@@ -1,0 +1,10 @@
+{
+  "name": "BlueDeck YachtOS",
+  "short_name": "BlueDeck",
+  "description": "Enterprise Superyacht Operating Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020817",
+  "theme_color": "#06b6d4",
+  "icons": []
+}
