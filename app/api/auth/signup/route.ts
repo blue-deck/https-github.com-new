@@ -4,6 +4,10 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+function normalizeSupabaseUrl(url?: string) {
+  return url?.replace("onftgqrmmpvvwgxxzywo", "onftggrmmpvvwgxxzywo");
+}
+
 export async function POST(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
@@ -29,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient(normalizeSupabaseUrl(supabaseUrl) || supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
