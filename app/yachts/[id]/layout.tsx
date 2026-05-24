@@ -2,59 +2,83 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { Home, Radar, Ship, Bell, Cpu, FileText, Wrench, Users } from "lucide-react";
+import {
+  Bell,
+  Crown,
+  Gauge,
+  Home,
+  type LucideIcon,
+  Radio,
+  ShieldCheck,
+  Ship,
+  Users,
+} from "lucide-react";
 
-export default function YachtAppLayout({ children }: { children: React.ReactNode }) {
+export default function YachtAppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const params = useParams();
   const pathname = usePathname();
   const yachtId = String(params?.id || "");
 
   const nav = [
-    { label: "Home", href: `/yachts/${yachtId}`, icon: <Home className="h-5 w-5" /> },
-    { label: "Map", href: `/yachts/${yachtId}/live-map`, icon: <Radar className="h-5 w-5" /> },
-    { label: "Bridge", href: `/yachts/${yachtId}/bridge`, icon: <Ship className="h-5 w-5" /> },
-    { label: "Crew", href: `/yachts/${yachtId}/crew`, icon: <Users className="h-5 w-5" /> },
-    { label: "AI", href: `/yachts/${yachtId}/ai`, icon: <Cpu className="h-5 w-5" /> },
-    { label: "Reports", href: `/yachts/${yachtId}/reports`, icon: <FileText className="h-5 w-5" /> },
+    { label: "Overview", href: `/yachts/${yachtId}`, icon: Home },
+    { label: "Bridge", href: `/yachts/${yachtId}/bridge`, icon: Radio },
+    { label: "Ops", href: `/yachts/${yachtId}/live-operations`, icon: Gauge },
+    { label: "Crew", href: `/yachts/${yachtId}/crew`, icon: Users },
+    { label: "Owner", href: `/yachts/${yachtId}/owner`, icon: Crown },
   ];
 
   return (
-    <div className="min-h-screen bg-[#020817] text-white">
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#020817]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href={`/yachts/${yachtId}`} className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400 text-black">
-              <Ship className="h-6 w-6" />
+    <div className="bd-shell min-h-screen text-[#eef7ff]">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#020817]/88 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
+          <Link href={`/yachts/${yachtId}`} className="bd-focus flex min-w-0 items-center gap-3 rounded-full">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#22d3ee]/35 bg-[#22d3ee]/15 text-[#22d3ee]">
+              <Ship className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-sm text-cyan-300">BlueDeck YachtOS</p>
-              <h1 className="text-lg font-black">Heliophilia</h1>
+            <div className="min-w-0">
+              <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-[#22d3ee]">
+                BlueDeck OS
+              </p>
+              <h1 className="truncate text-lg font-semibold text-white">
+                HELIOPHILIA
+              </h1>
             </div>
           </Link>
 
-          <div className="hidden items-center gap-3 lg:flex">
-            <Chip text="Captain Mode" />
-            <Chip text="Private Yacht" />
-            <Chip text="0 Critical" />
+          <div className="hidden items-center gap-2 lg:flex">
+            <Chip icon={ShieldCheck} text="Private Yacht" tone="blue" />
+            <Chip icon={Gauge} text="98% Ready" tone="green" />
+            <Chip icon={Bell} text="0 Critical" tone="cyan" />
           </div>
         </div>
       </header>
 
-      <div className="pt-20">{children}</div>
+      <div className="pt-[68px]">{children}</div>
 
-      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-4xl -translate-x-1/2 rounded-full border border-white/10 bg-black/75 p-2 backdrop-blur-2xl">
-        <div className="grid grid-cols-6 gap-2">
+      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-full border border-white/10 bg-[#020817]/88 p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
+        <div className="grid grid-cols-5 gap-1 sm:gap-2">
           {nav.map((item) => {
-            const active = pathname === item.href;
+            const Icon = item.icon;
+            const active =
+              pathname === item.href ||
+              (item.href.endsWith("/live-operations") &&
+                pathname.includes("/live-operations"));
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center rounded-full px-3 py-3 text-xs transition ${
-                  active ? "bg-cyan-400 text-black" : "text-gray-300 hover:bg-white/10"
+                className={`bd-focus flex h-14 flex-col items-center justify-center rounded-full px-2 text-xs font-semibold transition sm:h-16 ${
+                  active
+                    ? "bg-[#22d3ee] text-[#020817]"
+                    : "text-[#aeb8c8] hover:bg-white/10 hover:text-white"
                 }`}
               >
-                {item.icon}
+                <Icon className="h-5 w-5" />
                 <span className="mt-1 hidden sm:block">{item.label}</span>
               </Link>
             );
@@ -65,9 +89,24 @@ export default function YachtAppLayout({ children }: { children: React.ReactNode
   );
 }
 
-function Chip({ text }: { text: string }) {
+function Chip({
+  icon: Icon,
+  text,
+  tone,
+}: {
+  icon: LucideIcon;
+  text: string;
+  tone: "blue" | "green" | "cyan";
+}) {
+  const tones = {
+    blue: "border-[#22d3ee]/25 bg-[#22d3ee]/10 text-[#67e8f9]",
+    green: "border-[#66d19e]/25 bg-[#66d19e]/10 text-[#91e7ba]",
+    cyan: "border-[#47d7df]/25 bg-[#47d7df]/10 text-[#85edf1]",
+  };
+
   return (
-    <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-300">
+    <div className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm ${tones[tone]}`}>
+      <Icon className="h-4 w-4" />
       {text}
     </div>
   );

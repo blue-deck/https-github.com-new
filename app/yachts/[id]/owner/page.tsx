@@ -1,57 +1,146 @@
 "use client";
 
+import {
+  Bell,
+  CalendarDays,
+  Crown,
+  type LucideIcon,
+  MapPin,
+  Martini,
+  ShieldCheck,
+  Ship,
+  Utensils,
+  Waves,
+} from "lucide-react";
 import { BLUEDECK } from "../../../config";
-import { Ship, MapPin, Shield, Utensils, Waves, Bell } from "lucide-react";
+
+const ownerCards = [
+  {
+    icon: Ship,
+    title: "Yacht Status",
+    text: "All primary systems are ready for owner arrival.",
+  },
+  {
+    icon: MapPin,
+    title: "Location",
+    text: "Current position and arrival details are available for the owner party.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Privacy",
+    text: "Private yacht mode is active with restricted operational visibility.",
+  },
+  {
+    icon: Utensils,
+    title: "Guest Service",
+    text: "Interior, chef and service preparation are marked ready.",
+  },
+  {
+    icon: Waves,
+    title: "Water Experience",
+    text: "Beach club, tender and water toys are prepared for use.",
+  },
+  {
+    icon: Bell,
+    title: "Owner Alerts",
+    text: "Only meaningful owner-level updates appear here.",
+  },
+];
 
 export default function OwnerPage() {
   return (
-    <main className="min-h-screen bg-[#020817] p-8 pb-28 text-white">
+    <main className="min-h-screen px-5 pb-28 pt-8 text-[#eef7ff] sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 rounded-[40px] border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-purple-900/10 p-10">
-          <p className="text-amber-300">BlueDeck Owner Experience</p>
-          <h1 className="mt-3 text-6xl font-black">Owner VIP App</h1>
-          <p className="mt-5 max-w-3xl text-xl text-gray-400">
-            Luxury owner dashboard for yacht status, comfort, privacy and onboard experience.
-          </p>
-        </div>
+        <section className="bd-panel rounded-3xl p-6 sm:p-8 lg:p-10">
+          <div className="grid gap-10 lg:grid-cols-[1fr_0.85fr]">
+            <div>
+              <p className="bd-kicker">Owner Experience</p>
+              <h1 className="mt-4 text-5xl font-semibold leading-tight text-white sm:text-7xl">
+                Private Owner App
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#aeb8c8]">
+                A calm luxury view for yacht readiness, privacy, guest comfort
+                and the next owner moment. No operational clutter, only the
+                information that matters.
+              </p>
+            </div>
 
-        <div className="mb-12 grid gap-6 md:grid-cols-4">
+            <div className="rounded-3xl border border-[#22d3ee]/20 bg-[#22d3ee]/10 p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#22d3ee] text-[#020817]">
+                  <Crown className="h-7 w-7" />
+                </div>
+                <div>
+                  <p className="text-sm text-[#67e8f9]">{BLUEDECK.yachtName}</p>
+                  <h2 className="text-2xl font-semibold text-white">
+                    Owner Arrival Ready
+                  </h2>
+                </div>
+              </div>
+
+              <div className="mt-7 space-y-3">
+                <OwnerLine icon={CalendarDays} label="Next Moment" value="Sunset service" />
+                <OwnerLine icon={Martini} label="Hospitality" value="Guest profile ready" />
+                <OwnerLine icon={ShieldCheck} label="Privacy" value="Active" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-6 grid gap-4 md:grid-cols-4">
           <Stat title="Yacht" value={BLUEDECK.yachtName} />
           <Stat title="Mode" value="Private" />
-          <Stat title="Guest Comfort" value="Ready" />
-          <Stat title="Privacy" value="Active" />
-        </div>
+          <Stat title="Comfort" value="Ready" />
+          <Stat title="Alerts" value="Clear" />
+        </section>
 
-        <div className="grid gap-8 md:grid-cols-2">
-          <Card icon={<Ship />} title="Yacht Status" text="All primary yacht systems are operational." />
-          <Card icon={<MapPin />} title="Location" text="Live GPS map is available in Navigation." />
-          <Card icon={<Shield />} title="Security" text="Owner privacy and onboard security mode active." />
-          <Card icon={<Utensils />} title="Guest Service" text="Chef, crew and interior readiness panel prepared." />
-          <Card icon={<Waves />} title="Sea Experience" text="Beach club, tender and water toys workflow ready." />
-          <Card icon={<Bell />} title="Owner Alerts" text="Critical notifications will appear here when active." />
-        </div>
+        <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {ownerCards.map((card) => {
+            const Icon = card.icon;
+
+            return (
+              <article key={card.title} className="rounded-2xl border border-white/10 bg-white/[0.045] p-6">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#22d3ee]/15 text-[#22d3ee]">
+                  <Icon className="h-6 w-6" />
+                </div>
+                <h2 className="mt-6 text-2xl font-semibold text-white">
+                  {card.title}
+                </h2>
+                <p className="mt-3 leading-7 text-[#aeb8c8]">{card.text}</p>
+              </article>
+            );
+          })}
+        </section>
       </div>
     </main>
   );
 }
 
-function Stat({ title, value }: any) {
+function OwnerLine({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-[30px] border border-white/10 bg-white/5 p-6">
-      <p className="text-gray-400">{title}</p>
-      <h2 className="mt-4 text-3xl font-black">{value}</h2>
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+      <div className="flex items-center gap-3">
+        <Icon className="h-5 w-5 text-[#22d3ee]" />
+        <span className="text-[#aeb8c8]">{label}</span>
+      </div>
+      <span className="text-right font-semibold text-white">{value}</span>
     </div>
   );
 }
 
-function Card({ icon, title, text }: any) {
+function Stat({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-400 text-black">
-        {icon}
-      </div>
-      <h2 className="text-4xl font-black">{title}</h2>
-      <p className="mt-5 text-xl leading-relaxed text-gray-400">{text}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-5">
+      <p className="text-sm text-[#aeb8c8]">{title}</p>
+      <h2 className="mt-3 text-2xl font-semibold text-white">{value}</h2>
     </div>
   );
 }

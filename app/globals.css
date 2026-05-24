@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #020817;
+  --foreground: #eef7ff;
+  --navy-950: #020817;
+  --navy-900: #08111f;
+  --navy-800: #0f1c2e;
+  --platinum: #eef7ff;
+  --muted: #aeb8c8;
+  --brand-accent: #22d3ee;
+  --aqua: #47d7df;
+  --emerald: #66d19e;
+  --danger: #ef776f;
 }
 
 @theme inline {
@@ -12,15 +21,94 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  min-width: 1200px;
+  text-rendering: geometricPrecision;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(14, 165, 233, 0.22);
+  color: #0f172a;
+}
+
+input::selection,
+textarea::selection {
+  background: rgba(14, 165, 233, 0.18);
+  color: #0f172a;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.bd-shell {
+  background:
+    linear-gradient(180deg, rgba(7, 14, 27, 0.92), rgba(5, 9, 20, 1) 46%),
+    var(--navy-950);
+}
+
+.bd-panel {
+  border: 1px solid rgba(247, 243, 234, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
+}
+
+.bd-panel-soft {
+  border: 1px solid rgba(247, 243, 234, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bd-focus {
+  outline: none;
+}
+
+.bd-focus:focus-visible {
+  outline: 2px solid var(--brand-accent);
+  outline-offset: 3px;
+}
+
+.bd-kicker {
+  color: var(--brand-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #bluedeck-cv,
+  #bluedeck-cv * {
+    visibility: visible;
+  }
+
+  #bluedeck-cv {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    border-radius: 0 !important;
+  }
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ClipboardCheck, FileText, LogOut, Ship, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 export default function DashboardPage() {
@@ -48,7 +50,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#081120] p-10 text-white">
+      <main className="min-h-screen bg-[#f4f0e8] p-10 text-slate-900">
         Loading dashboard...
       </main>
     );
@@ -58,49 +60,72 @@ export default function DashboardPage() {
     profile?.role === "captain" || profile?.role === "management";
 
   return (
-    <main className="min-h-screen bg-[#081120] p-10 text-white">
+    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <div className="rounded-3xl bg-white/5 p-8">
-          <p className="text-gray-400">BlueDeck Dashboard</p>
+        <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur">
+          <p className="bd-kicker">My Dashboard</p>
 
-          <h1 className="mt-3 text-5xl font-bold">
+          <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
             Welcome, {profile?.full_name || profile?.email}
           </h1>
 
-          <p className="mt-4 text-xl text-gray-400">Role: {profile?.role}</p>
+          <p className="mt-4 text-lg text-slate-600">Role: {profile?.role}</p>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <Link
+            href="/profile"
+            className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+          >
+            <UserRound className="h-8 w-8 text-cyan-700" />
+            <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
+            <p className="mt-3 leading-7 text-slate-600">
+              Manage your crew ID, documents, expiry dates, portfolio and CV.
+            </p>
+          </Link>
+
           {isCaptain ? (
-            <a
+            <Link
               href="/yachts"
-              className="rounded-3xl border border-white/10 bg-white/5 p-8 transition hover:border-blue-400/40"
+              className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
             >
-              <h2 className="text-3xl font-bold">Captain Workspace</h2>
-              <p className="mt-3 text-gray-400">
+              <Ship className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Captain Workspace</h2>
+              <p className="mt-3 leading-7 text-slate-600">
                 Manage yachts, crew, tasks, documents and maintenance.
               </p>
-            </a>
+            </Link>
           ) : (
-            <a
-              href="/crew"
-              className="rounded-3xl border border-white/10 bg-white/5 p-8 transition hover:border-blue-400/40"
+            <Link
+              href="/crew/tasks"
+              className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
             >
-              <h2 className="text-3xl font-bold">My Crew Portal</h2>
-              <p className="mt-3 text-gray-400">
+              <ClipboardCheck className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Checklists</h2>
+              <p className="mt-3 leading-7 text-slate-600">
                 View your assigned tasks and onboard checklists.
               </p>
-            </a>
+            </Link>
           )}
+
+          <Link
+            href="/contracts"
+            className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+          >
+            <FileText className="h-8 w-8 text-cyan-700" />
+            <h2 className="mt-5 text-3xl font-semibold text-slate-950">Contracts</h2>
+            <p className="mt-3 leading-7 text-slate-600">Review yacht contracts assigned to your profile.</p>
+          </Link>
 
           <button
             onClick={async () => {
               await supabase.auth.signOut();
               window.location.href = "/auth";
             }}
-            className="rounded-3xl border border-red-500/30 bg-red-500/10 p-8 text-left text-red-300 transition hover:bg-red-500/20"
+            className="bd-focus rounded-2xl border border-[#ef776f]/30 bg-white/80 p-8 text-left text-[#b9423b] shadow-xl shadow-slate-900/5 transition hover:bg-[#fff6f5]"
           >
-            <h2 className="text-3xl font-bold">Logout</h2>
+            <LogOut className="h-8 w-8" />
+            <h2 className="mt-5 text-3xl font-semibold">Logout</h2>
             <p className="mt-3">Sign out from your BlueDeck account.</p>
           </button>
         </div>

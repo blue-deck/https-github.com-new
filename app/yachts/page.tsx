@@ -84,81 +84,83 @@ export default function YachtsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#081120] p-10 text-white">
+      <main className="bd-shell min-h-screen p-10 text-[#eef7ff]">
         Loading yachts...
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#081120] p-10 text-white">
+    <main className="bd-shell min-h-screen px-5 py-10 text-[#eef7ff] sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <a href="/dashboard" className="text-blue-300">
-          ← Back to dashboard
+        <a href="/dashboard" className="bd-focus rounded-full text-[#22d3ee]">
+          Back to dashboard
         </a>
 
-        <div className="mt-6 rounded-3xl bg-white/5 p-8">
-          <p className="text-gray-400">Captain Workspace</p>
-          <h1 className="mt-3 text-5xl font-bold">My Yachts</h1>
-          <p className="mt-4 text-gray-400">
+        <div className="bd-panel mt-6 rounded-3xl p-8">
+          <p className="bd-kicker">Captain Workspace</p>
+          <h1 className="mt-4 text-4xl font-semibold text-white sm:text-5xl">
+            Fleet
+          </h1>
+          <p className="mt-4 max-w-2xl leading-7 text-[#aeb8c8]">
             Create and manage the yachts connected to your BlueDeck account.
           </p>
         </div>
 
-        <div className="mt-8 grid gap-8 md:grid-cols-[420px_1fr]">
-          <div className="rounded-3xl bg-white/5 p-8">
-            <h2 className="text-3xl font-bold">Add Yacht</h2>
+        <div className="mt-6 grid gap-6 md:grid-cols-[390px_1fr]">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-6">
+            <h2 className="text-2xl font-semibold text-white">Add Yacht</h2>
 
-            <div className="mt-8 space-y-4">
+            <div className="mt-6 space-y-4">
               <input
                 placeholder="Yacht name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-white placeholder:text-[#6f7b8e]"
               />
 
               <input
                 placeholder="Model"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-white placeholder:text-[#6f7b8e]"
               />
 
               <input
                 placeholder="Flag"
                 value={flag}
                 onChange={(e) => setFlag(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-white placeholder:text-[#6f7b8e]"
               />
 
               <button
                 onClick={createYacht}
-                className="w-full rounded-2xl bg-blue-400 px-5 py-4 font-semibold text-black"
+                className="bd-focus w-full rounded-full bg-[#22d3ee] px-5 py-4 font-bold text-[#020817] transition hover:bg-[#eef7ff]"
               >
                 Create Yacht
               </button>
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-8">
-            <h2 className="text-3xl font-bold">Fleet</h2>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-6">
+            <h2 className="text-2xl font-semibold text-white">Connected Yachts</h2>
 
             <div className="mt-6 space-y-4">
               {yachts.map((yacht) => (
                 <a
                   href={`/yachts/${yacht.id}`}
                   key={yacht.id}
-                  className="block rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:border-blue-400/40 hover:bg-white/5"
+                  className="bd-focus block rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:border-[#22d3ee]/35 hover:bg-white/[0.06]"
                 >
-                  <h3 className="text-2xl font-semibold">{yacht.name}</h3>
-                  <p className="mt-2 text-gray-400">{yacht.model}</p>
-                  <p className="mt-1 text-gray-500">{yacht.flag}</p>
+                  <h3 className="text-2xl font-semibold text-white">{yacht.name}</h3>
+                  <p className="mt-2 text-[#aeb8c8]">{yacht.model}</p>
+                  <p className="mt-1 text-[#7e899a]">{yacht.flag}</p>
                 </a>
               ))}
 
               {yachts.length === 0 && (
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
-                  No yachts connected to your account yet. Create your first yacht.
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-[#aeb8c8]">
+                  Your fleet is empty. Add the first yacht to open the captain workspace.
                 </div>
               )}
             </div>

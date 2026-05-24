@@ -82,11 +82,11 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#081120] p-8 text-white">
-      <div className="w-full max-w-xl rounded-3xl bg-white/5 p-10">
-        <p className="text-center text-gray-400">BlueDeck Authentication</p>
+    <main className="bd-shell flex min-h-screen items-center justify-center p-5 text-[#eef7ff] sm:p-8">
+      <div className="bd-panel w-full max-w-xl rounded-3xl p-7 sm:p-10">
+        <p className="bd-kicker text-center">BlueDeck Authentication</p>
 
-        <h1 className="mt-3 text-center text-5xl font-bold">
+        <h1 className="mt-4 text-center text-4xl font-semibold text-white sm:text-5xl">
           {isLogin ? "Login" : "Create Account"}
         </h1>
 
@@ -97,13 +97,13 @@ export default function AuthPage() {
                 placeholder="Full name"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/20 p-5 outline-none"
+                className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 p-5 text-white placeholder:text-[#6f7b8e]"
               />
 
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-black/20 p-5 outline-none"
+                className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 p-5 text-white"
               >
                 <option value="crew">Crew</option>
                 <option value="captain">Captain</option>
@@ -118,7 +118,7 @@ export default function AuthPage() {
             placeholder="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-black/20 p-5 outline-none"
+            className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 p-5 text-white placeholder:text-[#6f7b8e]"
           />
 
           <input
@@ -126,13 +126,13 @@ export default function AuthPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-black/20 p-5 outline-none"
+            className="bd-focus w-full rounded-2xl border border-white/10 bg-black/20 p-5 text-white placeholder:text-[#6f7b8e]"
           />
 
           <button
             onClick={handleAuth}
             disabled={loading}
-            className="w-full rounded-2xl bg-blue-500 p-5 text-lg font-semibold disabled:opacity-50"
+            className="bd-focus w-full rounded-full bg-[#22d3ee] p-5 text-lg font-bold text-[#020817] transition hover:bg-[#eef7ff] disabled:opacity-50"
           >
             {loading ? "Please wait..." : isLogin ? "Login" : "Create Account"}
           </button>
@@ -140,7 +140,7 @@ export default function AuthPage() {
 
         <button
           onClick={() => setIsLogin(!isLogin)}
-          className="mt-8 w-full text-blue-300"
+          className="bd-focus mt-8 w-full rounded-full text-[#22d3ee]"
         >
           {isLogin ? "Create new account" : "Already have an account?"}
         </button>
