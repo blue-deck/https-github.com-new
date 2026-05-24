@@ -92,36 +92,47 @@ export default function LoginPage() {
       return;
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: {
-          full_name: fullName,
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          fullName,
           phone,
           role,
-        },
-      },
-    });
+        }),
+      });
 
-    if (error) {
+      const result = (await response.json()) as {
+        error?: string;
+        userId?: string | null;
+        needsEmailConfirmation?: boolean;
+      };
+
+      if (!response.ok || result.error) {
+        setLoading(false);
+        setNotice(result.error || "Account could not be created. Please try again.");
+        return;
+      }
+
+      if (result.userId) await createProfiles(result.userId, email.trim().toLowerCase());
+
       setLoading(false);
-      setNotice(error.message);
-      return;
+
+      if (result.needsEmailConfirmation) {
+        setNotice("Account created. Please check your email inbox and confirm your BlueDeck account, then login.");
+        setMode("login");
+        return;
+      }
+
+      setNotice("Account created. Please login to continue to My Dashboard.");
+      setMode("login");
+    } catch {
+      setLoading(false);
+      setNotice("Create account request failed. Please check your internet connection and try again.");
     }
-
-    if (data.user) await createProfiles(data.user.id, email.trim().toLowerCase());
-
-    setLoading(false);
-
-    if (data.session) {
-      window.location.href = "/dashboard";
-      return;
-    }
-
-    setNotice("Account created. Please check your email inbox and confirm your BlueDeck account, then login.");
-    setMode("login");
   }
 
   async function resendConfirmation() {
