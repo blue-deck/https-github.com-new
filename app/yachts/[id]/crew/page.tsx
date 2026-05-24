@@ -16,6 +16,7 @@ import {
   Wrench,
   Waves,
 } from "lucide-react";
+import { saveYachtMembership } from "../../../lib/yachtMemberships";
 
 const yachtId = "f434e90f-b8d8-443c-ad23-d5cedbe4308f";
 
@@ -314,20 +315,38 @@ export default function CrewPage() {
     }
 
     if (!profile && inviteEmail) {
-      const response = await supabase
+      const normalizedInviteEmail = inviteEmail.trim().toLowerCase();
+      const existingProfile = await supabase
         .from("crew_profiles")
-        .upsert(
-          {
-            email: inviteEmail.trim().toLowerCase(),
+        .select("*")
+        .eq("email", normalizedInviteEmail)
+        .limit(1);
+
+      if (existingProfile.error) {
+        profileError = existingProfile.error;
+      } else if (existingProfile.data?.[0]) {
+        profile = existingProfile.data[0];
+
+        if (fullName && !profile.full_name) {
+          await supabase
+            .from("crew_profiles")
+            .update({ full_name: fullName })
+            .eq("id", profile.id);
+        }
+      } else {
+        const response = await supabase
+          .from("crew_profiles")
+          .insert({
+            email: normalizedInviteEmail,
             full_name: fullName,
             public_crew_id: crypto.randomUUID().slice(0, 8).toUpperCase(),
-          },
-          { onConflict: "email" }
-        )
-        .select()
-        .single();
-      profile = response.data;
-      profileError = response.error;
+          })
+          .select()
+          .single();
+
+        profile = response.data;
+        profileError = response.error;
+      }
     }
 
     if (profileError) {
@@ -336,10 +355,16 @@ export default function CrewPage() {
       return;
     }
 
+    if (!profile?.id) {
+      alert("Crew profile could not be created. Please check the Crew ID or email.");
+      setLoading(false);
+      return;
+    }
+
     const token = crypto.randomUUID();
     const inviteOrigin =
       window.location.hostname === "localhost"
-        ? "https://www.bluedeck.app"
+        ? "https://bluedeck.app"
         : window.location.origin;
     const inviteLink = `${inviteOrigin}/invitations/${token}`;
 
@@ -361,19 +386,14 @@ export default function CrewPage() {
       return;
     }
 
-    const { error: memberError } = await supabase
-      .from("yacht_crew_memberships")
-      .upsert(
-        {
-          yacht_id: yachtId,
-          crew_profile_id: profile.id,
-          invited_email: inviteEmail || profile.email,
-          position,
-          department,
-          status: "invited",
-        },
-        { onConflict: "yacht_id,crew_profile_id" }
-      );
+    const { error: memberError } = await saveYachtMembership(supabase, {
+      yacht_id: yachtId,
+      crew_profile_id: profile.id,
+      invited_email: inviteEmail || profile.email,
+      position,
+      department,
+      status: "invited",
+    });
 
     if (memberError) {
       alert(memberError.message);

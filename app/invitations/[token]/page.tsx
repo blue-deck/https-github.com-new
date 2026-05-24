@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Mail, Ship, UserPlus } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import {
+  markInvitationAccepted,
+  saveYachtMembership,
+} from "../../lib/yachtMemberships";
 
 export default function InvitationPage() {
   const params = useParams();
@@ -57,27 +61,30 @@ export default function InvitationPage() {
       crewProfileId = profile?.id;
     }
 
-    const { error: membershipError } = await supabase
-      .from("yacht_crew_memberships")
-      .upsert({
-        yacht_id: invite.yacht_id,
-        crew_profile_id: crewProfileId,
-        invited_email: user.email,
-        position: invite.position,
-        department: invite.department,
-        status: "active",
-        accepted_at: new Date().toISOString(),
-      });
+    const { error: membershipError } = await saveYachtMembership(supabase, {
+      yacht_id: invite.yacht_id,
+      crew_profile_id: crewProfileId,
+      invited_email: user.email,
+      position: invite.position,
+      department: invite.department,
+      status: "active",
+    });
 
     if (membershipError) {
       alert(membershipError.message);
       return;
     }
 
-    await supabase
-      .from("crew_invitations")
-      .update({ status: "accepted", accepted_at: new Date().toISOString() })
-      .eq("id", invite.id);
+    const { error: inviteError } = await markInvitationAccepted(
+      supabase,
+      invite.id,
+      crewProfileId
+    );
+
+    if (inviteError) {
+      alert(inviteError.message);
+      return;
+    }
 
     setAccepted(true);
   }

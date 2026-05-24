@@ -1,3 +1,9 @@
+alter table public.crew_invitations
+  add column if not exists accepted_at timestamptz;
+
+alter table public.yacht_crew_memberships
+  add column if not exists accepted_at timestamptz;
+
 alter table public.crew_invitations enable row level security;
 alter table public.yacht_crew_memberships enable row level security;
 alter table public.yacht_checklists enable row level security;
