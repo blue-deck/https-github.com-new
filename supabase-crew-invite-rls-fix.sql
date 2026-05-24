@@ -4,6 +4,13 @@ alter table public.crew_invitations
 alter table public.yacht_crew_memberships
   add column if not exists accepted_at timestamptz;
 
+alter table public.yacht_checklists
+  add column if not exists frequency text,
+  add column if not exists due_date date,
+  add column if not exists captain_note text,
+  add column if not exists status text default 'open',
+  add column if not exists completed_at timestamptz;
+
 alter table public.crew_invitations enable row level security;
 alter table public.yacht_crew_memberships enable row level security;
 alter table public.yacht_checklists enable row level security;

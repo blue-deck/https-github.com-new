@@ -438,21 +438,17 @@ export default function CrewPage() {
       const template = allTemplates.find((item) => item.key === key);
       if (!template) continue;
 
-      const { data: checklist, error } = await supabase
-        .from("yacht_checklists")
-        .insert({
-          yacht_id: yachtId,
-          title: template.title,
-          department: template.department,
-          checklist_type: template.type,
-          assigned_to: member?.crew_profile_id,
-          frequency,
-          due_date: dueDate || null,
-          captain_note: captainNote || null,
-          status: "open",
-        })
-        .select()
-        .single();
+      const { data: checklist, error } = await createChecklist({
+        yacht_id: yachtId,
+        title: template.title,
+        department: template.department,
+        checklist_type: template.type,
+        assigned_to: member?.crew_profile_id,
+        frequency,
+        due_date: dueDate || null,
+        captain_note: captainNote || null,
+        status: "open",
+      });
 
       if (error) {
         alert(error.message);
@@ -475,6 +471,37 @@ export default function CrewPage() {
     loadData();
 
     alert("Checklist assigned.");
+  }
+
+  async function createChecklist(payload: Record<string, any>) {
+    const retryPayload = { ...payload };
+    const optionalColumns = ["captain_note", "due_date", "frequency", "status"];
+
+    for (let attempt = 0; attempt <= optionalColumns.length; attempt += 1) {
+      const response = await supabase
+        .from("yacht_checklists")
+        .insert(retryPayload)
+        .select()
+        .single();
+
+      if (!response.error) return response;
+
+      const message = response.error.message || "";
+      const missingColumn = optionalColumns.find(
+        (column) =>
+          Object.prototype.hasOwnProperty.call(retryPayload, column) &&
+          message.includes(`'${column}'`) &&
+          message.includes("schema cache")
+      );
+
+      if (!missingColumn) return response;
+      delete retryPayload[missingColumn];
+    }
+
+    return {
+      data: null,
+      error: { message: "Checklist could not be created." },
+    };
   }
 
   async function deleteChecklist(id: string) {
