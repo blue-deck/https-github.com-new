@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const fallbackSupabaseUrl = "https://onftggrmmpvvwgxxzywo.supabase.co";
+const productionSiteUrl = "https://www.bluedeck.app";
 
 function normalizeSupabaseUrl(url?: string) {
   if (!url || url.includes("onftgqrmmpvvwgxxzywo")) return fallbackSupabaseUrl;
@@ -25,8 +26,6 @@ export async function POST(request: NextRequest) {
 
   const email = body.email?.trim().toLowerCase();
   const password = body.password || "";
-  const origin = request.headers.get("origin") || "https://bluedeck.app";
-
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
   }
@@ -46,7 +45,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     options: {
-      emailRedirectTo: `${origin}/dashboard`,
+      emailRedirectTo: `${productionSiteUrl}/dashboard`,
       data: {
         full_name: body.fullName || email,
         phone: body.phone || "",

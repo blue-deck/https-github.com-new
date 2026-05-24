@@ -8,6 +8,7 @@ import { blueDeckCountries } from "../lib/countries";
 import { supabase } from "../lib/supabase";
 
 type AuthMode = "login" | "signup";
+const productionSiteUrl = "https://www.bluedeck.app";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -144,7 +145,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { emailRedirectTo: `${productionSiteUrl}/dashboard` },
     });
 
     setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
@@ -157,7 +158,7 @@ export default function LoginPage() {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${productionSiteUrl}/login`,
     });
 
     setNotice(error ? error.message : "Password reset email sent.");
