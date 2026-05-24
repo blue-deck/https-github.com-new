@@ -23,7 +23,7 @@ export default function YachtsPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      window.location.href = "/auth";
+      window.location.href = "/login";
       return;
     }
 
@@ -48,7 +48,7 @@ export default function YachtsPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      window.location.href = "/auth";
+      window.location.href = "/login";
       return;
     }
 

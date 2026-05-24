@@ -15,7 +15,7 @@ export default function DashboardPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      window.location.href = "/auth";
+      window.location.href = "/login";
       return;
     }
 
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           <button
             onClick={async () => {
               await supabase.auth.signOut();
-              window.location.href = "/auth";
+              window.location.href = "/login";
             }}
             className="bd-focus rounded-2xl border border-[#ef776f]/30 bg-white/80 p-8 text-left text-[#b9423b] shadow-xl shadow-slate-900/5 transition hover:bg-[#fff6f5]"
           >

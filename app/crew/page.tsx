@@ -18,7 +18,7 @@ export default function CrewPortalPage() {
     } = await supabase.auth.getUser();
 
     if (!user || !user.email) {
-      window.location.href = "/auth";
+      window.location.href = "/login";
       return;
     }
 
