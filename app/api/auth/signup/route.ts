@@ -3,9 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const fallbackSupabaseUrl = "https://onftggrmmpvvwgxxzywo.supabase.co";
 
 function normalizeSupabaseUrl(url?: string) {
-  return url?.replace("onftgqrmmpvvwgxxzywo", "onftggrmmpvvwgxxzywo");
+  if (!url || url.includes("onftgqrmmpvvwgxxzywo")) return fallbackSupabaseUrl;
+  return url;
 }
 
 export async function POST(request: NextRequest) {
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
 
-  const supabase = createClient(normalizeSupabaseUrl(supabaseUrl) || supabaseUrl, supabaseAnonKey, {
+  const supabase = createClient(normalizeSupabaseUrl(supabaseUrl), supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
