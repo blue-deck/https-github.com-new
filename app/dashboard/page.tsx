@@ -101,9 +101,9 @@ export default function DashboardPage() {
               className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
             >
               <ClipboardCheck className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Checklists</h2>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My YachtOS</h2>
               <p className="mt-3 leading-7 text-slate-600">
-                View your assigned tasks and onboard checklists.
+                View captain invitations, yacht duties and onboard checklists.
               </p>
             </Link>
           )}

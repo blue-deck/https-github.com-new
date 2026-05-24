@@ -234,7 +234,7 @@ export default function CrewPage() {
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
   const [contractText, setContractText] = useState("");
-  const [lastInviteLink, setLastInviteLink] = useState("");
+  const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   const allTemplates = useMemo(() => {
@@ -337,7 +337,11 @@ export default function CrewPage() {
     }
 
     const token = crypto.randomUUID();
-    const inviteLink = `${window.location.origin}/invitations/${token}`;
+    const inviteOrigin =
+      window.location.hostname === "localhost"
+        ? "https://www.bluedeck.app"
+        : window.location.origin;
+    const inviteLink = `${inviteOrigin}/invitations/${token}`;
 
     const { error: inviteError } = await supabase.from("crew_invitations").insert({
       yacht_id: yachtId,
@@ -359,14 +363,17 @@ export default function CrewPage() {
 
     const { error: memberError } = await supabase
       .from("yacht_crew_memberships")
-      .upsert({
-        yacht_id: yachtId,
-        crew_profile_id: profile.id,
-        invited_email: inviteEmail,
-        position,
-        department,
-        status: "invited",
-      });
+      .upsert(
+        {
+          yacht_id: yachtId,
+          crew_profile_id: profile.id,
+          invited_email: inviteEmail || profile.email,
+          position,
+          department,
+          status: "invited",
+        },
+        { onConflict: "yacht_id,crew_profile_id" }
+      );
 
     if (memberError) {
       alert(memberError.message);
@@ -377,11 +384,11 @@ export default function CrewPage() {
     setInviteEmail("");
     setCrewPublicId("");
     setFullName("");
-    setLastInviteLink(inviteLink);
+    setInviteNotice("Invitation is now waiting inside the crew member's My YachtOS portal.");
     setLoading(false);
     loadData();
 
-    alert("Crew invitation created. Copy the invite link and send it to the crew member.");
+    alert("Crew invitation created. The crew member will see it inside My YachtOS.");
   }
 
   function toggleTemplate(key: string) {
@@ -489,17 +496,20 @@ export default function CrewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 pb-32 text-white">
+    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-6 pb-32 text-slate-900">
       <div className="mx-auto max-w-[1700px]">
-        <div className="mb-10 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
-          <p className="text-cyan-300">BlueDeck CrewOS</p>
+        <div className="mb-10 overflow-hidden rounded-[40px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur">
+          <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
+          <div className="p-10">
+          <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck CrewOS</p>
           <h1 className="mt-3 text-6xl font-black">
             Crew Management & Checklist Assignment
           </h1>
-          <p className="mt-5 max-w-4xl text-xl leading-relaxed text-gray-400">
+          <p className="mt-5 max-w-4xl text-xl leading-relaxed text-slate-500">
             Add crew, assign department-based yacht checklists, manage roles,
             watchkeeping and operational duties.
           </p>
+          </div>
         </div>
 
         <div className="mb-10 grid gap-6 md:grid-cols-4">
@@ -511,13 +521,13 @@ export default function CrewPage() {
 
         <div className="grid gap-8 xl:grid-cols-[420px_1fr]">
           <div className="space-y-8">
-            <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
+            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
               <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400 text-black">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
                   <Plus />
                 </div>
                 <div>
-                  <p className="text-cyan-300">Captain Action</p>
+                  <p className="text-cyan-700">Captain Action</p>
                   <h2 className="text-4xl font-black">Invite Crew</h2>
                 </div>
               </div>
@@ -527,27 +537,27 @@ export default function CrewPage() {
                   placeholder="Full name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                 />
 
                 <input
                   placeholder="Crew ID"
                   value={crewPublicId}
                   onChange={(e) => setCrewPublicId(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                 />
 
                 <input
                   placeholder="Crew email, if Crew ID is not known"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                 />
 
                 <select
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 >
                   <option>Captain</option>
                   <option>Engineer</option>
@@ -559,7 +569,7 @@ export default function CrewPage() {
                 <select
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 >
                   <option>Deck</option>
                   <option>Interior</option>
@@ -571,28 +581,28 @@ export default function CrewPage() {
                 <button
                   onClick={addCrew}
                   disabled={loading}
-                  className="w-full rounded-2xl bg-cyan-400 py-4 text-xl font-bold text-black"
+                  className="w-full rounded-2xl bg-cyan-600 py-4 text-xl font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700 disabled:opacity-60"
                 >
                   {loading ? "Saving..." : "Create Invitation"}
                 </button>
 
-                {lastInviteLink && (
-                  <div className="rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm text-cyan-100">
-                    <p className="font-bold">Invite link</p>
-                    <p className="mt-2 break-all">{lastInviteLink}</p>
+                {inviteNotice && (
+                  <div className="rounded-2xl border border-cyan-400/25 bg-cyan-50 p-4 text-sm text-slate-700">
+                    <p className="font-bold">Invitation sent</p>
+                    <p className="mt-2 leading-6">{inviteNotice}</p>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
-              <p className="text-cyan-300">Assign To</p>
+            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+              <p className="text-cyan-700">Assign To</p>
               <h2 className="mt-2 text-4xl font-black">Crew Member</h2>
 
               <select
                 value={selectedCrew}
                 onChange={(e) => setSelectedCrew(e.target.value)}
-                className="mt-8 w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                className="mt-8 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
               >
                 <option value="">Select crew</option>
                 {crew.map((member) => (
@@ -605,7 +615,7 @@ export default function CrewPage() {
               <button
                 onClick={assignSelectedChecklists}
                 disabled={loading}
-                className="mt-5 w-full rounded-2xl bg-green-400 py-4 text-xl font-bold text-black"
+                className="mt-5 w-full rounded-2xl bg-slate-950 py-4 text-xl font-bold text-white transition hover:bg-cyan-700 disabled:opacity-60"
               >
                 {loading ? "Assigning..." : "Assign Selected Checklists"}
               </button>
@@ -614,7 +624,7 @@ export default function CrewPage() {
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 >
                   <option>Daily</option>
                   <option>Weekly</option>
@@ -627,7 +637,7 @@ export default function CrewPage() {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-lg outline-none"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 />
               </div>
 
@@ -635,14 +645,14 @@ export default function CrewPage() {
                 placeholder="Captain note for this checklist"
                 value={captainNote}
                 onChange={(e) => setCaptainNote(e.target.value)}
-                className="mt-4 h-24 w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none"
+                className="mt-4 h-24 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
               />
             </div>
 
-            <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
-              <p className="text-cyan-300">Contract</p>
+            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+              <p className="text-cyan-700">Contract</p>
               <h2 className="mt-2 text-4xl font-black">Assign Yacht Contract</h2>
-              <p className="mt-3 text-gray-400">
+              <p className="mt-3 text-slate-500">
                 Select a crew member above, paste the contract text, and send it
                 for mobile signature.
               </p>
@@ -650,37 +660,37 @@ export default function CrewPage() {
                 value={contractText}
                 onChange={(e) => setContractText(e.target.value)}
                 placeholder="Contract terms, dates, salary, position, vessel name..."
-                className="mt-6 h-40 w-full rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none"
+                className="mt-6 h-40 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
               />
               <button
                 onClick={assignContract}
-                className="mt-5 w-full rounded-2xl bg-cyan-400 py-4 text-xl font-bold text-black"
+                className="mt-5 w-full rounded-2xl bg-cyan-600 py-4 text-xl font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700"
               >
                 Send Contract for Signature
               </button>
             </div>
 
-            <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
-              <p className="text-cyan-300">Assigned Work</p>
+            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+              <p className="text-cyan-700">Assigned Work</p>
               <h2 className="mt-2 text-4xl font-black">Open Checklists</h2>
 
               <div className="mt-8 space-y-4">
                 {checklists.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-2xl border border-white/10 bg-black/30 p-4"
+                    className="rounded-2xl border border-slate-200 bg-white p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h3 className="text-xl font-bold">{item.title}</h3>
-                        <p className="mt-1 text-sm text-gray-400">
+                        <p className="mt-1 text-sm text-slate-500">
                           {item.department} · {item.checklist_type}
                         </p>
                       </div>
 
                       <button
                         onClick={() => deleteChecklist(item.id)}
-                        className="text-red-300"
+                        className="text-[#b9423b]"
                       >
                         <Trash2 className="h-5 w-5" />
                       </button>
@@ -689,7 +699,7 @@ export default function CrewPage() {
                 ))}
 
                 {checklists.length === 0 && (
-                  <p className="text-gray-500">No assigned checklist yet.</p>
+                  <p className="text-slate-500">No assigned checklist yet.</p>
                 )}
               </div>
             </div>
@@ -697,11 +707,11 @@ export default function CrewPage() {
 
           <div className="space-y-8">
             {Object.entries(checklistTemplates).map(([dept, templates]: any) => (
-              <div key={dept} className="rounded-[36px] border border-white/10 bg-white/5 p-8">
+              <div key={dept} className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
                 <div className="mb-8 flex items-center gap-4">
                   <DepartmentIcon department={dept} />
                   <div>
-                    <p className="text-cyan-300">Checklist Department</p>
+                    <p className="text-cyan-700">Checklist Department</p>
                     <h2 className="text-5xl font-black">{dept}</h2>
                   </div>
                 </div>
@@ -717,16 +727,16 @@ export default function CrewPage() {
                         onClick={() => toggleTemplate(key)}
                         className={`rounded-[28px] border p-6 text-left transition ${
                           selected
-                            ? "border-cyan-400 bg-cyan-400/10"
-                            : "border-white/10 bg-black/20 hover:border-cyan-400/40"
+                            ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_50px_rgba(8,145,178,0.12)]"
+                            : "border-slate-200 bg-white hover:border-cyan-300"
                         }`}
                       >
                         <div className="flex items-start gap-4">
                           <div
                             className={`mt-1 flex h-7 w-7 items-center justify-center rounded-lg border ${
                               selected
-                                ? "border-cyan-300 bg-cyan-400 text-black"
-                                : "border-white/20"
+                                ? "border-cyan-600 bg-cyan-600 text-white"
+                                : "border-slate-300"
                             }`}
                           >
                             {selected && <CheckCircle className="h-5 w-5" />}
@@ -734,11 +744,11 @@ export default function CrewPage() {
 
                           <div>
                             <h3 className="text-2xl font-black">{template.title}</h3>
-                            <p className="mt-2 text-sm text-cyan-300">{template.type}</p>
+                            <p className="mt-2 text-sm text-cyan-700">{template.type}</p>
 
                             <div className="mt-5 space-y-2">
                               {template.tasks.map((task: string) => (
-                                <p key={task} className="text-sm text-gray-400">
+                                <p key={task} className="text-sm text-slate-500">
                                   • {task}
                                 </p>
                               ))}
@@ -759,20 +769,20 @@ export default function CrewPage() {
 }
 
 function DepartmentIcon({ department }: any) {
-  if (department === "Deck") return <ShipWheel className="h-12 w-12 text-cyan-300" />;
-  if (department === "Interior") return <Utensils className="h-12 w-12 text-pink-300" />;
-  if (department === "Engineering") return <Wrench className="h-12 w-12 text-orange-300" />;
-  if (department === "Toys") return <Waves className="h-12 w-12 text-blue-300" />;
-  return <LifeBuoy className="h-12 w-12 text-red-300" />;
+  if (department === "Deck") return <ShipWheel className="h-12 w-12 text-cyan-700" />;
+  if (department === "Interior") return <Utensils className="h-12 w-12 text-[#b9427b]" />;
+  if (department === "Engineering") return <Wrench className="h-12 w-12 text-[#c46d24]" />;
+  if (department === "Toys") return <Waves className="h-12 w-12 text-blue-700" />;
+  return <LifeBuoy className="h-12 w-12 text-[#b9423b]" />;
 }
 
 function Stat({ title, value, icon }: any) {
   return (
-    <div className="rounded-[30px] border border-white/10 bg-white/5 p-6">
+    <div className="rounded-[30px] border border-slate-200 bg-white/85 p-6 shadow-xl shadow-cyan-950/5">
       <div className="flex items-center justify-between">
-        <div className="text-cyan-300">{icon}</div>
+        <div className="text-cyan-700">{icon}</div>
         <div className="text-right">
-          <p className="text-gray-400">{title}</p>
+          <p className="text-slate-500">{title}</p>
           <h2 className="mt-2 text-3xl font-black">{value}</h2>
         </div>
       </div>

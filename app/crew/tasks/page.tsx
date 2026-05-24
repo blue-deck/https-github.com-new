@@ -11,7 +11,9 @@ import {
   Loader2,
   Mail,
   ShieldCheck,
+  Ship,
   Sparkles,
+  UserPlus,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -20,8 +22,10 @@ export default function CrewTasksPage() {
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<any>(null);
   const [checklists, setChecklists] = useState<any[]>([]);
+  const [invitations, setInvitations] = useState<any[]>([]);
   const [activeChecklist, setActiveChecklist] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [acceptingInviteId, setAcceptingInviteId] = useState("");
   const [updatingTaskId, setUpdatingTaskId] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState("");
 
@@ -33,35 +37,72 @@ export default function CrewTasksPage() {
 
     return {
       totalLists: checklists.length,
+      pendingInvitations: invitations.length,
       totalTasks: total,
       completed,
       progress,
     };
-  }, [checklists]);
+  }, [checklists, invitations]);
 
   async function loadTasks(emailOverride?: string) {
-    const targetEmail = emailOverride || email;
+    const targetEmail = (emailOverride || email).trim().toLowerCase();
 
     if (!targetEmail) {
       alert("Please enter your email.");
       return;
     }
 
+    setEmail(targetEmail);
     setLoading(true);
 
     const { data: crewProfile, error: profileError } = await supabase
       .from("crew_profiles")
       .select("*")
-      .eq("email", targetEmail.trim().toLowerCase())
+      .eq("email", targetEmail)
       .single();
 
     if (profileError || !crewProfile) {
       alert("Crew profile not found.");
+      setProfile(null);
+      setInvitations([]);
+      setChecklists([]);
+      setActiveChecklist(null);
       setLoading(false);
       return;
     }
 
     setProfile(crewProfile);
+
+    const [emailInvites, profileInvites] = await Promise.all([
+      supabase
+        .from("crew_invitations")
+        .select("*")
+        .eq("status", "pending")
+        .eq("invited_email", targetEmail)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("crew_invitations")
+        .select("*")
+        .eq("status", "pending")
+        .eq("crew_profile_id", crewProfile.id)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    if (emailInvites.error || profileInvites.error) {
+      alert(emailInvites.error?.message || profileInvites.error?.message);
+      setLoading(false);
+      return;
+    }
+
+    const mergedInvites = [
+      ...(emailInvites.data || []),
+      ...(profileInvites.data || []),
+    ].filter(
+      (invite, index, items) =>
+        items.findIndex((candidate) => candidate.id === invite.id) === index
+    );
+
+    setInvitations(mergedInvites);
 
     const { data: lists, error: listError } = await supabase
       .from("yacht_checklists")
@@ -81,6 +122,62 @@ export default function CrewTasksPage() {
     setChecklists(lists || []);
     setActiveChecklist((lists || [])[0] || null);
     setLoading(false);
+  }
+
+  async function acceptInvitation(invitation: any) {
+    if (!profile?.id) return;
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user?.email) {
+      alert("Please login first, then open My YachtOS again.");
+      window.location.href = "/login";
+      return;
+    }
+
+    setAcceptingInviteId(invitation.id);
+    const acceptedAt = new Date().toISOString();
+
+    const { error: memberError } = await supabase
+      .from("yacht_crew_memberships")
+      .upsert(
+        {
+          yacht_id: invitation.yacht_id,
+          crew_profile_id: profile.id,
+          invited_email: profile.email || email,
+          position: invitation.position,
+          department: invitation.department,
+          status: "active",
+          accepted_at: acceptedAt,
+        },
+        { onConflict: "yacht_id,crew_profile_id" }
+      );
+
+    if (memberError) {
+      alert(memberError.message);
+      setAcceptingInviteId("");
+      return;
+    }
+
+    const { error: inviteError } = await supabase
+      .from("crew_invitations")
+      .update({
+        crew_profile_id: profile.id,
+        status: "accepted",
+        accepted_at: acceptedAt,
+      })
+      .eq("id", invitation.id);
+
+    if (inviteError) {
+      alert(inviteError.message);
+      setAcceptingInviteId("");
+      return;
+    }
+
+    await loadTasks(profile.email || email);
+    setAcceptingInviteId("");
   }
 
   async function toggleTask(task: any) {
@@ -174,7 +271,7 @@ export default function CrewTasksPage() {
 
             <div>
               <p className="text-sm font-semibold text-cyan-700">BlueDeck Crew Portal</p>
-              <h1 className="text-2xl font-black tracking-tight text-slate-950">My Duties</h1>
+              <h1 className="text-2xl font-black tracking-tight text-slate-950">My YachtOS</h1>
             </div>
           </div>
 
@@ -232,6 +329,7 @@ export default function CrewTasksPage() {
               <div className="mt-6 grid grid-cols-2 gap-3">
                 <MiniStat label="Checklists" value={stats.totalLists} />
                 <MiniStat label="Progress" value={`${stats.progress}%`} />
+                <MiniStat label="Invites" value={stats.pendingInvitations} />
                 <MiniStat label="Tasks" value={stats.totalTasks} />
                 <MiniStat label="Done" value={stats.completed} />
               </div>
@@ -309,12 +407,13 @@ export default function CrewTasksPage() {
                 </p>
 
                 <h2 className="mt-3 text-5xl font-black tracking-tight">
-                  Today’s Assigned Duties
+                  My YachtOS Work Center
                 </h2>
 
                 <p className="mt-4 max-w-2xl text-lg text-slate-500">
-                  Complete assigned yacht operations, watchkeeping rounds,
-                  safety checks and department duties from one clean crew portal.
+                  Accept captain invitations, complete yacht operations,
+                  watchkeeping rounds, safety checks and department duties from
+                  one clean crew portal.
                 </p>
               </div>
 
@@ -337,13 +436,84 @@ export default function CrewTasksPage() {
             </div>
           )}
 
-          {profile && !activeChecklist && (
+          {profile && !activeChecklist && invitations.length === 0 && (
             <div className="rounded-[34px] border border-slate-200 bg-white/80 p-10 text-center">
               <ClipboardCheck className="mx-auto h-14 w-14 text-cyan-700" />
               <h3 className="mt-4 text-3xl font-black">No assigned checklist yet</h3>
               <p className="mt-3 text-slate-500">
                 Your captain has not assigned any duty checklist to you yet.
               </p>
+            </div>
+          )}
+
+          {profile && invitations.length > 0 && (
+            <div className="overflow-hidden rounded-[34px] border border-slate-200 bg-white/85 shadow-2xl shadow-cyan-950/10">
+              <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
+              <div className="p-7">
+                <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
+                      <UserPlus className="h-7 w-7" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-cyan-700">
+                        Captain Invitation
+                      </p>
+                      <h3 className="text-3xl font-black text-slate-950">
+                        Pending yacht invitations
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="max-w-md text-sm leading-6 text-slate-500">
+                    Accept an invitation here. After acceptance, the captain can
+                    assign you yacht checklists and contracts inside BlueDeck.
+                  </p>
+                </div>
+
+                <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                  {invitations.map((invitation) => (
+                    <div
+                      key={invitation.id}
+                      className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f3fbfc_100%)] p-5 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300">
+                            <Ship className="h-6 w-6" />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-black text-slate-950">
+                              YachtOS Invitation
+                            </h4>
+                            <p className="mt-1 text-sm text-slate-500">
+                              {invitation.position || "Crew"} ·{" "}
+                              {invitation.department || "Yacht Operations"}
+                            </p>
+                            {invitation.created_at && (
+                              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
+                                Sent {new Date(invitation.created_at).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => acceptInvitation(invitation)}
+                        disabled={acceptingInviteId === invitation.id}
+                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-5 py-4 text-base font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                      >
+                        {acceptingInviteId === invitation.id && (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        )}
+                        {acceptingInviteId === invitation.id
+                          ? "Accepting..."
+                          : "Accept Invitation"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 

@@ -165,26 +165,26 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#020817] text-[#eef7ff]">
+    <main className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] text-slate-900">
       <Image
         src="/bluedeck-hero.png"
         alt="Luxury yacht bridge"
         fill
         priority
-        className="object-cover opacity-35"
+        className="object-cover opacity-20"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,9,20,0.97),rgba(5,9,20,0.82),rgba(5,9,20,0.95))]" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(238,247,248,0.86),rgba(255,255,255,0.96))]" />
 
       <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
           <p className="bd-kicker">BlueDeck YachtOS</p>
-          <h1 className="mt-5 max-w-3xl text-6xl font-semibold leading-tight text-white">
+          <h1 className="mt-5 max-w-3xl text-6xl font-semibold leading-tight text-slate-950">
             Secure yacht profiles, documents and crew operations.
           </h1>
-          <div className="mt-8 grid max-w-2xl gap-3 text-sm text-[#d8deea]">
+          <div className="mt-8 grid max-w-2xl gap-3 text-sm text-slate-700">
             {["Private crew ID and dashboard", "Professional CV and document vault", "Captain invitations, contracts and checklists"].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.055] px-4 py-3 backdrop-blur">
-                <CheckCircle2 className="h-5 w-5 text-cyan-300" />
+              <div key={item} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
+                <CheckCircle2 className="h-5 w-5 text-cyan-700" />
                 {item}
               </div>
             ))}
@@ -196,39 +196,39 @@ export default function LoginPage() {
             event.preventDefault();
             submit();
           }}
-          className="relative w-full rounded-3xl border border-white/10 bg-[#08111f]/88 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8"
+          className="relative w-full rounded-3xl border border-white/70 bg-white/88 p-6 shadow-2xl shadow-cyan-950/12 backdrop-blur-xl sm:p-8"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-100 text-cyan-700">
               <Ship className="h-6 w-6" />
             </div>
             <div>
-              <p className="font-semibold text-white">BlueDeck</p>
-              <p className="text-xs text-[#aeb8c8]">Secure account access</p>
+              <p className="font-semibold text-slate-950">BlueDeck</p>
+              <p className="text-xs text-slate-500">Secure account access</p>
             </div>
           </div>
 
-          <div className="mt-7 grid grid-cols-2 rounded-2xl border border-white/10 bg-black/20 p-1">
+          <div className="mt-7 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
             <button
               type="button"
               onClick={() => setMode("login")}
-              className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "login" ? "bg-cyan-300 text-[#020817]" : "text-slate-300"}`}
+              className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "login" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
             >
               Login
             </button>
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "signup" ? "bg-cyan-300 text-[#020817]" : "text-slate-300"}`}
+              className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "signup" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
             >
               Create account
             </button>
           </div>
 
-          <h2 className="mt-7 text-3xl font-semibold text-white">
+          <h2 className="mt-7 text-3xl font-semibold text-slate-950">
             {mode === "login" ? "Welcome back" : "Create your BlueDeck account"}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-[#aeb8c8]">
+          <p className="mt-2 text-sm leading-6 text-slate-500">
             {mode === "login"
               ? "Login to continue to My Dashboard."
               : "Use your real email and phone. Email confirmation is handled by Supabase when enabled in your project."}
@@ -241,17 +241,17 @@ export default function LoginPage() {
                   <input
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
-                    className="w-full bg-transparent text-white outline-none placeholder:text-[#6f7b8e]"
+                    className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                     placeholder="Name and surname"
                   />
                 </AuthField>
                 <SignupPhoneField value={phone} onChange={setPhone} />
                 <label className="block">
-                  <span className="mb-2 block text-sm text-[#aeb8c8]">Account type</span>
+                  <span className="mb-2 block text-sm text-slate-500">Account type</span>
                   <select
                     value={role}
                     onChange={(event) => setRole(event.target.value)}
-                    className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-white outline-none"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   >
                     <option value="crew">Crew</option>
                     <option value="captain">Captain</option>
@@ -268,7 +268,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full bg-transparent text-white outline-none placeholder:text-[#6f7b8e]"
+                className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                 placeholder="you@example.com"
               />
             </AuthField>
@@ -279,7 +279,7 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full bg-transparent text-white outline-none placeholder:text-[#6f7b8e]"
+                className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                 placeholder="Minimum 6 characters"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400">
@@ -288,16 +288,16 @@ export default function LoginPage() {
             </AuthField>
 
             {mode === "signup" && (
-              <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm leading-6 text-slate-300">
+              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
                 <input
                   type="checkbox"
                   checked={acceptedPrivacy}
                   onChange={(event) => setAcceptedPrivacy(event.target.checked)}
-                  className="mt-1 h-4 w-4 accent-cyan-300"
+                  className="mt-1 h-4 w-4 accent-cyan-600"
                 />
                 <span>
                   I agree to the BlueDeck{" "}
-                  <Link href="/privacy" className="font-semibold text-cyan-200">
+                  <Link href="/privacy" className="font-semibold text-cyan-700">
                     Privacy Policy
                   </Link>
                   .
@@ -306,7 +306,7 @@ export default function LoginPage() {
             )}
 
             {notice && (
-              <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-4 text-sm leading-6 text-cyan-50">
+              <div className="rounded-2xl border border-cyan-300/30 bg-cyan-50 p-4 text-sm leading-6 text-slate-700">
                 {notice}
               </div>
             )}
@@ -314,22 +314,22 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-cyan-300 px-5 py-4 font-bold text-[#020817] transition hover:bg-white disabled:opacity-60"
+              className="w-full rounded-2xl bg-cyan-600 px-5 py-4 font-bold text-white transition hover:bg-cyan-700 disabled:opacity-60"
             >
               {loading ? "Please wait..." : mode === "login" ? "Login to My Dashboard" : "Create secure account"}
             </button>
 
             <div className="flex flex-wrap justify-between gap-3 text-sm">
-              <button type="button" onClick={resetPassword} className="font-semibold text-cyan-200">
+              <button type="button" onClick={resetPassword} className="font-semibold text-cyan-700">
                 Forgot password?
               </button>
-              <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-300">
+              <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
                 Resend confirmation email
               </button>
             </div>
 
-            <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-xs leading-5 text-slate-400">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-200" />
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
               Email confirmation emails are sent by Supabase when email confirmations are enabled in the Supabase Auth settings. SMS login requires a configured SMS provider in Supabase.
             </div>
           </div>
@@ -342,8 +342,8 @@ export default function LoginPage() {
 function AuthField({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm text-[#aeb8c8]">{label}</span>
-      <span className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-cyan-200 focus-within:border-cyan-300/60">
+      <span className="mb-2 block text-sm text-slate-500">{label}</span>
+      <span className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-cyan-700 focus-within:border-cyan-300">
         {icon}
         {children}
       </span>
@@ -378,8 +378,8 @@ function SignupPhoneField({ value, onChange }: { value: string; onChange: (value
 
   return (
     <div className="block" ref={wrapperRef}>
-      <span className="mb-2 block text-sm text-[#aeb8c8]">Phone</span>
-      <div className="flex rounded-2xl border border-white/10 bg-black/25 focus-within:border-cyan-300/60">
+      <span className="mb-2 block text-sm text-slate-500">Phone</span>
+      <div className="flex rounded-2xl border border-slate-200 bg-white focus-within:border-cyan-300">
         <div className="relative w-[126px] shrink-0">
           <button
             type="button"
@@ -387,19 +387,19 @@ function SignupPhoneField({ value, onChange }: { value: string; onChange: (value
               setOpen(!open);
               setQuery("");
             }}
-            className="flex h-full w-full items-center justify-between gap-2 rounded-l-2xl border-r border-white/10 px-4 py-4 text-left text-sm font-semibold text-white"
+            className="flex h-full w-full items-center justify-between gap-2 rounded-l-2xl border-r border-slate-200 px-4 py-4 text-left text-sm font-semibold text-slate-950"
           >
             <span className="truncate">{currentCountry.flag} {currentCountry.code} {currentCountry.dial}</span>
-            <span className="text-cyan-200">⌄</span>
+            <span className="text-cyan-700">⌄</span>
           </button>
           {open && (
-            <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(420px,92vw)] overflow-hidden rounded-2xl border border-white/10 bg-[#071426] shadow-2xl">
+            <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(420px,92vw)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-cyan-950/15">
               <input
                 autoFocus
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search country..."
-                className="w-full border-b border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none"
+                className="w-full border-b border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none"
               />
               <div className="max-h-72 overflow-auto p-2">
                 {filteredCountries.map((country) => (
@@ -412,23 +412,23 @@ function SignupPhoneField({ value, onChange }: { value: string; onChange: (value
                       setOpen(false);
                       setQuery("");
                     }}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-100 hover:bg-cyan-400/10"
+                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-cyan-50"
                   >
                     <span className="truncate">{country.flag} {country.country}</span>
-                    <span className="shrink-0 font-semibold text-cyan-200">{country.dial}</span>
+                    <span className="shrink-0 font-semibold text-cyan-700">{country.dial}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
         </div>
-        <span className="flex items-center pl-3 text-cyan-200">
+        <span className="flex items-center pl-3 text-cyan-700">
           <Phone className="h-5 w-5" />
         </span>
         <input
           value={localNumber}
           onChange={(event) => onChange(`${currentCountry.dial} ${event.target.value}`.trim())}
-          className="min-w-0 flex-1 rounded-r-2xl bg-transparent px-3 py-4 text-white outline-none placeholder:text-[#6f7b8e]"
+          className="min-w-0 flex-1 rounded-r-2xl bg-transparent px-3 py-4 text-slate-950 outline-none placeholder:text-slate-400"
           placeholder="Phone number"
         />
       </div>

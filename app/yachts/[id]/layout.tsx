@@ -32,18 +32,18 @@ export default function YachtAppLayout({
   ];
 
   return (
-    <div className="bd-shell min-h-screen text-[#eef7ff]">
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-[#020817]/88 backdrop-blur-2xl">
+    <div className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] text-slate-900">
+      <header className="fixed left-0 right-0 top-0 z-50 border-b border-slate-200 bg-white/86 shadow-sm backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
           <Link href={`/yachts/${yachtId}`} className="bd-focus flex min-w-0 items-center gap-3 rounded-full">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#22d3ee]/35 bg-[#22d3ee]/15 text-[#22d3ee]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#22d3ee]/35 bg-[#22d3ee]/15 text-cyan-700">
               <Ship className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-[#22d3ee]">
+              <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">
                 BlueDeck OS
               </p>
-              <h1 className="truncate text-lg font-semibold text-white">
+              <h1 className="truncate text-lg font-semibold text-slate-950">
                 HELIOPHILIA
               </h1>
             </div>
@@ -59,7 +59,7 @@ export default function YachtAppLayout({
 
       <div className="pt-[68px]">{children}</div>
 
-      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-full border border-white/10 bg-[#020817]/88 p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
+      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-full border border-slate-200 bg-white/88 p-2 shadow-2xl shadow-cyan-950/15 backdrop-blur-2xl">
         <div className="grid grid-cols-5 gap-1 sm:gap-2">
           {nav.map((item) => {
             const Icon = item.icon;
@@ -74,8 +74,8 @@ export default function YachtAppLayout({
                 href={item.href}
                 className={`bd-focus flex h-14 flex-col items-center justify-center rounded-full px-2 text-xs font-semibold transition sm:h-16 ${
                   active
-                    ? "bg-[#22d3ee] text-[#020817]"
-                    : "text-[#aeb8c8] hover:bg-white/10 hover:text-white"
+                    ? "bg-cyan-600 text-white"
+                    : "text-slate-500 hover:bg-cyan-50 hover:text-slate-950"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -99,9 +99,9 @@ function Chip({
   tone: "blue" | "green" | "cyan";
 }) {
   const tones = {
-    blue: "border-[#22d3ee]/25 bg-[#22d3ee]/10 text-[#67e8f9]",
-    green: "border-[#66d19e]/25 bg-[#66d19e]/10 text-[#91e7ba]",
-    cyan: "border-[#47d7df]/25 bg-[#47d7df]/10 text-[#85edf1]",
+    blue: "border-[#22d3ee]/30 bg-[#22d3ee]/10 text-cyan-700",
+    green: "border-[#66d19e]/30 bg-[#66d19e]/10 text-emerald-700",
+    cyan: "border-[#47d7df]/30 bg-[#47d7df]/10 text-cyan-700",
   };
 
   return (
