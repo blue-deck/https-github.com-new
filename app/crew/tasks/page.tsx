@@ -520,9 +520,9 @@ export default function CrewTasksPage() {
                   <h2 className="mt-2 text-4xl font-black">
                     {activeChecklist.title}
                   </h2>
-                  {activeChecklist.captain_note && (
-                    <p className="mt-3 rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-4 text-yellow-100">
-                      Captain note: {activeChecklist.captain_note}
+                  {getCaptainNote(activeChecklist) && (
+                    <p className="mt-3 rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-slate-700">
+                      Captain note: {getCaptainNote(activeChecklist)}
                     </p>
                   )}
                 </div>
@@ -646,4 +646,8 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
       <h3 className="mt-1 text-2xl font-black">{value}</h3>
     </div>
   );
+}
+
+function getCaptainNote(checklist: any) {
+  return checklist?.captain_note || checklist?.items?.captain_note || "";
 }

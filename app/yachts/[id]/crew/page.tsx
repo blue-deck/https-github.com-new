@@ -444,10 +444,13 @@ export default function CrewPage() {
         department: template.department,
         checklist_type: template.type,
         assigned_to: member?.crew_profile_id,
-        frequency,
         due_date: dueDate || null,
-        captain_note: captainNote || null,
         status: "open",
+        items: {
+          frequency,
+          captain_note: captainNote || null,
+          tasks: template.tasks,
+        },
       });
 
       if (error) {
@@ -461,7 +464,8 @@ export default function CrewPage() {
         completed: false,
       }));
 
-      await supabase.from("yacht_checklist_items").insert(tasks);
+      const { error: itemError } = await insertChecklistItems(tasks);
+      if (itemError) alert(itemError.message);
     }
 
     setSelectedTemplates([]);
@@ -474,34 +478,48 @@ export default function CrewPage() {
   }
 
   async function createChecklist(payload: Record<string, any>) {
-    const retryPayload = { ...payload };
-    const optionalColumns = ["captain_note", "due_date", "frequency", "status"];
+    const variants = [
+      payload,
+      omitKeys(payload, ["items"]),
+      omitKeys(payload, ["items", "due_date"]),
+      omitKeys(payload, ["items", "due_date", "status"]),
+    ];
 
-    for (let attempt = 0; attempt <= optionalColumns.length; attempt += 1) {
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
       const response = await supabase
         .from("yacht_checklists")
-        .insert(retryPayload)
+        .insert(variant)
         .select()
         .single();
 
       if (!response.error) return response;
+      lastResponse = response;
 
-      const message = response.error.message || "";
-      const missingColumn = optionalColumns.find(
-        (column) =>
-          Object.prototype.hasOwnProperty.call(retryPayload, column) &&
-          message.includes(`'${column}'`) &&
-          message.includes("schema cache")
-      );
-
-      if (!missingColumn) return response;
-      delete retryPayload[missingColumn];
+      if (!isSchemaCacheError(response.error)) return response;
     }
 
-    return {
-      data: null,
-      error: { message: "Checklist could not be created." },
-    };
+    return lastResponse;
+  }
+
+  async function insertChecklistItems(tasks: any[]) {
+    const variants = [
+      tasks,
+      tasks.map((task) => omitKeys(task, ["completed"])),
+    ];
+
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase.from("yacht_checklist_items").insert(variant);
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
   }
 
   async function deleteChecklist(id: string) {
@@ -821,6 +839,17 @@ function DepartmentIcon({ department }: any) {
   if (department === "Engineering") return <Wrench className="h-12 w-12 text-[#c46d24]" />;
   if (department === "Toys") return <Waves className="h-12 w-12 text-blue-700" />;
   return <LifeBuoy className="h-12 w-12 text-[#b9423b]" />;
+}
+
+function omitKeys<T extends Record<string, any>>(value: T, keys: string[]) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => !keys.includes(key))
+  );
+}
+
+function isSchemaCacheError(error: any) {
+  const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`;
+  return message.toLowerCase().includes("schema cache");
 }
 
 function Stat({ title, value, icon }: any) {
