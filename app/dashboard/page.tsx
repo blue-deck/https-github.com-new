@@ -5,8 +5,22 @@ import Link from "next/link";
 import { ClipboardCheck, FileText, LogOut, Ship, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
+type DashboardProfile = {
+  id?: string;
+  email?: string;
+  full_name?: string;
+  phone?: string;
+  role?: string;
+};
+
+function cleanDisplayName(profile?: DashboardProfile | null) {
+  const name = profile?.full_name?.trim();
+  if (name && name !== profile?.email) return name;
+  return "";
+}
+
 export default function DashboardPage() {
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   async function loadDashboard() {
@@ -25,19 +39,34 @@ export default function DashboardPage() {
       .eq("id", user.id)
       .single();
 
+    const { data: crewProfile } = await supabase
+      .from("crew_profiles")
+      .select("full_name, phone, email")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const preferredName =
+      cleanDisplayName(profileData) ||
+      cleanDisplayName(crewProfile) ||
+      (typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "") ||
+      user.email;
+
     if (!profileData) {
       const { data: newProfile } = await supabase
         .from("profiles")
         .insert({
           id: user.id,
           email: user.email,
-          full_name: user.email,
-          role: "crew",
+          full_name: preferredName,
+          phone: crewProfile?.phone || user.user_metadata?.phone || "",
+          role: user.user_metadata?.role || "crew",
         })
         .select()
         .single();
 
       profileData = newProfile;
+    } else if (preferredName && profileData.full_name !== preferredName) {
+      profileData = { ...profileData, full_name: preferredName };
     }
 
     setProfile(profileData);

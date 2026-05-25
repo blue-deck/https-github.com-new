@@ -6,11 +6,6 @@ import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabase";
 
-function safeNext(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
-  return value;
-}
-
 function getHashParams() {
   if (typeof window === "undefined") return new URLSearchParams();
   return new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -21,10 +16,15 @@ export default function ConfirmAuthPage() {
   const [message, setMessage] = useState("Confirming your BlueDeck account...");
 
   useEffect(() => {
+    async function finishSuccess() {
+      await supabase.auth.signOut();
+      setStatus("success");
+      setMessage("Your BlueDeck account has been activated. Please login with your email and password to open My Dashboard.");
+    }
+
     async function confirmAccount() {
       const searchParams = new URLSearchParams(window.location.search);
       const hashParams = getHashParams();
-      const next = safeNext(searchParams.get("next"));
       const errorDescription =
         searchParams.get("error_description") ||
         hashParams.get("error_description") ||
@@ -66,11 +66,7 @@ export default function ConfirmAuthPage() {
         } = await supabase.auth.getSession();
 
         if (session) {
-          setStatus("success");
-          setMessage("Account confirmed. Opening your dashboard...");
-          window.setTimeout(() => {
-            window.location.replace(next);
-          }, 900);
+          await finishSuccess();
           return;
         }
 
@@ -83,12 +79,13 @@ export default function ConfirmAuthPage() {
         data: { session },
       } = await supabase.auth.getSession();
 
-      setStatus("success");
-      setMessage(session ? "Account confirmed. Opening your dashboard..." : "Account confirmed. Please login to continue.");
+      if (session) {
+        await finishSuccess();
+        return;
+      }
 
-      window.setTimeout(() => {
-        window.location.replace(session ? next : "/login");
-      }, 900);
+      setStatus("success");
+      setMessage("Your BlueDeck account has been activated. Please login with your email and password to open My Dashboard.");
     }
 
     confirmAccount();
@@ -105,16 +102,16 @@ export default function ConfirmAuthPage() {
 
         <p className="bd-kicker mt-7">BlueDeck Account</p>
         <h1 className="mt-3 text-4xl font-black">
-          {status === "error" ? "Confirmation needs attention" : "Secure confirmation"}
+          {status === "success" ? "Account activated" : status === "error" ? "Confirmation needs attention" : "Secure confirmation"}
         </h1>
         <p className="mt-4 leading-7 text-slate-600">{message}</p>
 
-        {status === "error" && (
+        {status !== "loading" && (
           <Link
             href="/login"
             className="mt-7 inline-flex rounded-2xl bg-cyan-600 px-6 py-4 font-black text-white transition hover:bg-cyan-700"
           >
-            Back to Login
+            Login to BlueDeck
           </Link>
         )}
       </div>

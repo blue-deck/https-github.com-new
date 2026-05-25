@@ -3,9 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const fallbackSupabaseUrl = "https://onftggrmmpvvwgxxzywo.supabase.co";
 const productionSiteUrl = "https://www.bluedeck.app";
 const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
+const accountTypes = ["crew", "captain", "owner", "management"];
 
 function normalizeSupabaseUrl(url?: string) {
   if (!url || url.includes("onftgqrmmpvvwgxxzywo")) return fallbackSupabaseUrl;
@@ -27,8 +29,12 @@ export async function POST(request: NextRequest) {
 
   const email = body.email?.trim().toLowerCase();
   const password = body.password || "";
-  if (!email || !password) {
-    return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+  const fullName = body.fullName?.trim() || "";
+  const phone = body.phone?.trim() || "";
+  const role = accountTypes.includes(body.role || "") ? body.role || "crew" : "";
+
+  if (!email || !password || !fullName || !phone || !role) {
+    return NextResponse.json({ error: "Name, email, password, phone and account type are required." }, { status: 400 });
   }
 
   if (password.length < 6) {
@@ -48,15 +54,49 @@ export async function POST(request: NextRequest) {
     options: {
       emailRedirectTo: confirmationRedirectUrl,
       data: {
-        full_name: body.fullName || email,
-        phone: body.phone || "",
-        role: body.role || "crew",
+        full_name: fullName,
+        phone,
+        role,
       },
     },
   });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (data.user?.id) {
+    const adminSupabase = createClient(normalizeSupabaseUrl(supabaseUrl), supabaseServiceRoleKey || supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
+
+    try {
+      await Promise.all([
+        adminSupabase.from("profiles").upsert({
+          id: data.user.id,
+          email,
+          full_name: fullName,
+          phone,
+          role,
+        }),
+        adminSupabase.from("crew_profiles").upsert(
+          {
+            user_id: data.user.id,
+            email,
+            full_name: fullName,
+            phone,
+            current_position: role === "captain" ? "Captain" : role === "owner" ? "Owner" : "Crew",
+            public_crew_id: data.user.id.slice(0, 8).toUpperCase(),
+          },
+          { onConflict: "user_id" }
+        ),
+      ]);
+    } catch {
+      // Profile sync is retried from the client after sign-up; account creation should not fail here.
+    }
   }
 
   return NextResponse.json({

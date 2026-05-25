@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, Phone, ShieldCheck, Ship, UserRound } from "lucide-react";
-import { blueDeckCountries } from "../lib/countries";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Ship, UserRound } from "lucide-react";
+import { PhoneInput } from "../components/PhoneInput";
 import { supabase } from "../lib/supabase";
 
 type AuthMode = "login" | "signup";
@@ -14,14 +14,16 @@ const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboa
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("crew");
+  const [role, setRole] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [notice, setNotice] = useState("");
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   useEffect(() => {
     async function redirectIfLoggedIn() {
@@ -65,6 +67,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (mode === "signup" && (!fullName.trim() || !phone.trim() || !role)) {
+      setNotice("Name, email, password, phone and account type are required.");
+      return;
+    }
+
     if (mode === "signup" && !acceptedPrivacy) {
       setNotice("Please accept the Privacy Policy to create your account.");
       return;
@@ -72,6 +79,11 @@ export default function LoginPage() {
 
     if (mode === "signup" && password.length < 6) {
       setNotice("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (mode === "signup" && password !== confirmPassword) {
+      setNotice("Passwords do not match.");
       return;
     }
 
@@ -101,7 +113,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           email,
           password,
-          fullName,
+          fullName: fullName.trim(),
           phone,
           role,
         }),
@@ -238,22 +250,28 @@ export default function LoginPage() {
           <div className="mt-6 space-y-4">
             {mode === "signup" && (
               <>
-                <AuthField icon={<UserRound className="h-5 w-5" />} label="Full name">
+                <AuthField icon={<UserRound className="h-5 w-5" />} label="Name and surname" required>
                   <input
                     value={fullName}
+                    required
+                    autoComplete="name"
                     onChange={(event) => setFullName(event.target.value)}
                     className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                     placeholder="Name and surname"
                   />
                 </AuthField>
-                <SignupPhoneField value={phone} onChange={setPhone} />
+                <PhoneInput label="Mobile number" value={phone} onChange={setPhone} required />
                 <label className="block">
-                  <span className="mb-2 block text-sm text-slate-500">Account type</span>
+                  <span className="mb-2 block text-sm text-slate-500">
+                    Account type <span className="text-rose-500">*</span>
+                  </span>
                   <select
                     value={role}
+                    required
                     onChange={(event) => setRole(event.target.value)}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   >
+                    <option value="">Select account type</option>
                     <option value="crew">Crew</option>
                     <option value="captain">Captain</option>
                     <option value="owner">Owner</option>
@@ -263,10 +281,11 @@ export default function LoginPage() {
               </>
             )}
 
-            <AuthField icon={<Mail className="h-5 w-5" />} label="Email">
+            <AuthField icon={<Mail className="h-5 w-5" />} label="Email" required={mode === "signup"}>
               <input
                 value={email}
                 type="email"
+                required
                 autoComplete="email"
                 onChange={(event) => setEmail(event.target.value)}
                 className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
@@ -274,10 +293,11 @@ export default function LoginPage() {
               />
             </AuthField>
 
-            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label="Password">
+            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label="Password" required={mode === "signup"}>
               <input
                 value={password}
                 type={showPassword ? "text" : "password"}
+                required
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 onChange={(event) => setPassword(event.target.value)}
                 className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
@@ -289,21 +309,36 @@ export default function LoginPage() {
             </AuthField>
 
             {mode === "signup" && (
-              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                <input
-                  type="checkbox"
-                  checked={acceptedPrivacy}
-                  onChange={(event) => setAcceptedPrivacy(event.target.checked)}
-                  className="mt-1 h-4 w-4 accent-cyan-600"
-                />
-                <span>
-                  I agree to the BlueDeck{" "}
-                  <Link href="/privacy" className="font-semibold text-cyan-700">
-                    Privacy Policy
-                  </Link>
-                  .
-                </span>
-              </label>
+              <>
+                <PasswordStrengthMeter strength={passwordStrength} />
+                <AuthField icon={<LockKeyhole className="h-5 w-5" />} label="Repeat password" required>
+                  <input
+                    value={confirmPassword}
+                    type={showPassword ? "text" : "password"}
+                    required
+                    autoComplete="new-password"
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                    placeholder="Enter the same password again"
+                  />
+                </AuthField>
+                <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={acceptedPrivacy}
+                    required
+                    onChange={(event) => setAcceptedPrivacy(event.target.checked)}
+                    className="mt-1 h-4 w-4 accent-cyan-600"
+                  />
+                  <span>
+                    I agree to the BlueDeck{" "}
+                    <Link href="/privacy" className="font-semibold text-cyan-700">
+                      Privacy Policy
+                    </Link>
+                    . <span className="text-rose-500">*</span>
+                  </span>
+                </label>
+              </>
             )}
 
             {notice && (
@@ -340,10 +375,12 @@ export default function LoginPage() {
   );
 }
 
-function AuthField({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
+function AuthField({ label, icon, children, required = false }: { label: string; icon: ReactNode; children: ReactNode; required?: boolean }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm text-slate-500">{label}</span>
+      <span className="mb-2 block text-sm text-slate-500">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </span>
       <span className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-cyan-700 focus-within:border-cyan-300">
         {icon}
         {children}
@@ -352,87 +389,54 @@ function AuthField({ label, icon, children }: { label: string; icon: React.React
   );
 }
 
-function SignupPhoneField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const currentCountry = blueDeckCountries.find((country) => value.startsWith(`${country.dial} `)) || blueDeckCountries.find((country) => country.country === "Turkey") || blueDeckCountries[0];
-  const localNumber = value.replace(`${currentCountry.dial} `, "");
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const preferredCountries = blueDeckCountries.filter((country) => {
-    return country.country === "Turkey" || country.region === "Europe" || ["United States", "Russia", "United Arab Emirates", "Israel"].includes(country.country);
-  });
-  const filteredCountries = (query.trim() ? blueDeckCountries : preferredCountries)
-    .filter((country) => `${country.country} ${country.nationality} ${country.dial}`.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, query.trim() ? 80 : 60);
-
-  useEffect(() => {
-    function close(event: MouseEvent) {
-      if (!wrapperRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    }
-
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
+  if (!strength.visible) return null;
 
   return (
-    <div className="block" ref={wrapperRef}>
-      <span className="mb-2 block text-sm text-slate-500">Phone</span>
-      <div className="flex rounded-2xl border border-slate-200 bg-white focus-within:border-cyan-300">
-        <div className="relative w-[126px] shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              setOpen(!open);
-              setQuery("");
-            }}
-            className="flex h-full w-full items-center justify-between gap-2 rounded-l-2xl border-r border-slate-200 px-4 py-4 text-left text-sm font-semibold text-slate-950"
-          >
-            <span className="truncate">{currentCountry.flag} {currentCountry.code} {currentCountry.dial}</span>
-            <span className="text-cyan-700">⌄</span>
-          </button>
-          {open && (
-            <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(420px,92vw)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-cyan-950/15">
-              <input
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search country..."
-                className="w-full border-b border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none"
-              />
-              <div className="max-h-72 overflow-auto p-2">
-                {filteredCountries.map((country) => (
-                  <button
-                    key={`${country.country}-${country.dial}`}
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      onChange(`${country.dial} ${localNumber}`.trim());
-                      setOpen(false);
-                      setQuery("");
-                    }}
-                    className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-cyan-50"
-                  >
-                    <span className="truncate">{country.flag} {country.country}</span>
-                    <span className="shrink-0 font-semibold text-cyan-700">{country.dial}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <span className="flex items-center pl-3 text-cyan-700">
-          <Phone className="h-5 w-5" />
-        </span>
-        <input
-          value={localNumber}
-          onChange={(event) => onChange(`${currentCountry.dial} ${event.target.value}`.trim())}
-          className="min-w-0 flex-1 rounded-r-2xl bg-transparent px-3 py-4 text-slate-950 outline-none placeholder:text-slate-400"
-          placeholder="Phone number"
-        />
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.12em]">
+        <span className="text-slate-500">Password strength</span>
+        <span className={strength.textClass}>{strength.label}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((index) => (
+          <span
+            key={index}
+            className={`h-2 rounded-full transition ${index < strength.score ? strength.barClass : "bg-slate-200"}`}
+          />
+        ))}
       </div>
     </div>
   );
+}
+
+type PasswordStrength = {
+  visible: boolean;
+  score: number;
+  label: string;
+  barClass: string;
+  textClass: string;
+};
+
+function getPasswordStrength(password: string): PasswordStrength {
+  if (!password) {
+    return { visible: false, score: 0, label: "", barClass: "bg-slate-200", textClass: "text-slate-500" };
+  }
+
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password) && /[a-z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length;
+
+  if (password.length < 6 || checks <= 1) {
+    return { visible: true, score: 1, label: "Weak", barClass: "bg-rose-500", textClass: "text-rose-600" };
+  }
+
+  if (checks <= 3) {
+    return { visible: true, score: 2, label: "Medium", barClass: "bg-amber-500", textClass: "text-amber-600" };
+  }
+
+  return { visible: true, score: 3, label: "Strong", barClass: "bg-emerald-500", textClass: "text-emerald-600" };
 }

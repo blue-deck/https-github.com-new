@@ -42,7 +42,7 @@ export const nationalityOptions = countries
   .sort(sortBlueDeckCountries);
 
 function countryPriority(country: { country: string; region: string }) {
-  if (country.country === "Turkey") return 0;
+  if (country.country === "Turkey" || country.country === "Türkiye") return 0;
   if (country.region === "Europe") return 1;
   if (country.country === "United States") return 2;
   if (country.country === "Russia") return 3;

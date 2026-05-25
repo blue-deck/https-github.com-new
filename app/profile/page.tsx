@@ -13,14 +13,15 @@ import {
   IdCard,
   Languages,
   MapPin,
-  Phone,
   Plus,
   Save,
+  ShieldCheck,
   Star,
   Trash2,
   Upload,
   UserRound,
 } from "lucide-react";
+import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { supabase } from "../lib/supabase";
 
@@ -281,6 +282,10 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [repeatNewPassword, setRepeatNewPassword] = useState("");
+  const [accountNotice, setAccountNotice] = useState("");
+  const [accountSaving, setAccountSaving] = useState(false);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
@@ -358,6 +363,10 @@ export default function ProfilePage() {
 
   async function saveProfile() {
     setSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     const { data, error } = await supabase
       .from("crew_profiles")
       .upsert(profile, { onConflict: "user_id" })
@@ -370,9 +379,73 @@ export default function ProfilePage() {
       return;
     }
 
+    if (user?.id) {
+      await Promise.all([
+        supabase.from("profiles").upsert({
+          id: user.id,
+          email: profile.email || user.email,
+          full_name: profile.full_name || user.email,
+          phone: profile.phone || "",
+          role: profile.current_positions?.includes("Captain") || profile.current_position === "Captain" ? "captain" : undefined,
+        }),
+        supabase.auth.updateUser({
+          data: {
+            full_name: profile.full_name || user.email,
+            phone: profile.phone || "",
+          },
+        }),
+      ]);
+    }
+
     setProfile(normalizeProfile(data));
     setSaving(false);
     alert("Profile saved.");
+  }
+
+  async function saveAccountSettings() {
+    setAccountNotice("");
+
+    if (newPassword || repeatNewPassword) {
+      if (newPassword.length < 6) {
+        setAccountNotice("Password must be at least 6 characters.");
+        return;
+      }
+
+      if (newPassword !== repeatNewPassword) {
+        setAccountNotice("Passwords do not match.");
+        return;
+      }
+    }
+
+    setAccountSaving(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const updatePayload: {
+      data: { full_name?: string; phone?: string };
+      email?: string;
+      password?: string;
+    } = {
+      data: {
+        full_name: profile.full_name || "",
+        phone: profile.phone || "",
+      },
+    };
+
+    if (profile.email && profile.email !== user?.email) updatePayload.email = profile.email;
+    if (newPassword) updatePayload.password = newPassword;
+
+    const { error } = await supabase.auth.updateUser(updatePayload);
+    setAccountSaving(false);
+
+    if (error) {
+      setAccountNotice(error.message);
+      return;
+    }
+
+    setNewPassword("");
+    setRepeatNewPassword("");
+    setAccountNotice(profile.email ? "Account settings saved. If you changed email, confirm the new email address from your inbox." : "Account settings saved.");
   }
 
   async function saveDocument() {
@@ -555,7 +628,7 @@ export default function ProfilePage() {
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
               <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
               <DropdownChoiceGroup title="Position" options={yachtPositions} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} />
-              <PhoneField label="Phone" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
+              <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
               <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Height cm" type="number" value={String(profile.height_cm || "")} onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })} />
@@ -568,6 +641,27 @@ export default function ProfilePage() {
                 <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
               </div>
               <TextArea label="Professional summary" value={profile.bio || ""} onChange={(value) => setProfile({ ...profile, bio: value })} />
+            </Panel>
+
+            <Panel title="Account settings" icon={<ShieldCheck className="h-5 w-5" />}>
+              <p className="text-sm leading-6 text-slate-600">
+                Update your login name, phone and password from the same BlueDeck profile.
+              </p>
+              <Field label="Login email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
+              <Field label="New password" type="password" value={newPassword} onChange={setNewPassword} />
+              <Field label="Repeat new password" type="password" value={repeatNewPassword} onChange={setRepeatNewPassword} />
+              {accountNotice && (
+                <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm leading-6 text-slate-700">
+                  {accountNotice}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={saveAccountSettings}
+                className="rounded-lg bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-900"
+              >
+                {accountSaving ? "Saving..." : "Save account settings"}
+              </button>
             </Panel>
 
             <Panel title="Languages" icon={<Languages className="h-5 w-5" />}>
@@ -1050,7 +1144,7 @@ function ReferenceEditor({ item, isNew, onSave, onDelete }: { item: ReferenceEnt
         <Field label="Role" value={draft.role} onChange={(value) => setDraft({ ...draft, role: value })} />
         <Field label="Vessel" value={draft.vessel} onChange={(value) => setDraft({ ...draft, vessel: value })} />
         <Field label="Company" value={draft.company} onChange={(value) => setDraft({ ...draft, company: value })} />
-        <Field label="Phone" value={draft.phone} onChange={(value) => setDraft({ ...draft, phone: value })} />
+        <PhoneInput label="Phone" value={draft.phone} onChange={(value) => setDraft({ ...draft, phone: value })} />
         <Field label="Email" value={draft.email} onChange={(value) => setDraft({ ...draft, email: value })} />
       </div>
       <TextArea label="Notes" value={draft.notes} onChange={(value) => setDraft({ ...draft, notes: value })} />
@@ -1132,36 +1226,6 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
   );
 }
 
-function PhoneField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  const currentCountry = blueDeckCountries.find((country) => value.startsWith(`${country.dial} `)) || blueDeckCountries.find((country) => country.country === "Turkey") || blueDeckCountries[0];
-  const localNumber = value.replace(`${currentCountry.dial} `, "");
-
-  return (
-    <div className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
-      <div className="flex rounded-xl border border-slate-200 bg-white shadow-sm focus-within:border-cyan-500">
-        <CountrySearch
-          selectedLabel={`${currentCountry.flag} ${currentCountry.code} ${currentCountry.dial}`}
-          options={blueDeckCountries}
-          onSelect={(country) => "dial" in country && onChange(`${country.dial} ${localNumber}`.trim())}
-          phoneMode
-        />
-        <div className="flex min-w-0 flex-1 border-l border-slate-200">
-          <span className="flex items-center pl-3 text-cyan-700">
-            <Phone className="h-4 w-4" />
-          </span>
-          <input
-            value={localNumber}
-            onChange={(event) => onChange(`${currentCountry.dial} ${event.target.value}`.trim())}
-            placeholder="Phone number"
-            className="min-w-0 flex-1 rounded-xl px-3 py-3 text-sm text-slate-950 outline-none"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function NationalitySelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const selectedCountry = nationalityOptions.find((country) => country.nationality === value);
 
@@ -1199,7 +1263,7 @@ function CountrySearch({
   const [pickedLabel, setPickedLabel] = useState(selectedLabel);
   const visibleLabel = pickedLabel || selectedLabel;
   const preferredCountries = options.filter((country) => {
-    return country.country === "Turkey" || country.region === "Europe" || ["United States", "Russia", "United Arab Emirates", "Israel"].includes(country.country);
+    return country.code === "TR" || country.region === "Europe" || ["United States", "Russia", "United Arab Emirates", "Israel"].includes(country.country);
   });
   const source = query.trim() ? options : preferredCountries;
   const filtered = source
