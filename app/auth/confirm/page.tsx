@@ -60,6 +60,23 @@ export default function ConfirmAuthPage() {
           setMessage(error.message);
           return;
         }
+      } else {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          setStatus("success");
+          setMessage("Account confirmed. Opening your dashboard...");
+          window.setTimeout(() => {
+            window.location.replace(next);
+          }, 900);
+          return;
+        }
+
+        setStatus("error");
+        setMessage("This confirmation link is incomplete or expired. Please request a new BlueDeck confirmation email.");
+        return;
       }
 
       const {
