@@ -19,7 +19,6 @@ import {
   ShieldCheck,
   Ship,
   ShipWheel,
-  Sparkles,
   Users,
   Wrench,
   type LucideIcon,
@@ -420,55 +419,34 @@ export default function YachtDashboard() {
           />
         </section>
 
-        <section className="mt-10 grid gap-8 xl:grid-cols-[1fr_0.52fr]">
-          <div>
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <p className="bd-kicker">Connected Workspaces</p>
-                <h2 className="mt-3 text-4xl font-black text-slate-950">
-                  Every button opens a real BlueDeck module.
-                </h2>
-              </div>
-              <Link
-                href={`/yachts/${yachtId}/notification-center`}
-                className="bd-focus inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-800 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
-              >
-                Notification Center
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {modules.map((module) => (
-                <ModuleLink key={module.title} {...module} />
-              ))}
-            </div>
+        <section className="mt-10">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <p className="bd-kicker">Connected Workspaces</p>
+            <Link
+              href={`/yachts/${yachtId}/notification-center`}
+              className="bd-focus inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-800 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
+            >
+              Notification Center
+              <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
 
-          <aside className="space-y-6">
-            <div className="rounded-[32px] border border-slate-200 bg-slate-950 p-6 text-white shadow-2xl shadow-cyan-950/20">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400 text-slate-950">
-                <Sparkles className="h-6 w-6" />
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {modules.map((module) => (
+              <ModuleLink key={module.title} {...module} />
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="bd-kicker">Recent Activity</p>
+                <h2 className="mt-2 text-3xl font-black text-slate-950">Yacht Log</h2>
               </div>
-              <h2 className="mt-6 text-3xl font-black">Captain Flow</h2>
-              <div className="mt-6 space-y-4">
-                <FlowStep number="01" title="Invite crew" text="Crew sees the invitation inside My YachtOS." />
-                <FlowStep number="02" title="Assign checklist" text="Daily or one-time yacht duties go to the selected crew." />
-                <FlowStep number="03" title="Review proof" text="Completed tasks, timestamps and photos appear in Crew Command." />
-                <FlowStep number="04" title="Export documents" text="Use IMO crew list, document vault and alerts for compliance." />
-              </div>
+              <CalendarDays className="h-7 w-7 text-cyan-700" />
             </div>
 
-            <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="bd-kicker">Recent Activity</p>
-                  <h2 className="mt-2 text-3xl font-black text-slate-950">Yacht Log</h2>
-                </div>
-                <CalendarDays className="h-7 w-7 text-cyan-700" />
-              </div>
-
-              <div className="mt-6 space-y-3">
+            <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {stats.recent.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
                     No activity yet. Start by inviting crew or assigning a checklist.
@@ -477,9 +455,8 @@ export default function YachtDashboard() {
                 {stats.recent.map((item, index) => (
                   <ActivityLine key={`${item.title}-${index}`} item={item} />
                 ))}
-              </div>
             </div>
-          </aside>
+          </div>
         </section>
       </div>
     </main>
@@ -647,22 +624,6 @@ function ModuleLink({
         <ChevronRight className="h-4 w-4 transition group-hover:translate-x-1" />
       </div>
     </Link>
-  );
-}
-
-function FlowStep({ number, title, text }: { number: string; title: string; text: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-      <div className="flex items-start gap-4">
-        <span className="rounded-full bg-cyan-300 px-3 py-1 text-xs font-black text-slate-950">
-          {number}
-        </span>
-        <div>
-          <h3 className="font-black text-white">{title}</h3>
-          <p className="mt-1 text-sm leading-6 text-slate-300">{text}</p>
-        </div>
-      </div>
-    </div>
   );
 }
 
