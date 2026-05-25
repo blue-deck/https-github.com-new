@@ -19,6 +19,7 @@ import {
   UserRound,
   Wrench,
   Waves,
+  X,
 } from "lucide-react";
 import { saveYachtMembership } from "../../../lib/yachtMemberships";
 
@@ -241,6 +242,7 @@ export default function CrewPage() {
   const [contractText, setContractText] = useState("");
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
 
   const allTemplates = useMemo(() => {
     return Object.entries(checklistTemplates).flatMap(([department, items]: any) =>
@@ -300,6 +302,17 @@ export default function CrewPage() {
     const interval = window.setInterval(() => loadData(true), 10000);
     return () => window.clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!photoPreview) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setPhotoPreview(null);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [photoPreview]);
 
   async function addCrew() {
     if (!inviteEmail && !crewPublicId) {
@@ -861,8 +874,8 @@ export default function CrewPage() {
 
                                   {(beforePhoto || afterPhoto) && (
                                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                      <TaskPhotoPreview label="Before" url={beforePhoto} />
-                                      <TaskPhotoPreview label="After" url={afterPhoto} />
+                                      <TaskPhotoPreview label="Before" url={beforePhoto} onOpen={setPhotoPreview} />
+                                      <TaskPhotoPreview label="After" url={afterPhoto} onOpen={setPhotoPreview} />
                                     </div>
                                   )}
                                 </div>
@@ -947,6 +960,43 @@ export default function CrewPage() {
           </div>
         </div>
       </div>
+
+      {photoPreview && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+          onClick={() => setPhotoPreview(null)}
+        >
+          <div
+            className="w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/20 bg-white shadow-2xl shadow-slate-950/40"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">
+                  Task Photo
+                </p>
+                <h3 className="text-2xl font-black text-slate-950">{photoPreview.label}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPhotoPreview(null)}
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                aria-label="Close photo preview"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="bg-slate-950">
+              <img
+                src={photoPreview.url}
+                alt={`${photoPreview.label} task photo`}
+                className="max-h-[78vh] w-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -1021,15 +1071,22 @@ function formatDateTime(value?: string) {
   });
 }
 
-function TaskPhotoPreview({ label, url }: { label: string; url?: string }) {
+function TaskPhotoPreview({
+  label,
+  url,
+  onOpen,
+}: {
+  label: string;
+  url?: string;
+  onOpen: (photo: { label: string; url: string }) => void;
+}) {
   if (!url) return null;
 
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white"
+    <button
+      type="button"
+      onClick={() => onOpen({ label, url })}
+      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-cyan-300 hover:shadow-lg hover:shadow-cyan-950/10"
     >
       <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-500">
         <Camera className="h-3.5 w-3.5 text-cyan-700" />
@@ -1040,7 +1097,7 @@ function TaskPhotoPreview({ label, url }: { label: string; url?: string }) {
         alt={`${label} task photo`}
         className="h-28 w-full object-cover transition group-hover:scale-[1.02]"
       />
-    </a>
+    </button>
   );
 }
 
