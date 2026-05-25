@@ -8,7 +8,7 @@ import { blueDeckCountries } from "../lib/countries";
 import { supabase } from "../lib/supabase";
 
 type AuthMode = "login" | "signup";
-const productionSiteUrl = "https://bluedeck.app";
+const productionSiteUrl = "https://www.bluedeck.app";
 const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
 
 export default function LoginPage() {

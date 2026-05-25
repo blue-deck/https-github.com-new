@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const fallbackSupabaseUrl = "https://onftggrmmpvvwgxxzywo.supabase.co";
-const productionSiteUrl = "https://bluedeck.app";
+const productionSiteUrl = "https://www.bluedeck.app";
 const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
 
 function normalizeSupabaseUrl(url?: string) {
