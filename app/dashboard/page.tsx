@@ -205,7 +205,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur sm:p-8">
+        <div className="relative rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur sm:p-8">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <p className="bd-kicker">My Dashboard</p>
@@ -217,7 +217,7 @@ export default function DashboardPage() {
               <p className="mt-4 text-lg text-slate-600">Role: {profile?.role}</p>
             </div>
 
-            <div className="relative flex shrink-0 flex-col items-center gap-3">
+            <div className="relative z-30 flex shrink-0 flex-col items-center gap-3">
               <button
                 type="button"
                 onClick={() => setPhotoMenuOpen((open) => !open)}
@@ -255,7 +255,7 @@ export default function DashboardPage() {
               </p>
 
               {photoMenuOpen && (
-                <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-2xl shadow-slate-900/18">
+                <div className="absolute right-1/2 top-[calc(100%+10px)] z-50 w-56 translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-2xl shadow-slate-900/18 lg:right-0 lg:translate-x-0">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
