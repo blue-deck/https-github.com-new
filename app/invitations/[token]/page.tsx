@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Mail, Ship, UserPlus } from "lucide-react";
+import { saveCrewProfileByUserId } from "../../lib/crewProfiles";
 import { supabase } from "../../lib/supabase";
 import {
   markInvitationAccepted,
@@ -44,19 +45,15 @@ export default function InvitationPage() {
     let crewProfileId = invite.crew_profile_id;
 
     if (!crewProfileId) {
-      const { data: profile } = await supabase
-        .from("crew_profiles")
-        .upsert(
-          {
-            user_id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || user.email,
-            public_crew_id: user.id.slice(0, 8).toUpperCase(),
-          },
-          { onConflict: "user_id" }
-        )
-        .select()
-        .single();
+      const { data: profile } = await saveCrewProfileByUserId(
+        supabase,
+        user.id,
+        {
+          email: user.email,
+          full_name: user.user_metadata?.full_name || user.email,
+          public_crew_id: user.id.slice(0, 8).toUpperCase(),
+        }
+      );
 
       crewProfileId = profile?.id;
     }

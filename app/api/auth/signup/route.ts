@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -86,16 +87,16 @@ export async function POST(request: NextRequest) {
           phone,
           role,
         }),
-        adminSupabase.from("crew_profiles").upsert(
+        saveCrewProfileByUserId(
+          adminSupabase,
+          data.user.id,
           {
-            user_id: data.user.id,
             email,
             full_name: fullName,
             phone,
             current_position: role === "captain" ? "Captain" : role === "owner" ? "Owner" : "Crew",
             public_crew_id: data.user.id.slice(0, 8).toUpperCase(),
-          },
-          { onConflict: "user_id" }
+          }
         ),
       ]);
     } catch {

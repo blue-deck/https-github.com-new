@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Ship, UserRound } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
+import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
 type AuthMode = "login" | "signup";
@@ -46,16 +47,16 @@ export default function LoginPage() {
       role,
     });
 
-    await supabase.from("crew_profiles").upsert(
+    await saveCrewProfileByUserId(
+      supabase,
+      userId,
       {
-        user_id: userId,
         email: userEmail,
         full_name: fullName || userEmail,
         phone,
         current_position: role === "captain" ? "Captain" : "Crew",
         public_crew_id: userId.slice(0, 8).toUpperCase(),
-      },
-      { onConflict: "user_id" }
+      }
     );
   }
 

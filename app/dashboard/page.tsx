@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserRound } from "lucide-react";
+import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
 type DashboardProfile = {
@@ -113,21 +114,21 @@ export default function DashboardPage() {
     const { data: publicUrl } = supabase.storage.from("crew-portfolio").getPublicUrl(path);
     const photoUrl = publicUrl.publicUrl;
 
-    const { data: crewProfile, error: profileError } = await supabase
-      .from("crew_profiles")
-      .upsert(
-        {
-          user_id: user.id,
-          email: profile?.email || user.email,
-          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-          phone: profile?.phone || user.user_metadata?.phone || "",
-          profile_photo_url: photoUrl,
-          public_crew_id: user.id.slice(0, 8).toUpperCase(),
-        },
-        { onConflict: "user_id" }
-      )
-      .select("id, profile_photo_url")
-      .single();
+    const { data: crewProfile, error: profileError } = await saveCrewProfileByUserId<{
+      id?: string;
+      profile_photo_url?: string;
+    }>(
+      supabase,
+      user.id,
+      {
+        email: profile?.email || user.email,
+        full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+        phone: profile?.phone || user.user_metadata?.phone || "",
+        profile_photo_url: photoUrl,
+        public_crew_id: user.id.slice(0, 8).toUpperCase(),
+      },
+      "id, profile_photo_url"
+    );
 
     await supabase.auth.updateUser({
       data: {

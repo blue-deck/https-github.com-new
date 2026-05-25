@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
+import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
 type SettingsProfile = {
@@ -148,15 +149,15 @@ export default function SettingsPage() {
         phone,
         role,
       }),
-      supabase.from("crew_profiles").upsert(
+      saveCrewProfileByUserId(
+        supabase,
+        user.id,
         {
-          user_id: user.id,
           email,
           full_name: fullName,
           phone,
           public_crew_id: user.id.slice(0, 8).toUpperCase(),
-        },
-        { onConflict: "user_id" }
+        }
       ),
     ]);
 

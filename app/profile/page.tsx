@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
+import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
 type CountryOption = (typeof blueDeckCountries)[number] | (typeof nationalityOptions)[number];
@@ -362,11 +363,24 @@ export default function ProfilePage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { data, error } = await supabase
-      .from("crew_profiles")
-      .upsert(profile, { onConflict: "user_id" })
-      .select()
-      .single();
+    if (!user?.id) {
+      setSaving(false);
+      window.location.href = "/login";
+      return;
+    }
+
+    const profilePayload: Record<string, unknown> = {
+      ...profile,
+      email: profile.email || user.email,
+      public_crew_id: profile.public_crew_id || user.id.slice(0, 8).toUpperCase(),
+    };
+    delete profilePayload.id;
+
+    const { data, error } = await saveCrewProfileByUserId<CrewProfile>(
+      supabase,
+      user.id,
+      profilePayload
+    );
 
     if (error) {
       setSaving(false);
@@ -374,25 +388,23 @@ export default function ProfilePage() {
       return;
     }
 
-    if (user?.id) {
-      await Promise.all([
-        supabase.from("profiles").upsert({
-          id: user.id,
-          email: profile.email || user.email,
+    await Promise.all([
+      supabase.from("profiles").upsert({
+        id: user.id,
+        email: profile.email || user.email,
+        full_name: profile.full_name || user.email,
+        phone: profile.phone || "",
+        role: profile.current_positions?.includes("Captain") || profile.current_position === "Captain" ? "captain" : undefined,
+      }),
+      supabase.auth.updateUser({
+        data: {
           full_name: profile.full_name || user.email,
           phone: profile.phone || "",
-          role: profile.current_positions?.includes("Captain") || profile.current_position === "Captain" ? "captain" : undefined,
-        }),
-        supabase.auth.updateUser({
-          data: {
-            full_name: profile.full_name || user.email,
-            phone: profile.phone || "",
-          },
-        }),
-      ]);
-    }
+        },
+      }),
+    ]);
 
-    setProfile(normalizeProfile(data));
+    setProfile(normalizeProfile(data || { ...profile, user_id: user.id }));
     setSaving(false);
     alert("Profile saved.");
   }
