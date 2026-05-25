@@ -4,30 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import { Phone } from "lucide-react";
 import { blueDeckCountries, type BlueDeckCountry } from "../lib/countries";
 
-function defaultCountry() {
-  return blueDeckCountries.find((country) => country.code === "TR") || blueDeckCountries[0];
-}
-
 function countryFromValue(value: string) {
   const normalized = value.trim();
-  if (!normalized) return defaultCountry();
+  if (!normalized) return null;
   return (
     [...blueDeckCountries]
       .sort((a, b) => b.dial.length - a.dial.length)
-      .find((country) => normalized.startsWith(country.dial)) || defaultCountry()
+      .find((country) => normalized.startsWith(country.dial)) || null
   );
 }
 
-function localNumberFromValue(value: string, country: BlueDeckCountry) {
+function localNumberFromValue(value: string, country: BlueDeckCountry | null) {
   let local = value.trim();
-  if (local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
-  if (local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
+  if (country && local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
+  if (country && local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
   return local.replace(/^\+/, "");
 }
 
-function composePhone(country: BlueDeckCountry, localNumber: string) {
+function composePhone(country: BlueDeckCountry | null, localNumber: string) {
   const cleanLocal = localNumber.replace(/[^\d\s()-]/g, "").trim();
-  return cleanLocal ? `${country.dial} ${cleanLocal}` : "";
+  if (!country) return cleanLocal;
+  return cleanLocal ? `${country.dial} ${cleanLocal}` : country.dial;
 }
 
 export function PhoneInput({
@@ -46,15 +43,12 @@ export function PhoneInput({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const country = countryFromValue(value);
+  const [manualCountry, setManualCountry] = useState<BlueDeckCountry | null>(null);
+  const country = countryFromValue(value) || manualCountry;
   const localNumber = localNumberFromValue(value, country);
-  const preferredCountries = blueDeckCountries.filter((item) => {
-    return item.code === "TR" || item.region === "Europe" || ["United States", "Russia", "United Arab Emirates", "Israel"].includes(item.country);
-  });
-  const source = query.trim() ? blueDeckCountries : preferredCountries;
-  const filteredCountries = source
+  const filteredCountries = blueDeckCountries
     .filter((item) => `${item.country} ${item.nationality} ${item.code} ${item.dial}`.toLowerCase().includes(query.toLowerCase()))
-    .slice(0, query.trim() ? 90 : 70);
+    .slice(0, 260);
 
   useEffect(() => {
     function closeOnOutsideClick(event: MouseEvent) {
@@ -81,11 +75,17 @@ export function PhoneInput({
               setOpen(!open);
               setQuery("");
             }}
-            className="flex w-[106px] shrink-0 items-center justify-center gap-2 border-r border-slate-200 bg-white px-3 text-sm font-black text-slate-950 transition hover:bg-cyan-50 sm:w-[116px]"
+            className={`flex w-[106px] shrink-0 items-center justify-center gap-2 border-r border-slate-200 bg-white px-3 text-sm font-black transition hover:bg-cyan-50 sm:w-[116px] ${country ? "text-slate-950" : "text-slate-400"}`}
             aria-label="Select country code"
           >
-            <span>{country.flag}</span>
-            <span>{country.dial}</span>
+            {country ? (
+              <>
+                <span>{country.flag}</span>
+                <span>{country.dial}</span>
+              </>
+            ) : (
+              <span>Code</span>
+            )}
           </button>
           <div className="flex min-w-0 flex-1 items-center">
             <Phone className="ml-3 h-4 w-4 shrink-0 text-cyan-700" />
@@ -117,6 +117,7 @@ export function PhoneInput({
                   type="button"
                   onMouseDown={(event) => {
                     event.preventDefault();
+                    setManualCountry(item);
                     onChange(composePhone(item, localNumber));
                     setOpen(false);
                     setQuery("");

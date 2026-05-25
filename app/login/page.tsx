@@ -72,6 +72,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (mode === "signup" && !isCompletePhoneNumber(phone)) {
+      setNotice("Please select a country code and enter a valid mobile number.");
+      return;
+    }
+
     if (mode === "signup" && !acceptedPrivacy) {
       setNotice("Please accept the Privacy Policy to create your account.");
       return;
@@ -439,4 +444,8 @@ function getPasswordStrength(password: string): PasswordStrength {
   }
 
   return { visible: true, score: 3, label: "Strong", barClass: "bg-emerald-500", textClass: "text-emerald-600" };
+}
+
+function isCompletePhoneNumber(value: string) {
+  return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
 }

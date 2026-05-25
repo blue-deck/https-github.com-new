@@ -37,6 +37,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Name, email, password, phone and account type are required." }, { status: 400 });
   }
 
+  if (!isCompletePhoneNumber(phone)) {
+    return NextResponse.json({ error: "Please select a country code and enter a valid mobile number." }, { status: 400 });
+  }
+
   if (password.length < 6) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
@@ -104,4 +108,8 @@ export async function POST(request: NextRequest) {
     emailConfirmed: Boolean(data.user?.email_confirmed_at),
     needsEmailConfirmation: !data.session,
   });
+}
+
+function isCompletePhoneNumber(value: string) {
+  return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
 }
