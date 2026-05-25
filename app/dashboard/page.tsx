@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ClipboardCheck, FileText, LogOut, Ship, UserRound } from "lucide-react";
+import { Camera, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserRound } from "lucide-react";
 import { supabase } from "../lib/supabase";
 
 type DashboardProfile = {
   id?: string;
+  crew_profile_id?: string;
   email?: string;
   full_name?: string;
   phone?: string;
   role?: string;
+  profile_photo_url?: string;
 };
 
 function cleanDisplayName(profile?: DashboardProfile | null) {
@@ -22,6 +24,9 @@ function cleanDisplayName(profile?: DashboardProfile | null) {
 export default function DashboardPage() {
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function loadDashboard() {
     const {
@@ -41,7 +46,7 @@ export default function DashboardPage() {
 
     const { data: crewProfile } = await supabase
       .from("crew_profiles")
-      .select("full_name, phone, email")
+      .select("id, full_name, phone, email, profile_photo_url")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -69,8 +74,117 @@ export default function DashboardPage() {
       profileData = { ...profileData, full_name: preferredName };
     }
 
-    setProfile(profileData);
+    setProfile({
+      ...profileData,
+      crew_profile_id: crewProfile?.id,
+      full_name: preferredName,
+      email: profileData?.email || crewProfile?.email || user.email,
+      phone: profileData?.phone || crewProfile?.phone || user.user_metadata?.phone || "",
+      profile_photo_url:
+        crewProfile?.profile_photo_url ||
+        (typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : ""),
+    });
     setLoading(false);
+  }
+
+  async function saveDashboardPhoto(file: File) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setPhotoUploading(true);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").toLowerCase();
+    const path = `${profile?.crew_profile_id || user.id}/dashboard-${Date.now()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage.from("crew-portfolio").upload(path, file, {
+      upsert: false,
+    });
+
+    if (uploadError) {
+      setPhotoUploading(false);
+      alert(uploadError.message === "Bucket not found" ? "Photo storage is not ready yet. Please create the crew-portfolio bucket in Supabase." : uploadError.message);
+      return;
+    }
+
+    const { data: publicUrl } = supabase.storage.from("crew-portfolio").getPublicUrl(path);
+    const photoUrl = publicUrl.publicUrl;
+
+    const { data: crewProfile, error: profileError } = await supabase
+      .from("crew_profiles")
+      .upsert(
+        {
+          user_id: user.id,
+          email: profile?.email || user.email,
+          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+          phone: profile?.phone || user.user_metadata?.phone || "",
+          profile_photo_url: photoUrl,
+          public_crew_id: user.id.slice(0, 8).toUpperCase(),
+        },
+        { onConflict: "user_id" }
+      )
+      .select("id, profile_photo_url")
+      .single();
+
+    await supabase.auth.updateUser({
+      data: {
+        full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+        phone: profile?.phone || user.user_metadata?.phone || "",
+        avatar_url: photoUrl,
+      },
+    });
+
+    setPhotoUploading(false);
+    setPhotoMenuOpen(false);
+
+    if (profileError) {
+      alert(profileError.message);
+      return;
+    }
+
+    setProfile((current) => ({
+      ...(current || {}),
+      crew_profile_id: crewProfile?.id || current?.crew_profile_id,
+      profile_photo_url: photoUrl,
+    }));
+  }
+
+  async function removeDashboardPhoto() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setPhotoUploading(true);
+    const { error } = await supabase
+      .from("crew_profiles")
+      .update({ profile_photo_url: "" })
+      .eq("user_id", user.id);
+
+    await supabase.auth.updateUser({
+      data: {
+        avatar_url: "",
+        full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+        phone: profile?.phone || user.user_metadata?.phone || "",
+      },
+    });
+
+    setPhotoUploading(false);
+    setPhotoMenuOpen(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setProfile((current) => ({ ...(current || {}), profile_photo_url: "" }));
   }
 
   useEffect(() => {
@@ -91,17 +205,82 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/80 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur">
-          <p className="bd-kicker">My Dashboard</p>
+        <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur sm:p-8">
+          <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <p className="bd-kicker">My Dashboard</p>
 
-          <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
-            Welcome, {profile?.full_name || profile?.email}
-          </h1>
+              <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
+                Welcome, {profile?.full_name || profile?.email}
+              </h1>
 
-          <p className="mt-4 text-lg text-slate-600">Role: {profile?.role}</p>
+              <p className="mt-4 text-lg text-slate-600">Role: {profile?.role}</p>
+            </div>
+
+            <div className="relative flex shrink-0 flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setPhotoMenuOpen((open) => !open)}
+                className="bd-focus group relative h-32 w-32 overflow-hidden rounded-full border border-cyan-200 bg-white shadow-2xl shadow-cyan-950/12 transition hover:border-cyan-400"
+                aria-label="Manage dashboard profile photo"
+              >
+                {profile?.profile_photo_url ? (
+                  <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#f8fafc,#dff8fb)] text-cyan-700">
+                    <UserRound className="h-12 w-12" />
+                  </span>
+                )}
+                <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-slate-950/72 py-2 text-xs font-black text-white opacity-0 transition group-hover:opacity-100">
+                  <Camera className="h-3.5 w-3.5" />
+                  Photo
+                </span>
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  await saveDashboardPhoto(file);
+                  event.target.value = "";
+                }}
+              />
+
+              <p className="text-xs font-semibold text-slate-500">
+                {photoUploading ? "Updating photo..." : "Profile photo"}
+              </p>
+
+              {photoMenuOpen && (
+                <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-2xl shadow-slate-900/18">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-semibold text-slate-700 transition hover:bg-cyan-50"
+                  >
+                    <Upload className="h-4 w-4 text-cyan-700" />
+                    {profile?.profile_photo_url ? "Change photo" : "Upload photo"}
+                  </button>
+                  {profile?.profile_photo_url && (
+                    <button
+                      type="button"
+                      onClick={removeDashboardPhoto}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-semibold text-[#b9423b] transition hover:bg-[#fff6f5]"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove photo
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Link
             href="/profile"
             className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
@@ -144,6 +323,17 @@ export default function DashboardPage() {
             <FileText className="h-8 w-8 text-cyan-700" />
             <h2 className="mt-5 text-3xl font-semibold text-slate-950">Contracts</h2>
             <p className="mt-3 leading-7 text-slate-600">Review yacht contracts assigned to your profile.</p>
+          </Link>
+
+          <Link
+            href="/settings"
+            className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+          >
+            <Settings className="h-8 w-8 text-cyan-700" />
+            <h2 className="mt-5 text-3xl font-semibold text-slate-950">Settings</h2>
+            <p className="mt-3 leading-7 text-slate-600">
+              Update account details, phone, email, password and security access.
+            </p>
           </Link>
 
           <button

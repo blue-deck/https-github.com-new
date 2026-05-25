@@ -15,7 +15,6 @@ import {
   MapPin,
   Plus,
   Save,
-  ShieldCheck,
   Star,
   Trash2,
   Upload,
@@ -282,10 +281,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [repeatNewPassword, setRepeatNewPassword] = useState("");
-  const [accountNotice, setAccountNotice] = useState("");
-  const [accountSaving, setAccountSaving] = useState(false);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
@@ -400,52 +395,6 @@ export default function ProfilePage() {
     setProfile(normalizeProfile(data));
     setSaving(false);
     alert("Profile saved.");
-  }
-
-  async function saveAccountSettings() {
-    setAccountNotice("");
-
-    if (newPassword || repeatNewPassword) {
-      if (newPassword.length < 6) {
-        setAccountNotice("Password must be at least 6 characters.");
-        return;
-      }
-
-      if (newPassword !== repeatNewPassword) {
-        setAccountNotice("Passwords do not match.");
-        return;
-      }
-    }
-
-    setAccountSaving(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const updatePayload: {
-      data: { full_name?: string; phone?: string };
-      email?: string;
-      password?: string;
-    } = {
-      data: {
-        full_name: profile.full_name || "",
-        phone: profile.phone || "",
-      },
-    };
-
-    if (profile.email && profile.email !== user?.email) updatePayload.email = profile.email;
-    if (newPassword) updatePayload.password = newPassword;
-
-    const { error } = await supabase.auth.updateUser(updatePayload);
-    setAccountSaving(false);
-
-    if (error) {
-      setAccountNotice(error.message);
-      return;
-    }
-
-    setNewPassword("");
-    setRepeatNewPassword("");
-    setAccountNotice(profile.email ? "Account settings saved. If you changed email, confirm the new email address from your inbox." : "Account settings saved.");
   }
 
   async function saveDocument() {
@@ -641,27 +590,6 @@ export default function ProfilePage() {
                 <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
               </div>
               <TextArea label="Professional summary" value={profile.bio || ""} onChange={(value) => setProfile({ ...profile, bio: value })} />
-            </Panel>
-
-            <Panel title="Account settings" icon={<ShieldCheck className="h-5 w-5" />}>
-              <p className="text-sm leading-6 text-slate-600">
-                Update your login name, phone and password from the same BlueDeck profile.
-              </p>
-              <Field label="Login email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
-              <Field label="New password" type="password" value={newPassword} onChange={setNewPassword} />
-              <Field label="Repeat new password" type="password" value={repeatNewPassword} onChange={setRepeatNewPassword} />
-              {accountNotice && (
-                <div className="rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2 text-sm leading-6 text-slate-700">
-                  {accountNotice}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={saveAccountSettings}
-                className="rounded-lg bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-900"
-              >
-                {accountSaving ? "Saving..." : "Save account settings"}
-              </button>
             </Panel>
 
             <Panel title="Languages" icon={<Languages className="h-5 w-5" />}>

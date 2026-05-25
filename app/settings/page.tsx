@@ -1,0 +1,564 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
+import {
+  CheckCircle2,
+  Home,
+  KeyRound,
+  LogOut,
+  Mail,
+  Save,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+import { PhoneInput } from "../components/PhoneInput";
+import { supabase } from "../lib/supabase";
+
+type SettingsProfile = {
+  id?: string;
+  email: string;
+  full_name: string;
+  phone: string;
+  role: string;
+  email_confirmed_at?: string | null;
+};
+
+type Notice = {
+  tone: "success" | "error";
+  message: string;
+};
+
+const accountTypes = [
+  { value: "crew", label: "Crew" },
+  { value: "captain", label: "Captain" },
+  { value: "owner", label: "Owner" },
+  { value: "management", label: "Management" },
+];
+
+export default function SettingsPage() {
+  const [profile, setProfile] = useState<SettingsProfile>({
+    email: "",
+    full_name: "",
+    phone: "",
+    role: "crew",
+  });
+  const [originalEmail, setOriginalEmail] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const passwordStrength = useMemo(() => getPasswordStrength(newPassword), [newPassword]);
+
+  async function loadSettings() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const [{ data: baseProfile }, { data: crewProfile }] = await Promise.all([
+      supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+      supabase.from("crew_profiles").select("full_name, phone, email, current_position").eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    const email = baseProfile?.email || crewProfile?.email || user.email || "";
+    const fullName =
+      cleanText(baseProfile?.full_name) ||
+      cleanText(crewProfile?.full_name) ||
+      cleanText(user.user_metadata?.full_name) ||
+      email;
+    const phone =
+      baseProfile?.phone ||
+      crewProfile?.phone ||
+      (typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "");
+    const role =
+      normalizeRole(baseProfile?.role || user.user_metadata?.role) ||
+      inferRoleFromPosition(crewProfile?.current_position) ||
+      "crew";
+
+    setProfile({
+      id: user.id,
+      email,
+      full_name: fullName,
+      phone,
+      role,
+      email_confirmed_at: user.email_confirmed_at,
+    });
+    setOriginalEmail(email);
+    setLoading(false);
+  }
+
+  async function saveAccountProfile() {
+    setNotice(null);
+
+    if (!profile.full_name.trim() || !profile.email.trim() || !profile.role) {
+      setNotice({ tone: "error", message: "Name, email and account type are required." });
+      return;
+    }
+
+    if (profile.phone && !isCompletePhoneNumber(profile.phone)) {
+      setNotice({ tone: "error", message: "Please select a country code and enter a valid mobile number." });
+      return;
+    }
+
+    setSavingProfile(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const email = profile.email.trim().toLowerCase();
+    const fullName = profile.full_name.trim();
+    const phone = profile.phone.trim();
+    const role = profile.role;
+    const authPayload: {
+      email?: string;
+      data: {
+        full_name: string;
+        phone: string;
+        role: string;
+      };
+    } = {
+      data: {
+        full_name: fullName,
+        phone,
+        role,
+      },
+    };
+
+    if (email && email !== user.email) authPayload.email = email;
+
+    const { error: authError } = await supabase.auth.updateUser(authPayload);
+
+    if (authError) {
+      setSavingProfile(false);
+      setNotice({ tone: "error", message: authError.message });
+      return;
+    }
+
+    const [{ error: baseError }, { error: crewError }] = await Promise.all([
+      supabase.from("profiles").upsert({
+        id: user.id,
+        email,
+        full_name: fullName,
+        phone,
+        role,
+      }),
+      supabase.from("crew_profiles").upsert(
+        {
+          user_id: user.id,
+          email,
+          full_name: fullName,
+          phone,
+          public_crew_id: user.id.slice(0, 8).toUpperCase(),
+        },
+        { onConflict: "user_id" }
+      ),
+    ]);
+
+    setSavingProfile(false);
+
+    if (baseError || crewError) {
+      setNotice({ tone: "error", message: baseError?.message || crewError?.message || "Settings could not be saved." });
+      return;
+    }
+
+    setOriginalEmail(email);
+    setProfile((current) => ({ ...current, email, full_name: fullName, phone, role }));
+    setNotice({
+      tone: "success",
+      message:
+        email !== user.email
+          ? "Account details saved. Please confirm the new email address from your inbox before using it to login."
+          : "Account details saved.",
+    });
+  }
+
+  async function changePassword() {
+    setNotice(null);
+
+    if (!newPassword || !repeatPassword) {
+      setNotice({ tone: "error", message: "Enter and repeat your new password." });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setNotice({ tone: "error", message: "Password must be at least 6 characters." });
+      return;
+    }
+
+    if (newPassword !== repeatPassword) {
+      setNotice({ tone: "error", message: "Passwords do not match." });
+      return;
+    }
+
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+
+    if (error) {
+      setNotice({ tone: "error", message: error.message });
+      return;
+    }
+
+    setNewPassword("");
+    setRepeatPassword("");
+    setNotice({ tone: "success", message: "Password changed successfully." });
+  }
+
+  async function resendConfirmation() {
+    setNotice(null);
+
+    if (!profile.email) {
+      setNotice({ tone: "error", message: "Enter your email address first." });
+      return;
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: profile.email.trim().toLowerCase(),
+      options: { emailRedirectTo: "https://www.bluedeck.app/auth/confirm?next=/dashboard" },
+    });
+
+    setNotice(error ? { tone: "error", message: error.message } : { tone: "success", message: "Confirmation email sent." });
+  }
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  }
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-8 text-slate-900">
+        Loading settings...
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
+      <div className="mx-auto max-w-6xl">
+        <header className="overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-2xl shadow-slate-900/10 backdrop-blur">
+          <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
+          <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="bd-kicker">Account Settings</p>
+              <h1 className="mt-3 text-4xl font-semibold text-slate-950 sm:text-5xl">BlueDeck Settings</h1>
+              <p className="mt-3 max-w-2xl leading-7 text-slate-600">
+                Manage your login details, password, phone number and account security from one clean control room.
+              </p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
+            >
+              <Home className="h-4 w-4 text-cyan-700" />
+              My Dashboard
+            </Link>
+          </div>
+        </header>
+
+        {notice && (
+          <div
+            className={`mt-5 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm ${
+              notice.tone === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-rose-200 bg-rose-50 text-rose-900"
+            }`}
+          >
+            {notice.message}
+          </div>
+        )}
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+          <SettingsPanel
+            icon={<UserRound className="h-5 w-5" />}
+            title="Profile and login"
+            description="This information is used across your dashboard, crew profile and BlueDeck account."
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                label="Name and surname"
+                required
+                value={profile.full_name}
+                onChange={(value) => setProfile({ ...profile, full_name: value })}
+                autoComplete="name"
+              />
+              <TextField
+                label="Email"
+                required
+                type="email"
+                value={profile.email}
+                onChange={(value) => setProfile({ ...profile, email: value })}
+                autoComplete="email"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <PhoneInput label="Mobile number" value={profile.phone} onChange={(value) => setProfile({ ...profile, phone: value })} />
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold text-slate-600">
+                  Account type <span className="text-rose-500">*</span>
+                </span>
+                <select
+                  value={profile.role}
+                  required
+                  onChange={(event) => setProfile({ ...profile, role: event.target.value })}
+                  className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none shadow-sm transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                >
+                  {accountTypes.map((item) => (
+                    <option key={item.value} value={item.value}>
+                      {item.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={saveAccountProfile}
+                disabled={savingProfile}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-black text-white shadow-lg shadow-slate-900/12 transition hover:bg-cyan-900 disabled:opacity-60"
+              >
+                <Save className="h-4 w-4" />
+                {savingProfile ? "Saving..." : "Save settings"}
+              </button>
+              {profile.email !== originalEmail && (
+                <span className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+                  New email will require inbox confirmation.
+                </span>
+              )}
+            </div>
+          </SettingsPanel>
+
+          <SettingsPanel
+            icon={<ShieldCheck className="h-5 w-5" />}
+            title="Account status"
+            description="Your account access and email confirmation details."
+          >
+            <StatusRow label="Email status" value={profile.email_confirmed_at ? "Confirmed" : "Needs confirmation"} />
+            <StatusRow label="Login email" value={profile.email || "-"} />
+            <StatusRow label="Account role" value={labelForRole(profile.role)} />
+            <button
+              type="button"
+              onClick={resendConfirmation}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-cyan-200 bg-cyan-50 px-5 py-4 text-sm font-black text-cyan-800 transition hover:bg-cyan-100"
+            >
+              <Mail className="h-4 w-4" />
+              Resend confirmation email
+            </button>
+          </SettingsPanel>
+
+          <SettingsPanel
+            icon={<KeyRound className="h-5 w-5" />}
+            title="Password"
+            description="Change your BlueDeck login password securely."
+          >
+            <TextField
+              label="New password"
+              type="password"
+              value={newPassword}
+              onChange={setNewPassword}
+              autoComplete="new-password"
+            />
+            <PasswordStrengthMeter strength={passwordStrength} />
+            <TextField
+              label="Repeat new password"
+              type="password"
+              value={repeatPassword}
+              onChange={setRepeatPassword}
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={changePassword}
+              disabled={savingPassword}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-5 py-4 text-sm font-black text-white shadow-lg shadow-cyan-900/12 transition hover:bg-cyan-700 disabled:opacity-60"
+            >
+              <KeyRound className="h-4 w-4" />
+              {savingPassword ? "Changing..." : "Change password"}
+            </button>
+          </SettingsPanel>
+
+          <SettingsPanel
+            icon={<CheckCircle2 className="h-5 w-5" />}
+            title="Session"
+            description="Leave this device safely when you finish working."
+          >
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+              BlueDeck keeps your session active on this device until you logout. Use this when working from a shared computer.
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#ef776f]/30 bg-white px-5 py-4 text-sm font-black text-[#b9423b] transition hover:bg-[#fff6f5]"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout from this device
+            </button>
+          </SettingsPanel>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function SettingsPanel({
+  icon,
+  title,
+  description,
+  children,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/8 backdrop-blur sm:p-7">
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 text-cyan-700">
+          {icon}
+        </div>
+        <div>
+          <h2 className="text-2xl font-semibold text-slate-950">{title}</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>
+        </div>
+      </div>
+      <div className="mt-6 space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  required = false,
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  required?: boolean;
+  autoComplete?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold text-slate-600">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </span>
+      <input
+        value={value}
+        type={type}
+        required={required}
+        autoComplete={autoComplete}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base text-slate-950 outline-none shadow-sm transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+      />
+    </label>
+  );
+}
+
+function StatusRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <span className="text-sm font-semibold text-slate-500">{label}</span>
+      <span className="text-right text-sm font-black text-slate-950">{value}</span>
+    </div>
+  );
+}
+
+function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
+  if (!strength.visible) return null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.12em]">
+        <span className="text-slate-500">Password strength</span>
+        <span className={strength.textClass}>{strength.label}</span>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((index) => (
+          <span
+            key={index}
+            className={`h-2 rounded-full transition ${index < strength.score ? strength.barClass : "bg-slate-200"}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type PasswordStrength = {
+  visible: boolean;
+  score: number;
+  label: string;
+  barClass: string;
+  textClass: string;
+};
+
+function getPasswordStrength(password: string): PasswordStrength {
+  if (!password) {
+    return { visible: false, score: 0, label: "", barClass: "bg-slate-200", textClass: "text-slate-500" };
+  }
+
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password) && /[a-z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ].filter(Boolean).length;
+
+  if (password.length < 6 || checks <= 1) {
+    return { visible: true, score: 1, label: "Weak", barClass: "bg-rose-500", textClass: "text-rose-600" };
+  }
+
+  if (checks <= 3) {
+    return { visible: true, score: 2, label: "Medium", barClass: "bg-amber-500", textClass: "text-amber-600" };
+  }
+
+  return { visible: true, score: 3, label: "Strong", barClass: "bg-emerald-500", textClass: "text-emerald-600" };
+}
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeRole(value: unknown) {
+  const role = cleanText(value).toLowerCase();
+  return accountTypes.some((item) => item.value === role) ? role : "";
+}
+
+function inferRoleFromPosition(value: unknown) {
+  const position = cleanText(value).toLowerCase();
+  if (position.includes("captain")) return "captain";
+  if (position.includes("owner")) return "owner";
+  if (position.includes("management")) return "management";
+  return "";
+}
+
+function labelForRole(role: string) {
+  return accountTypes.find((item) => item.value === role)?.label || "Crew";
+}
+
+function isCompletePhoneNumber(value: string) {
+  return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
+}
