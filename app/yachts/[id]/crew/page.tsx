@@ -5,14 +5,18 @@ import { supabase } from "../../../lib/supabase";
 import {
   Anchor,
   Bell,
+  Camera,
   CheckCircle,
   CheckSquare,
   ClipboardList,
+  Clock3,
   LifeBuoy,
   Plus,
+  RefreshCcw,
   ShipWheel,
   Trash2,
   Utensils,
+  UserRound,
   Wrench,
   Waves,
 } from "lucide-react";
@@ -248,7 +252,7 @@ export default function CrewPage() {
     );
   }, []);
 
-  async function loadData() {
+  async function loadData(silent = false) {
     const { data: crewData, error: crewError } = await supabase
       .from("yacht_crew_memberships")
       .select(`
@@ -269,18 +273,21 @@ export default function CrewPage() {
       .order("created_at", { ascending: false });
 
     if (crewError) {
-      alert(crewError.message);
+      if (!silent) alert(crewError.message);
       return;
     }
 
     const { data: checklistData, error: checklistError } = await supabase
       .from("yacht_checklists")
-      .select("*")
+      .select(`
+        *,
+        yacht_checklist_items (*)
+      `)
       .eq("yacht_id", yachtId)
       .order("created_at", { ascending: false });
 
     if (checklistError) {
-      alert(checklistError.message);
+      if (!silent) alert(checklistError.message);
       return;
     }
 
@@ -290,6 +297,8 @@ export default function CrewPage() {
 
   useEffect(() => {
     loadData();
+    const interval = window.setInterval(() => loadData(true), 10000);
+    return () => window.clearInterval(interval);
   }, []);
 
   async function addCrew() {
@@ -736,32 +745,141 @@ export default function CrewPage() {
             </div>
 
             <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
-              <p className="text-cyan-700">Assigned Work</p>
-              <h2 className="mt-2 text-4xl font-black">Open Checklists</h2>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-cyan-700">Assigned Work</p>
+                  <h2 className="mt-2 text-4xl font-black">Crew Progress</h2>
+                </div>
+                <button
+                  onClick={() => loadData()}
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-cyan-700 transition hover:border-cyan-300"
+                  title="Refresh crew progress"
+                >
+                  <RefreshCcw className="h-5 w-5" />
+                </button>
+              </div>
 
               <div className="mt-8 space-y-4">
-                {checklists.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h3 className="text-xl font-bold">{item.title}</h3>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {item.department} · {item.checklist_type}
-                        </p>
+                {checklists.map((item) => {
+                  const progress = getChecklistProgress(item);
+                  const assignedCrew = crew.find(
+                    (member) => member.crew_profile_id === item.assigned_to
+                  );
+                  const tasks = item.yacht_checklist_items || [];
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-3xl border border-slate-200 bg-white p-5"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <h3 className="text-xl font-bold">{item.title}</h3>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {item.department} · {item.checklist_type}
+                            {getChecklistFrequency(item) ? ` · ${getChecklistFrequency(item)}` : ""}
+                          </p>
+                          <p className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+                            <UserRound className="h-4 w-4 text-cyan-700" />
+                            {assignedCrew?.crew_profiles?.full_name ||
+                              assignedCrew?.invited_email ||
+                              "Crew member"}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => deleteChecklist(item.id)}
+                          className="text-[#b9423b]"
+                          title="Delete checklist"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
                       </div>
 
-                      <button
-                        onClick={() => deleteChecklist(item.id)}
-                        className="text-[#b9423b]"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                      {getChecklistNote(item) && (
+                        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-slate-700">
+                          Captain note: {getChecklistNote(item)}
+                        </div>
+                      )}
+
+                      <div className="mt-5">
+                        <div className="mb-2 flex items-center justify-between text-sm">
+                          <span className="font-semibold text-slate-600">
+                            {progress.done}/{progress.total} completed
+                          </span>
+                          <span className="font-black text-cyan-700">
+                            {progress.percent}%
+                          </span>
+                        </div>
+                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-cyan-600 transition-all"
+                            style={{ width: `${progress.percent}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-5 space-y-3">
+                        {tasks.map((task: any) => {
+                          const beforePhoto = getTaskPhoto(task, "before");
+                          const afterPhoto = getTaskPhoto(task, "after");
+
+                          return (
+                            <div
+                              key={task.id}
+                              className={`rounded-2xl border p-4 ${
+                                task.completed
+                                  ? "border-emerald-200 bg-emerald-50"
+                                  : "border-slate-200 bg-slate-50"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
+                                    task.completed
+                                      ? "border-emerald-500 bg-emerald-500 text-white"
+                                      : "border-slate-300 bg-white text-slate-300"
+                                  }`}
+                                >
+                                  {task.completed && <CheckCircle className="h-5 w-5" />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p
+                                    className={`font-semibold ${
+                                      task.completed ? "text-slate-700" : "text-slate-500"
+                                    }`}
+                                  >
+                                    {task.task_text}
+                                  </p>
+                                  {task.completed && (
+                                    <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                      <Clock3 className="h-3.5 w-3.5 text-cyan-700" />
+                                      Done by {task.completed_by || assignedCrew?.crew_profiles?.email || "crew"}
+                                      {task.completed_at ? ` · ${formatDateTime(task.completed_at)}` : ""}
+                                    </p>
+                                  )}
+
+                                  {(beforePhoto || afterPhoto) && (
+                                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                      <TaskPhotoPreview label="Before" url={beforePhoto} />
+                                      <TaskPhotoPreview label="After" url={afterPhoto} />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {tasks.length === 0 && (
+                          <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                            This checklist has no task items yet.
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {checklists.length === 0 && (
                   <p className="text-slate-500">No assigned checklist yet.</p>
@@ -850,6 +968,80 @@ function omitKeys<T extends Record<string, any>>(value: T, keys: string[]) {
 function isSchemaCacheError(error: any) {
   const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`;
   return message.toLowerCase().includes("schema cache");
+}
+
+function getChecklistProgress(checklist: any) {
+  const tasks = checklist?.yacht_checklist_items || [];
+  const total = tasks.length;
+  const done = tasks.filter((task: any) => task.completed).length;
+  return {
+    total,
+    done,
+    percent: total ? Math.round((done / total) * 100) : 0,
+  };
+}
+
+function getChecklistFrequency(checklist: any) {
+  return checklist?.frequency || checklist?.items?.frequency || "";
+}
+
+function getChecklistNote(checklist: any) {
+  return checklist?.captain_note || checklist?.items?.captain_note || "";
+}
+
+function parseTaskNote(task: any) {
+  if (!task?.note) return {};
+  if (typeof task.note === "object") return task.note;
+
+  try {
+    return JSON.parse(task.note);
+  } catch {
+    return {};
+  }
+}
+
+function getTaskPhoto(task: any, type: "before" | "after") {
+  const note = parseTaskNote(task);
+  return (
+    task?.[`${type}_photo_url`] ||
+    note?.[`${type}_photo_url`] ||
+    note?.photos?.[type] ||
+    ""
+  );
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return "";
+  return new Date(value).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function TaskPhotoPreview({ label, url }: { label: string; url?: string }) {
+  if (!url) return null;
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white"
+    >
+      <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-500">
+        <Camera className="h-3.5 w-3.5 text-cyan-700" />
+        {label}
+      </div>
+      <img
+        src={url}
+        alt={`${label} task photo`}
+        className="h-28 w-full object-cover transition group-hover:scale-[1.02]"
+      />
+    </a>
+  );
 }
 
 function Stat({ title, value, icon }: any) {

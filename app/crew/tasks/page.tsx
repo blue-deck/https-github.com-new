@@ -195,27 +195,57 @@ export default function CrewTasksPage() {
     const safeName = file.name.replaceAll(" ", "-").toLowerCase();
     const filePath = `${activeChecklist.yacht_id}/${task.id}/${type}-${Date.now()}-${safeName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("task-photos")
-      .upload(filePath, file);
+    const upload = await uploadTaskFile(filePath, file);
 
-    if (uploadError) {
+    if (upload.error || !upload.publicUrl) {
       setUploadingPhoto("");
-      alert(uploadError.message);
+      alert(upload.error || "Photo could not be uploaded.");
       return;
     }
 
-    const { data } = supabase.storage.from("task-photos").getPublicUrl(filePath);
+    const note = {
+      ...parseTaskNote(task),
+      [`${type}_photo_url`]: upload.publicUrl,
+    };
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("yacht_checklist_items")
-      .update({
-        [type === "before" ? "before_photo_url" : "after_photo_url"]: data.publicUrl,
-      })
+      .update({ note: JSON.stringify(note) })
       .eq("id", task.id);
+
+    if (updateError) {
+      setUploadingPhoto("");
+      alert(updateError.message);
+      return;
+    }
 
     await loadTasks();
     setUploadingPhoto("");
+  }
+
+  async function uploadTaskFile(filePath: string, file: File) {
+    const buckets = ["task-photos", "crew-portfolio"];
+    let lastError = "";
+
+    for (const bucket of buckets) {
+      const { error } = await supabase.storage.from(bucket).upload(filePath, file);
+
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+        return { publicUrl: data.publicUrl, error: "" };
+      }
+
+      lastError = error.message;
+      if (error.message !== "Bucket not found") break;
+    }
+
+    return {
+      publicUrl: "",
+      error:
+        lastError === "Bucket not found"
+          ? "Photo storage is not ready yet. Please run the Supabase storage SQL."
+          : lastError,
+    };
   }
 
   useEffect(() => {
@@ -582,13 +612,13 @@ export default function CrewTasksPage() {
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
                       <PhotoBox
                         label="Before photo"
-                        url={task.before_photo_url}
+                        url={getTaskPhoto(task, "before")}
                         uploading={uploadingPhoto === `before-${task.id}`}
                         onUpload={(file) => uploadTaskPhoto(task, file, "before")}
                       />
                       <PhotoBox
                         label="After photo"
-                        url={task.after_photo_url}
+                        url={getTaskPhoto(task, "after")}
                         uploading={uploadingPhoto === `after-${task.id}`}
                         onUpload={(file) => uploadTaskPhoto(task, file, "after")}
                       />
@@ -650,4 +680,25 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
 
 function getCaptainNote(checklist: any) {
   return checklist?.captain_note || checklist?.items?.captain_note || "";
+}
+
+function parseTaskNote(task: any) {
+  if (!task?.note) return {};
+  if (typeof task.note === "object") return task.note;
+
+  try {
+    return JSON.parse(task.note);
+  } catch {
+    return {};
+  }
+}
+
+function getTaskPhoto(task: any, type: "before" | "after") {
+  const note = parseTaskNote(task);
+  return (
+    task?.[`${type}_photo_url`] ||
+    note?.[`${type}_photo_url`] ||
+    note?.photos?.[type] ||
+    ""
+  );
 }
