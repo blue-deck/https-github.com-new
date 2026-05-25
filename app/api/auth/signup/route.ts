@@ -5,6 +5,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const fallbackSupabaseUrl = "https://onftggrmmpvvwgxxzywo.supabase.co";
 const productionSiteUrl = "https://bluedeck.app";
+const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
 
 function normalizeSupabaseUrl(url?: string) {
   if (!url || url.includes("onftgqrmmpvvwgxxzywo")) return fallbackSupabaseUrl;
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     options: {
-      emailRedirectTo: `${productionSiteUrl}/dashboard`,
+      emailRedirectTo: confirmationRedirectUrl,
       data: {
         full_name: body.fullName || email,
         phone: body.phone || "",

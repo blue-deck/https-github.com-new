@@ -9,6 +9,7 @@ import { supabase } from "../lib/supabase";
 
 type AuthMode = "login" | "signup";
 const productionSiteUrl = "https://bluedeck.app";
+const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -123,7 +124,7 @@ export default function LoginPage() {
       setLoading(false);
 
       if (result.needsEmailConfirmation) {
-        setNotice("Account created. Please check your email inbox and confirm your BlueDeck account, then login.");
+        setNotice("Account created. Please check your email and confirm your BlueDeck account, then login.");
         setMode("login");
         return;
       }
@@ -145,7 +146,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: `${productionSiteUrl}/dashboard` },
+      options: { emailRedirectTo: confirmationRedirectUrl },
     });
 
     setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
@@ -231,7 +232,7 @@ export default function LoginPage() {
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {mode === "login"
               ? "Login to continue to My Dashboard."
-              : "Use your real email and phone. Email confirmation is handled by Supabase when enabled in your project."}
+              : "Use your real email and phone. BlueDeck will send a secure confirmation email."}
           </p>
 
           <div className="mt-6 space-y-4">
@@ -330,7 +331,7 @@ export default function LoginPage() {
 
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
-              Email confirmation emails are sent by Supabase when email confirmations are enabled in the Supabase Auth settings. SMS login requires a configured SMS provider in Supabase.
+              BlueDeck protects new accounts with email confirmation. If the email does not arrive, check spam or resend the confirmation email.
             </div>
           </div>
         </form>
