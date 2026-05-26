@@ -130,20 +130,15 @@ export default function AlertsPage() {
     for (const document of documentData) {
       const level = calculateLevel(document.expiry_date);
 
-      const { error } = await supabase.from("expiry_alerts").upsert(
-        {
-          yacht_id: yachtId,
-          source_type: "document",
-          source_id: document.id,
-          title: document.title || document.file_name || "Untitled document",
-          expiry_date: document.expiry_date,
-          alert_level: level,
-          status: "active",
-        },
-        {
-          onConflict: "source_id",
-        }
-      );
+      const { error } = await saveDocumentAlert({
+        yacht_id: yachtId,
+        source_type: "document",
+        source_id: document.id,
+        title: document.title || document.file_name || "Untitled document",
+        expiry_date: document.expiry_date,
+        alert_level: level,
+        status: "active",
+      });
 
       if (error) {
         alert(error.message);
@@ -153,6 +148,26 @@ export default function AlertsPage() {
 
     await fetchData();
     alert("Document alerts synced.");
+  }
+
+  async function saveDocumentAlert(payload: Record<string, string>) {
+    const existing = await supabase
+      .from("expiry_alerts")
+      .select("id")
+      .eq("yacht_id", payload.yacht_id)
+      .eq("source_id", payload.source_id)
+      .limit(1);
+
+    if (existing.error) return { error: existing.error };
+
+    if (existing.data?.[0]?.id) {
+      return supabase
+        .from("expiry_alerts")
+        .update(payload)
+        .eq("id", existing.data[0].id);
+    }
+
+    return supabase.from("expiry_alerts").insert(payload);
   }
 
   async function markResolved(id: string) {

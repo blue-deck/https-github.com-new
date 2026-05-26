@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
+import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
@@ -389,7 +390,7 @@ export default function ProfilePage() {
     }
 
     await Promise.all([
-      supabase.from("profiles").upsert({
+      saveBaseProfileById(supabase, {
         id: user.id,
         email: profile.email || user.email,
         full_name: profile.full_name || user.email,
@@ -499,7 +500,7 @@ export default function ProfilePage() {
     const { error } = await supabase.storage.from(bucket).upload(path, file);
     if (error) {
       setUploading("");
-      alert(error.message === "Bucket not found" ? "Photo storage is not ready yet. Please run the Supabase storage SQL I sent you." : error.message);
+      alert(error.message === "Bucket not found" ? "File storage is not ready yet. Please create the required BlueDeck storage bucket in Supabase." : error.message);
       return "";
     }
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);

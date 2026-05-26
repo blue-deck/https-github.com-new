@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await Promise.all([
-        adminSupabase.from("profiles").upsert({
+        saveBaseProfileById(adminSupabase, {
           id: data.user.id,
           email,
           full_name: fullName,

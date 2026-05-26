@@ -63,7 +63,8 @@ export default function CrewTasksPage() {
       .from("crew_profiles")
       .select("*")
       .eq("email", targetEmail)
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (profileError || !crewProfile) {
       alert("Crew profile not found.");
@@ -176,16 +177,18 @@ export default function CrewTasksPage() {
   async function toggleTask(task: any) {
     setUpdatingTaskId(task.id);
 
-    await supabase
-      .from("yacht_checklist_items")
-      .update({
-        completed: !task.completed,
-        completed_at: !task.completed ? new Date().toISOString() : null,
-        completed_by: profile?.email || email,
-      })
-      .eq("id", task.id);
+    const { error } = await updateTaskWithFallback(task.id, {
+      completed: !task.completed,
+      completed_at: !task.completed ? new Date().toISOString() : null,
+      completed_by: profile?.email || email,
+    });
 
-    await loadTasks();
+    if (error) {
+      alert(error.message);
+    } else {
+      await loadTasks();
+    }
+
     setUpdatingTaskId("");
   }
 
@@ -208,10 +211,12 @@ export default function CrewTasksPage() {
       [`${type}_photo_url`]: upload.publicUrl,
     };
 
-    const { error: updateError } = await supabase
-      .from("yacht_checklist_items")
-      .update({ note: JSON.stringify(note) })
-      .eq("id", task.id);
+    const { error: updateError } = await updateTaskPhotoWithFallback(
+      task.id,
+      type,
+      upload.publicUrl,
+      note
+    );
 
     if (updateError) {
       setUploadingPhoto("");
@@ -243,9 +248,60 @@ export default function CrewTasksPage() {
       publicUrl: "",
       error:
         lastError === "Bucket not found"
-          ? "Photo storage is not ready yet. Please run the Supabase storage SQL."
+          ? "Photo storage is not ready yet. Please create the task-photos bucket in Supabase Storage."
           : lastError,
     };
+  }
+
+  async function updateTaskWithFallback(taskId: string, payload: Record<string, unknown>) {
+    const variants = [
+      payload,
+      omitKeys(payload, ["completed_at", "completed_by"]),
+    ];
+
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase
+        .from("yacht_checklist_items")
+        .update(variant)
+        .eq("id", taskId);
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
+  }
+
+  async function updateTaskPhotoWithFallback(
+    taskId: string,
+    type: "before" | "after",
+    publicUrl: string,
+    note: Record<string, unknown>
+  ) {
+    const variants = [
+      { note: JSON.stringify(note) },
+      { [`${type}_photo_url`]: publicUrl },
+    ];
+
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase
+        .from("yacht_checklist_items")
+        .update(variant)
+        .eq("id", taskId);
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
   }
 
   useEffect(() => {
@@ -272,15 +328,39 @@ export default function CrewTasksPage() {
       return;
     }
 
-    await supabase
-      .from("yacht_checklists")
-      .update({
-        status: "completed",
-        completed_at: new Date().toISOString(),
-      })
-      .eq("id", checklist.id);
+    const { error } = await updateChecklistWithFallback(checklist.id, {
+      status: "completed",
+      completed_at: new Date().toISOString(),
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
     await loadTasks();
+  }
+
+  async function updateChecklistWithFallback(
+    checklistId: string,
+    payload: Record<string, unknown>
+  ) {
+    const variants = [payload, omitKeys(payload, ["completed_at"])];
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase
+        .from("yacht_checklists")
+        .update(variant)
+        .eq("id", checklistId);
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
   }
 
   return (
@@ -701,4 +781,15 @@ function getTaskPhoto(task: any, type: "before" | "after") {
     note?.photos?.[type] ||
     ""
   );
+}
+
+function omitKeys<T extends Record<string, unknown>>(value: T, keys: string[]) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([key]) => !keys.includes(key))
+  );
+}
+
+function isSchemaCacheError(error: any) {
+  const message = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`;
+  return message.toLowerCase().includes("schema cache");
 }

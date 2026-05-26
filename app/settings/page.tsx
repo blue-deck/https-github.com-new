@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
+import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
@@ -142,7 +143,7 @@ export default function SettingsPage() {
     }
 
     const [{ error: baseError }, { error: crewError }] = await Promise.all([
-      supabase.from("profiles").upsert({
+      saveBaseProfileById(supabase, {
         id: user.id,
         email,
         full_name: fullName,

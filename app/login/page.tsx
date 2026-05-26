@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Ship, UserRound } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
+import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
@@ -39,7 +40,7 @@ export default function LoginPage() {
   }, []);
 
   async function createProfiles(userId: string, userEmail: string) {
-    await supabase.from("profiles").upsert({
+    await saveBaseProfileById(supabase, {
       id: userId,
       email: userEmail,
       full_name: fullName || userEmail,

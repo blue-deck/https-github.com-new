@@ -255,7 +255,7 @@ export default function CrewPage() {
   }, []);
 
   async function loadData(silent = false) {
-    const { data: crewData, error: crewError } = await supabase
+    let crewResponse = await supabase
       .from("yacht_crew_memberships")
       .select(`
         *,
@@ -273,6 +273,25 @@ export default function CrewPage() {
       `)
       .eq("yacht_id", yachtId)
       .order("created_at", { ascending: false });
+
+    if (isSchemaCacheError(crewResponse.error)) {
+      crewResponse = await supabase
+        .from("yacht_crew_memberships")
+        .select(`
+          *,
+          crew_profiles (
+            id,
+            email,
+            full_name,
+            phone,
+            nationality
+          )
+        `)
+        .eq("yacht_id", yachtId)
+        .order("created_at", { ascending: false });
+    }
+
+    const { data: crewData, error: crewError } = crewResponse;
 
     if (crewError) {
       if (!silent) alert(crewError.message);
@@ -356,15 +375,11 @@ export default function CrewPage() {
             .eq("id", profile.id);
         }
       } else {
-        const response = await supabase
-          .from("crew_profiles")
-          .insert({
-            email: normalizedInviteEmail,
-            full_name: fullName,
-            public_crew_id: crypto.randomUUID().slice(0, 8).toUpperCase(),
-          })
-          .select()
-          .single();
+        const response = await insertCrewProfile({
+          email: normalizedInviteEmail,
+          full_name: fullName,
+          public_crew_id: crypto.randomUUID().slice(0, 8).toUpperCase(),
+        });
 
         profile = response.data;
         profileError = response.error;
@@ -390,7 +405,7 @@ export default function CrewPage() {
         : window.location.origin;
     const inviteLink = `${inviteOrigin}/invitations/${token}`;
 
-    const { error: inviteError } = await supabase.from("crew_invitations").insert({
+    const { error: inviteError } = await insertCrewInvitation({
       yacht_id: yachtId,
       crew_profile_id: profile.id,
       invited_email: inviteEmail || profile.email,
@@ -431,6 +446,47 @@ export default function CrewPage() {
     loadData();
 
     alert("Crew invitation created. The crew member will see it inside My YachtOS.");
+  }
+
+  async function insertCrewProfile(payload: Record<string, any>) {
+    const variants = [payload, omitKeys(payload, ["public_crew_id"])];
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase
+        .from("crew_profiles")
+        .insert(variant)
+        .select()
+        .single();
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
+  }
+
+  async function insertCrewInvitation(payload: Record<string, any>) {
+    const variants = [
+      payload,
+      omitKeys(payload, ["invite_link"]),
+      omitKeys(payload, ["public_crew_id"]),
+      omitKeys(payload, ["invite_link", "public_crew_id"]),
+    ];
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase.from("crew_invitations").insert(variant);
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
   }
 
   function toggleTemplate(key: string) {
@@ -564,7 +620,7 @@ export default function CrewPage() {
 
     const member = crew.find((item) => item.id === selectedCrew);
 
-    const { error } = await supabase.from("yacht_contracts").insert({
+    const { error } = await insertContract({
       yacht_id: yachtId,
       crew_profile_id: member?.crew_profile_id,
       membership_id: selectedCrew,
@@ -580,6 +636,27 @@ export default function CrewPage() {
 
     setContractText("");
     alert("Contract sent for mobile signature.");
+  }
+
+  async function insertContract(payload: Record<string, any>) {
+    const variants = [
+      payload,
+      omitKeys(payload, ["sent_at"]),
+      omitKeys(payload, ["membership_id"]),
+      omitKeys(payload, ["sent_at", "membership_id"]),
+    ];
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase.from("yacht_contracts").insert(variant);
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
   }
 
   return (

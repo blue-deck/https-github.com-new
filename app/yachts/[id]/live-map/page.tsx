@@ -76,7 +76,7 @@ export default function LiveMapPage() {
           </h1>
 
           <p className="mt-4 max-w-4xl text-2xl text-gray-400">
-            This screen shows only real browser GPS data. No demo vessels. No fake AIS.
+            This screen shows only verified browser GPS data from the active device.
           </p>
 
           <button
