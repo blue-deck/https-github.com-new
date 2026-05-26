@@ -49,26 +49,25 @@ const trustPoints = [
 export default function HomePage() {
   return (
     <main className="bd-ocean-shell bd-home-shell min-h-screen overflow-hidden text-[#061831]">
-      <section className="relative min-h-screen">
-        <div className="bd-ocean-content mx-auto flex min-h-screen max-w-[1500px] flex-col justify-between px-5 py-6 sm:px-8 lg:px-12">
-          <header className="flex items-center justify-between">
+      <header className="bd-home-header border-b border-cyan-100/10 bg-[#020817]/96 shadow-2xl shadow-slate-950/20 backdrop-blur-2xl">
+        <div className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-12">
             <BlueDeckLogoLink
               priority
-              className="h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+              className="h-11 w-36 rounded-none border-0 bg-transparent shadow-none sm:h-12 sm:w-44"
               imageClassName="object-contain p-0"
             />
 
-            <nav className="hidden items-center gap-8 rounded-full border border-[#061831]/10 bg-white/32 px-8 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#061831] backdrop-blur-xl lg:flex">
-              <a href="#platform" className="bd-focus hover:text-cyan-700">
+            <nav className="hidden items-center gap-8 rounded-full border border-white/10 bg-white/6 px-8 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/78 backdrop-blur-xl lg:flex">
+              <a href="#platform" className="bd-focus hover:text-cyan-200">
                 Yachts
               </a>
-              <a href="#roles" className="bd-focus hover:text-cyan-700">
+              <a href="#roles" className="bd-focus hover:text-cyan-200">
                 Services
               </a>
-              <a href="#trust" className="bd-focus hover:text-cyan-700">
+              <a href="#trust" className="bd-focus hover:text-cyan-200">
                 Management
               </a>
-              <a href="#trust" className="bd-focus hover:text-cyan-700">
+              <a href="#trust" className="bd-focus hover:text-cyan-200">
                 Trust
               </a>
             </nav>
@@ -76,20 +75,23 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="bd-focus rounded-full border border-[#061831]/15 bg-white/30 px-5 py-3 text-sm font-bold text-[#061831] backdrop-blur-xl transition hover:bg-white/70"
+                className="bd-focus rounded-full border border-white/12 bg-white/8 px-5 py-3 text-sm font-bold text-white/90 backdrop-blur-xl transition hover:bg-white/16"
               >
                 Login
               </Link>
               <Link
                 href="/login?mode=signup"
-                className="bd-focus rounded-full bg-[#061831] px-5 py-3 text-sm font-bold text-white shadow-xl shadow-cyan-950/15 transition hover:bg-cyan-700"
+                className="bd-focus rounded-full bg-cyan-200 px-5 py-3 text-sm font-bold text-[#020817] shadow-xl shadow-cyan-400/15 transition hover:bg-white"
               >
                 Sign up
               </Link>
             </div>
-          </header>
+        </div>
+      </header>
 
-          <div className="flex items-center pb-20 pt-24 lg:min-h-[72vh]">
+      <section className="relative min-h-[calc(100vh-80px)]">
+        <div className="bd-ocean-content mx-auto flex min-h-[calc(100vh-80px)] max-w-[1500px] flex-col justify-center px-5 sm:px-8 lg:px-12">
+          <div className="flex items-center pb-20 pt-16 lg:min-h-[72vh]">
             <motion.div
               initial={{ opacity: 0, y: 34 }}
               animate={{ opacity: 1, y: 0 }}

@@ -139,6 +139,12 @@ textarea:-webkit-autofill:focus {
   z-index: 1;
 }
 
+.bd-home-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
 .bd-glass-card {
   border: 1px solid var(--ocean-line);
   background: var(--ocean-card);
