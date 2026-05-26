@@ -2,18 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ElementType } from "react";
 import { motion } from "framer-motion";
 import {
   Anchor,
-  Bell,
   ChevronRight,
-  Compass,
   Crown,
   FileLock2,
-  Gauge,
   Radio,
-  ShieldCheck,
   Ship,
   Sparkles,
   Users,
@@ -94,23 +89,32 @@ export default function HomePage() {
               </a>
             </nav>
 
-            <Link
-              href="/login"
-              className="bd-focus rounded-full bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#020817] transition hover:bg-[#22d3ee]"
-            >
-              Enter
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="bd-focus rounded-full border border-white/15 bg-white/[0.08] px-5 py-3 text-sm font-bold text-white backdrop-blur-xl transition hover:bg-white/[0.14]"
+              >
+                Login
+              </Link>
+              <Link
+                href="/login?mode=signup"
+                className="bd-focus rounded-full bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#020817] transition hover:bg-[#22d3ee]"
+              >
+                Sign up
+              </Link>
+            </div>
           </header>
 
-          <div className="grid items-end gap-12 pb-12 pt-24 lg:grid-cols-[1.05fr_0.95fr] lg:pb-20">
+          <div className="flex items-end pb-12 pt-24 lg:pb-20">
             <motion.div
               initial={{ opacity: 0, y: 34 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
+              className="max-w-4xl"
             >
               <p className="bd-kicker">Private Superyacht Operating System</p>
 
-              <h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[1.02] text-white sm:text-7xl lg:text-8xl">
+              <h1 className="mt-5 text-5xl font-semibold leading-[1.02] text-white sm:text-7xl lg:text-8xl">
                 BlueDeck
               </h1>
 
@@ -122,57 +126,19 @@ export default function HomePage() {
 
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/login"
+                  href="/login?mode=signup"
                   className="bd-focus inline-flex items-center justify-center gap-2 rounded-full bg-[#22d3ee] px-7 py-4 font-bold text-[#020817] transition hover:bg-[#eef7ff]"
                 >
                   Create Account
                   <ChevronRight className="h-5 w-5" />
                 </Link>
                 <Link
-                  href="/yachts"
+                  href="/login"
                   className="bd-focus inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-7 py-4 font-bold text-white backdrop-blur-xl transition hover:bg-white/[0.14]"
                 >
-                  Fleet Workspace
+                  Login
                   <Anchor className="h-5 w-5" />
                 </Link>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.85, delay: 0.15 }}
-              className="bd-panel rounded-3xl p-5 sm:p-6"
-            >
-              <div className="flex items-start justify-between gap-5 border-b border-white/10 pb-5">
-                <div>
-                  <p className="text-sm text-[#aeb8c8]">HELIOPHILIA</p>
-                  <h2 className="mt-1 text-2xl font-semibold text-white">
-                    Yacht Readiness
-                  </h2>
-                </div>
-                <span className="rounded-full border border-[#66d19e]/30 bg-[#66d19e]/12 px-3 py-1 text-sm font-semibold text-[#91e7ba]">
-                  Private
-                </span>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Metric icon={Compass} label="Position" value="Marina Ready" />
-                <Metric icon={Gauge} label="Systems" value="98%" />
-                <Metric icon={Bell} label="Critical Alerts" value="0" />
-                <Metric icon={ShieldCheck} label="Privacy" value="Active" />
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-white/10 bg-black/25 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-[#aeb8c8]">Next Voyage</p>
-                  <p className="text-sm font-semibold text-[#22d3ee]">
-                    Ready for owner approval
-                  </p>
-                </div>
-                <div className="mt-4 h-2 rounded-full bg-white/10">
-                  <div className="h-2 w-[82%] rounded-full bg-[#22d3ee]" />
-                </div>
               </div>
             </motion.div>
           </div>
@@ -242,7 +208,7 @@ export default function HomePage() {
           </h2>
         </div>
         <Link
-          href="/login"
+          href="/login?mode=signup"
           className="bd-focus inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 font-bold text-[#020817] transition hover:bg-[#22d3ee]"
         >
           Join BlueDeck
@@ -250,23 +216,5 @@ export default function HomePage() {
         </Link>
       </section>
     </main>
-  );
-}
-
-function Metric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: ElementType;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-      <Icon className="h-5 w-5 text-[#22d3ee]" />
-      <p className="mt-4 text-sm text-[#aeb8c8]">{label}</p>
-      <p className="mt-1 text-xl font-semibold text-white">{value}</p>
-    </div>
   );
 }

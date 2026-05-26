@@ -29,6 +29,9 @@ export default function LoginPage() {
 
   useEffect(() => {
     async function redirectIfLoggedIn() {
+      const requestedMode = new URLSearchParams(window.location.search).get("mode");
+      if (requestedMode === "signup") setMode("signup");
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -195,7 +198,20 @@ export default function LoginPage() {
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(238,247,248,0.86),rgba(255,255,255,0.96))]" />
 
-      <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
+      <Link
+        href="/"
+        className="bd-focus absolute left-5 top-5 z-10 flex items-center gap-3 rounded-full border border-white/70 bg-white/85 px-4 py-3 text-slate-950 shadow-xl shadow-cyan-950/10 backdrop-blur-xl transition hover:border-cyan-300 hover:bg-white sm:left-8 sm:top-8"
+      >
+        <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/40 bg-cyan-50 text-cyan-700">
+          <Ship className="h-5 w-5" />
+        </span>
+        <span>
+          <span className="block text-sm font-black leading-none">BlueDeck</span>
+          <span className="mt-1 block text-xs font-semibold text-slate-500">Home</span>
+        </span>
+      </Link>
+
+      <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-5 pb-8 pt-28 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
           <p className="bd-kicker">BlueDeck YachtOS</p>
           <h1 className="mt-5 max-w-3xl text-6xl font-semibold leading-tight text-slate-950">
