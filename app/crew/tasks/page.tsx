@@ -363,14 +363,14 @@ export default function CrewTasksPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] text-slate-900">
-      <section className="border-b border-white/70 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-xl">
+    <main className="bd-ocean-shell min-h-screen text-slate-900">
+      <section className="bd-ocean-topbar px-6 py-5">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <BlueDeckLogoLink
               href="/dashboard"
-              className="h-14 w-36 rounded-2xl sm:w-44"
-              imageClassName="p-1"
+              className="h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+              imageClassName="object-contain p-0"
             />
 
             <div>
@@ -385,9 +385,9 @@ export default function CrewTasksPage() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[390px_1fr]">
+      <div className="bd-ocean-content mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[390px_1fr]">
         <aside className="space-y-6">
-          <div className="rounded-[34px] border border-slate-200 bg-white/80 p-6 shadow-2xl">
+          <div className="bd-glass-card-strong rounded-[34px] p-6">
             <div className="flex items-center gap-3">
               <Mail className="h-6 w-6 text-cyan-700" />
               <div>
@@ -416,7 +416,7 @@ export default function CrewTasksPage() {
           </div>
 
           {profile && (
-            <div className="rounded-[34px] border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-blue-900/10 p-6">
+            <div className="bd-glass-card rounded-[34px] p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
                   <UserRound className="h-8 w-8 text-cyan-700" />
@@ -454,7 +454,7 @@ export default function CrewTasksPage() {
           )}
 
           {checklists.length > 0 && (
-            <div className="rounded-[34px] border border-slate-200 bg-white/80 p-4">
+            <div className="bd-glass-card rounded-[34px] p-4">
               <p className="px-2 pb-3 text-sm font-semibold text-cyan-700">
                 Assigned Checklists
               </p>
@@ -502,7 +502,7 @@ export default function CrewTasksPage() {
         </aside>
 
         <section className="space-y-6">
-          <div className="rounded-[40px] border border-slate-200 bg-gradient-to-br from-white/[0.06] to-white/[0.02] p-8">
+          <div className="bd-glass-card-strong rounded-[40px] p-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
               <div>
                 <p className="flex items-center gap-2 text-cyan-700">
@@ -510,7 +510,7 @@ export default function CrewTasksPage() {
                   Crew Work Center
                 </p>
 
-                <h2 className="mt-3 text-5xl font-black tracking-tight">
+                <h2 className="bd-serif mt-3 text-5xl font-normal tracking-tight text-[#071f3c]">
                   My YachtOS Work Center
                 </h2>
 
@@ -531,7 +531,7 @@ export default function CrewTasksPage() {
           </div>
 
           {!profile && (
-            <div className="rounded-[34px] border border-slate-200 bg-white/80 p-10 text-center">
+            <div className="bd-glass-card rounded-[34px] p-10 text-center">
               <ShieldCheck className="mx-auto h-14 w-14 text-cyan-700" />
               <h3 className="mt-4 text-3xl font-black">Enter your crew email</h3>
               <p className="mt-3 text-slate-500">
@@ -541,7 +541,7 @@ export default function CrewTasksPage() {
           )}
 
           {profile && !activeChecklist && invitations.length === 0 && (
-            <div className="rounded-[34px] border border-slate-200 bg-white/80 p-10 text-center">
+            <div className="bd-glass-card rounded-[34px] p-10 text-center">
               <ClipboardCheck className="mx-auto h-14 w-14 text-cyan-700" />
               <h3 className="mt-4 text-3xl font-black">No assigned checklist yet</h3>
               <p className="mt-3 text-slate-500">
@@ -551,7 +551,7 @@ export default function CrewTasksPage() {
           )}
 
           {profile && invitations.length > 0 && (
-            <div className="overflow-hidden rounded-[34px] border border-slate-200 bg-white/85 shadow-2xl shadow-cyan-950/10">
+            <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
               <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
               <div className="p-7">
                 <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
@@ -582,7 +582,7 @@ export default function CrewTasksPage() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
-                          <BlueDeckMark className="h-12 w-16 shrink-0 rounded-2xl shadow-black/15" imageClassName="p-1" />
+                          <BlueDeckMark className="h-12 w-16 shrink-0 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
                           <div>
                             <h4 className="text-xl font-black text-slate-950">
                               YachtOS Invitation
@@ -620,7 +620,7 @@ export default function CrewTasksPage() {
           )}
 
           {activeChecklist && (
-            <div className="rounded-[40px] border border-slate-200 bg-white/80 p-8">
+            <div className="bd-glass-card-strong rounded-[40px] p-8">
               <div className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 md:flex-row md:items-center">
                 <div>
                   <p className="text-cyan-700">
@@ -726,7 +726,7 @@ function PhotoBox({
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
-      <p className="font-semibold text-gray-200">{label}</p>
+      <p className="font-semibold text-slate-700">{label}</p>
       {url && (
         <img
           src={url}

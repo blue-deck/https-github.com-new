@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
@@ -189,32 +188,23 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] text-slate-900">
-      <Image
-        src="/bluedeck-hero.png"
-        alt="Luxury yacht bridge"
-        fill
-        priority
-        className="object-cover opacity-20"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(238,247,248,0.86),rgba(255,255,255,0.96))]" />
-
+    <main className="bd-ocean-shell min-h-screen overflow-hidden text-slate-900">
       <BlueDeckLogoLink
         href="/"
         priority
-        className="absolute left-5 top-5 z-10 h-14 w-36 rounded-2xl sm:left-8 sm:top-8 sm:w-44"
-        imageClassName="p-1"
+        className="absolute left-5 top-5 z-10 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:left-8 sm:top-8 sm:w-52"
+        imageClassName="object-contain p-0"
       />
 
-      <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-5 pb-8 pt-28 lg:grid-cols-[1fr_460px] lg:px-8">
+      <div className="bd-ocean-content mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-5 pb-8 pt-28 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
           <p className="bd-kicker">BlueDeck YachtOS</p>
-          <h1 className="mt-5 max-w-3xl text-6xl font-semibold leading-tight text-slate-950">
+          <h1 className="bd-serif mt-5 max-w-3xl text-6xl font-normal leading-tight text-[#071f3c]">
             Secure yacht profiles, documents and crew operations.
           </h1>
           <div className="mt-8 grid max-w-2xl gap-3 text-sm text-slate-700">
             {["Private crew ID and dashboard", "Professional CV and document vault", "Captain invitations, contracts and checklists"].map((item) => (
-              <div key={item} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
+              <div key={item} className="bd-glass-card flex items-center gap-3 rounded-2xl px-4 py-3">
                 <CheckCircle2 className="h-5 w-5 text-cyan-700" />
                 {item}
               </div>
@@ -227,7 +217,7 @@ export default function LoginPage() {
             event.preventDefault();
             submit();
           }}
-          className="relative w-full rounded-3xl border border-white/70 bg-white/88 p-6 shadow-2xl shadow-cyan-950/12 backdrop-blur-xl sm:p-8"
+          className="bd-glass-card-strong relative w-full rounded-[30px] p-6 sm:p-8"
         >
           <div className="flex items-center gap-3">
             <BlueDeckMark className="h-14 w-16 rounded-2xl" imageClassName="p-1" />

@@ -17,13 +17,13 @@ export const metadata: Metadata = {
     description:
       "Private superyacht operations, owner experience and captain-grade bridge intelligence in one premium interface.",
     siteName: "BlueDeck",
-    images: ["/bluedeck-hero.png"],
+    images: ["/bluedeck-ocean-hero.png"],
   },
 };
 
 export const viewport: Viewport = {
   initialScale: 1,
-  themeColor: "#020817",
+  themeColor: "#f5fbff",
 };
 
 export default function RootLayout({

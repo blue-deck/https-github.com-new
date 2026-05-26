@@ -93,19 +93,19 @@ export default function InvitationPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020817] p-8 text-white">
-        Loading invitation...
+      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+        <div className="bd-ocean-content">Loading invitation...</div>
       </main>
     );
   }
 
   if (!invite) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#020817] p-8 text-white">
-        <div className="max-w-lg rounded-[32px] border border-white/10 bg-white/5 p-8 text-center">
-          <Mail className="mx-auto h-12 w-12 text-cyan-300" />
-          <h1 className="mt-4 text-3xl font-black">Invitation not found</h1>
-          <p className="mt-3 text-gray-400">
+      <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-8 text-slate-900">
+        <div className="bd-glass-card-strong max-w-lg rounded-[32px] p-8 text-center">
+          <Mail className="mx-auto h-12 w-12 text-cyan-700" />
+          <h1 className="bd-serif mt-4 text-4xl font-normal text-[#071f3c]">Invitation not found</h1>
+          <p className="mt-3 text-slate-500">
             The invitation link may be expired or incorrect.
           </p>
         </div>
@@ -114,14 +114,14 @@ export default function InvitationPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#020817] p-5 text-white">
-      <div className="w-full max-w-xl rounded-[36px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/20 p-8">
-        <BlueDeckLogoLink href="/" className="mb-8 h-16 w-44 rounded-2xl" imageClassName="p-1" />
+    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-900">
+      <div className="bd-glass-card-strong w-full max-w-xl rounded-[36px] p-8">
+        <BlueDeckLogoLink href="/" className="mb-8 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52" imageClassName="object-contain p-0" />
         {accepted ? (
           <div className="text-center">
-            <CheckCircle2 className="mx-auto h-16 w-16 text-green-300" />
-            <h1 className="mt-5 text-4xl font-black">Invitation accepted</h1>
-            <p className="mt-4 text-gray-300">
+            <CheckCircle2 className="mx-auto h-16 w-16 text-emerald-500" />
+            <h1 className="bd-serif mt-5 text-5xl font-normal text-[#071f3c]">Invitation accepted</h1>
+            <p className="mt-4 text-slate-600">
               You are now connected to this yacht portal. Your assigned
               checklists and contracts will appear in your BlueDeck account.
             </p>
@@ -129,17 +129,17 @@ export default function InvitationPage() {
         ) : (
           <>
             <div className="flex items-center gap-4">
-              <BlueDeckMark className="h-14 w-20 shrink-0 rounded-2xl border-white/20 shadow-black/30" imageClassName="p-1" />
+              <BlueDeckMark className="h-14 w-20 shrink-0 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
               <div>
-                <p className="text-cyan-300">Yacht Crew Invitation</p>
-                <h1 className="text-3xl font-black">{invite.position}</h1>
+                <p className="text-cyan-700">Yacht Crew Invitation</p>
+                <h1 className="text-3xl font-black text-slate-950">{invite.position}</h1>
               </div>
             </div>
 
-            <div className="mt-8 rounded-2xl border border-white/10 bg-black/25 p-5">
-              <p className="text-gray-400">Department</p>
+            <div className="mt-8 rounded-2xl border border-slate-200 bg-white/65 p-5">
+              <p className="text-slate-500">Department</p>
               <p className="mt-1 text-2xl font-bold">{invite.department}</p>
-              <p className="mt-5 text-gray-400">Crew ID / email</p>
+              <p className="mt-5 text-slate-500">Crew ID / email</p>
               <p className="mt-1 text-xl">{invite.public_crew_id || invite.invited_email}</p>
             </div>
 

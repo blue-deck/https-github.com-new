@@ -93,12 +93,12 @@ export default function ConfirmAuthPage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-5 text-slate-950">
-      <div className="w-full max-w-lg rounded-[34px] border border-white/70 bg-white/90 p-8 text-center shadow-2xl shadow-cyan-950/12 backdrop-blur-xl">
+    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-950">
+      <div className="bd-glass-card-strong w-full max-w-lg rounded-[34px] p-8 text-center">
         <BlueDeckLogoLink
           href="/"
-          className="mx-auto mb-6 h-16 w-44 rounded-2xl"
-          imageClassName="p-1"
+          className="mx-auto mb-6 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+          imageClassName="object-contain p-0"
         />
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300">
           {status === "loading" && <Loader2 className="h-8 w-8 animate-spin" />}
@@ -107,7 +107,7 @@ export default function ConfirmAuthPage() {
         </div>
 
         <p className="bd-kicker mt-7">BlueDeck Account</p>
-        <h1 className="mt-3 text-4xl font-black">
+        <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">
           {status === "success" ? "Account activated" : status === "error" ? "Confirmation needs attention" : "Secure confirmation"}
         </h1>
         <p className="mt-4 leading-7 text-slate-600">{message}</p>

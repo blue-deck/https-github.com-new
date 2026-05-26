@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BlueDeckLogoLink } from "./components/BlueDeckLogo";
@@ -49,34 +48,27 @@ const trustPoints = [
 
 export default function HomePage() {
   return (
-    <main className="bd-shell min-h-screen overflow-hidden text-[#eef7ff]">
-      <section className="relative min-h-screen border-b border-white/10">
-        <Image
-          src="/bluedeck-hero-v2.png"
-          alt="Luxury superyacht bridge with digital navigation systems"
-          fill
-          priority
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,9,20,0.96)_0%,rgba(5,9,20,0.82)_38%,rgba(5,9,20,0.28)_72%,rgba(5,9,20,0.66)_100%)]" />
-        <div className="absolute inset-x-0 bottom-0 h-44 bg-[linear-gradient(180deg,rgba(5,9,20,0),#020817)]" />
-
-        <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-between px-5 py-6 sm:px-8 lg:px-10">
+    <main className="bd-ocean-shell bd-home-shell min-h-screen overflow-hidden text-[#061831]">
+      <section className="relative min-h-screen">
+        <div className="bd-ocean-content mx-auto flex min-h-screen max-w-[1500px] flex-col justify-between px-5 py-6 sm:px-8 lg:px-12">
           <header className="flex items-center justify-between">
             <BlueDeckLogoLink
               priority
-              className="h-14 w-36 rounded-2xl sm:w-44"
-              imageClassName="p-1"
+              className="h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+              imageClassName="object-contain p-0"
             />
 
-            <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1 backdrop-blur-xl md:flex">
-              <a href="#platform" className="bd-focus rounded-full px-4 py-2 text-sm text-[#d8deea] hover:bg-white/10">
-                Platform
+            <nav className="hidden items-center gap-8 rounded-full border border-[#061831]/10 bg-white/32 px-8 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-[#061831] backdrop-blur-xl lg:flex">
+              <a href="#platform" className="bd-focus hover:text-cyan-700">
+                Yachts
               </a>
-              <a href="#roles" className="bd-focus rounded-full px-4 py-2 text-sm text-[#d8deea] hover:bg-white/10">
-                Roles
+              <a href="#roles" className="bd-focus hover:text-cyan-700">
+                Services
               </a>
-              <a href="#trust" className="bd-focus rounded-full px-4 py-2 text-sm text-[#d8deea] hover:bg-white/10">
+              <a href="#trust" className="bd-focus hover:text-cyan-700">
+                Management
+              </a>
+              <a href="#trust" className="bd-focus hover:text-cyan-700">
                 Trust
               </a>
             </nav>
@@ -84,51 +76,54 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="bd-focus rounded-full border border-white/15 bg-white/[0.08] px-5 py-3 text-sm font-bold text-white backdrop-blur-xl transition hover:bg-white/[0.14]"
+                className="bd-focus rounded-full border border-[#061831]/15 bg-white/30 px-5 py-3 text-sm font-bold text-[#061831] backdrop-blur-xl transition hover:bg-white/70"
               >
                 Login
               </Link>
               <Link
                 href="/login?mode=signup"
-                className="bd-focus rounded-full bg-[#eef7ff] px-5 py-3 text-sm font-bold text-[#020817] transition hover:bg-[#22d3ee]"
+                className="bd-focus rounded-full bg-[#061831] px-5 py-3 text-sm font-bold text-white shadow-xl shadow-cyan-950/15 transition hover:bg-cyan-700"
               >
                 Sign up
               </Link>
             </div>
           </header>
 
-          <div className="flex items-end pb-12 pt-24 lg:pb-20">
+          <div className="flex items-center pb-20 pt-24 lg:min-h-[72vh]">
             <motion.div
               initial={{ opacity: 0, y: 34 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               className="max-w-4xl"
             >
-              <p className="bd-kicker">Private Superyacht Operating System</p>
-
-              <h1 className="mt-5 text-5xl font-semibold leading-[1.02] text-white sm:text-7xl lg:text-8xl">
-                BlueDeck
-              </h1>
-
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-[#d8deea] sm:text-xl">
-                A premium command platform for owners, captains and crew:
-                live bridge intelligence, yacht readiness, private owner
-                experience and operational control in one calm interface.
+              <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#526b83]">
+                Own the experience
               </p>
 
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <h1 className="bd-serif mt-7 text-5xl leading-[1.02] tracking-[-0.02em] text-[#071f3c] sm:text-6xl lg:text-7xl xl:text-8xl">
+                Manage Your Yacht.
+                <br />
+                Live Your Freedom.
+              </h1>
+
+              <p className="mt-8 max-w-xl text-lg leading-8 text-[#61758a]">
+                BlueDeck brings yacht management, crew workflows, documents,
+                contracts and readiness into one calm private command platform.
+              </p>
+
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                 <Link
                   href="/login?mode=signup"
-                  className="bd-focus inline-flex items-center justify-center gap-2 rounded-full bg-[#22d3ee] px-7 py-4 font-bold text-[#020817] transition hover:bg-[#eef7ff]"
+                  className="bd-focus inline-flex items-center justify-center gap-3 rounded-full bg-[#061831] px-8 py-4 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-2xl shadow-cyan-950/18 transition hover:bg-cyan-800"
                 >
                   Create Account
                   <ChevronRight className="h-5 w-5" />
                 </Link>
                 <Link
                   href="/login"
-                  className="bd-focus inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.08] px-7 py-4 font-bold text-white backdrop-blur-xl transition hover:bg-white/[0.14]"
+                  className="bd-focus inline-flex items-center justify-center gap-3 rounded-full border border-[#061831]/22 bg-white/18 px-8 py-4 text-xs font-bold uppercase tracking-[0.18em] text-[#061831] backdrop-blur-xl transition hover:bg-white/70"
                 >
-                  Login
+                  View Your Yacht
                   <Anchor className="h-5 w-5" />
                 </Link>
               </div>
@@ -137,15 +132,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="platform" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
+      <section id="platform" className="bd-ocean-content mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
         <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
           <div>
             <p className="bd-kicker">Platform</p>
-            <h2 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
+            <h2 className="bd-serif mt-4 text-4xl font-normal leading-tight text-[#071f3c] sm:text-6xl">
               Built around the way a private yacht actually runs.
             </h2>
           </div>
-          <p className="text-lg leading-8 text-[#aeb8c8]">
+          <p className="text-lg leading-8 text-[#61758a]">
             BlueDeck separates the experience by role, keeps the daily view
             simple, and brings advanced modules one level deeper. The result is
             less noise for owners, faster action for crew and clearer control
@@ -158,50 +153,50 @@ export default function HomePage() {
             const Icon = area.icon;
 
             return (
-              <article key={area.title} className="bd-panel-soft rounded-2xl p-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#22d3ee]/15 text-[#22d3ee]">
+              <article key={area.title} className="bd-glass-card rounded-[28px] p-6 transition hover:-translate-y-1 hover:bg-white/90">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200 bg-white/70 text-cyan-700">
                   <Icon className="h-6 w-6" />
                 </div>
-                <h3 className="mt-6 text-xl font-semibold text-white">
+                <h3 className="mt-6 text-xl font-semibold text-[#071f3c]">
                   {area.title}
                 </h3>
-                <p className="mt-3 leading-7 text-[#aeb8c8]">{area.text}</p>
+                <p className="mt-3 leading-7 text-[#61758a]">{area.text}</p>
               </article>
             );
           })}
         </div>
       </section>
 
-      <section id="trust" className="border-y border-white/10 bg-white/[0.025]">
+      <section id="trust" className="bd-ocean-content border-y border-[#061831]/10 bg-white/30 backdrop-blur">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
           <div>
             <p className="bd-kicker">Trust Layer</p>
-            <h2 className="mt-4 text-4xl font-semibold leading-tight text-white sm:text-5xl">
+            <h2 className="bd-serif mt-4 text-4xl font-normal leading-tight text-[#071f3c] sm:text-6xl">
               Luxury should feel effortless. Operations should be traceable.
             </h2>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             {trustPoints.map((point) => (
-              <div key={point} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-4">
-                <FileLock2 className="h-5 w-5 text-[#22d3ee]" />
-                <span className="font-medium text-[#eef7ff]">{point}</span>
+              <div key={point} className="flex items-center gap-3 rounded-2xl border border-[#061831]/10 bg-white/60 p-4 shadow-sm backdrop-blur">
+                <FileLock2 className="h-5 w-5 text-cyan-700" />
+                <span className="font-medium text-[#071f3c]">{point}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center lg:px-10">
+      <section className="bd-ocean-content mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center lg:px-10">
         <div>
           <p className="bd-kicker">BlueDeck YachtOS</p>
-          <h2 className="mt-3 text-3xl font-semibold text-white">
+          <h2 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c]">
             Ready for real captain, owner and crew workflows.
           </h2>
         </div>
         <Link
           href="/login?mode=signup"
-          className="bd-focus inline-flex items-center justify-center gap-2 rounded-full bg-white px-7 py-4 font-bold text-[#020817] transition hover:bg-[#22d3ee]"
+          className="bd-focus inline-flex items-center justify-center gap-2 rounded-full bg-[#061831] px-7 py-4 font-bold text-white shadow-xl shadow-cyan-950/16 transition hover:bg-cyan-800"
         >
           Join BlueDeck
           <Sparkles className="h-5 w-5" />

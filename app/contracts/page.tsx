@@ -72,20 +72,20 @@ export default function ContractsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020817] p-8 text-white">
-        Loading contracts...
+      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+        <div className="bd-ocean-content">Loading contracts...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] px-5 py-8 text-white sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-5xl">
-        <header className="rounded-[32px] border border-cyan-500/20 bg-cyan-500/10 p-8">
-          <BlueDeckLogoLink href="/dashboard" className="mb-7 h-16 w-44 rounded-2xl" imageClassName="p-1" />
+    <main className="bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
+      <div className="bd-ocean-content mx-auto max-w-5xl">
+        <header className="bd-glass-card-strong rounded-[34px] p-8">
+          <BlueDeckLogoLink href="/dashboard" className="mb-7 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52" imageClassName="object-contain p-0" />
           <p className="text-cyan-300">My Contracts</p>
-          <h1 className="mt-3 text-5xl font-black">Mobile Signature</h1>
-          <p className="mt-4 max-w-2xl text-gray-300">
+          <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">Mobile Signature</h1>
+          <p className="mt-4 max-w-2xl text-slate-600">
             Review yacht contracts assigned by captains and sign them inside
             your BlueDeck account.
           </p>
@@ -93,14 +93,14 @@ export default function ContractsPage() {
 
         <div className="mt-8 space-y-6">
           {contracts.map((contract) => (
-            <article key={contract.id} className="rounded-[28px] border border-white/10 bg-white/5 p-6">
+            <article key={contract.id} className="bd-glass-card rounded-[28px] p-6">
               <div className="flex items-start justify-between gap-5">
                 <div>
                   <div className="flex items-center gap-3">
                     <FileSignature className="h-6 w-6 text-cyan-300" />
-                    <h2 className="text-2xl font-black">Yacht Contract</h2>
+                    <h2 className="text-2xl font-black text-slate-950">Yacht Contract</h2>
                   </div>
-                  <p className="mt-2 text-sm text-gray-400">
+                  <p className="mt-2 text-sm text-slate-500">
                     Status: {contract.status}
                   </p>
                 </div>
@@ -112,7 +112,7 @@ export default function ContractsPage() {
                 )}
               </div>
 
-              <pre className="mt-6 whitespace-pre-wrap rounded-2xl border border-white/10 bg-black/30 p-5 font-sans leading-7 text-gray-200">
+              <pre className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white/70 p-5 font-sans leading-7 text-slate-700">
                 {contract.contract_text}
               </pre>
 
@@ -122,7 +122,7 @@ export default function ContractsPage() {
                     value={signatureName}
                     onChange={(e) => setSignatureName(e.target.value)}
                     placeholder="Type your full name"
-                    className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 outline-none focus:border-cyan-300"
+                    className="rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   />
                   <button
                     onClick={() => signContract(contract.id)}
@@ -133,7 +133,7 @@ export default function ContractsPage() {
                   </button>
                 </div>
               ) : (
-                <p className="mt-5 text-sm text-gray-400">
+                <p className="mt-5 text-sm text-slate-500">
                   Signed by {contract.signed_name} on {contract.signed_at}
                 </p>
               )}
@@ -141,7 +141,7 @@ export default function ContractsPage() {
           ))}
 
           {contracts.length === 0 && (
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-gray-400">
+            <div className="bd-glass-card rounded-3xl p-8 text-slate-500">
               No contracts assigned yet.
             </div>
           )}

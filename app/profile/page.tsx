@@ -514,21 +514,25 @@ export default function ProfilePage() {
   }, []);
 
   if (loading) {
-    return <main className="min-h-screen bg-[#f4f0e8] p-8 text-slate-900">Loading profile...</main>;
+    return (
+      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+        <div className="bd-ocean-content">Loading profile...</div>
+      </main>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#e8fbff_38%,#fff4dc_76%,#f9fafb_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1520px]">
-        <header className="overflow-hidden rounded-2xl border border-cyan-200/80 bg-white/85 shadow-2xl shadow-slate-900/10 backdrop-blur">
+    <main className="bd-ocean-shell min-h-screen px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <div className="bd-ocean-content mx-auto max-w-[1520px]">
+        <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
           <div className="grid gap-0 xl:grid-cols-[1fr_420px]">
             <div className="p-6 sm:p-8">
               <div className="mb-5 flex flex-wrap items-center gap-3">
                 <BlueDeckLogoLink
                   href="/dashboard"
-                  className="h-14 w-36 rounded-2xl sm:w-44"
-                  imageClassName="p-1"
+                  className="h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+                  imageClassName="object-contain p-0"
                 />
                 <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
                   <Home className="h-4 w-4 text-cyan-700" />
@@ -536,7 +540,7 @@ export default function ProfilePage() {
                 </Link>
               </div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              <h1 className="bd-serif mt-3 text-4xl font-normal tracking-tight text-[#071f3c] sm:text-5xl">
                 {profile.full_name || "Professional Crew Profile"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
@@ -568,12 +572,12 @@ export default function ProfilePage() {
         </header>
 
         {expiryAlerts.length > 0 && (
-          <section className="mt-4 rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-amber-950">
+          <section className="mt-4 rounded-2xl border border-amber-300/50 bg-amber-50/90 p-4 text-amber-950 shadow-sm backdrop-blur">
             <div className="flex gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-200" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-700" />
               <div>
-                <h2 className="font-semibold text-amber-100">Documents expiring within 3 months</h2>
-                <p className="mt-1 text-sm text-amber-100/75">
+                <h2 className="font-semibold text-amber-950">Documents expiring within 3 months</h2>
+                <p className="mt-1 text-sm text-amber-900/80">
                   {expiryAlerts.map((item) => `${item.document_type}: ${item.expiry_date}`).join(" · ")}
                 </p>
               </div>

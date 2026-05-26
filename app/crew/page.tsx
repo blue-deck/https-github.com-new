@@ -123,31 +123,31 @@ export default function CrewPortalPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#081120] p-10 text-white">
-        Loading crew portal...
+      <main className="bd-ocean-shell min-h-screen p-10 text-slate-900">
+        <div className="bd-ocean-content">Loading crew portal...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#081120] p-8 text-white">
-      <div className="mx-auto max-w-7xl">
-        <a href="/dashboard" className="text-blue-300">
+    <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+      <div className="bd-ocean-content mx-auto max-w-7xl">
+        <a href="/dashboard" className="text-cyan-700">
           ← Back to dashboard
         </a>
 
-        <div className="mt-6 rounded-3xl bg-white/5 p-8">
-          <p className="text-gray-400">Crew Portal</p>
+        <div className="bd-glass-card-strong mt-6 rounded-[34px] p-8">
+          <p className="text-cyan-700">Crew Portal</p>
 
-          <h1 className="mt-2 text-5xl font-bold">My Tasks</h1>
+          <h1 className="bd-serif mt-2 text-5xl font-normal text-[#071f3c]">My Tasks</h1>
 
-          <p className="mt-4 text-gray-400">
+          <p className="mt-4 text-slate-500">
             Logged in as: {userEmail}
           </p>
         </div>
 
         {crewProfiles.length === 0 && (
-          <div className="mt-8 rounded-3xl bg-white/5 p-8 text-gray-400">
+          <div className="bd-glass-card mt-8 rounded-3xl p-8 text-slate-500">
             No yacht invitation found for this account yet.
           </div>
         )}
@@ -155,18 +155,18 @@ export default function CrewPortalPage() {
         {crewProfiles.length > 0 && (
           <>
             <div className="mt-8 grid gap-6 md:grid-cols-3">
-              <div className="rounded-3xl bg-white/5 p-6">
-                <p className="text-gray-400">Pending</p>
+              <div className="bd-glass-card rounded-3xl p-6">
+                <p className="text-slate-500">Pending</p>
                 <h2 className="mt-4 text-5xl font-bold">{pendingCount}</h2>
               </div>
 
-              <div className="rounded-3xl bg-white/5 p-6">
-                <p className="text-gray-400">In Progress</p>
+              <div className="bd-glass-card rounded-3xl p-6">
+                <p className="text-slate-500">In Progress</p>
                 <h2 className="mt-4 text-5xl font-bold">{progressCount}</h2>
               </div>
 
-              <div className="rounded-3xl bg-white/5 p-6">
-                <p className="text-gray-400">Completed</p>
+              <div className="bd-glass-card rounded-3xl p-6">
+                <p className="text-slate-500">Completed</p>
                 <h2 className="mt-4 text-5xl font-bold">{completedCount}</h2>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function CrewPortalPage() {
               {tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="rounded-3xl border border-white/10 bg-white/5 p-8"
+                  className="bd-glass-card rounded-3xl p-8"
                 >
                   <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                     <div className="flex-1">
@@ -195,11 +195,11 @@ export default function CrewPortalPage() {
                         </span>
                       </div>
 
-                      <p className="mt-4 text-gray-400">
+                      <p className="mt-4 text-slate-500">
                         {task.description}
                       </p>
 
-                      <div className="mt-5 grid gap-3 text-sm text-gray-400 md:grid-cols-3">
+                      <div className="mt-5 grid gap-3 text-sm text-slate-500 md:grid-cols-3">
                         <p>Assigned: {task.assigned_to_name || "You"}</p>
                         <p>Role: {task.assigned_role || "Crew"}</p>
                         <p>Due: {task.due_date || "No date"}</p>
@@ -214,7 +214,7 @@ export default function CrewPortalPage() {
                             })
                           }
                           placeholder="Before note"
-                          className="h-24 rounded-2xl border border-white/10 bg-black/20 px-5 py-4 outline-none"
+                          className="h-24 rounded-2xl border border-slate-200 bg-white/70 px-5 py-4 text-slate-950 outline-none"
                         />
 
                         <textarea
@@ -225,12 +225,12 @@ export default function CrewPortalPage() {
                             })
                           }
                           placeholder="After note"
-                          className="h-24 rounded-2xl border border-white/10 bg-black/20 px-5 py-4 outline-none"
+                          className="h-24 rounded-2xl border border-slate-200 bg-white/70 px-5 py-4 text-slate-950 outline-none"
                         />
                       </div>
 
                       <div className="mt-6 grid gap-6 md:grid-cols-2">
-                        <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+                        <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
                           <p className="font-semibold">Before Photo</p>
 
                           {task.before_photo_url && (
@@ -259,13 +259,13 @@ export default function CrewPortalPage() {
                           />
 
                           {uploading === `before-${task.id}` && (
-                            <p className="mt-2 text-sm text-blue-300">
+                            <p className="mt-2 text-sm text-cyan-700">
                               Uploading...
                             </p>
                           )}
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
+                        <div className="rounded-2xl border border-slate-200 bg-white/70 p-5">
                           <p className="font-semibold">After Photo</p>
 
                           {task.after_photo_url && (
@@ -294,7 +294,7 @@ export default function CrewPortalPage() {
                           />
 
                           {uploading === `after-${task.id}` && (
-                            <p className="mt-2 text-sm text-blue-300">
+                            <p className="mt-2 text-sm text-cyan-700">
                               Uploading...
                             </p>
                           )}
@@ -326,7 +326,7 @@ export default function CrewPortalPage() {
               ))}
 
               {tasks.length === 0 && (
-                <div className="rounded-3xl bg-white/5 p-8 text-gray-400">
+                <div className="bd-glass-card rounded-3xl p-8 text-slate-500">
                   No assigned tasks yet.
                 </div>
               )}

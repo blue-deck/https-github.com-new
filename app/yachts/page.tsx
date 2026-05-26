@@ -85,29 +85,29 @@ export default function YachtsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-10 text-slate-900">
-        Loading yachts...
+      <main className="bd-ocean-shell min-h-screen p-10 text-slate-900">
+        <div className="bd-ocean-content">Loading yachts...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-7xl">
+    <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+      <div className="bd-ocean-content mx-auto max-w-7xl">
         <a href="/dashboard" className="bd-focus rounded-full text-cyan-700">
           Back to dashboard
         </a>
 
-        <div className="mt-6 overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur">
+        <div className="bd-glass-card-strong mt-6 overflow-hidden rounded-[34px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
           <div className="p-8">
             <BlueDeckLogoLink
               href="/dashboard"
-              className="mb-6 h-14 w-36 rounded-2xl sm:w-44"
-              imageClassName="p-1"
+              className="mb-6 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+              imageClassName="object-contain p-0"
             />
             <p className="bd-kicker">Captain Workspace</p>
-            <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
+            <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">
               Fleet
             </h1>
             <p className="mt-4 max-w-2xl leading-7 text-slate-600">
@@ -117,7 +117,7 @@ export default function YachtsPage() {
         </div>
 
         <div className="mt-6 grid gap-6 md:grid-cols-[390px_1fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white/85 p-6 shadow-xl shadow-cyan-950/5">
+          <div className="bd-glass-card rounded-[28px] p-6">
             <h2 className="text-2xl font-semibold text-slate-950">Add Yacht</h2>
 
             <div className="mt-6 space-y-4">
@@ -151,7 +151,7 @@ export default function YachtsPage() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white/85 p-6 shadow-xl shadow-cyan-950/5">
+          <div className="bd-glass-card rounded-[28px] p-6">
             <h2 className="text-2xl font-semibold text-slate-950">Connected Yachts</h2>
 
             <div className="mt-6 space-y-4">

@@ -3,17 +3,17 @@ import { BlueDeckMark } from "../components/BlueDeckLogo";
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-10 text-slate-900">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur sm:p-10">
+    <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900">
+      <div className="bd-ocean-content bd-glass-card-strong mx-auto max-w-4xl rounded-[34px] p-6 sm:p-10">
         <Link href="/login" className="text-sm font-semibold text-cyan-700">
           Back to login
         </Link>
 
         <div className="mt-8 flex items-center gap-3">
-          <BlueDeckMark className="h-14 w-20 shrink-0 rounded-2xl" imageClassName="p-1" />
+          <BlueDeckMark className="h-14 w-20 shrink-0 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck</p>
-            <h1 className="text-3xl font-semibold text-slate-950">Privacy Policy</h1>
+            <h1 className="bd-serif text-4xl font-normal text-[#071f3c]">Privacy Policy</h1>
           </div>
         </div>
 

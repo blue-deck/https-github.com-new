@@ -8,8 +8,8 @@ export default function AuthPage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#020817] p-6 text-white">
-      Redirecting to secure login...
+    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-6 text-slate-900">
+      <div className="bd-ocean-content">Redirecting to secure login...</div>
     </main>
   );
 }

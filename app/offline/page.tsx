@@ -2,15 +2,15 @@ import { BlueDeckMark } from "../components/BlueDeckLogo";
 
 export default function OfflinePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#020817] p-6 text-white">
-      <div className="max-w-lg rounded-[40px] border border-white/10 bg-white/5 p-10 text-center">
-        <BlueDeckMark className="mx-auto h-20 w-28 rounded-3xl border-cyan-300/25 shadow-black/25" imageClassName="p-1" />
+    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-6 text-slate-900">
+      <div className="bd-ocean-content bd-glass-card-strong max-w-lg rounded-[40px] p-10 text-center">
+        <BlueDeckMark className="mx-auto h-20 w-28 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
 
-        <h1 className="mt-8 text-5xl font-black">
+        <h1 className="bd-serif mt-8 text-5xl font-normal text-[#071f3c]">
           BlueDeck Offline
         </h1>
 
-        <p className="mt-5 text-lg text-gray-400">
+        <p className="mt-5 text-lg text-slate-600">
           Connection is unavailable. Your yacht system shell is still accessible.
         </p>
       </div>

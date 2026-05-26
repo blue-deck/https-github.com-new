@@ -28,10 +28,10 @@ export default function PortalPage() {
   }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#020817] p-10 text-white">
-      <div className="text-center">
-        <BlueDeckLogoLink href="/" className="mx-auto h-16 w-44 rounded-2xl" imageClassName="p-1" />
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300">
+    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-10 text-slate-900">
+      <div className="bd-ocean-content text-center">
+        <BlueDeckLogoLink href="/" className="mx-auto h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52" imageClassName="object-contain p-0" />
+        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-700">
           Opening BlueDeck
         </p>
       </div>

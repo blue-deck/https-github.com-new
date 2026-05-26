@@ -12,6 +12,11 @@
   --aqua: #47d7df;
   --emerald: #66d19e;
   --danger: #ef776f;
+  --ocean-ink: #061831;
+  --ocean-muted: #61758a;
+  --ocean-line: rgba(7, 33, 61, 0.13);
+  --ocean-card: rgba(255, 255, 255, 0.78);
+  --ocean-card-strong: rgba(255, 255, 255, 0.9);
 }
 
 @theme inline {
@@ -88,6 +93,150 @@ textarea:-webkit-autofill:focus {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.bd-serif {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-weight: 400;
+}
+
+.bd-ocean-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(125, 211, 252, 0.28), transparent 34%),
+    radial-gradient(circle at 8% 18%, rgba(255, 255, 255, 0.92), transparent 30%),
+    linear-gradient(135deg, #fbfdff 0%, #edf8ff 42%, #f7fbff 72%, #eef6f9 100%),
+    #f5fbff;
+  color: var(--ocean-ink);
+}
+
+.bd-ocean-shell::before {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255, 255, 255, 0.92), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(231, 247, 255, 0.3));
+}
+
+.bd-ocean-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.bd-home-shell {
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(236, 249, 255, 0.86) 36%, rgba(255, 255, 255, 0.38) 63%, rgba(168, 218, 246, 0.18) 100%),
+    url("/bluedeck-ocean-hero.png") center bottom / cover no-repeat,
+    #f5fbff;
+}
+
+.bd-ocean-content {
+  position: relative;
+  z-index: 1;
+}
+
+.bd-glass-card {
+  border: 1px solid var(--ocean-line);
+  background: var(--ocean-card);
+  box-shadow: 0 28px 90px rgba(4, 33, 63, 0.12);
+  backdrop-filter: blur(24px);
+}
+
+.bd-glass-card-strong {
+  border: 1px solid var(--ocean-line);
+  background: var(--ocean-card-strong);
+  box-shadow: 0 30px 100px rgba(4, 33, 63, 0.14);
+  backdrop-filter: blur(26px);
+}
+
+.bd-ocean-topbar {
+  border-bottom: 1px solid rgba(7, 33, 61, 0.1);
+  background: rgba(255, 255, 255, 0.64);
+  box-shadow: 0 18px 50px rgba(8, 35, 61, 0.08);
+  backdrop-filter: blur(26px);
+}
+
+.bd-ocean-pill {
+  border: 1px solid rgba(7, 33, 61, 0.16);
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--ocean-ink);
+  box-shadow: 0 16px 42px rgba(7, 33, 61, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.bd-yacht-portal {
+  background:
+    radial-gradient(circle at 88% 10%, rgba(34, 211, 238, 0.22), transparent 32%),
+    linear-gradient(135deg, #fbfdff 0%, #edf8ff 48%, #fffaf0 100%),
+    #f5fbff;
+  color: var(--ocean-ink);
+}
+
+.bd-yacht-portal main {
+  background: transparent !important;
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal .text-white,
+.bd-yacht-portal [class*="text-gray-"],
+.bd-yacht-portal [class*="text-slate-"] {
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal [class*="text-cyan-"] {
+  color: #0e7490 !important;
+}
+
+.bd-yacht-portal [class*="bg-white/5"],
+.bd-yacht-portal [class*="bg-white/10"],
+.bd-yacht-portal [class*="bg-black/20"],
+.bd-yacht-portal [class*="bg-black/30"],
+.bd-yacht-portal [class*="from-cyan-500/10"],
+.bd-yacht-portal [class*="from-cyan-500/20"],
+.bd-yacht-portal [class*="to-blue-900/10"],
+.bd-yacht-portal [class*="to-blue-500/10"] {
+  border-color: var(--ocean-line) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: 0 24px 70px rgba(4, 33, 63, 0.1);
+  backdrop-filter: blur(22px);
+}
+
+.bd-yacht-portal input,
+.bd-yacht-portal textarea,
+.bd-yacht-portal select {
+  border-color: rgba(7, 33, 61, 0.14) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal [class*="border-white/"] {
+  border-color: var(--ocean-line) !important;
+}
+
+.bd-yacht-portal [class*="bg-cyan-400"],
+.bd-yacht-portal [class*="bg-blue-400"],
+.bd-yacht-portal [class*="bg-green-400"] {
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal [class*="bg-cyan-600"],
+.bd-yacht-portal [class*="bg-cyan-700"],
+.bd-yacht-portal [class*="bg-slate-950"],
+.bd-yacht-portal [class*="bg-[#020817]"],
+.bd-yacht-portal [class*="bg-[#081120]"] {
+  color: #ffffff !important;
+}
+
+.bd-yacht-portal [class*="bg-cyan-600"] *,
+.bd-yacht-portal [class*="bg-cyan-700"] *,
+.bd-yacht-portal [class*="bg-slate-950"] *,
+.bd-yacht-portal [class*="bg-[#020817]"] *,
+.bd-yacht-portal [class*="bg-[#081120]"] * {
+  color: #ffffff !important;
 }
 
 @media print {

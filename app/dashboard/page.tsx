@@ -195,8 +195,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#f4f0e8] p-10 text-slate-900">
-        Loading dashboard...
+      <main className="bd-ocean-shell min-h-screen p-10 text-slate-900">
+        <div className="bd-ocean-content">Loading dashboard...</div>
       </main>
     );
   }
@@ -205,19 +205,19 @@ export default function DashboardPage() {
     profile?.role === "captain" || profile?.role === "management";
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-7xl">
-        <div className="relative rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur sm:p-8">
+    <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+      <div className="bd-ocean-content mx-auto max-w-7xl">
+        <div className="bd-glass-card-strong relative rounded-[34px] p-6 sm:p-8">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <BlueDeckLogoLink
                 href="/"
-                className="mb-6 h-14 w-36 rounded-2xl sm:w-44"
-                imageClassName="p-1"
+                className="mb-6 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+                imageClassName="object-contain p-0"
               />
               <p className="bd-kicker">My Dashboard</p>
 
-              <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
+              <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">
                 Welcome, {profile?.full_name || profile?.email}
               </h1>
 
@@ -290,7 +290,7 @@ export default function DashboardPage() {
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Link
             href="/profile"
-            className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
           >
             <UserRound className="h-8 w-8 text-cyan-700" />
             <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
           {isCaptain ? (
             <Link
               href="/yachts"
-              className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
             >
               <Ship className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">Captain Workspace</h2>
@@ -313,7 +313,7 @@ export default function DashboardPage() {
           ) : (
             <Link
               href="/crew/tasks"
-              className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
             >
               <ClipboardCheck className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">My YachtOS</h2>
@@ -325,7 +325,7 @@ export default function DashboardPage() {
 
           <Link
             href="/contracts"
-            className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
           >
             <FileText className="h-8 w-8 text-cyan-700" />
             <h2 className="mt-5 text-3xl font-semibold text-slate-950">Contracts</h2>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
 
           <Link
             href="/settings"
-            className="bd-focus rounded-2xl border border-white/70 bg-white/80 p-8 shadow-xl shadow-slate-900/5 transition hover:border-[#22d3ee]/45"
+            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
           >
             <Settings className="h-8 w-8 text-cyan-700" />
             <h2 className="mt-5 text-3xl font-semibold text-slate-950">Settings</h2>
@@ -348,7 +348,7 @@ export default function DashboardPage() {
               await supabase.auth.signOut();
               window.location.href = "/login";
             }}
-            className="bd-focus rounded-2xl border border-[#ef776f]/30 bg-white/80 p-8 text-left text-[#b9423b] shadow-xl shadow-slate-900/5 transition hover:bg-[#fff6f5]"
+            className="bd-focus rounded-[28px] border border-[#ef776f]/30 bg-white/70 p-8 text-left text-[#b9423b] shadow-xl shadow-slate-900/5 backdrop-blur transition hover:bg-[#fff6f5]"
           >
             <LogOut className="h-8 w-8" />
             <h2 className="mt-5 text-3xl font-semibold">Logout</h2>

@@ -219,26 +219,26 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-8 text-slate-900">
-        Loading settings...
+      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+        <div className="bd-ocean-content">Loading settings...</div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-6xl">
-        <header className="overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-2xl shadow-slate-900/10 backdrop-blur">
+    <main className="bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
+      <div className="bd-ocean-content mx-auto max-w-6xl">
+        <header className="bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
           <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <BlueDeckLogoLink
                 href="/dashboard"
-                className="mb-5 h-14 w-36 rounded-2xl sm:w-44"
-                imageClassName="p-1"
+                className="mb-5 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
+                imageClassName="object-contain p-0"
               />
               <p className="bd-kicker">Account Settings</p>
-              <h1 className="mt-3 text-4xl font-semibold text-slate-950 sm:text-5xl">BlueDeck Settings</h1>
+              <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c] sm:text-6xl">BlueDeck Settings</h1>
               <p className="mt-3 max-w-2xl leading-7 text-slate-600">
                 Manage your login details, password, phone number and account security from one clean control room.
               </p>
@@ -391,7 +391,7 @@ function SettingsPanel({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/8 backdrop-blur sm:p-7">
+    <section className="bd-glass-card-strong rounded-[30px] p-6 sm:p-7">
       <div className="flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 text-cyan-700">
           {icon}

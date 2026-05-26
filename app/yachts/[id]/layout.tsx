@@ -32,11 +32,11 @@ export default function YachtAppLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] text-slate-900">
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-slate-200 bg-white/86 shadow-sm backdrop-blur-2xl">
+    <div className="bd-yacht-portal min-h-screen text-slate-900">
+      <header className="bd-ocean-topbar fixed left-0 right-0 top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
           <Link href={`/yachts/${yachtId}`} className="bd-focus flex min-w-0 items-center gap-3 rounded-full">
-            <BlueDeckMark className="h-12 w-16 shrink-0 rounded-2xl" imageClassName="p-1" />
+            <BlueDeckMark className="h-12 w-16 shrink-0 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">
                 BlueDeck OS
@@ -57,7 +57,7 @@ export default function YachtAppLayout({
 
       <div className="pt-[68px]">{children}</div>
 
-      <nav className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-full border border-slate-200 bg-white/88 p-2 shadow-2xl shadow-cyan-950/15 backdrop-blur-2xl">
+      <nav className="bd-ocean-pill fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-full p-2">
         <div className="grid grid-cols-5 gap-1 sm:gap-2">
           {nav.map((item) => {
             const Icon = item.icon;
