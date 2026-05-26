@@ -48,12 +48,12 @@ const trustPoints = [
 
 export default function HomePage() {
   return (
-    <main className="bd-ocean-shell bd-home-shell min-h-screen overflow-hidden text-[#061831]">
+    <main className="bd-ocean-shell bd-home-shell min-h-screen overflow-hidden pt-[92px] text-[#061831]">
       <header className="bd-home-header border-b border-cyan-100/10 bg-[#020817]/96 shadow-2xl shadow-slate-950/20 backdrop-blur-2xl">
-        <div className="mx-auto flex h-20 max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-12">
+        <div className="mx-auto flex h-[92px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-12">
             <BlueDeckLogoLink
               priority
-              className="h-11 w-36 rounded-none border-0 bg-transparent shadow-none sm:h-12 sm:w-44"
+              className="h-14 w-44 rounded-none border-0 bg-transparent shadow-none sm:h-16 sm:w-56"
               imageClassName="object-contain p-0"
             />
 
@@ -89,8 +89,8 @@ export default function HomePage() {
         </div>
       </header>
 
-      <section className="relative min-h-[calc(100vh-80px)]">
-        <div className="bd-ocean-content mx-auto flex min-h-[calc(100vh-80px)] max-w-[1500px] flex-col justify-center px-5 sm:px-8 lg:px-12">
+      <section className="relative min-h-[calc(100vh-92px)]">
+        <div className="bd-ocean-content mx-auto flex min-h-[calc(100vh-92px)] max-w-[1500px] flex-col justify-center px-5 sm:px-8 lg:px-12">
           <div className="flex items-center pb-20 pt-16 lg:min-h-[72vh]">
             <motion.div
               initial={{ opacity: 0, y: 34 }}
