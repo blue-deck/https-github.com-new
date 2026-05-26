@@ -14,8 +14,7 @@ import {
   UserPlus,
   UserRound,
 } from "lucide-react";
-import Link from "next/link";
-import { BlueDeckLogoLink, BlueDeckMark } from "../../components/BlueDeckLogo";
+import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import {
   markInvitationAccepted,
   saveYachtMembership,
@@ -364,27 +363,6 @@ export default function CrewTasksPage() {
 
   return (
     <main className="bd-ocean-shell min-h-screen text-slate-900">
-      <section className="bd-ocean-topbar px-6 py-5">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <BlueDeckLogoLink
-              href="/dashboard"
-              className="h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
-              imageClassName="object-contain p-0"
-            />
-
-            <div>
-              <p className="text-sm font-semibold text-cyan-700">BlueDeck Crew Portal</p>
-              <h1 className="text-2xl font-black tracking-tight text-slate-950">My YachtOS</h1>
-            </div>
-          </div>
-
-          <Link href="/dashboard" className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-            My Dashboard
-          </Link>
-        </div>
-      </section>
-
       <div className="bd-ocean-content mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[390px_1fr]">
         <aside className="space-y-6">
           <div className="bd-glass-card-strong rounded-[34px] p-6">

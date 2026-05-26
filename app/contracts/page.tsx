@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, FileSignature, PenLine } from "lucide-react";
-import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { supabase } from "../lib/supabase";
 
 export default function ContractsPage() {
@@ -82,7 +81,6 @@ export default function ContractsPage() {
     <main className="bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-5xl">
         <header className="bd-glass-card-strong rounded-[34px] p-8">
-          <BlueDeckLogoLink href="/dashboard" className="mb-7 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52" imageClassName="object-contain p-0" />
           <p className="text-cyan-300">My Contracts</p>
           <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">Mobile Signature</h1>
           <p className="mt-4 max-w-2xl text-slate-600">

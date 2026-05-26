@@ -147,6 +147,14 @@ textarea:-webkit-autofill:focus {
   z-index: 50;
 }
 
+.bd-app-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+}
+
 .bd-glass-card {
   border: 1px solid var(--ocean-line);
   background: var(--ocean-card);
@@ -245,6 +253,15 @@ textarea:-webkit-autofill:focus {
 .bd-yacht-portal [class*="bg-[#020817]"] *,
 .bd-yacht-portal [class*="bg-[#081120]"] * {
   color: #ffffff !important;
+}
+
+.bd-yacht-portal .bd-app-topbar a[href="/profile"],
+.bd-yacht-portal .bd-app-topbar a[href="/profile"] * {
+  color: #020817 !important;
+}
+
+.bd-yacht-portal .bd-app-topbar [class*="text-cyan-"] {
+  color: #a5f3fc !important;
 }
 
 @media print {

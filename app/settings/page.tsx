@@ -1,14 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import {
-  Home,
   KeyRound,
   Save,
   UserRound,
 } from "lucide-react";
-import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -232,24 +229,12 @@ export default function SettingsPage() {
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
           <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <BlueDeckLogoLink
-                href="/dashboard"
-                className="mb-5 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
-                imageClassName="object-contain p-0"
-              />
               <p className="bd-kicker">Account Settings</p>
               <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c] sm:text-6xl">BlueDeck Settings</h1>
               <p className="mt-3 max-w-2xl leading-7 text-slate-600">
                 Manage your login details, password, phone number and account security from one clean control room.
               </p>
             </div>
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-black text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
-            >
-              <Home className="h-4 w-4 text-cyan-700" />
-              My Dashboard
-            </Link>
           </div>
         </header>
 

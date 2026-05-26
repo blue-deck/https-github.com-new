@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { supabase } from "../lib/supabase";
 
 type Yacht = {
@@ -85,8 +84,8 @@ export default function YachtsPage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen p-10 text-slate-900">
-        <div className="bd-ocean-content">Loading yachts...</div>
+      <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+        <div className="bd-ocean-content mx-auto max-w-7xl">Loading yachts...</div>
       </main>
     );
   }
@@ -94,18 +93,9 @@ export default function YachtsPage() {
   return (
     <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-7xl">
-        <a href="/dashboard" className="bd-focus rounded-full text-cyan-700">
-          Back to dashboard
-        </a>
-
-        <div className="bd-glass-card-strong mt-6 overflow-hidden rounded-[34px]">
+        <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
           <div className="p-8">
-            <BlueDeckLogoLink
-              href="/dashboard"
-              className="mb-6 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
-              imageClassName="object-contain p-0"
-            />
             <p className="bd-kicker">Captain Workspace</p>
             <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">
               Fleet

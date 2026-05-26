@@ -9,7 +9,6 @@ import {
   Check,
   Download,
   FileText,
-  Home,
   IdCard,
   Languages,
   MapPin,
@@ -20,7 +19,7 @@ import {
   Upload,
   UserRound,
 } from "lucide-react";
-import { BlueDeckLogoLink, BlueDeckMark } from "../components/BlueDeckLogo";
+import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
@@ -528,17 +527,6 @@ export default function ProfilePage() {
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
           <div className="grid gap-0 xl:grid-cols-[1fr_420px]">
             <div className="p-6 sm:p-8">
-              <div className="mb-5 flex flex-wrap items-center gap-3">
-                <BlueDeckLogoLink
-                  href="/dashboard"
-                  className="h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
-                  imageClassName="object-contain p-0"
-                />
-                <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
-                  <Home className="h-4 w-4 text-cyan-700" />
-                  My Dashboard
-                </Link>
-              </div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
               <h1 className="bd-serif mt-3 text-4xl font-normal tracking-tight text-[#071f3c] sm:text-5xl">
                 {profile.full_name || "Professional Crew Profile"}
