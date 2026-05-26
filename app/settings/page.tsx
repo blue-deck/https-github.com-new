@@ -8,6 +8,7 @@ import {
   Save,
   UserRound,
 } from "lucide-react";
+import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -231,6 +232,11 @@ export default function SettingsPage() {
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
           <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
+              <BlueDeckLogoLink
+                href="/dashboard"
+                className="mb-5 h-14 w-36 rounded-2xl sm:w-44"
+                imageClassName="p-1"
+              />
               <p className="bd-kicker">Account Settings</p>
               <h1 className="mt-3 text-4xl font-semibold text-slate-950 sm:text-5xl">BlueDeck Settings</h1>
               <p className="mt-3 max-w-2xl leading-7 text-slate-600">

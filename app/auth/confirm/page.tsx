@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { BlueDeckLogoLink } from "../../components/BlueDeckLogo";
 import { supabase } from "../../lib/supabase";
 
 function getHashParams() {
@@ -94,6 +95,11 @@ export default function ConfirmAuthPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-5 text-slate-950">
       <div className="w-full max-w-lg rounded-[34px] border border-white/70 bg-white/90 p-8 text-center shadow-2xl shadow-cyan-950/12 backdrop-blur-xl">
+        <BlueDeckLogoLink
+          href="/"
+          className="mx-auto mb-6 h-16 w-44 rounded-2xl"
+          imageClassName="p-1"
+        />
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300">
           {status === "loading" && <Loader2 className="h-8 w-8 animate-spin" />}
           {status === "success" && <CheckCircle2 className="h-8 w-8" />}

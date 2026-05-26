@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 
 export default function PortalPage() {
   useEffect(() => {
@@ -27,8 +28,13 @@ export default function PortalPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#020817] p-10 text-white">
-      Opening BlueDeck...
+    <main className="flex min-h-screen items-center justify-center bg-[#020817] p-10 text-white">
+      <div className="text-center">
+        <BlueDeckLogoLink href="/" className="mx-auto h-16 w-44 rounded-2xl" imageClassName="p-1" />
+        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.18em] text-cyan-300">
+          Opening BlueDeck
+        </p>
+      </div>
     </main>
   );
 }

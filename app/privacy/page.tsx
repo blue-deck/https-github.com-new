@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck } from "lucide-react";
+import { BlueDeckMark } from "../components/BlueDeckLogo";
 
 export default function PrivacyPage() {
   return (
@@ -10,9 +10,7 @@ export default function PrivacyPage() {
         </Link>
 
         <div className="mt-8 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-700">
-            <ShieldCheck className="h-6 w-6" />
-          </div>
+          <BlueDeckMark className="h-14 w-20 shrink-0 rounded-2xl" imageClassName="p-1" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck</p>
             <h1 className="text-3xl font-semibold text-slate-950">Privacy Policy</h1>

@@ -20,6 +20,7 @@ import {
   Upload,
   UserRound,
 } from "lucide-react";
+import { BlueDeckLogoLink, BlueDeckMark } from "../components/BlueDeckLogo";
 import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
@@ -523,7 +524,12 @@ export default function ProfilePage() {
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
           <div className="grid gap-0 xl:grid-cols-[1fr_420px]">
             <div className="p-6 sm:p-8">
-              <div className="mb-5 flex flex-wrap gap-3">
+              <div className="mb-5 flex flex-wrap items-center gap-3">
+                <BlueDeckLogoLink
+                  href="/dashboard"
+                  className="h-14 w-36 rounded-2xl sm:w-44"
+                  imageClassName="p-1"
+                />
                 <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm">
                   <Home className="h-4 w-4 text-cyan-700" />
                   My Dashboard
@@ -792,7 +798,10 @@ function CvPreview({
               )}
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-100">BlueDeck CV</p>
+              <div className="mb-3 flex items-center gap-3">
+                <BlueDeckMark className="h-12 w-16 rounded-2xl border-white/20 shadow-black/20" imageClassName="p-1" />
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-100">BlueDeck CV</p>
+              </div>
               <h2 className="mt-3 text-4xl font-semibold tracking-tight">{profile.full_name || "Crew Member"}</h2>
               <p className="mt-2 text-base text-white/80">{profile.current_positions?.[0] || profile.current_position || "Yacht Crew"} · Crew ID {profile.public_crew_id}</p>
             </div>

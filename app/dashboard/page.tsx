@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserRound } from "lucide-react";
+import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
 
@@ -209,6 +210,11 @@ export default function DashboardPage() {
         <div className="relative rounded-3xl border border-white/70 bg-white/85 p-6 shadow-2xl shadow-slate-900/10 backdrop-blur sm:p-8">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
+              <BlueDeckLogoLink
+                href="/"
+                className="mb-6 h-14 w-36 rounded-2xl sm:w-44"
+                imageClassName="p-1"
+              />
               <p className="bd-kicker">My Dashboard</p>
 
               <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">

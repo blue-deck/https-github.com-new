@@ -3,13 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { BlueDeckLogoLink } from "./components/BlueDeckLogo";
 import {
   Anchor,
   ChevronRight,
   Crown,
   FileLock2,
   Radio,
-  Ship,
   Sparkles,
   Users,
   Wrench,
@@ -63,19 +63,11 @@ export default function HomePage() {
 
         <div className="relative mx-auto flex min-h-screen max-w-7xl flex-col justify-between px-5 py-6 sm:px-8 lg:px-10">
           <header className="flex items-center justify-between">
-            <Link href="/" className="bd-focus flex items-center gap-3 rounded-full">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-[#22d3ee]/35 bg-[#22d3ee]/15 text-[#22d3ee]">
-                <Ship className="h-5 w-5" />
-              </span>
-              <span>
-                <span className="block text-sm font-semibold text-[#22d3ee]">
-                  BlueDeck
-                </span>
-                <span className="block text-xs text-[#aeb8c8]">
-                  YachtOS
-                </span>
-              </span>
-            </Link>
+            <BlueDeckLogoLink
+              priority
+              className="h-14 w-36 rounded-2xl sm:w-44"
+              imageClassName="p-1"
+            />
 
             <nav className="hidden items-center gap-2 rounded-full border border-white/10 bg-black/25 p-1 backdrop-blur-xl md:flex">
               <a href="#platform" className="bd-focus rounded-full px-4 py-2 text-sm text-[#d8deea] hover:bg-white/10">

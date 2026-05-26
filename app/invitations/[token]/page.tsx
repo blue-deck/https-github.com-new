@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CheckCircle2, Mail, Ship, UserPlus } from "lucide-react";
+import { CheckCircle2, Mail, UserPlus } from "lucide-react";
+import { BlueDeckLogoLink, BlueDeckMark } from "../../components/BlueDeckLogo";
 import { saveCrewProfileByUserId } from "../../lib/crewProfiles";
 import { supabase } from "../../lib/supabase";
 import {
@@ -115,6 +116,7 @@ export default function InvitationPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#020817] p-5 text-white">
       <div className="w-full max-w-xl rounded-[36px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/20 p-8">
+        <BlueDeckLogoLink href="/" className="mb-8 h-16 w-44 rounded-2xl" imageClassName="p-1" />
         {accepted ? (
           <div className="text-center">
             <CheckCircle2 className="mx-auto h-16 w-16 text-green-300" />
@@ -127,9 +129,7 @@ export default function InvitationPage() {
         ) : (
           <>
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400 text-black">
-                <Ship className="h-7 w-7" />
-              </div>
+              <BlueDeckMark className="h-14 w-20 shrink-0 rounded-2xl border-white/20 shadow-black/30" imageClassName="p-1" />
               <div>
                 <p className="text-cyan-300">Yacht Crew Invitation</p>
                 <h1 className="text-3xl font-black">{invite.position}</h1>

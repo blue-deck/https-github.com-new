@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { supabase } from "../lib/supabase";
 
 type Yacht = {
@@ -100,13 +101,18 @@ export default function YachtsPage() {
         <div className="mt-6 overflow-hidden rounded-3xl border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
           <div className="p-8">
-          <p className="bd-kicker">Captain Workspace</p>
-          <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
-            Fleet
-          </h1>
-          <p className="mt-4 max-w-2xl leading-7 text-slate-600">
-            Create and manage the yachts connected to your BlueDeck account.
-          </p>
+            <BlueDeckLogoLink
+              href="/dashboard"
+              className="mb-6 h-14 w-36 rounded-2xl sm:w-44"
+              imageClassName="p-1"
+            />
+            <p className="bd-kicker">Captain Workspace</p>
+            <h1 className="mt-4 text-4xl font-semibold text-slate-950 sm:text-5xl">
+              Fleet
+            </h1>
+            <p className="mt-4 max-w-2xl leading-7 text-slate-600">
+              Create and manage the yachts connected to your BlueDeck account.
+            </p>
           </div>
         </div>
 

@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Ship, UserRound } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
+import { BlueDeckLogoLink, BlueDeckMark } from "../components/BlueDeckLogo";
 import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -198,18 +199,12 @@ export default function LoginPage() {
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96),rgba(238,247,248,0.86),rgba(255,255,255,0.96))]" />
 
-      <Link
+      <BlueDeckLogoLink
         href="/"
-        className="bd-focus absolute left-5 top-5 z-10 flex items-center gap-3 rounded-full border border-white/70 bg-white/85 px-4 py-3 text-slate-950 shadow-xl shadow-cyan-950/10 backdrop-blur-xl transition hover:border-cyan-300 hover:bg-white sm:left-8 sm:top-8"
-      >
-        <span className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/40 bg-cyan-50 text-cyan-700">
-          <Ship className="h-5 w-5" />
-        </span>
-        <span>
-          <span className="block text-sm font-black leading-none">BlueDeck</span>
-          <span className="mt-1 block text-xs font-semibold text-slate-500">Home</span>
-        </span>
-      </Link>
+        priority
+        className="absolute left-5 top-5 z-10 h-14 w-36 rounded-2xl sm:left-8 sm:top-8 sm:w-44"
+        imageClassName="p-1"
+      />
 
       <div className="relative mx-auto grid min-h-screen max-w-6xl items-center gap-8 px-5 pb-8 pt-28 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
@@ -235,9 +230,7 @@ export default function LoginPage() {
           className="relative w-full rounded-3xl border border-white/70 bg-white/88 p-6 shadow-2xl shadow-cyan-950/12 backdrop-blur-xl sm:p-8"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-100 text-cyan-700">
-              <Ship className="h-6 w-6" />
-            </div>
+            <BlueDeckMark className="h-14 w-16 rounded-2xl" imageClassName="p-1" />
             <div>
               <p className="font-semibold text-slate-950">BlueDeck</p>
               <p className="text-xs text-slate-500">Secure account access</p>

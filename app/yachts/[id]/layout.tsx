@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
+import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import {
   Bell,
   Crown,
@@ -10,7 +11,6 @@ import {
   type LucideIcon,
   Radio,
   ShieldCheck,
-  Ship,
   Users,
 } from "lucide-react";
 
@@ -36,9 +36,7 @@ export default function YachtAppLayout({
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-slate-200 bg-white/86 shadow-sm backdrop-blur-2xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8 lg:px-10">
           <Link href={`/yachts/${yachtId}`} className="bd-focus flex min-w-0 items-center gap-3 rounded-full">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#22d3ee]/35 bg-[#22d3ee]/15 text-cyan-700">
-              <Ship className="h-5 w-5" />
-            </div>
+            <BlueDeckMark className="h-12 w-16 shrink-0 rounded-2xl" imageClassName="p-1" />
             <div className="min-w-0">
               <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">
                 BlueDeck OS

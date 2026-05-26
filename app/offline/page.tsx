@@ -1,12 +1,10 @@
-import { Ship } from "lucide-react";
+import { BlueDeckMark } from "../components/BlueDeckLogo";
 
 export default function OfflinePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#020817] p-6 text-white">
       <div className="max-w-lg rounded-[40px] border border-white/10 bg-white/5 p-10 text-center">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-cyan-400 text-black">
-          <Ship className="h-11 w-11" />
-        </div>
+        <BlueDeckMark className="mx-auto h-20 w-28 rounded-3xl border-cyan-300/25 shadow-black/25" imageClassName="p-1" />
 
         <h1 className="mt-8 text-5xl font-black">
           BlueDeck Offline

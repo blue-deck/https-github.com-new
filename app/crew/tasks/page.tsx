@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import {
-  Anchor,
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
@@ -11,12 +10,12 @@ import {
   Loader2,
   Mail,
   ShieldCheck,
-  Ship,
   Sparkles,
   UserPlus,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
+import { BlueDeckLogoLink, BlueDeckMark } from "../../components/BlueDeckLogo";
 import {
   markInvitationAccepted,
   saveYachtMembership,
@@ -368,9 +367,11 @@ export default function CrewTasksPage() {
       <section className="border-b border-white/70 bg-white/80 px-6 py-5 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-slate-950 shadow-[0_18px_45px_rgba(8,145,178,0.22)]">
-              <Anchor className="h-7 w-7" />
-            </div>
+            <BlueDeckLogoLink
+              href="/dashboard"
+              className="h-14 w-36 rounded-2xl sm:w-44"
+              imageClassName="p-1"
+            />
 
             <div>
               <p className="text-sm font-semibold text-cyan-700">BlueDeck Crew Portal</p>
@@ -581,9 +582,7 @@ export default function CrewTasksPage() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300">
-                            <Ship className="h-6 w-6" />
-                          </div>
+                          <BlueDeckMark className="h-12 w-16 shrink-0 rounded-2xl shadow-black/15" imageClassName="p-1" />
                           <div>
                             <h4 className="text-xl font-black text-slate-950">
                               YachtOS Invitation
