@@ -185,13 +185,30 @@ const characteristics = [
 const languageOptions = [
   "English",
   "Turkish",
-  "Russian",
   "French",
   "Italian",
   "Spanish",
   "German",
   "Greek",
+  "Russian",
   "Arabic",
+  "Dutch",
+  "Portuguese",
+  "Croatian",
+  "Serbian",
+  "Montenegrin",
+  "Albanian",
+  "Romanian",
+  "Bulgarian",
+  "Ukrainian",
+  "Polish",
+  "Danish",
+  "Swedish",
+  "Norwegian",
+  "Finnish",
+  "Hebrew",
+  "Mandarin Chinese",
+  "Japanese",
 ];
 
 const languageLevels = ["Basic", "Intermediate", "Advanced", "Fluent", "Native"];
@@ -827,7 +844,20 @@ function CvPreview({
             <p>Tattoos: {profile.visible_tattoos || "-"}</p>
           </CvBlock>
           <CvBlock title="Languages">
-            {(profile.languages || []).map((lang) => <p key={lang.name}>{lang.name}: {lang.level}</p>)}
+            {profile.languages?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {profile.languages.map((lang) => (
+                  <span
+                    key={lang.name}
+                    className="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100"
+                  >
+                    {lang.name} · {lang.level}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p>-</p>
+            )}
           </CvBlock>
           <CvBlock title="Documents">
             {documents.length === 0 && <p>No CV documents selected.</p>}
@@ -1002,26 +1032,144 @@ function DropdownChoiceGroup({ title, options, value, onChange }: { title: strin
 }
 
 function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange: (value: LanguageEntry[]) => void }) {
-  function setLanguage(name: string, level: string) {
-    const rest = value.filter((item) => item.name !== name);
-    onChange(level ? [...rest, { name, level }] : rest);
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [customLanguage, setCustomLanguage] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("Intermediate");
+
+  const selectedNames = value.map((item) => item.name.toLowerCase());
+  const availableLanguages = languageOptions.filter(
+    (language) => !selectedNames.includes(language.toLowerCase())
+  );
+  const languageName =
+    selectedLanguage === "__custom__" ? customLanguage.trim() : selectedLanguage;
+  const canAdd =
+    Boolean(languageName) &&
+    Boolean(selectedLevel) &&
+    !selectedNames.includes(languageName.toLowerCase());
+
+  function addLanguage() {
+    if (!canAdd) return;
+    onChange([...value, { name: languageName, level: selectedLevel }]);
+    setSelectedLanguage("");
+    setCustomLanguage("");
+    setSelectedLevel("Intermediate");
+  }
+
+  function updateLanguageLevel(name: string, level: string) {
+    onChange(
+      value.map((item) => (item.name === name ? { ...item, level } : item))
+    );
+  }
+
+  function removeLanguage(name: string) {
+    onChange(value.filter((item) => item.name !== name));
   }
 
   return (
-    <div className="space-y-3">
-      {languageOptions.map((language) => (
-        <div key={language} className="grid grid-cols-[1fr_150px] items-center gap-3">
-          <span className="text-sm text-slate-700">{language}</span>
-          <select
-            value={value.find((item) => item.name === language)?.level || ""}
-            onChange={(event) => setLanguage(language, event.target.value)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-500"
-          >
-            <option value="">Not listed</option>
-            {languageLevels.map((level) => <option key={level}>{level}</option>)}
-          </select>
+    <div className="space-y-4">
+      <div className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff,#ffffff_52%,#f2fbff)] p-4 shadow-sm shadow-cyan-950/5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+            <Languages className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-700">
+              Language profile
+            </p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Add each language once, then set the level that should appear on
+              your BlueDeck CV.
+            </p>
+          </div>
         </div>
-      ))}
+
+        <div className="mt-5 grid gap-3">
+          <select
+            value={selectedLanguage}
+            onChange={(event) => setSelectedLanguage(event.target.value)}
+            className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+          >
+            <option value="">Select language</option>
+            {availableLanguages.map((language) => (
+              <option key={language} value={language}>
+                {language}
+              </option>
+            ))}
+            <option value="__custom__">Add another language</option>
+          </select>
+
+          {selectedLanguage === "__custom__" && (
+            <input
+              value={customLanguage}
+              onChange={(event) => setCustomLanguage(event.target.value)}
+              placeholder="Language name"
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+            />
+          )}
+
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <select
+              value={selectedLevel}
+              onChange={(event) => setSelectedLevel(event.target.value)}
+              className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+            >
+              {languageLevels.map((level) => (
+                <option key={level}>{level}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={addLanguage}
+              disabled={!canAdd}
+              className="bd-focus inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+            >
+              <Plus className="h-4 w-4" />
+              Add language
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {value.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-5 text-sm text-slate-500">
+            No languages added yet.
+          </p>
+        )}
+
+        {value.map((language) => (
+          <div
+            key={language.name}
+            className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm shadow-cyan-950/5 sm:grid-cols-[1fr_150px_auto] sm:items-center"
+          >
+            <div>
+              <p className="font-black text-slate-950">{language.name}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">
+                CV language
+              </p>
+            </div>
+            <select
+              value={language.level}
+              onChange={(event) =>
+                updateLanguageLevel(language.name, event.target.value)
+              }
+              className="h-11 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400"
+            >
+              {languageLevels.map((level) => (
+                <option key={level}>{level}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => removeLanguage(language.name)}
+              className="bd-focus flex h-11 w-full items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-100 sm:w-11"
+              title={`Remove ${language.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
