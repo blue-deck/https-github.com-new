@@ -8,6 +8,7 @@ import {
   Camera,
   CheckCircle,
   CheckSquare,
+  ChevronDown,
   ClipboardList,
   Clock3,
   LifeBuoy,
@@ -55,6 +56,9 @@ export default function CrewPage() {
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
   const [expandedProgress, setExpandedProgress] = useState<string[]>([]);
+  const [expandedTemplateTasks, setExpandedTemplateTasks] = useState<string[]>([]);
+  const [templateTaskDrafts, setTemplateTaskDrafts] = useState<Record<string, string[]>>({});
+  const [newTemplateTasks, setNewTemplateTasks] = useState<Record<string, string>>({});
   const [operator, setOperator] = useState({
     position: "",
     department: "",
@@ -116,6 +120,51 @@ export default function CrewPage() {
         ? current.filter((item) => item !== id)
         : [...current, id]
     );
+  }
+
+  function toggleTemplateTaskPanel(id: string) {
+    setExpandedTemplateTasks((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
+  }
+
+  function getTemplateAssignmentTasks(template: { id: string; tasks: string[] }) {
+    return templateTaskDrafts[template.id] || template.tasks;
+  }
+
+  function updateTemplateTask(templateId: string, baseTasks: string[], index: number, value: string) {
+    const next = [...(templateTaskDrafts[templateId] || baseTasks)];
+    next[index] = value;
+    setTemplateTaskDrafts((current) => ({ ...current, [templateId]: next }));
+  }
+
+  function removeTemplateTask(templateId: string, baseTasks: string[], index: number) {
+    const next = [...(templateTaskDrafts[templateId] || baseTasks)].filter((_, taskIndex) => taskIndex !== index);
+    setTemplateTaskDrafts((current) => ({ ...current, [templateId]: next }));
+  }
+
+  function addTemplateTask(templateId: string, baseTasks: string[]) {
+    const task = (newTemplateTasks[templateId] || "").trim();
+    if (!task) return;
+
+    const next = [...(templateTaskDrafts[templateId] || baseTasks), task];
+    setTemplateTaskDrafts((current) => ({ ...current, [templateId]: next }));
+    setNewTemplateTasks((current) => ({ ...current, [templateId]: "" }));
+  }
+
+  function resetTemplateTasks(templateId: string) {
+    setTemplateTaskDrafts((current) => {
+      const next = { ...current };
+      delete next[templateId];
+      return next;
+    });
+    setNewTemplateTasks((current) => {
+      const next = { ...current };
+      delete next[templateId];
+      return next;
+    });
   }
 
   async function loadData(silent = false) {
@@ -473,6 +522,15 @@ export default function CrewPage() {
         continue;
       }
 
+      const assignmentTasks = getTemplateAssignmentTasks(template)
+        .map((task) => task.trim())
+        .filter(Boolean);
+
+      if (assignmentTasks.length === 0) {
+        alert(`${template.title} has no task items to assign.`);
+        continue;
+      }
+
       const { data: checklist, error } = await createChecklist({
         yacht_id: yachtId,
         title: template.title,
@@ -484,7 +542,7 @@ export default function CrewPage() {
         items: {
           frequency: frequency === "Template default" ? template.frequency : frequency,
           captain_note: captainNote || null,
-          tasks: template.tasks,
+          tasks: assignmentTasks,
           source_template: template.id,
           summary: template.summary,
         },
@@ -495,7 +553,7 @@ export default function CrewPage() {
         continue;
       }
 
-      const tasks = template.tasks.map((task: string) => ({
+      const tasks = assignmentTasks.map((task: string) => ({
         checklist_id: checklist.id,
         task_text: task,
         completed: false,
@@ -1064,11 +1122,15 @@ export default function CrewPage() {
               <div className="mt-8 grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                 {visibleTemplates.map((template) => {
                   const selected = selectedTemplates.includes(template.id);
+                  const taskPanelOpen = expandedTemplateTasks.includes(template.id);
+                  const assignmentTasks = getTemplateAssignmentTasks(template);
+                  const trimmedTasks = assignmentTasks.map((task) => task.trim()).filter(Boolean);
+                  const visibleTaskPreview = trimmedTasks.slice(0, 3);
+                  const hiddenTaskCount = Math.max(trimmedTasks.length - visibleTaskPreview.length, 0);
 
                   return (
-                    <button
+                    <article
                       key={template.id}
-                      onClick={() => toggleTemplate(template.id)}
                       className={`rounded-[28px] border p-5 text-left transition ${
                         selected
                           ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_50px_rgba(8,145,178,0.12)]"
@@ -1077,15 +1139,19 @@ export default function CrewPage() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
-                          <div
-                            className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
+                          <button
+                            type="button"
+                            onClick={() => toggleTemplate(template.id)}
+                            className={`bd-focus mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
                               selected
-                                ? "border-cyan-600 bg-cyan-600 text-white"
-                                : "border-slate-300 bg-white text-slate-300"
+                                ? "border-cyan-600 bg-cyan-600 text-white shadow-lg shadow-cyan-700/20"
+                                : "border-slate-300 bg-white text-slate-300 hover:border-cyan-300 hover:text-cyan-700"
                             }`}
+                            aria-pressed={selected}
+                            title={selected ? "Remove from assignment" : "Select checklist"}
                           >
                             {selected ? <CheckCircle className="h-5 w-5" /> : <ClipboardList className="h-4 w-4" />}
-                          </div>
+                          </button>
 
                           <div>
                             <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
@@ -1102,25 +1168,109 @@ export default function CrewPage() {
 
                       <p className="mt-4 text-sm leading-6 text-slate-500">{template.summary}</p>
 
-                      <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.12em]">
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
-                          {template.tasks.length} tasks
-                        </span>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleTemplateTaskPanel(template.id)}
+                        className="bd-focus mt-4 inline-flex items-center gap-3 rounded-full border border-cyan-100 bg-white px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                        aria-expanded={taskPanelOpen}
+                      >
+                        <span>{trimmedTasks.length} tasks</span>
+                        <span className="text-cyan-700">{taskPanelOpen ? "Close" : "Review"}</span>
+                        <ChevronDown className={`h-4 w-4 transition ${taskPanelOpen ? "rotate-180" : ""}`} />
+                      </button>
 
-                      <div className="mt-4 space-y-2">
-                        {template.tasks.slice(0, 3).map((task) => (
+                      {!taskPanelOpen && (
+                        <div className="mt-4 space-y-2">
+                        {visibleTaskPreview.map((task) => (
                           <p key={task} className="text-sm text-slate-500">
                             • {task}
                           </p>
                         ))}
-                        {template.tasks.length > 3 && (
-                          <p className="text-sm font-bold text-cyan-700">
-                            +{template.tasks.length - 3} more in assignment
-                          </p>
+                        {hiddenTaskCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleTemplateTaskPanel(template.id)}
+                            className="bd-focus text-sm font-bold text-cyan-700 transition hover:text-cyan-900"
+                          >
+                            +{hiddenTaskCount} more in assignment
+                          </button>
                         )}
                       </div>
-                    </button>
+                      )}
+
+                      {taskPanelOpen && (
+                        <div className="mt-5 rounded-3xl border border-cyan-100 bg-[#f8fcfd] p-4 shadow-inner shadow-cyan-950/5">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                              Assignment tasks
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => resetTemplateTasks(template.id)}
+                              className="bd-focus rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:border-cyan-300 hover:text-cyan-800"
+                            >
+                              Reset
+                            </button>
+                          </div>
+
+                          <div className="mt-4 space-y-2.5">
+                            {assignmentTasks.map((task, index) => (
+                              <div key={`${template.id}-${index}`} className="flex items-center gap-2">
+                                <input
+                                  value={task}
+                                  onChange={(event) =>
+                                    updateTemplateTask(template.id, template.tasks, index, event.target.value)
+                                  }
+                                  className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeTemplateTask(template.id, template.tasks, index)}
+                                  className="bd-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-rose-100 bg-white text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-50"
+                                  title="Remove task"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+
+                            {assignmentTasks.length === 0 && (
+                              <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-500">
+                                Add at least one task before assigning this checklist.
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="mt-4 flex gap-2">
+                            <input
+                              value={newTemplateTasks[template.id] || ""}
+                              onChange={(event) =>
+                                setNewTemplateTasks((current) => ({
+                                  ...current,
+                                  [template.id]: event.target.value,
+                                }))
+                              }
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                  event.preventDefault();
+                                  addTemplateTask(template.id, template.tasks);
+                                }
+                              }}
+                              placeholder="New task"
+                              className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => addTemplateTask(template.id, template.tasks)}
+                              className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
+                              title="Add task"
+                            >
+                              <Plus className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </article>
                   );
                 })}
 
