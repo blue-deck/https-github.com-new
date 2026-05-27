@@ -75,9 +75,17 @@ export default function NotificationCenterPage() {
   async function generateSmartNotifications() {
     setLoading(true);
 
-    const { data: tasks } = await supabase
-      .from("crew_tasks")
-      .select("*")
+    const { data: checklists } = await supabase
+      .from("yacht_checklists")
+      .select(`
+        id,
+        title,
+        department,
+        yacht_checklist_items (
+          id,
+          completed
+        )
+      `)
       .eq("yacht_id", yachtId);
 
     const { data: expiryAlerts } = await supabase
@@ -104,18 +112,24 @@ export default function NotificationCenterPage() {
       .order("created_at", { ascending: false })
       .limit(1);
 
-    const pendingTasks = (tasks || []).filter((t: any) => t.status !== "completed");
+    const pendingChecklists = (checklists || [])
+      .map((checklist: any) => {
+        const items = checklist.yacht_checklist_items || [];
+        const pendingCount = items.filter((item: any) => !item.completed).length;
+        return { ...checklist, pendingCount };
+      })
+      .filter((checklist: any) => checklist.pendingCount > 0);
 
     const items: any[] = [];
 
-    pendingTasks.forEach((task: any) => {
+    pendingChecklists.forEach((checklist: any) => {
       items.push({
-        title: `Pending Task: ${task.title}`,
-        message: task.description || "Crew task is still pending.",
+        title: `Pending Checklist: ${checklist.title}`,
+        message: `${checklist.department || "Yacht"} checklist has ${checklist.pendingCount} open item${checklist.pendingCount === 1 ? "" : "s"}.`,
         category: "crew",
         severity: "warning",
-        source_table: "crew_tasks",
-        source_id: task.id,
+        source_table: "yacht_checklists",
+        source_id: checklist.id,
       });
     });
 

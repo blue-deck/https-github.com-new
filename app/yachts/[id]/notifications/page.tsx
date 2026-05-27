@@ -27,11 +27,19 @@ export default function NotificationsPage() {
       .eq("yacht_id", yachtId)
       .neq("status", "resolved");
 
-    const { data: tasks } = await supabase
-      .from("crew_tasks")
-      .select("*")
+    const { data: checklists } = await supabase
+      .from("yacht_checklists")
+      .select(`
+        id,
+        title,
+        department,
+        yacht_checklist_items (
+          id,
+          completed
+        )
+      `)
       .eq("yacht_id", yachtId)
-      .eq("status", "pending");
+      .order("created_at", { ascending: false });
 
     for (const alert of alerts || []) {
       await supabase.from("notifications").insert({
@@ -42,12 +50,16 @@ export default function NotificationsPage() {
       });
     }
 
-    for (const task of tasks || []) {
+    for (const checklist of checklists || []) {
+      const items = checklist.yacht_checklist_items || [];
+      const pendingCount = items.filter((item: any) => !item.completed).length;
+      if (!pendingCount) continue;
+
       await supabase.from("notifications").insert({
         yacht_id: yachtId,
-        title: `Pending Task: ${task.title}`,
-        message: task.description || "Crew task is still pending.",
-        type: "task",
+        title: `Pending Checklist: ${checklist.title}`,
+        message: `${checklist.department || "Yacht"} checklist has ${pendingCount} open item${pendingCount === 1 ? "" : "s"}.`,
+        type: "checklist",
       });
     }
 

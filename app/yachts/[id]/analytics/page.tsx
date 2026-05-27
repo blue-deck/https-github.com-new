@@ -37,15 +37,30 @@ export default function AnalyticsPage() {
       .select("*")
       .eq("yacht_id", yachtId);
 
-    const { data: taskData } = await supabase
-      .from("crew_tasks")
-      .select("*")
+    const { data: checklistData } = await supabase
+      .from("yacht_checklists")
+      .select(`
+        id,
+        title,
+        status,
+        yacht_checklist_items (
+          id,
+          completed
+        )
+      `)
       .eq("yacht_id", yachtId);
 
     setEngineLogs(engineData || []);
     setFuelLogs(fuelData || []);
     setExpenses(expenseData || []);
-    setTasks(taskData || []);
+    setTasks(
+      (checklistData || []).flatMap((checklist: any) =>
+        (checklist.yacht_checklist_items || []).map((item: any) => ({
+          ...item,
+          status: item.completed ? "completed" : "pending",
+        }))
+      )
+    );
   }
 
   useEffect(() => {

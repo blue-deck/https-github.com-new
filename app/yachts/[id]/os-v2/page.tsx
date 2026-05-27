@@ -276,7 +276,7 @@ export default function BlueDeckOSV2Page() {
 
                 <Insight
                   title="Offline Mode"
-                  text="This local dashboard can continue as a manual offline logbook pattern."
+                  text="YachtOS keeps a structured operations log ready for onboard continuity."
                 />
               </div>
             </div>

@@ -56,9 +56,9 @@ export default function CrewPage() {
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
   const [expandedProgress, setExpandedProgress] = useState<string[]>([]);
   const [operator, setOperator] = useState({
-    position: "Captain",
-    department: "Command",
-    role: "captain",
+    position: "",
+    department: "",
+    role: "",
   });
   const [templateDepartmentFilter, setTemplateDepartmentFilter] = useState("All");
   const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
@@ -119,6 +119,15 @@ export default function CrewPage() {
   }
 
   async function loadData(silent = false) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
+
     let crewResponse = await supabase
       .from("yacht_crew_memberships")
       .select(`
@@ -182,23 +191,14 @@ export default function CrewPage() {
 
     setCrew(crewData || []);
     setChecklists(checklistData || []);
-    await loadCurrentOperator(crewData || []);
+    loadCurrentOperator(crewData || [], user);
   }
 
-  async function loadCurrentOperator(crewData: any[]) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+  function loadCurrentOperator(crewData: any[], user: any) {
     const role =
       typeof user?.user_metadata?.role === "string"
         ? user.user_metadata.role
         : "";
-
-    if (!user) {
-      setOperator({ position: "Captain", department: "Command", role: "captain" });
-      return;
-    }
 
     const normalizedUserEmail = normalizeEmail(user.email);
     const membership = crewData.find((member) => {
@@ -209,14 +209,18 @@ export default function CrewPage() {
       );
     });
 
+    if (!membership && role !== "captain" && role !== "management") {
+      setOperator({ position: "", department: "", role });
+      return;
+    }
+
     const operatorPosition =
       membership?.position ||
       membership?.crew_profiles?.current_position ||
-      getDefaultPositionForAccountType(role) ||
-      "Deckhand";
+      getDefaultPositionForAccountType(role);
 
     setOperator({
-      position: operatorPosition,
+      position: operatorPosition || "",
       department: membership?.department || getDepartmentByPosition(operatorPosition),
       role,
     });

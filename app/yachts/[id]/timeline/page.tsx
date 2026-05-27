@@ -13,14 +13,20 @@ export default function TimelinePage() {
   async function fetchTimeline() {
     const timeline: any[] = [];
 
-    const { data: tasks } = await supabase
-      .from("crew_tasks")
-      .select("*")
-      .eq("yacht_id", yachtId);
-
     const { data: checklists } = await supabase
-      .from("checklists")
-      .select("*")
+      .from("yacht_checklists")
+      .select(`
+        id,
+        title,
+        department,
+        frequency,
+        status,
+        created_at,
+        yacht_checklist_items (
+          id,
+          completed
+        )
+      `)
       .eq("yacht_id", yachtId);
 
     const { data: documents } = await supabase
@@ -33,23 +39,16 @@ export default function TimelinePage() {
       .select("*")
       .eq("yacht_id", yachtId);
 
-    (tasks || []).forEach((item) =>
-      timeline.push({
-        time: item.created_at,
-        title: item.title,
-        type: "Task",
-        message: `Task status: ${item.status}`,
-      })
-    );
-
-    (checklists || []).forEach((item) =>
+    (checklists || []).forEach((item) => {
+      const tasks = item.yacht_checklist_items || [];
+      const completed = tasks.filter((task: any) => task.completed).length;
       timeline.push({
         time: item.created_at,
         title: item.title,
         type: "Checklist",
-        message: `Checklist type: ${item.checklist_type}`,
-      })
-    );
+        message: `${item.department || "Yacht"} · ${item.frequency || "Assigned"} · ${completed}/${tasks.length} complete`,
+      });
+    });
 
     (documents || []).forEach((item) =>
       timeline.push({

@@ -49,9 +49,18 @@ export default function CommandCenterPage() {
       .select("*")
       .eq("yacht_id", yachtId);
 
-    const { data: taskData } = await supabase
-      .from("crew_tasks")
-      .select("*")
+    const { data: checklistData } = await supabase
+      .from("yacht_checklists")
+      .select(`
+        id,
+        title,
+        status,
+        yacht_checklist_items (
+          id,
+          task_text,
+          completed
+        )
+      `)
       .eq("yacht_id", yachtId);
 
     const { data: alertData } = await supabase
@@ -74,7 +83,15 @@ export default function CommandCenterPage() {
     setPosition(positionData || null);
     setVoyage(voyageData || null);
     setEngineering(engData || []);
-    setTasks(taskData || []);
+    setTasks(
+      (checklistData || []).flatMap((checklist: any) =>
+        (checklist.yacht_checklist_items || []).map((item: any) => ({
+          ...item,
+          title: item.task_text || checklist.title,
+          status: item.completed ? "completed" : "pending",
+        }))
+      )
+    );
     setAlerts(alertData || []);
 
     setFinance({
