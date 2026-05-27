@@ -1125,8 +1125,6 @@ export default function CrewPage() {
                   const taskPanelOpen = expandedTemplateTasks.includes(template.id);
                   const assignmentTasks = getTemplateAssignmentTasks(template);
                   const trimmedTasks = assignmentTasks.map((task) => task.trim()).filter(Boolean);
-                  const visibleTaskPreview = trimmedTasks.slice(0, 3);
-                  const hiddenTaskCount = Math.max(trimmedTasks.length - visibleTaskPreview.length, 0);
 
                   return (
                     <article
@@ -1178,25 +1176,6 @@ export default function CrewPage() {
                         <span className="text-cyan-700">{taskPanelOpen ? "Close" : "Review"}</span>
                         <ChevronDown className={`h-4 w-4 transition ${taskPanelOpen ? "rotate-180" : ""}`} />
                       </button>
-
-                      {!taskPanelOpen && (
-                        <div className="mt-4 space-y-2">
-                        {visibleTaskPreview.map((task) => (
-                          <p key={task} className="text-sm text-slate-500">
-                            • {task}
-                          </p>
-                        ))}
-                        {hiddenTaskCount > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => toggleTemplateTaskPanel(template.id)}
-                            className="bd-focus text-sm font-bold text-cyan-700 transition hover:text-cyan-900"
-                          >
-                            +{hiddenTaskCount} more in assignment
-                          </button>
-                        )}
-                      </div>
-                      )}
 
                       {taskPanelOpen && (
                         <div className="mt-5 rounded-3xl border border-cyan-100 bg-[#f8fcfd] p-4 shadow-inner shadow-cyan-950/5">
