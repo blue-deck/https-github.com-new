@@ -25,6 +25,7 @@ import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
+import { yachtPositionTitles } from "../lib/yachtOperations";
 
 type CountryOption = (typeof blueDeckCountries)[number] | (typeof nationalityOptions)[number];
 
@@ -99,27 +100,6 @@ type ReferenceEntry = {
   notes: string;
   show_on_cv: boolean;
 };
-
-const yachtPositions = [
-  "Captain",
-  "Relief Captain",
-  "Chief Officer",
-  "First Mate",
-  "Bosun",
-  "Deckhand",
-  "Chief Engineer",
-  "Engineer",
-  "ETO",
-  "Chief Steward/ess",
-  "Stewardess",
-  "Chef",
-  "Sous Chef",
-  "Purser",
-  "Deck/Stew",
-  "Cook/Stew",
-  "Delivery Crew",
-  "Tender Driver",
-];
 
 const workPreferences = [
   "Seasonal",
@@ -604,7 +584,7 @@ export default function ProfilePage() {
               />
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
               <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
-              <DropdownChoiceGroup title="Position" options={yachtPositions} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} />
+              <DropdownChoiceGroup title="Position" options={yachtPositionTitles} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} />
               <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
               <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
               <div className="grid grid-cols-2 gap-3">
@@ -699,7 +679,7 @@ export default function ProfilePage() {
             <Panel title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
               <DropdownChoiceGroup title="Personal skills" options={personalSkills} value={profile.personal_skills || []} onChange={(value) => setProfile({ ...profile, personal_skills: value })} />
               <DropdownChoiceGroup title="Personal characteristics" options={characteristics} value={profile.personal_characteristics || []} onChange={(value) => setProfile({ ...profile, personal_characteristics: value })} />
-              <DropdownChoiceGroup title="Seeking positions" options={yachtPositions} value={profile.seeking_positions || []} onChange={(value) => setProfile({ ...profile, seeking_positions: value })} />
+              <DropdownChoiceGroup title="Seeking positions" options={yachtPositionTitles} value={profile.seeking_positions || []} onChange={(value) => setProfile({ ...profile, seeking_positions: value })} />
             </Panel>
 
             <CvPreview

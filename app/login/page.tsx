@@ -8,6 +8,7 @@ import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
+import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
 type AuthMode = "login" | "signup";
 const productionSiteUrl = "https://www.bluedeck.app";
@@ -20,6 +21,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
+  const [position, setPosition] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -58,7 +60,7 @@ export default function LoginPage() {
         email: userEmail,
         full_name: fullName || userEmail,
         phone,
-        current_position: role === "captain" ? "Captain" : "Crew",
+        current_position: position || getDefaultPositionForAccountType(role) || "Deckhand",
         public_crew_id: userId.slice(0, 8).toUpperCase(),
       }
     );
@@ -72,8 +74,8 @@ export default function LoginPage() {
       return;
     }
 
-    if (mode === "signup" && (!fullName.trim() || !phone.trim() || !role)) {
-      setNotice("Name, email, password, phone and account type are required.");
+    if (mode === "signup" && (!fullName.trim() || !phone.trim() || !role || !position)) {
+      setNotice("Name, email, password, phone, account type and yacht position are required.");
       return;
     }
 
@@ -126,6 +128,7 @@ export default function LoginPage() {
           fullName: fullName.trim(),
           phone,
           role,
+          position,
         }),
       });
 
@@ -274,7 +277,11 @@ export default function LoginPage() {
                   <select
                     value={role}
                     required
-                    onChange={(event) => setRole(event.target.value)}
+                    onChange={(event) => {
+                      const nextRole = event.target.value;
+                      setRole(nextRole);
+                      setPosition(getDefaultPositionForAccountType(nextRole));
+                    }}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   >
                     <option value="">Select account type</option>
@@ -282,6 +289,28 @@ export default function LoginPage() {
                     <option value="captain">Captain</option>
                     <option value="owner">Owner</option>
                     <option value="management">Management</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-2 block text-sm text-slate-500">
+                    Yacht position <span className="text-rose-500">*</span>
+                  </span>
+                  <select
+                    value={position}
+                    required
+                    onChange={(event) => setPosition(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                  >
+                    <option value="">Select yacht position</option>
+                    {positionSelectGroups.map((group) => (
+                      <optgroup key={group.department} label={group.department}>
+                        {group.positions.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
                   </select>
                 </label>
               </>

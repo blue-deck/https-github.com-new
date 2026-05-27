@@ -22,208 +22,19 @@ import {
   X,
 } from "lucide-react";
 import { saveYachtMembership } from "../../../lib/yachtMemberships";
+import {
+  canAssignChecklistDepartment,
+  canAssignToCrew,
+  checklistFrequencies,
+  checklistTemplates,
+  getAssignableDepartments,
+  getDefaultPositionForAccountType,
+  getDepartmentByPosition,
+  positionSelectGroups,
+  yachtDepartments,
+} from "../../../lib/yachtOperations";
 
 const yachtId = "f434e90f-b8d8-443c-ad23-d5cedbe4308f";
-
-const checklistTemplates: any = {
-  Deck: [
-    {
-      title: "Departure Preparation",
-      type: "Departure",
-      tasks: [
-        "Fenders ready",
-        "Lines ready",
-        "Deck clear",
-        "Tender secured",
-        "Passerelle secured",
-        "Navigation lights checked",
-        "Water toys secured",
-        "Guest areas checked",
-      ],
-    },
-    {
-      title: "Arrival Preparation",
-      type: "Arrival",
-      tasks: [
-        "Fenders deployed",
-        "Mooring lines prepared",
-        "Passerelle ready",
-        "Deck crew in position",
-        "Shore power cable ready",
-        "Water hose ready",
-      ],
-    },
-    {
-      title: "Anchor Watch",
-      type: "Watchkeeping",
-      tasks: [
-        "Anchor position checked",
-        "GPS drift checked",
-        "Weather checked",
-        "Nearby vessels checked",
-        "Deck security round completed",
-        "Bilge alarm panel checked",
-      ],
-    },
-    {
-      title: "Exterior Washdown",
-      type: "Daily",
-      tasks: [
-        "Aft deck washed",
-        "Foredeck washed",
-        "Side decks washed",
-        "Stainless wiped",
-        "Teak checked",
-        "Windows rinsed",
-      ],
-    },
-  ],
-
-  Interior: [
-    {
-      title: "Guest Arrival Preparation",
-      type: "Guest",
-      tasks: [
-        "Cabins prepared",
-        "Bathrooms sanitized",
-        "Towels placed",
-        "Welcome drinks ready",
-        "Guest amenities placed",
-        "Interior temperature checked",
-      ],
-    },
-    {
-      title: "Cabin Turnover",
-      type: "Daily",
-      tasks: [
-        "Beds made",
-        "Bathrooms cleaned",
-        "Laundry collected",
-        "Bins emptied",
-        "Amenities refilled",
-        "Cabin surfaces cleaned",
-      ],
-    },
-    {
-      title: "Table Service Setup",
-      type: "Guest",
-      tasks: [
-        "Table dressed",
-        "Cutlery polished",
-        "Glassware checked",
-        "Napkins prepared",
-        "Drinks station ready",
-        "Galley coordination confirmed",
-      ],
-    },
-  ],
-
-  Engineering: [
-    {
-      title: "Engine Room Daily Check",
-      type: "Daily",
-      tasks: [
-        "Main engine oil levels checked",
-        "Generator oil levels checked",
-        "Bilges checked",
-        "Seawater strainers checked",
-        "Battery voltage checked",
-        "Engine room temperature checked",
-        "Leaks checked",
-        "Alarm panel checked",
-      ],
-    },
-    {
-      title: "Generator Watch",
-      type: "Watchkeeping",
-      tasks: [
-        "Generator load checked",
-        "Generator temperature checked",
-        "Fuel level checked",
-        "Exhaust water flow checked",
-        "Abnormal noise checked",
-        "Engine room ventilation checked",
-      ],
-    },
-    {
-      title: "Watermaker Check",
-      type: "Maintenance",
-      tasks: [
-        "Pre-filters checked",
-        "Pressure checked",
-        "Fresh water production checked",
-        "Leaks checked",
-        "Flush cycle confirmed",
-        "System logged",
-      ],
-    },
-  ],
-
-  Toys: [
-    {
-      title: "Jetski Preparation",
-      type: "Toys",
-      tasks: [
-        "Fuel level checked",
-        "Battery checked",
-        "Safety lanyard checked",
-        "Flush connection ready",
-        "Lifejackets ready",
-        "Guest briefing prepared",
-      ],
-    },
-    {
-      title: "Seabob Preparation",
-      type: "Toys",
-      tasks: [
-        "Batteries charged",
-        "Units rinsed",
-        "Prop guards checked",
-        "Charging station checked",
-        "Guest safety briefing ready",
-      ],
-    },
-    {
-      title: "Beach Club Setup",
-      type: "Guest",
-      tasks: [
-        "Towels ready",
-        "Water toys ready",
-        "Drinks cooler ready",
-        "Shade setup ready",
-        "Tender standby confirmed",
-        "Safety gear ready",
-      ],
-    },
-  ],
-
-  Safety: [
-    {
-      title: "Guest Safety Briefing",
-      type: "Safety",
-      tasks: [
-        "Lifejackets location explained",
-        "Muster point explained",
-        "Smoking rules explained",
-        "Tender safety explained",
-        "Water toys safety explained",
-        "Emergency procedure explained",
-      ],
-    },
-    {
-      title: "Weekly Safety Check",
-      type: "Weekly",
-      tasks: [
-        "Fire extinguishers checked",
-        "EPIRB checked",
-        "Life raft expiry checked",
-        "First aid kit checked",
-        "Emergency lights checked",
-        "MOB equipment checked",
-      ],
-    },
-  ],
-};
 
 export default function CrewPage() {
   const [crew, setCrew] = useState<any[]>([]);
@@ -236,7 +47,7 @@ export default function CrewPage() {
   const [fullName, setFullName] = useState("");
   const [position, setPosition] = useState("Deckhand");
   const [department, setDepartment] = useState("Deck");
-  const [frequency, setFrequency] = useState("Daily");
+  const [frequency, setFrequency] = useState("Template default");
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
   const [contractText, setContractText] = useState("");
@@ -244,16 +55,60 @@ export default function CrewPage() {
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
   const [expandedProgress, setExpandedProgress] = useState<string[]>([]);
+  const [operator, setOperator] = useState({
+    position: "Captain",
+    department: "Command",
+    role: "captain",
+  });
+  const [templateDepartmentFilter, setTemplateDepartmentFilter] = useState("All");
+  const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
+  const [templateSearch, setTemplateSearch] = useState("");
 
-  const allTemplates = useMemo(() => {
-    return Object.entries(checklistTemplates).flatMap(([department, items]: any) =>
-      items.map((item: any) => ({
-        ...item,
-        department,
-        key: `${department}-${item.title}`,
-      }))
+  const assignableDepartments = useMemo(
+    () => getAssignableDepartments(operator.position, operator.department),
+    [operator.department, operator.position]
+  );
+
+  const assignableCrew = useMemo(() => {
+    return crew.filter((member) =>
+      canAssignToCrew(
+        operator.position,
+        operator.department,
+        member.position || member.crew_profiles?.current_position,
+        member.department,
+        operator.role
+      )
     );
-  }, []);
+  }, [crew, operator.department, operator.position, operator.role]);
+
+  const availableTemplates = useMemo(() => {
+    return checklistTemplates.filter((template) =>
+      canAssignChecklistDepartment(
+        operator.position,
+        operator.department,
+        template.department,
+        operator.role
+      )
+    );
+  }, [operator.department, operator.position, operator.role]);
+
+  const visibleTemplates = useMemo(() => {
+    const search = templateSearch.trim().toLowerCase();
+
+    return availableTemplates.filter((template) => {
+      const matchesDepartment =
+        templateDepartmentFilter === "All" || template.department === templateDepartmentFilter;
+      const matchesFrequency =
+        templateFrequencyFilter === "All" || template.frequency === templateFrequencyFilter;
+      const matchesSearch =
+        !search ||
+        `${template.title} ${template.department} ${template.type} ${template.summary} ${template.tasks.join(" ")}`
+          .toLowerCase()
+          .includes(search);
+
+      return matchesDepartment && matchesFrequency && matchesSearch;
+    });
+  }, [availableTemplates, templateDepartmentFilter, templateFrequencyFilter, templateSearch]);
 
   function toggleProgressCard(id: string) {
     setExpandedProgress((current) =>
@@ -270,8 +125,10 @@ export default function CrewPage() {
         *,
         crew_profiles (
           id,
+          user_id,
           email,
           full_name,
+          current_position,
           phone,
           nationality,
           passport_number,
@@ -290,8 +147,10 @@ export default function CrewPage() {
           *,
           crew_profiles (
             id,
+            user_id,
             email,
             full_name,
+            current_position,
             phone,
             nationality
           )
@@ -323,6 +182,44 @@ export default function CrewPage() {
 
     setCrew(crewData || []);
     setChecklists(checklistData || []);
+    await loadCurrentOperator(crewData || []);
+  }
+
+  async function loadCurrentOperator(crewData: any[]) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const role =
+      typeof user?.user_metadata?.role === "string"
+        ? user.user_metadata.role
+        : "";
+
+    if (!user) {
+      setOperator({ position: "Captain", department: "Command", role: "captain" });
+      return;
+    }
+
+    const normalizedUserEmail = normalizeEmail(user.email);
+    const membership = crewData.find((member) => {
+      return (
+        member.crew_profiles?.user_id === user.id ||
+        normalizeEmail(member.crew_profiles?.email) === normalizedUserEmail ||
+        normalizeEmail(member.invited_email) === normalizedUserEmail
+      );
+    });
+
+    const operatorPosition =
+      membership?.position ||
+      membership?.crew_profiles?.current_position ||
+      getDefaultPositionForAccountType(role) ||
+      "Deckhand";
+
+    setOperator({
+      position: operatorPosition,
+      department: membership?.department || getDepartmentByPosition(operatorPosition),
+      role,
+    });
   }
 
   useEffect(() => {
@@ -342,9 +239,27 @@ export default function CrewPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [photoPreview]);
 
+  useEffect(() => {
+    setSelectedTemplates((current) =>
+      current.filter((id) => availableTemplates.some((template) => template.id === id))
+    );
+  }, [availableTemplates]);
+
+  useEffect(() => {
+    if (!selectedCrew) return;
+    if (!assignableCrew.some((member) => member.id === selectedCrew)) {
+      setSelectedCrew("");
+    }
+  }, [assignableCrew, selectedCrew]);
+
   async function addCrew() {
     if (!inviteEmail && !crewPublicId) {
       alert("Crew email or Crew ID required");
+      return;
+    }
+
+    if (!canAssignToCrew(operator.position, operator.department, position, department, operator.role)) {
+      alert("You can only invite crew within your BlueDeck hierarchy.");
       return;
     }
 
@@ -377,16 +292,20 @@ export default function CrewPage() {
       } else if (existingProfile.data?.[0]) {
         profile = existingProfile.data[0];
 
-        if (fullName && !profile.full_name) {
+        if ((fullName && !profile.full_name) || !profile.current_position) {
           await supabase
             .from("crew_profiles")
-            .update({ full_name: fullName })
+            .update({
+              ...(fullName && !profile.full_name ? { full_name: fullName } : {}),
+              ...(!profile.current_position ? { current_position: position } : {}),
+            })
             .eq("id", profile.id);
         }
       } else {
         const response = await insertCrewProfile({
           email: normalizedInviteEmail,
           full_name: fullName,
+          current_position: position,
           public_crew_id: crypto.randomUUID().slice(0, 8).toUpperCase(),
         });
 
@@ -520,10 +439,35 @@ export default function CrewPage() {
     setLoading(true);
 
     const member = crew.find((item) => item.id === selectedCrew);
+    if (
+      !member ||
+      !canAssignToCrew(
+        operator.position,
+        operator.department,
+        member.position || member.crew_profiles?.current_position,
+        member.department,
+        operator.role
+      )
+    ) {
+      alert("You can only assign checklists to crew below you in the yacht hierarchy.");
+      setLoading(false);
+      return;
+    }
 
     for (const key of selectedTemplates) {
-      const template = allTemplates.find((item) => item.key === key);
+      const template = checklistTemplates.find((item) => item.id === key);
       if (!template) continue;
+      if (
+        !canAssignChecklistDepartment(
+          operator.position,
+          operator.department,
+          template.department,
+          operator.role
+        )
+      ) {
+        alert(`${template.title} is outside your checklist authority.`);
+        continue;
+      }
 
       const { data: checklist, error } = await createChecklist({
         yacht_id: yachtId,
@@ -534,9 +478,11 @@ export default function CrewPage() {
         due_date: dueDate || null,
         status: "open",
         items: {
-          frequency,
+          frequency: frequency === "Template default" ? template.frequency : frequency,
           captain_note: captainNote || null,
           tasks: template.tasks,
+          source_template: template.id,
+          summary: template.summary,
         },
       });
 
@@ -676,11 +622,11 @@ export default function CrewPage() {
           <div className="p-10">
           <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck CrewOS</p>
           <h1 className="mt-3 text-6xl font-black">
-            Crew Management & Checklist Assignment
+            Yacht Crew Command
           </h1>
           <p className="mt-5 max-w-4xl text-xl leading-relaxed text-slate-500">
-            Add crew, assign department-based yacht checklists, manage roles,
-            watchkeeping and operational duties.
+            Assign professional yacht checklists through the correct onboard hierarchy,
+            review proof and keep every department working from one calm command view.
           </p>
           </div>
         </div>
@@ -688,8 +634,8 @@ export default function CrewPage() {
         <div className="mb-10 grid gap-6 md:grid-cols-4">
           <Stat title="Crew" value={crew.length} icon={<Bell />} />
           <Stat title="Open Checklists" value={checklists.length} icon={<ClipboardList />} />
-          <Stat title="Departments" value="5" icon={<ShipWheel />} />
-          <Stat title="Status" value="Operational" icon={<CheckSquare />} />
+          <Stat title="Library" value={`${checklistTemplates.length} templates`} icon={<ShipWheel />} />
+          <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
         </div>
 
         <div className="grid gap-8 xl:grid-cols-[420px_1fr]">
@@ -729,14 +675,22 @@ export default function CrewPage() {
 
                 <select
                   value={position}
-                  onChange={(e) => setPosition(e.target.value)}
+                  onChange={(e) => {
+                    const nextPosition = e.target.value;
+                    setPosition(nextPosition);
+                    setDepartment(getDepartmentByPosition(nextPosition));
+                  }}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 >
-                  <option>Captain</option>
-                  <option>Engineer</option>
-                  <option>Deckhand</option>
-                  <option>Stewardess</option>
-                  <option>Chef</option>
+                  {positionSelectGroups.map((group) => (
+                    <optgroup key={group.department} label={group.department}>
+                      {group.positions.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
 
                 <select
@@ -744,11 +698,11 @@ export default function CrewPage() {
                   onChange={(e) => setDepartment(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 >
-                  <option>Deck</option>
-                  <option>Interior</option>
-                  <option>Engineering</option>
-                  <option>Toys</option>
-                  <option>Safety</option>
+                  {yachtDepartments.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
                 </select>
 
                 <button
@@ -778,12 +732,17 @@ export default function CrewPage() {
                 className="mt-8 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
               >
                 <option value="">Select crew</option>
-                {crew.map((member) => (
+                {assignableCrew.map((member) => (
                   <option key={member.id} value={member.id}>
                     {member.crew_profiles?.full_name || member.invited_email} — {member.position}
                   </option>
                 ))}
               </select>
+              {assignableCrew.length === 0 && (
+                <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-slate-600">
+                  No crew below your current hierarchy is available for assignment yet.
+                </p>
+              )}
 
               <button
                 onClick={assignSelectedChecklists}
@@ -799,11 +758,9 @@ export default function CrewPage() {
                   onChange={(e) => setFrequency(e.target.value)}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
                 >
-                  <option>Daily</option>
-                  <option>Weekly</option>
-                  <option>One-time</option>
-                  <option>Before Departure</option>
-                  <option>After Arrival</option>
+                  {checklistFrequencies.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
                 </select>
 
                 <input
@@ -1027,61 +984,149 @@ export default function CrewPage() {
           </div>
 
           <div className="space-y-8">
-            {Object.entries(checklistTemplates).map(([dept, templates]: any) => (
-              <div key={dept} className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
-                <div className="mb-8 flex items-center gap-4">
-                  <DepartmentIcon department={dept} />
+            <div className="rounded-[36px] border border-slate-200 bg-white/90 p-8 shadow-xl shadow-cyan-950/5">
+              <div className="flex flex-wrap items-start justify-between gap-5">
+                <div className="flex items-center gap-4">
+                  <DepartmentIcon department="Command" />
                   <div>
-                    <p className="text-cyan-700">Checklist Department</p>
-                    <h2 className="text-5xl font-black">{dept}</h2>
+                    <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
+                      Professional Yacht Library
+                    </p>
+                    <h2 className="text-5xl font-black">Checklist System</h2>
+                    <p className="mt-3 max-w-3xl text-slate-500">
+                      Command, deck, engineering, interior, galley, safety, toys and guest
+                      operations are grouped for fast assignment without crowding the page.
+                    </p>
                   </div>
                 </div>
 
-                <div className="grid gap-5 md:grid-cols-2">
-                  {templates.map((template: any) => {
-                    const key = `${dept}-${template.title}`;
-                    const selected = selectedTemplates.includes(key);
+                <div className="rounded-3xl border border-cyan-100 bg-cyan-50 px-5 py-4 text-sm text-slate-600">
+                  <p className="font-black text-slate-950">{operator.position}</p>
+                  <p className="mt-1">
+                    {availableTemplates.length === checklistTemplates.length
+                      ? "Full captain access"
+                      : `Allowed: ${assignableDepartments.join(", ") || operator.department}`}
+                  </p>
+                </div>
+              </div>
 
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => toggleTemplate(key)}
-                        className={`rounded-[28px] border p-6 text-left transition ${
-                          selected
-                            ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_50px_rgba(8,145,178,0.12)]"
-                            : "border-slate-200 bg-white hover:border-cyan-300"
-                        }`}
-                      >
-                        <div className="flex items-start gap-4">
+              <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
+                <input
+                  value={templateSearch}
+                  onChange={(event) => setTemplateSearch(event.target.value)}
+                  placeholder="Search checklist, task or department"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                />
+                <select
+                  value={templateDepartmentFilter}
+                  onChange={(event) => setTemplateDepartmentFilter(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                >
+                  <option value="All">All departments</option>
+                  {yachtDepartments.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={templateFrequencyFilter}
+                  onChange={(event) => setTemplateFrequencyFilter(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                >
+                  <option value="All">All frequencies</option>
+                  {checklistFrequencies
+                    .filter((item) => item !== "Template default")
+                    .map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.14em]">
+                <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-slate-500">
+                  {visibleTemplates.length} visible
+                </span>
+                <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-cyan-800">
+                  {selectedTemplates.length} selected
+                </span>
+                <span className="rounded-full border border-slate-200 bg-white px-4 py-2 text-slate-500">
+                  {availableTemplates.length} authorized
+                </span>
+              </div>
+
+              <div className="mt-8 grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+                {visibleTemplates.map((template) => {
+                  const selected = selectedTemplates.includes(template.id);
+
+                  return (
+                    <button
+                      key={template.id}
+                      onClick={() => toggleTemplate(template.id)}
+                      className={`rounded-[28px] border p-5 text-left transition ${
+                        selected
+                          ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_50px_rgba(8,145,178,0.12)]"
+                          : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-xl hover:shadow-cyan-950/10"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
                           <div
-                            className={`mt-1 flex h-7 w-7 items-center justify-center rounded-lg border ${
+                            className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
                               selected
                                 ? "border-cyan-600 bg-cyan-600 text-white"
-                                : "border-slate-300"
+                                : "border-slate-300 bg-white text-slate-300"
                             }`}
                           >
-                            {selected && <CheckCircle className="h-5 w-5" />}
+                            {selected ? <CheckCircle className="h-5 w-5" /> : <ClipboardList className="h-4 w-4" />}
                           </div>
 
                           <div>
-                            <h3 className="text-2xl font-black">{template.title}</h3>
-                            <p className="mt-2 text-sm text-cyan-700">{template.type}</p>
-
-                            <div className="mt-5 space-y-2">
-                              {template.tasks.map((task: string) => (
-                                <p key={task} className="text-sm text-slate-500">
-                                  • {task}
-                                </p>
-                              ))}
-                            </div>
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
+                              {template.department} · {template.type}
+                            </p>
+                            <h3 className="mt-2 text-2xl font-black text-slate-950">{template.title}</h3>
                           </div>
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
+
+                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
+                          {template.frequency}
+                        </span>
+                      </div>
+
+                      <p className="mt-4 text-sm leading-6 text-slate-500">{template.summary}</p>
+
+                      <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.12em]">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">
+                          {template.tasks.length} tasks
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        {template.tasks.slice(0, 3).map((task) => (
+                          <p key={task} className="text-sm text-slate-500">
+                            • {task}
+                          </p>
+                        ))}
+                        {template.tasks.length > 3 && (
+                          <p className="text-sm font-bold text-cyan-700">
+                            +{template.tasks.length - 3} more in assignment
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+
+                {visibleTemplates.length === 0 && (
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-6 text-slate-500">
+                    No checklist matches this filter or your current hierarchy authority.
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1127,11 +1172,21 @@ export default function CrewPage() {
 }
 
 function DepartmentIcon({ department }: any) {
+  if (department === "Command") return <ShipWheel className="h-12 w-12 text-cyan-700" />;
   if (department === "Deck") return <ShipWheel className="h-12 w-12 text-cyan-700" />;
   if (department === "Interior") return <Utensils className="h-12 w-12 text-[#b9427b]" />;
+  if (department === "Galley") return <Utensils className="h-12 w-12 text-[#c46d24]" />;
   if (department === "Engineering") return <Wrench className="h-12 w-12 text-[#c46d24]" />;
   if (department === "Toys") return <Waves className="h-12 w-12 text-blue-700" />;
+  if (department === "Guest") return <Anchor className="h-12 w-12 text-[#1f6f8b]" />;
+  if (department === "Purser") return <ClipboardList className="h-12 w-12 text-[#1f6f8b]" />;
+  if (department === "Security") return <CheckSquare className="h-12 w-12 text-[#1f6f8b]" />;
+  if (department === "Medical") return <LifeBuoy className="h-12 w-12 text-emerald-700" />;
   return <LifeBuoy className="h-12 w-12 text-[#b9423b]" />;
+}
+
+function normalizeEmail(value?: string | null) {
+  return (value || "").trim().toLowerCase();
 }
 
 function omitKeys<T extends Record<string, any>>(value: T, keys: string[]) {

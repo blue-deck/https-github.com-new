@@ -10,6 +10,7 @@ import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
+import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
 type SettingsProfile = {
   id?: string;
@@ -17,6 +18,7 @@ type SettingsProfile = {
   full_name: string;
   phone: string;
   role: string;
+  current_position: string;
 };
 
 type Notice = {
@@ -37,6 +39,7 @@ export default function SettingsPage() {
     full_name: "",
     phone: "",
     role: "crew",
+    current_position: "",
   });
   const [originalEmail, setOriginalEmail] = useState("");
   const [loading, setLoading] = useState(true);
@@ -83,6 +86,7 @@ export default function SettingsPage() {
       full_name: fullName,
       phone,
       role,
+      current_position: cleanText(crewProfile?.current_position) || getDefaultPositionForAccountType(role) || "Deckhand",
     });
     setOriginalEmail(email);
     setLoading(false);
@@ -91,8 +95,8 @@ export default function SettingsPage() {
   async function saveAccountProfile() {
     setNotice(null);
 
-    if (!profile.full_name.trim() || !profile.email.trim() || !profile.role) {
-      setNotice({ tone: "error", message: "Name, email and account type are required." });
+    if (!profile.full_name.trim() || !profile.email.trim() || !profile.role || !profile.current_position) {
+      setNotice({ tone: "error", message: "Name, email, account type and yacht position are required." });
       return;
     }
 
@@ -115,18 +119,21 @@ export default function SettingsPage() {
     const fullName = profile.full_name.trim();
     const phone = profile.phone.trim();
     const role = profile.role;
+    const currentPosition = profile.current_position;
     const authPayload: {
       email?: string;
       data: {
         full_name: string;
         phone: string;
         role: string;
+        position: string;
       };
     } = {
       data: {
         full_name: fullName,
         phone,
         role,
+        position: currentPosition,
       },
     };
 
@@ -155,6 +162,7 @@ export default function SettingsPage() {
           email,
           full_name: fullName,
           phone,
+          current_position: currentPosition,
           public_crew_id: user.id.slice(0, 8).toUpperCase(),
         }
       ),
@@ -168,7 +176,7 @@ export default function SettingsPage() {
     }
 
     setOriginalEmail(email);
-    setProfile((current) => ({ ...current, email, full_name: fullName, phone, role }));
+    setProfile((current) => ({ ...current, email, full_name: fullName, phone, role, current_position: currentPosition }));
     setNotice({
       tone: "success",
       message:
@@ -290,7 +298,14 @@ export default function SettingsPage() {
                     <select
                       value={profile.role}
                       required
-                      onChange={(event) => setProfile({ ...profile, role: event.target.value })}
+                      onChange={(event) => {
+                        const nextRole = event.target.value;
+                        setProfile({
+                          ...profile,
+                          role: nextRole,
+                          current_position: profile.current_position || getDefaultPositionForAccountType(nextRole),
+                        });
+                      }}
                       className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none shadow-sm transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                     >
                       {accountTypes.map((item) => (
@@ -301,6 +316,28 @@ export default function SettingsPage() {
                     </select>
                   </label>
                 </div>
+                <label className="block">
+                  <span className="mb-2 block text-sm font-semibold text-slate-600">
+                    Yacht position <span className="text-rose-500">*</span>
+                  </span>
+                  <select
+                    value={profile.current_position}
+                    required
+                    onChange={(event) => setProfile({ ...profile, current_position: event.target.value })}
+                    className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none shadow-sm transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
+                  >
+                    <option value="">Select yacht position</option>
+                    {positionSelectGroups.map((group) => (
+                      <optgroup key={group.department} label={group.department}>
+                        {group.positions.map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </label>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <button
                     type="button"

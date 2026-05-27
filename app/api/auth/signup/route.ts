@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
+import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -27,6 +28,7 @@ export async function POST(request: NextRequest) {
     fullName?: string;
     phone?: string;
     role?: string;
+    position?: string;
   };
 
   const email = body.email?.trim().toLowerCase();
@@ -34,9 +36,11 @@ export async function POST(request: NextRequest) {
   const fullName = body.fullName?.trim() || "";
   const phone = body.phone?.trim() || "";
   const role = accountTypes.includes(body.role || "") ? body.role || "crew" : "";
+  const requestedPosition = body.position?.trim() || getDefaultPositionForAccountType(role);
+  const position = yachtPositionTitles.includes(requestedPosition) ? requestedPosition : "";
 
-  if (!email || !password || !fullName || !phone || !role) {
-    return NextResponse.json({ error: "Name, email, password, phone and account type are required." }, { status: 400 });
+  if (!email || !password || !fullName || !phone || !role || !position) {
+    return NextResponse.json({ error: "Name, email, password, phone, account type and yacht position are required." }, { status: 400 });
   }
 
   if (!isCompletePhoneNumber(phone)) {
@@ -63,6 +67,7 @@ export async function POST(request: NextRequest) {
         full_name: fullName,
         phone,
         role,
+        position,
       },
     },
   });
@@ -95,7 +100,7 @@ export async function POST(request: NextRequest) {
             email,
             full_name: fullName,
             phone,
-            current_position: role === "captain" ? "Captain" : role === "owner" ? "Owner" : "Crew",
+            current_position: position,
             public_crew_id: data.user.id.slice(0, 8).toUpperCase(),
           }
         ),
