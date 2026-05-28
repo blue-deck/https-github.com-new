@@ -1,74 +1,49 @@
-import Link from "next/link";
-import { BlueDeckMark } from "../components/BlueDeckLogo";
+import { PublicPageShell } from "../components/PublicSiteChrome";
+
+const sections = [
+  {
+    title: "Information We Collect",
+    text: "BlueDeck may collect name, email address, phone number, account type, yacht position, profile details, maritime documents, expiry dates, yacht experience, references, portfolio images, invitations, contracts and checklist activity.",
+  },
+  {
+    title: "How We Use Information",
+    text: "We use this information to create user accounts, provide secure dashboards, manage crew profiles, build CVs, support captain invitations, organize contracts, show expiry alerts and keep yacht workflows connected.",
+  },
+  {
+    title: "Documents and Photos",
+    text: "Documents and images uploaded by users are used for profile, CV, portfolio, yacht record, checklist proof and operational history purposes inside the BlueDeck account experience.",
+  },
+  {
+    title: "Security",
+    text: "Authentication, email confirmation, password reset and database access are handled through configured secure providers. Access should be limited by account, role and yacht membership.",
+  },
+  {
+    title: "Account Emails",
+    text: "BlueDeck may send account confirmation, password reset, invitation and operational notification emails through the configured email provider and authenticated domain.",
+  },
+  {
+    title: "Contact",
+    text: "For privacy, account or deletion requests, contact info@bluedeck.app.",
+  },
+];
 
 export default function PrivacyPage() {
   return (
-    <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900">
-      <div className="bd-ocean-content bd-glass-card-strong mx-auto max-w-4xl rounded-[34px] p-6 sm:p-10">
-        <Link href="/login" className="text-sm font-semibold text-cyan-700">
-          Back to login
-        </Link>
-
-        <div className="mt-8 flex items-center gap-3">
-          <BlueDeckMark className="h-14 w-20 shrink-0 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck</p>
-            <h1 className="bd-serif text-4xl font-normal text-[#071f3c]">Privacy Policy</h1>
-          </div>
+    <PublicPageShell
+      eyebrow="Privacy Policy"
+      title="Privacy for a secure yacht and crew operations platform."
+      intro="BlueDeck stores information only to support account access, crew profiles, yacht workspaces, documents, contracts and operational workflows."
+    >
+      <section className="bd-section pt-4">
+        <div className="grid gap-5">
+          {sections.map((section) => (
+            <article key={section.title} className="bd-editorial-card">
+              <h2 className="text-2xl font-semibold text-[#071f3c]">{section.title}</h2>
+              <p className="mt-3 leading-8 text-[#5b7088]">{section.text}</p>
+            </article>
+          ))}
         </div>
-
-        <div className="mt-8 space-y-6 text-sm leading-7 text-slate-700">
-          <p>
-            BlueDeck stores account, profile, document, crew, yacht, checklist,
-            portfolio and contract information so users can manage yacht
-            operations and professional crew records.
-          </p>
-
-          <section>
-            <h2 className="text-lg font-semibold text-slate-950">Information We Collect</h2>
-            <p className="mt-2">
-              We may collect your name, email address, phone number, role,
-              nationality, location, profile details, maritime documents,
-              expiry dates, yacht experience, portfolio images, references and
-              operational checklist activity.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-slate-950">How We Use Information</h2>
-            <p className="mt-2">
-              We use this information to create user accounts, provide private
-              dashboards, build CVs, manage yacht crew invitations, support
-              checklist workflows and show document expiry alerts.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-slate-950">Security</h2>
-            <p className="mt-2">
-              Authentication and database access are handled through Supabase.
-              User data is protected by account-based access controls and
-              row-level security policies where configured.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-slate-950">Account Emails and SMS</h2>
-            <p className="mt-2">
-              Account confirmation and password reset emails are sent through
-              the configured authentication provider. SMS verification requires
-              an enabled SMS provider in the authentication settings.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-semibold text-slate-950">Contact</h2>
-            <p className="mt-2">
-              For privacy or account requests, contact the BlueDeck site owner.
-            </p>
-          </section>
-        </div>
-      </div>
-    </main>
+      </section>
+    </PublicPageShell>
   );
 }

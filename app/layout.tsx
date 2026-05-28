@@ -4,19 +4,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://bluedeck.app"),
-  title: "BlueDeck YachtOS | Private Superyacht Operating System",
+  title: "BlueDeck | Private Yacht Management Platform",
   description:
-    "A private operating system for modern superyachts: owner experience, captain operations, crew workflows, bridge intelligence and engineering readiness.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "BlueDeck",
-  },
+    "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",
   openGraph: {
-    title: "BlueDeck YachtOS",
+    title: "BlueDeck Yacht Management",
     description:
-      "Private superyacht operations, owner experience and captain-grade bridge intelligence in one premium interface.",
+      "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
     siteName: "BlueDeck",
     images: ["/bluedeck-ocean-hero.png"],
   },

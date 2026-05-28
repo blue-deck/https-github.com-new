@@ -100,6 +100,160 @@ textarea:-webkit-autofill:focus {
   font-weight: 400;
 }
 
+.bd-site-shell {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(239, 249, 255, 0.86) 44%, rgba(210, 235, 249, 0.58) 100%),
+    #f7fbff;
+  color: var(--ocean-ink);
+}
+
+.bd-public-header {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 70;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(90deg, #020817 0%, #06172b 52%, #0b2842 100%);
+  box-shadow: 0 18px 56px rgba(2, 8, 23, 0.22);
+}
+
+.bd-home-hero {
+  position: relative;
+  min-height: calc(100vh - 92px);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 250, 255, 0.88) 35%, rgba(255, 255, 255, 0.34) 64%, rgba(148, 205, 238, 0.16) 100%),
+    url("/bluedeck-ocean-hero.png") center bottom / cover no-repeat,
+    #f6fbff;
+}
+
+.bd-section {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 5rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .bd-section {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .bd-section {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+.bd-editorial-card,
+.bd-feature-panel {
+  border: 1px solid rgba(7, 31, 60, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 26px 72px rgba(7, 31, 60, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.bd-editorial-card {
+  padding: 2rem;
+  border-radius: 1.4rem;
+}
+
+.bd-feature-panel {
+  display: block;
+  min-height: 100%;
+  padding: 2.2rem;
+  border-radius: 1.6rem;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.bd-feature-panel:hover {
+  transform: translateY(-4px);
+  border-color: rgba(14, 116, 144, 0.32);
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.bd-primary-cta,
+.bd-secondary-cta {
+  display: inline-flex;
+  min-height: 3.6rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-radius: 999px;
+  padding: 0.95rem 1.65rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.bd-primary-cta {
+  background: #07182d;
+  color: white;
+  box-shadow: 0 24px 60px rgba(7, 24, 45, 0.18);
+}
+
+.bd-primary-cta:hover,
+.bd-secondary-cta:hover {
+  transform: translateY(-2px);
+}
+
+.bd-secondary-cta {
+  border: 1px solid rgba(7, 24, 45, 0.2);
+  background: rgba(255, 255, 255, 0.34);
+  color: #07182d;
+  backdrop-filter: blur(16px);
+}
+
+.bd-deep-band {
+  background:
+    radial-gradient(circle at 88% 20%, rgba(34, 211, 238, 0.22), transparent 28%),
+    linear-gradient(135deg, #020817 0%, #07182d 52%, #0c2d44 100%);
+}
+
+.bd-deep-card {
+  overflow: hidden;
+  border-radius: 1.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(circle at 92% 20%, rgba(34, 211, 238, 0.22), transparent 30%),
+    linear-gradient(135deg, #020817 0%, #07182d 70%, #0d3448 100%);
+  padding: 2.2rem;
+  box-shadow: 0 32px 90px rgba(7, 24, 45, 0.18);
+}
+
+.bd-cta-band {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid rgba(7, 31, 60, 0.1);
+  border-radius: 1.8rem;
+  background:
+    linear-gradient(105deg, rgba(255, 255, 255, 0.88), rgba(222, 245, 255, 0.72)),
+    #fff;
+  padding: 2.3rem;
+  box-shadow: 0 26px 80px rgba(7, 31, 60, 0.1);
+}
+
+@media (min-width: 768px) {
+  .bd-cta-band {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
 .bd-ocean-shell {
   position: relative;
   isolation: isolate;
@@ -157,16 +311,16 @@ textarea:-webkit-autofill:focus {
 
 .bd-glass-card {
   border: 1px solid var(--ocean-line);
-  background: var(--ocean-card);
-  box-shadow: 0 28px 90px rgba(4, 33, 63, 0.12);
-  backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 24px 68px rgba(4, 33, 63, 0.08);
+  backdrop-filter: blur(18px);
 }
 
 .bd-glass-card-strong {
   border: 1px solid var(--ocean-line);
-  background: var(--ocean-card-strong);
-  box-shadow: 0 30px 100px rgba(4, 33, 63, 0.14);
-  backdrop-filter: blur(26px);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 28px 82px rgba(4, 33, 63, 0.1);
+  backdrop-filter: blur(20px);
 }
 
 .bd-ocean-topbar {
@@ -186,9 +340,9 @@ textarea:-webkit-autofill:focus {
 
 .bd-yacht-portal {
   background:
-    radial-gradient(circle at 88% 10%, rgba(34, 211, 238, 0.22), transparent 32%),
-    linear-gradient(135deg, #fbfdff 0%, #edf8ff 48%, #fffaf0 100%),
-    #f5fbff;
+    radial-gradient(circle at 84% 8%, rgba(125, 211, 252, 0.22), transparent 28%),
+    linear-gradient(135deg, #fbfdff 0%, #eef8ff 52%, #f8fbfc 100%),
+    #f7fbff;
   color: var(--ocean-ink);
 }
 
@@ -274,6 +428,42 @@ textarea:-webkit-autofill:focus {
 }
 
 @media (max-width: 640px) {
+  .bd-public-header > div {
+    height: 76px !important;
+    gap: 0.55rem !important;
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+  }
+
+  .bd-public-header a[aria-label="BlueDeck home"] {
+    width: 138px !important;
+    height: 48px !important;
+  }
+
+  .bd-public-header a[href="/login"],
+  .bd-public-header a[href="/login?mode=signup"] {
+    padding: 0.62rem 0.82rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  .bd-site-shell,
+  .bd-home-hero {
+    padding-top: 76px;
+  }
+
+  .bd-section {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .bd-editorial-card,
+  .bd-feature-panel,
+  .bd-deep-card,
+  .bd-cta-band {
+    border-radius: 1.15rem;
+    padding: 1.35rem;
+  }
+
   .bd-app-topbar > div {
     height: 76px !important;
     gap: 0.65rem !important;

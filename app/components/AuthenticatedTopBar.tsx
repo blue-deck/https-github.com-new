@@ -5,7 +5,21 @@ import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { BlueDeckTopBar } from "./BlueDeckTopBar";
 
-const publicPaths = ["/", "/login", "/signup", "/auth", "/auth/confirm", "/privacy", "/offline"];
+const publicPaths = [
+  "/",
+  "/about",
+  "/auth",
+  "/auth/confirm",
+  "/contact",
+  "/login",
+  "/management",
+  "/offline",
+  "/privacy",
+  "/services",
+  "/signup",
+  "/terms",
+  "/trust",
+];
 
 function isPublicPath(pathname: string) {
   if (publicPaths.includes(pathname)) return true;

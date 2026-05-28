@@ -1,209 +1,193 @@
-"use client";
-
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { BlueDeckLogoLink } from "./components/BlueDeckLogo";
 import {
-  Anchor,
-  ChevronRight,
+  ArrowRight,
+  CheckCircle2,
+  ClipboardCheck,
   Crown,
-  FileLock2,
+  FileText,
   Radio,
-  Sparkles,
+  ShieldCheck,
+  Ship,
   Users,
-  Wrench,
 } from "lucide-react";
+import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 
-const productAreas = [
+const servicePillars = [
   {
-    icon: Crown,
-    title: "Owner Experience",
-    text: "A quiet private view for yacht readiness, location, privacy, guest comfort and concierge moments.",
-  },
-  {
-    icon: Radio,
-    title: "Captain Console",
-    text: "Daily command center for voyage planning, alerts, crew status, documents and live operations.",
+    icon: Ship,
+    title: "Yacht Management",
+    text: "A private workspace for vessel data, documents, readiness, crew status and operational records.",
   },
   {
     icon: Users,
-    title: "Crew Mobile",
-    text: "Focused task lists, checklists and shift workflows for fast onboard execution.",
+    title: "Crew Operations",
+    text: "Crew profiles, invitations, contracts, document expiry alerts and onboard checklist workflows.",
   },
   {
-    icon: Wrench,
-    title: "Engineering",
-    text: "Maintenance, machinery readiness, fuel, spares and technical handover in one operational view.",
+    icon: Crown,
+    title: "Owner Experience",
+    text: "A calm owner view focused on privacy, guest comfort, readiness, location and high-level confidence.",
+  },
+  {
+    icon: Radio,
+    title: "Bridge Readiness",
+    text: "Navigation, watch, passage, arrival and departure workflows structured for captain-grade oversight.",
   },
 ];
 
-const trustPoints = [
-  "Role-based access",
-  "Offline-ready PWA",
-  "Document vault",
-  "Private yacht mode",
-  "Fleet-ready architecture",
-  "Audit-ready activity history",
+const websiteSections = [
+  "Private account and role-based access",
+  "Crew CV, document vault and expiry monitoring",
+  "Captain invitations, yacht contracts and mobile signing",
+  "Checklist System with crew progress and proof records",
+  "IMO crew list, yacht documents and operational history",
+  "Owner, captain and crew areas connected under one brand",
 ];
 
 export default function HomePage() {
   return (
-    <main className="bd-ocean-shell bd-home-shell min-h-screen overflow-hidden pt-[92px] text-[#061831]">
-      <header className="bd-home-header border-b border-cyan-100/10 bg-[#020817]/96 shadow-2xl shadow-slate-950/20 backdrop-blur-2xl">
-        <div className="mx-auto flex h-[92px] max-w-[1500px] items-center justify-between px-5 sm:px-8 lg:px-12">
-            <BlueDeckLogoLink
-              priority
-              className="h-14 w-44 rounded-none border-0 bg-transparent shadow-none sm:h-16 sm:w-56"
-              imageClassName="object-contain p-0"
-            />
+    <main className="bd-site-shell min-h-screen overflow-hidden pt-[92px] text-[#071f3c]">
+      <PublicHeader />
 
-            <nav className="hidden items-center gap-8 rounded-full border border-white/10 bg-white/6 px-8 py-4 text-xs font-semibold uppercase tracking-[0.18em] text-white/78 backdrop-blur-xl lg:flex">
-              <a href="#platform" className="bd-focus hover:text-cyan-200">
-                Yachts
-              </a>
-              <a href="#roles" className="bd-focus hover:text-cyan-200">
-                Services
-              </a>
-              <a href="#trust" className="bd-focus hover:text-cyan-200">
-                Management
-              </a>
-              <a href="#trust" className="bd-focus hover:text-cyan-200">
-                Trust
-              </a>
-            </nav>
-
-            <div className="flex items-center gap-2">
-              <Link
-                href="/login"
-                className="bd-focus rounded-full border border-white/12 bg-white/8 px-5 py-3 text-sm font-bold text-white/90 backdrop-blur-xl transition hover:bg-white/16"
-              >
-                Login
+      <section className="bd-home-hero">
+        <div className="mx-auto flex min-h-[calc(100vh-92px)] max-w-[1500px] items-center px-5 py-16 sm:px-8 lg:px-12">
+          <div className="max-w-4xl">
+            <p className="text-xs font-black uppercase tracking-[0.42em] text-[#58718c]">
+              Own the experience
+            </p>
+            <h1 className="bd-serif mt-7 text-5xl leading-[1.02] text-[#071f3c] sm:text-7xl lg:text-8xl">
+              Manage Your Yacht.
+              <br />
+              Live Your Freedom.
+            </h1>
+            <p className="mt-8 max-w-2xl text-lg leading-8 text-[#526b83]">
+              BlueDeck brings yacht management, crew workflows, documents,
+              contracts and operational readiness into one elegant private website.
+            </p>
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+              <Link href="/login?mode=signup" className="bd-primary-cta">
+                Create Account
+                <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link
-                href="/login?mode=signup"
-                className="bd-focus rounded-full bg-cyan-200 px-5 py-3 text-sm font-bold text-[#020817] shadow-xl shadow-cyan-400/15 transition hover:bg-white"
-              >
-                Sign up
+              <Link href="/services" className="bd-secondary-cta">
+                Explore Services
               </Link>
             </div>
-        </div>
-      </header>
-
-      <section className="relative min-h-[calc(100vh-92px)]">
-        <div className="bd-ocean-content mx-auto flex min-h-[calc(100vh-92px)] max-w-[1500px] flex-col justify-center px-5 sm:px-8 lg:px-12">
-          <div className="flex items-center pb-20 pt-16 lg:min-h-[72vh]">
-            <motion.div
-              initial={{ opacity: 0, y: 34 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="max-w-4xl"
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.42em] text-[#526b83]">
-                Own the experience
-              </p>
-
-              <h1 className="bd-serif mt-7 text-5xl leading-[1.02] tracking-[-0.02em] text-[#071f3c] sm:text-6xl lg:text-7xl xl:text-8xl">
-                Manage Your Yacht.
-                <br />
-                Live Your Freedom.
-              </h1>
-
-              <p className="mt-8 max-w-xl text-lg leading-8 text-[#61758a]">
-                BlueDeck brings yacht management, crew workflows, documents,
-                contracts and readiness into one calm private command platform.
-              </p>
-
-              <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-                <Link
-                  href="/login?mode=signup"
-                  className="bd-focus inline-flex items-center justify-center gap-3 rounded-full bg-[#061831] px-8 py-4 text-xs font-bold uppercase tracking-[0.18em] text-white shadow-2xl shadow-cyan-950/18 transition hover:bg-cyan-800"
-                >
-                  Create Account
-                  <ChevronRight className="h-5 w-5" />
-                </Link>
-                <Link
-                  href="/login"
-                  className="bd-focus inline-flex items-center justify-center gap-3 rounded-full border border-[#061831]/22 bg-white/18 px-8 py-4 text-xs font-bold uppercase tracking-[0.18em] text-[#061831] backdrop-blur-xl transition hover:bg-white/70"
-                >
-                  View Your Yacht
-                  <Anchor className="h-5 w-5" />
-                </Link>
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>
 
-      <section id="platform" className="bd-ocean-content mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
+      <section id="yacht-platform" className="bd-section">
+        <div className="grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
           <div>
-            <p className="bd-kicker">Platform</p>
-            <h2 className="bd-serif mt-4 text-4xl font-normal leading-tight text-[#071f3c] sm:text-6xl">
-              Built around the way a private yacht actually runs.
+            <p className="bd-kicker">BlueDeck Platform</p>
+            <h2 className="bd-serif mt-4 text-4xl leading-tight text-[#071f3c] sm:text-6xl">
+              A yacht website that works like a private operations office.
             </h2>
           </div>
-          <p className="text-lg leading-8 text-[#61758a]">
-            BlueDeck separates the experience by role, keeps the daily view
-            simple, and brings advanced modules one level deeper. The result is
-            less noise for owners, faster action for crew and clearer control
-            for captains.
+          <p className="text-lg leading-8 text-[#5b7088]">
+            BlueDeck is designed for the real structure of a yacht: owner,
+            captain, officers, departments and crew. The public site stays calm
+            and premium; secure areas open only after login.
           </p>
         </div>
 
-        <div id="roles" className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {productAreas.map((area) => {
-            const Icon = area.icon;
-
+        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {servicePillars.map((item) => {
+            const Icon = item.icon;
             return (
-              <article key={area.title} className="bd-glass-card rounded-[28px] p-6 transition hover:-translate-y-1 hover:bg-white/90">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200 bg-white/70 text-cyan-700">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <h3 className="mt-6 text-xl font-semibold text-[#071f3c]">
-                  {area.title}
-                </h3>
-                <p className="mt-3 leading-7 text-[#61758a]">{area.text}</p>
+              <article key={item.title} className="bd-editorial-card">
+                <Icon className="h-7 w-7 text-cyan-700" />
+                <h3 className="mt-7 text-2xl font-semibold text-[#071f3c]">{item.title}</h3>
+                <p className="mt-4 leading-7 text-[#5b7088]">{item.text}</p>
               </article>
             );
           })}
         </div>
       </section>
 
-      <section id="trust" className="bd-ocean-content border-y border-[#061831]/10 bg-white/30 backdrop-blur">
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10">
+      <section className="bd-deep-band">
+        <div className="mx-auto grid max-w-[1500px] gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
           <div>
-            <p className="bd-kicker">Trust Layer</p>
-            <h2 className="bd-serif mt-4 text-4xl font-normal leading-tight text-[#071f3c] sm:text-6xl">
-              Luxury should feel effortless. Operations should be traceable.
+            <p className="text-xs font-black uppercase tracking-[0.36em] text-cyan-200">Private YachtOS</p>
+            <h2 className="bd-serif mt-5 text-4xl leading-tight text-white sm:text-6xl">
+              Built for traceable operations without losing the luxury feeling.
             </h2>
           </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
-            {trustPoints.map((point) => (
-              <div key={point} className="flex items-center gap-3 rounded-2xl border border-[#061831]/10 bg-white/60 p-4 shadow-sm backdrop-blur">
-                <FileLock2 className="h-5 w-5 text-cyan-700" />
-                <span className="font-medium text-[#071f3c]">{point}</span>
+            {websiteSections.map((item) => (
+              <div key={item} className="flex items-start gap-3 border-b border-white/12 pb-4 text-white/78">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-cyan-200" />
+                <span className="leading-7">{item}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bd-ocean-content mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-5 py-14 sm:px-8 md:flex-row md:items-center lg:px-10">
-        <div>
-          <p className="bd-kicker">BlueDeck YachtOS</p>
-          <h2 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c]">
-            Ready for real captain, owner and crew workflows.
-          </h2>
+      <section className="bd-section">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <FeaturePanel
+            icon={<ClipboardCheck className="h-7 w-7" />}
+            title="Checklist System"
+            text="Assign duties, track completion, inspect before/after proof and keep records clear."
+            href="/login"
+          />
+          <FeaturePanel
+            icon={<FileText className="h-7 w-7" />}
+            title="Document Control"
+            text="Crew documents, yacht papers, contracts and expiry alerts organized in one secure flow."
+            href="/services"
+          />
+          <FeaturePanel
+            icon={<ShieldCheck className="h-7 w-7" />}
+            title="Trust & Privacy"
+            text="Account-based access, privacy-focused structure and professional legal pages."
+            href="/trust"
+          />
         </div>
-        <Link
-          href="/login?mode=signup"
-          className="bd-focus inline-flex items-center justify-center gap-2 rounded-full bg-[#061831] px-7 py-4 font-bold text-white shadow-xl shadow-cyan-950/16 transition hover:bg-cyan-800"
-        >
-          Join BlueDeck
-          <Sparkles className="h-5 w-5" />
-        </Link>
       </section>
+
+      <section className="mx-auto max-w-[1500px] px-5 pb-20 sm:px-8 lg:px-12">
+        <div className="bd-cta-band">
+          <div>
+            <p className="bd-kicker">Start BlueDeck</p>
+            <h2 className="bd-serif mt-4 text-4xl leading-tight text-[#071f3c] sm:text-6xl">
+              Open a private account and build your yacht workspace.
+            </h2>
+          </div>
+          <Link href="/login?mode=signup" className="bd-primary-cta shrink-0">
+            Sign up
+            <ArrowRight className="h-5 w-5" />
+          </Link>
+        </div>
+      </section>
+
+      <PublicFooter />
     </main>
+  );
+}
+
+function FeaturePanel({
+  icon,
+  title,
+  text,
+  href,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  href: string;
+}) {
+  return (
+    <Link href={href} className="bd-feature-panel">
+      <span className="text-cyan-700">{icon}</span>
+      <h3 className="mt-6 text-3xl font-semibold text-[#071f3c]">{title}</h3>
+      <p className="mt-4 leading-7 text-[#5b7088]">{text}</p>
+      <span className="mt-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-cyan-800">
+        View details
+        <ArrowRight className="h-4 w-4" />
+      </span>
+    </Link>
   );
 }

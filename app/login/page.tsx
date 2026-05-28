@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
-import { BlueDeckLogoLink, BlueDeckMark } from "../components/BlueDeckLogo";
+import { BlueDeckMark } from "../components/BlueDeckLogo";
+import { PublicHeader } from "../components/PublicSiteChrome";
 import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -191,49 +192,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen overflow-hidden pt-[92px] text-slate-900">
-      <header className="bd-app-topbar border-b border-cyan-100/10 bg-[#020817]/98 shadow-2xl shadow-slate-950/24 backdrop-blur-2xl">
-        <div className="mx-auto flex h-[92px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
-          <BlueDeckLogoLink
-            href="/"
-            priority
-            label="BlueDeck home"
-            className="h-14 w-44 shrink-0 rounded-none border-0 bg-[#020817] shadow-none sm:h-16 sm:w-56"
-            imageClassName="object-contain p-0"
-          />
-
-          <nav className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/"
-              className="bd-focus hidden rounded-full border border-white/12 bg-white/8 px-4 py-3 text-sm font-bold text-white/90 backdrop-blur-xl transition hover:bg-white/16 sm:inline-flex"
-            >
-              Home
-            </Link>
-            <button
-              type="button"
-              onClick={() => setMode("login")}
-              className={`bd-focus rounded-full px-4 py-3 text-sm font-bold transition ${
-                mode === "login"
-                  ? "bg-cyan-200 text-[#020817] shadow-xl shadow-cyan-400/15"
-                  : "border border-white/12 bg-white/8 text-white/90 hover:bg-white/16"
-              }`}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className={`bd-focus rounded-full px-4 py-3 text-sm font-bold transition ${
-                mode === "signup"
-                  ? "bg-cyan-200 text-[#020817] shadow-xl shadow-cyan-400/15"
-                  : "border border-white/12 bg-white/8 text-white/90 hover:bg-white/16"
-              }`}
-            >
-              Sign up
-            </button>
-          </nav>
-        </div>
-      </header>
+    <main className="bd-site-shell min-h-screen overflow-hidden pt-[92px] text-slate-900">
+      <PublicHeader />
 
       <div className="bd-ocean-content mx-auto grid min-h-[calc(100vh-92px)] max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
