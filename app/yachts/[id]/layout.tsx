@@ -29,10 +29,8 @@ export default function YachtAppLayout({
 
   return (
     <div className="bd-yacht-portal min-h-screen text-slate-900">
-      <div>{children}</div>
-
-      <nav className="bd-ocean-pill fixed bottom-4 left-1/2 z-50 w-[calc(100%-24px)] max-w-3xl -translate-x-1/2 rounded-full p-2">
-        <div className="grid grid-cols-5 gap-1 sm:gap-2">
+      <nav className="bd-yacht-section-nav sticky top-[92px] z-40 border-b border-slate-200/70 bg-white/88 shadow-lg shadow-cyan-950/5 backdrop-blur-2xl">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-2 overflow-x-auto px-4 py-3 sm:px-8 lg:px-12">
           {nav.map((item) => {
             const Icon = item.icon;
             const active =
@@ -44,19 +42,21 @@ export default function YachtAppLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`bd-focus flex h-14 flex-col items-center justify-center rounded-full px-2 text-xs font-semibold transition sm:h-16 ${
+                className={`bd-focus inline-flex min-w-fit items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-bold transition ${
                   active
-                    ? "bg-cyan-600 text-white"
-                    : "text-slate-500 hover:bg-cyan-50 hover:text-slate-950"
+                    ? "border-cyan-300 bg-slate-950 text-white shadow-xl shadow-cyan-950/12"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300 hover:text-slate-950"
                 }`}
               >
-                <Icon className="h-5 w-5" />
-                <span className="mt-1 hidden sm:block">{item.label}</span>
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
               </Link>
             );
           })}
         </div>
       </nav>
+
+      <div>{children}</div>
     </div>
   );
 }

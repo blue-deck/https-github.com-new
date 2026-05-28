@@ -677,43 +677,43 @@ export default function CrewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] p-6 pb-32 text-slate-900">
+    <main className="bd-crew-command-page min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
       <div className="mx-auto max-w-[1700px]">
-        <div className="mb-10 overflow-hidden rounded-[40px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur">
+        <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
-          <div className="p-10">
+          <div className="p-5 sm:p-10">
           <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck CrewOS</p>
-          <h1 className="mt-3 text-6xl font-black">
+          <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
             Yacht Crew Command
           </h1>
-          <p className="mt-5 max-w-4xl text-xl leading-relaxed text-slate-500">
+          <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-5 sm:text-xl">
             Assign professional yacht checklists through the correct onboard hierarchy,
             review proof and keep every department working from one calm command view.
           </p>
           </div>
         </div>
 
-        <div className="mb-10 grid gap-6 md:grid-cols-4">
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 md:mb-10 md:grid-cols-4 md:gap-6">
           <Stat title="Crew" value={crew.length} icon={<Bell />} />
           <Stat title="Open Checklists" value={checklists.length} icon={<ClipboardList />} />
           <Stat title="Library" value={`${checklistTemplates.length} templates`} icon={<ShipWheel />} />
           <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
         </div>
 
-        <div className="grid gap-8 xl:grid-cols-[420px_1fr]">
-          <div className="space-y-8">
-            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+        <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
+          <div className="space-y-6 xl:space-y-8">
+            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
                   <Plus />
                 </div>
                 <div>
                   <p className="text-cyan-700">Captain Action</p>
-                  <h2 className="text-4xl font-black">Invite Crew</h2>
+                  <h2 className="text-3xl font-black sm:text-4xl">Invite Crew</h2>
                 </div>
               </div>
 
-              <div className="mt-8 space-y-5">
+              <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
                 <input
                   placeholder="Full name"
                   value={fullName}
@@ -784,9 +784,9 @@ export default function CrewPage() {
               </div>
             </div>
 
-            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <p className="text-cyan-700">Assign To</p>
-              <h2 className="mt-2 text-4xl font-black">Crew Member</h2>
+              <h2 className="mt-2 text-3xl font-black sm:text-4xl">Crew Member</h2>
 
               <select
                 value={selectedCrew}
@@ -814,7 +814,7 @@ export default function CrewPage() {
                 {loading ? "Assigning..." : "Assign Selected Checklists"}
               </button>
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 <select
                   value={frequency}
                   onChange={(e) => setFrequency(e.target.value)}
@@ -841,9 +841,9 @@ export default function CrewPage() {
               />
             </div>
 
-            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <p className="text-cyan-700">Contract</p>
-              <h2 className="mt-2 text-4xl font-black">Assign Yacht Contract</h2>
+              <h2 className="mt-2 text-3xl font-black sm:text-4xl">Assign Yacht Contract</h2>
               <p className="mt-3 text-slate-500">
                 Select a crew member above, paste the contract text, and send it
                 for mobile signature.
@@ -862,11 +862,11 @@ export default function CrewPage() {
               </button>
             </div>
 
-            <div className="rounded-[36px] border border-slate-200 bg-white/85 p-8 shadow-xl shadow-cyan-950/5">
+            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-cyan-700">Assigned Work</p>
-                  <h2 className="mt-2 text-4xl font-black">Crew Progress</h2>
+                  <h2 className="mt-2 text-3xl font-black sm:text-4xl">Crew Progress</h2>
                 </div>
                 <button
                   onClick={() => loadData()}
@@ -916,9 +916,9 @@ export default function CrewPage() {
                         className="bd-focus block w-full cursor-pointer p-5 text-left"
                         aria-expanded={expanded}
                       >
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0">
-                            <h3 className="truncate text-xl font-black text-slate-950">
+                            <h3 className="break-words text-xl font-black text-slate-950 sm:truncate">
                               {item.title || "Checklist"}
                             </h3>
                             <p className="mt-1 text-sm font-semibold text-cyan-700">
@@ -932,7 +932,7 @@ export default function CrewPage() {
                             </p>
                           </div>
 
-                          <div className="flex shrink-0 items-center gap-2">
+                          <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-start">
                             <span className="hidden rounded-full border border-slate-200 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:inline-flex">
                               {expanded ? "Hide details" : "View details"}
                             </span>
@@ -1045,24 +1045,24 @@ export default function CrewPage() {
             </div>
           </div>
 
-          <div className="space-y-8">
-            <div className="rounded-[36px] border border-slate-200 bg-white/90 p-8 shadow-xl shadow-cyan-950/5">
+          <div className="space-y-6 xl:space-y-8">
+            <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-5">
-                <div className="flex items-center gap-4">
+                <div className="flex items-start gap-4">
                   <DepartmentIcon department="Command" />
                   <div>
                     <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
                       Professional Yacht Library
                     </p>
-                    <h2 className="text-5xl font-black">Checklist System</h2>
-                    <p className="mt-3 max-w-3xl text-slate-500">
+                    <h2 className="text-3xl font-black sm:text-5xl">Checklist System</h2>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
                       Command, deck, engineering, interior, galley, safety, toys and guest
                       operations are grouped for fast assignment without crowding the page.
                     </p>
                   </div>
                 </div>
 
-                <div className="rounded-3xl border border-cyan-100 bg-cyan-50 px-5 py-4 text-sm text-slate-600">
+                <div className="w-full rounded-3xl border border-cyan-100 bg-cyan-50 px-5 py-4 text-sm text-slate-600 sm:w-auto">
                   <p className="font-black text-slate-950">{operator.position}</p>
                   <p className="mt-1">
                     {availableTemplates.length === checklistTemplates.length
@@ -1072,7 +1072,7 @@ export default function CrewPage() {
                 </div>
               </div>
 
-              <div className="mt-8 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
+              <div className="mt-6 grid gap-3 sm:mt-8 lg:grid-cols-[1.2fr_0.9fr_0.9fr] lg:gap-4">
                 <input
                   value={templateSearch}
                   onChange={(event) => setTemplateSearch(event.target.value)}
@@ -1119,7 +1119,7 @@ export default function CrewPage() {
                 </span>
               </div>
 
-              <div className="mt-8 grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
+              <div className="mt-6 grid gap-4 sm:mt-8 md:grid-cols-2 2xl:grid-cols-3">
                 {visibleTemplates.map((template) => {
                   const selected = selectedTemplates.includes(template.id);
                   const taskPanelOpen = expandedTemplateTasks.includes(template.id);
@@ -1129,13 +1129,13 @@ export default function CrewPage() {
                   return (
                     <article
                       key={template.id}
-                      className={`rounded-[28px] border p-5 text-left transition ${
+                      className={`bd-checklist-template-card rounded-[24px] border p-4 text-left transition sm:rounded-[28px] sm:p-5 ${
                         selected
                           ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_50px_rgba(8,145,178,0.12)]"
                           : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-xl hover:shadow-cyan-950/10"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex items-start gap-3">
                           <button
                             type="button"
@@ -1151,15 +1151,15 @@ export default function CrewPage() {
                             {selected ? <CheckCircle className="h-5 w-5" /> : <ClipboardList className="h-4 w-4" />}
                           </button>
 
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
                               {template.department} · {template.type}
                             </p>
-                            <h3 className="mt-2 text-2xl font-black text-slate-950">{template.title}</h3>
+                            <h3 className="mt-2 break-words text-xl font-black text-slate-950 sm:text-2xl">{template.title}</h3>
                           </div>
                         </div>
 
-                        <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
+                        <span className="w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
                           {template.frequency}
                         </span>
                       </div>
@@ -1169,7 +1169,7 @@ export default function CrewPage() {
                       <button
                         type="button"
                         onClick={() => toggleTemplateTaskPanel(template.id)}
-                        className="bd-focus mt-4 inline-flex items-center gap-3 rounded-full border border-cyan-100 bg-white px-3.5 py-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                        className="bd-focus mt-4 inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-white px-3.5 py-2.5 text-[11px] font-black uppercase tracking-[0.12em] text-slate-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800 sm:w-auto sm:justify-start sm:rounded-full sm:py-2"
                         aria-expanded={taskPanelOpen}
                       >
                         <span>{trimmedTasks.length} tasks</span>
@@ -1178,7 +1178,7 @@ export default function CrewPage() {
                       </button>
 
                       {taskPanelOpen && (
-                        <div className="mt-5 rounded-3xl border border-cyan-100 bg-[#f8fcfd] p-4 shadow-inner shadow-cyan-950/5">
+                        <div className="mt-5 rounded-3xl border border-cyan-100 bg-[#f8fcfd] p-3 shadow-inner shadow-cyan-950/5 sm:p-4">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
                               Assignment tasks

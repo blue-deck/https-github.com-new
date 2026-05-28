@@ -264,6 +264,105 @@ textarea:-webkit-autofill:focus {
   color: #a5f3fc !important;
 }
 
+.bd-yacht-section-nav {
+  scrollbar-width: none;
+}
+
+.bd-yacht-section-nav::-webkit-scrollbar,
+.bd-yacht-section-nav > div::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .bd-app-topbar > div {
+    height: 76px !important;
+    gap: 0.65rem !important;
+    padding-left: 0.9rem !important;
+    padding-right: 0.9rem !important;
+  }
+
+  .bd-app-topbar + div[aria-hidden="true"] {
+    height: 76px !important;
+  }
+
+  .bd-app-topbar a[aria-label="BlueDeck home"],
+  .bd-app-topbar a[aria-label="BlueDeck home"] img {
+    max-width: 132px !important;
+  }
+
+  .bd-app-topbar a[href="/dashboard"],
+  .bd-app-topbar a[href="/profile"] {
+    min-height: 42px !important;
+    padding: 0.65rem 0.85rem !important;
+  }
+
+  .bd-yacht-section-nav {
+    top: 76px !important;
+  }
+
+  .bd-yacht-section-nav > div {
+    padding: 0.65rem 0.9rem !important;
+  }
+
+  .bd-yacht-section-nav a {
+    border-radius: 0.9rem !important;
+    padding: 0.7rem 0.85rem !important;
+    font-size: 0.86rem !important;
+  }
+
+  .bd-yacht-portal main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    padding-bottom: 2.5rem !important;
+  }
+
+  .bd-yacht-portal [class*="text-7xl"],
+  .bd-yacht-portal [class*="text-6xl"] {
+    font-size: 2.4rem !important;
+    line-height: 1.06 !important;
+  }
+
+  .bd-yacht-portal [class*="text-5xl"] {
+    font-size: 2rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .bd-yacht-portal [class*="rounded-[40px]"],
+  .bd-yacht-portal [class*="rounded-[38px]"],
+  .bd-yacht-portal [class*="rounded-[36px]"],
+  .bd-yacht-portal [class*="rounded-[34px]"],
+  .bd-yacht-portal [class*="rounded-[32px]"] {
+    border-radius: 1.5rem !important;
+  }
+
+  .bd-yacht-portal input,
+  .bd-yacht-portal textarea,
+  .bd-yacht-portal select {
+    font-size: 16px;
+  }
+
+  .bd-yacht-portal input,
+  .bd-yacht-portal textarea,
+  .bd-yacht-portal select {
+    min-width: 0;
+  }
+
+  .bd-yacht-portal img,
+  .bd-yacht-portal video,
+  .bd-yacht-portal canvas,
+  .bd-yacht-portal table {
+    max-width: 100%;
+  }
+
+  .bd-crew-command-page article,
+  .bd-crew-command-page button,
+  .bd-crew-command-page input,
+  .bd-crew-command-page select,
+  .bd-crew-command-page textarea {
+    max-width: 100%;
+  }
+}
+
 @media print {
   body {
     background: white !important;
