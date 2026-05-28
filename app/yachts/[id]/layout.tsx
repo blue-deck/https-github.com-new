@@ -6,6 +6,7 @@ import {
   Crown,
   Gauge,
   Home,
+  ClipboardList,
   Radio,
   Users,
 } from "lucide-react";
@@ -23,6 +24,7 @@ export default function YachtAppLayout({
     { label: "Overview", href: `/yachts/${yachtId}`, icon: Home },
     { label: "Bridge", href: `/yachts/${yachtId}/bridge`, icon: Radio },
     { label: "Ops", href: `/yachts/${yachtId}/live-operations`, icon: Gauge },
+    { label: "Checklist", href: `/yachts/${yachtId}/checklists`, icon: ClipboardList },
     { label: "Crew", href: `/yachts/${yachtId}/crew`, icon: Users },
     { label: "Owner", href: `/yachts/${yachtId}/owner`, icon: Crown },
   ];

@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ChevronRight,
   ClipboardCheck,
+  ClipboardList,
   Compass,
   Crown,
   FileSignature,
@@ -234,11 +235,19 @@ export default function YachtDashboard() {
   const modules = [
     {
       title: "Crew Command",
-      text: "Invite crew, assign duties, review before/after proof and create contracts.",
+      text: "Invite crew, manage onboard roles and send yacht contracts.",
       href: `/yachts/${yachtId}/crew`,
       icon: Users,
       tone: "cyan",
       meta: `${stats.crewCount} crew`,
+    },
+    {
+      title: "Checklist System",
+      text: "Assign yacht checklists, review crew progress and inspect before/after proof.",
+      href: `/yachts/${yachtId}/checklists`,
+      icon: ClipboardList,
+      tone: "emerald",
+      meta: `${stats.openChecklists} open`,
     },
     {
       title: "Crew My YachtOS",

@@ -1,10 +1,5 @@
-import { redirect } from "next/navigation";
+import CrewPage from "../crew/page";
 
-export default async function YachtChecklistsRedirect({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  redirect(`/yachts/${id}/crew`);
+export default function ChecklistSystemPage() {
+  return <CrewPage view="checklists" />;
 }

@@ -37,7 +37,12 @@ import {
 
 const yachtId = "f434e90f-b8d8-443c-ad23-d5cedbe4308f";
 
-export default function CrewPage() {
+export default function CrewPage({
+  view = "command",
+}: {
+  view?: "command" | "checklists";
+}) {
+  const isChecklistSystem = view === "checklists";
   const [crew, setCrew] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
   const [selectedCrew, setSelectedCrew] = useState("");
@@ -682,26 +687,43 @@ export default function CrewPage() {
         <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
           <div className="p-5 sm:p-10">
-          <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">BlueDeck CrewOS</p>
-          <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
-            Yacht Crew Command
-          </h1>
-          <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-5 sm:text-xl">
-            Assign professional yacht checklists through the correct onboard hierarchy,
-            review proof and keep every department working from one calm command view.
-          </p>
+            <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
+              {isChecklistSystem ? "BlueDeck ChecklistOS" : "BlueDeck CrewOS"}
+            </p>
+            <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
+              {isChecklistSystem ? "Checklist System" : "Yacht Crew Command"}
+            </h1>
+            <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-5 sm:text-xl">
+              {isChecklistSystem
+                ? "Assign professional yacht checklists through the correct onboard hierarchy, review crew progress and keep proof records in one focused workspace."
+                : "Invite crew, manage onboard roles and send yacht contracts from one clean crew command workspace."}
+            </p>
           </div>
         </div>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-2 md:mb-10 md:grid-cols-4 md:gap-6">
           <Stat title="Crew" value={crew.length} icon={<Bell />} />
-          <Stat title="Open Checklists" value={checklists.length} icon={<ClipboardList />} />
-          <Stat title="Library" value={`${checklistTemplates.length} templates`} icon={<ShipWheel />} />
+          {isChecklistSystem ? (
+            <>
+              <Stat title="Open Checklists" value={checklists.length} icon={<ClipboardList />} />
+              <Stat title="Library" value={`${checklistTemplates.length} templates`} icon={<ShipWheel />} />
+            </>
+          ) : (
+            <>
+              <Stat title="Assignable Crew" value={assignableCrew.length} icon={<UserRound />} />
+              <Stat
+                title="Invited"
+                value={crew.filter((member) => member.status === "invited").length}
+                icon={<Plus />}
+              />
+            </>
+          )}
           <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
           <div className="space-y-6 xl:space-y-8">
+            {!isChecklistSystem && (
             <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex items-center gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
@@ -783,7 +805,9 @@ export default function CrewPage() {
                 )}
               </div>
             </div>
+            )}
 
+            {isChecklistSystem && (
             <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <p className="text-cyan-700">Assign To</p>
               <h2 className="mt-2 text-3xl font-black sm:text-4xl">Crew Member</h2>
@@ -840,7 +864,9 @@ export default function CrewPage() {
                 className="mt-4 h-24 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
               />
             </div>
+            )}
 
+            {!isChecklistSystem && (
             <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <p className="text-cyan-700">Contract</p>
               <h2 className="mt-2 text-3xl font-black sm:text-4xl">Assign Yacht Contract</h2>
@@ -848,6 +874,18 @@ export default function CrewPage() {
                 Select a crew member above, paste the contract text, and send it
                 for mobile signature.
               </p>
+              <select
+                value={selectedCrew}
+                onChange={(e) => setSelectedCrew(e.target.value)}
+                className="mt-6 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
+              >
+                <option value="">Select crew for contract</option>
+                {assignableCrew.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.crew_profiles?.full_name || member.invited_email} — {member.position}
+                  </option>
+                ))}
+              </select>
               <textarea
                 value={contractText}
                 onChange={(e) => setContractText(e.target.value)}
@@ -861,7 +899,9 @@ export default function CrewPage() {
                 Send Contract for Signature
               </button>
             </div>
+            )}
 
+            {isChecklistSystem && (
             <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -1043,9 +1083,54 @@ export default function CrewPage() {
                 )}
               </div>
             </div>
+            )}
           </div>
 
           <div className="space-y-6 xl:space-y-8">
+            {!isChecklistSystem && (
+              <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
+                      Crew Directory
+                    </p>
+                    <h2 className="mt-2 text-3xl font-black sm:text-5xl">Onboard Team</h2>
+                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
+                      Crew profiles, yacht roles, invitations and contract readiness in one
+                      clean captain command view.
+                    </p>
+                  </div>
+                  <UserRound className="h-10 w-10 text-cyan-700" />
+                </div>
+
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  {crew.map((member) => (
+                    <article
+                      key={member.id}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    >
+                      <p className="truncate text-lg font-black text-slate-950">
+                        {member.crew_profiles?.full_name || member.invited_email || "Crew member"}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-cyan-700">
+                        {member.position || member.crew_profiles?.current_position || "Crew"} · {member.department || "Yacht"}
+                      </p>
+                      <p className="mt-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
+                        {member.status || "active"}
+                      </p>
+                    </article>
+                  ))}
+
+                  {crew.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
+                      No crew has been added yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isChecklistSystem && (
             <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-5">
                 <div className="flex items-start gap-4">
@@ -1260,6 +1345,7 @@ export default function CrewPage() {
                 )}
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>
