@@ -10,7 +10,7 @@ import { absoluteSiteUrl, authConfirmUrl } from "../lib/site";
 import { supabase } from "../lib/supabase";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
-type AuthMode = "login" | "signup";
+type AuthMode = "login" | "signup" | "recovery";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -29,7 +29,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     async function redirectIfLoggedIn() {
-      const requestedMode = new URLSearchParams(window.location.search).get("mode");
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const requestedMode = searchParams.get("mode");
+      const isPasswordRecovery =
+        requestedMode === "recovery" ||
+        searchParams.get("type") === "recovery" ||
+        hashParams.get("type") === "recovery";
+
+      if (isPasswordRecovery) {
+        setMode("recovery");
+        return;
+      }
+
       if (requestedMode === "signup") setMode("signup");
 
       const {
@@ -44,6 +56,46 @@ export default function LoginPage() {
 
   async function submit() {
     setNotice("");
+
+    if (mode === "recovery") {
+      if (!password || !confirmPassword) {
+        setNotice("Please enter your new password twice.");
+        return;
+      }
+
+      if (password.length < 6) {
+        setNotice("Password must be at least 6 characters.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setNotice("Passwords do not match.");
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const { error } = await supabase.auth.updateUser({ password });
+
+        if (error) {
+          setNotice(error.message);
+          return;
+        }
+
+        await supabase.auth.signOut();
+        setPassword("");
+        setConfirmPassword("");
+        setMode("login");
+        setNotice("Your password has been updated. Please login with your new password.");
+      } catch {
+        setNotice("BlueDeck could not complete the password reset. Please request a new reset email.");
+      } finally {
+        setLoading(false);
+      }
+
+      return;
+    }
 
     if (!email || !password) {
       setNotice("Please enter your email and password.");
@@ -78,19 +130,25 @@ export default function LoginPage() {
     setLoading(true);
 
     if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
 
-      setLoading(false);
+        setLoading(false);
 
-      if (error) {
-        setNotice(error.message);
-        return;
+        if (error) {
+          setNotice(error.message);
+          return;
+        }
+
+        window.location.href = "/dashboard";
+      } catch {
+        setLoading(false);
+        setNotice("BlueDeck could not reach the login service. Please try again in a moment.");
       }
 
-      window.location.href = "/dashboard";
       return;
     }
 
@@ -142,13 +200,17 @@ export default function LoginPage() {
       return;
     }
 
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: authConfirmUrl("/dashboard") },
-    });
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: authConfirmUrl("/dashboard") },
+      });
 
-    setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
+      setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
+    } catch {
+      setNotice("BlueDeck could not resend the confirmation email. Please try again in a moment.");
+    }
   }
 
   async function resetPassword() {
@@ -157,11 +219,15 @@ export default function LoginPage() {
       return;
     }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: absoluteSiteUrl("/login"),
-    });
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+        redirectTo: absoluteSiteUrl("/login?mode=recovery"),
+      });
 
-    setNotice(error ? error.message : "Password reset email sent.");
+      setNotice(error ? error.message : "Password reset email sent. Open the link in your email to set a new password.");
+    } catch {
+      setNotice("BlueDeck could not send the password reset email. Please try again in a moment.");
+    }
   }
 
   return (
@@ -199,29 +265,44 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="mt-7 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
+          {mode === "recovery" ? (
             <button
               type="button"
-              onClick={() => setMode("login")}
-              className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "login" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
+              onClick={() => {
+                setMode("login");
+                setNotice("");
+              }}
+              className="mt-7 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50"
             >
-              Login
+              Back to login
             </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "signup" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
-            >
-              Create account
-            </button>
-          </div>
+          ) : (
+            <div className="mt-7 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "login" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "signup" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
+              >
+                Create account
+              </button>
+            </div>
+          )}
 
           <h2 className="mt-7 text-3xl font-semibold text-slate-950">
-            {mode === "login" ? "Welcome back" : "Create your BlueDeck account"}
+            {mode === "login" ? "Welcome back" : mode === "recovery" ? "Set a new password" : "Create your BlueDeck account"}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {mode === "login"
               ? "Login to continue to My Dashboard."
+              : mode === "recovery"
+                ? "Enter a new password for your BlueDeck account. After saving, login again with your new password."
               : "Use your real email and phone. BlueDeck will send a secure confirmation email."}
           </p>
 
@@ -285,19 +366,21 @@ export default function LoginPage() {
               </>
             )}
 
-            <AuthField icon={<Mail className="h-5 w-5" />} label="Email" required={mode === "signup"}>
-              <input
-                value={email}
-                type="email"
-                required
-                autoComplete="email"
-                onChange={(event) => setEmail(event.target.value)}
-                className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                placeholder="you@example.com"
-              />
-            </AuthField>
+            {mode !== "recovery" && (
+              <AuthField icon={<Mail className="h-5 w-5" />} label="Email" required={mode === "signup"}>
+                <input
+                  value={email}
+                  type="email"
+                  required
+                  autoComplete="email"
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                  placeholder="you@example.com"
+                />
+              </AuthField>
+            )}
 
-            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label="Password" required={mode === "signup"}>
+            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={mode === "recovery" ? "New password" : "Password"} required={mode !== "login"}>
               <input
                 value={password}
                 type={showPassword ? "text" : "password"}
@@ -312,7 +395,7 @@ export default function LoginPage() {
               </button>
             </AuthField>
 
-            {mode === "signup" && (
+            {(mode === "signup" || mode === "recovery") && (
               <>
                 <PasswordStrengthMeter strength={passwordStrength} />
                 <AuthField icon={<LockKeyhole className="h-5 w-5" />} label="Repeat password" required>
@@ -326,22 +409,24 @@ export default function LoginPage() {
                     placeholder="Enter the same password again"
                   />
                 </AuthField>
-                <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={acceptedPrivacy}
-                    required
-                    onChange={(event) => setAcceptedPrivacy(event.target.checked)}
-                    className="mt-1 h-4 w-4 accent-cyan-600"
-                  />
-                  <span>
-                    I agree to the BlueDeck{" "}
-                    <Link href="/privacy" className="font-semibold text-cyan-700">
-                      Privacy Policy
-                    </Link>
-                    . <span className="text-rose-500">*</span>
-                  </span>
-                </label>
+                {mode === "signup" && (
+                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                    <input
+                      type="checkbox"
+                      checked={acceptedPrivacy}
+                      required
+                      onChange={(event) => setAcceptedPrivacy(event.target.checked)}
+                      className="mt-1 h-4 w-4 accent-cyan-600"
+                    />
+                    <span>
+                      I agree to the BlueDeck{" "}
+                      <Link href="/privacy" className="font-semibold text-cyan-700">
+                        Privacy Policy
+                      </Link>
+                      . <span className="text-rose-500">*</span>
+                    </span>
+                  </label>
+                )}
               </>
             )}
 
@@ -356,17 +441,19 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-2xl bg-cyan-600 px-5 py-4 font-bold text-white transition hover:bg-cyan-700 disabled:opacity-60"
             >
-              {loading ? "Please wait..." : mode === "login" ? "Login to My Dashboard" : "Create secure account"}
+              {loading ? "Please wait..." : mode === "login" ? "Login to My Dashboard" : mode === "recovery" ? "Save new password" : "Create secure account"}
             </button>
 
-            <div className="flex flex-wrap justify-between gap-3 text-sm">
-              <button type="button" onClick={resetPassword} className="font-semibold text-cyan-700">
-                Forgot password?
-              </button>
-              <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
-                Resend confirmation email
-              </button>
-            </div>
+            {mode !== "recovery" && (
+              <div className="flex flex-wrap justify-between gap-3 text-sm">
+                <button type="button" onClick={resetPassword} className="font-semibold text-cyan-700">
+                  Forgot password?
+                </button>
+                <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
+                  Resend confirmation email
+                </button>
+              </div>
+            )}
 
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 import { authConfirmUrl } from "../../../lib/site";
+import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -47,7 +48,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  const resolvedSupabaseUrl = resolveSupabaseUrl(supabaseUrl);
+
+  const supabase = createClient(resolvedSupabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (data.user?.id) {
-    const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    const adminSupabase = createClient(resolvedSupabaseUrl, supabaseServiceRoleKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
