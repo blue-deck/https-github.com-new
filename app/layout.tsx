@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { AuthenticatedTopBar } from "./components/AuthenticatedTopBar";
+import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bluedeck.app"),
+  metadataBase: new URL(BLUEDECK_SITE_URL),
   title: "BlueDeck | Private Yacht Management Platform",
   description:
     "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",

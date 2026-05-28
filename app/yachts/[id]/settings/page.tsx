@@ -7,20 +7,20 @@ import {
   Globe,
   Satellite,
   Shield,
-  Wifi,
   Ship,
   CheckCircle,
+  type LucideIcon,
 } from "lucide-react";
 
 const items = [
   ["Deployment", BLUEDECK.production.deploy, Globe],
   ["Database", BLUEDECK.production.database, Database],
-  ["PWA", BLUEDECK.production.pwa ? "Enabled" : "Disabled", CheckCircle],
-  ["Offline Mode", BLUEDECK.production.offline ? "Enabled" : "Disabled", Wifi],
+  ["Website Mode", "Production website", CheckCircle],
+  ["Health Check", "/api/health", CheckCircle],
   ["GPS", BLUEDECK.integrations.gps, Satellite],
   ["AIS", BLUEDECK.integrations.ais, Ship],
-  ["Security", "Local access active", Shield],
-];
+  ["Security", "Account access active", Shield],
+] satisfies Array<[string, string, LucideIcon]>;
 
 export default function SettingsPage() {
   return (
@@ -42,7 +42,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {items.map(([title, value, Icon]: any) => (
+          {items.map(([title, value, Icon]) => (
             <div key={title} className="rounded-[36px] border border-white/10 bg-white/5 p-8">
               <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-cyan-400 text-black">
                 <Icon className="h-8 w-8" />
@@ -65,7 +65,7 @@ export default function SettingsPage() {
 
           <p className="mt-6 text-xl leading-relaxed text-gray-400">
             Real AIS, Starlink, NMEA2000 and payment systems require live provider credentials.
-            The application shell, PWA, modules and yacht operating interface are ready.
+            The website shell, private modules and yacht operating interface are ready for controlled production use.
           </p>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default function SettingsPage() {
   );
 }
 
-function Stat({ title, value }: any) {
+function Stat({ title, value }: { title: string; value: string }) {
   return (
     <div className="rounded-[30px] border border-white/10 bg-white/5 p-6">
       <p className="text-gray-400">{title}</p>

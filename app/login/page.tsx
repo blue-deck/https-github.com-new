@@ -6,14 +6,11 @@ import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } 
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
 import { PhoneInput } from "../components/PhoneInput";
-import { saveBaseProfileById } from "../lib/baseProfiles";
-import { saveCrewProfileByUserId } from "../lib/crewProfiles";
+import { absoluteSiteUrl, authConfirmUrl } from "../lib/site";
 import { supabase } from "../lib/supabase";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
 type AuthMode = "login" | "signup";
-const productionSiteUrl = "https://www.bluedeck.app";
-const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -44,28 +41,6 @@ export default function LoginPage() {
 
     redirectIfLoggedIn();
   }, []);
-
-  async function createProfiles(userId: string, userEmail: string) {
-    await saveBaseProfileById(supabase, {
-      id: userId,
-      email: userEmail,
-      full_name: fullName || userEmail,
-      phone,
-      role,
-    });
-
-    await saveCrewProfileByUserId(
-      supabase,
-      userId,
-      {
-        email: userEmail,
-        full_name: fullName || userEmail,
-        phone,
-        current_position: position || getDefaultPositionForAccountType(role) || "Deckhand",
-        public_crew_id: userId.slice(0, 8).toUpperCase(),
-      }
-    );
-  }
 
   async function submit() {
     setNotice("");
@@ -145,8 +120,6 @@ export default function LoginPage() {
         return;
       }
 
-      if (result.userId) await createProfiles(result.userId, email.trim().toLowerCase());
-
       setLoading(false);
 
       if (result.needsEmailConfirmation) {
@@ -172,7 +145,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: confirmationRedirectUrl },
+      options: { emailRedirectTo: authConfirmUrl("/dashboard") },
     });
 
     setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
@@ -185,7 +158,7 @@ export default function LoginPage() {
     }
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: `${productionSiteUrl}/login`,
+      redirectTo: absoluteSiteUrl("/login"),
     });
 
     setNotice(error ? error.message : "Password reset email sent.");

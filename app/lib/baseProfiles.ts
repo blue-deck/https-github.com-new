@@ -1,6 +1,4 @@
-type SupabaseClientLike = {
-  from: (table: string) => any;
-};
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type BaseProfilePayload = {
   id: string;
@@ -17,7 +15,7 @@ function cleanPayload(payload: BaseProfilePayload) {
 }
 
 export async function saveBaseProfileById(
-  supabase: SupabaseClientLike,
+  supabase: SupabaseClient,
   payload: BaseProfilePayload
 ) {
   const clean = cleanPayload(payload);

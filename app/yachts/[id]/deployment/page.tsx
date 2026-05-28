@@ -1,15 +1,14 @@
 "use client";
 
-import { Rocket, Globe, Database, Shield, Smartphone, CheckCircle } from "lucide-react";
+import { CheckCircle, Database, Globe, Rocket, Shield, type LucideIcon } from "lucide-react";
 
 const steps = [
   ["Vercel Deploy", "Push project to GitHub, import into Vercel and deploy.", Rocket],
-  ["Environment Variables", "Add Supabase URL and anon key in Vercel project settings.", Shield],
+  ["Environment Variables", "Add site URL, Supabase anon key and server-only service role in Vercel.", Shield],
   ["Domain", "Connect custom domain from Vercel Domains.", Globe],
-  ["Database", "Keep Supabase project active and policies configured.", Database],
-  ["PWA", "Manifest and offline shell are already prepared.", Smartphone],
-  ["Production QA", "Test navigation, crew, engineering, reports and live GPS.", CheckCircle],
-];
+  ["Database Foundation", "Apply the production hardening SQL and keep RLS/storage policies current.", Database],
+  ["Production QA", "Test public pages, login, profile, crew, documents, checklists and contracts.", CheckCircle],
+] satisfies Array<[string, string, LucideIcon]>;
 
 export default function DeploymentPage() {
   return (
@@ -19,12 +18,12 @@ export default function DeploymentPage() {
           <p className="text-cyan-300">BlueDeck Production</p>
           <h1 className="mt-3 text-6xl font-black">Deployment Center</h1>
           <p className="mt-5 max-w-3xl text-xl text-gray-400">
-            Final production checklist for Vercel, domain, Supabase and mobile PWA deployment.
+            Final production checklist for Vercel, domain, Supabase and private yacht operations.
           </p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {steps.map(([title, text, Icon]: any) => (
+          {steps.map(([title, text, Icon]) => (
             <div key={title} className="rounded-[36px] border border-white/10 bg-white/5 p-8">
               <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-cyan-400 text-black">
                 <Icon className="h-8 w-8" />

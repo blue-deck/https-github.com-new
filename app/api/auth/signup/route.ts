@@ -2,34 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
+import { authConfirmUrl } from "../../../lib/site";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const fallbackSupabaseUrl = "https://onftggrmmpvvwgxxzywo.supabase.co";
-const productionSiteUrl = "https://www.bluedeck.app";
-const confirmationRedirectUrl = `${productionSiteUrl}/auth/confirm?next=/dashboard`;
 const accountTypes = ["crew", "captain", "owner", "management"];
 
-function normalizeSupabaseUrl(url?: string) {
-  if (!url || url.includes("onftgqrmmpvvwgxxzywo")) return fallbackSupabaseUrl;
-  return url;
-}
-
 export async function POST(request: NextRequest) {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return NextResponse.json({ error: "Supabase is not configured." }, { status: 500 });
   }
 
-  const body = (await request.json()) as {
-    email?: string;
-    password?: string;
-    fullName?: string;
-    phone?: string;
-    role?: string;
-    position?: string;
-  };
+  let body: SignupRequestBody;
+
+  try {
+    body = (await request.json()) as SignupRequestBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid account request." }, { status: 400 });
+  }
 
   const email = body.email?.trim().toLowerCase();
   const password = body.password || "";
@@ -43,6 +35,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Name, email, password, phone, account type and yacht position are required." }, { status: 400 });
   }
 
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+  }
+
   if (!isCompletePhoneNumber(phone)) {
     return NextResponse.json({ error: "Please select a country code and enter a valid mobile number." }, { status: 400 });
   }
@@ -51,7 +47,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
   }
 
-  const supabase = createClient(normalizeSupabaseUrl(supabaseUrl), supabaseAnonKey, {
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -62,7 +58,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     options: {
-      emailRedirectTo: confirmationRedirectUrl,
+      emailRedirectTo: authConfirmUrl("/dashboard"),
       data: {
         full_name: fullName,
         phone,
@@ -77,7 +73,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (data.user?.id) {
-    const adminSupabase = createClient(normalizeSupabaseUrl(supabaseUrl), supabaseServiceRoleKey || supabaseAnonKey, {
+    const adminSupabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -85,7 +81,7 @@ export async function POST(request: NextRequest) {
     });
 
     try {
-      await Promise.all([
+      const profileResults = await Promise.all([
         saveBaseProfileById(adminSupabase, {
           id: data.user.id,
           email,
@@ -105,8 +101,16 @@ export async function POST(request: NextRequest) {
           }
         ),
       ]);
-    } catch {
-      // Profile sync is retried from the client after sign-up; account creation should not fail here.
+
+      const failedProfileWrites = profileResults
+        .map((result) => result.error?.message)
+        .filter(Boolean);
+
+      if (failedProfileWrites.length > 0) {
+        console.error("BlueDeck profile sync returned errors after signup", failedProfileWrites);
+      }
+    } catch (profileError) {
+      console.error("BlueDeck profile sync failed after signup", profileError);
     }
   }
 
@@ -115,6 +119,19 @@ export async function POST(request: NextRequest) {
     emailConfirmed: Boolean(data.user?.email_confirmed_at),
     needsEmailConfirmation: !data.session,
   });
+}
+
+type SignupRequestBody = {
+  email?: string;
+  password?: string;
+  fullName?: string;
+  phone?: string;
+  role?: string;
+  position?: string;
+};
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 function isCompletePhoneNumber(value: string) {

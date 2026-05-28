@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BlueDeck
 
-## Getting Started
+BlueDeck is a private yacht management website for owners, captains and crew.
+It combines account-based access, yacht workspaces, crew profiles, document
+records, contracts, checklist workflows and public company pages.
 
-First, run the development server:
+## Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Required Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The app expects these values in `.env.local` locally and in Vercel production:
 
-## Learn More
+```bash
+NEXT_PUBLIC_SITE_URL=https://www.bluedeck.app
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
 
-To learn more about Next.js, take a look at the following resources:
+`SUPABASE_SERVICE_ROLE_KEY` is server-only. Never expose it in browser code.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Production Foundation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run `supabase-production-hardening.sql` in Supabase SQL Editor after the initial
+database setup. It is idempotent and keeps the critical production foundation in
+one place:
 
-## Deploy on Vercel
+- required profile, crew, yacht, invitation, checklist and contract columns
+- unique indexes used by profile sync and yacht membership flows
+- storage buckets for crew documents, portfolio photos, task proof and yacht files
+- baseline RLS/storage policies for authenticated BlueDeck users
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Verification
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+npx eslint app/page.tsx app/login/page.tsx app/api/auth/signup/route.ts app/api/health/route.ts
+```
+
+The full repository contains older operational modules, so broad linting can
+surface legacy warnings. Production build must stay clean before deployment.
+
+## Operational Checks
+
+- Public health endpoint: `/api/health`
+- Public sitemap: `/sitemap.xml`
+- Robots policy: `/robots.txt`
+- Public legal pages: `/privacy`, `/terms`
+- Public company pages: `/about`, `/contact`, `/services`, `/management`, `/trust`

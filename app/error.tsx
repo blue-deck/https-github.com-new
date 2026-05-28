@@ -1,0 +1,48 @@
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import { RefreshCcw, ShieldAlert } from "lucide-react";
+import { PublicHeader } from "./components/PublicSiteChrome";
+
+export default function ErrorPage({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
+  return (
+    <main className="bd-site-shell min-h-screen pt-[92px] text-[#071f3c]">
+      <PublicHeader />
+      <section className="mx-auto flex min-h-[calc(100vh-92px)] max-w-3xl items-center px-5 py-16 text-center sm:px-8">
+        <div className="bd-editorial-card w-full p-8 sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#07182d] text-cyan-200">
+            <ShieldAlert className="h-8 w-8" />
+          </div>
+          <p className="bd-kicker mt-7">BlueDeck System</p>
+          <h1 className="bd-serif mt-4 text-5xl leading-tight text-[#071f3c]">
+            We could not complete this request.
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#5b7088]">
+            The page stayed protected and the request did not change your account.
+            Try again, or return to the dashboard and continue from there.
+          </p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <button type="button" onClick={reset} className="bd-primary-cta">
+              <RefreshCcw className="h-4 w-4" />
+              Try again
+            </button>
+            <Link href="/dashboard" className="bd-secondary-cta">
+              Dashboard
+            </Link>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
