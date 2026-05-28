@@ -10,8 +10,9 @@ import {
   AlertTriangle,
   Satellite,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const systems = [
+const systems: Array<[string, string, LucideIcon]> = [
   ["Course", "184°", Navigation],
   ["Speed", "GPS", Gauge],
   ["AIS", "Provider Required", Radar],
@@ -22,55 +23,80 @@ const systems = [
 
 export default function BridgePage() {
   return (
-    <main className="min-h-screen bg-[#020817] p-8 pb-28 text-white">
+    <main className="min-h-screen px-4 py-6 pb-14 text-[#071629] sm:px-8 sm:py-8">
       <div className="mx-auto max-w-[1700px]">
-        <div className="mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
-          <p className="text-cyan-300">BlueDeck BridgeOS</p>
-          <h1 className="mt-3 text-6xl font-black">Captain Bridge</h1>
-          <p className="mt-5 max-w-4xl text-xl text-gray-400">
+        <div className="mb-8 overflow-hidden rounded-[30px] border border-white/70 bg-white/90 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
+          <div className="h-1.5 bg-[linear-gradient(90deg,#061225,#22d3ee,#d8b45f,#ef776f)]" />
+          <div className="p-6 sm:p-10">
+            <p className="text-sm font-black uppercase tracking-[0.2em] text-[#0e7490]">
+              BlueDeck BridgeOS
+            </p>
+            <h1 className="mt-3 text-4xl font-black leading-tight text-[#071629] sm:text-6xl">
+              Captain Bridge
+            </h1>
+            <p className="mt-5 max-w-4xl text-base leading-relaxed text-[#52677d] sm:text-xl">
             Professional bridge interface for GPS, AIS readiness, navigation awareness and captain operations.
-          </p>
+            </p>
+          </div>
         </div>
 
-        <div className="mb-12 grid gap-6 md:grid-cols-3 xl:grid-cols-6">
-          {systems.map(([title, value, Icon]: any) => (
-            <div key={title} className="rounded-[30px] border border-white/10 bg-white/5 p-6">
-              <Icon className="h-8 w-8 text-cyan-300" />
-              <p className="mt-5 text-gray-400">{title}</p>
-              <h2 className="mt-3 text-2xl font-black">{value}</h2>
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:mb-10 xl:grid-cols-6">
+          {systems.map(([title, value, Icon]) => (
+            <div
+              key={title}
+              className="rounded-[26px] border border-cyan-950/10 bg-white/88 p-5 shadow-xl shadow-cyan-950/7 backdrop-blur"
+            >
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-50 text-[#0e7490]">
+                <Icon className="h-6 w-6" />
+              </div>
+              <p className="mt-5 text-sm font-semibold uppercase tracking-[0.12em] text-[#607489]">
+                {title}
+              </p>
+              <h2 className="mt-2 text-2xl font-black text-[#071629]">{value}</h2>
             </div>
           ))}
         </div>
 
-        <div className="grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[40px] border border-white/10 bg-black/40 p-8">
-            <div className="flex items-center justify-between">
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:gap-8">
+          <div className="rounded-[30px] border border-cyan-950/10 bg-white/92 p-5 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:rounded-[40px] sm:p-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-cyan-300">Tactical Display</p>
-                <h2 className="mt-2 text-5xl font-black">Navigation Radar</h2>
+                <p className="text-sm font-black uppercase tracking-[0.18em] text-[#0e7490]">
+                  Tactical Display
+                </p>
+                <h2 className="mt-2 text-3xl font-black leading-tight text-[#071629] sm:text-5xl">
+                  Navigation Radar
+                </h2>
               </div>
-              <Radar className="h-14 w-14 text-cyan-300" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#061225] text-[#a5f3fc] shadow-xl shadow-cyan-950/15">
+                <Radar className="h-7 w-7" />
+              </div>
             </div>
 
-            <div className="relative mt-10 flex h-[650px] items-center justify-center overflow-hidden rounded-[36px] bg-[#020817]">
-              <div className="absolute h-[620px] w-[620px] rounded-full border border-cyan-500/20" />
-              <div className="absolute h-[440px] w-[440px] rounded-full border border-cyan-500/20" />
-              <div className="absolute h-[260px] w-[260px] rounded-full border border-cyan-500/20" />
-              <div className="absolute h-full w-[1px] bg-cyan-500/20" />
-              <div className="absolute h-[1px] w-full bg-cyan-500/20" />
+            <div className="relative mt-6 flex h-[360px] items-center justify-center overflow-hidden rounded-[28px] border border-cyan-300/20 bg-[#05111f] text-[#eaf6ff] shadow-inner shadow-cyan-950/40 sm:mt-8 sm:h-[520px] sm:rounded-[36px] xl:h-[650px]">
+              <div className="absolute h-[92%] max-h-[620px] w-[92%] max-w-[620px] rounded-full border border-cyan-300/20" />
+              <div className="absolute h-[66%] max-h-[440px] w-[66%] max-w-[440px] rounded-full border border-cyan-300/20" />
+              <div className="absolute h-[40%] max-h-[260px] w-[40%] max-w-[260px] rounded-full border border-cyan-300/20" />
+              <div className="absolute h-full w-px bg-cyan-300/16" />
+              <div className="absolute h-px w-full bg-cyan-300/16" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.16),transparent_35%)]" />
 
-              <div className="z-10 flex h-20 w-20 items-center justify-center rounded-full bg-cyan-400 text-black shadow-[0_0_45px_#06b6d4]">
-                <Ship className="h-10 w-10" />
+              <div className="z-10 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-300 text-[#061225] shadow-[0_0_45px_rgba(34,211,238,0.75)] sm:h-20 sm:w-20">
+                <Ship className="h-8 w-8 sm:h-10 sm:w-10" />
               </div>
 
-              <div className="absolute bottom-8 left-8 rounded-2xl border border-white/10 bg-black/50 p-5">
-                <p className="text-cyan-300">Real AIS Status</p>
-                <p className="mt-2 text-gray-400">Awaiting provider access</p>
+              <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur sm:bottom-8 sm:left-8 sm:right-auto sm:min-w-[280px] sm:p-5">
+                <p className="text-sm font-black uppercase tracking-[0.16em] text-[#67e8f9]">
+                  Real AIS Status
+                </p>
+                <p className="mt-2 text-sm text-[#d8ecfb] sm:text-base">
+                  Awaiting provider access
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-5 sm:space-y-6">
             <Panel title="Captain Status" text="Bridge systems are online and ready for navigation." />
             <Panel title="Real GPS" text="Use Live Navigation Map to display actual browser GPS position." />
             <Panel title="AIS Integration" text="Connect MarineTraffic, AISStream or Kpler account with active AIS endpoint." warning />
@@ -82,14 +108,34 @@ export default function BridgePage() {
   );
 }
 
-function Panel({ title, text, warning = false }: any) {
+function Panel({
+  title,
+  text,
+  warning = false,
+}: {
+  title: string;
+  text: string;
+  warning?: boolean;
+}) {
   return (
-    <div className={`rounded-[32px] border p-8 ${warning ? "border-yellow-500/30 bg-yellow-500/10" : "border-white/10 bg-white/5"}`}>
+    <div
+      className={`rounded-[26px] border p-5 shadow-xl shadow-cyan-950/7 backdrop-blur sm:rounded-[32px] sm:p-7 ${
+        warning
+          ? "border-amber-200 bg-amber-50/90"
+          : "border-cyan-950/10 bg-white/88"
+      }`}
+    >
       <div className="flex items-start gap-4">
-        {warning ? <AlertTriangle className="h-8 w-8 text-yellow-300" /> : <Ship className="h-8 w-8 text-cyan-300" />}
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+            warning ? "bg-amber-100 text-amber-700" : "bg-cyan-50 text-[#0e7490]"
+          }`}
+        >
+          {warning ? <AlertTriangle className="h-6 w-6" /> : <Ship className="h-6 w-6" />}
+        </div>
         <div>
-          <h2 className="text-3xl font-black">{title}</h2>
-          <p className="mt-4 text-lg leading-relaxed text-gray-400">{text}</p>
+          <h2 className="text-2xl font-black text-[#071629] sm:text-3xl">{title}</h2>
+          <p className="mt-3 text-base leading-relaxed text-[#52677d] sm:text-lg">{text}</p>
         </div>
       </div>
     </div>
