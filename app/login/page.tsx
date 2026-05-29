@@ -26,6 +26,9 @@ export default function LoginPage() {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [notice, setNotice] = useState("");
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+  const forgotPasswordHref = email.trim()
+    ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
+    : "/forgot-password";
 
   useEffect(() => {
     async function redirectIfLoggedIn() {
@@ -429,16 +432,9 @@ export default function LoginPage() {
 
             {mode !== "recovery" && (
               <div className="flex flex-wrap justify-between gap-3 text-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const query = email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : "";
-                    window.location.href = `/forgot-password${query}`;
-                  }}
-                  className="font-semibold text-cyan-700"
-                >
+                <Link href={forgotPasswordHref} className="font-semibold text-cyan-700">
                   Forgot password?
-                </button>
+                </Link>
                 <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
                   Resend confirmation email
                 </button>
