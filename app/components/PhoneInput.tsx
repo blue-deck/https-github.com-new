@@ -17,7 +17,6 @@ function countryFromValue(value: string) {
 function localNumberFromValue(value: string, country: BlueDeckCountry | null) {
   let local = value.trim();
   if (country && local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
-  if (country && local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
   return local.replace(/^\+/, "");
 }
 

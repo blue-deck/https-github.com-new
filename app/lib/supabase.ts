@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -8,10 +8,22 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase environment variables");
 }
 
-export const supabase = createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
+type BlueDeckGlobal = typeof globalThis & {
+  __bluedeckSupabase?: SupabaseClient;
+};
+
+const globalForSupabase = globalThis as BlueDeckGlobal;
+
+export const supabase =
+  globalForSupabase.__bluedeckSupabase ||
+  createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
+
+if (typeof window !== "undefined") {
+  globalForSupabase.__bluedeckSupabase = supabase;
+}
