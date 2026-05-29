@@ -6,7 +6,7 @@ import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } 
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
 import { PhoneInput } from "../components/PhoneInput";
-import { absoluteSiteUrl, authConfirmUrl } from "../lib/site";
+import { authConfirmUrl } from "../lib/site";
 import { supabase } from "../lib/supabase";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
@@ -38,7 +38,7 @@ export default function LoginPage() {
         hashParams.get("type") === "recovery";
 
       if (isPasswordRecovery) {
-        setMode("recovery");
+        window.location.replace(`/reset-password${window.location.search}${window.location.hash}`);
         return;
       }
 
@@ -210,23 +210,6 @@ export default function LoginPage() {
       setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
     } catch {
       setNotice("BlueDeck could not resend the confirmation email. Please try again in a moment.");
-    }
-  }
-
-  async function resetPassword() {
-    if (!email) {
-      setNotice("Enter your email first.");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: absoluteSiteUrl("/login?mode=recovery"),
-      });
-
-      setNotice(error ? error.message : "Password reset email sent. Open the link in your email to set a new password.");
-    } catch {
-      setNotice("BlueDeck could not send the password reset email. Please try again in a moment.");
     }
   }
 
@@ -446,7 +429,14 @@ export default function LoginPage() {
 
             {mode !== "recovery" && (
               <div className="flex flex-wrap justify-between gap-3 text-sm">
-                <button type="button" onClick={resetPassword} className="font-semibold text-cyan-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const query = email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : "";
+                    window.location.href = `/forgot-password${query}`;
+                  }}
+                  className="font-semibold text-cyan-700"
+                >
                   Forgot password?
                 </button>
                 <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
