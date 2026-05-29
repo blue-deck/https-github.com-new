@@ -1,47 +1,55 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowUpRight, Mail, MapPin, ShieldCheck } from "lucide-react";
+import { type TranslationKey } from "../lib/i18n";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useLanguage } from "./LanguageProvider";
 
 const publicNavigation = [
-  { label: "Yachts", href: "/#yacht-platform" },
-  { label: "Services", href: "/services" },
-  { label: "Management", href: "/management" },
-  { label: "Trust", href: "/trust" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
+  { labelKey: "nav.yachts", href: "/#yacht-platform" },
+  { labelKey: "nav.services", href: "/services" },
+  { labelKey: "nav.management", href: "/management" },
+  { labelKey: "nav.trust", href: "/trust" },
+  { labelKey: "nav.about", href: "/about" },
+  { labelKey: "nav.contact", href: "/contact" },
+] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
 export function PublicHeader() {
+  const { t } = useLanguage();
+
   return (
     <header className="bd-public-header">
       <div className="mx-auto flex h-[92px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         <BlueDeckLogoLink
           href="/"
           priority
-          className="h-16 w-52 shrink-0 rounded-none border-0 bg-transparent shadow-none sm:h-[74px] sm:w-64"
+          className="h-12 w-36 shrink-0 rounded-none border-0 bg-transparent shadow-none sm:h-[74px] sm:w-64"
           imageClassName="object-contain p-0"
         />
 
         <nav className="hidden items-center gap-7 text-xs font-bold uppercase tracking-[0.18em] text-white/72 xl:flex">
           {publicNavigation.map((item) => (
             <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           ))}
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
+          <LanguageSwitcher size="compact" />
           <Link
             href="/login"
-            className="bd-focus rounded-full border border-white/15 px-5 py-3 text-sm font-bold text-white/82 transition hover:border-cyan-200 hover:text-white"
+            className="bd-focus rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-5 sm:py-3 sm:text-sm"
           >
-            Login
+            {t("auth.login")}
           </Link>
           <Link
             href="/login?mode=signup"
-            className="bd-focus rounded-full bg-white px-5 py-3 text-sm font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100"
+            className="bd-focus rounded-full bg-white px-3 py-2.5 text-xs font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100 sm:px-5 sm:py-3 sm:text-sm"
           >
-            Sign up
+            {t("auth.signUp")}
           </Link>
         </div>
       </div>
@@ -50,6 +58,8 @@ export function PublicHeader() {
 }
 
 export function PublicFooter() {
+  const { t } = useLanguage();
+
   return (
     <footer className="bd-public-footer border-t border-[#071f3c]/10 bg-[#06172b] text-white">
       <div className="mx-auto grid max-w-[1500px] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr] lg:px-12">
@@ -60,31 +70,30 @@ export function PublicFooter() {
             imageClassName="object-contain p-0"
           />
           <p className="mt-5 max-w-sm text-sm leading-7 text-white/62">
-            BlueDeck is a private yacht management platform for owners, captains,
-            crew operations, documents, contracts and readiness workflows.
+            {t("footer.description")}
           </p>
         </div>
 
         <FooterColumn
-          title="Company"
+          title={t("footer.company")}
           links={[
-            ["About", "/about"],
-            ["Vision", "/about#vision"],
-            ["Services", "/services"],
-            ["Contact", "/contact"],
+            [t("nav.about"), "/about"],
+            [t("footer.vision"), "/about#vision"],
+            [t("nav.services"), "/services"],
+            [t("nav.contact"), "/contact"],
           ]}
         />
         <FooterColumn
-          title="Platform"
+          title={t("footer.platform")}
           links={[
-            ["Yachts", "/#yacht-platform"],
-            ["Management", "/management"],
-            ["Trust", "/trust"],
-            ["Client login", "/login"],
+            [t("nav.yachts"), "/#yacht-platform"],
+            [t("nav.management"), "/management"],
+            [t("nav.trust"), "/trust"],
+            [t("footer.clientLogin"), "/login"],
           ]}
         />
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">Contact</p>
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">{t("footer.contact")}</p>
           <div className="mt-5 space-y-4 text-sm text-white/68">
             <a href="mailto:info@bluedeck.app" className="flex items-center gap-3 transition hover:text-white">
               <Mail className="h-4 w-4 text-cyan-200" />
@@ -92,11 +101,11 @@ export function PublicFooter() {
             </a>
             <p className="flex items-center gap-3">
               <MapPin className="h-4 w-4 text-cyan-200" />
-              Private yacht operations
+              {t("footer.operations")}
             </p>
             <p className="flex items-center gap-3">
               <ShieldCheck className="h-4 w-4 text-cyan-200" />
-              Account-based secure access
+              {t("footer.secureAccess")}
             </p>
           </div>
         </div>
@@ -104,11 +113,11 @@ export function PublicFooter() {
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-[1500px] flex-col gap-3 px-5 py-5 text-xs text-white/50 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12">
-          <p>© {new Date().getFullYear()} BlueDeck. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} BlueDeck. {t("footer.rights")}</p>
           <div className="flex flex-wrap gap-4">
-            <Link href="/privacy" className="hover:text-white">Privacy Policy</Link>
-            <Link href="/terms" className="hover:text-white">Terms</Link>
-            <Link href="/contact" className="hover:text-white">Contact</Link>
+            <Link href="/privacy" className="hover:text-white">{t("footer.privacy")}</Link>
+            <Link href="/terms" className="hover:text-white">{t("footer.terms")}</Link>
+            <Link href="/contact" className="hover:text-white">{t("nav.contact")}</Link>
           </div>
         </div>
       </div>

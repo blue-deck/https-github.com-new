@@ -1,35 +1,40 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, Mail, MapPin, ShieldCheck } from "lucide-react";
+import { useLanguage } from "../components/LanguageProvider";
 import { PublicPageShell } from "../components/PublicSiteChrome";
 
 export default function ContactPage() {
+  const { t } = useLanguage();
+
   return (
     <PublicPageShell
-      eyebrow="Contact"
-      title="Speak with BlueDeck about your yacht workspace."
-      intro="For account, privacy, onboarding or yacht workspace questions, contact BlueDeck directly. The secure platform remains available through login."
+      eyebrow={t("contact.eyebrow")}
+      title={t("contact.title")}
+      intro={t("contact.intro")}
     >
       <section className="bd-section pt-4">
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="bd-deep-card">
-            <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-200">Direct contact</p>
+            <p className="text-xs font-black uppercase tracking-[0.3em] text-cyan-200">{t("contact.direct")}</p>
             <h2 className="bd-serif mt-4 text-4xl leading-tight text-white">
-              A premium system should be easy to reach.
+              {t("contact.directTitle")}
             </h2>
             <a href="mailto:info@bluedeck.app" className="mt-8 inline-flex items-center gap-3 rounded-full bg-white px-6 py-4 font-black text-[#07182d]">
-              Email BlueDeck
+              {t("contact.emailBlueDeck")}
               <Mail className="h-5 w-5" />
             </a>
           </div>
 
           <div className="grid gap-4">
-            <ContactLine icon={<Mail className="h-5 w-5" />} title="Email" text="info@bluedeck.app" />
-            <ContactLine icon={<MapPin className="h-5 w-5" />} title="Operations" text="Private yacht management and crew workflows" />
-            <ContactLine icon={<ShieldCheck className="h-5 w-5" />} title="Account Access" text="Existing users can manage profile, settings and yacht modules after login." />
+            <ContactLine icon={<Mail className="h-5 w-5" />} title={t("contact.email")} text="info@bluedeck.app" />
+            <ContactLine icon={<MapPin className="h-5 w-5" />} title={t("contact.operationsTitle")} text={t("contact.operationsText")} />
+            <ContactLine icon={<ShieldCheck className="h-5 w-5" />} title={t("contact.accessTitle")} text={t("contact.accessText")} />
             <Link href="/login" className="bd-feature-panel">
-              <h3 className="text-3xl font-semibold text-[#071f3c]">Already have an account?</h3>
+              <h3 className="text-3xl font-semibold text-[#071f3c]">{t("contact.haveAccount")}</h3>
               <span className="mt-6 inline-flex items-center gap-3 font-black uppercase tracking-[0.16em] text-cyan-800">
-                Login to BlueDeck
+                {t("contact.loginBlueDeck")}
                 <ArrowRight className="h-5 w-5" />
               </span>
             </Link>

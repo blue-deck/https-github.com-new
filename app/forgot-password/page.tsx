@@ -3,12 +3,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, CheckCircle2, Mail, Send, ShieldCheck } from "lucide-react";
+import { useLanguage } from "../components/LanguageProvider";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 
 const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 export default function ForgotPasswordPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
   const [website, setWebsite] = useState("");
@@ -29,12 +31,12 @@ export default function ForgotPasswordPage() {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!isValidEmail(normalizedEmail)) {
-      setNotice("Please enter a valid email address.");
+      setNotice(t("forgot.invalidEmail"));
       return;
     }
 
     if (!captchaToken) {
-      setNotice("Please complete the security check.");
+      setNotice(t("forgot.completeSecurity"));
       return;
     }
 
@@ -58,14 +60,14 @@ export default function ForgotPasswordPage() {
       const result = (await response.json()) as { error?: string };
 
       if (!response.ok || result.error) {
-        setNotice(result.error || "BlueDeck could not send the reset email. Please try again.");
+        setNotice(result.error || t("forgot.sendFailed"));
         setCaptchaToken("");
         return;
       }
 
       setSent(true);
     } catch {
-      setNotice("BlueDeck could not send the reset email. Please try again in a moment.");
+      setNotice(t("forgot.sendFailedMoment"));
     } finally {
       setLoading(false);
     }
@@ -77,9 +79,9 @@ export default function ForgotPasswordPage() {
 
       <section className="border-b border-[#071f3c]/10 bg-white/64">
         <div className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8 lg:px-12">
-          <p className="bd-kicker">BlueDeck account recovery</p>
+          <p className="bd-kicker">{t("forgot.eyebrow")}</p>
           <h1 className="mt-5 text-4xl font-semibold tracking-[-0.02em] text-[#07182d] sm:text-5xl">
-            Reset your password
+            {t("forgot.title")}
           </h1>
         </div>
       </section>
@@ -90,11 +92,11 @@ export default function ForgotPasswordPage() {
           className="w-full max-w-2xl"
         >
           <p className="max-w-xl text-base leading-7 text-[#405570]">
-            Enter your email address below and we will send you a secure link to reset your password.
+            {t("forgot.intro")}
           </p>
 
           <label className="mt-7 block max-w-xl">
-            <span className="mb-2 block text-sm font-bold text-[#07182d]">Email address</span>
+            <span className="mb-2 block text-sm font-bold text-[#07182d]">{t("forgot.email")}</span>
             <span className="flex h-14 items-center gap-3 rounded-xl border border-[#071f3c]/16 bg-white px-4 text-cyan-700 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10">
               <Mail className="h-5 w-5" />
               <input
@@ -123,7 +125,7 @@ export default function ForgotPasswordPage() {
               <div className="rounded-xl border border-[#071f3c]/12 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#07182d]">
                   <ShieldCheck className="h-4 w-4 text-cyan-700" />
-                  Security verification
+                  {t("forgot.security")}
                 </div>
                 <TurnstileWidget
                   siteKey={turnstileSiteKey}
@@ -135,14 +137,14 @@ export default function ForgotPasswordPage() {
                   onExpire={() => setCaptchaToken("")}
                   onError={() => {
                     setCaptchaToken("");
-                    setNotice("Security verification could not load. Please refresh and try again.");
+                    setNotice(t("forgot.securityError"));
                   }}
                 />
               </div>
             ) : (
               <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
                 <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
-                BlueDeck security verification needs Cloudflare Turnstile keys before password reset can be used.
+                {t("forgot.needsKeys")}
               </div>
             )}
           </div>
@@ -156,7 +158,7 @@ export default function ForgotPasswordPage() {
           {sent && (
             <div className="mt-5 flex max-w-xl items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm leading-6 text-emerald-800">
               <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-              If this email belongs to a BlueDeck account, a secure reset link has been sent.
+              {t("forgot.sent")}
             </div>
           )}
 
@@ -166,12 +168,12 @@ export default function ForgotPasswordPage() {
             className="mt-6 inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-cyan-600 px-7 text-base font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Send className="h-5 w-5" />
-            {loading ? "Sending reset link..." : "Send reset link"}
+            {loading ? t("forgot.sending") : t("forgot.send")}
           </button>
 
           <Link href="/login" className="mt-6 flex w-fit items-center gap-2 text-sm font-bold text-cyan-700 transition hover:text-[#07182d]">
             <ArrowLeft className="h-4 w-4" />
-            Back to login
+            {t("login.backToLogin")}
           </Link>
         </form>
       </section>

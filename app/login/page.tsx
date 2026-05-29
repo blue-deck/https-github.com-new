@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
+import { useLanguage } from "../components/LanguageProvider";
 import { PhoneInput } from "../components/PhoneInput";
+import type { TranslationKey } from "../lib/i18n";
 import { authConfirmUrl } from "../lib/site";
 import { supabase } from "../lib/supabase";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
@@ -13,6 +15,7 @@ import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/y
 type AuthMode = "login" | "signup" | "recovery";
 
 export default function LoginPage() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -25,7 +28,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [notice, setNotice] = useState("");
-  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
+  const passwordStrength = useMemo(() => getPasswordStrength(password, t), [password, t]);
   const forgotPasswordHref = email.trim()
     ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
     : "/forgot-password";
@@ -62,17 +65,17 @@ export default function LoginPage() {
 
     if (mode === "recovery") {
       if (!password || !confirmPassword) {
-        setNotice("Please enter your new password twice.");
+        setNotice(t("login.notice.newPasswordTwice"));
         return;
       }
 
       if (password.length < 6) {
-        setNotice("Password must be at least 6 characters.");
+        setNotice(t("login.notice.minPassword"));
         return;
       }
 
       if (password !== confirmPassword) {
-        setNotice("Passwords do not match.");
+        setNotice(t("login.notice.passwordMismatch"));
         return;
       }
 
@@ -90,9 +93,9 @@ export default function LoginPage() {
         setPassword("");
         setConfirmPassword("");
         setMode("login");
-        setNotice("Your password has been updated. Please login with your new password.");
+        setNotice(t("login.notice.passwordUpdated"));
       } catch {
-        setNotice("BlueDeck could not complete the password reset. Please request a new reset email.");
+        setNotice(t("login.notice.resetFailed"));
       } finally {
         setLoading(false);
       }
@@ -101,32 +104,32 @@ export default function LoginPage() {
     }
 
     if (!email || !password) {
-      setNotice("Please enter your email and password.");
+      setNotice(t("login.notice.emailPassword"));
       return;
     }
 
     if (mode === "signup" && (!fullName.trim() || !phone.trim() || !role || !position)) {
-      setNotice("Name, email, password, phone, account type and yacht position are required.");
+      setNotice(t("login.notice.required"));
       return;
     }
 
     if (mode === "signup" && !isCompletePhoneNumber(phone)) {
-      setNotice("Please select a country code and enter a valid mobile number.");
+      setNotice(t("login.notice.phone"));
       return;
     }
 
     if (mode === "signup" && !acceptedPrivacy) {
-      setNotice("Please accept the Privacy Policy to create your account.");
+      setNotice(t("login.notice.privacy"));
       return;
     }
 
     if (mode === "signup" && password.length < 6) {
-      setNotice("Password must be at least 6 characters.");
+      setNotice(t("login.notice.minPassword"));
       return;
     }
 
     if (mode === "signup" && password !== confirmPassword) {
-      setNotice("Passwords do not match.");
+      setNotice(t("login.notice.passwordMismatch"));
       return;
     }
 
@@ -149,7 +152,7 @@ export default function LoginPage() {
         window.location.href = "/dashboard";
       } catch {
         setLoading(false);
-        setNotice("BlueDeck could not reach the login service. Please try again in a moment.");
+        setNotice(t("login.notice.loginService"));
       }
 
       return;
@@ -177,29 +180,29 @@ export default function LoginPage() {
 
       if (!response.ok || result.error) {
         setLoading(false);
-        setNotice(result.error || "Account could not be created. Please try again.");
+        setNotice(result.error || t("login.notice.accountFailed"));
         return;
       }
 
       setLoading(false);
 
       if (result.needsEmailConfirmation) {
-        setNotice("Account created. Please check your email and confirm your BlueDeck account, then login.");
+        setNotice(t("login.notice.confirmEmail"));
         setMode("login");
         return;
       }
 
-      setNotice("Account created. Please login to continue to My Dashboard.");
+      setNotice(t("login.notice.accountCreated"));
       setMode("login");
     } catch {
       setLoading(false);
-      setNotice("Create account request failed. Please check your internet connection and try again.");
+      setNotice(t("login.notice.createFailed"));
     }
   }
 
   async function resendConfirmation() {
     if (!email) {
-      setNotice("Enter your email first.");
+      setNotice(t("login.notice.enterEmail"));
       return;
     }
 
@@ -210,9 +213,9 @@ export default function LoginPage() {
         options: { emailRedirectTo: authConfirmUrl("/dashboard") },
       });
 
-      setNotice(error ? error.message : "Confirmation email sent again. Please check your inbox.");
+      setNotice(error ? error.message : t("login.notice.confirmationSent"));
     } catch {
-      setNotice("BlueDeck could not resend the confirmation email. Please try again in a moment.");
+      setNotice(t("login.notice.resendFailed"));
     }
   }
 
@@ -222,15 +225,15 @@ export default function LoginPage() {
 
       <div className="bd-ocean-content mx-auto grid min-h-[calc(100vh-92px)] max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
-          <p className="bd-kicker">BlueDeck YachtOS</p>
+          <p className="bd-kicker">{t("login.heroEyebrow")}</p>
           <h1 className="bd-serif mt-5 max-w-3xl text-6xl font-normal leading-tight text-[#071f3c]">
-            Secure yacht profiles, documents and crew operations.
+            {t("login.heroTitle")}
           </h1>
           <div className="mt-8 grid max-w-2xl gap-3 text-sm text-slate-700">
-            {["Private crew ID and dashboard", "Professional CV and document vault", "Captain invitations, contracts and checklists"].map((item) => (
+            {(["login.bullet1", "login.bullet2", "login.bullet3"] satisfies TranslationKey[]).map((item) => (
               <div key={item} className="bd-glass-card flex items-center gap-3 rounded-2xl px-4 py-3">
                 <CheckCircle2 className="h-5 w-5 text-cyan-700" />
-                {item}
+                {t(item)}
               </div>
             ))}
           </div>
@@ -247,7 +250,7 @@ export default function LoginPage() {
             <BlueDeckMark className="h-14 w-16 rounded-2xl" imageClassName="p-1" />
             <div>
               <p className="font-semibold text-slate-950">BlueDeck</p>
-              <p className="text-xs text-slate-500">Secure account access</p>
+              <p className="text-xs text-slate-500">{t("login.secureAccess")}</p>
             </div>
           </div>
 
@@ -260,7 +263,7 @@ export default function LoginPage() {
               }}
               className="mt-7 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50"
             >
-              Back to login
+              {t("login.backToLogin")}
             </button>
           ) : (
             <div className="mt-7 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
@@ -269,46 +272,46 @@ export default function LoginPage() {
                 onClick={() => setMode("login")}
                 className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "login" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
               >
-                Login
+                {t("login.tabLogin")}
               </button>
               <button
                 type="button"
                 onClick={() => setMode("signup")}
                 className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "signup" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
               >
-                Create account
+                {t("login.tabSignup")}
               </button>
             </div>
           )}
 
           <h2 className="mt-7 text-3xl font-semibold text-slate-950">
-            {mode === "login" ? "Welcome back" : mode === "recovery" ? "Set a new password" : "Create your BlueDeck account"}
+            {mode === "login" ? t("login.welcomeBack") : mode === "recovery" ? t("login.newPasswordTitle") : t("login.createTitle")}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {mode === "login"
-              ? "Login to continue to My Dashboard."
+              ? t("login.loginIntro")
               : mode === "recovery"
-                ? "Enter a new password for your BlueDeck account. After saving, login again with your new password."
-              : "Use your real email and phone. BlueDeck will send a secure confirmation email."}
+                ? t("login.recoveryIntro")
+              : t("login.signupIntro")}
           </p>
 
           <div className="mt-6 space-y-4">
             {mode === "signup" && (
               <>
-                <AuthField icon={<UserRound className="h-5 w-5" />} label="Name and surname" required>
+                <AuthField icon={<UserRound className="h-5 w-5" />} label={t("login.fullName")} required>
                   <input
                     value={fullName}
                     required
                     autoComplete="name"
                     onChange={(event) => setFullName(event.target.value)}
                     className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                    placeholder="Name and surname"
+                    placeholder={t("login.fullName")}
                   />
                 </AuthField>
-                <PhoneInput label="Mobile number" value={phone} onChange={setPhone} required />
+                <PhoneInput label={t("login.mobile")} value={phone} onChange={setPhone} required />
                 <label className="block">
                   <span className="mb-2 block text-sm text-slate-500">
-                    Account type <span className="text-rose-500">*</span>
+                    {t("login.accountType")} <span className="text-rose-500">*</span>
                   </span>
                   <select
                     value={role}
@@ -320,16 +323,16 @@ export default function LoginPage() {
                     }}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   >
-                    <option value="">Select account type</option>
-                    <option value="crew">Crew</option>
-                    <option value="captain">Captain</option>
-                    <option value="owner">Owner</option>
-                    <option value="management">Management</option>
+                    <option value="">{t("login.selectAccountType")}</option>
+                    <option value="crew">{t("login.roleCrew")}</option>
+                    <option value="captain">{t("login.roleCaptain")}</option>
+                    <option value="owner">{t("login.roleOwner")}</option>
+                    <option value="management">{t("login.roleManagement")}</option>
                   </select>
                 </label>
                 <label className="block">
                   <span className="mb-2 block text-sm text-slate-500">
-                    Yacht position <span className="text-rose-500">*</span>
+                    {t("login.position")} <span className="text-rose-500">*</span>
                   </span>
                   <select
                     value={position}
@@ -337,7 +340,7 @@ export default function LoginPage() {
                     onChange={(event) => setPosition(event.target.value)}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   >
-                    <option value="">Select yacht position</option>
+                    <option value="">{t("login.selectPosition")}</option>
                     {positionSelectGroups.map((group) => (
                       <optgroup key={group.department} label={group.department}>
                         {group.positions.map((item) => (
@@ -353,7 +356,7 @@ export default function LoginPage() {
             )}
 
             {mode !== "recovery" && (
-              <AuthField icon={<Mail className="h-5 w-5" />} label="Email" required={mode === "signup"}>
+              <AuthField icon={<Mail className="h-5 w-5" />} label={t("login.email")} required={mode === "signup"}>
                 <input
                   value={email}
                   type="email"
@@ -366,7 +369,7 @@ export default function LoginPage() {
               </AuthField>
             )}
 
-            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={mode === "recovery" ? "New password" : "Password"} required={mode !== "login"}>
+            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={mode === "recovery" ? t("login.newPassword") : t("login.password")} required={mode !== "login"}>
               <input
                 value={password}
                 type={showPassword ? "text" : "password"}
@@ -374,7 +377,7 @@ export default function LoginPage() {
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 onChange={(event) => setPassword(event.target.value)}
                 className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                placeholder="Minimum 6 characters"
+                placeholder={t("login.minimumPassword")}
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400">
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -384,7 +387,7 @@ export default function LoginPage() {
             {(mode === "signup" || mode === "recovery") && (
               <>
                 <PasswordStrengthMeter strength={passwordStrength} />
-                <AuthField icon={<LockKeyhole className="h-5 w-5" />} label="Repeat password" required>
+                <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={t("login.repeatPassword")} required>
                   <input
                     value={confirmPassword}
                     type={showPassword ? "text" : "password"}
@@ -392,7 +395,7 @@ export default function LoginPage() {
                     autoComplete="new-password"
                     onChange={(event) => setConfirmPassword(event.target.value)}
                     className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                    placeholder="Enter the same password again"
+                    placeholder={t("login.samePassword")}
                   />
                 </AuthField>
                 {mode === "signup" && (
@@ -405,9 +408,9 @@ export default function LoginPage() {
                       className="mt-1 h-4 w-4 accent-cyan-600"
                     />
                     <span>
-                      I agree to the BlueDeck{" "}
+                      {t("login.privacyAgree")}{" "}
                       <Link href="/privacy" className="font-semibold text-cyan-700">
-                        Privacy Policy
+                        {t("login.privacyPolicy")}
                       </Link>
                       . <span className="text-rose-500">*</span>
                     </span>
@@ -427,23 +430,23 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-2xl bg-cyan-600 px-5 py-4 font-bold text-white transition hover:bg-cyan-700 disabled:opacity-60"
             >
-              {loading ? "Please wait..." : mode === "login" ? "Login to My Dashboard" : mode === "recovery" ? "Save new password" : "Create secure account"}
+              {loading ? t("login.wait") : mode === "login" ? t("login.loginButton") : mode === "recovery" ? t("login.savePassword") : t("login.createButton")}
             </button>
 
             {mode !== "recovery" && (
               <div className="flex flex-wrap justify-between gap-3 text-sm">
                 <Link href={forgotPasswordHref} className="font-semibold text-cyan-700">
-                  Forgot password?
+                  {t("login.forgot")}
                 </Link>
                 <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
-                  Resend confirmation email
+                  {t("login.resend")}
                 </button>
               </div>
             )}
 
             <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
-              BlueDeck protects new accounts with email confirmation. If the email does not arrive, check spam or resend the confirmation email.
+              {t("login.protection")}
             </div>
           </div>
         </form>
@@ -467,12 +470,14 @@ function AuthField({ label, icon, children, required = false }: { label: string;
 }
 
 function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
+  const { t } = useLanguage();
+
   if (!strength.visible) return null;
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
       <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.12em]">
-        <span className="text-slate-500">Password strength</span>
+        <span className="text-slate-500">{t("password.strength")}</span>
         <span className={strength.textClass}>{strength.label}</span>
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -495,7 +500,7 @@ type PasswordStrength = {
   textClass: string;
 };
 
-function getPasswordStrength(password: string): PasswordStrength {
+function getPasswordStrength(password: string, t: (key: TranslationKey) => string): PasswordStrength {
   if (!password) {
     return { visible: false, score: 0, label: "", barClass: "bg-slate-200", textClass: "text-slate-500" };
   }
@@ -508,14 +513,14 @@ function getPasswordStrength(password: string): PasswordStrength {
   ].filter(Boolean).length;
 
   if (password.length < 6 || checks <= 1) {
-    return { visible: true, score: 1, label: "Weak", barClass: "bg-rose-500", textClass: "text-rose-600" };
+    return { visible: true, score: 1, label: t("password.weak"), barClass: "bg-rose-500", textClass: "text-rose-600" };
   }
 
   if (checks <= 3) {
-    return { visible: true, score: 2, label: "Medium", barClass: "bg-amber-500", textClass: "text-amber-600" };
+    return { visible: true, score: 2, label: t("password.medium"), barClass: "bg-amber-500", textClass: "text-amber-600" };
   }
 
-  return { visible: true, score: 3, label: "Strong", barClass: "bg-emerald-500", textClass: "text-emerald-600" };
+  return { visible: true, score: 3, label: t("password.strong"), barClass: "bg-emerald-500", textClass: "text-emerald-600" };
 }
 
 function isCompletePhoneNumber(value: string) {

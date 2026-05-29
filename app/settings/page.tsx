@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  Globe2,
   KeyRound,
   Save,
   UserRound,
 } from "lucide-react";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { useLanguage } from "../components/LanguageProvider";
 import { PhoneInput } from "../components/PhoneInput";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -34,6 +37,7 @@ const accountTypes = [
 ];
 
 export default function SettingsPage() {
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<SettingsProfile>({
     email: "",
     full_name: "",
@@ -395,6 +399,21 @@ export default function SettingsPage() {
               </div>
             </div>
           </SettingsPanel>
+
+          <div className="mt-6">
+            <SettingsPanel
+              icon={<Globe2 className="h-5 w-5" />}
+              title={t("settings.languageTitle")}
+              description={t("settings.languageDescription")}
+            >
+              <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <p className="max-w-2xl text-sm leading-6 text-slate-600">
+                  {t("settings.languageAvailable")}
+                </p>
+                <LanguageSwitcher variant="light" />
+              </div>
+            </SettingsPanel>
+          </div>
         </div>
       </div>
     </main>

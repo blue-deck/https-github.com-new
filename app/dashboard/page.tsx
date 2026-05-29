@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserRound } from "lucide-react";
+import { useLanguage } from "../components/LanguageProvider";
 import { BLUEDECK } from "../config";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
@@ -24,6 +25,7 @@ function cleanDisplayName(profile?: DashboardProfile | null) {
 }
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
@@ -196,7 +198,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <main className="bd-ocean-shell min-h-screen p-10 text-slate-900">
-        <div className="bd-ocean-content">Loading dashboard...</div>
+        <div className="bd-ocean-content">{t("dashboard.loading")}</div>
       </main>
     );
   }
@@ -210,13 +212,13 @@ export default function DashboardPage() {
         <div className="bd-glass-card-strong relative rounded-[34px] p-6 sm:p-8">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <p className="bd-kicker">My Dashboard</p>
+              <p className="bd-kicker">{t("dashboard.myDashboard")}</p>
 
               <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">
-                Welcome, {profile?.full_name || profile?.email}
+                {t("dashboard.welcome")}, {profile?.full_name || profile?.email}
               </h1>
 
-              <p className="mt-4 text-lg text-slate-600">Role: {profile?.role}</p>
+              <p className="mt-4 text-lg text-slate-600">{t("dashboard.role")}: {profile?.role}</p>
             </div>
 
             <div className="relative z-30 flex shrink-0 flex-col items-center gap-3">
@@ -253,7 +255,7 @@ export default function DashboardPage() {
               />
 
               <p className="text-xs font-semibold text-slate-500">
-                {photoUploading ? "Updating photo..." : "Profile photo"}
+                {photoUploading ? t("dashboard.updatingPhoto") : t("dashboard.profilePhoto")}
               </p>
 
               {photoMenuOpen && (

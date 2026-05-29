@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { AuthenticatedTopBar } from "./components/AuthenticatedTopBar";
+import { LanguageProvider } from "./components/LanguageProvider";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
@@ -30,8 +31,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <AuthenticatedTopBar />
-        {children}
+        <LanguageProvider>
+          <AuthenticatedTopBar />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   );

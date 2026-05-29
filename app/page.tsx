@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,41 +12,45 @@ import {
   Ship,
   Users,
 } from "lucide-react";
+import { type TranslationKey } from "./lib/i18n";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
+import { useLanguage } from "./components/LanguageProvider";
 
 const servicePillars = [
   {
     icon: Ship,
-    title: "Yacht Management",
-    text: "A private workspace for vessel data, documents, readiness, crew status and operational records.",
+    titleKey: "home.pillar1.title",
+    textKey: "home.pillar1.text",
   },
   {
     icon: Users,
-    title: "Crew Operations",
-    text: "Crew profiles, invitations, contracts, document expiry alerts and onboard checklist workflows.",
+    titleKey: "home.pillar2.title",
+    textKey: "home.pillar2.text",
   },
   {
     icon: Crown,
-    title: "Owner Experience",
-    text: "A calm owner view focused on privacy, guest comfort, readiness, location and high-level confidence.",
+    titleKey: "home.pillar3.title",
+    textKey: "home.pillar3.text",
   },
   {
     icon: Radio,
-    title: "Bridge Readiness",
-    text: "Navigation, watch, passage, arrival and departure workflows structured for captain-grade oversight.",
+    titleKey: "home.pillar4.title",
+    textKey: "home.pillar4.text",
   },
-];
+] satisfies Array<{ icon: typeof Ship; titleKey: TranslationKey; textKey: TranslationKey }>;
 
 const websiteSections = [
-  "Private account and role-based access",
-  "Crew CV, document vault and expiry monitoring",
-  "Captain invitations, yacht contracts and mobile signing",
-  "Checklist System with crew progress and proof records",
-  "IMO crew list, yacht documents and operational history",
-  "Owner, captain and crew areas connected under one brand",
-];
+  "home.section1",
+  "home.section2",
+  "home.section3",
+  "home.section4",
+  "home.section5",
+  "home.section6",
+] satisfies TranslationKey[];
 
 export default function HomePage() {
+  const { t } = useLanguage();
+
   return (
     <main className="bd-site-shell min-h-screen overflow-hidden pt-[92px] text-[#071f3c]">
       <PublicHeader />
@@ -53,24 +59,23 @@ export default function HomePage() {
         <div className="mx-auto flex min-h-[calc(100vh-92px)] max-w-[1500px] items-center px-5 py-16 sm:px-8 lg:px-12">
           <div className="max-w-4xl">
             <p className="text-xs font-black uppercase tracking-[0.42em] text-[#58718c]">
-              Own the experience
+              {t("home.eyebrow")}
             </p>
             <h1 className="bd-serif mt-7 text-5xl leading-[1.02] text-[#071f3c] sm:text-7xl lg:text-8xl">
-              Manage Your Yacht.
+              {t("home.title1")}
               <br />
-              Live Your Freedom.
+              {t("home.title2")}
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-8 text-[#526b83]">
-              BlueDeck brings yacht management, crew workflows, documents,
-              contracts and operational readiness into one elegant private website.
+              {t("home.intro")}
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link href="/login?mode=signup" className="bd-primary-cta">
-                Create Account
+                {t("home.createAccount")}
                 <ArrowRight className="h-5 w-5" />
               </Link>
               <Link href="/services" className="bd-secondary-cta">
-                Explore Services
+                {t("home.exploreServices")}
               </Link>
             </div>
           </div>
@@ -80,15 +85,13 @@ export default function HomePage() {
       <section id="yacht-platform" className="bd-section">
         <div className="grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
           <div>
-            <p className="bd-kicker">BlueDeck Platform</p>
+            <p className="bd-kicker">{t("home.platformEyebrow")}</p>
             <h2 className="bd-serif mt-4 text-4xl leading-tight text-[#071f3c] sm:text-6xl">
-              A yacht website that works like a private operations office.
+              {t("home.platformTitle")}
             </h2>
           </div>
           <p className="text-lg leading-8 text-[#5b7088]">
-            BlueDeck is designed for the real structure of a yacht: owner,
-            captain, officers, departments and crew. The public site stays calm
-            and premium; secure areas open only after login.
+            {t("home.platformIntro")}
           </p>
         </div>
 
@@ -96,10 +99,10 @@ export default function HomePage() {
           {servicePillars.map((item) => {
             const Icon = item.icon;
             return (
-              <article key={item.title} className="bd-editorial-card">
+              <article key={item.titleKey} className="bd-editorial-card">
                 <Icon className="h-7 w-7 text-cyan-700" />
-                <h3 className="mt-7 text-2xl font-semibold text-[#071f3c]">{item.title}</h3>
-                <p className="mt-4 leading-7 text-[#5b7088]">{item.text}</p>
+                <h3 className="mt-7 text-2xl font-semibold text-[#071f3c]">{t(item.titleKey)}</h3>
+                <p className="mt-4 leading-7 text-[#5b7088]">{t(item.textKey)}</p>
               </article>
             );
           })}
@@ -109,16 +112,16 @@ export default function HomePage() {
       <section className="bd-deep-band">
         <div className="mx-auto grid max-w-[1500px] gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.36em] text-cyan-200">Private YachtOS</p>
+            <p className="text-xs font-black uppercase tracking-[0.36em] text-cyan-200">{t("home.deepEyebrow")}</p>
             <h2 className="bd-serif mt-5 text-4xl leading-tight text-white sm:text-6xl">
-              Built for traceable operations without losing the luxury feeling.
+              {t("home.deepTitle")}
             </h2>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {websiteSections.map((item) => (
-              <div key={item} className="flex items-start gap-3 border-b border-white/12 pb-4 text-white/78">
+            {websiteSections.map((itemKey) => (
+              <div key={itemKey} className="flex items-start gap-3 border-b border-white/12 pb-4 text-white/78">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-cyan-200" />
-                <span className="leading-7">{item}</span>
+                <span className="leading-7">{t(itemKey)}</span>
               </div>
             ))}
           </div>
@@ -129,20 +132,20 @@ export default function HomePage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <FeaturePanel
             icon={<ClipboardCheck className="h-7 w-7" />}
-            title="Checklist System"
-            text="Assign duties, track completion, inspect before/after proof and keep records clear."
+            titleKey="home.feature1.title"
+            textKey="home.feature1.text"
             href="/login"
           />
           <FeaturePanel
             icon={<FileText className="h-7 w-7" />}
-            title="Document Control"
-            text="Crew documents, yacht papers, contracts and expiry alerts organized in one secure flow."
+            titleKey="home.feature2.title"
+            textKey="home.feature2.text"
             href="/services"
           />
           <FeaturePanel
             icon={<ShieldCheck className="h-7 w-7" />}
-            title="Trust & Privacy"
-            text="Account-based access, privacy-focused structure and professional legal pages."
+            titleKey="home.feature3.title"
+            textKey="home.feature3.text"
             href="/trust"
           />
         </div>
@@ -151,13 +154,13 @@ export default function HomePage() {
       <section className="mx-auto max-w-[1500px] px-5 pb-20 sm:px-8 lg:px-12">
         <div className="bd-cta-band">
           <div>
-            <p className="bd-kicker">Start BlueDeck</p>
+            <p className="bd-kicker">{t("home.startEyebrow")}</p>
             <h2 className="bd-serif mt-4 text-4xl leading-tight text-[#071f3c] sm:text-6xl">
-              Open a private account and build your yacht workspace.
+              {t("home.startTitle")}
             </h2>
           </div>
           <Link href="/login?mode=signup" className="bd-primary-cta shrink-0">
-            Sign up
+            {t("auth.signUp")}
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
@@ -170,22 +173,24 @@ export default function HomePage() {
 
 function FeaturePanel({
   icon,
-  title,
-  text,
+  titleKey,
+  textKey,
   href,
 }: {
   icon: React.ReactNode;
-  title: string;
-  text: string;
+  titleKey: TranslationKey;
+  textKey: TranslationKey;
   href: string;
 }) {
+  const { t } = useLanguage();
+
   return (
     <Link href={href} className="bd-feature-panel">
       <span className="text-cyan-700">{icon}</span>
-      <h3 className="mt-6 text-3xl font-semibold text-[#071f3c]">{title}</h3>
-      <p className="mt-4 leading-7 text-[#5b7088]">{text}</p>
+      <h3 className="mt-6 text-3xl font-semibold text-[#071f3c]">{t(titleKey)}</h3>
+      <p className="mt-4 leading-7 text-[#5b7088]">{t(textKey)}</p>
       <span className="mt-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-cyan-800">
-        View details
+        {t("home.viewDetails")}
         <ArrowRight className="h-4 w-4" />
       </span>
     </Link>
