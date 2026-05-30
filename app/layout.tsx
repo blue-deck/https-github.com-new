@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(BLUEDECK_SITE_URL),
-  title: "BlueDeck | Private Yacht Management Platform",
+  title: "BlueDeck | Yacht Management Platform",
   description:
     "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",
   openGraph: {
