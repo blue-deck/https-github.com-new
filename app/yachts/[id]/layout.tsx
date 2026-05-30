@@ -11,6 +11,9 @@ import {
   Radio,
   Users,
 } from "lucide-react";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
+import { useLanguage } from "../../components/LanguageProvider";
+import { translatePhrase } from "../../lib/i18n";
 import { supabase } from "../../lib/supabase";
 
 export default function YachtAppLayout({
@@ -20,6 +23,7 @@ export default function YachtAppLayout({
 }) {
   const params = useParams();
   const pathname = usePathname();
+  const { language } = useLanguage();
   const yachtId = String(params?.id || "");
   const [sessionChecked, setSessionChecked] = useState(false);
 
@@ -49,12 +53,12 @@ export default function YachtAppLayout({
   }, []);
 
   const nav = [
-    { label: "Overview", href: `/yachts/${yachtId}`, icon: Home },
-    { label: "Bridge", href: `/yachts/${yachtId}/bridge`, icon: Radio },
-    { label: "Ops", href: `/yachts/${yachtId}/live-operations`, icon: Gauge },
-    { label: "Checklist", href: `/yachts/${yachtId}/checklists`, icon: ClipboardList },
-    { label: "Crew", href: `/yachts/${yachtId}/crew`, icon: Users },
-    { label: "Owner", href: `/yachts/${yachtId}/owner`, icon: Crown },
+    { label: translatePhrase("Overview", language), href: `/yachts/${yachtId}`, icon: Home },
+    { label: translatePhrase("Bridge", language), href: `/yachts/${yachtId}/bridge`, icon: Radio },
+    { label: translatePhrase("Ops", language), href: `/yachts/${yachtId}/live-operations`, icon: Gauge },
+    { label: translatePhrase("Checklist", language), href: `/yachts/${yachtId}/checklists`, icon: ClipboardList },
+    { label: translatePhrase("Crew", language), href: `/yachts/${yachtId}/crew`, icon: Users },
+    { label: translatePhrase("Owner", language), href: `/yachts/${yachtId}/owner`, icon: Crown },
   ];
 
   if (!sessionChecked) {
@@ -71,29 +75,32 @@ export default function YachtAppLayout({
   return (
     <div className="bd-yacht-portal min-h-screen text-slate-900">
       <nav className="bd-yacht-section-nav sticky top-[92px] z-40 border-b border-[#071f3c]/10 bg-white/92 shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center gap-6 overflow-x-auto px-4 py-4 sm:px-8 lg:px-12">
-          {nav.map((item) => {
-            const Icon = item.icon;
-            const active =
-              pathname === item.href ||
-              (item.href.endsWith("/live-operations") &&
-                pathname.includes("/live-operations"));
+        <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 sm:px-8 lg:px-12">
+          <div className="flex min-w-0 flex-1 items-center gap-6 overflow-x-auto">
+            {nav.map((item) => {
+              const Icon = item.icon;
+              const active =
+                pathname === item.href ||
+                (item.href.endsWith("/live-operations") &&
+                  pathname.includes("/live-operations"));
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`bd-focus inline-flex min-w-fit items-center gap-2 border-b-2 px-1 py-2 text-sm font-black uppercase tracking-[0.12em] transition ${
-                  active
-                    ? "border-cyan-700 text-[#071f3c]"
-                    : "border-transparent text-[#5b7088] hover:border-cyan-300 hover:text-[#071f3c]"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`bd-focus inline-flex min-w-fit items-center gap-2 border-b-2 px-1 py-2 text-sm font-black uppercase tracking-[0.12em] transition ${
+                    active
+                      ? "border-cyan-700 text-[#071f3c]"
+                      : "border-transparent text-[#5b7088] hover:border-cyan-300 hover:text-[#071f3c]"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+          <LanguageSwitcher variant="light" size="compact" className="shrink-0 lg:hidden" />
         </div>
       </nav>
 

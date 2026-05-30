@@ -409,6 +409,111 @@ textarea:-webkit-autofill:focus {
   color: #ffffff !important;
 }
 
+.bd-yacht-portal main[class*="bg-[#020817]"],
+.bd-yacht-portal main[class*="bg-[#081120]"],
+.bd-yacht-portal main[class*="bg-slate-950"] {
+  background:
+    radial-gradient(circle at 84% 8%, rgba(125, 211, 252, 0.22), transparent 28%),
+    linear-gradient(135deg, #fbfdff 0%, #eef8ff 52%, #f8fbfc 100%),
+    #f7fbff !important;
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal main [class*="bg-white/5"],
+.bd-yacht-portal main [class*="bg-white/10"],
+.bd-yacht-portal main [class*="bg-black/20"],
+.bd-yacht-portal main [class*="bg-black/30"],
+.bd-yacht-portal main [class*="from-cyan-500/10"],
+.bd-yacht-portal main [class*="from-cyan-500/20"],
+.bd-yacht-portal main [class*="to-blue-500/10"],
+.bd-yacht-portal main [class*="to-blue-900/10"] {
+  border-color: var(--ocean-line) !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  box-shadow: 0 24px 70px rgba(4, 33, 63, 0.1);
+  backdrop-filter: blur(22px);
+}
+
+.bd-yacht-portal main [class*="text-white"],
+.bd-yacht-portal main [class*="text-gray-"],
+.bd-yacht-portal main [class*="text-slate-"],
+.bd-yacht-portal main [class*="text-blue-300"],
+.bd-yacht-portal main [class*="text-cyan-300"] {
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal main [class*="text-gray-400"],
+.bd-yacht-portal main [class*="text-gray-500"],
+.bd-yacht-portal main [class*="text-slate-400"],
+.bd-yacht-portal main [class*="text-slate-500"],
+.bd-yacht-portal main [class*="text-slate-600"] {
+  color: var(--ocean-muted) !important;
+}
+
+.bd-yacht-portal main [class*="text-cyan-700"],
+.bd-yacht-portal main [class*="text-cyan-800"] {
+  color: #0e7490 !important;
+}
+
+.bd-yacht-portal main [class*="text-red-300"],
+.bd-yacht-portal main [class*="text-red-400"] {
+  color: #b42318 !important;
+}
+
+.bd-yacht-portal main [class*="text-orange-300"],
+.bd-yacht-portal main [class*="text-yellow-300"] {
+  color: #9a5b00 !important;
+}
+
+.bd-yacht-portal main [class*="text-green-300"] {
+  color: #13795b !important;
+}
+
+.bd-yacht-portal main [class*="bg-cyan-400"],
+.bd-yacht-portal main [class*="bg-blue-400"],
+.bd-yacht-portal main [class*="bg-green-400"] {
+  color: #061831 !important;
+}
+
+.bd-yacht-portal main [class*="bg-cyan-400"] *,
+.bd-yacht-portal main [class*="bg-blue-400"] *,
+.bd-yacht-portal main [class*="bg-green-400"] * {
+  color: #061831 !important;
+}
+
+.bd-yacht-portal main [class*="bg-slate-950"],
+.bd-yacht-portal main [class*="bg-[#020817]"],
+.bd-yacht-portal main [class*="bg-[#081120]"] {
+  background: #061831 !important;
+  color: #ffffff !important;
+}
+
+.bd-yacht-portal main[class*="bg-[#020817]"] :is(h1, h2, h3, h4, p, span, a, label, li),
+.bd-yacht-portal main[class*="bg-[#081120]"] :is(h1, h2, h3, h4, p, span, a, label, li),
+.bd-yacht-portal main[class*="bg-slate-950"] :is(h1, h2, h3, h4, p, span, a, label, li) {
+  color: var(--ocean-ink) !important;
+}
+
+.bd-yacht-portal main[class*="bg-[#020817]"] [class*="text-gray-"],
+.bd-yacht-portal main[class*="bg-[#081120]"] [class*="text-gray-"],
+.bd-yacht-portal main[class*="bg-slate-950"] [class*="text-gray-"] {
+  color: var(--ocean-muted) !important;
+}
+
+.bd-yacht-portal main [class*="bg-slate-950"] *,
+.bd-yacht-portal main [class*="bg-[#020817]"] *,
+.bd-yacht-portal main [class*="bg-[#081120]"] * {
+  color: #ffffff !important;
+}
+
+.bd-yacht-portal main [class*="bg-cyan-400"],
+.bd-yacht-portal main [class*="bg-blue-400"],
+.bd-yacht-portal main [class*="bg-green-400"],
+.bd-yacht-portal main [class*="bg-cyan-400"] *,
+.bd-yacht-portal main [class*="bg-blue-400"] *,
+.bd-yacht-portal main [class*="bg-green-400"] * {
+  color: #061831 !important;
+}
+
 .bd-yacht-portal .bd-app-topbar a[href="/profile"],
 .bd-yacht-portal .bd-app-topbar a[href="/profile"] * {
   color: #020817 !important;
