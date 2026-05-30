@@ -44,8 +44,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Please select a country code and enter a valid mobile number." }, { status: 400 });
   }
 
-  if (password.length < 6) {
-    return NextResponse.json({ error: "Password must be at least 6 characters." }, { status: 400 });
+  if (!hasSignupPasswordRequirements(password)) {
+    return NextResponse.json(
+      { error: "Password must be at least 8 characters and include uppercase, lowercase, a number and at least 1 special character." },
+      { status: 400 }
+    );
   }
 
   const resolvedSupabaseUrl = resolveSupabaseUrl(supabaseUrl);
@@ -139,4 +142,14 @@ function isValidEmail(value: string) {
 
 function isCompletePhoneNumber(value: string) {
   return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
+}
+
+function hasSignupPasswordRequirements(value: string) {
+  return (
+    value.length >= 8 &&
+    /[A-Z]/.test(value) &&
+    /[a-z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value)
+  );
 }

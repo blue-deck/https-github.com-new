@@ -193,7 +193,10 @@ const en = {
   "login.newPassword": "New password",
   "login.repeatPassword": "Repeat password",
   "login.minimumPassword": "Minimum 6 characters",
+  "login.minimumSignupPassword": "Minimum 8 characters",
   "login.samePassword": "Enter the same password again",
+  "login.passwordRequirements":
+    "Use uppercase and lowercase letters, a number and at least 1 special character.",
   "login.privacyAgree": "I agree to the BlueDeck",
   "login.privacyPolicy": "Privacy Policy",
   "login.wait": "Please wait...",
@@ -206,6 +209,8 @@ const en = {
     "BlueDeck protects new accounts with email confirmation. If the email does not arrive, check spam or resend the confirmation email.",
   "login.notice.newPasswordTwice": "Please enter your new password twice.",
   "login.notice.minPassword": "Password must be at least 6 characters.",
+  "login.notice.signupPassword":
+    "Password must be at least 8 characters and include uppercase, lowercase, a number and at least 1 special character.",
   "login.notice.passwordMismatch": "Passwords do not match.",
   "login.notice.passwordUpdated": "Your password has been updated. Please login with your new password.",
   "login.notice.resetFailed":
@@ -436,7 +441,9 @@ const tr: Record<TranslationKey, string> = {
   "login.newPassword": "Yeni şifre",
   "login.repeatPassword": "Şifreyi tekrar girin",
   "login.minimumPassword": "Minimum 6 karakter",
+  "login.minimumSignupPassword": "Minimum 8 karakter",
   "login.samePassword": "Aynı şifreyi tekrar girin",
+  "login.passwordRequirements": "Büyük ve küçük harf, sayı ve en az 1 özel karakter kullanın.",
   "login.privacyAgree": "BlueDeck",
   "login.privacyPolicy": "Gizlilik Politikası’nı kabul ediyorum",
   "login.wait": "Lütfen bekleyin...",
@@ -448,6 +455,8 @@ const tr: Record<TranslationKey, string> = {
   "login.protection": "BlueDeck yeni hesapları e-posta onayıyla korur. E-posta gelmezse spam klasörünü kontrol edin veya onayı tekrar gönderin.",
   "login.notice.newPasswordTwice": "Lütfen yeni şifrenizi iki kez girin.",
   "login.notice.minPassword": "Şifre en az 6 karakter olmalı.",
+  "login.notice.signupPassword":
+    "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, sayı ve en az 1 özel karakter içermelidir.",
   "login.notice.passwordMismatch": "Şifreler eşleşmiyor.",
   "login.notice.passwordUpdated": "Şifreniz güncellendi. Lütfen yeni şifrenizle giriş yapın.",
   "login.notice.resetFailed": "BlueDeck şifre sıfırlamayı tamamlayamadı. Lütfen yeni sıfırlama e-postası isteyin.",
@@ -542,6 +551,11 @@ const ru: Record<TranslationKey, string> = {
   "login.email": "Эл. почта",
   "login.password": "Пароль",
   "login.repeatPassword": "Повторите пароль",
+  "login.minimumSignupPassword": "Минимум 8 символов",
+  "login.passwordRequirements":
+    "Используйте заглавные и строчные буквы, цифру и минимум 1 специальный символ.",
+  "login.notice.signupPassword":
+    "Пароль должен быть минимум 8 символов и содержать заглавную букву, строчную букву, цифру и минимум 1 специальный символ.",
   "login.forgot": "Забыли пароль?",
   "forgot.title": "Сброс пароля",
   "forgot.intro": "Введите email, и мы отправим безопасную ссылку для сброса пароля.",
@@ -588,6 +602,11 @@ const it: Record<TranslationKey, string> = {
   "login.email": "Email",
   "login.password": "Password",
   "login.repeatPassword": "Ripeti password",
+  "login.minimumSignupPassword": "Minimo 8 caratteri",
+  "login.passwordRequirements":
+    "Usa lettere maiuscole e minuscole, un numero e almeno 1 carattere speciale.",
+  "login.notice.signupPassword":
+    "La password deve avere almeno 8 caratteri e includere maiuscole, minuscole, un numero e almeno 1 carattere speciale.",
   "login.forgot": "Password dimenticata?",
   "forgot.title": "Reimposta la password",
   "forgot.intro": "Inserisci la tua email e ti invieremo un link sicuro per reimpostare la password.",
@@ -634,6 +653,11 @@ const el: Record<TranslationKey, string> = {
   "login.email": "Email",
   "login.password": "Κωδικός",
   "login.repeatPassword": "Επανάληψη κωδικού",
+  "login.minimumSignupPassword": "Τουλάχιστον 8 χαρακτήρες",
+  "login.passwordRequirements":
+    "Χρησιμοποιήστε κεφαλαία και πεζά γράμματα, έναν αριθμό και τουλάχιστον 1 ειδικό χαρακτήρα.",
+  "login.notice.signupPassword":
+    "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες και να περιλαμβάνει κεφαλαίο, πεζό, αριθμό και τουλάχιστον 1 ειδικό χαρακτήρα.",
   "login.forgot": "Ξεχάσατε τον κωδικό;",
   "forgot.title": "Επαναφορά κωδικού",
   "forgot.intro": "Πληκτρολογήστε το email σας και θα στείλουμε ασφαλή σύνδεσμο επαναφοράς.",

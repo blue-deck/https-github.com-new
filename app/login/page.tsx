@@ -123,13 +123,8 @@ export default function LoginPage() {
       return;
     }
 
-    if (mode === "signup" && password.length < 6) {
-      setNotice(t("login.notice.minPassword"));
-      return;
-    }
-
-    if (mode === "signup" && password !== confirmPassword) {
-      setNotice(t("login.notice.passwordMismatch"));
+    if (mode === "signup" && !hasSignupPasswordRequirements(password)) {
+      setNotice(t("login.notice.signupPassword"));
       return;
     }
 
@@ -377,7 +372,13 @@ export default function LoginPage() {
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 onChange={(event) => setPassword(event.target.value)}
                 className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                placeholder={t("login.minimumPassword")}
+                placeholder={
+                  mode === "login"
+                    ? t("login.password")
+                    : mode === "signup"
+                      ? t("login.minimumSignupPassword")
+                      : t("login.minimumPassword")
+                }
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400">
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -387,6 +388,16 @@ export default function LoginPage() {
             {(mode === "signup" || mode === "recovery") && (
               <>
                 <PasswordStrengthMeter strength={passwordStrength} />
+                {mode === "signup" && (
+                  <p className="rounded-2xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                    {t("login.passwordRequirements")}
+                  </p>
+                )}
+              </>
+            )}
+
+            {mode === "recovery" && (
+              <>
                 <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={t("login.repeatPassword")} required>
                   <input
                     value={confirmPassword}
@@ -398,25 +409,26 @@ export default function LoginPage() {
                     placeholder={t("login.samePassword")}
                   />
                 </AuthField>
-                {mode === "signup" && (
-                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
-                    <input
-                      type="checkbox"
-                      checked={acceptedPrivacy}
-                      required
-                      onChange={(event) => setAcceptedPrivacy(event.target.checked)}
-                      className="mt-1 h-4 w-4 accent-cyan-600"
-                    />
-                    <span>
-                      {t("login.privacyAgree")}{" "}
-                      <Link href="/privacy" className="font-semibold text-cyan-700">
-                        {t("login.privacyPolicy")}
-                      </Link>
-                      . <span className="text-rose-500">*</span>
-                    </span>
-                  </label>
-                )}
               </>
+            )}
+
+            {mode === "signup" && (
+              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={acceptedPrivacy}
+                  required
+                  onChange={(event) => setAcceptedPrivacy(event.target.checked)}
+                  className="mt-1 h-4 w-4 accent-cyan-600"
+                />
+                <span>
+                  {t("login.privacyAgree")}{" "}
+                  <Link href="/privacy" className="font-semibold text-cyan-700">
+                    {t("login.privacyPolicy")}
+                  </Link>
+                  . <span className="text-rose-500">*</span>
+                </span>
+              </label>
             )}
 
             {notice && (
@@ -512,7 +524,7 @@ function getPasswordStrength(password: string, t: (key: TranslationKey) => strin
     /[^A-Za-z0-9]/.test(password),
   ].filter(Boolean).length;
 
-  if (password.length < 6 || checks <= 1) {
+  if (password.length < 8 || checks <= 1) {
     return { visible: true, score: 1, label: t("password.weak"), barClass: "bg-rose-500", textClass: "text-rose-600" };
   }
 
@@ -525,4 +537,14 @@ function getPasswordStrength(password: string, t: (key: TranslationKey) => strin
 
 function isCompletePhoneNumber(value: string) {
   return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
+}
+
+function hasSignupPasswordRequirements(value: string) {
+  return (
+    value.length >= 8 &&
+    /[A-Z]/.test(value) &&
+    /[a-z]/.test(value) &&
+    /\d/.test(value) &&
+    /[^A-Za-z0-9]/.test(value)
+  );
 }
