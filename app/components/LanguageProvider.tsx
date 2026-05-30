@@ -26,6 +26,52 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 const originalTextNodes = new WeakMap<Text, string>();
+const translatableAttributes = ["aria-label", "placeholder", "title"] as const;
+const originalAttributes = new WeakMap<Element, Partial<Record<(typeof translatableAttributes)[number], string>>>();
+
+function translateMaybeWithPrefix(text: string, language: Language) {
+  const direct = translatePhrase(text, language);
+  if (direct !== text) return direct;
+
+  const prefixMatch = text.match(/^([^:]+:)(\s*)(.*)$/);
+  if (!prefixMatch) return text;
+
+  const [, prefix, space, rest] = prefixMatch;
+  const translatedPrefix = translatePhrase(prefix, language);
+  const translatedPrefixWithoutColon = translatePhrase(prefix.slice(0, -1), language);
+
+  if (translatedPrefix !== prefix) return `${translatedPrefix}${space}${rest}`;
+  if (translatedPrefixWithoutColon !== prefix.slice(0, -1)) {
+    return `${translatedPrefixWithoutColon}:${space}${rest}`;
+  }
+
+  return text;
+}
+
+function translateElementAttributes(language: Language) {
+  const elements = document.body.querySelectorAll<HTMLElement>(
+    translatableAttributes.map((attribute) => `[${attribute}]`).join(","),
+  );
+
+  elements.forEach((element) => {
+    if (element.closest("script, style, code, pre, [data-i18n-ignore]")) return;
+
+    const stored = originalAttributes.get(element) || {};
+
+    translatableAttributes.forEach((attribute) => {
+      const current = element.getAttribute(attribute);
+      if (!current) return;
+
+      const original = stored[attribute] || current;
+      stored[attribute] = original;
+
+      const translated = translateMaybeWithPrefix(original.trim(), language);
+      element.setAttribute(attribute, translated === original.trim() ? original : translated);
+    });
+
+    originalAttributes.set(element, stored);
+  });
+}
 
 function translateVisibleText(language: Language) {
   const root = document.body;
@@ -39,7 +85,7 @@ function translateVisibleText(language: Language) {
       if (!parent || !text) return NodeFilter.FILTER_REJECT;
       if (
         parent.closest(
-          "script, style, textarea, input, select, option, code, pre, [data-i18n-ignore]",
+          "script, style, textarea, input, code, pre, [data-i18n-ignore]",
         )
       ) {
         return NodeFilter.FILTER_REJECT;
@@ -58,7 +104,7 @@ function translateVisibleText(language: Language) {
     const current = node.textContent || "";
     const original = originalTextNodes.get(node) || current;
     const trimmedOriginal = original.trim();
-    const translated = translatePhrase(trimmedOriginal, language);
+    const translated = translateMaybeWithPrefix(trimmedOriginal, language);
 
     if (!originalTextNodes.has(node)) {
       originalTextNodes.set(node, original);
@@ -78,6 +124,8 @@ function translateVisibleText(language: Language) {
       node.textContent = nextText;
     }
   }
+
+  translateElementAttributes(language);
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

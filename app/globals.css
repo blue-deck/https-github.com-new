@@ -514,6 +514,40 @@ textarea:-webkit-autofill:focus {
   color: #061831 !important;
 }
 
+.bd-yacht-portal :is(input, textarea, select),
+.bd-yacht-portal main :is(input, textarea, select),
+.bd-yacht-portal main[class*="bg-[#020817]"] :is(input, textarea, select),
+.bd-yacht-portal main[class*="bg-[#081120]"] :is(input, textarea, select),
+.bd-yacht-portal main[class*="bg-slate-950"] :is(input, textarea, select),
+.bd-yacht-portal main [class*="bg-slate-950"] :is(input, textarea, select),
+.bd-yacht-portal main [class*="bg-[#020817]"] :is(input, textarea, select),
+.bd-yacht-portal main [class*="bg-[#081120]"] :is(input, textarea, select) {
+  color: var(--ocean-ink) !important;
+  -webkit-text-fill-color: var(--ocean-ink) !important;
+  caret-color: #0e7490 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color-scheme: light;
+}
+
+.bd-yacht-portal :is(input, textarea, select)::placeholder,
+.bd-yacht-portal main :is(input, textarea, select)::placeholder,
+.bd-yacht-portal main[class*="bg-[#020817]"] :is(input, textarea, select)::placeholder,
+.bd-yacht-portal main[class*="bg-[#081120]"] :is(input, textarea, select)::placeholder,
+.bd-yacht-portal main[class*="bg-slate-950"] :is(input, textarea, select)::placeholder {
+  color: #6b7f95 !important;
+  -webkit-text-fill-color: #6b7f95 !important;
+  opacity: 1 !important;
+}
+
+.bd-yacht-portal input[type="file"]::file-selector-button {
+  border: 0;
+  border-radius: 0.85rem;
+  background: #061831;
+  color: #ffffff;
+  padding: 0.65rem 1rem;
+  font-weight: 800;
+}
+
 .bd-yacht-portal .bd-app-topbar a[href="/profile"],
 .bd-yacht-portal .bd-app-topbar a[href="/profile"] * {
   color: #020817 !important;

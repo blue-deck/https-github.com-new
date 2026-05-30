@@ -21,6 +21,7 @@ export function LanguageSwitcher({
 
   return (
     <label
+      data-i18n-ignore
       className={`bd-focus inline-flex items-center gap-2 rounded-full border text-xs font-black uppercase tracking-[0.12em] transition ${
         isCompact ? "h-10 px-2.5" : "h-11 px-3"
       } ${
