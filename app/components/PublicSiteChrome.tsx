@@ -38,7 +38,6 @@ export function PublicHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <LanguageSwitcher size="compact" />
           <Link
             href="/login"
             className="bd-focus rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-5 sm:py-3 sm:text-sm"
@@ -51,6 +50,7 @@ export function PublicHeader() {
           >
             {t("auth.signUp")}
           </Link>
+          <LanguageSwitcher size="compact" />
         </div>
       </div>
     </header>

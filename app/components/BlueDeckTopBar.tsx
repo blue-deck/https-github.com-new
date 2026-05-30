@@ -39,8 +39,6 @@ export function BlueDeckTopBar({
         </div>
 
         <nav className="flex shrink-0 items-center gap-2">
-          <LanguageSwitcher className="hidden lg:inline-flex" />
-
           <Link
             href="/dashboard"
             className="bd-focus inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-3 text-sm font-bold text-white/84 transition hover:border-cyan-200 hover:text-white"
@@ -64,6 +62,8 @@ export function BlueDeckTopBar({
             <UserRound className="h-4 w-4" />
             <span className="hidden sm:inline">{t("topbar.profile")}</span>
           </Link>
+
+          <LanguageSwitcher size="compact" />
         </nav>
       </div>
     </header>

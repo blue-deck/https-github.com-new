@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   defaultLanguage,
   isLanguage,
@@ -129,6 +130,7 @@ function translateVisibleText(language: Language) {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [language, setLanguageState] = useState<Language>(defaultLanguage);
 
   useEffect(() => {
@@ -163,18 +165,25 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     translateVisibleText(language);
 
+    let frame = 0;
     const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(() => translateVisibleText(language));
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        translateVisibleText(language);
+      });
     });
 
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true,
     });
 
-    return () => observer.disconnect();
-  }, [language]);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [language, pathname]);
 
   const value = useMemo<LanguageContextValue>(
     () => ({

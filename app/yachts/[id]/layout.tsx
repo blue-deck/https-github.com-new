@@ -11,7 +11,6 @@ import {
   Radio,
   Users,
 } from "lucide-react";
-import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 import { useLanguage } from "../../components/LanguageProvider";
 import { translatePhrase } from "../../lib/i18n";
 import { supabase } from "../../lib/supabase";
@@ -100,7 +99,6 @@ export default function YachtAppLayout({
               );
             })}
           </div>
-          <LanguageSwitcher variant="light" size="compact" className="shrink-0 lg:hidden" />
         </div>
       </nav>
 

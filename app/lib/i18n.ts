@@ -1,9 +1,11 @@
+import { generatedPhraseTranslations } from "./phraseTranslations.generated";
+
 export const languages = [
-  { code: "tr", label: "TR", name: "Türkçe" },
-  { code: "en", label: "EN", name: "English" },
-  { code: "ru", label: "RU", name: "Русский" },
-  { code: "it", label: "IT", name: "Italiano" },
-  { code: "el", label: "EL", name: "Ελληνικά" },
+  { code: "tr", label: "TR", flag: "🇹🇷", name: "Türkçe" },
+  { code: "en", label: "EN", flag: "🇬🇧", name: "English" },
+  { code: "ru", label: "RU", flag: "🇷🇺", name: "Русский" },
+  { code: "it", label: "IT", flag: "🇮🇹", name: "Italiano" },
+  { code: "el", label: "EL", flag: "🇬🇷", name: "Ελληνικά" },
 ] as const;
 
 export type Language = (typeof languages)[number]["code"];
@@ -681,7 +683,7 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
   el,
 };
 
-export const phraseTranslations: Record<string, Partial<Record<Language, string>>> = {
+const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>> = {
   "Overview": { tr: "Genel Bakış", ru: "Обзор", it: "Panoramica", el: "Επισκόπηση" },
   "Bridge": { tr: "Köprüüstü", ru: "Мостик", it: "Ponte", el: "Γέφυρα" },
   "Ops": { tr: "Operasyon", ru: "Операции", it: "Operazioni", el: "Λειτουργίες" },
@@ -831,6 +833,11 @@ export const phraseTranslations: Record<string, Partial<Record<Language, string>
     it: "Ancora nessuna notifica. Clicca Genera notifiche smart.",
     el: "Δεν υπάρχουν ακόμη ειδοποιήσεις. Πατήστε Δημιουργία έξυπνων ειδοποιήσεων.",
   },
+};
+
+export const phraseTranslations: Record<string, Partial<Record<Language, string>>> = {
+  ...generatedPhraseTranslations,
+  ...manualPhraseTranslations,
 };
 
 export function translatePhrase(phrase: string, language: Language) {
