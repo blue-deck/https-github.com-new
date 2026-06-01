@@ -911,6 +911,42 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
     it: "Salva MMSI",
     el: "Αποθήκευση MMSI",
   },
+  "Maritime Voyage Sync": {
+    tr: "Denizcilik Seyir Eşitleme",
+    ru: "Синхронизация морского рейса",
+    it: "Sincronizzazione viaggio marittimo",
+    el: "Συγχρονισμός ναυτικού ταξιδιού",
+  },
+  "Refresh AIS Provider": {
+    tr: "AIS Sağlayıcısını Yenile",
+    ru: "Обновить AIS-провайдера",
+    it: "Aggiorna provider AIS",
+    el: "Ανανέωση παρόχου AIS",
+  },
+  "Syncing maritime voyage...": {
+    tr: "Denizcilik seyri eşitleniyor...",
+    ru: "Синхронизация морского рейса...",
+    it: "Sincronizzazione viaggio marittimo...",
+    el: "Συγχρονισμός ναυτικού ταξιδιού...",
+  },
+  "Maritime voyage is waiting": {
+    tr: "Denizcilik seyri bekliyor",
+    ru: "Морской рейс ожидает",
+    it: "Il viaggio marittimo è in attesa",
+    el: "Το ναυτικό ταξίδι είναι σε αναμονή",
+  },
+  "Add a 9-digit MMSI number to this yacht and configure a maritime AIS API key to activate automatic voyage sync.": {
+    tr: "Otomatik seyir eşitlemesini etkinleştirmek için bu yata 9 haneli MMSI numarası ekleyin ve bir denizcilik AIS API anahtarı yapılandırın.",
+    ru: "Добавьте этой яхте 9-значный MMSI и настройте ключ API морского AIS, чтобы включить автоматическую синхронизацию рейса.",
+    it: "Aggiungi a questo yacht un MMSI di 9 cifre e configura una chiave API AIS marittima per attivare la sincronizzazione automatica del viaggio.",
+    el: "Προσθέστε σε αυτό το yacht MMSI 9 ψηφίων και ρυθμίστε ένα API key ναυτικού AIS για αυτόματο συγχρονισμό ταξιδιού.",
+  },
+  "Maritime MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.": {
+    tr: "Denizcilik MMSI eşitlemesi AIS varış noktası, ETA ve canlı seyri BlueDeck'e çeker.",
+    ru: "Синхронизация морского MMSI подтягивает AIS-пункт назначения, ETA и живой рейс в BlueDeck.",
+    it: "La sincronizzazione MMSI marittima porta destinazione AIS, ETA e viaggio live in BlueDeck.",
+    el: "Ο ναυτικός συγχρονισμός MMSI φέρνει προορισμό AIS, ETA και live ταξίδι στο BlueDeck.",
+  },
 };
 
 export const phraseTranslations: Record<string, Partial<Record<Language, string>>> = {

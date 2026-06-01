@@ -10,8 +10,8 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           ok: false,
-          source: "MarineTraffic",
-          error: "Pass a valid 9-digit MMSI with ?mmsi=... to fetch live AIS from MarineTraffic.",
+          source: "Maritime AIS",
+          error: "Pass a valid 9-digit MMSI with ?mmsi=... to fetch live AIS from the configured maritime provider.",
           vessels: [],
         },
         { status: 400 },
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           ok: false,
-          source: "MarineTraffic",
+          source: "Maritime AIS",
           error: result.error,
           vessels: [],
         },
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      source: "MarineTraffic",
+      source: result.provider || result.vessel.provider || "Maritime AIS",
       vessels: [
         {
           id: result.vessel.mmsi,
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        source: "MarineTraffic",
+        source: "Maritime AIS",
         error: error instanceof Error ? error.message : "Live AIS request failed.",
         vessels: [],
       },

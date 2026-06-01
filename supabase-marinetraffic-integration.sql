@@ -1,9 +1,12 @@
 -- BlueDeck MarineTraffic integration.
 -- Run in Supabase SQL Editor after the production hardening script.
 -- Idempotent: this file can be re-run safely.
--- Also set MARINETRAFFIC_API_KEY in Vercel/local env.
+-- Also set MARITIME_PROVIDER=auto in Vercel/local env and at least one provider key:
+-- DATALASTIC_API_KEY, VESSELFINDER_API_KEY or MARINETRAFFIC_API_KEY.
 -- Optional: set MARINETRAFFIC_VOYAGE_FORECAST_URL_TEMPLATE when your contracted
 -- MarineTraffic service uses a custom endpoint shape.
+-- Optional: set DATALASTIC_VESSEL_URL_TEMPLATE or VESSELFINDER_VESSELS_URL_TEMPLATE
+-- when your contracted provider uses a custom endpoint shape.
 
 create extension if not exists "pgcrypto";
 

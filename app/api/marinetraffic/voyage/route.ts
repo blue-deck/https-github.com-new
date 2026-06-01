@@ -52,8 +52,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         ok: false,
-        configured: Boolean(process.env.MARINETRAFFIC_API_KEY),
-        error: "Add a 9-digit MMSI number to this yacht to enable automatic MarineTraffic voyage data.",
+        configured: Boolean(
+          process.env.DATALASTIC_API_KEY ||
+            process.env.VESSELFINDER_API_KEY ||
+            process.env.MARINETRAFFIC_API_KEY,
+        ),
+        error: "Add a 9-digit MMSI number to this yacht to enable automatic maritime voyage data.",
         yacht,
       },
       { status: 400 },
@@ -77,7 +81,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    source: "MarineTraffic",
+    source: result.provider || result.vessel.provider || voyage.source,
     yachtId: yachtId || null,
     mmsi,
     vessel: result.vessel,
@@ -98,7 +102,7 @@ async function savePositionSnapshot(
     longitude: vessel.longitude,
     speed: vessel.speedKnots,
     heading: vessel.heading ?? vessel.course,
-    location_name: vessel.currentPort || vessel.destination || "MarineTraffic AIS",
+    location_name: vessel.currentPort || vessel.destination || "Maritime AIS",
   });
 }
 

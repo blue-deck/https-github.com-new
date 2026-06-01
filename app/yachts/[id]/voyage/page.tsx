@@ -12,7 +12,7 @@ type LiveVoyage = {
   eta: string;
   etaCalculated: string;
   status: string;
-  source: "MarineTraffic";
+  source: string;
 };
 
 type LiveVessel = {
@@ -64,7 +64,7 @@ export default function VoyagePage() {
     } catch (error) {
       setData({
         ok: false,
-        error: error instanceof Error ? error.message : "MarineTraffic voyage sync failed.",
+        error: error instanceof Error ? error.message : "Maritime voyage sync failed.",
       });
     } finally {
       setLoading(false);
@@ -116,7 +116,7 @@ export default function VoyagePage() {
                   BlueDeck VoyageOS
                 </p>
                 <h1 className="mt-4 text-5xl font-black leading-none sm:text-6xl">
-                  MarineTraffic Voyage Sync
+                  Maritime Voyage Sync
                 </h1>
                 <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
                   Enter a yacht MMSI once and BlueDeck pulls the live AIS record into voyage,
@@ -130,7 +130,7 @@ export default function VoyagePage() {
                 className="bd-focus inline-flex items-center justify-center gap-3 rounded-full border border-cyan-300/30 bg-cyan-300 px-6 py-4 font-black text-slate-950 shadow-xl shadow-cyan-500/20 transition hover:bg-white disabled:cursor-wait disabled:opacity-70"
               >
                 {refreshing ? <Loader2 className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
-                Refresh MarineTraffic
+                Refresh AIS Provider
               </button>
             </div>
           </div>
@@ -138,17 +138,17 @@ export default function VoyagePage() {
 
         {loading ? (
           <div className="rounded-[32px] border border-white/10 bg-white/5 p-8 text-slate-300">
-            Syncing MarineTraffic voyage...
+            Syncing maritime voyage...
           </div>
         ) : !data?.ok || !voyage ? (
           <div className="rounded-[36px] border border-amber-300/30 bg-amber-300/10 p-8 shadow-2xl shadow-black/20">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-300 text-slate-950">
               <Radar className="h-8 w-8" />
             </div>
-            <h2 className="mt-6 text-4xl font-black">MarineTraffic voyage is waiting</h2>
+            <h2 className="mt-6 text-4xl font-black">Maritime voyage is waiting</h2>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-amber-50/80">
               {data?.error ||
-                "Add a 9-digit MMSI number to this yacht and configure the MarineTraffic API key to activate automatic voyage sync."}
+                "Add a 9-digit MMSI number to this yacht and configure a maritime AIS API key to activate automatic voyage sync."}
             </p>
             <p className="mt-5 text-sm font-semibold uppercase tracking-[0.18em] text-amber-100/70">
               No demo route is shown here.

@@ -99,7 +99,7 @@ export default function CommandCenterPage() {
             marineTraffic.vessel?.currentPort ||
             marineTraffic.vessel?.destination ||
             livePosition?.location_name ||
-            "MarineTraffic AIS",
+            "Maritime AIS",
         };
         liveVoyage = {
           ...liveVoyage,
