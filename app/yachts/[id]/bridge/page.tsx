@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import {
   Radar,
   Ship,
@@ -11,17 +13,120 @@ import {
   Satellite,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { supabase } from "../../../lib/supabase";
 
-const systems: Array<[string, string, LucideIcon]> = [
-  ["Course", "184°", Navigation],
-  ["Speed", "GPS", Gauge],
-  ["AIS", "Provider Required", Radar],
-  ["Fuel", "Monitoring", Fuel],
-  ["Sea", "Operational", Waves],
-  ["GPS", "Browser Active", Satellite],
-];
+type YachtPosition = {
+  id: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  speed?: number | null;
+  heading?: number | null;
+  location_name?: string | null;
+  operational_mode?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+type YachtStatus = {
+  operational_status?: string | null;
+  current_location?: string | null;
+  weather?: string | null;
+  sea_state?: string | null;
+};
+
+type Voyage = {
+  id: string;
+  departure_port?: string | null;
+  arrival_port?: string | null;
+  status?: string | null;
+  eta?: string | null;
+};
+
+type ExpiryAlert = {
+  id: string;
+  severity?: string | null;
+  status?: string | null;
+};
+
+type EngineeringAsset = {
+  id: string;
+  current_hours?: number | null;
+  last_service_hours?: number | null;
+  service_interval?: number | null;
+};
 
 export default function BridgePage() {
+  const params = useParams();
+  const yachtId = String(params?.id || "");
+  const [positions, setPositions] = useState<YachtPosition[]>([]);
+  const [status, setStatus] = useState<YachtStatus | null>(null);
+  const [voyages, setVoyages] = useState<Voyage[]>([]);
+  const [alerts, setAlerts] = useState<ExpiryAlert[]>([]);
+  const [assets, setAssets] = useState<EngineeringAsset[]>([]);
+
+  async function loadBridge() {
+    if (!yachtId) return;
+
+    const [positionResult, statusResult, voyageResult, alertResult, assetResult] = await Promise.all([
+      supabase
+        .from("yacht_positions")
+        .select("*")
+        .eq("yacht_id", yachtId)
+        .order("created_at", { ascending: false })
+        .limit(12),
+      supabase
+        .from("yacht_status")
+        .select("*")
+        .eq("yacht_id", yachtId)
+        .maybeSingle(),
+      supabase
+        .from("voyages")
+        .select("*")
+        .eq("yacht_id", yachtId)
+        .order("created_at", { ascending: false })
+        .limit(3),
+      supabase
+        .from("expiry_alerts")
+        .select("*")
+        .eq("yacht_id", yachtId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("engineering_assets")
+        .select("id,current_hours,last_service_hours,service_interval")
+        .eq("yacht_id", yachtId),
+    ]);
+
+    setPositions(positionResult.data || []);
+    setStatus(statusResult.data || null);
+    setVoyages(voyageResult.data || []);
+    setAlerts(alertResult.data || []);
+    setAssets(assetResult.data || []);
+  }
+
+  useEffect(() => {
+    loadBridge();
+  }, [yachtId]);
+
+  const latestPosition = positions[0];
+  const activeVoyage = voyages.find((voyage) => voyage.status !== "completed") || voyages[0];
+  const criticalAlerts = alerts.filter((alert) => alert.status !== "resolved" && alert.severity === "critical");
+  const dueAssets = assets.filter((asset) => remainingHours(asset) <= 25);
+  const coordinates = hasPosition(latestPosition)
+    ? `${Number(latestPosition?.latitude).toFixed(4)}, ${Number(latestPosition?.longitude).toFixed(4)}`
+    : "Position not set";
+
+  const systems: Array<[string, string, LucideIcon]> = useMemo(
+    () => [
+      ["Course", `${Number(latestPosition?.heading || 0)}°`, Navigation],
+      ["Speed", `${Number(latestPosition?.speed || 0)} kn`, Gauge],
+      ["AIS", activeVoyage ? "Voyage Linked" : "MMSI Required", Radar],
+      ["Fuel", "Finance Linked", Fuel],
+      ["Sea", status?.sea_state || "Not logged", Waves],
+      ["GPS", latestPosition ? "Position Active" : "Waiting", Satellite],
+    ],
+    [activeVoyage, latestPosition, status],
+  );
+
   return (
     <main className="min-h-screen px-4 py-6 pb-14 text-[#071629] sm:px-8 sm:py-8">
       <div className="mx-auto max-w-[1700px]">
@@ -35,7 +140,7 @@ export default function BridgePage() {
               Captain Bridge
             </h1>
             <p className="mt-5 max-w-4xl text-base leading-relaxed text-[#52677d] sm:text-xl">
-            Professional bridge interface for GPS, AIS readiness, navigation awareness and captain operations.
+              Professional bridge interface for live position, voyage awareness and captain operations.
             </p>
           </div>
         </div>
@@ -87,24 +192,64 @@ export default function BridgePage() {
 
               <div className="absolute bottom-4 left-4 right-4 rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur sm:bottom-8 sm:left-8 sm:right-auto sm:min-w-[280px] sm:p-5">
                 <p className="text-sm font-black uppercase tracking-[0.16em] text-[#67e8f9]">
-                  Real AIS Status
+                  Live Bridge Status
                 </p>
                 <p className="mt-2 text-sm text-[#d8ecfb] sm:text-base">
-                  Awaiting provider access
+                  {latestPosition?.location_name || status?.current_location || coordinates}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="space-y-5 sm:space-y-6">
-            <Panel title="Captain Status" text="Bridge systems are online and ready for navigation." />
-            <Panel title="Real GPS" text="Use Live Navigation Map to display actual browser GPS position." />
-            <Panel title="AIS Integration" text="Connect MarineTraffic, AISStream or Kpler account with active AIS endpoint." warning />
-            <Panel title="Safety" text="No critical onboard alerts currently active." />
+            <Panel
+              title="Captain Status"
+              text={`${status?.operational_status || latestPosition?.operational_mode || "Status not logged"} at ${
+                status?.current_location || latestPosition?.location_name || "current yacht position"
+              }.`}
+            />
+            <Panel title="Real Position" text={`${coordinates} · ${positions.length} position records available.`} />
+            <Panel
+              title="Voyage"
+              text={
+                activeVoyage
+                  ? `${activeVoyage.departure_port || "Departure"} to ${activeVoyage.arrival_port || "Arrival"} · ${
+                      activeVoyage.status || "active"
+                    }`
+                  : "Add MMSI or create a voyage to activate route awareness."
+              }
+              warning={!activeVoyage}
+            />
+            <Panel
+              title="Safety"
+              text={
+                criticalAlerts.length || dueAssets.length
+                  ? `${criticalAlerts.length} critical alerts and ${dueAssets.length} engineering services need attention.`
+                  : "No critical onboard alerts currently active."
+              }
+              warning={Boolean(criticalAlerts.length || dueAssets.length)}
+            />
           </div>
         </div>
       </div>
     </main>
+  );
+}
+
+function remainingHours(asset: EngineeringAsset) {
+  return (
+    Number(asset.last_service_hours || 0) +
+    Number(asset.service_interval || 0) -
+    Number(asset.current_hours || 0)
+  );
+}
+
+function hasPosition(position?: YachtPosition) {
+  return (
+    position?.latitude !== null &&
+    position?.latitude !== undefined &&
+    position?.longitude !== null &&
+    position?.longitude !== undefined
   );
 }
 
