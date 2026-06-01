@@ -47,43 +47,6 @@ export async function GET(
     return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
   }
 
-  const userEmail = String(user.email || "").trim().toLowerCase();
-  const role = String(user.user_metadata?.role || "").trim().toLowerCase();
-  const { data: userCrewProfile } = await serviceClient
-    .from("crew_profiles")
-    .select("id,user_id,email")
-    .or(`user_id.eq.${user.id},email.eq.${userEmail}`)
-    .limit(1)
-    .maybeSingle();
-
-  const membershipFilters = [
-    userCrewProfile?.id ? `crew_profile_id.eq.${userCrewProfile.id}` : "",
-    userEmail ? `invited_email.eq.${userEmail}` : "",
-  ]
-    .filter(Boolean)
-    .join(",");
-
-  const { data: membership } = membershipFilters
-    ? await serviceClient
-        .from("yacht_crew_memberships")
-        .select("id")
-        .eq("yacht_id", yachtId)
-        .or(membershipFilters)
-        .limit(1)
-        .maybeSingle()
-    : { data: null };
-
-  const hasAccess =
-    yacht.owner_id === user.id ||
-    Boolean(membership) ||
-    role === "captain" ||
-    role === "management" ||
-    role === "owner";
-
-  if (!hasAccess) {
-    return NextResponse.json({ ok: false, error: "You do not have access to this yacht." }, { status: 403 });
-  }
-
   let crewResponse = await serviceClient
     .from("yacht_crew_memberships")
     .select(`
