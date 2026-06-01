@@ -791,228 +791,229 @@ function CvPreview({
   return (
     <section
       id="bluedeck-cv"
-      className="overflow-hidden rounded-[28px] border border-white/70 bg-[#f7f3ea] text-slate-950 shadow-2xl shadow-slate-900/14 print:rounded-none print:border-0 print:bg-white print:shadow-none"
+      className="overflow-hidden rounded-[22px] border border-[#d9c9a6] bg-[#eee7da] text-[#101820] shadow-2xl shadow-slate-950/12 print:rounded-none print:border-0 print:bg-white print:shadow-none"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-[#dfd3bb] bg-[#fbfaf7] px-5 py-4 print:hidden">
+      <div className="flex items-center justify-between gap-4 border-b border-[#d1bf99] bg-[#f6f1e7] px-5 py-4 print:hidden">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-800">Luxury CV Preview</p>
-          <p className="mt-1 text-sm text-slate-500">This is the exact BlueDeck CV layout generated from your saved profile.</p>
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-[#7b6122]">BlueDeck Signature CV</p>
+          <p className="mt-1 text-sm text-[#5f6b76]">Timeless maritime dossier generated from your saved crew profile.</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white">
+        <button onClick={() => window.print()} className="flex items-center justify-center gap-2 rounded-md bg-[#101820] px-4 py-3 text-sm font-semibold text-[#f8f4ec]">
           <Download className="h-4 w-4" />
           Save as PDF
         </button>
       </div>
 
-      <div className="bg-white p-3 sm:p-5 print:p-0">
-        <div className="mx-auto overflow-hidden rounded-[24px] border border-[#d8caa8] bg-white shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:shadow-none">
-          <div className="grid min-h-[1120px] lg:grid-cols-[310px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
-            <aside className="relative overflow-hidden bg-[#07111f] p-7 text-white">
-              <div className="absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#22d3ee,#d7b46a,#ffffff,#d7b46a)]" />
-              <div className="absolute -right-24 top-14 h-56 w-56 rounded-full border border-cyan-200/15" />
-              <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full border border-[#d7b46a]/20" />
-
-              <div className="relative">
-                <div className="flex items-center gap-3">
-                  <BlueDeckMark className="h-11 w-16 rounded-xl border-white/15 bg-white/8 shadow-black/20" imageClassName="p-1" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.26em] text-cyan-100">BlueDeck</p>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">Yacht Crew CV</p>
-                  </div>
-                </div>
-
-                <div className="mt-8 h-36 w-36 overflow-hidden rounded-[28px] border border-white/20 bg-white/8 shadow-2xl shadow-black/30">
-                  {profile.profile_photo_url ? (
-                    <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-white/60">
-                      <UserRound className="h-14 w-14" />
-                    </div>
-                  )}
-                </div>
-
-                <p className="mt-6 text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">Candidate</p>
-                <h2 className="mt-2 text-3xl font-black leading-tight tracking-tight text-white">
-                  {profile.full_name || "Crew Member"}
-                </h2>
-                <p className="mt-3 text-base font-semibold text-cyan-100">{primaryPosition}</p>
-                <p className="mt-1 text-sm text-white/55">Crew ID {profile.public_crew_id || "-"}</p>
-
-                <div className="mt-7 grid grid-cols-2 gap-3">
-                  <LuxuryMetric label="Experience" value={`${totalExperienceYears}y`} />
-                  <LuxuryMetric label="CV Score" value={`${completion}%`} />
-                  <LuxuryMetric label="Docs" value={String(documents.length)} />
-                  <LuxuryMetric label="Refs" value={String(references.length)} />
-                </div>
-
-                <CvSidebarSection title="Contact">
-                  <CvContact label="Email" value={profile.email || "-"} />
-                  <CvContact label="Phone" value={profile.phone || "-"} />
-                  <CvContact label="Nationality" value={profile.nationality || "-"} />
-                  <CvContact label="Location" value={profile.location || "-"} />
-                </CvSidebarSection>
-
-                <CvSidebarSection title="Personal">
-                  <CvContact label="DOB" value={formatCvDate(profile.date_of_birth)} />
-                  <CvContact label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
-                  <CvContact label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
-                  <CvContact label="Smoker" value={profile.smoker || "-"} />
-                  <CvContact label="Tattoos" value={profile.visible_tattoos || "-"} />
-                </CvSidebarSection>
-
-                <CvSidebarSection title="Languages">
-                  {profile.languages?.length ? (
-                    <div className="space-y-2">
-                      {profile.languages.map((language) => (
-                        <div key={language.name}>
-                          <div className="flex justify-between gap-3 text-sm">
-                            <span className="font-semibold text-white">{language.name}</span>
-                            <span className="text-cyan-100/80">{language.level}</span>
-                          </div>
-                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
-                            <div className="h-full rounded-full bg-[linear-gradient(90deg,#22d3ee,#d7b46a)]" style={{ width: languageLevelWidth(language.level) }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-white/55">No languages added yet.</p>
-                  )}
-                </CvSidebarSection>
-
-                <CvSidebarSection title="Documents">
-                  <div className="space-y-2">
-                    {documents.slice(0, 8).map((doc) => (
-                      <CvDocumentRow key={doc.id || doc.document_type} document={doc} />
-                    ))}
-                    {documents.length === 0 && <p className="text-sm text-white/55">No CV documents selected.</p>}
-                  </div>
-                </CvSidebarSection>
+      <div className="bg-[#eee7da] p-3 sm:p-5 print:p-0">
+        <div className="mx-auto overflow-hidden rounded-[16px] border border-[#c7b78f] bg-[#f8f4ec] shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:shadow-none">
+          <div className="grid min-h-[1120px] lg:grid-cols-[76px_1fr] print:min-h-0 print:grid-cols-[70px_1fr]">
+            <aside className="flex flex-col items-center justify-between bg-[#101820] px-3 py-7 text-[#f8f4ec]">
+              <BlueDeckMark className="h-12 w-12 rounded-md border-[#d1b15f]/35 bg-[#f8f4ec]/6" imageClassName="p-1" />
+              <div className="flex flex-1 items-center justify-center py-10">
+                <p className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-black uppercase tracking-[0.34em] text-[#d1b15f]">
+                  BlueDeck Crew Dossier
+                </p>
+              </div>
+              <div className="border-t border-[#d1b15f]/35 pt-4 text-center">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Score</p>
+                <p className="mt-1 text-2xl font-black text-[#d1b15f]">{completion}</p>
               </div>
             </aside>
 
-            <div className="bg-[#fbfaf7] p-7 sm:p-9 print:p-8">
-              <div className="rounded-[28px] border border-[#e8dfcc] bg-white p-6 shadow-sm print:shadow-none">
-                <div className="flex flex-col gap-5 border-b border-[#e8dfcc] pb-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="bg-[#f8f4ec]">
+              <header className="border-b border-[#c7b78f] p-6 sm:p-8 print:p-7">
+                <div className="grid gap-7 lg:grid-cols-[168px_1fr]">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-cyan-700">Professional yacht profile</p>
-                    <h1 className="mt-2 text-4xl font-black leading-tight tracking-tight text-[#07111f] sm:text-5xl">
-                      {profile.full_name || "Crew Member"}
-                    </h1>
-                    <p className="mt-3 text-lg font-semibold text-[#0e7490]">{primaryPosition}</p>
+                    <div className="h-[210px] overflow-hidden rounded-md border border-[#101820] bg-[#ece4d6] p-1">
+                      {profile.profile_photo_url ? (
+                        <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover grayscale-[12%]" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-[#e6dcc8] text-[#101820]/35">
+                          <UserRound className="h-16 w-16" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 border-y border-[#c7b78f] py-2 text-center">
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7b6122]">Crew ID</p>
+                      <p className="mt-1 text-sm font-black tracking-[0.16em] text-[#101820]">{profile.public_crew_id || "-"}</p>
+                    </div>
                   </div>
-                  <div className="rounded-2xl border border-[#dfd3bb] bg-[#f8f3e8] px-5 py-4 text-right">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8b6a21]">Availability</p>
-                    <p className="mt-1 text-sm font-black text-[#07111f]">
-                      {(profile.work_preferences || [])[0] || "Open to yacht opportunities"}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="mt-6 grid gap-4 sm:grid-cols-4">
-                  <CvStat label="Experience" value={`${totalExperienceYears} years`} />
-                  <CvStat label="Documents" value={String(documents.length)} />
-                  <CvStat label="Languages" value={String(profile.languages?.length || 0)} />
-                  <CvStat label="Portfolio" value={String(cleanPortfolio.length)} />
-                </div>
-
-                <CvMainSection title="Executive Summary">
-                  <p className="text-[15px] leading-7 text-slate-700">
-                    {profile.bio ||
-                      "Add a concise professional summary describing your yacht background, guest service style, safety mindset and the type of role you are targeting."}
-                  </p>
-                </CvMainSection>
-
-                <CvMainSection title="Yacht Experience">
-                  <div className="space-y-4">
-                    {cleanExperiences.length === 0 && (
-                      <p className="rounded-2xl border border-dashed border-slate-200 bg-[#fbfaf7] p-4 text-sm text-slate-500">
-                        No yacht experience added yet.
-                      </p>
-                    )}
-                    {cleanExperiences.map((item) => (
-                      <div key={item.id || `${item.yacht_name}-${item.start_date}`} className="grid gap-4 rounded-2xl border border-slate-100 bg-[#fbfaf7] p-4 sm:grid-cols-[118px_1fr]">
-                        {item.photo_url ? (
-                          <img src={item.photo_url} alt={item.yacht_name || "Yacht"} className="h-28 w-full rounded-xl object-cover shadow-sm" />
-                        ) : (
-                          <div className="hidden h-28 rounded-xl border border-[#e8dfcc] bg-[linear-gradient(135deg,#eef8fb,#f8f3e8)] sm:block" />
-                        )}
+                  <div className="flex flex-col justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
                         <div>
-                          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                              <h3 className="text-lg font-black text-[#07111f]">{item.position || "Position"}</h3>
-                              <p className="mt-1 text-sm font-semibold text-cyan-800">{item.yacht_name || "Yacht"}</p>
-                            </div>
-                            <p className="w-fit rounded-full border border-[#dfd3bb] bg-white px-3 py-1 text-xs font-bold text-[#7c641e]">
-                              {formatDateRange(item.start_date, item.end_date)}
-                            </p>
-                          </div>
-                          {item.description && <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>}
+                          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#7b6122]">
+                            Private Maritime CV
+                          </p>
+                          <h1 className="mt-4 max-w-3xl text-5xl font-black leading-[0.95] tracking-[-0.02em] text-[#101820] sm:text-6xl">
+                            {profile.full_name || "Crew Member"}
+                          </h1>
+                        </div>
+                        <div className="min-w-[150px] border-l border-[#c7b78f] pl-5">
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7b6122]">Position</p>
+                          <p className="mt-2 text-lg font-black leading-tight text-[#101820]">{primaryPosition}</p>
                         </div>
                       </div>
-                    ))}
+
+                      <div className="mt-7 h-px bg-[#101820]" />
+                      <div className="mt-2 h-px bg-[#d1b15f]" />
+
+                      <p className="mt-7 max-w-4xl text-[15px] leading-7 text-[#35424d]">
+                        {profile.bio ||
+                          "Add a concise professional summary describing your yacht background, guest service style, safety mindset and the type of role you are targeting."}
+                      </p>
+                    </div>
+
+                    <div className="mt-7 grid gap-3 sm:grid-cols-4">
+                      <DossierMetric label="Experience" value={`${totalExperienceYears} years`} />
+                      <DossierMetric label="Documents" value={String(documents.length)} />
+                      <DossierMetric label="Languages" value={String(profile.languages?.length || 0)} />
+                      <DossierMetric label="Portfolio" value={String(cleanPortfolio.length)} />
+                    </div>
                   </div>
-                </CvMainSection>
-
-                <div className="mt-7 grid gap-7 xl:grid-cols-2">
-                  <CvMainSection title="Skills & Character">
-                    <PillList items={visibleSkills} light />
-                  </CvMainSection>
-                  <CvMainSection title="Seeking">
-                    <PillList items={profile.seeking_positions || []} light />
-                  </CvMainSection>
                 </div>
+              </header>
 
-                <div className="mt-7 grid gap-7 xl:grid-cols-2">
-                  <CvMainSection title="Work Preferences">
-                    <PillList items={profile.work_preferences || []} light />
-                  </CvMainSection>
-                  <CvMainSection title="References">
-                    {references.length === 0 ? (
-                      <p className="text-sm text-slate-500">References available upon request.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {references.slice(0, 3).map((ref) => (
-                          <div key={ref.id || ref.email || ref.name} className="rounded-2xl border border-slate-100 bg-[#fbfaf7] p-4">
-                            <p className="font-black text-[#07111f]">{ref.name || "Reference"}</p>
-                            <p className="mt-1 text-sm font-semibold text-cyan-800">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" · ") || "Yacht reference"}</p>
-                            <p className="mt-2 text-xs text-slate-500">{[ref.email, ref.phone].filter(Boolean).join(" · ")}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CvMainSection>
-                </div>
-
-                {cleanPortfolio.length > 0 && (
-                  <CvMainSection title="Portfolio">
-                    <div className="grid grid-cols-3 gap-3">
-                      {cleanPortfolio.slice(0, 6).map((photo) => (
-                        <figure key={photo.id || photo.image_url} className="overflow-hidden rounded-2xl border border-slate-100 bg-white">
-                          <img src={photo.image_url} alt={photo.title || "Portfolio"} className="h-28 w-full object-cover" />
-                          {(photo.title || photo.location) && (
-                            <figcaption className="px-3 py-2 text-xs font-semibold text-slate-600">
-                              {photo.title || photo.location}
-                            </figcaption>
+              <div className="grid gap-0 xl:grid-cols-[1fr_330px] print:grid-cols-[1fr_310px]">
+                <main className="p-6 sm:p-8 print:p-7">
+                  <CvMainSection title="Yacht Experience">
+                    <div className="space-y-4">
+                      {cleanExperiences.length === 0 && (
+                        <p className="border border-dashed border-[#c7b78f] bg-[#f3ede0] p-4 text-sm text-[#5f6b76]">
+                          No yacht experience added yet.
+                        </p>
+                      )}
+                      {cleanExperiences.map((item) => (
+                        <div key={item.id || `${item.yacht_name}-${item.start_date}`} className="grid gap-4 border-b border-[#d8c8a6] pb-5 last:border-b-0 sm:grid-cols-[112px_1fr]">
+                          {item.photo_url ? (
+                            <img src={item.photo_url} alt={item.yacht_name || "Yacht"} className="h-28 w-full rounded-sm border border-[#c7b78f] object-cover grayscale-[8%]" />
+                          ) : (
+                            <div className="hidden h-28 border border-[#c7b78f] bg-[#eee7da] sm:block" />
                           )}
-                        </figure>
+                          <div>
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <h3 className="text-xl font-black text-[#101820]">{item.position || "Position"}</h3>
+                                <p className="mt-1 text-sm font-black uppercase tracking-[0.16em] text-[#255e66]">{item.yacht_name || "Yacht"}</p>
+                              </div>
+                              <p className="w-fit border border-[#c7b78f] bg-[#f8f4ec] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#7b6122]">
+                                {formatDateRange(item.start_date, item.end_date)}
+                              </p>
+                            </div>
+                            {item.description && <p className="mt-3 text-sm leading-6 text-[#4d5963]">{item.description}</p>}
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </CvMainSection>
-                )}
 
-                <div className="mt-8 rounded-2xl border border-[#dfd3bb] bg-[#f8f3e8] p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-[#8b6a21]">BlueDeck CV readiness</p>
-                      <p className="mt-1 text-sm text-slate-600">Profile, documents, references and portfolio completeness.</p>
+                  <div className="mt-8 grid gap-8 lg:grid-cols-2">
+                    <CvMainSection title="Skills & Character">
+                      <PillList items={visibleSkills} light />
+                    </CvMainSection>
+                    <CvMainSection title="Seeking">
+                      <PillList items={profile.seeking_positions || []} light />
+                    </CvMainSection>
+                  </div>
+
+                  <div className="mt-8 grid gap-8 lg:grid-cols-2">
+                    <CvMainSection title="Work Preferences">
+                      <PillList items={profile.work_preferences || []} light />
+                    </CvMainSection>
+                    <CvMainSection title="References">
+                      {references.length === 0 ? (
+                        <p className="text-sm text-[#5f6b76]">References available upon request.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {references.slice(0, 3).map((ref) => (
+                            <div key={ref.id || ref.email || ref.name} className="border border-[#d8c8a6] bg-[#f3ede0] p-4">
+                              <p className="font-black text-[#101820]">{ref.name || "Reference"}</p>
+                              <p className="mt-1 text-sm font-semibold text-[#255e66]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
+                              <p className="mt-2 text-xs text-[#66717b]">{[ref.email, ref.phone].filter(Boolean).join(" / ")}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CvMainSection>
+                  </div>
+
+                  {cleanPortfolio.length > 0 && (
+                    <CvMainSection title="Portfolio">
+                      <div className="grid grid-cols-3 gap-3">
+                        {cleanPortfolio.slice(0, 6).map((photo) => (
+                          <figure key={photo.id || photo.image_url} className="overflow-hidden border border-[#d8c8a6] bg-[#f8f4ec]">
+                            <img src={photo.image_url} alt={photo.title || "Portfolio"} className="h-28 w-full object-cover grayscale-[8%]" />
+                            {(photo.title || photo.location) && (
+                              <figcaption className="px-3 py-2 text-xs font-semibold text-[#4d5963]">
+                                {photo.title || photo.location}
+                              </figcaption>
+                            )}
+                          </figure>
+                        ))}
+                      </div>
+                    </CvMainSection>
+                  )}
+                </main>
+
+                <aside className="border-t border-[#c7b78f] bg-[#eee7da] p-6 xl:border-l xl:border-t-0 print:border-l print:border-t-0">
+                  <CvSidebarSection title="Contact">
+                    <CvContact label="Email" value={profile.email || "-"} />
+                    <CvContact label="Phone" value={profile.phone || "-"} />
+                    <CvContact label="Nationality" value={profile.nationality || "-"} />
+                    <CvContact label="Location" value={profile.location || "-"} />
+                  </CvSidebarSection>
+
+                  <CvSidebarSection title="Personal">
+                    <CvContact label="DOB" value={formatCvDate(profile.date_of_birth)} />
+                    <CvContact label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
+                    <CvContact label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
+                    <CvContact label="Smoker" value={profile.smoker || "-"} />
+                    <CvContact label="Tattoos" value={profile.visible_tattoos || "-"} />
+                  </CvSidebarSection>
+
+                  <CvSidebarSection title="Languages">
+                    {profile.languages?.length ? (
+                      <div className="space-y-3">
+                        {profile.languages.map((language) => (
+                          <div key={language.name}>
+                            <div className="flex justify-between gap-3 text-sm">
+                              <span className="font-black text-[#101820]">{language.name}</span>
+                              <span className="font-semibold text-[#255e66]">{language.level}</span>
+                            </div>
+                            <div className="mt-1 h-1 overflow-hidden bg-[#d8c8a6]">
+                              <div className="h-full bg-[#101820]" style={{ width: languageLevelWidth(language.level) }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-[#5f6b76]">No languages added yet.</p>
+                    )}
+                  </CvSidebarSection>
+
+                  <CvSidebarSection title="Documents">
+                    <div className="space-y-2">
+                      {documents.slice(0, 8).map((doc) => (
+                        <CvDocumentRow key={doc.id || doc.document_type} document={doc} />
+                      ))}
+                      {documents.length === 0 && <p className="text-sm text-[#5f6b76]">No CV documents selected.</p>}
                     </div>
-                    <p className="text-3xl font-black text-[#07111f]">{completion}%</p>
+                  </CvSidebarSection>
+
+                  <div className="mt-8 border border-[#c7b78f] bg-[#f8f4ec] p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7b6122]">CV Readiness</p>
+                        <p className="mt-1 text-xs text-[#5f6b76]">Profile completeness</p>
+                      </div>
+                      <p className="text-3xl font-black text-[#101820]">{completion}%</p>
+                    </div>
+                    <div className="mt-3 h-1.5 bg-[#d8c8a6]">
+                      <div className="h-full bg-[#101820]" style={{ width: `${completion}%` }} />
+                    </div>
                   </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-white">
-                    <div className="h-full rounded-full bg-[linear-gradient(90deg,#07111f,#0891b2,#d7b46a)]" style={{ width: `${completion}%` }} />
-                  </div>
-                </div>
+                </aside>
               </div>
             </div>
           </div>
@@ -1022,19 +1023,19 @@ function CvPreview({
   );
 }
 
-function LuxuryMetric({ label, value }: { label: string; value: string }) {
+function DossierMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100/70">{label}</p>
-      <p className="mt-1 text-xl font-black text-white">{value}</p>
+    <div className="border border-[#c7b78f] bg-[#f3ede0] px-3 py-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6122]">{label}</p>
+      <p className="mt-1 text-lg font-black text-[#101820]">{value}</p>
     </div>
   );
 }
 
 function CvSidebarSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-7 border-t border-white/10 pt-5">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.24em] text-[#d7b46a]">{title}</h3>
+    <section className="mt-7 border-t border-[#c7b78f] pt-5 first:mt-0 first:border-t-0 first:pt-0">
+      <h3 className="text-[10px] font-black uppercase tracking-[0.24em] text-[#7b6122]">{title}</h3>
       <div className="mt-4">{children}</div>
     </section>
   );
@@ -1044,9 +1045,9 @@ function CvMainSection({ title, children }: { title: string; children: ReactNode
   return (
     <section className="mt-7">
       <div className="mb-4 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#e8dfcc]" />
-        <h2 className="text-xs font-black uppercase tracking-[0.22em] text-[#8b6a21]">{title}</h2>
-        <div className="h-px flex-1 bg-[#e8dfcc]" />
+        <div className="h-px flex-1 bg-[#c7b78f]" />
+        <h2 className="text-xs font-black uppercase tracking-[0.22em] text-[#7b6122]">{title}</h2>
+        <div className="h-px flex-1 bg-[#c7b78f]" />
       </div>
       {children}
     </section>
@@ -1056,8 +1057,8 @@ function CvMainSection({ title, children }: { title: string; children: ReactNode
 function CvContact({ label, value }: { label: string; value: string }) {
   return (
     <div className="mb-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/35">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-white/85">{value}</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#7b6122]">{label}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-[#101820]">{value}</p>
     </div>
   );
 }
@@ -1065,9 +1066,9 @@ function CvContact({ label, value }: { label: string; value: string }) {
 function CvDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
-    <div className={`rounded-xl border px-3 py-2 ${expiring ? "border-amber-300/40 bg-amber-300/10" : "border-white/10 bg-white/[0.06]"}`}>
-      <p className="text-sm font-semibold text-white">{document.document_type}</p>
-      <p className={expiring ? "mt-1 text-xs text-amber-100" : "mt-1 text-xs text-white/45"}>
+    <div className={`border px-3 py-2 ${expiring ? "border-[#b7832c] bg-[#f5e8c8]" : "border-[#c7b78f] bg-[#f8f4ec]"}`}>
+      <p className="text-sm font-semibold text-[#101820]">{document.document_type}</p>
+      <p className={expiring ? "mt-1 text-xs text-[#8b4a18]" : "mt-1 text-xs text-[#66717b]"}>
         {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
       </p>
     </div>
@@ -1749,10 +1750,6 @@ function Snapshot({ label, value, tone = "cyan" }: { label: string; value: strin
     rose: "border-rose-200 bg-rose-50 text-rose-950",
   };
   return <div className={`rounded-xl border p-3 ${tones[tone]}`}><p className="text-xs opacity-65">{label}</p><p className="mt-1 text-lg font-semibold">{value}</p></div>;
-}
-
-function CvStat({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{label}</p><p className="mt-1 text-lg font-semibold text-slate-950">{value}</p></div>;
 }
 
 function PillList({ items, light = false }: { items: string[]; light?: boolean }) {
