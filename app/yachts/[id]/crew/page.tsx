@@ -183,70 +183,31 @@ export default function CrewPage({
       return;
     }
 
-    let crewResponse = await supabase
-      .from("yacht_crew_memberships")
-      .select(`
-        *,
-        crew_profiles (
-          id,
-          user_id,
-          email,
-          full_name,
-          current_position,
-          phone,
-          nationality,
-          passport_number,
-          passport_expiry,
-          stcw_expiry,
-          medical_expiry
-        )
-      `)
-      .eq("yacht_id", yachtId)
-      .order("created_at", { ascending: false });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (isSchemaCacheError(crewResponse.error)) {
-      crewResponse = await supabase
-        .from("yacht_crew_memberships")
-        .select(`
-          *,
-          crew_profiles (
-            id,
-            user_id,
-            email,
-            full_name,
-            current_position,
-            phone,
-            nationality
-          )
-        `)
-        .eq("yacht_id", yachtId)
-        .order("created_at", { ascending: false });
-    }
+    const response = await fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
+      cache: "no-store",
+      headers: session?.access_token
+        ? {
+            authorization: `Bearer ${session.access_token}`,
+          }
+        : {},
+    });
+    const payload = await response.json();
 
-    const { data: crewData, error: crewError } = crewResponse;
-
-    if (crewError) {
-      if (!silent) alert(crewError.message);
+    if (!response.ok || !payload?.ok) {
+      if (!silent) alert(payload?.error || "Crew data could not be loaded.");
       return;
     }
 
-    const { data: checklistData, error: checklistError } = await supabase
-      .from("yacht_checklists")
-      .select(`
-        *,
-        yacht_checklist_items (*)
-      `)
-      .eq("yacht_id", yachtId)
-      .order("created_at", { ascending: false });
+    const crewData = payload.crew || [];
+    const checklistData = payload.checklists || [];
 
-    if (checklistError) {
-      if (!silent) alert(checklistError.message);
-      return;
-    }
-
-    setCrew(crewData || []);
-    setChecklists(checklistData || []);
-    loadCurrentOperator(crewData || [], user);
+    setCrew(crewData);
+    setChecklists(checklistData);
+    loadCurrentOperator(crewData, user);
   }
 
   function loadCurrentOperator(crewData: any[], user: any) {
