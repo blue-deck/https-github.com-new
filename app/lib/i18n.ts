@@ -833,6 +833,84 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
     it: "Ancora nessuna notifica. Clicca Genera notifiche smart.",
     el: "Δεν υπάρχουν ακόμη ειδοποιήσεις. Πατήστε Δημιουργία έξυπνων ειδοποιήσεων.",
   },
+  "MMSI number (9 digits)": {
+    tr: "MMSI numarası (9 hane)",
+    ru: "Номер MMSI (9 цифр)",
+    it: "Numero MMSI (9 cifre)",
+    el: "Αριθμός MMSI (9 ψηφία)",
+  },
+  "MMSI must be 9 digits.": {
+    tr: "MMSI 9 haneli olmalıdır.",
+    ru: "MMSI должен состоять из 9 цифр.",
+    it: "MMSI deve avere 9 cifre.",
+    el: "Το MMSI πρέπει να έχει 9 ψηφία.",
+  },
+  "MarineTraffic Voyage Sync": {
+    tr: "MarineTraffic Seyir Eşitleme",
+    ru: "Синхронизация рейса MarineTraffic",
+    it: "Sincronizzazione viaggio MarineTraffic",
+    el: "Συγχρονισμός ταξιδιού MarineTraffic",
+  },
+  "Enter a yacht MMSI once and BlueDeck pulls the live AIS record into voyage, position and captain command screens automatically.": {
+    tr: "Yat MMSI numarasını bir kez girin; BlueDeck canlı AIS kaydını otomatik olarak seyir, konum ve kaptan komuta ekranlarına çeker.",
+    ru: "Введите MMSI яхты один раз, и BlueDeck автоматически подтянет живую AIS-запись в экраны рейса, позиции и капитанского центра.",
+    it: "Inserisci una volta l'MMSI dello yacht e BlueDeck porta automaticamente il record AIS live in viaggio, posizione e comando capitano.",
+    el: "Πληκτρολογήστε μία φορά το MMSI του yacht και το BlueDeck φέρνει αυτόματα το live AIS στο ταξίδι, τη θέση και το κέντρο εντολών.",
+  },
+  "Refresh MarineTraffic": {
+    tr: "MarineTraffic'i Yenile",
+    ru: "Обновить MarineTraffic",
+    it: "Aggiorna MarineTraffic",
+    el: "Ανανέωση MarineTraffic",
+  },
+  "Syncing MarineTraffic voyage...": {
+    tr: "MarineTraffic seyri eşitleniyor...",
+    ru: "Синхронизация рейса MarineTraffic...",
+    it: "Sincronizzazione viaggio MarineTraffic...",
+    el: "Συγχρονισμός ταξιδιού MarineTraffic...",
+  },
+  "MarineTraffic voyage is waiting": {
+    tr: "MarineTraffic seyri bekliyor",
+    ru: "Рейс MarineTraffic ожидает",
+    it: "Il viaggio MarineTraffic è in attesa",
+    el: "Το ταξίδι MarineTraffic είναι σε αναμονή",
+  },
+  "Add a 9-digit MMSI number to this yacht and configure the MarineTraffic API key to activate automatic voyage sync.": {
+    tr: "Otomatik seyir eşitlemesini etkinleştirmek için bu yata 9 haneli MMSI numarası ekleyin ve MarineTraffic API anahtarını yapılandırın.",
+    ru: "Добавьте этой яхте 9-значный MMSI и настройте ключ API MarineTraffic, чтобы включить автоматическую синхронизацию рейса.",
+    it: "Aggiungi a questo yacht un MMSI di 9 cifre e configura la chiave API MarineTraffic per attivare la sincronizzazione automatica del viaggio.",
+    el: "Προσθέστε σε αυτό το yacht MMSI 9 ψηφίων και ρυθμίστε το API key MarineTraffic για αυτόματο συγχρονισμό ταξιδιού.",
+  },
+  "No demo route is shown here.": {
+    tr: "Burada demo rota gösterilmez.",
+    ru: "Демо-маршрут здесь не показывается.",
+    it: "Qui non viene mostrata nessuna rotta demo.",
+    el: "Δεν εμφανίζεται demo διαδρομή εδώ.",
+  },
+  "Active AIS Voyage": {
+    tr: "Aktif AIS Seyri",
+    ru: "Активный AIS-рейс",
+    it: "Viaggio AIS attivo",
+    el: "Ενεργό ταξίδι AIS",
+  },
+  "MarineTraffic MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.": {
+    tr: "MarineTraffic MMSI eşitlemesi AIS varış noktası, ETA ve canlı seyri BlueDeck'e çeker.",
+    ru: "Синхронизация MarineTraffic MMSI подтягивает AIS-пункт назначения, ETA и живой рейс в BlueDeck.",
+    it: "La sincronizzazione MMSI MarineTraffic porta destinazione AIS, ETA e viaggio live in BlueDeck.",
+    el: "Ο συγχρονισμός MMSI MarineTraffic φέρνει προορισμό AIS, ETA και live ταξίδι στο BlueDeck.",
+  },
+  "Voyage Sync": {
+    tr: "Seyir Eşitleme",
+    ru: "Синхронизация рейса",
+    it: "Sincronizzazione viaggio",
+    el: "Συγχρονισμός ταξιδιού",
+  },
+  "Save MMSI": {
+    tr: "MMSI Kaydet",
+    ru: "Сохранить MMSI",
+    it: "Salva MMSI",
+    el: "Αποθήκευση MMSI",
+  },
 };
 
 export const phraseTranslations: Record<string, Partial<Record<Language, string>>> = {

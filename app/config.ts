@@ -16,7 +16,7 @@ export const BLUEDECK = {
 
   integrations: {
     gps: "Browser GPS active",
-    ais: "Requires real AIS provider API access",
+    ais: "MarineTraffic MMSI voyage sync ready",
     weather: "Open-Meteo ready",
     notifications: "Supabase realtime ready",
     starlink: "Future integration",

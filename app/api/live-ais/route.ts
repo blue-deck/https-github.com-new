@@ -1,60 +1,66 @@
 import { NextResponse } from "next/server";
+import { fetchMarineTrafficVessel, normalizeMmsi } from "../../lib/marineTraffic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const vessels = [
-      {
-        id: "1",
-        name: "HELIOPHILIA",
-        lat: 37.936654,
-        lon: 23.649491,
-        speed: 0,
-        course: 184,
-        type: "Yacht",
-        risk: "normal",
-      },
-      {
-        id: "2",
-        name: "MSC ATHENA",
-        lat: 37.9401,
-        lon: 23.645,
-        speed: 14,
-        course: 90,
-        type: "Cargo",
-        risk: "low",
-      },
-      {
-        id: "3",
-        name: "BLUE STAR",
-        lat: 37.932,
-        lon: 23.655,
-        speed: 18,
-        course: 270,
-        type: "Passenger",
-        risk: "medium",
-      },
-      {
-        id: "4",
-        name: "SEA DREAM",
-        lat: 37.938,
-        lon: 23.652,
-        speed: 7,
-        course: 120,
-        type: "Yacht",
-        risk: "low",
-      },
-    ];
+    const { searchParams } = new URL(request.url);
+    const mmsi = normalizeMmsi(searchParams.get("mmsi"));
+
+    if (!mmsi) {
+      return NextResponse.json(
+        {
+          ok: false,
+          source: "MarineTraffic",
+          error: "Pass a valid 9-digit MMSI with ?mmsi=... to fetch live AIS from MarineTraffic.",
+          vessels: [],
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await fetchMarineTrafficVessel(mmsi);
+
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          source: "MarineTraffic",
+          error: result.error,
+          vessels: [],
+        },
+        { status: result.status },
+      );
+    }
 
     return NextResponse.json({
       ok: true,
-      source: "live-gps-with-simulated-ais",
-      vessels,
+      source: "MarineTraffic",
+      vessels: [
+        {
+          id: result.vessel.mmsi,
+          mmsi: result.vessel.mmsi,
+          name: result.vessel.shipName || result.vessel.mmsi,
+          lat: result.vessel.latitude,
+          lon: result.vessel.longitude,
+          speed: result.vessel.speedKnots,
+          course: result.vessel.course,
+          heading: result.vessel.heading,
+          type: result.vessel.typeName || "Vessel",
+          destination: result.vessel.destination,
+          eta: result.vessel.eta || result.vessel.etaCalculated,
+          risk: "normal",
+        },
+      ],
     });
-  } catch (e: any) {
-    return NextResponse.json({
-      ok: false,
-      error: e.message,
-      vessels: [],
-    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        source: "MarineTraffic",
+        error: error instanceof Error ? error.message : "Live AIS request failed.",
+        vessels: [],
+      },
+      { status: 500 },
+    );
   }
 }

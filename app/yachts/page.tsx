@@ -8,6 +8,7 @@ type Yacht = {
   name: string;
   model: string;
   flag: string;
+  mmsi?: string | null;
 };
 
 export default function YachtsPage() {
@@ -15,6 +16,7 @@ export default function YachtsPage() {
   const [name, setName] = useState("");
   const [model, setModel] = useState("");
   const [flag, setFlag] = useState("");
+  const [mmsi, setMmsi] = useState("");
   const [loading, setLoading] = useState(true);
 
   async function fetchYachts() {
@@ -57,14 +59,31 @@ export default function YachtsPage() {
       return;
     }
 
-    const { error } = await supabase.from("yachts").insert([
-      {
+    if (mmsi && !/^\d{9}$/.test(mmsi)) {
+      alert("MMSI must be 9 digits.");
+      return;
+    }
+
+    const yachtPayload = {
+      name,
+      model,
+      flag,
+      mmsi: mmsi || null,
+      owner_id: user.id,
+    };
+
+    let { error } = await supabase.from("yachts").insert([yachtPayload]);
+
+    if (error && /mmsi|schema cache|column/i.test(error.message)) {
+      const fallbackPayload = {
         name,
         model,
         flag,
         owner_id: user.id,
-      },
-    ]);
+      };
+      const fallback = await supabase.from("yachts").insert([fallbackPayload]);
+      error = fallback.error;
+    }
 
     if (error) {
       alert(error.message);
@@ -74,6 +93,7 @@ export default function YachtsPage() {
     setName("");
     setModel("");
     setFlag("");
+    setMmsi("");
 
     fetchYachts();
   }
@@ -132,6 +152,15 @@ export default function YachtsPage() {
                 className="bd-focus w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 placeholder:text-slate-400"
               />
 
+              <input
+                placeholder="MMSI number (9 digits)"
+                value={mmsi}
+                inputMode="numeric"
+                maxLength={9}
+                onChange={(e) => setMmsi(e.target.value.replace(/\D/g, "").slice(0, 9))}
+                className="bd-focus w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 placeholder:text-slate-400"
+              />
+
               <button
                 onClick={createYacht}
                 className="bd-focus w-full rounded-full bg-cyan-600 px-5 py-4 font-bold text-white transition hover:bg-cyan-700"
@@ -154,6 +183,9 @@ export default function YachtsPage() {
                   <h3 className="text-2xl font-semibold text-slate-950">{yacht.name}</h3>
                   <p className="mt-2 text-slate-600">{yacht.model}</p>
                   <p className="mt-1 text-slate-400">{yacht.flag}</p>
+                  {yacht.mmsi && (
+                    <p className="mt-2 text-sm font-semibold text-cyan-700">MMSI {yacht.mmsi}</p>
+                  )}
                 </a>
               ))}
 

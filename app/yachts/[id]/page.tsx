@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   AlertTriangle,
   Bell,
@@ -27,8 +28,6 @@ import {
 import { BLUEDECK } from "../../config";
 import { supabase } from "../../lib/supabase";
 
-const yachtId = BLUEDECK.yachtId;
-
 type OverviewStats = {
   crewCount: number;
   invitedCrew: number;
@@ -49,6 +48,14 @@ type ActivityItem = {
   tone: "cyan" | "emerald" | "gold" | "rose";
 };
 
+type YachtRecord = {
+  id: string;
+  name?: string | null;
+  model?: string | null;
+  flag?: string | null;
+  mmsi?: string | null;
+};
+
 const emptyStats: OverviewStats = {
   crewCount: 0,
   invitedCrew: 0,
@@ -63,6 +70,9 @@ const emptyStats: OverviewStats = {
 };
 
 export default function YachtDashboard() {
+  const params = useParams();
+  const yachtId = String(params?.id || BLUEDECK.yachtId);
+  const [yacht, setYacht] = useState<YachtRecord | null>(null);
   const [stats, setStats] = useState<OverviewStats>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -72,8 +82,13 @@ export default function YachtDashboard() {
     if (!silent) setLoading(true);
     setLoadError("");
 
-    const [crewResponse, checklistResponse, invitationResponse, documentResponse] =
+    const [yachtResponse, crewResponse, checklistResponse, invitationResponse, documentResponse] =
       await Promise.all([
+        supabase
+          .from("yachts")
+          .select("*")
+          .eq("id", yachtId)
+          .maybeSingle(),
         supabase
           .from("yacht_crew_memberships")
           .select(
@@ -183,6 +198,7 @@ export default function YachtDashboard() {
       criticalDocuments,
       recent,
     });
+    setYacht((yachtResponse.data as YachtRecord | null) || null);
     setUpdatedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
     setLoading(false);
   }
@@ -191,7 +207,7 @@ export default function YachtDashboard() {
     loadOverview();
     const interval = window.setInterval(() => loadOverview(true), 15000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [yachtId]);
 
   const taskProgress = stats.totalTasks
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
@@ -290,6 +306,14 @@ export default function YachtDashboard() {
       meta: "BridgeOS",
     },
     {
+      title: "Voyage Sync",
+      text: "MarineTraffic MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.",
+      href: `/yachts/${yachtId}/voyage`,
+      icon: Compass,
+      tone: "cyan",
+      meta: yacht?.mmsi ? `MMSI ${yacht.mmsi}` : "MMSI ready",
+    },
+    {
       title: "Engineering",
       text: "Technical systems, maintenance planning and onboard machinery readiness.",
       href: `/yachts/${yachtId}/engineering`,
@@ -333,7 +357,7 @@ export default function YachtDashboard() {
               <div>
                 <p className="bd-kicker">Private Yacht Command</p>
                 <h1 className="mt-4 max-w-4xl text-5xl font-black leading-[0.95] text-slate-950 sm:text-7xl">
-                  {BLUEDECK.yachtName}
+                  {yacht?.name || BLUEDECK.yachtName}
                 </h1>
                 <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">
                   Captain dashboard for crew invitations, duty proof, compliance
@@ -363,8 +387,8 @@ export default function YachtDashboard() {
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <HeroMetric icon={Ship} label="Mode" value={BLUEDECK.mode} />
-              <HeroMetric icon={Map} label="Flag" value={BLUEDECK.flag} />
-              <HeroMetric icon={Compass} label="Voyage" value="Standby" />
+              <HeroMetric icon={Map} label="Flag" value={yacht?.flag || BLUEDECK.flag} />
+              <HeroMetric icon={Compass} label="Voyage" value={yacht?.mmsi ? "MarineTraffic" : "MMSI ready"} />
               <HeroMetric icon={ShieldCheck} label="Privacy" value="Active" />
             </div>
 

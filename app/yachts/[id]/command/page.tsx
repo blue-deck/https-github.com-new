@@ -79,9 +79,44 @@ export default function CommandCenterPage() {
       .select("*")
       .eq("yacht_id", yachtId);
 
+    let livePosition = positionData || null;
+    let liveVoyage = voyageData || null;
+
+    try {
+      const response = await fetch(`/api/marinetraffic/voyage?yachtId=${encodeURIComponent(yachtId)}`, {
+        cache: "no-store",
+      });
+      const marineTraffic = await response.json();
+
+      if (marineTraffic?.ok) {
+        livePosition = {
+          ...livePosition,
+          latitude: marineTraffic.vessel?.latitude ?? livePosition?.latitude,
+          longitude: marineTraffic.vessel?.longitude ?? livePosition?.longitude,
+          speed: marineTraffic.vessel?.speedKnots ?? livePosition?.speed,
+          heading: marineTraffic.vessel?.heading ?? marineTraffic.vessel?.course ?? livePosition?.heading,
+          location_name:
+            marineTraffic.vessel?.currentPort ||
+            marineTraffic.vessel?.destination ||
+            livePosition?.location_name ||
+            "MarineTraffic AIS",
+        };
+        liveVoyage = {
+          ...liveVoyage,
+          title: marineTraffic.voyage?.title,
+          departure_port: marineTraffic.voyage?.departurePort,
+          arrival_port: marineTraffic.voyage?.arrivalPort,
+          fuel_estimate: liveVoyage?.fuel_estimate || 0,
+          fuel_remaining: liveVoyage?.fuel_remaining || 0,
+        };
+      }
+    } catch {
+      // Command center keeps the saved yacht record if the live provider is temporarily unavailable.
+    }
+
     setStatus(statusData || null);
-    setPosition(positionData || null);
-    setVoyage(voyageData || null);
+    setPosition(livePosition);
+    setVoyage(liveVoyage);
     setEngineering(engData || []);
     setTasks(
       (checklistData || []).flatMap((checklist: any) =>
