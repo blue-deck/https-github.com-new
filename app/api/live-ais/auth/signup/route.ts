@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       user_metadata: {
         full_name: fullName,
         role,
-        yacht_id: "f434e90f-b8d8-443c-ad23-d5cedbe4308f",
+        yacht_id: "c5839d51-1c51-4747-8ab9-9762f6e8b06b",
       },
     });
 

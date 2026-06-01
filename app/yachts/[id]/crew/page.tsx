@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import {
   Anchor,
@@ -35,13 +36,13 @@ import {
   yachtDepartments,
 } from "../../../lib/yachtOperations";
 
-const yachtId = "f434e90f-b8d8-443c-ad23-d5cedbe4308f";
-
 export default function CrewPage({
   view = "command",
 }: {
   view?: "command" | "checklists";
 }) {
+  const params = useParams();
+  const yachtId = String(params?.id || "");
   const isChecklistSystem = view === "checklists";
   const [crew, setCrew] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
@@ -281,10 +282,11 @@ export default function CrewPage({
   }
 
   useEffect(() => {
+    if (!yachtId) return;
     loadData();
     const interval = window.setInterval(() => loadData(true), 10000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [yachtId]);
 
   useEffect(() => {
     if (!photoPreview) return;
