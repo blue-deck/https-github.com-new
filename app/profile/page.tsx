@@ -1120,19 +1120,6 @@ function SeazoneStyleCvPreview({
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const firstName = (profile.full_name || "there").split(" ")[0];
   const age = calculateAge(profile.date_of_birth);
-  const completionItems = [
-    Boolean(profile.full_name),
-    Boolean(profile.profile_photo_url),
-    Boolean(profile.bio),
-    Boolean(profile.phone && profile.email),
-    Boolean(profile.languages?.length),
-    Boolean(documents.length),
-    Boolean(cleanExperiences.length),
-    Boolean(visibleSkills.length),
-    Boolean(references.length),
-    Boolean(cleanPortfolio.length),
-  ];
-  const completion = Math.round((completionItems.filter(Boolean).length / completionItems.length) * 100);
 
   return (
     <section
@@ -1190,11 +1177,10 @@ function SeazoneStyleCvPreview({
                 <SeazoneInfoRow label="Location" value={profile.location || "-"} />
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6 grid gap-3">
                 <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
                 <SeazoneStat label="References" value={String(references.length)} />
                 <SeazoneStat label="Documents" value={String(documents.length)} />
-                <SeazoneStat label="Score" value={`${completion}%`} />
               </div>
 
               <div className="mt-6 rounded-3xl bg-white p-4 text-slate-950 shadow-lg shadow-[#166a96]/12">
