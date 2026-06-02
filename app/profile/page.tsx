@@ -23,6 +23,7 @@ import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
+import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { yachtPositionTitles } from "../lib/yachtOperations";
 
@@ -507,8 +508,7 @@ export default function ProfilePage() {
   async function uploadFile(file: File, bucket: "crew-documents" | "crew-portfolio") {
     if (!profile.id) return "";
     setUploading(bucket);
-    const safeName = file.name.replaceAll(" ", "-").toLowerCase();
-    const path = `${profile.id}/${Date.now()}-${safeName}`;
+    const path = createSafeStoragePath(profile.id, file);
     const { error } = await supabase.storage.from(bucket).upload(path, file);
     if (error) {
       setUploading("");

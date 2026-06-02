@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { createSafeStoragePath } from "../../lib/storage";
 import {
   CheckCircle2,
   ChevronRight,
@@ -193,8 +194,7 @@ export default function CrewTasksPage() {
   async function uploadTaskPhoto(task: any, file: File, type: "before" | "after") {
     setUploadingPhoto(`${type}-${task.id}`);
 
-    const safeName = file.name.replaceAll(" ", "-").toLowerCase();
-    const filePath = `${activeChecklist.yacht_id}/${task.id}/${type}-${Date.now()}-${safeName}`;
+    const filePath = createSafeStoragePath(`${activeChecklist.yacht_id}/${task.id}`, file, type);
 
     const upload = await uploadTaskFile(filePath, file);
 

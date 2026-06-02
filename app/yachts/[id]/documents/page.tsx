@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { createSafeStoragePath } from "../../../lib/storage";
 import { supabase } from "../../../lib/supabase";
 
 type YachtDocument = {
@@ -70,8 +71,7 @@ export default function DocumentsPage() {
       return;
     }
 
-    const safeFileName = file.name.replaceAll(" ", "-").toLowerCase();
-    const filePath = `${yachtId}/${Date.now()}-${safeFileName}`;
+    const filePath = createSafeStoragePath(yachtId, file, "document");
 
     const { error: uploadError } = await supabase.storage
       .from("documents")

@@ -6,6 +6,7 @@ import { Camera, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Uploa
 import { useLanguage } from "../components/LanguageProvider";
 import { BLUEDECK } from "../config";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
+import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 
 type DashboardProfile = {
@@ -102,8 +103,7 @@ export default function DashboardPage() {
     }
 
     setPhotoUploading(true);
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").toLowerCase();
-    const path = `${profile?.crew_profile_id || user.id}/dashboard-${Date.now()}-${safeName}`;
+    const path = createSafeStoragePath(profile?.crew_profile_id || user.id, file, "dashboard");
     const { error: uploadError } = await supabase.storage.from("crew-portfolio").upload(path, file, {
       upsert: false,
     });
