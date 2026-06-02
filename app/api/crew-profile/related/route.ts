@@ -38,6 +38,65 @@ const relatedTables: Record<RelatedKind, { table: string; columns: string[] }> =
   },
 };
 
+export async function GET(request: NextRequest) {
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  const profileId = request.nextUrl.searchParams.get("profileId")?.trim();
+
+  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
+    return NextResponse.json({ ok: false, error: "Supabase is not configured." }, { status: 500 });
+  }
+
+  if (!token) {
+    return NextResponse.json({ ok: false, error: "Login session is required." }, { status: 401 });
+  }
+
+  if (!profileId) {
+    return NextResponse.json({ ok: false, error: "Crew profile id is required." }, { status: 400 });
+  }
+
+  const clients = await getAuthorizedClients(token, profileId);
+  if (!clients.ok) {
+    return NextResponse.json({ ok: false, error: clients.error }, { status: clients.status });
+  }
+
+  const { serviceClient } = clients;
+  const [documentRes, experienceRes, referenceRes, portfolioRes] = await Promise.all([
+    serviceClient
+      .from("crew_documents")
+      .select("*")
+      .eq("crew_profile_id", profileId)
+      .order("created_at", { ascending: false }),
+    serviceClient
+      .from("crew_experiences")
+      .select("*")
+      .eq("crew_profile_id", profileId)
+      .order("start_date", { ascending: false }),
+    serviceClient
+      .from("crew_references")
+      .select("*")
+      .eq("crew_profile_id", profileId)
+      .order("created_at", { ascending: false }),
+    serviceClient
+      .from("crew_portfolio_photos")
+      .select("*")
+      .eq("crew_profile_id", profileId)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const error = documentRes.error || experienceRes.error || referenceRes.error || portfolioRes.error;
+  if (error) {
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    documents: documentRes.data || [],
+    experiences: experienceRes.data || [],
+    references: referenceRes.data || [],
+    portfolio: portfolioRes.data || [],
+  });
+}
+
 export async function POST(request: NextRequest) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
 
@@ -61,40 +120,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "Invalid crew profile request." }, { status: 400 });
   }
 
-  const authClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const {
-    data: { user },
-    error: userError,
-  } = await authClient.auth.getUser(token);
-
-  if (userError || !user?.id) {
-    return NextResponse.json({ ok: false, error: "Login session is invalid." }, { status: 401 });
+  const clients = await getAuthorizedClients(token, body.profileId);
+  if (!clients.ok) {
+    return NextResponse.json({ ok: false, error: clients.error }, { status: clients.status });
   }
 
-  const { data: profile, error: profileError } = await serviceClient
-    .from("crew_profiles")
-    .select("id,user_id,email")
-    .eq("id", body.profileId)
-    .maybeSingle();
-
-  if (profileError) {
-    return NextResponse.json({ ok: false, error: profileError.message }, { status: 500 });
-  }
-
-  const userEmail = user.email?.trim().toLowerCase();
-  const profileEmail = profile?.email?.trim().toLowerCase();
-  const ownsProfile = profile?.user_id === user.id || Boolean(userEmail && profileEmail && userEmail === profileEmail);
-
-  if (!profile || !ownsProfile) {
-    return NextResponse.json({ ok: false, error: "Crew profile access denied." }, { status: 403 });
-  }
-
+  const { serviceClient } = clients;
   const config = relatedTables[body.kind];
 
   if (body.action === "delete") {
@@ -136,4 +167,42 @@ function cleanPayload(payload: Record<string, unknown>, columns: string[]) {
   return Object.fromEntries(
     Object.entries(payload).filter(([key, value]) => columns.includes(key) && value !== undefined),
   );
+}
+
+async function getAuthorizedClients(token: string, profileId: string) {
+  const authClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const {
+    data: { user },
+    error: userError,
+  } = await authClient.auth.getUser(token);
+
+  if (userError || !user?.id) {
+    return { ok: false as const, error: "Login session is invalid.", status: 401 };
+  }
+
+  const { data: profile, error: profileError } = await serviceClient
+    .from("crew_profiles")
+    .select("id,user_id,email")
+    .eq("id", profileId)
+    .maybeSingle();
+
+  if (profileError) {
+    return { ok: false as const, error: profileError.message, status: 500 };
+  }
+
+  const userEmail = user.email?.trim().toLowerCase();
+  const profileEmail = profile?.email?.trim().toLowerCase();
+  const ownsProfile = profile?.user_id === user.id || Boolean(userEmail && profileEmail && userEmail === profileEmail);
+
+  if (!profile || !ownsProfile) {
+    return { ok: false as const, error: "Crew profile access denied.", status: 403 };
+  }
+
+  return { ok: true as const, serviceClient };
 }

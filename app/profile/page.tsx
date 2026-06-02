@@ -343,17 +343,37 @@ export default function ProfilePage() {
   async function loadRelated(profileId?: string) {
     if (!profileId) return;
 
-    const [{ data: docs }, { data: exp }, { data: refs }, { data: photos }] = await Promise.all([
-      supabase.from("crew_documents").select("*").eq("crew_profile_id", profileId).order("created_at", { ascending: false }),
-      supabase.from("crew_experiences").select("*").eq("crew_profile_id", profileId).order("start_date", { ascending: false }),
-      supabase.from("crew_references").select("*").eq("crew_profile_id", profileId).order("created_at", { ascending: false }),
-      supabase.from("crew_portfolio_photos").select("*").eq("crew_profile_id", profileId).order("created_at", { ascending: false }),
-    ]);
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    setDocuments((docs || []) as CrewDocument[]);
-    setExperiences((exp || []) as Experience[]);
-    setReferences((refs || []) as ReferenceEntry[]);
-    setPortfolio((photos || []) as PortfolioPhoto[]);
+    if (!session?.access_token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    const response = await fetch(`/api/crew-profile/related?profileId=${encodeURIComponent(profileId)}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: "no-store",
+    });
+    const result = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+      documents?: CrewDocument[];
+      experiences?: Experience[];
+      references?: ReferenceEntry[];
+      portfolio?: PortfolioPhoto[];
+    } | null;
+
+    if (!response.ok || !result?.ok) {
+      alert(result?.error || "Crew profile records could not be loaded.");
+      return;
+    }
+
+    setDocuments(result.documents || []);
+    setExperiences(result.experiences || []);
+    setReferences(result.references || []);
+    setPortfolio(result.portfolio || []);
   }
 
   async function saveProfile() {
@@ -1817,11 +1837,11 @@ function PortfolioEditor({ item, isNew, onSave, onDelete, onUpload, uploading }:
 function EditorButtons({ isNew, onSave, onDelete, addLabel }: { isNew: boolean; onSave: () => void; onDelete: () => void; addLabel: string }) {
   return (
     <div className="mt-4 flex gap-2">
-      <button onClick={onSave} className="flex items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817]">
+      <button onClick={onSave} className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817]">
         <Plus className="h-4 w-4" />
         {isNew ? addLabel : "Save"}
       </button>
-      {!isNew && <button onClick={onDelete} className="rounded-lg border border-red-300/20 px-3 py-2 text-sm font-semibold text-red-200">Delete</button>}
+      {!isNew && <button onClick={onDelete} className="cursor-pointer rounded-lg border border-red-300/20 px-3 py-2 text-sm font-semibold text-red-200">Delete</button>}
     </div>
   );
 }
