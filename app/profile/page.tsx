@@ -100,6 +100,8 @@ type ReferenceEntry = {
   show_on_cv: boolean;
 };
 
+type RelatedKind = "document" | "experience" | "reference" | "portfolio";
+
 const workPreferences = [
   "Seasonal",
   "Permanent",
@@ -412,14 +414,13 @@ export default function ProfilePage() {
       return;
     }
 
-    const { error } = await supabase.from("crew_documents").insert({
+    const response = await saveRelatedRecord("document", {
       ...documentDraft,
-      crew_profile_id: profile.id,
       expiry_date: documentDraft.no_expiry ? null : documentDraft.expiry_date || null,
     });
 
-    if (error) {
-      alert(error.message);
+    if (!response.ok) {
+      alert(response.error);
       return;
     }
 
@@ -429,62 +430,57 @@ export default function ProfilePage() {
 
   async function updateDocument(document: CrewDocument) {
     if (!profile.id || !document.id) return;
-    const { error } = await supabase.from("crew_documents").update(document).eq("id", document.id);
-    if (error) alert(error.message);
+    const response = await saveRelatedRecord("document", document, document.id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function deleteDocument(id?: string) {
     if (!profile.id || !id) return;
-    await supabase.from("crew_documents").delete().eq("id", id);
+    const response = await deleteRelatedRecord("document", id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function saveExperience(item: Experience) {
     if (!profile.id) return;
-    const payload = { ...item, crew_profile_id: profile.id };
-    const { error } = item.id
-      ? await supabase.from("crew_experiences").update(payload).eq("id", item.id)
-      : await supabase.from("crew_experiences").insert(payload);
-    if (error) alert(error.message);
+    const response = await saveRelatedRecord("experience", item, item.id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function deleteExperience(id?: string) {
     if (!profile.id || !id) return;
-    await supabase.from("crew_experiences").delete().eq("id", id);
+    const response = await deleteRelatedRecord("experience", id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function saveReference(item: ReferenceEntry) {
     if (!profile.id) return;
-    const payload = { ...item, crew_profile_id: profile.id };
-    const { error } = item.id
-      ? await supabase.from("crew_references").update(payload).eq("id", item.id)
-      : await supabase.from("crew_references").insert(payload);
-    if (error) alert(error.message);
+    const response = await saveRelatedRecord("reference", item, item.id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function deleteReference(id?: string) {
     if (!profile.id || !id) return;
-    await supabase.from("crew_references").delete().eq("id", id);
+    const response = await deleteRelatedRecord("reference", id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function savePortfolioPhoto(item: PortfolioPhoto) {
     if (!profile.id) return;
-    const payload = { ...item, crew_profile_id: profile.id };
-    const { error } = item.id
-      ? await supabase.from("crew_portfolio_photos").update(payload).eq("id", item.id)
-      : await supabase.from("crew_portfolio_photos").insert(payload);
-    if (error) alert(error.message);
+    const response = await saveRelatedRecord("portfolio", item, item.id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
   async function deletePortfolioPhoto(id?: string) {
     if (!profile.id || !id) return;
-    await supabase.from("crew_portfolio_photos").delete().eq("id", id);
+    const response = await deleteRelatedRecord("portfolio", id);
+    if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
 
@@ -502,6 +498,48 @@ export default function ProfilePage() {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     setUploading("");
     return data.publicUrl;
+  }
+
+  async function saveRelatedRecord(kind: RelatedKind, payload: Record<string, unknown>, id?: string) {
+    return callRelatedApi({ action: "save", kind, payload, id });
+  }
+
+  async function deleteRelatedRecord(kind: RelatedKind, id: string) {
+    return callRelatedApi({ action: "delete", kind, id });
+  }
+
+  async function callRelatedApi(input: {
+    action: "save" | "delete";
+    kind: RelatedKind;
+    payload?: Record<string, unknown>;
+    id?: string;
+  }) {
+    if (!profile.id) return { ok: false, error: "Crew profile is not loaded." };
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      window.location.href = "/login";
+      return { ok: false, error: "Login session is required." };
+    }
+
+    const response = await fetch("/api/crew-profile/related", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ ...input, profileId: profile.id }),
+    });
+    const result = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+
+    if (!response.ok || !result?.ok) {
+      return { ok: false, error: result?.error || "Crew profile record could not be saved." };
+    }
+
+    return { ok: true, error: "" };
   }
 
   useEffect(() => {
