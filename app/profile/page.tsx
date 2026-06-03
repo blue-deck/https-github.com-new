@@ -8,6 +8,7 @@ import {
   Camera,
   Check,
   Download,
+  ExternalLink,
   FileText,
   IdCard,
   Languages,
@@ -18,11 +19,13 @@ import {
   Upload,
   UserRound,
 } from "lucide-react";
+import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
+import { absoluteSiteUrl } from "../lib/site";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { yachtPositionTitles } from "../lib/yachtOperations";
@@ -1335,22 +1338,11 @@ function SeazoneStyleCvPreview({
               <div className="mt-6 rounded-3xl bg-white p-4 text-slate-950 shadow-lg shadow-[#166a96]/12">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2492c8]">Crew card</p>
                 <div className="mt-4 grid grid-cols-[92px_1fr] gap-3">
-                  <div className="grid h-24 grid-cols-5 gap-1 rounded-xl bg-[#f4f8fb] p-2">
-                    {Array.from({ length: 25 }).map((_, index) => (
-                      <span
-                        key={index}
-                        className={
-                          [0, 1, 3, 6, 8, 10, 12, 14, 16, 20, 21, 23, 24].includes(index)
-                            ? "bg-[#30216f]"
-                            : "bg-white"
-                        }
-                      />
-                    ))}
-                  </div>
+                  <CrewProfileQr crewId={profile.public_crew_id} />
                   <div>
                     <p className="text-xs font-semibold text-slate-500">Share profile</p>
                     <p className="mt-1 text-lg font-black text-[#30216f]">{profile.public_crew_id || "-"}</p>
-                    <p className="mt-2 text-xs leading-5 text-slate-500">Use this ID for captain and recruiter lookup inside BlueDeck.</p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">Scan the QR code to open this crew CV on BlueDeck.</p>
                   </div>
                 </div>
               </div>
@@ -1475,6 +1467,69 @@ function SeazoneStyleCvPreview({
         </div>
       </div>
     </section>
+  );
+}
+
+function CrewProfileQr({ crewId }: { crewId?: string }) {
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const profileUrl = useMemo(
+    () => (crewId ? absoluteSiteUrl(`/crew/${encodeURIComponent(crewId)}`) : ""),
+    [crewId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!profileUrl) {
+      return;
+    }
+
+    void toDataURL(profileUrl, {
+      errorCorrectionLevel: "H",
+      margin: 1,
+      width: 192,
+      color: {
+        dark: "#30216f",
+        light: "#ffffff",
+      },
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profileUrl]);
+
+  if (!profileUrl) {
+    return (
+      <div className="flex h-24 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-[#f4f8fb] p-3 text-center text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+        Save profile
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={profileUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="group relative flex h-24 items-center justify-center rounded-xl border border-slate-200 bg-white p-2 shadow-sm transition hover:border-[#2492c8]"
+      title={`Open public CV: ${profileUrl}`}
+    >
+      {qrDataUrl ? (
+        <img src={qrDataUrl} alt={`QR code for BlueDeck CV ${crewId}`} className="h-full w-full object-contain" />
+      ) : (
+        <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">QR loading</span>
+      )}
+      <span className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#30216f] text-white shadow-lg shadow-[#30216f]/20 opacity-0 transition group-hover:opacity-100">
+        <ExternalLink className="h-3.5 w-3.5" />
+      </span>
+    </a>
   );
 }
 
