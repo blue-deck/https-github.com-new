@@ -1257,6 +1257,9 @@ function SeazoneStyleCvPreview({
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const firstName = (profile.full_name || "there").split(" ")[0];
   const age = calculateAge(profile.date_of_birth);
+  const professionalSummary =
+    profile.bio?.trim() ||
+    `I am a ${primaryPosition.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
 
   return (
     <section
@@ -1359,8 +1362,7 @@ function SeazoneStyleCvPreview({
                   Hi, I&apos;m {firstName} :-)
                 </p>
                 <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-700">
-                  {profile.bio ||
-                    `I am a ${primaryPosition.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`}
+                  BlueDeck CV prepared for captains, managers and recruiters reviewing {primaryPosition.toLowerCase()} profiles.
                 </p>
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   <SeazoneMiniCard label="Looking for" value={(profile.seeking_positions || [primaryPosition])[0] || primaryPosition} />
@@ -1368,6 +1370,14 @@ function SeazoneStyleCvPreview({
                   <SeazoneMiniCard label="Documents" value={`${documents.length} on CV`} />
                 </div>
               </header>
+
+              <SeazoneSection title="Professional Summary">
+                <div className="rounded-2xl border border-[#d6e8f1] bg-[#f7fcff] p-5 shadow-sm shadow-[#2492c8]/5">
+                  <p className="text-[15px] leading-7 text-slate-800">
+                    {professionalSummary}
+                  </p>
+                </div>
+              </SeazoneSection>
 
               <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
                 <div className="space-y-4">
