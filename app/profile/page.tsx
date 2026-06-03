@@ -102,6 +102,7 @@ type ReferenceEntry = {
 };
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
+type UploadBucket = "crew-documents" | "crew-portfolio";
 
 const workPreferences = [
   "Seasonal",
@@ -282,6 +283,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const uploadRunRef = useRef(0);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
@@ -505,19 +508,40 @@ export default function ProfilePage() {
     await loadRelated(profile.id);
   }
 
-  async function uploadFile(file: File, bucket: "crew-documents" | "crew-portfolio") {
-    if (!profile.id) return "";
-    setUploading(bucket);
-    const path = createSafeStoragePath(profile.id, file);
-    const { error } = await supabase.storage.from(bucket).upload(path, file);
-    if (error) {
-      setUploading("");
-      alert(error.message === "Bucket not found" ? "File storage is not ready yet. Please create the required BlueDeck storage bucket in Supabase." : error.message);
-      return "";
-    }
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  function cancelUpload() {
+    uploadRunRef.current += 1;
     setUploading("");
-    return data.publicUrl;
+    setUploadError("");
+  }
+
+  async function uploadFile(file: File, bucket: UploadBucket, slot: string = bucket) {
+    if (!profile.id) return "";
+    const uploadRun = uploadRunRef.current + 1;
+    uploadRunRef.current = uploadRun;
+    setUploadError("");
+    setUploading(slot);
+    const path = createSafeStoragePath(profile.id, file);
+
+    try {
+      const { error } = await supabase.storage.from(bucket).upload(path, file);
+
+      if (uploadRun !== uploadRunRef.current) {
+        if (!error) await supabase.storage.from(bucket).remove([path]);
+        return "";
+      }
+
+      if (error) {
+        setUploadError(formatUploadError(error.message));
+        return "";
+      }
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+      return data.publicUrl;
+    } finally {
+      if (uploadRun === uploadRunRef.current) {
+        setUploading((current) => (current === slot ? "" : current));
+      }
+    }
   }
 
   async function saveRelatedRecord(kind: RelatedKind, payload: Record<string, unknown>, id?: string) {
@@ -627,16 +651,39 @@ export default function ProfilePage() {
           </section>
         )}
 
+        {uploadError && (
+          <section className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-950 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 text-rose-600" />
+                <div>
+                  <h2 className="font-semibold text-rose-950">Upload failed</h2>
+                  <p className="mt-1 text-sm leading-6 text-rose-800">{uploadError}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadError("")}
+                className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-100"
+              >
+                Dismiss
+              </button>
+            </div>
+          </section>
+        )}
+
         <div className="mt-6 grid gap-6 xl:grid-cols-[430px_1fr]">
           <aside className="space-y-6">
             <Panel title="Personal details" icon={<UserRound className="h-5 w-5" />}>
               <ProfilePhoto
                 url={profile.profile_photo_url}
                 name={profile.full_name}
-                uploading={uploading === "crew-portfolio"}
+                uploading={uploading === "profile-photo"}
+                onCancelUpload={cancelUpload}
+                onRemove={() => setProfile((current) => ({ ...current, profile_photo_url: "" }))}
                 onUpload={async (file) => {
-                  const url = await uploadFile(file, "crew-portfolio");
-                  if (url) setProfile({ ...profile, profile_photo_url: url });
+                  const url = await uploadFile(file, "crew-portfolio", "profile-photo");
+                  if (url) setProfile((current) => ({ ...current, profile_photo_url: url }));
                 }}
               />
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
@@ -668,17 +715,22 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <Panel title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
               <div className="space-y-4">
-                {[...experiences, emptyExperience].map((item, index) => (
-                  <ExperienceEditor
-                    key={item.id || `new-${index}`}
-                    item={item}
-                    isNew={!item.id}
-                    onSave={saveExperience}
-                    onDelete={deleteExperience}
-                    onUpload={async (file) => uploadFile(file, "crew-portfolio")}
-                    uploading={uploading === "crew-portfolio"}
-                  />
-                ))}
+                {[...experiences, emptyExperience].map((item, index) => {
+                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${index}`;
+
+                  return (
+                    <ExperienceEditor
+                      key={item.id || `new-${index}`}
+                      item={item}
+                      isNew={!item.id}
+                      onSave={saveExperience}
+                      onDelete={deleteExperience}
+                      onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
+                      onCancelUpload={cancelUpload}
+                      uploading={uploading === uploadSlot}
+                    />
+                  );
+                })}
               </div>
             </Panel>
 
@@ -696,10 +748,11 @@ export default function ProfilePage() {
                 setDraft={setDocumentDraft}
                 onSave={saveDocument}
                 onUpload={async (file) => {
-                  const url = await uploadFile(file, "crew-documents");
-                  if (url) setDocumentDraft({ ...documentDraft, file_url: url });
+                  const url = await uploadFile(file, "crew-documents", "document-file");
+                  if (url) setDocumentDraft((current) => ({ ...current, file_url: url }));
                 }}
-                uploading={uploading === "crew-documents"}
+                onCancelUpload={cancelUpload}
+                uploading={uploading === "document-file"}
               />
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
                 {documents.map((document) => (
@@ -715,17 +768,22 @@ export default function ProfilePage() {
 
             <Panel title="Portfolio photos" icon={<Camera className="h-5 w-5" />}>
               <div className="grid gap-4 lg:grid-cols-2">
-                {[...portfolio, emptyPhoto].map((item, index) => (
-                  <PortfolioEditor
-                    key={item.id || `new-${index}`}
-                    item={item}
-                    isNew={!item.id}
-                    onSave={savePortfolioPhoto}
-                    onDelete={deletePortfolioPhoto}
-                    onUpload={async (file) => uploadFile(file, "crew-portfolio")}
-                    uploading={uploading === "crew-portfolio"}
-                  />
-                ))}
+                {[...portfolio, emptyPhoto].map((item, index) => {
+                  const uploadSlot = item.id ? `portfolio-photo-${item.id}` : `portfolio-photo-new-${index}`;
+
+                  return (
+                    <PortfolioEditor
+                      key={item.id || `new-${index}`}
+                      item={item}
+                      isNew={!item.id}
+                      onSave={savePortfolioPhoto}
+                      onDelete={deletePortfolioPhoto}
+                      onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
+                      onCancelUpload={cancelUpload}
+                      uploading={uploading === uploadSlot}
+                    />
+                  );
+                })}
               </div>
             </Panel>
 
@@ -759,12 +817,14 @@ function DocumentCreator({
   setDraft,
   onSave,
   onUpload,
+  onCancelUpload,
   uploading,
 }: {
   draft: CrewDocument;
   setDraft: (draft: CrewDocument) => void;
   onSave: () => void;
-  onUpload: (file: File) => void;
+  onUpload: (file: File) => void | Promise<void>;
+  onCancelUpload: () => void;
   uploading: boolean;
 }) {
   const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
@@ -799,12 +859,31 @@ function DocumentCreator({
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <Checkbox label="No expiry / unlimited" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
         <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300"}`}>
           <Upload className="h-4 w-4 text-cyan-700" />
           {uploading ? "Uploading..." : draft.file_url ? "File attached" : "Attach file/photo"}
-          <input type="file" className="hidden" onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])} />
+          <input
+            type="file"
+            disabled={uploading}
+            className="hidden"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) onUpload(file);
+            }}
+          />
         </label>
-        <button onClick={onSave} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817]">
+        {uploading && (
+          <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+            Cancel upload
+          </button>
+        )}
+        {draft.file_url && !uploading && (
+          <button type="button" onClick={() => setDraft({ ...draft, file_url: "" })} className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+            Remove file
+          </button>
+        )}
+        <button type="button" onClick={onSave} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817]">
           Add document
         </button>
       </div>
@@ -1516,7 +1595,21 @@ function Panel({ title, icon, children }: { title: string; icon: ReactNode; chil
   );
 }
 
-function ProfilePhoto({ url, name, uploading, onUpload }: { url?: string; name?: string; uploading: boolean; onUpload: (file: File) => void }) {
+function ProfilePhoto({
+  url,
+  name,
+  uploading,
+  onUpload,
+  onCancelUpload,
+  onRemove,
+}: {
+  url?: string;
+  name?: string;
+  uploading: boolean;
+  onUpload: (file: File) => void | Promise<void>;
+  onCancelUpload: () => void;
+  onRemove: () => void;
+}) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4">
       <div className="h-24 w-24 overflow-hidden rounded-2xl bg-slate-100">
@@ -1525,11 +1618,34 @@ function ProfilePhoto({ url, name, uploading, onUpload }: { url?: string; name?:
       <div>
         <p className="font-semibold text-slate-950">Profile photo</p>
         <p className="mt-1 text-sm text-slate-500">This appears in your portal and CV.</p>
-        <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white">
-          <Upload className="h-4 w-4" />
-          {uploading ? "Uploading..." : "Upload photo"}
-          <input type="file" accept="image/*" className="hidden" onChange={(event) => event.target.files?.[0] && onUpload(event.target.files[0])} />
-        </label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <label className={`inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:bg-cyan-900"}`}>
+            <Upload className="h-4 w-4" />
+            {uploading ? "Uploading..." : url ? "Change photo" : "Upload photo"}
+            <input
+              type="file"
+              accept="image/*"
+              disabled={uploading}
+              className="hidden"
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
+                if (file) onUpload(file);
+              }}
+            />
+          </label>
+          {uploading && (
+            <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+              Cancel
+            </button>
+          )}
+          {url && !uploading && (
+            <button type="button" onClick={onRemove} className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+              <Trash2 className="h-4 w-4" />
+              Remove
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1766,8 +1882,31 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
   );
 }
 
-function ExperienceEditor({ item, isNew, onSave, onDelete, onUpload, uploading }: { item: Experience; isNew: boolean; onSave: (item: Experience) => void; onDelete: (id?: string) => void; onUpload: (file: File) => Promise<string>; uploading: boolean }) {
+function ExperienceEditor({
+  item,
+  isNew,
+  onSave,
+  onDelete,
+  onUpload,
+  onCancelUpload,
+  uploading,
+}: {
+  item: Experience;
+  isNew: boolean;
+  onSave: (item: Experience) => void;
+  onDelete: (id?: string) => void;
+  onUpload: (file: File) => Promise<string>;
+  onCancelUpload: () => void;
+  uploading: boolean;
+}) {
   const [draft, setDraft] = useState(item);
+
+  function removePhoto() {
+    const nextDraft = { ...draft, photo_url: "" };
+    setDraft(nextDraft);
+    if (!isNew) onSave(nextDraft);
+  }
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       {draft.photo_url && <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="mb-4 h-52 w-full rounded-xl object-cover" />}
@@ -1778,16 +1917,36 @@ function ExperienceEditor({ item, isNew, onSave, onDelete, onUpload, uploading }
         <DateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
       </div>
       <TextArea label="Duties" value={draft.description} onChange={(value) => setDraft({ ...draft, description: value })} />
-      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 py-2 text-sm font-semibold text-slate-700">
-        <Upload className="h-4 w-4 text-cyan-700" />
-        {uploading ? "Uploading..." : draft.photo_url ? "Change yacht photo" : "Add yacht photo"}
-        <input type="file" accept="image/*" className="hidden" onChange={async (event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          const url = await onUpload(file);
-          if (url) setDraft({ ...draft, photo_url: url });
-        }} />
-      </label>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
+          <Upload className="h-4 w-4 text-cyan-700" />
+          {uploading ? "Uploading..." : draft.photo_url ? "Change yacht photo" : "Add yacht photo"}
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading}
+            className="hidden"
+            onChange={async (event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (!file) return;
+              const url = await onUpload(file);
+              if (url) setDraft((current) => ({ ...current, photo_url: url }));
+            }}
+          />
+        </label>
+        {uploading && (
+          <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+            Cancel upload
+          </button>
+        )}
+        {draft.photo_url && !uploading && (
+          <button type="button" onClick={removePhoto} className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+            <Trash2 className="h-4 w-4" />
+            Remove photo
+          </button>
+        )}
+      </div>
       <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
     </div>
   );
@@ -1812,23 +1971,66 @@ function ReferenceEditor({ item, isNew, onSave, onDelete }: { item: ReferenceEnt
   );
 }
 
-function PortfolioEditor({ item, isNew, onSave, onDelete, onUpload, uploading }: { item: PortfolioPhoto; isNew: boolean; onSave: (item: PortfolioPhoto) => void; onDelete: (id?: string) => void; onUpload: (file: File) => Promise<string>; uploading: boolean }) {
+function PortfolioEditor({
+  item,
+  isNew,
+  onSave,
+  onDelete,
+  onUpload,
+  onCancelUpload,
+  uploading,
+}: {
+  item: PortfolioPhoto;
+  isNew: boolean;
+  onSave: (item: PortfolioPhoto) => void;
+  onDelete: (id?: string) => void;
+  onUpload: (file: File) => Promise<string>;
+  onCancelUpload: () => void;
+  uploading: boolean;
+}) {
   const [draft, setDraft] = useState(item);
+
+  function removePhoto() {
+    const nextDraft = { ...draft, image_url: "" };
+    setDraft(nextDraft);
+    if (!isNew) onSave(nextDraft);
+  }
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       {draft.image_url && <img src={draft.image_url} alt={draft.title || "Portfolio"} className="mb-4 h-44 w-full rounded-xl object-cover" />}
       <Field label="Title" value={draft.title} onChange={(value) => setDraft({ ...draft, title: value })} />
       <Field label="Location" value={draft.location} onChange={(value) => setDraft({ ...draft, location: value })} />
-      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 py-2 text-sm font-semibold text-slate-700">
-        <Upload className="h-4 w-4 text-cyan-700" />
-        {uploading ? "Uploading..." : draft.image_url ? "Change photo" : "Add photo"}
-        <input type="file" accept="image/*" className="hidden" onChange={async (event) => {
-          const file = event.target.files?.[0];
-          if (!file) return;
-          const url = await onUpload(file);
-          if (url) setDraft({ ...draft, image_url: url });
-        }} />
-      </label>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
+          <Upload className="h-4 w-4 text-cyan-700" />
+          {uploading ? "Uploading..." : draft.image_url ? "Change photo" : "Add photo"}
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading}
+            className="hidden"
+            onChange={async (event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (!file) return;
+              const url = await onUpload(file);
+              if (url) setDraft((current) => ({ ...current, image_url: url }));
+            }}
+          />
+        </label>
+        {uploading && (
+          <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+            Cancel upload
+          </button>
+        )}
+        {draft.image_url && !uploading && (
+          <button type="button" onClick={removePhoto} className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+            <Trash2 className="h-4 w-4" />
+            Remove photo
+          </button>
+        )}
+      </div>
       <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Save photo" />
     </div>
   );
@@ -1837,11 +2039,11 @@ function PortfolioEditor({ item, isNew, onSave, onDelete, onUpload, uploading }:
 function EditorButtons({ isNew, onSave, onDelete, addLabel }: { isNew: boolean; onSave: () => void; onDelete: () => void; addLabel: string }) {
   return (
     <div className="mt-4 flex gap-2">
-      <button onClick={onSave} className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817]">
+      <button type="button" onClick={onSave} className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817]">
         <Plus className="h-4 w-4" />
         {isNew ? addLabel : "Save"}
       </button>
-      {!isNew && <button onClick={onDelete} className="cursor-pointer rounded-lg border border-red-300/20 px-3 py-2 text-sm font-semibold text-red-200">Delete</button>}
+      {!isNew && <button type="button" onClick={onDelete} className="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">Delete</button>}
     </div>
   );
 }
@@ -2173,6 +2375,18 @@ function normalizeProfile(profile: CrewProfile) {
 
 function newDocumentDraft(): CrewDocument {
   return { document_type: "", category: "", issuer: "", issue_date: "", expiry_date: "", no_expiry: false, show_on_cv: true, file_url: "", notes: "" };
+}
+
+function formatUploadError(message: string) {
+  if (message === "Bucket not found") {
+    return "File storage is not ready yet. Please create the required BlueDeck storage bucket in Supabase.";
+  }
+
+  if (/invalid key/i.test(message)) {
+    return "This file name could not be accepted by storage. BlueDeck now creates a safe upload name automatically, so please try the upload again after refreshing the page.";
+  }
+
+  return message;
 }
 
 function isWithin90Days(dateString?: string) {
