@@ -549,6 +549,10 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Refresh": { tr: "Yenile" },
   "Reference": { tr: "Referans" },
   "Related yacht / vessel": { tr: "İlgili yat / tekne" },
+  "Verified Crew Profile": { tr: "Doğrulanmış Mürettebat Profili" },
+  "Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.": {
+    tr: "Özel yat işe alımı ve yönetim incelemesi için BlueDeck profil verilerinden hazırlanmış kaptan seviyesinde denizcilik CV'si.",
+  },
   "Mode": { tr: "Mod" },
   "Flag": { tr: "Bayrak" },
   "Voyage": { tr: "Seyir" },
