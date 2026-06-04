@@ -950,354 +950,6 @@ function DocumentCreator({
   );
 }
 
-function CvPreview({
-  profile,
-  documents,
-  experiences,
-  references,
-  portfolio,
-  totalExperienceYears,
-}: {
-  profile: CrewProfile;
-  documents: CrewDocument[];
-  experiences: Experience[];
-  references: ReferenceEntry[];
-  portfolio: PortfolioPhoto[];
-  totalExperienceYears: string;
-}) {
-  const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
-  const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
-  const cleanReferences = cleanReferenceEntries(references);
-  const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
-  const cleanPortfolio = portfolio.filter((photo) => photo.image_url);
-  const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
-  const completionItems = [
-    Boolean(profile.full_name),
-    Boolean(profile.profile_photo_url),
-    Boolean(profile.bio),
-    Boolean(profile.phone && profile.email),
-    Boolean(profile.languages?.length),
-    Boolean(documents.length),
-    Boolean(cleanExperiences.length),
-    Boolean(visibleSkills.length),
-    Boolean(references.length),
-    Boolean(cleanPortfolio.length),
-  ];
-  const completion = Math.round((completionItems.filter(Boolean).length / completionItems.length) * 100);
-
-  return (
-    <section
-      id="bluedeck-cv"
-      className="overflow-hidden rounded-[22px] border border-[#d9c9a6] bg-[#eee7da] text-[#101820] shadow-2xl shadow-slate-950/12 print:rounded-none print:border-0 print:bg-white print:shadow-none"
-    >
-      <div className="flex items-center justify-between gap-4 border-b border-[#d1bf99] bg-[#f6f1e7] px-5 py-4 print:hidden">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.24em] text-[#7b6122]">BlueDeck Signature CV</p>
-          <p className="mt-1 text-sm text-[#5f6b76]">Timeless maritime dossier generated from your saved crew profile.</p>
-        </div>
-        <button onClick={() => window.print()} className="flex items-center justify-center gap-2 rounded-md bg-[#101820] px-4 py-3 text-sm font-semibold text-[#f8f4ec]">
-          <Download className="h-4 w-4" />
-          Save as PDF
-        </button>
-      </div>
-
-      <div className="bg-[#eee7da] p-3 sm:p-5 print:p-0">
-        <div className="mx-auto overflow-hidden rounded-[16px] border border-[#c7b78f] bg-[#f8f4ec] shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:shadow-none">
-          <div className="grid min-h-[1120px] lg:grid-cols-[76px_1fr] print:min-h-0 print:grid-cols-[70px_1fr]">
-            <aside className="flex flex-col items-center justify-between bg-[#101820] px-3 py-7 text-[#f8f4ec]">
-              <BlueDeckMark className="h-12 w-12 rounded-md border-[#d1b15f]/35 bg-[#f8f4ec]/6" imageClassName="p-1" />
-              <div className="flex flex-1 items-center justify-center py-10">
-                <p className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-black uppercase tracking-[0.34em] text-[#d1b15f]">
-                  BlueDeck Crew Dossier
-                </p>
-              </div>
-              <div className="border-t border-[#d1b15f]/35 pt-4 text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">Score</p>
-                <p className="mt-1 text-2xl font-black text-[#d1b15f]">{completion}</p>
-              </div>
-            </aside>
-
-            <div className="bg-[#f8f4ec]">
-              <header className="border-b border-[#c7b78f] p-6 sm:p-8 print:p-7">
-                <div className="grid gap-7 lg:grid-cols-[168px_1fr]">
-                  <div>
-                    <div className="h-[210px] overflow-hidden rounded-md border border-[#101820] bg-[#ece4d6] p-1">
-                      {profile.profile_photo_url ? (
-                        <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover grayscale-[12%]" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#e6dcc8] text-[#101820]/35">
-                          <UserRound className="h-16 w-16" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-3 border-y border-[#c7b78f] py-2 text-center">
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7b6122]">Crew ID</p>
-                      <p className="mt-1 text-sm font-black tracking-[0.16em] text-[#101820]">{profile.public_crew_id || "-"}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div>
-                          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#7b6122]">
-                            Private Maritime CV
-                          </p>
-                          <h1 className="mt-4 max-w-3xl text-5xl font-black leading-[0.95] tracking-[-0.02em] text-[#101820] sm:text-6xl">
-                            {profile.full_name || "Crew Member"}
-                          </h1>
-                        </div>
-                        <div className="min-w-[150px] border-l border-[#c7b78f] pl-5">
-                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7b6122]">Position</p>
-                          <p className="mt-2 text-lg font-black leading-tight text-[#101820]">{primaryPosition}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-7 h-px bg-[#101820]" />
-                      <div className="mt-2 h-px bg-[#d1b15f]" />
-
-                      <p className="mt-7 max-w-4xl text-[15px] leading-7 text-[#35424d]">
-                        {profile.bio ||
-                          "Add a concise professional summary describing your yacht background, guest service style, safety mindset and the type of role you are targeting."}
-                      </p>
-                    </div>
-
-                    <div className="mt-7 grid gap-3 sm:grid-cols-4">
-                      <DossierMetric label="Experience" value={`${totalExperienceYears} years`} />
-                      <DossierMetric label="Documents" value={String(documents.length)} />
-                      <DossierMetric label="Languages" value={String(profile.languages?.length || 0)} />
-                      <DossierMetric label="Portfolio" value={String(cleanPortfolio.length)} />
-                    </div>
-                  </div>
-                </div>
-              </header>
-
-              <div className="grid gap-0 xl:grid-cols-[1fr_330px] print:grid-cols-[1fr_310px]">
-                <main className="p-6 sm:p-8 print:p-7">
-                  <CvMainSection title="Yacht Experience">
-                    <div className="space-y-4">
-                      {cleanExperiences.length === 0 && (
-                        <p className="border border-dashed border-[#c7b78f] bg-[#f3ede0] p-4 text-sm text-[#5f6b76]">
-                          No yacht experience added yet.
-                        </p>
-                      )}
-                      {cleanExperiences.map((item) => {
-                        const experienceReferences = referencesForExperience(item, cleanReferences);
-
-                        return (
-                          <div key={item.id || `${item.yacht_name}-${item.start_date}`} className="grid gap-4 border-b border-[#d8c8a6] pb-5 last:border-b-0 sm:grid-cols-[112px_1fr]">
-                            {item.photo_url ? (
-                              <img src={item.photo_url} alt={item.yacht_name || "Yacht"} className="h-28 w-full rounded-sm border border-[#c7b78f] object-cover grayscale-[8%]" />
-                            ) : (
-                              <div className="hidden h-28 border border-[#c7b78f] bg-[#eee7da] sm:block" />
-                            )}
-                            <div>
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                  <h3 className="text-xl font-black text-[#101820]">{item.position || "Position"}</h3>
-                                  <p className="mt-1 text-sm font-black uppercase tracking-[0.16em] text-[#255e66]">{item.yacht_name || "Yacht"}</p>
-                                </div>
-                                <p className="w-fit border border-[#c7b78f] bg-[#f8f4ec] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#7b6122]">
-                                  {formatDateRange(item.start_date, item.end_date)}
-                                </p>
-                              </div>
-                              {item.description && <p className="mt-3 text-sm leading-6 text-[#4d5963]">{item.description}</p>}
-                              <SignatureExperienceReferences references={experienceReferences} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CvMainSection>
-
-                  <div className="mt-8 grid gap-8 lg:grid-cols-2">
-                    <CvMainSection title="Skills & Character">
-                      <PillList items={visibleSkills} light />
-                    </CvMainSection>
-                    <CvMainSection title="Seeking">
-                      <PillList items={profile.seeking_positions || []} light />
-                    </CvMainSection>
-                  </div>
-
-                  <div className="mt-8 grid gap-8 lg:grid-cols-2">
-                    <CvMainSection title="Work Preferences">
-                      <PillList items={profile.work_preferences || []} light />
-                    </CvMainSection>
-                    {standaloneReferences.length > 0 && (
-                      <CvMainSection title="References">
-                        <div className="space-y-3">
-                          {standaloneReferences.slice(0, 3).map((ref) => (
-                            <div key={ref.id || ref.email || ref.name} className="border border-[#d8c8a6] bg-[#f3ede0] p-4">
-                              <p className="font-black text-[#101820]">{ref.name || "Reference"}</p>
-                              <p className="mt-1 text-sm font-semibold text-[#255e66]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
-                              <p className="mt-2 text-xs text-[#66717b]">{[ref.email, ref.phone].filter(Boolean).join(" / ")}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </CvMainSection>
-                    )}
-                  </div>
-
-                  {cleanPortfolio.length > 0 && (
-                    <CvMainSection title="Portfolio">
-                      <div className="grid grid-cols-3 gap-3">
-                        {cleanPortfolio.slice(0, 6).map((photo) => (
-                          <figure key={photo.id || photo.image_url} className="overflow-hidden border border-[#d8c8a6] bg-[#f8f4ec]">
-                            <img src={photo.image_url} alt={photo.title || "Portfolio"} className="h-28 w-full object-cover grayscale-[8%]" />
-                            {(photo.title || photo.location) && (
-                              <figcaption className="px-3 py-2 text-xs font-semibold text-[#4d5963]">
-                                {photo.title || photo.location}
-                              </figcaption>
-                            )}
-                          </figure>
-                        ))}
-                      </div>
-                    </CvMainSection>
-                  )}
-                </main>
-
-                <aside className="border-t border-[#c7b78f] bg-[#eee7da] p-6 xl:border-l xl:border-t-0 print:border-l print:border-t-0">
-                  <CvSidebarSection title="Contact">
-                    <CvContact label="Email" value={profile.email || "-"} />
-                    <CvContact label="Phone" value={profile.phone || "-"} />
-                    <CvContact label="Nationality" value={profile.nationality || "-"} />
-                    <CvContact label="Location" value={profile.location || "-"} />
-                  </CvSidebarSection>
-
-                  <CvSidebarSection title="Personal">
-                    <CvContact label="DOB" value={formatCvDate(profile.date_of_birth)} />
-                    <CvContact label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
-                    <CvContact label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
-                    <CvContact label="Smoker" value={profile.smoker || "-"} />
-                    <CvContact label="Tattoos" value={profile.visible_tattoos || "-"} />
-                  </CvSidebarSection>
-
-                  <CvSidebarSection title="Languages">
-                    {profile.languages?.length ? (
-                      <div className="space-y-3">
-                        {profile.languages.map((language) => (
-                          <div key={language.name}>
-                            <div className="flex justify-between gap-3 text-sm">
-                              <span className="font-black text-[#101820]">{language.name}</span>
-                              <span className="font-semibold text-[#255e66]">{language.level}</span>
-                            </div>
-                            <div className="mt-1 h-1 overflow-hidden bg-[#d8c8a6]">
-                              <div className="h-full bg-[#101820]" style={{ width: languageLevelWidth(language.level) }} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-[#5f6b76]">No languages added yet.</p>
-                    )}
-                  </CvSidebarSection>
-
-                  <CvSidebarSection title="Documents">
-                    <div className="space-y-2">
-                      {documents.slice(0, 8).map((doc) => (
-                        <CvDocumentRow key={doc.id || doc.document_type} document={doc} />
-                      ))}
-                      {documents.length === 0 && <p className="text-sm text-[#5f6b76]">No CV documents selected.</p>}
-                    </div>
-                  </CvSidebarSection>
-
-                  <div className="mt-8 border border-[#c7b78f] bg-[#f8f4ec] p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#7b6122]">CV Readiness</p>
-                        <p className="mt-1 text-xs text-[#5f6b76]">Profile completeness</p>
-                      </div>
-                      <p className="text-3xl font-black text-[#101820]">{completion}%</p>
-                    </div>
-                    <div className="mt-3 h-1.5 bg-[#d8c8a6]">
-                      <div className="h-full bg-[#101820]" style={{ width: `${completion}%` }} />
-                    </div>
-                  </div>
-                </aside>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function DossierMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-[#c7b78f] bg-[#f3ede0] px-3 py-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6122]">{label}</p>
-      <p className="mt-1 text-lg font-black text-[#101820]">{value}</p>
-    </div>
-  );
-}
-
-function CvSidebarSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mt-7 border-t border-[#c7b78f] pt-5 first:mt-0 first:border-t-0 first:pt-0">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.24em] text-[#7b6122]">{title}</h3>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
-function CvMainSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="mt-7">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#c7b78f]" />
-        <h2 className="text-xs font-black uppercase tracking-[0.22em] text-[#7b6122]">{title}</h2>
-        <div className="h-px flex-1 bg-[#c7b78f]" />
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function SignatureExperienceReferences({ references }: { references: ReferenceEntry[] }) {
-  if (references.length === 0) return null;
-
-  return (
-    <div className="mt-4 border-l-2 border-[#b59648] bg-[#f8f4ec] px-4 py-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6122]">Reference</p>
-      <div className="mt-2 grid gap-2">
-        {references.slice(0, 2).map((reference) => (
-          <div key={reference.id || reference.email || reference.phone || reference.name} className="border-t border-[#d8c8a6] pt-2 first:border-t-0 first:pt-0">
-            <p className="text-sm font-black text-[#101820]">{reference.name || "Reference"}</p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-[#255e66]">
-              {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
-            </p>
-            {(reference.email || reference.phone) && (
-              <p className="mt-1 text-xs text-[#66717b]">{[reference.email, reference.phone].filter(Boolean).join(" / ")}</p>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CvContact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="mb-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#7b6122]">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-[#101820]">{value}</p>
-    </div>
-  );
-}
-
-function CvDocumentRow({ document }: { document: CrewDocument }) {
-  const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
-  return (
-    <div className={`border px-3 py-2 ${expiring ? "border-[#b7832c] bg-[#f5e8c8]" : "border-[#c7b78f] bg-[#f8f4ec]"}`}>
-      <p className="text-sm font-semibold text-[#101820]">{document.document_type}</p>
-      <p className={expiring ? "mt-1 text-xs text-[#8b4a18]" : "mt-1 text-xs text-[#66717b]"}>
-        {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
-      </p>
-    </div>
-  );
-}
-
 function languageLevelWidth(level: string) {
   const widths: Record<string, string> = {
     Basic: "30%",
@@ -1403,79 +1055,66 @@ function SeazoneStyleCvPreview({
 
       <div className="bg-[#eef3f4] p-3 sm:p-5 print:p-0">
         <div className="mx-auto max-w-[980px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/16 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-          <div className="grid min-h-[1120px] lg:grid-cols-[294px_1fr] print:min-h-0 print:grid-cols-[286px_1fr]">
-            <aside className="bg-[linear-gradient(180deg,#06111f_0%,#0c2633_48%,#123f4a_100%)] p-6 text-white">
-              <div className="flex items-center gap-3">
-                <BlueDeckMark className="h-12 w-16 rounded-xl border-[#d7b46a]/45 bg-white/8 shadow-black/25" imageClassName="p-1" />
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">BlueDeck</p>
-                  <p className="text-xs font-semibold text-white/62">Crew profile CV</p>
+          <div className="min-h-[1120px] bg-[#fbfcfc] print:min-h-0">
+            <header className="relative overflow-hidden bg-[linear-gradient(135deg,#06111f_0%,#0b2630_48%,#123f4a_100%)] px-6 pb-9 pt-6 text-white sm:px-9 sm:pb-10">
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-[#d7b46a]" />
+              <div className="relative flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <BlueDeckMark className="h-12 w-16 rounded-xl border-[#d7b46a]/45 bg-white/8 shadow-black/25" imageClassName="p-1" />
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">BlueDeck</p>
+                    <p className="text-xs font-semibold text-white/62">Crew profile CV</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="mt-8 text-center">
-                <div className="mx-auto h-36 w-36 overflow-hidden rounded-full border-[5px] border-[#d7b46a] bg-white shadow-xl shadow-black/25">
-                  {profile.profile_photo_url ? (
-                    <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#eef3f4] text-[#0f4050]">
-                      <UserRound className="h-14 w-14" />
-                    </div>
-                  )}
-                </div>
-                <h2 className="mt-5 text-3xl font-black leading-tight">{profile.full_name || "Crew Member"}</h2>
-                <p className="mt-2 text-base font-black uppercase tracking-[0.14em] text-[#d7b46a]">{primaryPosition}</p>
-                <p className="mt-3 inline-flex rounded-full border border-[#d7b46a]/55 bg-white/8 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-white/88">
+                <p className="rounded-full border border-[#d7b46a]/45 bg-white/8 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/82">
                   {profile.public_crew_id || "Crew ID"}
                 </p>
               </div>
 
-              <div className="mt-7 divide-y divide-white/12 border-y border-[#d7b46a]/24">
-                <SeazoneInfoRow label="Age" value={age ? String(age) : "-"} />
-                <SeazoneInfoRow label="Nationality" value={profile.nationality || "-"} />
-                <SeazoneInfoRow label="Smoking" value={profile.smoker || "-"} />
-                <SeazoneInfoRow label="Visible tattoos" value={profile.visible_tattoos || "-"} />
-                <SeazoneInfoRow label="Location" value={profile.location || "-"} />
-              </div>
-
-              <div className="mt-6 grid gap-3">
-                <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
-                <SeazoneStat label="References" value={String(references.length)} />
-                <SeazoneStat label="Documents" value={String(documents.length)} />
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-[#d7b46a]/28 bg-white/95 p-4 text-slate-950 shadow-lg shadow-black/12">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8b6f2e]">Contact me</p>
-                <div className="mt-3 space-y-2 text-sm">
-                  <p className="break-words font-semibold">{profile.phone || "-"}</p>
-                  <p className="break-words font-semibold">{profile.email || "-"}</p>
-                  <p className="text-slate-500">{profile.location || "-"}</p>
+              <div className="relative mx-auto mt-8 max-w-3xl text-center">
+                <div className="mx-auto h-40 w-40 overflow-hidden rounded-full border-[6px] border-[#d7b46a] bg-white shadow-2xl shadow-black/30 sm:h-44 sm:w-44">
+                  {profile.profile_photo_url ? (
+                    <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-[#eef3f4] text-[#0f4050]">
+                      <UserRound className="h-16 w-16" />
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-[#d7b46a]/28 bg-white/95 p-4 text-slate-950 shadow-lg shadow-black/12">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8b6f2e]">Crew card</p>
-                <div className="mt-4 grid grid-cols-[92px_1fr] gap-3">
-                  <CrewProfileQr crewId={profile.public_crew_id} />
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500">Share profile</p>
-                    <p className="mt-1 text-lg font-black text-[#0f4050]">{profile.public_crew_id || "-"}</p>
-                    <p className="mt-2 text-xs leading-5 text-slate-500">Scan the QR code to open this crew CV on BlueDeck.</p>
-                  </div>
-                </div>
-              </div>
-            </aside>
-
-            <main className="bg-[#fbfcfc] p-6 sm:p-8 print:p-7">
-              <header className="border-b border-[#b9c8cd] pb-5">
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#8b6f2e]">Verified Crew Profile</p>
-                <h3 className="mt-2 text-2xl font-black uppercase tracking-[0.06em] text-[#06111f]">{primaryPosition}</h3>
-                <div className="mt-3 h-1 w-24 bg-[#d7b46a]" />
-                <p className="mt-4 max-w-3xl text-[15px] leading-7 text-[#364650]">
+                <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">Verified Crew Profile</p>
+                <h2 className="mt-2 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">{profile.full_name || "Crew Member"}</h2>
+                <p className="mt-3 text-sm font-black uppercase tracking-[0.22em] text-white/76">{primaryPosition}</p>
+                <div className="mx-auto mt-5 h-px w-40 bg-[#d7b46a]" />
+                <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-7 text-white/74">
                   Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
                 </p>
-              </header>
+              </div>
 
+              <div className="relative mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
+                <SeazoneStat label="References" value={String(cleanReferences.length)} />
+                <SeazoneStat label="Documents" value={String(documents.length)} />
+                <SeazoneStat label="Age" value={age ? String(age) : "-"} />
+                <SeazoneStat label="Nationality" value={profile.nationality || "-"} />
+                <SeazoneStat label="Location" value={profile.location || "-"} />
+              </div>
+
+              <div className="relative mt-6 grid gap-3 border-y border-white/12 py-4 text-center text-sm font-semibold text-white/78 sm:grid-cols-3">
+                <p className="break-words">{profile.phone || "-"}</p>
+                <p className="break-words">{profile.email || "-"}</p>
+                <p className="break-words">{profile.location || "-"}</p>
+              </div>
+
+              <div className="relative mx-auto mt-6 grid max-w-xl gap-3 rounded-2xl border border-[#d7b46a]/28 bg-white/8 p-3 text-left text-white/82 sm:grid-cols-[92px_1fr]">
+                <CrewProfileQr crewId={profile.public_crew_id} />
+                <div className="self-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d7b46a]">Public CV Access</p>
+                  <p className="mt-1 text-sm font-semibold text-white/78">Scan the QR code to open this crew CV on BlueDeck.</p>
+                </div>
+              </div>
+            </header>
+
+            <main className="p-6 sm:p-8 print:p-7">
               <SeazoneSection title="Professional Summary">
                 <div className="rounded-2xl border border-[#c7d2d6] bg-[#f6f8f8] p-5 shadow-sm shadow-slate-950/5">
                   <p className="text-[15px] leading-7 text-[#364650]">
@@ -1651,15 +1290,6 @@ function SeazoneStat({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border border-[#d7b46a]/24 bg-white/92 px-3 py-3 text-slate-950 shadow-lg shadow-black/12">
       <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8b6f2e]">{label}</p>
       <p className="mt-1 text-xl font-black">{value}</p>
-    </div>
-  );
-}
-
-function SeazoneInfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid grid-cols-[1fr_auto] gap-3 py-2.5 text-sm">
-      <p className="font-semibold text-white/70">{label}</p>
-      <p className="text-right font-black text-white">{value}</p>
     </div>
   );
 }

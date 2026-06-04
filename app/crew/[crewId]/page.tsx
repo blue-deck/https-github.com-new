@@ -103,67 +103,58 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
-        <div className="grid min-h-[1120px] lg:grid-cols-[310px_1fr] print:min-h-0 print:grid-cols-[286px_1fr]">
-          <aside className="bg-[linear-gradient(180deg,#06111f_0%,#0c2633_48%,#123f4a_100%)] p-6 text-white">
-            <div className="flex items-center gap-3">
-              <BlueDeckMark className="h-12 w-16 rounded-xl border-[#d7b46a]/45 bg-white/8 shadow-black/25" imageClassName="p-1" />
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">BlueDeck</p>
-                <p className="text-xs font-semibold text-white/65">Verified crew CV</p>
+        <div className="min-h-[1120px] bg-[#fbfcfc] print:min-h-0">
+          <header className="relative overflow-hidden bg-[linear-gradient(135deg,#06111f_0%,#0b2630_48%,#123f4a_100%)] px-6 pb-9 pt-6 text-white sm:px-9 sm:pb-10">
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-[#d7b46a]" />
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <BlueDeckMark className="h-12 w-16 rounded-xl border-[#d7b46a]/45 bg-white/8 shadow-black/25" imageClassName="p-1" />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">BlueDeck</p>
+                  <p className="text-xs font-semibold text-white/65">Verified crew CV</p>
+                </div>
               </div>
-            </div>
-
-            <div className="mt-8 text-center">
-              <div className="mx-auto h-36 w-36 overflow-hidden rounded-full border-[5px] border-[#d7b46a] bg-white shadow-xl shadow-black/25">
-                {text(profile, "profile_photo_url") ? (
-                  <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[#eef3f4] text-[#0f4050]">
-                    <UserRound className="h-14 w-14" />
-                  </div>
-                )}
-              </div>
-              <h1 className="mt-5 text-3xl font-black leading-tight">{name}</h1>
-              <p className="mt-2 text-base font-black uppercase tracking-[0.14em] text-[#d7b46a]">{position}</p>
-              <p className="mt-3 inline-flex rounded-full border border-[#d7b46a]/55 bg-white/8 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-white/88">
+              <p className="rounded-full border border-[#d7b46a]/45 bg-white/8 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/82">
                 {text(profile, "public_crew_id") || crewId}
               </p>
             </div>
 
-            <div className="mt-7 divide-y divide-white/12 border-y border-[#d7b46a]/24">
-              <InfoRow label="Age" value={age ? String(age) : "-"} />
-              <InfoRow label="Nationality" value={text(profile, "nationality") || "-"} />
-              <InfoRow label="Smoking" value={text(profile, "smoker") || "-"} />
-              <InfoRow label="Visible tattoos" value={text(profile, "visible_tattoos") || "-"} />
-              <InfoRow label="Location" value={text(profile, "location") || "-"} />
+            <div className="relative mx-auto mt-8 max-w-3xl text-center">
+              <div className="mx-auto h-40 w-40 overflow-hidden rounded-full border-[6px] border-[#d7b46a] bg-white shadow-2xl shadow-black/30 sm:h-44 sm:w-44">
+                {text(profile, "profile_photo_url") ? (
+                  <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-[#eef3f4] text-[#0f4050]">
+                    <UserRound className="h-16 w-16" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">Verified Crew Profile</p>
+              <h1 className="mt-2 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">{name}</h1>
+              <p className="mt-3 text-sm font-black uppercase tracking-[0.22em] text-white/76">{position}</p>
+              <div className="mx-auto mt-5 h-px w-40 bg-[#d7b46a]" />
+              <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-7 text-white/74">
+                Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
+              </p>
             </div>
 
-            <div className="mt-6 grid gap-3">
+            <div className="relative mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <Stat label="Experience" value={`${totalExperienceYears(experiences)}y`} />
               <Stat label="References" value={String(cleanReferences.length)} />
               <Stat label="Documents" value={String(documents.length)} />
+              <Stat label="Age" value={age ? String(age) : "-"} />
+              <Stat label="Nationality" value={text(profile, "nationality") || "-"} />
+              <Stat label="Location" value={text(profile, "location") || "-"} />
             </div>
 
-            <div className="mt-6 rounded-2xl border border-[#d7b46a]/28 bg-white/95 p-4 text-slate-950 shadow-lg shadow-black/12">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8b6f2e]">Contact</p>
-              <div className="mt-3 space-y-2 text-sm">
-                <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
-                <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
-                <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
-              </div>
+            <div className="relative mt-6 grid gap-3 border-y border-white/12 py-4 text-center text-sm font-semibold text-white/78 sm:grid-cols-3">
+              <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
+              <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
+              <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
             </div>
-          </aside>
+          </header>
 
-          <section className="bg-[#fbfcfc] p-6 sm:p-8 print:p-7">
-            <header className="border-b border-[#b9c8cd] pb-5">
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#8b6f2e]">Verified Crew Profile</p>
-              <h2 className="mt-2 text-2xl font-black uppercase tracking-[0.06em] text-[#06111f]">{position}</h2>
-              <div className="mt-3 h-1 w-24 bg-[#d7b46a]" />
-              <p className="mt-4 max-w-3xl text-[15px] leading-7 text-[#364650]">
-                Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
-              </p>
-            </header>
-
+          <section className="p-6 sm:p-8 print:p-7">
             <CvSection title="Professional Summary" icon={<BadgeCheck className="h-4 w-4" />}>
               <div className="rounded-2xl border border-[#c7d2d6] bg-[#f6f8f8] p-5 shadow-sm shadow-slate-950/5">
                 <p className="text-[15px] leading-7 text-[#364650]">{professionalSummary}</p>
@@ -182,16 +173,16 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
                   return (
                     <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="rounded-2xl border border-[#c7d2d6] bg-white p-4 shadow-sm shadow-slate-950/6">
-                      <div className="grid gap-4 sm:grid-cols-[112px_1fr]">
+                      <div className="grid gap-4 sm:grid-cols-[132px_1fr]">
                         {text(experience, "photo_url") ? (
-                          <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-24 w-full rounded-xl border border-[#d7b46a]/45 object-cover" />
+                          <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-28 w-full rounded-xl border border-[#d7b46a]/45 object-cover" />
                         ) : (
-                          <div className="hidden h-24 rounded-xl border border-[#d7b46a]/35 bg-[linear-gradient(135deg,#eef3f4,#dfe9ec)] sm:block" />
+                          <div className="hidden h-28 rounded-xl border border-[#d7b46a]/35 bg-[linear-gradient(135deg,#eef3f4,#dfe9ec)] sm:block" />
                         )}
                         <div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                              <h2 className="text-lg font-black text-[#06111f]">{text(experience, "yacht_name") || "Yacht"}</h2>
+                              <h2 className="text-xl font-black text-[#06111f]">{text(experience, "yacht_name") || "Yacht"}</h2>
                               <p className="mt-1 text-sm font-semibold text-[#0f6372]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -487,15 +478,6 @@ function languageLevelWidth(level: string) {
   if (normalized.includes("intermediate")) return "58%";
   if (normalized.includes("basic")) return "34%";
   return "50%";
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid grid-cols-[1fr_auto] gap-3 py-2.5 text-sm">
-      <p className="font-semibold text-white/70">{label}</p>
-      <p className="text-right font-black text-white">{value}</p>
-    </div>
-  );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
