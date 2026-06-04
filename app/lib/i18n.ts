@@ -547,6 +547,8 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Invite / Manage Crew": { tr: "Mürettebat Davet / Yönet" },
   "Open Alerts": { tr: "Uyarıları Aç" },
   "Refresh": { tr: "Yenile" },
+  "Reference": { tr: "Referans" },
+  "Related yacht / vessel": { tr: "İlgili yat / tekne" },
   "Mode": { tr: "Mod" },
   "Flag": { tr: "Bayrak" },
   "Voyage": { tr: "Seyir" },

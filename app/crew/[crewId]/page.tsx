@@ -78,6 +78,8 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
     ...stringArray(profile.personal_characteristics),
   ].slice(0, 18);
   const cleanPortfolio = portfolio.filter((photo) => text(photo, "image_url"));
+  const cleanReferences = publicReferenceEntries(references);
+  const standaloneReferences = publicUnmatchedExperienceReferences(experiences, cleanReferences);
   const professionalSummary =
     text(profile, "bio") ||
     `I am a ${position.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
@@ -138,7 +140,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
             <div className="mt-6 grid gap-3">
               <Stat label="Experience" value={`${totalExperienceYears(experiences)}y`} />
-              <Stat label="References" value={String(references.length)} />
+              <Stat label="References" value={String(cleanReferences.length)} />
               <Stat label="Documents" value={String(documents.length)} />
             </div>
 
@@ -178,31 +180,46 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                     No yacht experience added yet.
                   </p>
                 )}
-                {experiences.map((experience) => (
-                  <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5">
-                    <div className="grid gap-4 sm:grid-cols-[112px_1fr]">
-                      {text(experience, "photo_url") ? (
-                        <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-24 w-full rounded-xl object-cover" />
-                      ) : (
-                        <div className="hidden h-24 rounded-xl bg-[linear-gradient(135deg,#e8f6fb,#f5f1ff)] sm:block" />
-                      )}
-                      <div>
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <h2 className="text-lg font-black text-slate-950">{text(experience, "yacht_name") || "Yacht"}</h2>
-                            <p className="mt-1 text-sm font-semibold text-[#2492c8]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
-                          </div>
-                          <span className="w-fit rounded-md bg-[#2492c8] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
-                            {text(experience, "position") || "Position"}
-                          </span>
-                        </div>
-                        {text(experience, "description") && (
-                          <p className="mt-3 text-sm leading-6 text-slate-600">{text(experience, "description")}</p>
+                {experiences.map((experience) => {
+                  const experienceReferences = publicReferencesForExperience(experience, cleanReferences);
+
+                  return (
+                    <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5">
+                      <div className="grid gap-4 sm:grid-cols-[112px_1fr]">
+                        {text(experience, "photo_url") ? (
+                          <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-24 w-full rounded-xl object-cover" />
+                        ) : (
+                          <div className="hidden h-24 rounded-xl bg-[linear-gradient(135deg,#e8f6fb,#f5f1ff)] sm:block" />
                         )}
+                        <div>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <h2 className="text-lg font-black text-slate-950">{text(experience, "yacht_name") || "Yacht"}</h2>
+                              <p className="mt-1 text-sm font-semibold text-[#2492c8]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <span className="w-fit rounded-md bg-[#2492c8] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
+                                {text(experience, "position") || "Position"}
+                              </span>
+                              {experienceReferences.length > 0 && (
+                                <span className="w-fit rounded-md bg-[#eefaf2] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-emerald-700">
+                                  Reference
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#30216f]">Duties</p>
+                            <p className="mt-2 text-sm leading-6 text-slate-700">
+                              {text(experience, "description") || "Responsibilities and onboard duties will appear here."}
+                            </p>
+                            <PublicExperienceReferences references={experienceReferences} />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             </CvSection>
 
@@ -256,10 +273,10 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               </CvSection>
             </div>
 
-            {references.length > 0 && (
+            {standaloneReferences.length > 0 && (
               <CvSection title="References">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {references.slice(0, 4).map((reference) => (
+                  {standaloneReferences.slice(0, 4).map((reference) => (
                     <div key={text(reference, "id") || text(reference, "email") || text(reference, "name")} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                       <p className="font-black text-slate-900">{text(reference, "name") || "Reference"}</p>
                       <p className="mt-1 text-sm font-semibold text-[#2492c8]">
@@ -424,6 +441,47 @@ function formatDateRange(start?: string, end?: string) {
   return `${startText} - ${endText}`;
 }
 
+function normalizeVesselName(value?: string) {
+  return (value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(m y|s y|my|sy|motor yacht|sailing yacht|yacht)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function publicReferenceEntries(references: Row[]) {
+  return references.filter((reference) =>
+    Boolean(
+      text(reference, "name") ||
+        text(reference, "role") ||
+        text(reference, "vessel") ||
+        text(reference, "company") ||
+        text(reference, "phone") ||
+        text(reference, "email"),
+    ),
+  );
+}
+
+function publicReferenceMatchesExperience(reference: Row, experience: Row) {
+  const vessel = normalizeVesselName(text(reference, "vessel"));
+  const yacht = normalizeVesselName(text(experience, "yacht_name"));
+  if (!vessel || !yacht) return false;
+  if (vessel === yacht) return true;
+  return vessel.length >= 3 && yacht.length >= 3 && (vessel.includes(yacht) || yacht.includes(vessel));
+}
+
+function publicReferencesForExperience(experience: Row, references: Row[]) {
+  return references.filter((reference) => publicReferenceMatchesExperience(reference, experience));
+}
+
+function publicUnmatchedExperienceReferences(experiences: Row[], references: Row[]) {
+  return references.filter((reference) => !experiences.some((experience) => publicReferenceMatchesExperience(reference, experience)));
+}
+
 function languageLevelWidth(level: string) {
   const normalized = level.toLowerCase();
   if (normalized.includes("native")) return "100%";
@@ -492,6 +550,29 @@ function CvSection({
       </div>
       {children}
     </section>
+  );
+}
+
+function PublicExperienceReferences({ references }: { references: Row[] }) {
+  if (references.length === 0) return null;
+
+  return (
+    <div className="mt-4 border-t border-slate-200 pt-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2492c8]">Reference</p>
+      <div className="mt-2 grid gap-2">
+        {references.slice(0, 2).map((reference) => (
+          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="rounded-xl border border-[#d6e8f1] bg-white px-3 py-2">
+            <p className="text-sm font-black text-slate-950">{text(reference, "name") || "Reference"}</p>
+            <p className="mt-1 text-xs font-semibold text-[#2492c8]">
+              {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
+            </p>
+            {(text(reference, "email") || text(reference, "phone")) && (
+              <p className="mt-1 text-xs text-slate-500">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

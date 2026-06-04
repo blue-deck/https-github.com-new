@@ -292,6 +292,10 @@ export default function ProfilePage() {
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
+  const referenceVesselOptions = useMemo(
+    () => Array.from(new Set(experiences.map((item) => item.yacht_name.trim()).filter(Boolean))),
+    [experiences],
+  );
 
   const totalExperienceYears = useMemo(() => {
     const firstYear = experiences
@@ -740,7 +744,14 @@ export default function ProfilePage() {
             <Panel title="References" icon={<FileText className="h-5 w-5" />}>
               <div className="space-y-4">
                 {[...references, emptyReference].map((item, index) => (
-                  <ReferenceEditor key={item.id || `new-${index}`} item={item} isNew={!item.id} onSave={saveReference} onDelete={deleteReference} />
+                  <ReferenceEditor
+                    key={item.id || `new-${index}`}
+                    item={item}
+                    isNew={!item.id}
+                    experienceOptions={referenceVesselOptions}
+                    onSave={saveReference}
+                    onDelete={deleteReference}
+                  />
                 ))}
               </div>
             </Panel>
@@ -912,6 +923,8 @@ function CvPreview({
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
   const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
+  const cleanReferences = cleanReferenceEntries(references);
+  const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
   const cleanPortfolio = portfolio.filter((photo) => photo.image_url);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const completionItems = [
@@ -1024,27 +1037,32 @@ function CvPreview({
                           No yacht experience added yet.
                         </p>
                       )}
-                      {cleanExperiences.map((item) => (
-                        <div key={item.id || `${item.yacht_name}-${item.start_date}`} className="grid gap-4 border-b border-[#d8c8a6] pb-5 last:border-b-0 sm:grid-cols-[112px_1fr]">
-                          {item.photo_url ? (
-                            <img src={item.photo_url} alt={item.yacht_name || "Yacht"} className="h-28 w-full rounded-sm border border-[#c7b78f] object-cover grayscale-[8%]" />
-                          ) : (
-                            <div className="hidden h-28 border border-[#c7b78f] bg-[#eee7da] sm:block" />
-                          )}
-                          <div>
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <h3 className="text-xl font-black text-[#101820]">{item.position || "Position"}</h3>
-                                <p className="mt-1 text-sm font-black uppercase tracking-[0.16em] text-[#255e66]">{item.yacht_name || "Yacht"}</p>
+                      {cleanExperiences.map((item) => {
+                        const experienceReferences = referencesForExperience(item, cleanReferences);
+
+                        return (
+                          <div key={item.id || `${item.yacht_name}-${item.start_date}`} className="grid gap-4 border-b border-[#d8c8a6] pb-5 last:border-b-0 sm:grid-cols-[112px_1fr]">
+                            {item.photo_url ? (
+                              <img src={item.photo_url} alt={item.yacht_name || "Yacht"} className="h-28 w-full rounded-sm border border-[#c7b78f] object-cover grayscale-[8%]" />
+                            ) : (
+                              <div className="hidden h-28 border border-[#c7b78f] bg-[#eee7da] sm:block" />
+                            )}
+                            <div>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                  <h3 className="text-xl font-black text-[#101820]">{item.position || "Position"}</h3>
+                                  <p className="mt-1 text-sm font-black uppercase tracking-[0.16em] text-[#255e66]">{item.yacht_name || "Yacht"}</p>
+                                </div>
+                                <p className="w-fit border border-[#c7b78f] bg-[#f8f4ec] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#7b6122]">
+                                  {formatDateRange(item.start_date, item.end_date)}
+                                </p>
                               </div>
-                              <p className="w-fit border border-[#c7b78f] bg-[#f8f4ec] px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-[#7b6122]">
-                                {formatDateRange(item.start_date, item.end_date)}
-                              </p>
+                              {item.description && <p className="mt-3 text-sm leading-6 text-[#4d5963]">{item.description}</p>}
+                              <SignatureExperienceReferences references={experienceReferences} />
                             </div>
-                            {item.description && <p className="mt-3 text-sm leading-6 text-[#4d5963]">{item.description}</p>}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </CvMainSection>
 
@@ -1061,12 +1079,10 @@ function CvPreview({
                     <CvMainSection title="Work Preferences">
                       <PillList items={profile.work_preferences || []} light />
                     </CvMainSection>
-                    <CvMainSection title="References">
-                      {references.length === 0 ? (
-                        <p className="text-sm text-[#5f6b76]">References available upon request.</p>
-                      ) : (
+                    {standaloneReferences.length > 0 && (
+                      <CvMainSection title="References">
                         <div className="space-y-3">
-                          {references.slice(0, 3).map((ref) => (
+                          {standaloneReferences.slice(0, 3).map((ref) => (
                             <div key={ref.id || ref.email || ref.name} className="border border-[#d8c8a6] bg-[#f3ede0] p-4">
                               <p className="font-black text-[#101820]">{ref.name || "Reference"}</p>
                               <p className="mt-1 text-sm font-semibold text-[#255e66]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
@@ -1074,8 +1090,8 @@ function CvPreview({
                             </div>
                           ))}
                         </div>
-                      )}
-                    </CvMainSection>
+                      </CvMainSection>
+                    )}
                   </div>
 
                   {cleanPortfolio.length > 0 && (
@@ -1194,6 +1210,29 @@ function CvMainSection({ title, children }: { title: string; children: ReactNode
   );
 }
 
+function SignatureExperienceReferences({ references }: { references: ReferenceEntry[] }) {
+  if (references.length === 0) return null;
+
+  return (
+    <div className="mt-4 border-l-2 border-[#b59648] bg-[#f8f4ec] px-4 py-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6122]">Reference</p>
+      <div className="mt-2 grid gap-2">
+        {references.slice(0, 2).map((reference) => (
+          <div key={reference.id || reference.email || reference.phone || reference.name} className="border-t border-[#d8c8a6] pt-2 first:border-t-0 first:pt-0">
+            <p className="text-sm font-black text-[#101820]">{reference.name || "Reference"}</p>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-[#255e66]">
+              {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
+            </p>
+            {(reference.email || reference.phone) && (
+              <p className="mt-1 text-xs text-[#66717b]">{[reference.email, reference.phone].filter(Boolean).join(" / ")}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function CvContact({ label, value }: { label: string; value: string }) {
   return (
     <div className="mb-3">
@@ -1239,6 +1278,40 @@ function formatDateRange(start?: string, end?: string) {
   return `${startText} - ${endText}`;
 }
 
+function normalizeVesselName(value?: string) {
+  return (value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(m y|s y|my|sy|motor yacht|sailing yacht|yacht)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function cleanReferenceEntries(references: ReferenceEntry[]) {
+  return references.filter((reference) =>
+    Boolean(reference.name || reference.role || reference.vessel || reference.company || reference.phone || reference.email),
+  );
+}
+
+function referenceMatchesExperience(reference: ReferenceEntry, experience: Experience) {
+  const vessel = normalizeVesselName(reference.vessel);
+  const yacht = normalizeVesselName(experience.yacht_name);
+  if (!vessel || !yacht) return false;
+  if (vessel === yacht) return true;
+  return vessel.length >= 3 && yacht.length >= 3 && (vessel.includes(yacht) || yacht.includes(vessel));
+}
+
+function referencesForExperience(experience: Experience, references: ReferenceEntry[]) {
+  return references.filter((reference) => referenceMatchesExperience(reference, experience));
+}
+
+function unmatchedExperienceReferences(experiences: Experience[], references: ReferenceEntry[]) {
+  return references.filter((reference) => !experiences.some((experience) => referenceMatchesExperience(reference, experience)));
+}
+
 function SeazoneStyleCvPreview({
   profile,
   documents,
@@ -1256,6 +1329,8 @@ function SeazoneStyleCvPreview({
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
   const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
+  const cleanReferences = cleanReferenceEntries(references);
+  const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
   const cleanPortfolio = portfolio.filter((photo) => photo.image_url);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const firstName = (profile.full_name || "there").split(" ")[0];
@@ -1378,11 +1453,11 @@ function SeazoneStyleCvPreview({
                       No yacht experience added yet.
                     </p>
                   )}
-                  {cleanExperiences.map((item, index) => (
+                  {cleanExperiences.map((item) => (
                     <SeazoneExperienceCard
                       key={item.id || `${item.yacht_name}-${item.start_date}`}
                       experience={item}
-                      reference={references[index] || references[0]}
+                      references={referencesForExperience(item, cleanReferences)}
                     />
                   ))}
                 </div>
@@ -1428,10 +1503,10 @@ function SeazoneStyleCvPreview({
                 </SeazoneSection>
               </div>
 
-              {references.length > 0 && (
+              {standaloneReferences.length > 0 && (
                 <SeazoneSection title="References">
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {references.slice(0, 4).map((ref) => (
+                    {standaloneReferences.slice(0, 4).map((ref) => (
                       <div key={ref.id || ref.email || ref.name} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <p className="font-black text-slate-900">{ref.name || "Reference"}</p>
                         <p className="mt-1 text-sm font-semibold text-[#2492c8]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
@@ -1572,7 +1647,7 @@ function SeazoneSection({ title, badge, children }: { title: string; badge?: str
   );
 }
 
-function SeazoneExperienceCard({ experience, reference }: { experience: Experience; reference?: ReferenceEntry }) {
+function SeazoneExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-950/5">
       <div className="grid gap-4 sm:grid-cols-[112px_1fr]">
@@ -1591,7 +1666,7 @@ function SeazoneExperienceCard({ experience, reference }: { experience: Experien
               <span className="rounded-md bg-[#2492c8] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
                 {experience.position || "Position"}
               </span>
-              {reference?.name && (
+              {references.length > 0 && (
                 <span className="rounded-md bg-[#eefaf2] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-emerald-700">
                   Reference
                 </span>
@@ -1604,16 +1679,34 @@ function SeazoneExperienceCard({ experience, reference }: { experience: Experien
             <p className="mt-2 text-sm leading-6 text-slate-700">
               {experience.description || "Responsibilities and onboard duties will appear here."}
             </p>
+            <SeazoneExperienceReferences references={references} />
           </div>
-
-          {reference?.name && (
-            <p className="mt-3 text-xs text-slate-500">
-              Reference: {reference.name}{reference.role ? ` / ${reference.role}` : ""}
-            </p>
-          )}
         </div>
       </div>
     </article>
+  );
+}
+
+function SeazoneExperienceReferences({ references }: { references: ReferenceEntry[] }) {
+  if (references.length === 0) return null;
+
+  return (
+    <div className="mt-4 border-t border-slate-200 pt-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2492c8]">Reference</p>
+      <div className="mt-2 grid gap-2">
+        {references.slice(0, 2).map((reference) => (
+          <div key={reference.id || reference.email || reference.phone || reference.name} className="rounded-xl border border-[#d6e8f1] bg-white px-3 py-2">
+            <p className="text-sm font-black text-slate-950">{reference.name || "Reference"}</p>
+            <p className="mt-1 text-xs font-semibold text-[#2492c8]">
+              {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
+            </p>
+            {(reference.email || reference.phone) && (
+              <p className="mt-1 text-xs text-slate-500">{[reference.email, reference.phone].filter(Boolean).join(" / ")}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -2017,14 +2110,40 @@ function ExperienceEditor({
   );
 }
 
-function ReferenceEditor({ item, isNew, onSave, onDelete }: { item: ReferenceEntry; isNew: boolean; onSave: (item: ReferenceEntry) => void; onDelete: (id?: string) => void }) {
+function ReferenceEditor({
+  item,
+  isNew,
+  experienceOptions,
+  onSave,
+  onDelete,
+}: {
+  item: ReferenceEntry;
+  isNew: boolean;
+  experienceOptions: string[];
+  onSave: (item: ReferenceEntry) => void;
+  onDelete: (id?: string) => void;
+}) {
   const [draft, setDraft] = useState(item);
+  const vesselListId = `reference-vessel-${draft.id || (isNew ? "new" : "saved")}`;
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
       <div className="grid gap-4 md:grid-cols-2">
         <Field label="Name" value={draft.name} onChange={(value) => setDraft({ ...draft, name: value })} />
         <Field label="Role" value={draft.role} onChange={(value) => setDraft({ ...draft, role: value })} />
-        <Field label="Vessel" value={draft.vessel} onChange={(value) => setDraft({ ...draft, vessel: value })} />
+        <Field
+          label="Related yacht / vessel"
+          value={draft.vessel}
+          listId={experienceOptions.length ? vesselListId : undefined}
+          onChange={(value) => setDraft({ ...draft, vessel: value })}
+        />
+        {experienceOptions.length > 0 && (
+          <datalist id={vesselListId}>
+            {experienceOptions.map((option) => (
+              <option key={option} value={option} />
+            ))}
+          </datalist>
+        )}
         <Field label="Company" value={draft.company} onChange={(value) => setDraft({ ...draft, company: value })} />
         <PhoneInput label="Phone" value={draft.phone} onChange={(value) => setDraft({ ...draft, phone: value })} />
         <Field label="Email" value={draft.email} onChange={(value) => setDraft({ ...draft, email: value })} />
@@ -2113,11 +2232,25 @@ function EditorButtons({ isNew, onSave, onDelete, addLabel }: { isNew: boolean; 
   );
 }
 
-function Field({ label, value, onChange, type = "text", disabled = false }: { label: string; value?: string; onChange: (value: string) => void; type?: string; disabled?: boolean }) {
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  disabled = false,
+  listId,
+}: {
+  label: string;
+  value?: string;
+  onChange: (value: string) => void;
+  type?: string;
+  disabled?: boolean;
+  listId?: string;
+}) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
-      <input type={type} value={value || ""} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40" />
+      <input type={type} value={value || ""} list={listId} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40" />
     </label>
   );
 }
