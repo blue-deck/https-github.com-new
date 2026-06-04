@@ -285,6 +285,8 @@ export default function ProfilePage() {
   const [documentDraft, setDocumentDraft] = useState<CrewDocument>(newDocumentDraft());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [referenceSaving, setReferenceSaving] = useState(false);
+  const [referenceStatus, setReferenceStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const uploadRunRef = useRef(0);
@@ -488,10 +490,40 @@ export default function ProfilePage() {
   }
 
   async function saveReference(item: ReferenceEntry) {
-    if (!profile.id) return;
-    const response = await saveRelatedRecord("reference", item, item.id);
-    if (!response.ok) alert(response.error);
+    setReferenceStatus(null);
+
+    if (!profile.id) {
+      setReferenceStatus({ type: "error", message: "Crew profile is still loading. Please try again in a moment." });
+      return false;
+    }
+
+    const hasReferenceDetail = [item.name, item.role, item.vessel, item.company, item.phone, item.email, item.notes].some(
+      (value) => typeof value === "string" && value.trim().length > 0,
+    );
+
+    if (!hasReferenceDetail) {
+      setReferenceStatus({ type: "error", message: "Add a reference name, vessel, contact detail or note before saving." });
+      return false;
+    }
+
+    setReferenceSaving(true);
+    const response = await saveRelatedRecord("reference", item, item.id).catch((error: unknown) => ({
+      ok: false,
+      error: error instanceof Error ? error.message : "Reference could not be saved.",
+    }));
+    setReferenceSaving(false);
+
+    if (!response.ok) {
+      setReferenceStatus({ type: "error", message: response.error });
+      return false;
+    }
+
     await loadRelated(profile.id);
+    setReferenceStatus({
+      type: "success",
+      message: "Reference saved. If the vessel name matches a yacht experience, it appears under that yacht's duties in the CV.",
+    });
+    return true;
   }
 
   async function deleteReference(id?: string) {
@@ -743,12 +775,24 @@ export default function ProfilePage() {
 
             <Panel title="References" icon={<FileText className="h-5 w-5" />}>
               <div className="space-y-4">
+                {referenceStatus && (
+                  <p
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
+                      referenceStatus.type === "success"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-rose-200 bg-rose-50 text-rose-800"
+                    }`}
+                  >
+                    {referenceStatus.message}
+                  </p>
+                )}
                 {[...references, emptyReference].map((item, index) => (
                   <ReferenceEditor
                     key={item.id || `new-${index}`}
                     item={item}
                     isNew={!item.id}
                     experienceOptions={referenceVesselOptions}
+                    saving={referenceSaving}
                     onSave={saveReference}
                     onDelete={deleteReference}
                   />
@@ -2114,17 +2158,24 @@ function ReferenceEditor({
   item,
   isNew,
   experienceOptions,
+  saving,
   onSave,
   onDelete,
 }: {
   item: ReferenceEntry;
   isNew: boolean;
   experienceOptions: string[];
-  onSave: (item: ReferenceEntry) => void;
+  saving: boolean;
+  onSave: (item: ReferenceEntry) => Promise<boolean>;
   onDelete: (id?: string) => void;
 }) {
   const [draft, setDraft] = useState(item);
   const vesselListId = `reference-vessel-${draft.id || (isNew ? "new" : "saved")}`;
+
+  async function handleSave() {
+    const saved = await onSave(draft);
+    if (saved && isNew) setDraft(emptyReference);
+  }
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -2150,7 +2201,7 @@ function ReferenceEditor({
       </div>
       <TextArea label="Notes" value={draft.notes} onChange={(value) => setDraft({ ...draft, notes: value })} />
       <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
-      <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add reference" />
+      <EditorButtons isNew={isNew} onSave={handleSave} onDelete={() => onDelete(draft.id)} addLabel="Add reference" saving={saving} />
     </div>
   );
 }
@@ -2220,14 +2271,31 @@ function PortfolioEditor({
   );
 }
 
-function EditorButtons({ isNew, onSave, onDelete, addLabel }: { isNew: boolean; onSave: () => void; onDelete: () => void; addLabel: string }) {
+function EditorButtons({
+  isNew,
+  onSave,
+  onDelete,
+  addLabel,
+  saving = false,
+}: {
+  isNew: boolean;
+  onSave: () => void | Promise<void>;
+  onDelete: () => void;
+  addLabel: string;
+  saving?: boolean;
+}) {
   return (
     <div className="mt-4 flex gap-2">
-      <button type="button" onClick={onSave} className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817]">
+      <button
+        type="button"
+        disabled={saving}
+        onClick={onSave}
+        className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817] transition hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+      >
         <Plus className="h-4 w-4" />
-        {isNew ? addLabel : "Save"}
+        {saving ? "Saving..." : isNew ? addLabel : "Save"}
       </button>
-      {!isNew && <button type="button" onClick={onDelete} className="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">Delete</button>}
+      {!isNew && <button type="button" disabled={saving} onClick={onDelete} className="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60">Delete</button>}
     </div>
   );
 }
