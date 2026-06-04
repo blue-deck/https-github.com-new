@@ -1054,73 +1054,120 @@ function SeazoneStyleCvPreview({
       </div>
 
       <div className="bg-[#f3f7f8] p-3 sm:p-5 print:p-0">
-        <div className="mx-auto max-w-[980px] overflow-hidden rounded-[20px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-          <div className="min-h-[1120px] bg-[#fbfcfc] print:min-h-0">
-            <header className="border-b border-[#d8e2e6] bg-[#fbfcfc] px-6 py-6 sm:px-8">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <BlueDeckMark className="h-10 w-14 rounded-xl border-[#d8e2e6] bg-white shadow-sm" imageClassName="p-1" />
+        <div className="mx-auto max-w-[980px] overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+          <div className="grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
+            <aside className="relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
+              <div className="absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
+                {profile.profile_photo_url ? (
+                  <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
+                    <UserRound className="h-16 w-16" />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-8">
+                <SeazoneSideSection title="About Me">
+                  <p className="text-[14px] leading-7 text-[#3d454c]">{professionalSummary}</p>
+                </SeazoneSideSection>
+
+                <SeazoneSideSection title="Profile">
+                  <div className="space-y-2.5">
+                    <SeazoneSidebarLine label="Age" value={age ? String(age) : "-"} />
+                    <SeazoneSidebarLine label="Nationality" value={profile.nationality || "-"} />
+                    <SeazoneSidebarLine label="Location" value={profile.location || "-"} />
+                    <SeazoneSidebarLine label="Crew ID" value={profile.public_crew_id || "-"} />
+                    <SeazoneSidebarLine label="References" value={String(cleanReferences.length)} />
+                    <SeazoneSidebarLine label="Documents" value={String(documents.length)} />
+                  </div>
+                </SeazoneSideSection>
+
+                <SeazoneSideSection title="Contact">
+                  <div className="space-y-2.5 text-sm font-semibold text-[#3d454c]">
+                    <p className="break-words">{profile.phone || "-"}</p>
+                    <p className="break-words">{profile.email || "-"}</p>
+                    <p className="break-words">{profile.location || "-"}</p>
+                  </div>
+                </SeazoneSideSection>
+
+                <SeazoneSideSection title="Documents">
+                  <div className="space-y-2">
+                    {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
+                    {documents.slice(0, 8).map((doc) => (
+                      <SeazoneDocumentRow key={doc.id || doc.document_type} document={doc} />
+                    ))}
+                  </div>
+                </SeazoneSideSection>
+
+                <SeazoneSideSection title="Skills">
+                  <PillList items={visibleSkills} light />
+                </SeazoneSideSection>
+
+                <SeazoneSideSection title="Language">
+                  <div className="space-y-3">
+                    {profile.languages?.length ? (
+                      profile.languages.map((language) => (
+                        <div key={language.name}>
+                          <div className="flex justify-between gap-3 text-sm">
+                            <span className="font-black text-[#242a31]">{language.name}</span>
+                            <span className="font-semibold text-[#2d7482]">{language.level}</span>
+                          </div>
+                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#cfd9de]">
+                            <div className="h-full rounded-full bg-[#173f4a]" style={{ width: languageLevelWidth(language.level) }} />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-[#6b747a]">No languages added yet.</p>
+                    )}
+                  </div>
+                </SeazoneSideSection>
+
+                <SeazoneSideSection title="Preferences">
+                  <PillList items={profile.work_preferences || []} light />
+                </SeazoneSideSection>
+
+                <div className="rounded-2xl border border-[#cbd7dc] bg-white p-4 text-[#40535d]">
+                  <CrewProfileQr crewId={profile.public_crew_id} />
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Public CV Access</p>
+                  <p className="mt-1 text-sm font-semibold">Scan the QR code to open this crew CV on BlueDeck.</p>
+                </div>
+              </div>
+            </aside>
+
+            <div className="bg-white">
+              <header className="bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
+                <div className="flex min-h-[132px] flex-col justify-center gap-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#07131f]">BlueDeck</p>
-                    <p className="text-xs font-semibold text-[#6b7b84]">Crew profile CV</p>
+                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#8ed8e6]">Verified Crew Profile</p>
+                    <h2 className="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">{profile.full_name || "Crew Member"}</h2>
+                    <p className="mt-3 text-lg font-semibold tracking-[0.18em] text-white/80">{primaryPosition}</p>
+                  </div>
+                  <div className="flex items-center gap-4 rounded-2xl border border-white/14 bg-white/8 p-4 shadow-lg shadow-black/10">
+                    <BlueDeckMark className="h-14 w-24 rounded-xl border-white/20 bg-white/10 shadow-none" imageClassName="p-1" />
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white">BlueDeck</p>
+                      <p className="mt-1 text-sm font-semibold text-white/68">Yachtos CV</p>
+                    </div>
                   </div>
                 </div>
-                <p className="rounded-full border border-[#d8e2e6] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#40535d]">
-                  {profile.public_crew_id || "Crew ID"}
-                </p>
-              </div>
+              </header>
 
-              <div className="mt-7 grid items-center gap-6 md:grid-cols-[1fr_140px_1fr]">
-                <div className="order-2 text-center md:order-1 md:text-right">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2d7482]">Verified Crew Profile</p>
-                  <p className="mt-3 text-sm leading-6 text-[#596972]">
-                    Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
-                  </p>
+              <main className="p-6 sm:p-8 print:p-7">
+                <div className="grid gap-3 border-b border-[#d8e2e6] pb-6 text-sm font-semibold text-[#40535d] sm:grid-cols-3">
+                  <p className="break-words">{profile.phone || "-"}</p>
+                  <p className="break-words">{profile.email || "-"}</p>
+                  <p className="break-words">{profile.location || "-"}</p>
                 </div>
 
-                <div className="order-1 mx-auto h-32 w-32 overflow-hidden rounded-full border border-[#d8e2e6] bg-white p-1 shadow-lg shadow-slate-950/10 md:order-2 sm:h-36 sm:w-36">
-                  {profile.profile_photo_url ? (
-                    <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
-                      <UserRound className="h-14 w-14" />
-                    </div>
-                  )}
+                <div className="mt-6 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3">
+                  <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
+                  <SeazoneStat label="References" value={String(cleanReferences.length)} />
+                  <SeazoneStat label="Documents" value={String(documents.length)} />
                 </div>
 
-                <div className="order-3 text-center md:text-left">
-                  <h2 className="text-3xl font-black leading-tight text-[#07131f] sm:text-4xl">{profile.full_name || "Crew Member"}</h2>
-                  <p className="mt-3 text-sm font-black uppercase tracking-[0.2em] text-[#2d7482]">{primaryPosition}</p>
-                  <div className="mt-4 h-px w-full bg-[#d8e2e6]" />
-                </div>
-              </div>
-
-              <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3 lg:grid-cols-6">
-                <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
-                <SeazoneStat label="References" value={String(cleanReferences.length)} />
-                <SeazoneStat label="Documents" value={String(documents.length)} />
-                <SeazoneStat label="Age" value={age ? String(age) : "-"} />
-                <SeazoneStat label="Nationality" value={profile.nationality || "-"} />
-                <SeazoneStat label="Location" value={profile.location || "-"} />
-              </div>
-
-              <div className="mt-4 grid gap-2 rounded-2xl border border-[#d8e2e6] bg-[#f5f8f9] p-3 text-center text-sm font-semibold text-[#40535d] sm:grid-cols-3">
-                <p className="break-words">{profile.phone || "-"}</p>
-                <p className="break-words">{profile.email || "-"}</p>
-                <p className="break-words">{profile.location || "-"}</p>
-              </div>
-            </header>
-
-            <main className="p-6 sm:p-8 print:p-7">
-              <SeazoneSection title="Professional Summary">
-                <div className="rounded-2xl border border-[#c7d2d6] bg-[#f6f8f8] p-5 shadow-sm shadow-slate-950/5">
-                  <p className="text-[15px] leading-7 text-[#364650]">
-                    {professionalSummary}
-                  </p>
-                </div>
-              </SeazoneSection>
-
-              <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
+                <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
                 <div className="space-y-4">
                   {cleanExperiences.length === 0 && (
                     <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
@@ -1136,46 +1183,6 @@ function SeazoneStyleCvPreview({
                   ))}
                 </div>
               </SeazoneSection>
-
-              <div className="mt-7 grid gap-5 xl:grid-cols-2">
-                <SeazoneSection title="Certificates & Documents">
-                  <div className="space-y-2">
-                    {documents.length === 0 && <p className="text-sm text-slate-500">No CV documents selected.</p>}
-                    {documents.slice(0, 8).map((doc) => (
-                      <SeazoneDocumentRow key={doc.id || doc.document_type} document={doc} />
-                    ))}
-                  </div>
-                </SeazoneSection>
-
-                <SeazoneSection title="Languages">
-                  <div className="space-y-3">
-                    {profile.languages?.length ? (
-                      profile.languages.map((language) => (
-                        <div key={language.name}>
-                          <div className="flex justify-between gap-3 text-sm">
-                            <span className="font-black text-slate-900">{language.name}</span>
-                            <span className="font-semibold text-[#2d7482]">{language.level}</span>
-                          </div>
-                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#dbe4e7]">
-                            <div className="h-full rounded-full bg-[#173f4a]" style={{ width: languageLevelWidth(language.level) }} />
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-500">No languages added yet.</p>
-                    )}
-                  </div>
-                </SeazoneSection>
-              </div>
-
-              <div className="mt-7 grid gap-5 xl:grid-cols-2">
-                <SeazoneSection title="Skills">
-                  <PillList items={visibleSkills} light />
-                </SeazoneSection>
-                <SeazoneSection title="Work Preferences">
-                  <PillList items={profile.work_preferences || []} light />
-                </SeazoneSection>
-              </div>
 
               {standaloneReferences.length > 0 && (
                 <SeazoneSection title="References">
@@ -1208,18 +1215,11 @@ function SeazoneStyleCvPreview({
                 </SeazoneSection>
               )}
 
-              <div className="mt-8 grid gap-3 rounded-2xl border border-[#d8e2e6] bg-white p-4 text-[#40535d] sm:grid-cols-[88px_1fr]">
-                <CrewProfileQr crewId={profile.public_crew_id} />
-                <div className="self-center">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Public CV Access</p>
-                  <p className="mt-1 text-sm font-semibold">Scan the QR code to open this crew CV on BlueDeck.</p>
-                </div>
-              </div>
-
               <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
                 This CV is generated from verified BlueDeck profile data and can be updated from any device.
               </footer>
             </main>
+            </div>
           </div>
         </div>
       </div>
@@ -1308,6 +1308,27 @@ function SeazoneSection({ title, badge, children }: { title: string; badge?: str
       </div>
       {children}
     </section>
+  );
+}
+
+function SeazoneSideSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <div className="mb-4 flex items-center gap-4">
+        <h3 className="text-[15px] font-black uppercase tracking-[0.22em] text-[#242a31]">{title}</h3>
+        <div className="h-px flex-1 bg-[#242a31]/45" />
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SeazoneSidebarLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-[#cbd7dc] pb-2 text-sm last:border-b-0 last:pb-0">
+      <p className="font-semibold text-[#6b747a]">{label}</p>
+      <p className="break-words text-right font-black text-[#242a31]">{value}</p>
+    </div>
   );
 }
 

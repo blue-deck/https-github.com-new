@@ -3,10 +3,7 @@ import { cache, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
-  BadgeCheck,
   BriefcaseBusiness,
-  FileText,
-  Languages,
   Mail,
   MapPin,
   Phone,
@@ -103,70 +100,123 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
-        <div className="min-h-[1120px] bg-[#fbfcfc] print:min-h-0">
-          <header className="border-b border-[#d8e2e6] bg-[#fbfcfc] px-6 py-6 sm:px-8">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <BlueDeckMark className="h-10 w-14 rounded-xl border-[#d8e2e6] bg-white shadow-sm" imageClassName="p-1" />
+        <div className="grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
+          <aside className="relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
+            <div className="absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
+              {text(profile, "profile_photo_url") ? (
+                <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
+                  <UserRound className="h-16 w-16" />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-8">
+              <SideSection title="About Me">
+                <p className="text-[14px] leading-7 text-[#3d454c]">{professionalSummary}</p>
+              </SideSection>
+
+              <SideSection title="Profile">
+                <div className="space-y-2.5">
+                  <SidebarLine label="Age" value={age ? String(age) : "-"} />
+                  <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
+                  <SidebarLine label="Location" value={text(profile, "location") || "-"} />
+                  <SidebarLine label="Crew ID" value={text(profile, "public_crew_id") || crewId} />
+                  <SidebarLine label="References" value={String(cleanReferences.length)} />
+                  <SidebarLine label="Documents" value={String(documents.length)} />
+                </div>
+              </SideSection>
+
+              <SideSection title="Contact">
+                <div className="space-y-2.5 text-sm font-semibold text-[#3d454c]">
+                  <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
+                  <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
+                  <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
+                </div>
+              </SideSection>
+
+              <SideSection title="Documents">
+                <div className="space-y-2">
+                  {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
+                  {documents.slice(0, 10).map((document) => (
+                    <div key={text(document, "id") || text(document, "document_type")} className="rounded-xl border border-[#c7d2d6] bg-white px-4 py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-black text-[#06111f]">{text(document, "document_type") || "Document"}</p>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
+                        </div>
+                        <p className="text-right text-xs font-black text-[#2d7482]">
+                          {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SideSection>
+
+              <SideSection title="Skills">
+                <Pills items={visibleSkills} />
+              </SideSection>
+
+              <SideSection title="Language">
+                <div className="space-y-3">
+                  {languages.length ? (
+                    languages.map((language) => (
+                      <div key={language.name}>
+                        <div className="flex justify-between gap-3 text-sm">
+                          <span className="font-black text-[#242a31]">{language.name}</span>
+                          <span className="font-semibold text-[#2d7482]">{language.level}</span>
+                        </div>
+                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#cfd9de]">
+                          <div className="h-full rounded-full bg-[#173f4a]" style={{ width: languageLevelWidth(language.level) }} />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-[#6b747a]">No languages added yet.</p>
+                  )}
+                </div>
+              </SideSection>
+
+              <SideSection title="Preferences">
+                <Pills items={stringArray(profile.work_preferences)} />
+              </SideSection>
+            </div>
+          </aside>
+
+          <section className="bg-white">
+            <header className="bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
+              <div className="flex min-h-[132px] flex-col justify-center gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#07131f]">BlueDeck</p>
-                  <p className="text-xs font-semibold text-[#6b7b84]">Verified crew CV</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#8ed8e6]">Verified Crew Profile</p>
+                  <h1 className="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">{name}</h1>
+                  <p className="mt-3 text-lg font-semibold tracking-[0.18em] text-white/80">{position}</p>
+                </div>
+                <div className="flex items-center gap-4 rounded-2xl border border-white/14 bg-white/8 p-4 shadow-lg shadow-black/10">
+                  <BlueDeckMark className="h-14 w-24 rounded-xl border-white/20 bg-white/10 shadow-none" imageClassName="p-1" />
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white">BlueDeck</p>
+                    <p className="mt-1 text-sm font-semibold text-white/68">Yachtos CV</p>
+                  </div>
                 </div>
               </div>
-              <p className="rounded-full border border-[#d8e2e6] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#40535d]">
-                {text(profile, "public_crew_id") || crewId}
-              </p>
-            </div>
+            </header>
 
-            <div className="mt-7 grid items-center gap-6 md:grid-cols-[1fr_140px_1fr]">
-              <div className="order-2 text-center md:order-1 md:text-right">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2d7482]">Verified Crew Profile</p>
-                <p className="mt-3 text-sm leading-6 text-[#596972]">
-                  Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
-                </p>
+            <div className="p-6 sm:p-8 print:p-7">
+              <div className="grid gap-3 border-b border-[#d8e2e6] pb-6 text-sm font-semibold text-[#40535d] sm:grid-cols-3">
+                <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
+                <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
+                <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
               </div>
 
-              <div className="order-1 mx-auto h-32 w-32 overflow-hidden rounded-full border border-[#d8e2e6] bg-white p-1 shadow-lg shadow-slate-950/10 md:order-2 sm:h-36 sm:w-36">
-                {text(profile, "profile_photo_url") ? (
-                  <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
-                    <UserRound className="h-14 w-14" />
-                  </div>
-                )}
+              <div className="mt-6 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3">
+                <Stat label="Experience" value={`${totalExperienceYears(experiences)}y`} />
+                <Stat label="References" value={String(cleanReferences.length)} />
+                <Stat label="Documents" value={String(documents.length)} />
               </div>
 
-              <div className="order-3 text-center md:text-left">
-                <h1 className="text-3xl font-black leading-tight text-[#07131f] sm:text-4xl">{name}</h1>
-                <p className="mt-3 text-sm font-black uppercase tracking-[0.2em] text-[#2d7482]">{position}</p>
-                <div className="mt-4 h-px w-full bg-[#d8e2e6]" />
-              </div>
-            </div>
-
-            <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3 lg:grid-cols-6">
-              <Stat label="Experience" value={`${totalExperienceYears(experiences)}y`} />
-              <Stat label="References" value={String(cleanReferences.length)} />
-              <Stat label="Documents" value={String(documents.length)} />
-              <Stat label="Age" value={age ? String(age) : "-"} />
-              <Stat label="Nationality" value={text(profile, "nationality") || "-"} />
-              <Stat label="Location" value={text(profile, "location") || "-"} />
-            </div>
-
-            <div className="mt-4 grid gap-2 rounded-2xl border border-[#d8e2e6] bg-[#f5f8f9] p-3 text-center text-sm font-semibold text-[#40535d] sm:grid-cols-3">
-              <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
-              <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
-              <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
-            </div>
-          </header>
-
-          <section className="p-6 sm:p-8 print:p-7">
-            <CvSection title="Professional Summary" icon={<BadgeCheck className="h-4 w-4" />}>
-              <div className="rounded-2xl border border-[#c7d2d6] bg-[#f6f8f8] p-5 shadow-sm shadow-slate-950/5">
-                <p className="text-[15px] leading-7 text-[#364650]">{professionalSummary}</p>
-              </div>
-            </CvSection>
-
-            <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" />}>
+              <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" />}>
               <div className="space-y-4">
                 {experiences.length === 0 && (
                   <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
@@ -216,56 +266,6 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               </div>
             </CvSection>
 
-            <div className="mt-7 grid gap-5 xl:grid-cols-2">
-              <CvSection title="Certificates & Documents" icon={<FileText className="h-4 w-4" />}>
-                <div className="space-y-2">
-                  {documents.length === 0 && <p className="text-sm text-slate-500">No CV documents selected.</p>}
-                  {documents.slice(0, 10).map((document) => (
-                    <div key={text(document, "id") || text(document, "document_type")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] px-4 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-black text-[#06111f]">{text(document, "document_type") || "Document"}</p>
-                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
-                        </div>
-                        <p className="text-right text-xs font-black text-[#2d7482]">
-                          {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CvSection>
-
-              <CvSection title="Languages" icon={<Languages className="h-4 w-4" />}>
-                <div className="space-y-3">
-                  {languages.length ? (
-                    languages.map((language) => (
-                      <div key={language.name}>
-                        <div className="flex justify-between gap-3 text-sm">
-                          <span className="font-black text-slate-900">{language.name}</span>
-                          <span className="font-semibold text-[#2d7482]">{language.level}</span>
-                        </div>
-                        <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#dbe4e7]">
-                          <div className="h-full rounded-full bg-[#173f4a]" style={{ width: languageLevelWidth(language.level) }} />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-500">No languages added yet.</p>
-                  )}
-                </div>
-              </CvSection>
-            </div>
-
-            <div className="mt-7 grid gap-5 xl:grid-cols-2">
-              <CvSection title="Skills">
-                <Pills items={visibleSkills} />
-              </CvSection>
-              <CvSection title="Work Preferences">
-                <Pills items={stringArray(profile.work_preferences)} />
-              </CvSection>
-            </div>
-
             {standaloneReferences.length > 0 && (
               <CvSection title="References">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -302,6 +302,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
               This CV is generated from BlueDeck profile data and opened through a Crew ID QR code.
             </footer>
+            </div>
           </section>
         </div>
       </section>
@@ -525,6 +526,27 @@ function CvSection({
       </div>
       {children}
     </section>
+  );
+}
+
+function SideSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <div className="mb-4 flex items-center gap-4">
+        <h2 className="text-[15px] font-black uppercase tracking-[0.22em] text-[#242a31]">{title}</h2>
+        <div className="h-px flex-1 bg-[#242a31]/45" />
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SidebarLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-[#cbd7dc] pb-2 text-sm last:border-b-0 last:pb-0">
+      <p className="font-semibold text-[#6b747a]">{label}</p>
+      <p className="break-words text-right font-black text-[#242a31]">{value}</p>
+    </div>
   );
 }
 
