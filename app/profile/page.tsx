@@ -641,11 +641,11 @@ export default function ProfilePage() {
     <main className="bd-ocean-shell min-h-screen px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1520px]">
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
-          <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
+          <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_45%,#2d7482_100%)]" />
           <div className="grid gap-0 xl:grid-cols-[1fr_420px]">
             <div className="p-6 sm:p-8">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-              <h1 className="bd-serif mt-3 text-4xl font-normal tracking-tight text-[#071f3c] sm:text-5xl">
+              <h1 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c] sm:text-5xl">
                 {profile.full_name || "Professional Crew Profile"}
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
@@ -1037,12 +1037,12 @@ function SeazoneStyleCvPreview({
   return (
     <section
       id="bluedeck-cv"
-      className="overflow-hidden rounded-[30px] border border-[#b9c8cd] bg-[#eef3f4] text-slate-950 shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:bg-white print:shadow-none"
+      className="overflow-hidden rounded-[24px] border border-[#d8e2e6] bg-[#f3f7f8] text-slate-950 shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:bg-white print:shadow-none"
     >
       <div className="flex items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
         <div>
           <p className="text-xs font-black uppercase tracking-[0.22em] text-[#228fc4]">BlueDeck crew CV</p>
-          <p className="mt-1 text-sm text-slate-500">Seazone-style recruiter layout generated from your saved profile.</p>
+          <p className="mt-1 text-sm text-slate-500">Minimal maritime CV generated from your saved profile.</p>
         </div>
         <button
           onClick={() => window.print()}
@@ -1053,44 +1053,49 @@ function SeazoneStyleCvPreview({
         </button>
       </div>
 
-      <div className="bg-[#eef3f4] p-3 sm:p-5 print:p-0">
-        <div className="mx-auto max-w-[980px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/16 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+      <div className="bg-[#f3f7f8] p-3 sm:p-5 print:p-0">
+        <div className="mx-auto max-w-[980px] overflow-hidden rounded-[20px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
           <div className="min-h-[1120px] bg-[#fbfcfc] print:min-h-0">
-            <header className="relative overflow-hidden bg-[linear-gradient(135deg,#06111f_0%,#0b2630_48%,#123f4a_100%)] px-6 pb-9 pt-6 text-white sm:px-9 sm:pb-10">
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-[#d7b46a]" />
-              <div className="relative flex items-start justify-between gap-4">
+            <header className="border-b border-[#d8e2e6] bg-[#fbfcfc] px-6 py-6 sm:px-8">
+              <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <BlueDeckMark className="h-12 w-16 rounded-xl border-[#d7b46a]/45 bg-white/8 shadow-black/25" imageClassName="p-1" />
+                  <BlueDeckMark className="h-10 w-14 rounded-xl border-[#d8e2e6] bg-white shadow-sm" imageClassName="p-1" />
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">BlueDeck</p>
-                    <p className="text-xs font-semibold text-white/62">Crew profile CV</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#07131f]">BlueDeck</p>
+                    <p className="text-xs font-semibold text-[#6b7b84]">Crew profile CV</p>
                   </div>
                 </div>
-                <p className="rounded-full border border-[#d7b46a]/45 bg-white/8 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/82">
+                <p className="rounded-full border border-[#d8e2e6] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#40535d]">
                   {profile.public_crew_id || "Crew ID"}
                 </p>
               </div>
 
-              <div className="relative mx-auto mt-8 max-w-3xl text-center">
-                <div className="mx-auto h-40 w-40 overflow-hidden rounded-full border-[6px] border-[#d7b46a] bg-white shadow-2xl shadow-black/30 sm:h-44 sm:w-44">
+              <div className="mt-7 grid items-center gap-6 md:grid-cols-[1fr_140px_1fr]">
+                <div className="order-2 text-center md:order-1 md:text-right">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2d7482]">Verified Crew Profile</p>
+                  <p className="mt-3 text-sm leading-6 text-[#596972]">
+                    Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
+                  </p>
+                </div>
+
+                <div className="order-1 mx-auto h-32 w-32 overflow-hidden rounded-full border border-[#d8e2e6] bg-white p-1 shadow-lg shadow-slate-950/10 md:order-2 sm:h-36 sm:w-36">
                   {profile.profile_photo_url ? (
-                    <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover" />
+                    <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full rounded-full object-cover" />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#eef3f4] text-[#0f4050]">
-                      <UserRound className="h-16 w-16" />
+                    <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
+                      <UserRound className="h-14 w-14" />
                     </div>
                   )}
                 </div>
-                <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">Verified Crew Profile</p>
-                <h2 className="mt-2 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">{profile.full_name || "Crew Member"}</h2>
-                <p className="mt-3 text-sm font-black uppercase tracking-[0.22em] text-white/76">{primaryPosition}</p>
-                <div className="mx-auto mt-5 h-px w-40 bg-[#d7b46a]" />
-                <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-7 text-white/74">
-                  Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
-                </p>
+
+                <div className="order-3 text-center md:text-left">
+                  <h2 className="text-3xl font-black leading-tight text-[#07131f] sm:text-4xl">{profile.full_name || "Crew Member"}</h2>
+                  <p className="mt-3 text-sm font-black uppercase tracking-[0.2em] text-[#2d7482]">{primaryPosition}</p>
+                  <div className="mt-4 h-px w-full bg-[#d8e2e6]" />
+                </div>
               </div>
 
-              <div className="relative mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3 lg:grid-cols-6">
                 <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
                 <SeazoneStat label="References" value={String(cleanReferences.length)} />
                 <SeazoneStat label="Documents" value={String(documents.length)} />
@@ -1099,18 +1104,10 @@ function SeazoneStyleCvPreview({
                 <SeazoneStat label="Location" value={profile.location || "-"} />
               </div>
 
-              <div className="relative mt-6 grid gap-3 border-y border-white/12 py-4 text-center text-sm font-semibold text-white/78 sm:grid-cols-3">
+              <div className="mt-4 grid gap-2 rounded-2xl border border-[#d8e2e6] bg-[#f5f8f9] p-3 text-center text-sm font-semibold text-[#40535d] sm:grid-cols-3">
                 <p className="break-words">{profile.phone || "-"}</p>
                 <p className="break-words">{profile.email || "-"}</p>
                 <p className="break-words">{profile.location || "-"}</p>
-              </div>
-
-              <div className="relative mx-auto mt-6 grid max-w-xl gap-3 rounded-2xl border border-[#d7b46a]/28 bg-white/8 p-3 text-left text-white/82 sm:grid-cols-[92px_1fr]">
-                <CrewProfileQr crewId={profile.public_crew_id} />
-                <div className="self-center">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d7b46a]">Public CV Access</p>
-                  <p className="mt-1 text-sm font-semibold text-white/78">Scan the QR code to open this crew CV on BlueDeck.</p>
-                </div>
               </div>
             </header>
 
@@ -1157,10 +1154,10 @@ function SeazoneStyleCvPreview({
                         <div key={language.name}>
                           <div className="flex justify-between gap-3 text-sm">
                             <span className="font-black text-slate-900">{language.name}</span>
-                            <span className="font-semibold text-[#0f6372]">{language.level}</span>
+                            <span className="font-semibold text-[#2d7482]">{language.level}</span>
                           </div>
                           <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#dbe4e7]">
-                            <div className="h-full rounded-full bg-[#0f4050]" style={{ width: languageLevelWidth(language.level) }} />
+                            <div className="h-full rounded-full bg-[#173f4a]" style={{ width: languageLevelWidth(language.level) }} />
                           </div>
                         </div>
                       ))
@@ -1186,7 +1183,7 @@ function SeazoneStyleCvPreview({
                     {standaloneReferences.slice(0, 4).map((ref) => (
                       <div key={ref.id || ref.email || ref.name} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                         <p className="font-black text-[#06111f]">{ref.name || "Reference"}</p>
-                        <p className="mt-1 text-sm font-semibold text-[#0f6372]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
+                        <p className="mt-1 text-sm font-semibold text-[#2d7482]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
                         <p className="mt-2 text-xs text-[#5a6870]">{[ref.email, ref.phone].filter(Boolean).join(" / ")}</p>
                       </div>
                     ))}
@@ -1210,6 +1207,14 @@ function SeazoneStyleCvPreview({
                   </div>
                 </SeazoneSection>
               )}
+
+              <div className="mt-8 grid gap-3 rounded-2xl border border-[#d8e2e6] bg-white p-4 text-[#40535d] sm:grid-cols-[88px_1fr]">
+                <CrewProfileQr crewId={profile.public_crew_id} />
+                <div className="self-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Public CV Access</p>
+                  <p className="mt-1 text-sm font-semibold">Scan the QR code to open this crew CV on BlueDeck.</p>
+                </div>
+              </div>
 
               <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
                 This CV is generated from verified BlueDeck profile data and can be updated from any device.
@@ -1241,7 +1246,7 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
       margin: 1,
       width: 192,
       color: {
-        dark: "#0f4050",
+        dark: "#173f4a",
         light: "#ffffff",
       },
     })
@@ -1270,7 +1275,7 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
       href={profileUrl}
       target="_blank"
       rel="noreferrer"
-      className="group relative flex h-24 items-center justify-center rounded-xl border border-[#c7d2d6] bg-white p-2 shadow-sm transition hover:border-[#d7b46a]"
+      className="group relative flex h-24 items-center justify-center rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm transition hover:border-[#2d7482]"
       title={`Open public CV: ${profileUrl}`}
     >
       {qrDataUrl ? (
@@ -1278,7 +1283,7 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
       ) : (
         <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">QR loading</span>
       )}
-      <span className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#0f4050] text-white shadow-lg shadow-[#0f4050]/20 opacity-0 transition group-hover:opacity-100">
+      <span className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#173f4a] text-white shadow-lg shadow-[#173f4a]/20 opacity-0 transition group-hover:opacity-100">
         <ExternalLink className="h-3.5 w-3.5" />
       </span>
     </a>
@@ -1287,9 +1292,9 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
 
 function SeazoneStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[#d7b46a]/24 bg-white/92 px-3 py-3 text-slate-950 shadow-lg shadow-black/12">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8b6f2e]">{label}</p>
-      <p className="mt-1 text-xl font-black">{value}</p>
+    <div className="bg-white px-3 py-3 text-slate-950">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6b7b84]">{label}</p>
+      <p className="mt-1 text-lg font-black text-[#07131f]">{value}</p>
     </div>
   );
 }
@@ -1299,7 +1304,7 @@ function SeazoneSection({ title, badge, children }: { title: string; badge?: str
     <section className="mt-7">
       <div className="mb-4 flex items-center justify-between gap-4 border-b border-[#b9c8cd] pb-2">
         <h3 className="text-sm font-black uppercase tracking-[0.14em] text-[#06111f]">{title}</h3>
-        {badge && <span className="rounded-full bg-[#0f4050] px-3 py-1 text-xs font-black text-white shadow-sm shadow-[#0f4050]/20">{badge}</span>}
+        {badge && <span className="rounded-full bg-[#173f4a] px-3 py-1 text-xs font-black text-white shadow-sm shadow-[#173f4a]/20">{badge}</span>}
       </div>
       {children}
     </section>
@@ -1308,25 +1313,25 @@ function SeazoneSection({ title, badge, children }: { title: string; badge?: str
 
 function SeazoneExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
   return (
-    <article className="rounded-2xl border border-[#c7d2d6] bg-white p-4 shadow-sm shadow-slate-950/6">
+    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-4 shadow-sm shadow-slate-950/5">
       <div className="grid gap-4 sm:grid-cols-[112px_1fr]">
         {experience.photo_url ? (
-          <img src={experience.photo_url} alt={experience.yacht_name || "Yacht"} className="h-24 w-full rounded-xl border border-[#d7b46a]/45 object-cover" />
+          <img src={experience.photo_url} alt={experience.yacht_name || "Yacht"} className="h-24 w-full rounded-xl border border-[#d8e2e6] object-cover" />
         ) : (
-          <div className="hidden h-24 rounded-xl border border-[#d7b46a]/35 bg-[linear-gradient(135deg,#eef3f4,#dfe9ec)] sm:block" />
+          <div className="hidden h-24 rounded-xl border border-[#d8e2e6] bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] sm:block" />
         )}
         <div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h4 className="text-lg font-black text-[#06111f]">{experience.yacht_name || "Yacht"}</h4>
-              <p className="mt-1 text-sm font-semibold text-[#0f6372]">{formatDateRange(experience.start_date, experience.end_date)}</p>
+              <p className="mt-1 text-sm font-semibold text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-md bg-[#0f4050] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
+              <span className="rounded-md bg-[#173f4a] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
                 {experience.position || "Position"}
               </span>
               {references.length > 0 && (
-                <span className="rounded-md border border-[#d7b46a]/45 bg-[#fbf7eb] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-[#8b6f2e]">
+                <span className="rounded-md border border-[#cddae0] bg-[#f5f8f9] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-[#2d7482]">
                   Reference
                 </span>
               )}
@@ -1334,7 +1339,7 @@ function SeazoneExperienceCard({ experience, references }: { experience: Experie
           </div>
 
           <div className="mt-4 rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8b6f2e]">Duties</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
             <p className="mt-2 text-sm leading-6 text-[#364650]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
             </p>
@@ -1351,12 +1356,12 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 
   return (
     <div className="mt-4 border-t border-[#c7d2d6] pt-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8b6f2e]">Reference</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
-          <div key={reference.id || reference.email || reference.phone || reference.name} className="rounded-xl border border-[#d7b46a]/38 bg-white px-3 py-2">
+          <div key={reference.id || reference.email || reference.phone || reference.name} className="rounded-xl border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-sm font-black text-[#06111f]">{reference.name || "Reference"}</p>
-            <p className="mt-1 text-xs font-semibold text-[#0f6372]">
+            <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
             </p>
             {(reference.email || reference.phone) && (
@@ -1372,13 +1377,13 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
-    <div className={`rounded-xl border px-4 py-3 ${expiring ? "border-[#d7b46a] bg-[#fbf7eb]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
+    <div className={`rounded-xl border px-4 py-3 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-black text-[#06111f]">{document.document_type}</p>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#7a858b]">{document.category || "Certificate"}</p>
         </div>
-        <p className={expiring ? "text-xs font-black text-[#8b6f2e]" : "text-xs font-black text-[#0f6372]"}>
+        <p className={expiring ? "text-xs font-black text-[#9a4b2e]" : "text-xs font-black text-[#2d7482]"}>
           {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
         </p>
       </div>
@@ -1400,7 +1405,7 @@ function calculateAge(value?: string) {
 function Panel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
-      <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#d7b46a,#ef776f)]" />
+      <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#2d7482)]" />
       <div className="p-5">
       <div className="mb-5 flex items-center gap-3 border-b border-slate-200 pb-4">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>

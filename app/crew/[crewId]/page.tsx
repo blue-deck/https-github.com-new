@@ -104,41 +104,46 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
         </div>
 
         <div className="min-h-[1120px] bg-[#fbfcfc] print:min-h-0">
-          <header className="relative overflow-hidden bg-[linear-gradient(135deg,#06111f_0%,#0b2630_48%,#123f4a_100%)] px-6 pb-9 pt-6 text-white sm:px-9 sm:pb-10">
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-[#d7b46a]" />
-            <div className="relative flex items-start justify-between gap-4">
+          <header className="border-b border-[#d8e2e6] bg-[#fbfcfc] px-6 py-6 sm:px-8">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <BlueDeckMark className="h-12 w-16 rounded-xl border-[#d7b46a]/45 bg-white/8 shadow-black/25" imageClassName="p-1" />
+                <BlueDeckMark className="h-10 w-14 rounded-xl border-[#d8e2e6] bg-white shadow-sm" imageClassName="p-1" />
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">BlueDeck</p>
-                  <p className="text-xs font-semibold text-white/65">Verified crew CV</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#07131f]">BlueDeck</p>
+                  <p className="text-xs font-semibold text-[#6b7b84]">Verified crew CV</p>
                 </div>
               </div>
-              <p className="rounded-full border border-[#d7b46a]/45 bg-white/8 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/82">
+              <p className="rounded-full border border-[#d8e2e6] bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-[#40535d]">
                 {text(profile, "public_crew_id") || crewId}
               </p>
             </div>
 
-            <div className="relative mx-auto mt-8 max-w-3xl text-center">
-              <div className="mx-auto h-40 w-40 overflow-hidden rounded-full border-[6px] border-[#d7b46a] bg-white shadow-2xl shadow-black/30 sm:h-44 sm:w-44">
+            <div className="mt-7 grid items-center gap-6 md:grid-cols-[1fr_140px_1fr]">
+              <div className="order-2 text-center md:order-1 md:text-right">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2d7482]">Verified Crew Profile</p>
+                <p className="mt-3 text-sm leading-6 text-[#596972]">
+                  Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
+                </p>
+              </div>
+
+              <div className="order-1 mx-auto h-32 w-32 overflow-hidden rounded-full border border-[#d8e2e6] bg-white p-1 shadow-lg shadow-slate-950/10 md:order-2 sm:h-36 sm:w-36">
                 {text(profile, "profile_photo_url") ? (
-                  <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full object-cover" />
+                  <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-[#eef3f4] text-[#0f4050]">
-                    <UserRound className="h-16 w-16" />
+                  <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
+                    <UserRound className="h-14 w-14" />
                   </div>
                 )}
               </div>
-              <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-[#d7b46a]">Verified Crew Profile</p>
-              <h1 className="mt-2 text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl">{name}</h1>
-              <p className="mt-3 text-sm font-black uppercase tracking-[0.22em] text-white/76">{position}</p>
-              <div className="mx-auto mt-5 h-px w-40 bg-[#d7b46a]" />
-              <p className="mx-auto mt-5 max-w-2xl text-[15px] leading-7 text-white/74">
-                Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.
-              </p>
+
+              <div className="order-3 text-center md:text-left">
+                <h1 className="text-3xl font-black leading-tight text-[#07131f] sm:text-4xl">{name}</h1>
+                <p className="mt-3 text-sm font-black uppercase tracking-[0.2em] text-[#2d7482]">{position}</p>
+                <div className="mt-4 h-px w-full bg-[#d8e2e6]" />
+              </div>
             </div>
 
-            <div className="relative mt-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div className="mt-7 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3 lg:grid-cols-6">
               <Stat label="Experience" value={`${totalExperienceYears(experiences)}y`} />
               <Stat label="References" value={String(cleanReferences.length)} />
               <Stat label="Documents" value={String(documents.length)} />
@@ -147,7 +152,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               <Stat label="Location" value={text(profile, "location") || "-"} />
             </div>
 
-            <div className="relative mt-6 grid gap-3 border-y border-white/12 py-4 text-center text-sm font-semibold text-white/78 sm:grid-cols-3">
+            <div className="mt-4 grid gap-2 rounded-2xl border border-[#d8e2e6] bg-[#f5f8f9] p-3 text-center text-sm font-semibold text-[#40535d] sm:grid-cols-3">
               <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
               <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
               <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
@@ -175,29 +180,29 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                     <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="rounded-2xl border border-[#c7d2d6] bg-white p-4 shadow-sm shadow-slate-950/6">
                       <div className="grid gap-4 sm:grid-cols-[132px_1fr]">
                         {text(experience, "photo_url") ? (
-                          <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-28 w-full rounded-xl border border-[#d7b46a]/45 object-cover" />
+                          <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-28 w-full rounded-xl border border-[#d8e2e6] object-cover" />
                         ) : (
-                          <div className="hidden h-28 rounded-xl border border-[#d7b46a]/35 bg-[linear-gradient(135deg,#eef3f4,#dfe9ec)] sm:block" />
+                          <div className="hidden h-28 rounded-xl border border-[#d8e2e6] bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] sm:block" />
                         )}
                         <div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <h2 className="text-xl font-black text-[#06111f]">{text(experience, "yacht_name") || "Yacht"}</h2>
-                              <p className="mt-1 text-sm font-semibold text-[#0f6372]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
+                              <p className="mt-1 text-sm font-semibold text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              <span className="w-fit rounded-md bg-[#0f4050] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
+                              <span className="w-fit rounded-md bg-[#173f4a] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-white">
                                 {text(experience, "position") || "Position"}
                               </span>
                               {experienceReferences.length > 0 && (
-                                <span className="w-fit rounded-md border border-[#d7b46a]/45 bg-[#fbf7eb] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-[#8b6f2e]">
+                                <span className="w-fit rounded-md border border-[#cddae0] bg-[#f5f8f9] px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-[#2d7482]">
                                   Reference
                                 </span>
                               )}
                             </div>
                           </div>
                           <div className="mt-4 rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-4">
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8b6f2e]">Duties</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
                             <p className="mt-2 text-sm leading-6 text-[#364650]">
                               {text(experience, "description") || "Responsibilities and onboard duties will appear here."}
                             </p>
@@ -222,7 +227,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                           <p className="font-black text-[#06111f]">{text(document, "document_type") || "Document"}</p>
                           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
                         </div>
-                        <p className="text-right text-xs font-black text-[#0f6372]">
+                        <p className="text-right text-xs font-black text-[#2d7482]">
                           {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
                         </p>
                       </div>
@@ -238,10 +243,10 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                       <div key={language.name}>
                         <div className="flex justify-between gap-3 text-sm">
                           <span className="font-black text-slate-900">{language.name}</span>
-                          <span className="font-semibold text-[#0f6372]">{language.level}</span>
+                          <span className="font-semibold text-[#2d7482]">{language.level}</span>
                         </div>
                         <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#dbe4e7]">
-                          <div className="h-full rounded-full bg-[#0f4050]" style={{ width: languageLevelWidth(language.level) }} />
+                          <div className="h-full rounded-full bg-[#173f4a]" style={{ width: languageLevelWidth(language.level) }} />
                         </div>
                       </div>
                     ))
@@ -267,7 +272,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                   {standaloneReferences.slice(0, 4).map((reference) => (
                     <div key={text(reference, "id") || text(reference, "email") || text(reference, "name")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                       <p className="font-black text-[#06111f]">{text(reference, "name") || "Reference"}</p>
-                      <p className="mt-1 text-sm font-semibold text-[#0f6372]">
+                      <p className="mt-1 text-sm font-semibold text-[#2d7482]">
                         {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
                       </p>
                       <p className="mt-2 text-xs text-[#5a6870]">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
@@ -482,9 +487,9 @@ function languageLevelWidth(level: string) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-[#d7b46a]/24 bg-white/92 px-3 py-3 text-slate-950 shadow-lg shadow-black/12">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#8b6f2e]">{label}</p>
-      <p className="mt-1 text-xl font-black">{value}</p>
+    <div className="bg-white px-3 py-3 text-slate-950">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6b7b84]">{label}</p>
+      <p className="mt-1 text-lg font-black text-[#07131f]">{value}</p>
     </div>
   );
 }
@@ -492,7 +497,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function ContactLine({ icon, text: value }: { icon: ReactNode; text: string }) {
   return (
     <p className="flex items-start gap-2 break-words font-semibold">
-      <span className="mt-0.5 text-[#8b6f2e]">{icon}</span>
+      <span className="mt-0.5 text-[#2d7482]">{icon}</span>
       <span>{value}</span>
     </p>
   );
@@ -516,7 +521,7 @@ function CvSection({
           {icon}
           {title}
         </h2>
-        {badge && <span className="rounded-full bg-[#0f4050] px-3 py-1 text-xs font-black text-white shadow-sm shadow-[#0f4050]/20">{badge}</span>}
+        {badge && <span className="rounded-full bg-[#173f4a] px-3 py-1 text-xs font-black text-white shadow-sm shadow-[#173f4a]/20">{badge}</span>}
       </div>
       {children}
     </section>
@@ -528,12 +533,12 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
 
   return (
     <div className="mt-4 border-t border-[#c7d2d6] pt-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8b6f2e]">Reference</p>
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
-          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="rounded-xl border border-[#d7b46a]/38 bg-white px-3 py-2">
+          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="rounded-xl border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-sm font-black text-[#06111f]">{text(reference, "name") || "Reference"}</p>
-            <p className="mt-1 text-xs font-semibold text-[#0f6372]">
+            <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
             </p>
             {(text(reference, "email") || text(reference, "phone")) && (
