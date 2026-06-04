@@ -141,11 +141,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } else {
       const browserLanguage = window.navigator.language.toLowerCase();
       if (browserLanguage.startsWith("tr")) detectedLanguage = "tr";
-      else if (browserLanguage.startsWith("ru")) detectedLanguage = "ru";
-      else if (browserLanguage.startsWith("it")) detectedLanguage = "it";
-      else if (browserLanguage.startsWith("el") || browserLanguage.startsWith("gr")) {
-        detectedLanguage = "el";
-      }
     }
 
     if (!detectedLanguage) return;
