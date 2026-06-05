@@ -9,7 +9,6 @@ import {
   Check,
   Download,
   ExternalLink,
-  FileText,
   IdCard,
   Languages,
   MapPin,
@@ -294,10 +293,6 @@ export default function ProfilePage() {
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
-  const referenceVesselOptions = useMemo(
-    () => Array.from(new Set(experiences.map((item) => item.yacht_name.trim()).filter(Boolean))),
-    [experiences],
-  );
 
   const totalExperienceYears = useMemo(() => {
     const firstYear = experiences
@@ -497,12 +492,12 @@ export default function ProfilePage() {
       return false;
     }
 
-    const hasReferenceDetail = [item.name, item.role, item.vessel, item.company, item.phone, item.email, item.notes].some(
+    const hasReferenceDetail = [item.name, item.role, item.company, item.phone, item.email].some(
       (value) => typeof value === "string" && value.trim().length > 0,
     );
 
     if (!hasReferenceDetail) {
-      setReferenceStatus({ type: "error", message: "Add a reference name, vessel, contact detail or note before saving." });
+      setReferenceStatus({ type: "error", message: "Add a reference name/company, role, phone or email before saving." });
       return false;
     }
 
@@ -521,7 +516,7 @@ export default function ProfilePage() {
     await loadRelated(profile.id);
     setReferenceStatus({
       type: "success",
-      message: "Reference saved. If the vessel name matches a yacht experience, it appears under that yacht's duties in the CV.",
+      message: "Reference saved under this yacht experience.",
     });
     return true;
   }
@@ -754,27 +749,6 @@ export default function ProfilePage() {
           <div className="space-y-6">
             <Panel title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
               <div className="space-y-4">
-                {[...experiences, emptyExperience].map((item, index) => {
-                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${index}`;
-
-                  return (
-                    <ExperienceEditor
-                      key={item.id || `new-${index}`}
-                      item={item}
-                      isNew={!item.id}
-                      onSave={saveExperience}
-                      onDelete={deleteExperience}
-                      onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
-                      onCancelUpload={cancelUpload}
-                      uploading={uploading === uploadSlot}
-                    />
-                  );
-                })}
-              </div>
-            </Panel>
-
-            <Panel title="References" icon={<FileText className="h-5 w-5" />}>
-              <div className="space-y-4">
                 {referenceStatus && (
                   <p
                     className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
@@ -786,17 +760,27 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
-                {[...references, emptyReference].map((item, index) => (
-                  <ReferenceEditor
-                    key={item.id || `new-${index}`}
-                    item={item}
-                    isNew={!item.id}
-                    experienceOptions={referenceVesselOptions}
-                    saving={referenceSaving}
-                    onSave={saveReference}
-                    onDelete={deleteReference}
-                  />
-                ))}
+                {[...experiences, emptyExperience].map((item, index) => {
+                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${index}`;
+                  const linkedReferences = referencesForExperience(item, references);
+
+                  return (
+                    <ExperienceEditor
+                      key={item.id || `new-${index}`}
+                      item={item}
+                      isNew={!item.id}
+                      references={linkedReferences}
+                      referenceSaving={referenceSaving}
+                      onSave={saveExperience}
+                      onDelete={deleteExperience}
+                      onSaveReference={saveReference}
+                      onDeleteReference={deleteReference}
+                      onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
+                      onCancelUpload={cancelUpload}
+                      uploading={uploading === uploadSlot}
+                    />
+                  );
+                })}
               </div>
             </Panel>
 
@@ -1684,16 +1668,24 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
 function ExperienceEditor({
   item,
   isNew,
+  references,
+  referenceSaving,
   onSave,
   onDelete,
+  onSaveReference,
+  onDeleteReference,
   onUpload,
   onCancelUpload,
   uploading,
 }: {
   item: Experience;
   isNew: boolean;
+  references: ReferenceEntry[];
+  referenceSaving: boolean;
   onSave: (item: Experience) => void;
   onDelete: (id?: string) => void;
+  onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
+  onDeleteReference: (id?: string) => void;
   onUpload: (file: File) => Promise<string>;
   onCancelUpload: () => void;
   uploading: boolean;
@@ -1706,15 +1698,33 @@ function ExperienceEditor({
     if (!isNew) onSave(nextDraft);
   }
 
+  async function saveLinkedReference(reference: ReferenceEntry) {
+    const yachtName = draft.yacht_name.trim();
+
+    if (!yachtName) {
+      alert("Add the yacht name before saving a reference.");
+      return false;
+    }
+
+    return onSaveReference({
+      ...reference,
+      name: (reference.name || reference.company).trim(),
+      vessel: yachtName,
+      company: "",
+      notes: "",
+      show_on_cv: true,
+    });
+  }
+
   return (
-    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-      <div className="grid items-start gap-3 sm:grid-cols-[136px_1fr]">
-        <div className="rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
+      <div className="grid items-stretch gap-3 sm:grid-cols-[128px_1fr]">
+        <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           <div className="relative overflow-hidden rounded-lg border border-[#d8e2e6] bg-white">
             {draft.photo_url ? (
-              <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="h-24 w-full object-cover" />
+              <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="h-20 w-full object-cover" />
             ) : (
-              <div className="flex h-24 items-center justify-center bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-[#6b7b84]">
+              <div className="flex h-20 items-center justify-center bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-[#6b7b84]">
                 <Camera className="h-5 w-5" />
               </div>
             )}
@@ -1766,7 +1776,7 @@ function ExperienceEditor({
             </label>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
             {uploading && (
               <button type="button" onClick={onCancelUpload} className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
                 Cancel
@@ -1788,9 +1798,35 @@ function ExperienceEditor({
               value={draft.description || ""}
               onChange={(event) => setDraft({ ...draft, description: event.target.value })}
               placeholder="Responsibilities and onboard duties"
-              className="mt-2 min-h-32 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-3 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+              className="mt-2 min-h-24 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
             />
           </label>
+          <div className="mt-3 border-t border-[#c7d2d6] pt-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
+              <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this yacht</p>
+            </div>
+            <div className="space-y-2">
+              {references.map((reference) => (
+                <ExperienceReferenceEditor
+                  key={reference.id || `${reference.name}-${reference.email}`}
+                  item={reference}
+                  isNew={false}
+                  saving={referenceSaving}
+                  onSave={saveLinkedReference}
+                  onDelete={onDeleteReference}
+                />
+              ))}
+              <ExperienceReferenceEditor
+                key={`new-reference-${item.id || "draft"}`}
+                item={emptyReference}
+                isNew
+                saving={referenceSaving}
+                onSave={saveLinkedReference}
+                onDelete={onDeleteReference}
+              />
+            </div>
+          </div>
           <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
         </div>
       </div>
@@ -1848,55 +1884,111 @@ function ExperienceCardDateField({ label, value, onChange }: { label: string; va
   );
 }
 
-function ReferenceEditor({
+function ExperienceReferenceEditor({
   item,
   isNew,
-  experienceOptions,
   saving,
   onSave,
   onDelete,
 }: {
   item: ReferenceEntry;
   isNew: boolean;
-  experienceOptions: string[];
   saving: boolean;
   onSave: (item: ReferenceEntry) => Promise<boolean>;
   onDelete: (id?: string) => void;
 }) {
   const [draft, setDraft] = useState(item);
-  const vesselListId = `reference-vessel-${draft.id || (isNew ? "new" : "saved")}`;
+  const nameValue = draft.name || draft.company || "";
 
   async function handleSave() {
-    const saved = await onSave(draft);
+    const saved = await onSave({
+      ...draft,
+      name: nameValue.trim(),
+      company: "",
+      notes: "",
+      show_on_cv: true,
+    });
     if (saved && isNew) setDraft(emptyReference);
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Name" value={draft.name} onChange={(value) => setDraft({ ...draft, name: value })} />
-        <Field label="Role" value={draft.role} onChange={(value) => setDraft({ ...draft, role: value })} />
-        <Field
-          label="Related yacht / vessel"
-          value={draft.vessel}
-          listId={experienceOptions.length ? vesselListId : undefined}
-          onChange={(value) => setDraft({ ...draft, vessel: value })}
+    <div className="rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5">
+      <div className="grid items-center gap-2 lg:grid-cols-[1.2fr_0.85fr_0.9fr_1fr_auto]">
+        <ReferenceMiniField
+          label="Name / Company"
+          value={nameValue}
+          placeholder="Name / Company"
+          onChange={(value) => setDraft({ ...draft, name: value, company: "" })}
         />
-        {experienceOptions.length > 0 && (
-          <datalist id={vesselListId}>
-            {experienceOptions.map((option) => (
-              <option key={option} value={option} />
-            ))}
-          </datalist>
-        )}
-        <Field label="Company" value={draft.company} onChange={(value) => setDraft({ ...draft, company: value })} />
-        <PhoneInput label="Phone" value={draft.phone} onChange={(value) => setDraft({ ...draft, phone: value })} />
-        <Field label="Email" value={draft.email} onChange={(value) => setDraft({ ...draft, email: value })} />
+        <ReferenceMiniField
+          label="Role"
+          value={draft.role}
+          placeholder="Role"
+          onChange={(value) => setDraft({ ...draft, role: value })}
+        />
+        <ReferenceMiniField
+          label="Phone"
+          value={draft.phone}
+          placeholder="Phone"
+          onChange={(value) => setDraft({ ...draft, phone: value })}
+        />
+        <ReferenceMiniField
+          label="Email"
+          value={draft.email}
+          placeholder="Email"
+          type="email"
+          onChange={(value) => setDraft({ ...draft, email: value })}
+        />
+        <div className="flex gap-1.5 lg:justify-end">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleSave}
+            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-[#173f4a] px-3 text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#235866] disabled:cursor-wait disabled:opacity-60"
+          >
+            {saving ? "Saving" : isNew ? "Add" : "Save"}
+          </button>
+          {!isNew && (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => onDelete(draft.id)}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-rose-100 bg-white px-2.5 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Delete reference"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
-      <TextArea label="Notes" value={draft.notes} onChange={(value) => setDraft({ ...draft, notes: value })} />
-      <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
-      <EditorButtons isNew={isNew} onSave={handleSave} onDelete={() => onDelete(draft.id)} addLabel="Add reference" saving={saving} />
     </div>
+  );
+}
+
+function ReferenceMiniField({
+  label,
+  value,
+  placeholder,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value?: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="sr-only">{label}</span>
+      <input
+        type={type}
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-9 w-full rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] px-2.5 text-[12px] font-semibold text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:bg-white focus:ring-2 focus:ring-[#2d7482]/15"
+      />
+    </label>
   );
 }
 
