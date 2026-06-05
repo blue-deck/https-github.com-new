@@ -82,7 +82,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <section className="mx-auto max-w-[1120px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
+      <section id="bluedeck-cv" className="mx-auto max-w-[1120px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
           <div className="flex items-center gap-3">
             <BlueDeckMark className="h-12 w-16 rounded-2xl border-slate-200 bg-slate-950" imageClassName="p-1" />

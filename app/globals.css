@@ -698,23 +698,83 @@ textarea:-webkit-autofill:focus {
     margin: 0;
   }
 
-  body {
+  html:has(#bluedeck-cv) {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm;
+  }
+
+  body:has(#bluedeck-cv) {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
     background: white !important;
   }
 
-  body * {
-    visibility: hidden;
+  body:has(#bluedeck-cv) *:not(#bluedeck-cv):not(#bluedeck-cv *):not(:has(#bluedeck-cv)) {
+    display: none !important;
+  }
+
+  body:has(#bluedeck-cv) :has(#bluedeck-cv) {
+    display: block !important;
+    width: 210mm !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
   }
 
   #bluedeck-cv,
   #bluedeck-cv * {
-    visibility: visible;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   #bluedeck-cv {
-    position: absolute;
-    inset: 0 auto auto 0;
-    width: 100%;
+    position: static !important;
+    inset: auto !important;
+    width: 210mm !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
     border-radius: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+
+  #bluedeck-cv > div,
+  #bluedeck-cv > div > div,
+  #bluedeck-cv > div > div > div {
+    max-width: none !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #bluedeck-cv header,
+  #bluedeck-cv aside,
+  #bluedeck-cv main,
+  #bluedeck-cv section,
+  #bluedeck-cv article,
+  #bluedeck-cv figure {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #bluedeck-cv article,
+  #bluedeck-cv figure {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  #bluedeck-cv img,
+  #bluedeck-cv svg {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
   }
 }
