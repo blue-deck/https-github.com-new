@@ -1707,47 +1707,144 @@ function ExperienceEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      {draft.photo_url && <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="mb-4 h-52 w-full rounded-xl object-cover" />}
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Yacht name" value={draft.yacht_name} onChange={(value) => setDraft({ ...draft, yacht_name: value })} />
-        <Field label="Position" value={draft.position} onChange={(value) => setDraft({ ...draft, position: value })} />
-        <DateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
-        <DateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
+    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
+      <div className="grid items-start gap-3 sm:grid-cols-[136px_1fr]">
+        <div className="rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+          <div className="relative overflow-hidden rounded-lg border border-[#d8e2e6] bg-white">
+            {draft.photo_url ? (
+              <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="h-24 w-full object-cover" />
+            ) : (
+              <div className="flex h-24 items-center justify-center bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-[#6b7b84]">
+                <Camera className="h-5 w-5" />
+              </div>
+            )}
+            <label className={`absolute inset-x-2 bottom-2 inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md bg-[#06111f]/85 px-2 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-white shadow-lg shadow-slate-950/20 transition hover:bg-[#173f4a] ${uploading ? "cursor-progress opacity-80" : ""}`}>
+              <Upload className="h-3 w-3" />
+              {uploading ? "Uploading" : draft.photo_url ? "Change" : "Photo"}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                className="hidden"
+                onChange={async (event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (!file) return;
+                  const url = await onUpload(file);
+                  if (url) setDraft((current) => ({ ...current, photo_url: url }));
+                }}
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <ExperienceCardInput
+              label="Yacht name"
+              value={draft.yacht_name}
+              placeholder="Yacht"
+              strong
+              onChange={(value) => setDraft({ ...draft, yacht_name: value })}
+            />
+            <div className="grid gap-1.5">
+              <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
+              <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
+            </div>
+            <label className="block">
+              <span className="sr-only">Position</span>
+              <select
+                value={draft.position || ""}
+                onChange={(event) => setDraft({ ...draft, position: event.target.value })}
+                className="w-full cursor-pointer appearance-none rounded-md border border-[#173f4a] bg-[#173f4a] px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-white outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/20"
+              >
+                <option value="">Position</option>
+                {yachtPositionTitles.map((position) => (
+                  <option key={position} value={position}>
+                    {position}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {uploading && (
+              <button type="button" onClick={onCancelUpload} className="cursor-pointer rounded-md border border-slate-200 bg-white px-2 py-1 text-[10px] font-black text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                Cancel
+              </button>
+            )}
+            {draft.photo_url && !uploading && (
+              <button type="button" onClick={removePhoto} className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-rose-100 bg-white px-2 py-1 text-[10px] font-black text-rose-700 transition hover:bg-rose-50">
+                <Trash2 className="h-3 w-3" />
+                Remove
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+          <label className="flex flex-1 flex-col">
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</span>
+            <textarea
+              value={draft.description || ""}
+              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+              placeholder="Responsibilities and onboard duties"
+              className="mt-2 min-h-32 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-3 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+            />
+          </label>
+          <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
+        </div>
       </div>
-      <TextArea label="Duties" value={draft.description} onChange={(value) => setDraft({ ...draft, description: value })} />
-      <div className="mt-4 flex flex-wrap gap-2">
-        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
-          <Upload className="h-4 w-4 text-cyan-700" />
-          {uploading ? "Uploading..." : draft.photo_url ? "Change yacht photo" : "Add yacht photo"}
-          <input
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            className="hidden"
-            onChange={async (event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (!file) return;
-              const url = await onUpload(file);
-              if (url) setDraft((current) => ({ ...current, photo_url: url }));
-            }}
-          />
-        </label>
-        {uploading && (
-          <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-            Cancel upload
-          </button>
-        )}
-        {draft.photo_url && !uploading && (
-          <button type="button" onClick={removePhoto} className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-            <Trash2 className="h-4 w-4" />
-            Remove photo
-          </button>
-        )}
-      </div>
-      <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
-    </div>
+    </article>
+  );
+}
+
+function ExperienceCardInput({
+  label,
+  value,
+  placeholder,
+  onChange,
+  strong = false,
+}: {
+  label: string;
+  value?: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+  strong?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="sr-only">{label}</span>
+      <input
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className={`w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${strong ? "text-[15px] font-black leading-tight text-[#06111f]" : "text-[12px] font-semibold text-[#2d7482]"}`}
+      />
+    </label>
+  );
+}
+
+function ExperienceCardDateField({ label, value, onChange }: { label: string; value?: string; onChange: (value: string) => void }) {
+  const [display, setDisplay] = useState(formatDateForDisplay(value || ""));
+
+  function commit(nextDisplay: string) {
+    const formatted = formatDateTyping(nextDisplay);
+    setDisplay(formatted);
+    onChange(parseDisplayDate(formatted));
+  }
+
+  return (
+    <label className="block">
+      <span className="sr-only">{label}</span>
+      <input
+        inputMode="numeric"
+        value={display}
+        onChange={(event) => commit(event.target.value)}
+        onBlur={() => setDisplay(formatDateForDisplay(parseDisplayDate(display)))}
+        placeholder={label}
+        className="w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-1.5 text-[12px] font-semibold leading-5 text-[#2d7482] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+      />
+    </label>
   );
 }
 
