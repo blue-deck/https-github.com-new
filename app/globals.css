@@ -756,6 +756,108 @@ textarea:-webkit-autofill:focus {
     box-shadow: none !important;
   }
 
+  #bluedeck-cv .bd-cv-sheet {
+    width: 210mm !important;
+    max-width: none !important;
+  }
+
+  #bluedeck-cv .bd-cv-layout {
+    display: grid !important;
+    grid-template-columns: 74mm 136mm !important;
+    align-items: start !important;
+    width: 210mm !important;
+    min-height: 0 !important;
+  }
+
+  #bluedeck-cv .bd-cv-sidebar {
+    padding: 64mm 7mm 8mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-avatar {
+    top: 9mm !important;
+    width: 45mm !important;
+    height: 45mm !important;
+    border-width: 2.8mm !important;
+    box-shadow: none !important;
+  }
+
+  #bluedeck-cv .bd-cv-side-stack {
+    display: grid !important;
+    gap: 7mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-side-stack > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+  }
+
+  #bluedeck-cv .bd-cv-header {
+    padding: 8mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-header > div {
+    min-height: 34mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-main {
+    padding: 7mm 8mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-section {
+    margin-top: 5mm !important;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  #bluedeck-cv .bd-cv-section:first-child {
+    margin-top: 0 !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-list {
+    display: block !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-list > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 4mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience {
+    margin: 0 !important;
+    padding: 2.8mm !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-grid {
+    display: grid !important;
+    grid-template-columns: 34mm 1fr !important;
+    gap: 3mm !important;
+    align-items: start !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-meta,
+  #bluedeck-cv .bd-cv-reference-list,
+  #bluedeck-cv .bd-cv-reference-card,
+  #bluedeck-cv .bd-cv-side-section,
+  #bluedeck-cv figure {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-meta,
+  #bluedeck-cv .bd-cv-experience-body {
+    padding: 2.5mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-body {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-meta > img,
+  #bluedeck-cv .bd-cv-experience-meta > div:first-child {
+    height: 22mm !important;
+  }
+
   #bluedeck-cv header,
   #bluedeck-cv aside,
   #bluedeck-cv main,
@@ -766,15 +868,18 @@ textarea:-webkit-autofill:focus {
     print-color-adjust: exact !important;
   }
 
-  #bluedeck-cv article,
-  #bluedeck-cv figure {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
   #bluedeck-cv img,
   #bluedeck-cv svg {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
+  }
+
+  #bluedeck-cv h1,
+  #bluedeck-cv h2,
+  #bluedeck-cv h3,
+  #bluedeck-cv h4,
+  #bluedeck-cv p {
+    orphans: 3;
+    widows: 3;
   }
 }

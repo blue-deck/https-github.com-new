@@ -82,7 +82,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <section id="bluedeck-cv" className="mx-auto max-w-[1120px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
+      <section id="bluedeck-cv" className="bd-cv-root mx-auto max-w-[1120px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
           <div className="flex items-center gap-3">
             <BlueDeckMark className="h-12 w-16 rounded-2xl border-slate-200 bg-slate-950" imageClassName="p-1" />
@@ -99,9 +99,9 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
-        <div className="grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
-          <aside className="relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
-            <div className="absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
+        <div className="bd-cv-layout grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
+          <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
+            <div className="bd-cv-avatar absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
               {text(profile, "profile_photo_url") ? (
                 <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
               ) : (
@@ -111,7 +111,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               )}
             </div>
 
-            <div className="space-y-8">
+            <div className="bd-cv-side-stack space-y-8">
               <SideSection title="About Me">
                 <p className="text-[14px] leading-7 text-[#3d454c]">{professionalSummary}</p>
               </SideSection>
@@ -182,7 +182,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </aside>
 
           <section className="bg-white">
-            <header className="bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
+            <header className="bd-cv-header bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
               <div className="flex min-h-[132px] flex-col justify-center gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#8ed8e6]">Verified Crew Profile</p>
@@ -199,9 +199,9 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               </div>
             </header>
 
-            <div className="p-6 sm:p-8 print:p-7">
+            <div className="bd-cv-main p-6 sm:p-8 print:p-7">
               <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" />}>
-              <div className="space-y-4">
+              <div className="bd-cv-experience-list space-y-4">
                 {experiences.length === 0 && (
                   <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
                     No yacht experience added yet.
@@ -211,9 +211,9 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                   const experienceReferences = publicReferencesForExperience(experience, cleanReferences);
 
                   return (
-                    <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-                      <div className="grid items-start gap-3 sm:grid-cols-[136px_1fr]">
-                        <div className="rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+                    <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
+                      <div className="bd-cv-experience-grid grid items-start gap-3 sm:grid-cols-[136px_1fr]">
+                        <div className="bd-cv-experience-meta rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
                           {text(experience, "photo_url") ? (
                             <img src={text(experience, "photo_url")} alt={text(experience, "yacht_name") || "Yacht"} className="h-24 w-full rounded-lg object-cover" />
                           ) : (
@@ -228,7 +228,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+                        <div className="bd-cv-experience-body rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
                           <p className="mt-2 text-[13px] leading-5 text-[#364650]">
                             {text(experience, "description") || "Responsibilities and onboard duties will appear here."}
@@ -479,7 +479,7 @@ function CvSection({
   children: ReactNode;
 }) {
   return (
-    <section className="mt-6">
+    <section className="bd-cv-section mt-6">
       <div className="mb-3 flex items-center justify-between gap-4 border-b border-[#b9c8cd] pb-2">
         <h2 className="flex items-center gap-2 text-[13px] font-black uppercase tracking-[0.14em] text-[#06111f]">
           {icon}
@@ -494,7 +494,7 @@ function CvSection({
 
 function SideSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section>
+    <section className="bd-cv-side-section">
       <div className="mb-3 flex items-center gap-4">
         <h2 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#242a31]">{title}</h2>
         <div className="h-px flex-1 bg-[#242a31]/45" />
@@ -517,11 +517,11 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
   if (references.length === 0) return null;
 
   return (
-    <div className="mt-3 border-t border-[#c7d2d6] pt-3">
+    <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
-          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{text(reference, "name") || "Reference"}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}

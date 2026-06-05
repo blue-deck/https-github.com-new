@@ -1155,7 +1155,7 @@ function SeazoneStyleCvPreview({
   return (
     <section
       id="bluedeck-cv"
-      className="overflow-hidden rounded-[24px] border border-[#d8e2e6] bg-[#f3f7f8] text-slate-950 shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:bg-white print:shadow-none"
+      className="bd-cv-root overflow-hidden rounded-[24px] border border-[#d8e2e6] bg-[#f3f7f8] text-slate-950 shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:bg-white print:shadow-none"
     >
       <div className="flex items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
         <div>
@@ -1172,10 +1172,10 @@ function SeazoneStyleCvPreview({
       </div>
 
       <div className="bg-[#f3f7f8] p-3 sm:p-5 print:p-0">
-        <div className="mx-auto max-w-[980px] overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-          <div className="grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
-            <aside className="relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
-              <div className="absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
+        <div className="bd-cv-sheet mx-auto max-w-[980px] overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+          <div className="bd-cv-layout grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
+            <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
+              <div className="bd-cv-avatar absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
                 {profile.profile_photo_url ? (
                   <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full rounded-full object-cover" />
                 ) : (
@@ -1185,7 +1185,7 @@ function SeazoneStyleCvPreview({
                 )}
               </div>
 
-              <div className="space-y-8">
+              <div className="bd-cv-side-stack space-y-8">
                 <SeazoneSideSection title="About Me">
                   <p className="text-[14px] leading-7 text-[#3d454c]">{professionalSummary}</p>
                 </SeazoneSideSection>
@@ -1253,7 +1253,7 @@ function SeazoneStyleCvPreview({
             </aside>
 
             <div className="bg-white">
-              <header className="bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
+              <header className="bd-cv-header bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
                 <div className="flex min-h-[132px] flex-col justify-center gap-6 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#8ed8e6]">Verified Crew Profile</p>
@@ -1270,9 +1270,9 @@ function SeazoneStyleCvPreview({
                 </div>
               </header>
 
-              <main className="p-6 sm:p-8 print:p-7">
+              <main className="bd-cv-main p-6 sm:p-8 print:p-7">
                 <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
-                <div className="space-y-4">
+                <div className="bd-cv-experience-list space-y-4">
                   {cleanExperiences.length === 0 && (
                     <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
                       No yacht experience added yet.
@@ -1396,7 +1396,7 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
 
 function SeazoneSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) {
   return (
-    <section className="mt-6">
+    <section className="bd-cv-section mt-6">
       <div className="mb-3 flex items-center justify-between gap-4 border-b border-[#b9c8cd] pb-2">
         <h3 className="text-[13px] font-black uppercase tracking-[0.14em] text-[#06111f]">{title}</h3>
         {badge && <span className="rounded-full bg-[#173f4a] px-3 py-1 text-[11px] font-black text-white shadow-sm shadow-[#173f4a]/20">{badge}</span>}
@@ -1408,7 +1408,7 @@ function SeazoneSection({ title, badge, children }: { title: string; badge?: str
 
 function SeazoneSideSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section>
+    <section className="bd-cv-side-section">
       <div className="mb-3 flex items-center gap-4">
         <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#242a31]">{title}</h3>
         <div className="h-px flex-1 bg-[#242a31]/45" />
@@ -1429,9 +1429,9 @@ function SeazoneSidebarLine({ label, value }: { label: string; value: string }) 
 
 function SeazoneExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
   return (
-    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-      <div className="grid items-start gap-3 sm:grid-cols-[136px_1fr]">
-        <div className="rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+    <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
+      <div className="bd-cv-experience-grid grid items-start gap-3 sm:grid-cols-[136px_1fr]">
+        <div className="bd-cv-experience-meta rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           {experience.photo_url ? (
             <img src={experience.photo_url} alt={experience.yacht_name || "Yacht"} className="h-24 w-full rounded-lg object-cover" />
           ) : (
@@ -1446,7 +1446,7 @@ function SeazoneExperienceCard({ experience, references }: { experience: Experie
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+        <div className="bd-cv-experience-body rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
             <p className="mt-2 text-[13px] leading-5 text-[#364650]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
@@ -1462,11 +1462,11 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
   if (references.length === 0) return null;
 
   return (
-    <div className="mt-3 border-t border-[#c7d2d6] pt-3">
+    <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
-          <div key={reference.id || reference.email || reference.phone || reference.name} className="rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+          <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{reference.name || "Reference"}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
