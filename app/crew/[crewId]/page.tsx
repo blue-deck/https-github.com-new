@@ -68,7 +68,6 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
   const { profile, documents, experiences, references, portfolio } = cv;
   const name = text(profile, "full_name") || "Crew Member";
   const position = primaryPosition(profile);
-  const age = calculateAge(text(profile, "date_of_birth"));
   const languages = languageEntries(profile.languages);
   const visibleSkills = [
     ...stringArray(profile.personal_skills),
@@ -119,12 +118,9 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
               <SideSection title="Profile">
                 <div className="space-y-2.5">
-                  <SidebarLine label="Age" value={age ? String(age) : "-"} />
+                  <SidebarLine label="Date of Birth" value={formatFullCvDate(text(profile, "date_of_birth"))} />
                   <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
-                  <SidebarLine label="Location" value={text(profile, "location") || "-"} />
-                  <SidebarLine label="Crew ID" value={text(profile, "public_crew_id") || crewId} />
-                  <SidebarLine label="References" value={String(cleanReferences.length)} />
-                  <SidebarLine label="Documents" value={String(documents.length)} />
+                  <SidebarLine label="Experience" value={`${totalExperienceYears(experiences)}y`} />
                 </div>
               </SideSection>
 
@@ -204,18 +200,6 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             </header>
 
             <div className="p-6 sm:p-8 print:p-7">
-              <div className="grid gap-3 border-b border-[#d8e2e6] pb-6 text-sm font-semibold text-[#40535d] sm:grid-cols-3">
-                <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
-                <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
-                <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
-              </div>
-
-              <div className="mt-6 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3">
-                <Stat label="Experience" value={`${totalExperienceYears(experiences)}y`} />
-                <Stat label="References" value={String(cleanReferences.length)} />
-                <Stat label="Documents" value={String(documents.length)} />
-              </div>
-
               <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" />}>
               <div className="space-y-4">
                 {experiences.length === 0 && (
@@ -402,22 +386,18 @@ function totalExperienceYears(experiences: Row[]) {
   return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
 }
 
-function calculateAge(value?: string) {
-  if (!value) return null;
-  const birthDate = new Date(value);
-  if (Number.isNaN(birthDate.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDelta = today.getMonth() - birthDate.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) age -= 1;
-  return age > 0 ? age : null;
-}
-
 function formatCvDate(value?: string) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+}
+
+function formatFullCvDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function formatDateRange(start?: string, end?: string) {
@@ -476,15 +456,6 @@ function languageLevelWidth(level: string) {
   if (normalized.includes("intermediate")) return "58%";
   if (normalized.includes("basic")) return "34%";
   return "50%";
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white px-3 py-2.5 text-slate-950">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6b7b84]">{label}</p>
-      <p className="mt-1 text-base font-black text-[#07131f]">{value}</p>
-    </div>
-  );
 }
 
 function ContactLine({ icon, text: value }: { icon: ReactNode; text: string }) {

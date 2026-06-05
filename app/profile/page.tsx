@@ -1029,7 +1029,6 @@ function SeazoneStyleCvPreview({
   const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
   const cleanPortfolio = portfolio.filter((photo) => photo.image_url);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
-  const age = calculateAge(profile.date_of_birth);
   const professionalSummary =
     profile.bio?.trim() ||
     `I am a ${primaryPosition.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
@@ -1074,12 +1073,9 @@ function SeazoneStyleCvPreview({
 
                 <SeazoneSideSection title="Profile">
                   <div className="space-y-2.5">
-                    <SeazoneSidebarLine label="Age" value={age ? String(age) : "-"} />
+                    <SeazoneSidebarLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
                     <SeazoneSidebarLine label="Nationality" value={profile.nationality || "-"} />
-                    <SeazoneSidebarLine label="Location" value={profile.location || "-"} />
-                    <SeazoneSidebarLine label="Crew ID" value={profile.public_crew_id || "-"} />
-                    <SeazoneSidebarLine label="References" value={String(cleanReferences.length)} />
-                    <SeazoneSidebarLine label="Documents" value={String(documents.length)} />
+                    <SeazoneSidebarLine label="Experience" value={`${totalExperienceYears}y`} />
                   </div>
                 </SeazoneSideSection>
 
@@ -1130,6 +1126,7 @@ function SeazoneStyleCvPreview({
 
                 <div className="rounded-2xl border border-[#cbd7dc] bg-white p-4 text-[#40535d]">
                   <CrewProfileQr crewId={profile.public_crew_id} />
+                  <p className="mt-2 text-center text-[10px] font-black uppercase tracking-[0.16em] text-[#6b747a]">{profile.public_crew_id || "Crew ID"}</p>
                   <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Public CV Access</p>
                   <p className="mt-1 text-sm font-semibold">Scan the QR code to open this crew CV on BlueDeck.</p>
                 </div>
@@ -1155,18 +1152,6 @@ function SeazoneStyleCvPreview({
               </header>
 
               <main className="p-6 sm:p-8 print:p-7">
-                <div className="grid gap-3 border-b border-[#d8e2e6] pb-6 text-sm font-semibold text-[#40535d] sm:grid-cols-3">
-                  <p className="break-words">{profile.phone || "-"}</p>
-                  <p className="break-words">{profile.email || "-"}</p>
-                  <p className="break-words">{profile.location || "-"}</p>
-                </div>
-
-                <div className="mt-6 grid gap-px overflow-hidden rounded-2xl border border-[#d8e2e6] bg-[#d8e2e6] sm:grid-cols-3">
-                  <SeazoneStat label="Experience" value={`${totalExperienceYears}y`} />
-                  <SeazoneStat label="References" value={String(cleanReferences.length)} />
-                  <SeazoneStat label="Documents" value={String(documents.length)} />
-                </div>
-
                 <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
                 <div className="space-y-4">
                   {cleanExperiences.length === 0 && (
@@ -1290,15 +1275,6 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
   );
 }
 
-function SeazoneStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white px-3 py-2.5 text-slate-950">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#6b7b84]">{label}</p>
-      <p className="mt-1 text-base font-black text-[#07131f]">{value}</p>
-    </div>
-  );
-}
-
 function SeazoneSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) {
   return (
     <section className="mt-6">
@@ -1401,17 +1377,6 @@ function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
       </div>
     </div>
   );
-}
-
-function calculateAge(value?: string) {
-  if (!value) return null;
-  const birthDate = new Date(value);
-  if (Number.isNaN(birthDate.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDelta = today.getMonth() - birthDate.getMonth();
-  if (monthDelta < 0 || (monthDelta === 0 && today.getDate() < birthDate.getDate())) age -= 1;
-  return age > 0 ? age : null;
 }
 
 function Panel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
