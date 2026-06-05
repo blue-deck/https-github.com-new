@@ -77,6 +77,7 @@ type CrewDocument = {
 
 type Experience = {
   id?: string;
+  created_at?: string;
   yacht_name: string;
   position: string;
   start_date: string;
@@ -294,6 +295,15 @@ export default function ProfilePage() {
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
+  const editableExperiences = useMemo(
+    () =>
+      [...experiences].sort((first, second) => {
+        const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
+        const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
+        return secondCreatedAt - firstCreatedAt;
+      }),
+    [experiences],
+  );
 
   const totalExperienceYears = useMemo(() => {
     const firstYear = experiences
@@ -707,8 +717,8 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[430px_1fr]">
-          <aside className="space-y-6">
+        <div className="mt-6 grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
+          <aside className="space-y-5">
             <Panel title="Personal details" icon={<UserRound className="h-5 w-5" />}>
               <ProfilePhoto
                 url={profile.profile_photo_url}
@@ -747,7 +757,7 @@ export default function ProfilePage() {
             </Panel>
           </aside>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             <Panel title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
               <div className="space-y-4">
                 {referenceStatus && (
@@ -761,15 +771,16 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
-                {[...experiences, emptyExperience].map((item, index) => {
-                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${index}`;
+                {[emptyExperience, ...editableExperiences].map((item) => {
+                  const isNewExperience = !item.id;
+                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${experiences.length}`;
                   const linkedReferences = referencesForExperience(item, references);
 
                   return (
                     <ExperienceEditor
-                      key={item.id || `new-${index}`}
+                      key={item.id || `new-${experiences.length}`}
                       item={item}
-                      isNew={!item.id}
+                      isNew={isNewExperience}
                       references={linkedReferences}
                       referenceSaving={referenceSaving}
                       onSave={saveExperience}
@@ -1390,12 +1401,12 @@ function Panel({ title, icon, children }: { title: string; icon: ReactNode; chil
   return (
     <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
       <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#2d7482)]" />
-      <div className="p-5">
-      <div className="mb-5 flex items-center gap-3 border-b border-slate-200 pb-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>
-        <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+      <div className="p-4">
+      <div className="mb-4 flex items-center gap-3 border-b border-slate-200 pb-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>
+        <h2 className="text-base font-semibold text-slate-950">{title}</h2>
       </div>
-      <div className="space-y-4">{children}</div>
+      <div className="space-y-3.5">{children}</div>
       </div>
     </section>
   );
