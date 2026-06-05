@@ -286,6 +286,7 @@ export default function ProfilePage() {
   const [documentDraft, setDocumentDraft] = useState<CrewDocument>(newDocumentDraft());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savedProfile, setSavedProfile] = useState<CrewProfile>({});
   const [referenceSaving, setReferenceSaving] = useState(false);
   const [referenceStatus, setReferenceStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [uploading, setUploading] = useState("");
@@ -295,6 +296,7 @@ export default function ProfilePage() {
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
+  const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
   const editableExperiences = useMemo(
     () =>
       [...experiences].sort((first, second) => {
@@ -330,7 +332,9 @@ export default function ProfilePage() {
       .maybeSingle();
 
     if (existingProfile) {
-      setProfile(normalizeProfile(existingProfile));
+      const normalizedProfile = normalizeProfile(existingProfile);
+      setProfile(normalizedProfile);
+      setSavedProfile(normalizedProfile);
       await loadRelated(existingProfile.id);
       setLoading(false);
       return;
@@ -355,7 +359,9 @@ export default function ProfilePage() {
       .select()
       .single();
 
-    setProfile(normalizeProfile(data || newProfile));
+    const normalizedProfile = normalizeProfile(data || newProfile);
+    setProfile(normalizedProfile);
+    setSavedProfile(normalizedProfile);
     setLoading(false);
   }
 
@@ -404,7 +410,7 @@ export default function ProfilePage() {
     if (!user?.id) {
       setSaving(false);
       window.location.href = "/login";
-      return;
+      return false;
     }
 
     const profilePayload: Record<string, unknown> = {
@@ -423,7 +429,7 @@ export default function ProfilePage() {
     if (error) {
       setSaving(false);
       alert(error.message);
-      return;
+      return false;
     }
 
     await Promise.all([
@@ -442,9 +448,11 @@ export default function ProfilePage() {
       }),
     ]);
 
-    setProfile(normalizeProfile(data || { ...profile, user_id: user.id }));
+    const normalizedProfile = normalizeProfile(data || { ...profile, user_id: user.id });
+    setProfile(normalizedProfile);
+    setSavedProfile(normalizedProfile);
     setSaving(false);
-    alert("Profile saved.");
+    return true;
   }
 
   async function saveDocument() {
@@ -482,10 +490,14 @@ export default function ProfilePage() {
   }
 
   async function saveExperience(item: Experience) {
-    if (!profile.id) return;
+    if (!profile.id) return false;
     const response = await saveRelatedRecord("experience", item, item.id);
-    if (!response.ok) alert(response.error);
+    if (!response.ok) {
+      alert(response.error);
+      return false;
+    }
     await loadRelated(profile.id);
+    return true;
   }
 
   async function deleteExperience(id?: string) {
@@ -540,10 +552,14 @@ export default function ProfilePage() {
   }
 
   async function savePortfolioPhoto(item: PortfolioPhoto) {
-    if (!profile.id) return;
+    if (!profile.id) return false;
     const response = await saveRelatedRecord("portfolio", item, item.id);
-    if (!response.ok) alert(response.error);
+    if (!response.ok) {
+      alert(response.error);
+      return false;
+    }
     await loadRelated(profile.id);
+    return true;
   }
 
   async function deletePortfolioPhoto(id?: string) {
@@ -668,8 +684,18 @@ export default function ProfilePage() {
             <div className="border-t border-cyan-100 bg-[#f8fcfd] p-5 xl:border-l xl:border-t-0">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Actions</p>
               <div className="mt-4 grid gap-2">
-                <button onClick={saveProfile} className="rounded-lg bg-slate-950 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-900">
-                  {saving ? "Saving..." : "Save profile"}
+                <button
+                  type="button"
+                  onClick={saveProfile}
+                  disabled={saving || !profileDirty}
+                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-default ${
+                    profileDirty
+                      ? "bg-slate-950 text-white hover:bg-cyan-900 disabled:opacity-70"
+                      : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                  }`}
+                >
+                  {saving ? <Plus className="h-4 w-4" /> : profileDirty ? <Plus className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                  {saving ? "Saving..." : profileDirty ? "Save profile" : "Saved"}
                 </button>
                 <Link href="/contracts" className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-700 shadow-sm transition hover:border-cyan-300">
                   Contracts
@@ -986,6 +1012,81 @@ function cleanReferenceEntries(references: ReferenceEntry[]) {
   return references.filter((reference) =>
     Boolean(reference.name || reference.role || reference.vessel || reference.company || reference.phone || reference.email),
   );
+}
+
+function saveStateEquals(left: unknown, right: unknown) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function cleanSaveText(value?: string | null) {
+  return (value || "").trim();
+}
+
+function cleanSaveNumber(value?: number | null) {
+  return value ? String(value) : "";
+}
+
+function cleanSaveList(value?: string[]) {
+  return (value || []).map((item) => cleanSaveText(item));
+}
+
+function cleanSaveLanguages(value?: LanguageEntry[]) {
+  return (value || []).map((language) => ({
+    name: cleanSaveText(language.name),
+    level: cleanSaveText(language.level),
+  }));
+}
+
+function profileSaveState(profile: CrewProfile) {
+  return {
+    profile_photo_url: cleanSaveText(profile.profile_photo_url),
+    full_name: cleanSaveText(profile.full_name),
+    email: cleanSaveText(profile.email),
+    phone: cleanSaveText(profile.phone),
+    nationality: cleanSaveText(profile.nationality),
+    current_position: cleanSaveText(profile.current_position),
+    location: cleanSaveText(profile.location),
+    bio: cleanSaveText(profile.bio),
+    date_of_birth: cleanSaveText(profile.date_of_birth),
+    height_cm: cleanSaveNumber(profile.height_cm),
+    weight_kg: cleanSaveNumber(profile.weight_kg),
+    visible_tattoos: cleanSaveText(profile.visible_tattoos),
+    smoker: cleanSaveText(profile.smoker),
+    current_positions: cleanSaveList(profile.current_positions),
+    seeking_positions: cleanSaveList(profile.seeking_positions),
+    work_preferences: cleanSaveList(profile.work_preferences),
+    personal_skills: cleanSaveList(profile.personal_skills),
+    personal_characteristics: cleanSaveList(profile.personal_characteristics),
+    languages: cleanSaveLanguages(profile.languages),
+  };
+}
+
+function experienceSaveState(experience: Experience) {
+  return {
+    yacht_name: cleanSaveText(experience.yacht_name),
+    position: cleanSaveText(experience.position),
+    start_date: cleanSaveText(experience.start_date),
+    end_date: cleanSaveText(experience.end_date),
+    description: cleanSaveText(experience.description),
+    photo_url: cleanSaveText(experience.photo_url),
+  };
+}
+
+function referenceSaveState(reference: ReferenceEntry) {
+  return {
+    name: cleanSaveText(reference.name || reference.company),
+    role: cleanSaveText(reference.role),
+    phone: cleanSaveText(reference.phone),
+    email: cleanSaveText(reference.email),
+  };
+}
+
+function portfolioSaveState(photo: PortfolioPhoto) {
+  return {
+    title: cleanSaveText(photo.title),
+    image_url: cleanSaveText(photo.image_url),
+    location: cleanSaveText(photo.location),
+  };
 }
 
 function phoneCountryFromValue(value: string) {
@@ -1698,7 +1799,7 @@ function ExperienceEditor({
   isNew: boolean;
   references: ReferenceEntry[];
   referenceSaving: boolean;
-  onSave: (item: Experience) => void;
+  onSave: (item: Experience) => Promise<boolean>;
   onDelete: (id?: string) => void;
   onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
   onDeleteReference: (id?: string) => void;
@@ -1707,11 +1808,10 @@ function ExperienceEditor({
   uploading: boolean;
 }) {
   const [draft, setDraft] = useState(item);
+  const dirty = !saveStateEquals(experienceSaveState(draft), experienceSaveState(item));
 
   function removePhoto() {
-    const nextDraft = { ...draft, photo_url: "" };
-    setDraft(nextDraft);
-    if (!isNew) onSave(nextDraft);
+    setDraft({ ...draft, photo_url: "" });
   }
 
   async function saveLinkedReference(reference: ReferenceEntry) {
@@ -1843,7 +1943,7 @@ function ExperienceEditor({
               />
             </div>
           </div>
-          <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
+          <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
         </div>
       </div>
     </article>
@@ -1915,6 +2015,8 @@ function ExperienceReferenceEditor({
 }) {
   const [draft, setDraft] = useState(item);
   const nameValue = draft.name || draft.company || "";
+  const dirty = !saveStateEquals(referenceSaveState({ ...draft, name: nameValue }), referenceSaveState(item));
+  const saved = !isNew && !dirty;
 
   async function handleSave() {
     const saved = await onSave({
@@ -1956,11 +2058,16 @@ function ExperienceReferenceEditor({
         <div className="flex gap-1.5 lg:justify-end">
           <button
             type="button"
-            disabled={saving}
+            disabled={saving || saved}
             onClick={handleSave}
-            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-[#173f4a] px-3 text-[11px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-[#235866] disabled:cursor-wait disabled:opacity-60"
+            className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] font-black uppercase tracking-[0.08em] transition disabled:cursor-default ${
+              saved
+                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "cursor-pointer bg-[#173f4a] text-white hover:bg-[#235866] disabled:cursor-wait disabled:opacity-60"
+            }`}
           >
-            {saving ? "Saving" : isNew ? "Add" : "Save"}
+            {saving ? <Plus className="h-3.5 w-3.5" /> : saved ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+            {saving ? "Saving" : isNew ? "Add" : saved ? "Saved" : "Save"}
           </button>
           {!isNew && (
             <button
@@ -2108,18 +2215,17 @@ function PortfolioEditor({
 }: {
   item: PortfolioPhoto;
   isNew: boolean;
-  onSave: (item: PortfolioPhoto) => void;
+  onSave: (item: PortfolioPhoto) => Promise<boolean>;
   onDelete: (id?: string) => void;
   onUpload: (file: File) => Promise<string>;
   onCancelUpload: () => void;
   uploading: boolean;
 }) {
   const [draft, setDraft] = useState(item);
+  const dirty = !saveStateEquals(portfolioSaveState(draft), portfolioSaveState(item));
 
   function removePhoto() {
-    const nextDraft = { ...draft, image_url: "" };
-    setDraft(nextDraft);
-    if (!isNew) onSave(nextDraft);
+    setDraft({ ...draft, image_url: "" });
   }
 
   return (
@@ -2157,36 +2263,55 @@ function PortfolioEditor({
           </button>
         )}
       </div>
-      <EditorButtons isNew={isNew} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Save photo" />
+      <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Save photo" />
     </div>
   );
 }
 
 function EditorButtons({
   isNew,
+  dirty = true,
   onSave,
   onDelete,
   addLabel,
   saving = false,
 }: {
   isNew: boolean;
-  onSave: () => void | Promise<void>;
+  dirty?: boolean;
+  onSave: () => unknown | Promise<unknown>;
   onDelete: () => void;
   addLabel: string;
   saving?: boolean;
 }) {
+  const saved = !isNew && !dirty;
+  const [pending, setPending] = useState(false);
+  const activeSaving = saving || pending;
+
+  async function handleSave() {
+    setPending(true);
+    try {
+      await onSave();
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className="mt-4 flex gap-2">
       <button
         type="button"
-        disabled={saving}
-        onClick={onSave}
-        className="flex cursor-pointer items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817] transition hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+        disabled={activeSaving || saved}
+        onClick={handleSave}
+        className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition disabled:cursor-default ${
+          saved
+            ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+            : "cursor-pointer bg-cyan-400 text-[#020817] hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+        }`}
       >
-        <Plus className="h-4 w-4" />
-        {saving ? "Saving..." : isNew ? addLabel : "Save"}
+        {activeSaving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        {activeSaving ? "Saving..." : isNew ? addLabel : saved ? "Saved" : "Save"}
       </button>
-      {!isNew && <button type="button" disabled={saving} onClick={onDelete} className="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60">Delete</button>}
+      {!isNew && <button type="button" disabled={activeSaving} onClick={onDelete} className="cursor-pointer rounded-lg border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60">Delete</button>}
     </div>
   );
 }
