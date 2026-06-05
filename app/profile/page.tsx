@@ -30,6 +30,7 @@ import { supabase } from "../lib/supabase";
 import { yachtPositionTitles } from "../lib/yachtOperations";
 
 type CountryOption = (typeof blueDeckCountries)[number] | (typeof nationalityOptions)[number];
+type PhoneCountryOption = (typeof blueDeckCountries)[number];
 
 type CrewProfile = {
   id?: string;
@@ -976,6 +977,28 @@ function cleanReferenceEntries(references: ReferenceEntry[]) {
   );
 }
 
+function phoneCountryFromValue(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return null;
+  return (
+    [...blueDeckCountries]
+      .sort((a, b) => b.dial.length - a.dial.length)
+      .find((country) => normalized.startsWith(country.dial)) || null
+  );
+}
+
+function localPhoneFromValue(value: string, country: PhoneCountryOption | null) {
+  let local = value.trim();
+  if (country && local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
+  return local.replace(/^\+/, "");
+}
+
+function composeReferencePhone(country: PhoneCountryOption | null, localNumber: string) {
+  const cleanLocal = localNumber.replace(/[^\d\s()-]/g, "").trim();
+  if (!country) return cleanLocal;
+  return cleanLocal ? `${country.dial} ${cleanLocal}` : country.dial;
+}
+
 function referenceMatchesExperience(reference: ReferenceEntry, experience: Experience) {
   const vessel = normalizeVesselName(reference.vessel);
   const yacht = normalizeVesselName(experience.yacht_name);
@@ -1913,7 +1936,7 @@ function ExperienceReferenceEditor({
 
   return (
     <div className="rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5">
-      <div className="grid items-center gap-2 lg:grid-cols-[1.2fr_0.85fr_0.9fr_1fr_auto]">
+      <div className="grid items-center gap-2 lg:grid-cols-[1.05fr_0.7fr_1.2fr_1fr_auto]">
         <ReferenceMiniField
           label="Name / Company"
           value={nameValue}
@@ -1926,10 +1949,8 @@ function ExperienceReferenceEditor({
           placeholder="Role"
           onChange={(value) => setDraft({ ...draft, role: value })}
         />
-        <ReferenceMiniField
-          label="Phone"
+        <ReferenceMiniPhoneField
           value={draft.phone}
-          placeholder="Phone"
           onChange={(value) => setDraft({ ...draft, phone: value })}
         />
         <ReferenceMiniField
@@ -1989,6 +2010,97 @@ function ReferenceMiniField({
         className="h-9 w-full rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] px-2.5 text-[12px] font-semibold text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:bg-white focus:ring-2 focus:ring-[#2d7482]/15"
       />
     </label>
+  );
+}
+
+function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [manualCountry, setManualCountry] = useState<PhoneCountryOption | null>(null);
+  const country = phoneCountryFromValue(value || "") || manualCountry;
+  const localNumber = localPhoneFromValue(value || "", country);
+  const filteredCountries = blueDeckCountries
+    .filter((item) => `${item.country} ${item.nationality} ${item.code} ${item.dial}`.toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 120);
+
+  useEffect(() => {
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery("");
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <span className="sr-only">Phone</span>
+      <div className="flex h-9 overflow-hidden rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] transition focus-within:border-[#2d7482] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2d7482]/15">
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(!open);
+            setQuery("");
+          }}
+          className={`flex w-[74px] shrink-0 cursor-pointer items-center justify-center gap-1 border-r border-[#d8e2e6] bg-white px-1.5 text-[11px] font-black transition hover:bg-[#eef7f8] ${country ? "text-[#06111f]" : "text-[#9aa8ae]"}`}
+          aria-label="Select reference country code"
+        >
+          {country ? (
+            <>
+              <span>{country.flag}</span>
+              <span>{country.dial}</span>
+            </>
+          ) : (
+            <span>Code</span>
+          )}
+        </button>
+        <input
+          value={localNumber}
+          onChange={(event) => onChange(composeReferencePhone(country, event.target.value))}
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="Phone"
+          className="min-w-0 flex-1 bg-transparent px-2 text-[12px] font-semibold text-[#364650] outline-none placeholder:text-[#9aa8ae]"
+        />
+      </div>
+
+      {open && (
+        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[min(330px,84vw)] overflow-hidden rounded-xl border border-[#d8e2e6] bg-white shadow-2xl shadow-slate-900/18">
+          <input
+            autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search country..."
+            className="h-9 w-full border-b border-[#d8e2e6] px-3 text-[12px] font-semibold text-[#364650] outline-none placeholder:text-[#9aa8ae]"
+          />
+          <div className="max-h-56 overflow-auto p-1.5">
+            {filteredCountries.map((item) => (
+              <button
+                key={`${item.country}-${item.dial}`}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  setManualCountry(item);
+                  onChange(composeReferencePhone(item, localNumber));
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-[12px] font-semibold text-[#364650] transition hover:bg-[#eef7f8]"
+              >
+                <span className="min-w-0 truncate">
+                  {item.flag} {item.country}
+                </span>
+                <span className="shrink-0 font-black text-[#2d7482]">{item.dial}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
