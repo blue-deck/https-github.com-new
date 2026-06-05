@@ -1569,22 +1569,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
   return (
     <div className="space-y-4">
       <div className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff,#ffffff_52%,#f2fbff)] p-4 shadow-sm shadow-cyan-950/5">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
-            <Languages className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-700">
-              Language profile
-            </p>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
-              Add each language once, then set the level that should appear on
-              your BlueDeck CV.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3">
+        <div className="grid gap-3">
           <select
             value={selectedLanguage}
             onChange={(event) => setSelectedLanguage(event.target.value)}
@@ -1645,9 +1630,6 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
           >
             <div>
               <p className="font-black text-slate-950">{language.name}</p>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700">
-                CV language
-              </p>
             </div>
             <select
               value={language.level}
