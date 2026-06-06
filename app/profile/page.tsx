@@ -856,17 +856,26 @@ export default function ProfilePage() {
           <div className="bg-[#f6f9fa] p-4 sm:p-5">
             <div className="contents">
             <Panel active={activeStudioTab === "personal"} title="Personal details" icon={<UserRound className="h-5 w-5" />}>
-              <ProfilePhoto
-                url={profile.profile_photo_url}
-                name={profile.full_name}
-                uploading={uploading === "profile-photo"}
-                onCancelUpload={cancelUpload}
-                onRemove={() => setProfile((current) => ({ ...current, profile_photo_url: "" }))}
-                onUpload={async (file) => {
-                  const url = await uploadFile(file, "crew-portfolio", "profile-photo");
-                  if (url) setProfile((current) => ({ ...current, profile_photo_url: url }));
-                }}
-              />
+              <div className="grid gap-4 xl:grid-cols-[minmax(320px,440px)_1fr]">
+                <ProfilePhoto
+                  url={profile.profile_photo_url}
+                  name={profile.full_name}
+                  uploading={uploading === "profile-photo"}
+                  onCancelUpload={cancelUpload}
+                  onRemove={() => setProfile((current) => ({ ...current, profile_photo_url: "" }))}
+                  onUpload={async (file) => {
+                    const url = await uploadFile(file, "crew-portfolio", "profile-photo");
+                    if (url) setProfile((current) => ({ ...current, profile_photo_url: url }));
+                  }}
+                />
+                <TextArea
+                  label="Professional summary"
+                  value={profile.bio || ""}
+                  onChange={(value) => setProfile({ ...profile, bio: value })}
+                  className="min-h-full"
+                  textareaClassName="h-[calc(100%-30px)] min-h-40"
+                />
+              </div>
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
               <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
               <DropdownChoiceGroup title="Position" options={yachtPositionTitles} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} />
@@ -882,7 +891,6 @@ export default function ProfilePage() {
                 <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
                 <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
               </div>
-              <TextArea label="Professional summary" value={profile.bio || ""} onChange={(value) => setProfile({ ...profile, bio: value })} />
             </Panel>
 
             <Panel active={activeStudioTab === "languages"} title="Languages" icon={<Languages className="h-5 w-5" />}>
@@ -1040,8 +1048,8 @@ function DocumentCreator({
   return (
     <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
       <div className="grid gap-3 lg:grid-cols-2">
-        <label>
-          <span className="mb-2 block text-sm font-medium text-slate-600">Document type</span>
+        <div>
+          <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
           <select
             value={draft.document_type}
             onChange={(event) => {
@@ -1059,7 +1067,7 @@ function DocumentCreator({
               </optgroup>
             ))}
           </select>
-        </label>
+        </div>
         <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: value })} />
         <DateField label="Issue date" value={draft.issue_date} onChange={(value) => setDraft({ ...draft, issue_date: value })} />
         <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry} />
@@ -2005,9 +2013,10 @@ function ExperienceEditor({
               <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
               <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
             </div>
-            <label className="block">
+            <div className="block">
               <span className="sr-only">Position</span>
               <select
+                aria-label="Position"
                 value={draft.position || ""}
                 onChange={(event) => setDraft({ ...draft, position: event.target.value })}
                 className="w-full cursor-pointer appearance-none rounded-md border border-[#173f4a] bg-[#173f4a] px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-white outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/20"
@@ -2019,7 +2028,7 @@ function ExperienceEditor({
                   </option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
 
           <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
@@ -2038,15 +2047,15 @@ function ExperienceEditor({
         </div>
 
         <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
-          <label className="flex flex-1 flex-col">
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</span>
+          <div className="flex flex-1 flex-col">
+            <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
             <textarea
               value={draft.description || ""}
               onChange={(event) => setDraft({ ...draft, description: event.target.value })}
               placeholder="Responsibilities and onboard duties"
               className="mt-2 min-h-24 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
             />
-          </label>
+          </div>
           <div className="mt-3 border-t border-[#c7d2d6] pt-3">
             <div className="mb-2 flex items-center justify-between gap-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
@@ -2094,15 +2103,16 @@ function ExperienceCardInput({
   strong?: boolean;
 }) {
   return (
-    <label className="block">
+    <div className="block">
       <span className="sr-only">{label}</span>
       <input
+        aria-label={label}
         value={value || ""}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className={`w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${strong ? "text-[15px] font-black leading-tight text-[#06111f]" : "text-[12px] font-semibold text-[#2d7482]"}`}
       />
-    </label>
+    </div>
   );
 }
 
@@ -2116,9 +2126,10 @@ function ExperienceCardDateField({ label, value, onChange }: { label: string; va
   }
 
   return (
-    <label className="block">
+    <div className="block">
       <span className="sr-only">{label}</span>
       <input
+        aria-label={label}
         inputMode="numeric"
         value={display}
         onChange={(event) => commit(event.target.value)}
@@ -2126,7 +2137,7 @@ function ExperienceCardDateField({ label, value, onChange }: { label: string; va
         placeholder={label}
         className="w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-1.5 text-[12px] font-semibold leading-5 text-[#2d7482] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
       />
-    </label>
+    </div>
   );
 }
 
@@ -2230,16 +2241,17 @@ function ReferenceMiniField({
   type?: string;
 }) {
   return (
-    <label className="block">
+    <div className="block">
       <span className="sr-only">{label}</span>
       <input
+        aria-label={label}
         type={type}
         value={value || ""}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className="h-9 w-full rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] px-2.5 text-[12px] font-semibold text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:bg-white focus:ring-2 focus:ring-[#2d7482]/15"
       />
-    </label>
+    </div>
   );
 }
 
@@ -2462,10 +2474,10 @@ function Field({
   listId?: string;
 }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
       <input type={type} value={value || ""} list={listId} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40" />
-    </label>
+    </div>
   );
 }
 
@@ -2483,8 +2495,8 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
   }
 
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
       <input
         inputMode="numeric"
         placeholder="DD.MM.YYYY"
@@ -2494,7 +2506,7 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
         onBlur={() => setDisplay(formatDateForDisplay(parseDisplayDate(display)))}
         className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"
       />
-    </label>
+    </div>
   );
 }
 
@@ -2502,8 +2514,8 @@ function NationalitySelect({ value, onChange }: { value: string; onChange: (valu
   const selectedCountry = nationalityOptions.find((country) => country.nationality === value);
 
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">Nationality</span>
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-medium text-slate-600">Nationality</p>
       <div className="rounded-xl border border-slate-200 bg-white">
         <CountrySearch
           selectedLabel={selectedCountry ? `${selectedCountry.flag} ${selectedCountry.country} / ${selectedCountry.nationality}` : "Select nationality"}
@@ -2512,7 +2524,7 @@ function NationalitySelect({ value, onChange }: { value: string; onChange: (valu
           fullWidth
         />
       </div>
-    </label>
+    </div>
   );
 }
 
@@ -2613,6 +2625,8 @@ function CountrySearch({
 }
 
 function LocationSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(value);
   const [suggestions, setSuggestions] = useState<Array<{ label: string; detail: string }>>([]);
   const [searching, setSearching] = useState(false);
@@ -2623,10 +2637,7 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
 
   useEffect(() => {
     const trimmed = query.trim();
-    if (trimmed.length < 3) {
-      setSuggestions([]);
-      return;
-    }
+    if (!open || trimmed.length < 3) return;
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
@@ -2664,26 +2675,53 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
       controller.abort();
       window.clearTimeout(timeout);
     };
-  }, [query]);
+  }, [query, open]);
+
+  useEffect(() => {
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (!wrapperRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, []);
 
   return (
-    <div className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">Location</span>
+    <div ref={wrapperRef} className="block">
+      <p className="mb-2 block select-text text-sm font-medium text-slate-600">Location</p>
       <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-cyan-500">
         <span className="flex items-center pl-3 text-cyan-700">
           <MapPin className="h-4 w-4" />
         </span>
         <input
           value={query}
+          onFocus={() => {
+            setOpen(true);
+            if (query.trim().length < 3) {
+              setSuggestions([]);
+              setSearching(false);
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setOpen(false);
+          }}
           onChange={(event) => {
-            setQuery(event.target.value);
-            onChange(event.target.value);
+            const nextQuery = event.target.value;
+            setQuery(nextQuery);
+            onChange(nextQuery);
+            setOpen(true);
+            if (nextQuery.trim().length < 3) {
+              setSuggestions([]);
+              setSearching(false);
+            }
           }}
           placeholder="Search any city, marina or country"
           className="min-w-0 flex-1 px-3 py-3 text-sm text-slate-950 outline-none"
         />
       </div>
-      {(suggestions.length > 0 || searching) && (
+      {open && (suggestions.length > 0 || searching) && (
         <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
           {searching && <p className="px-3 py-2 text-sm text-slate-500">Searching...</p>}
           {suggestions.map((location) => (
@@ -2694,6 +2732,7 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
                 setQuery(location.label);
                 onChange(location.label);
                 setSuggestions([]);
+                setOpen(false);
               }}
               className="block w-full border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-700 last:border-b-0 hover:bg-cyan-50"
             >
@@ -2730,22 +2769,34 @@ function cleanLocationCountry(country?: string) {
 
 function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
       <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none focus:border-cyan-500">
         <option value="">Select</option>
         {options.map((option) => <option key={option}>{option}</option>)}
       </select>
-    </label>
+    </div>
   );
 }
 
-function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function TextArea({
+  label,
+  value,
+  onChange,
+  className = "mt-4",
+  textareaClassName = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  textareaClassName?: string;
+}) {
   return (
-    <label className="mt-4 block">
-      <span className="mb-2 block text-sm font-medium text-slate-600">{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} className="h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500" />
-    </label>
+    <div className={`${className} block`}>
+      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} className={`h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 ${textareaClassName}`} />
+    </div>
   );
 }
 

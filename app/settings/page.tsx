@@ -295,10 +295,10 @@ export default function SettingsPage() {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <PhoneInput label="Mobile number" value={profile.phone} onChange={(value) => setProfile({ ...profile, phone: value })} />
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-semibold text-slate-600">
+                  <div className="block">
+                    <p className="mb-2 block select-text text-sm font-semibold text-slate-600">
                       Account type <span className="text-rose-500">*</span>
-                    </span>
+                    </p>
                     <select
                       value={profile.role}
                       required
@@ -318,12 +318,12 @@ export default function SettingsPage() {
                         </option>
                       ))}
                     </select>
-                  </label>
+                  </div>
                 </div>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-semibold text-slate-600">
+                <div className="block">
+                  <p className="mb-2 block select-text text-sm font-semibold text-slate-600">
                     Yacht position <span className="text-rose-500">*</span>
-                  </span>
+                  </p>
                   <select
                     value={profile.current_position}
                     required
@@ -341,7 +341,7 @@ export default function SettingsPage() {
                       </optgroup>
                     ))}
                   </select>
-                </label>
+                </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <button
                     type="button"
@@ -463,10 +463,10 @@ function TextField({
   autoComplete?: string;
 }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-600">
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-semibold text-slate-600">
         {label} {required && <span className="text-rose-500">*</span>}
-      </span>
+      </p>
       <input
         value={value}
         type={type}
@@ -475,7 +475,7 @@ function TextField({
         onChange={(event) => onChange(event.target.value)}
         className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base text-slate-950 outline-none shadow-sm transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
       />
-    </label>
+    </div>
   );
 }
 
@@ -493,8 +493,8 @@ function DarkTextField({
   autoComplete?: string;
 }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-white/75">{label}</span>
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-semibold text-white/75">{label}</p>
       <input
         value={value}
         type={type}
@@ -502,7 +502,7 @@ function DarkTextField({
         onChange={(event) => onChange(event.target.value)}
         className="min-h-[54px] w-full rounded-2xl border border-white/12 bg-white/8 px-4 text-base text-white outline-none shadow-sm transition placeholder:text-white/35 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-300/10"
       />
-    </label>
+    </div>
   );
 }
 

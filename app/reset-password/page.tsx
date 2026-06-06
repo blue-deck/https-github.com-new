@@ -235,13 +235,13 @@ export default function ResetPasswordPage() {
 
 function AuthField({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-bold text-[#071f3c]">{label}</span>
+    <div className="block">
+      <p className="mb-2 block select-text text-sm font-bold text-[#071f3c]">{label}</p>
       <span className="flex items-center gap-3 rounded-2xl border border-[#071f3c]/14 bg-white px-4 py-4 text-cyan-700 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-100">
         {icon}
         {children}
       </span>
-    </label>
+    </div>
   );
 }
 

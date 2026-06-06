@@ -95,8 +95,8 @@ export default function ForgotPasswordPage() {
             {t("forgot.intro")}
           </p>
 
-          <label className="mt-7 block max-w-xl">
-            <span className="mb-2 block text-sm font-bold text-[#07182d]">{t("forgot.email")}</span>
+          <div className="mt-7 block max-w-xl">
+            <p className="mb-2 block select-text text-sm font-bold text-[#07182d]">{t("forgot.email")}</p>
             <span className="flex h-14 items-center gap-3 rounded-xl border border-[#071f3c]/16 bg-white px-4 text-cyan-700 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10">
               <Mail className="h-5 w-5" />
               <input
@@ -109,7 +109,7 @@ export default function ForgotPasswordPage() {
                 placeholder="name@youremail.com"
               />
             </span>
-          </label>
+          </div>
 
           <input
             tabIndex={-1}

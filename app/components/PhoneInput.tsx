@@ -63,7 +63,7 @@ export function PhoneInput({
 
   return (
     <div ref={wrapperRef} className="block">
-      <span className="mb-2 block text-sm font-semibold text-slate-600">
+      <span className="mb-2 block select-text text-sm font-semibold text-slate-600">
         {label} {required && <span className="text-rose-500">*</span>}
       </span>
       <div className="relative">

@@ -304,10 +304,10 @@ export default function LoginPage() {
                   />
                 </AuthField>
                 <PhoneInput label={t("login.mobile")} value={phone} onChange={setPhone} required />
-                <label className="block">
-                  <span className="mb-2 block text-sm text-slate-500">
+                <div className="block">
+                  <p className="mb-2 block select-text text-sm text-slate-500">
                     {t("login.accountType")} <span className="text-rose-500">*</span>
-                  </span>
+                  </p>
                   <select
                     value={role}
                     required
@@ -324,11 +324,11 @@ export default function LoginPage() {
                     <option value="owner">{t("login.roleOwner")}</option>
                     <option value="management">{t("login.roleManagement")}</option>
                   </select>
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm text-slate-500">
+                </div>
+                <div className="block">
+                  <p className="mb-2 block select-text text-sm text-slate-500">
                     {t("login.position")} <span className="text-rose-500">*</span>
-                  </span>
+                  </p>
                   <select
                     value={position}
                     required
@@ -346,7 +346,7 @@ export default function LoginPage() {
                       </optgroup>
                     ))}
                   </select>
-                </label>
+                </div>
               </>
             )}
 
@@ -469,15 +469,15 @@ export default function LoginPage() {
 
 function AuthField({ label, icon, children, required = false }: { label: string; icon: ReactNode; children: ReactNode; required?: boolean }) {
   return (
-    <label className="block">
-      <span className="mb-2 block text-sm text-slate-500">
+    <div className="block">
+      <p className="mb-2 block select-text text-sm text-slate-500">
         {label} {required && <span className="text-rose-500">*</span>}
-      </span>
+      </p>
       <span className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-cyan-700 focus-within:border-cyan-300">
         {icon}
         {children}
       </span>
-    </label>
+    </div>
   );
 }
 
