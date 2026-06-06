@@ -878,7 +878,7 @@ export default function ProfilePage() {
               </div>
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
               <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
-              <DropdownChoiceGroup title="Position" options={yachtPositionTitles} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} />
+              <DropdownChoiceGroup title="Position" options={yachtPositionTitles} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} selectedAsTitle />
               <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
               <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
               <div className="grid grid-cols-2 gap-3">
@@ -1707,10 +1707,25 @@ function ProfilePhoto({
   );
 }
 
-function DropdownChoiceGroup({ title, options, value, onChange }: { title: string; options: string[]; value: string[]; onChange: (value: string[]) => void }) {
+function DropdownChoiceGroup({
+  title,
+  options,
+  value,
+  onChange,
+  selectedAsTitle = false,
+}: {
+  title: string;
+  options: string[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  selectedAsTitle?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
-  const selectedText = value.length ? value.join(", ") : "Select";
+  const hasSelection = value.length > 0;
+  const selectedText = hasSelection ? value.join(", ") : "Select";
+  const triggerTitle = selectedAsTitle && hasSelection ? selectedText : title;
+  const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedText;
 
   return (
     <div>
@@ -1722,10 +1737,10 @@ function DropdownChoiceGroup({ title, options, value, onChange }: { title: strin
         }}
         className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"
       >
-        <span>{title}</span>
-        <span className="max-w-[58%] truncate text-right text-xs text-cyan-700">{selectedText}</span>
+        <span className="min-w-0 truncate">{triggerTitle}</span>
+        <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
       </button>
-      {value.length > 0 && <PillList items={value} light />}
+      {value.length > 0 && !selectedAsTitle && <PillList items={value} light />}
       {open && (
         <div className="mt-3 rounded-2xl border border-slate-200 bg-[#fbfaf7] p-3">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
