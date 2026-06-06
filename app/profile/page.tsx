@@ -805,9 +805,9 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#173f4a]/25 bg-white shadow-2xl shadow-slate-950/14">
-          <div className="h-1 bg-[linear-gradient(90deg,#06111f_0%,#8ed8e6_38%,#2d7482_72%,#06111f_100%)]" />
-          <div className="border-b border-white/10 bg-[linear-gradient(135deg,#06111f_0%,#0a1b2d_58%,#102f42_100%)] px-4 py-5 text-white sm:px-6">
+        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14">
+          <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
+          <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-4 py-5 text-white sm:px-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#8ed8e6]">BlueDeck CV Studio</p>
@@ -820,8 +820,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="border-b border-[#173f4a]/25 bg-[#06111f] px-3 pb-3 sm:px-5">
-            <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/10 bg-white/[0.04] p-2 shadow-inner shadow-black/20">
+          <div className="border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] px-3 pb-3 sm:px-5">
+            <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10">
               {studioTabs.map((tab) => {
                 const active = activeStudioTab === tab.id;
 
@@ -832,20 +832,20 @@ export default function ProfilePage() {
                     onClick={() => setActiveStudioTab(tab.id)}
                     className={`group flex min-w-[188px] items-center gap-3 rounded-[18px] border px-3.5 py-3.5 text-left transition ${
                       active
-                        ? "border-[#8ed8e6] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-black/20"
-                        : "border-white/10 bg-[#0b1a2a] text-white/78 hover:border-[#8ed8e6]/50 hover:bg-[#102235] hover:text-white"
+                        ? "border-[#c9f7ff] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-[#062c35]/20"
+                        : "border-white/18 bg-white/10 text-white/86 hover:border-[#c9f7ff]/70 hover:bg-white/16 hover:text-white"
                     }`}
                   >
                     <span
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
-                        active ? "border-[#06111f] bg-[#06111f] text-[#8ed8e6]" : "border-white/10 bg-white/8 text-[#8ed8e6] group-hover:bg-white/12"
+                        active ? "border-[#08313b] bg-[#08313b] text-[#8ed8e6]" : "border-white/18 bg-white/10 text-[#d4fbff] group-hover:bg-white/16"
                       }`}
                     >
                       {tab.icon}
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-black">{tab.label}</span>
-                      <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${active ? "bg-[#e6f4f7] text-[#2d7482]" : "bg-white/8 text-white/62"}`}>{tab.status}</span>
+                      <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${active ? "bg-[#e6f8fb] text-[#2d7482]" : "bg-white/12 text-white/72"}`}>{tab.status}</span>
                     </span>
                   </button>
                 );
