@@ -805,22 +805,23 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/10">
-          <div className="border-b border-white/10 bg-[#06111f] px-4 py-4 text-white sm:px-5">
+        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#173f4a]/25 bg-white shadow-2xl shadow-slate-950/14">
+          <div className="h-1 bg-[linear-gradient(90deg,#06111f_0%,#8ed8e6_38%,#2d7482_72%,#06111f_100%)]" />
+          <div className="border-b border-white/10 bg-[linear-gradient(135deg,#06111f_0%,#0a1b2d_58%,#102f42_100%)] px-4 py-5 text-white sm:px-6">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#8ed8e6]">BlueDeck CV Studio</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-white">{activeStudioTabInfo.label}</h2>
-                <p className="mt-1 text-sm font-semibold text-white/62">{activeStudioTabInfo.description}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#8ed8e6]">BlueDeck CV Studio</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
+                <p className="mt-1 text-sm font-semibold text-white/70">{activeStudioTabInfo.description}</p>
               </div>
-              <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white/78">
+              <span className="rounded-full border border-[#8ed8e6]/35 bg-white/10 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-black/10">
                 {activeStudioTabInfo.status}
               </span>
             </div>
           </div>
 
-          <div className="border-b border-[#d8e2e6] bg-[#edf4f6] p-2">
-            <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="border-b border-[#173f4a]/25 bg-[#06111f] px-3 pb-3 sm:px-5">
+            <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/10 bg-white/[0.04] p-2 shadow-inner shadow-black/20">
               {studioTabs.map((tab) => {
                 const active = activeStudioTab === tab.id;
 
@@ -829,22 +830,22 @@ export default function ProfilePage() {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveStudioTab(tab.id)}
-                    className={`group flex min-w-[176px] items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                    className={`group flex min-w-[188px] items-center gap-3 rounded-[18px] border px-3.5 py-3.5 text-left transition ${
                       active
-                        ? "border-[#173f4a] bg-white text-[#06111f] shadow-lg shadow-slate-950/10"
-                        : "border-transparent bg-white/55 text-[#40535d] hover:border-[#b9c8cd] hover:bg-white"
+                        ? "border-[#8ed8e6] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-black/20"
+                        : "border-white/10 bg-[#0b1a2a] text-white/78 hover:border-[#8ed8e6]/50 hover:bg-[#102235] hover:text-white"
                     }`}
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-                        active ? "bg-[#173f4a] text-white" : "bg-[#dbe9ed] text-[#2d7482] group-hover:bg-[#cbe2e8]"
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
+                        active ? "border-[#06111f] bg-[#06111f] text-[#8ed8e6]" : "border-white/10 bg-white/8 text-[#8ed8e6] group-hover:bg-white/12"
                       }`}
                     >
                       {tab.icon}
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-black">{tab.label}</span>
-                      <span className={`mt-0.5 block text-[11px] font-bold ${active ? "text-[#2d7482]" : "text-[#6b747a]"}`}>{tab.status}</span>
+                      <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${active ? "bg-[#e6f4f7] text-[#2d7482]" : "bg-white/8 text-white/62"}`}>{tab.status}</span>
                     </span>
                   </button>
                 );
