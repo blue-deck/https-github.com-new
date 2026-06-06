@@ -107,6 +107,7 @@ type ReferenceEntry = {
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
+type CvStudioTab = "personal" | "experience" | "skills" | "documents" | "portfolio" | "languages" | "preview";
 
 const workPreferences = [
   "Seasonal",
@@ -291,12 +292,15 @@ export default function ProfilePage() {
   const [referenceStatus, setReferenceStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
+  const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const uploadRunRef = useRef(0);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
   const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
+  const portfolioPhotoCount = portfolio.filter((item) => item.image_url).length;
+  const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
   const editableExperiences = useMemo(
     () =>
       [...experiences].sort((first, second) => {
@@ -314,6 +318,64 @@ export default function ProfilePage() {
       .sort((a, b) => a - b)[0];
     return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
   }, [experiences]);
+  const studioTabs: Array<{
+    id: CvStudioTab;
+    label: string;
+    description: string;
+    status: string;
+    icon: ReactNode;
+  }> = [
+    {
+      id: "personal",
+      label: "Personal Details",
+      description: "Identity, contact, photo and summary.",
+      status: profileDirty ? "Unsaved" : "Saved",
+      icon: <UserRound className="h-4 w-4" />,
+    },
+    {
+      id: "experience",
+      label: "Yacht Experience",
+      description: "Yachts, duties, photos and references.",
+      status: `${experiences.length} saved`,
+      icon: <BriefcaseBusiness className="h-4 w-4" />,
+    },
+    {
+      id: "skills",
+      label: "Skills & Characteristics",
+      description: "Skills, traits, preferences and seeking roles.",
+      status: `${skillsCount} selected`,
+      icon: <Star className="h-4 w-4" />,
+    },
+    {
+      id: "documents",
+      label: "Documents",
+      description: "Certificates and CV visibility.",
+      status: expiryAlerts.length ? `${expiryAlerts.length} alert` : `${documents.length} docs`,
+      icon: <IdCard className="h-4 w-4" />,
+    },
+    {
+      id: "portfolio",
+      label: "Portfolio",
+      description: "Yacht and work photos.",
+      status: `${portfolioPhotoCount} photos`,
+      icon: <Camera className="h-4 w-4" />,
+    },
+    {
+      id: "languages",
+      label: "Languages",
+      description: "Language level profile.",
+      status: `${profile.languages?.length || 0} added`,
+      icon: <Languages className="h-4 w-4" />,
+    },
+    {
+      id: "preview",
+      label: "Preview / Download",
+      description: "Review the final CV and save PDF.",
+      status: "PDF ready",
+      icon: <Download className="h-4 w-4" />,
+    },
+  ];
+  const activeStudioTabInfo = studioTabs.find((tab) => tab.id === activeStudioTab) || studioTabs[0];
 
   async function loadProfile() {
     const {
@@ -743,9 +805,56 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <div className="mt-6 grid gap-5 xl:grid-cols-[380px_minmax(0,1fr)]">
-          <aside className="space-y-5">
-            <Panel title="Personal details" icon={<UserRound className="h-5 w-5" />}>
+        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/10">
+          <div className="border-b border-white/10 bg-[#06111f] px-4 py-4 text-white sm:px-5">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#8ed8e6]">BlueDeck CV Studio</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-white">{activeStudioTabInfo.label}</h2>
+                <p className="mt-1 text-sm font-semibold text-white/62">{activeStudioTabInfo.description}</p>
+              </div>
+              <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white/78">
+                {activeStudioTabInfo.status}
+              </span>
+            </div>
+          </div>
+
+          <div className="border-b border-[#d8e2e6] bg-[#edf4f6] p-2">
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {studioTabs.map((tab) => {
+                const active = activeStudioTab === tab.id;
+
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveStudioTab(tab.id)}
+                    className={`group flex min-w-[176px] items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                      active
+                        ? "border-[#173f4a] bg-white text-[#06111f] shadow-lg shadow-slate-950/10"
+                        : "border-transparent bg-white/55 text-[#40535d] hover:border-[#b9c8cd] hover:bg-white"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        active ? "bg-[#173f4a] text-white" : "bg-[#dbe9ed] text-[#2d7482] group-hover:bg-[#cbe2e8]"
+                      }`}
+                    >
+                      {tab.icon}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-black">{tab.label}</span>
+                      <span className={`mt-0.5 block text-[11px] font-bold ${active ? "text-[#2d7482]" : "text-[#6b747a]"}`}>{tab.status}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="bg-[#f6f9fa] p-4 sm:p-5">
+            <div className="contents">
+            <Panel active={activeStudioTab === "personal"} title="Personal details" icon={<UserRound className="h-5 w-5" />}>
               <ProfilePhoto
                 url={profile.profile_photo_url}
                 name={profile.full_name}
@@ -775,16 +884,16 @@ export default function ProfilePage() {
               <TextArea label="Professional summary" value={profile.bio || ""} onChange={(value) => setProfile({ ...profile, bio: value })} />
             </Panel>
 
-            <Panel title="Languages" icon={<Languages className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "languages"} title="Languages" icon={<Languages className="h-5 w-5" />}>
               <LanguagePicker
                 value={profile.languages || []}
                 onChange={(languages) => setProfile({ ...profile, languages })}
               />
             </Panel>
-          </aside>
+          </div>
 
-          <div className="space-y-5">
-            <Panel title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
+          <div className="contents">
+            <Panel active={activeStudioTab === "experience"} title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
               <div className="space-y-4">
                 {referenceStatus && (
                   <p
@@ -822,7 +931,7 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel title="Documents" icon={<IdCard className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "documents"} title="Documents" icon={<IdCard className="h-5 w-5" />}>
               <DocumentCreator
                 draft={documentDraft}
                 setDraft={setDocumentDraft}
@@ -846,7 +955,7 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel title="Portfolio photos" icon={<Camera className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "portfolio"} title="Portfolio photos" icon={<Camera className="h-5 w-5" />}>
               <div className="grid gap-4 lg:grid-cols-2">
                 {[...portfolio, emptyPhoto].map((item, index) => {
                   const uploadSlot = item.id ? `portfolio-photo-${item.id}` : `portfolio-photo-new-${index}`;
@@ -867,26 +976,44 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel title="Work preferences" icon={<Star className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "skills"} title="Work preferences" icon={<Star className="h-5 w-5" />}>
               <DropdownChoiceGroup title="Select preferences" options={workPreferences} value={profile.work_preferences || []} onChange={(value) => setProfile({ ...profile, work_preferences: value })} />
             </Panel>
 
-            <Panel title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
               <DropdownChoiceGroup title="Personal skills" options={personalSkills} value={profile.personal_skills || []} onChange={(value) => setProfile({ ...profile, personal_skills: value })} />
               <DropdownChoiceGroup title="Personal characteristics" options={characteristics} value={profile.personal_characteristics || []} onChange={(value) => setProfile({ ...profile, personal_characteristics: value })} />
               <DropdownChoiceGroup title="Seeking positions" options={yachtPositionTitles} value={profile.seeking_positions || []} onChange={(value) => setProfile({ ...profile, seeking_positions: value })} />
             </Panel>
 
-            <SeazoneStyleCvPreview
-              profile={profile}
-              documents={cvDocuments}
-              experiences={experiences}
-              references={cvReferences}
-              portfolio={portfolio}
-              totalExperienceYears={totalExperienceYears}
-            />
+            {activeStudioTab === "preview" && (
+              <div className="space-y-5">
+                <Panel title="Preview / Download" icon={<Download className="h-5 w-5" />}>
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8e2e6] bg-[#f8fbfc] p-4">
+                    <div>
+                      <p className="text-sm font-black text-[#06111f]">Final BlueDeck CV</p>
+                      <p className="mt-1 text-sm leading-6 text-[#5a6870]">
+                        Review the generated CV below. Use the Save as PDF button inside the preview to download the exact CV layout.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-[#173f4a] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white">
+                      {cvDocuments.length} CV docs
+                    </span>
+                  </div>
+                </Panel>
+                <SeazoneStyleCvPreview
+                  profile={profile}
+                  documents={cvDocuments}
+                  experiences={experiences}
+                  references={cvReferences}
+                  portfolio={portfolio}
+                  totalExperienceYears={totalExperienceYears}
+                />
+              </div>
+            )}
           </div>
         </div>
+        </section>
       </div>
     </main>
   );
@@ -1498,7 +1625,9 @@ function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   );
 }
 
-function Panel({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
+function Panel({ title, icon, children, active = true }: { title: string; icon: ReactNode; children: ReactNode; active?: boolean }) {
+  if (!active) return null;
+
   return (
     <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
       <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#2d7482)]" />
