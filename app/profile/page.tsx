@@ -1363,7 +1363,6 @@ function SeazoneStyleCvPreview({
                   <div className="space-y-2.5">
                     <SeazoneSidebarLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
                     <SeazoneSidebarLine label="Nationality" value={profile.nationality || "-"} />
-                    <SeazoneSidebarLine label="Experience" value={`${totalExperienceYears}y`} />
                   </div>
                 </SeazoneSideSection>
 
