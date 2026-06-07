@@ -878,7 +878,14 @@ export default function ProfilePage() {
               </div>
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
               <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
-              <DropdownChoiceGroup title="Position" options={yachtPositionTitles} value={profile.current_positions || []} onChange={(value) => setProfile({ ...profile, current_positions: value, current_position: value[0] || "" })} selectedAsTitle />
+              <DropdownChoiceGroup
+                title="Position"
+                options={yachtPositionTitles}
+                value={profile.current_positions?.length ? profile.current_positions.slice(0, 1) : profile.current_position ? [profile.current_position] : []}
+                onChange={(value) => setProfile({ ...profile, current_positions: value.slice(0, 1), current_position: value[0] || "" })}
+                selectedAsTitle
+                singleSelect
+              />
               <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
               <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
               <div className="grid grid-cols-2 gap-3">
@@ -1713,17 +1720,20 @@ function DropdownChoiceGroup({
   value,
   onChange,
   selectedAsTitle = false,
+  singleSelect = false,
 }: {
   title: string;
   options: string[];
   value: string[];
   onChange: (value: string[]) => void;
   selectedAsTitle?: boolean;
+  singleSelect?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(value);
-  const hasSelection = value.length > 0;
-  const selectedText = hasSelection ? value.join(", ") : "Select";
+  const displayValue = singleSelect ? value.slice(0, 1) : value;
+  const [draft, setDraft] = useState(displayValue);
+  const hasSelection = displayValue.length > 0;
+  const selectedText = hasSelection ? displayValue.join(", ") : "Select";
   const triggerTitle = selectedAsTitle && hasSelection ? selectedText : title;
   const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedText;
 
@@ -1732,7 +1742,7 @@ function DropdownChoiceGroup({
       <button
         type="button"
         onClick={() => {
-          setDraft(value);
+          setDraft(displayValue);
           setOpen(!open);
         }}
         className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"
@@ -1740,7 +1750,7 @@ function DropdownChoiceGroup({
         <span className="min-w-0 truncate">{triggerTitle}</span>
         <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
       </button>
-      {value.length > 0 && !selectedAsTitle && <PillList items={value} light />}
+      {displayValue.length > 0 && !selectedAsTitle && <PillList items={displayValue} light />}
       {open && (
         <div className="mt-3 rounded-2xl border border-slate-200 bg-[#fbfaf7] p-3">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -1750,7 +1760,16 @@ function DropdownChoiceGroup({
                 <button
                   key={option}
                   type="button"
-                  onClick={() => setDraft(selected ? draft.filter((item) => item !== option) : [...draft, option])}
+                  onClick={() => {
+                    if (singleSelect) {
+                      onChange([option]);
+                      setDraft([option]);
+                      setOpen(false);
+                      return;
+                    }
+
+                    setDraft(selected ? draft.filter((item) => item !== option) : [...draft, option]);
+                  }}
                   className={`rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${selected ? "border-cyan-600 bg-cyan-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-cyan-400"}`}
                 >
                   {option}
@@ -1758,11 +1777,11 @@ function DropdownChoiceGroup({
               );
             })}
           </div>
-          <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
+          {!singleSelect && <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
             <button
               type="button"
               onClick={() => {
-                setDraft(value);
+                setDraft(displayValue);
                 setOpen(false);
               }}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600"
@@ -1779,7 +1798,7 @@ function DropdownChoiceGroup({
             >
               Save
             </button>
-          </div>
+          </div>}
         </div>
       )}
     </div>
