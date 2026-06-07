@@ -11,7 +11,9 @@ import {
   ExternalLink,
   IdCard,
   Languages,
+  Mail,
   MapPin,
+  Phone,
   Plus,
   Star,
   Trash2,
@@ -1367,9 +1369,9 @@ function SeazoneStyleCvPreview({
 
                 <SeazoneSideSection title="Contact">
                   <div className="space-y-2.5 text-sm font-semibold text-[#3d454c]">
-                    <p className="break-words">{profile.phone || "-"}</p>
-                    <p className="break-words">{profile.email || "-"}</p>
-                    <p className="break-words">{profile.location || "-"}</p>
+                    <SeazoneContactLine icon={<Phone className="h-3.5 w-3.5" />} value={profile.phone || "-"} />
+                    <SeazoneContactLine icon={<Mail className="h-3.5 w-3.5" />} value={profile.email || "-"} />
+                    <SeazoneContactLine icon={<MapPin className="h-3.5 w-3.5" />} value={profile.location || "-"} />
                   </div>
                 </SeazoneSideSection>
 
@@ -1582,6 +1584,17 @@ function SeazoneSideSection({ title, children }: { title: string; children: Reac
       </div>
       {children}
     </section>
+  );
+}
+
+function SeazoneContactLine({ icon, value }: { icon: ReactNode; value: string }) {
+  return (
+    <div className="grid grid-cols-[20px_1fr] items-start gap-2.5">
+      <span className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-md bg-[#173f4a] text-white shadow-sm shadow-[#173f4a]/15">
+        {icon}
+      </span>
+      <p className="min-w-0 break-words leading-6">{value}</p>
+    </div>
   );
 }
 
