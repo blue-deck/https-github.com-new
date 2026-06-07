@@ -299,6 +299,7 @@ export default function ProfilePage() {
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
   const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
+  const currentPositionValue = getProfileCurrentPosition(profile);
   const portfolioPhotoCount = portfolio.filter((item) => item.image_url).length;
   const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
   const editableExperiences = useMemo(
@@ -475,10 +476,11 @@ export default function ProfilePage() {
       return false;
     }
 
+    const normalizedForSave = normalizeProfile(profile);
     const profilePayload: Record<string, unknown> = {
-      ...profile,
-      email: profile.email || user.email,
-      public_crew_id: profile.public_crew_id || user.id.slice(0, 8).toUpperCase(),
+      ...normalizedForSave,
+      email: normalizedForSave.email || user.email,
+      public_crew_id: normalizedForSave.public_crew_id || user.id.slice(0, 8).toUpperCase(),
     };
     delete profilePayload.id;
 
@@ -497,20 +499,20 @@ export default function ProfilePage() {
     await Promise.all([
       saveBaseProfileById(supabase, {
         id: user.id,
-        email: profile.email || user.email,
-        full_name: profile.full_name || user.email,
-        phone: profile.phone || "",
-        role: profile.current_positions?.includes("Captain") || profile.current_position === "Captain" ? "captain" : undefined,
+        email: normalizedForSave.email || user.email,
+        full_name: normalizedForSave.full_name || user.email,
+        phone: normalizedForSave.phone || "",
+        role: inferBaseRoleFromPosition(normalizedForSave.current_position),
       }),
       supabase.auth.updateUser({
         data: {
-          full_name: profile.full_name || user.email,
-          phone: profile.phone || "",
+          full_name: normalizedForSave.full_name || user.email,
+          phone: normalizedForSave.phone || "",
         },
       }),
     ]);
 
-    const normalizedProfile = normalizeProfile(data || { ...profile, user_id: user.id });
+    const normalizedProfile = normalizeProfile(data || { ...normalizedForSave, user_id: user.id });
     setProfile(normalizedProfile);
     setSavedProfile(normalizedProfile);
     setSaving(false);
@@ -881,8 +883,15 @@ export default function ProfilePage() {
               <DropdownChoiceGroup
                 title="Position"
                 options={yachtPositionTitles}
-                value={profile.current_positions?.length ? profile.current_positions.slice(0, 1) : profile.current_position ? [profile.current_position] : []}
-                onChange={(value) => setProfile({ ...profile, current_positions: value.slice(0, 1), current_position: value[0] || "" })}
+                value={currentPositionValue ? [currentPositionValue] : []}
+                onChange={(value) => {
+                  const nextPosition = cleanSaveText(value[0]);
+                  setProfile((current) => ({
+                    ...current,
+                    current_position: nextPosition,
+                    current_positions: nextPosition ? [nextPosition] : [],
+                  }));
+                }}
                 selectedAsTitle
                 singleSelect
               />
@@ -1169,8 +1178,21 @@ function cleanSaveNumber(value?: number | null) {
   return value ? String(value) : "";
 }
 
-function cleanSaveList(value?: string[]) {
-  return (value || []).map((item) => cleanSaveText(item));
+function cleanSaveList(value?: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => cleanSaveText(typeof item === "string" ? item : "")).filter(Boolean);
+}
+
+function getProfileCurrentPosition(profile: CrewProfile) {
+  return cleanSaveText(profile.current_position) || cleanSaveList(profile.current_positions)[0] || "";
+}
+
+function inferBaseRoleFromPosition(value?: string) {
+  const position = cleanSaveText(value).toLowerCase();
+  if (position.includes("captain")) return "captain";
+  if (position.includes("owner")) return "owner";
+  if (position.includes("management")) return "management";
+  return "crew";
 }
 
 function cleanSaveLanguages(value?: LanguageEntry[]) {
@@ -1181,13 +1203,15 @@ function cleanSaveLanguages(value?: LanguageEntry[]) {
 }
 
 function profileSaveState(profile: CrewProfile) {
+  const currentPosition = getProfileCurrentPosition(profile);
+
   return {
     profile_photo_url: cleanSaveText(profile.profile_photo_url),
     full_name: cleanSaveText(profile.full_name),
     email: cleanSaveText(profile.email),
     phone: cleanSaveText(profile.phone),
     nationality: cleanSaveText(profile.nationality),
-    current_position: cleanSaveText(profile.current_position),
+    current_position: currentPosition,
     location: cleanSaveText(profile.location),
     bio: cleanSaveText(profile.bio),
     date_of_birth: cleanSaveText(profile.date_of_birth),
@@ -1195,7 +1219,7 @@ function profileSaveState(profile: CrewProfile) {
     weight_kg: cleanSaveNumber(profile.weight_kg),
     visible_tattoos: cleanSaveText(profile.visible_tattoos),
     smoker: cleanSaveText(profile.smoker),
-    current_positions: cleanSaveList(profile.current_positions),
+    current_positions: currentPosition ? [currentPosition] : [],
     seeking_positions: cleanSaveList(profile.seeking_positions),
     work_preferences: cleanSaveList(profile.work_preferences),
     personal_skills: cleanSaveList(profile.personal_skills),
@@ -2859,13 +2883,16 @@ function PillList({ items, light = false }: { items: string[]; light?: boolean }
 }
 
 function normalizeProfile(profile: CrewProfile) {
+  const currentPosition = getProfileCurrentPosition(profile);
+
   return {
     ...profile,
-    current_positions: profile.current_positions || [],
-    seeking_positions: profile.seeking_positions || [],
-    work_preferences: profile.work_preferences || [],
-    personal_skills: profile.personal_skills || [],
-    personal_characteristics: profile.personal_characteristics || [],
+    current_position: currentPosition,
+    current_positions: currentPosition ? [currentPosition] : [],
+    seeking_positions: cleanSaveList(profile.seeking_positions),
+    work_preferences: cleanSaveList(profile.work_preferences),
+    personal_skills: cleanSaveList(profile.personal_skills),
+    personal_characteristics: cleanSaveList(profile.personal_characteristics),
     languages: profile.languages || [],
   };
 }

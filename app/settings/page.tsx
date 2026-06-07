@@ -22,6 +22,7 @@ type SettingsProfile = {
   phone: string;
   role: string;
   current_position: string;
+  current_positions?: string[];
 };
 
 type Notice = {
@@ -66,7 +67,7 @@ export default function SettingsPage() {
 
     const [{ data: baseProfile }, { data: crewProfile }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-      supabase.from("crew_profiles").select("full_name, phone, email, current_position").eq("user_id", user.id).maybeSingle(),
+      supabase.from("crew_profiles").select("full_name, phone, email, current_position, current_positions").eq("user_id", user.id).maybeSingle(),
     ]);
 
     const email = baseProfile?.email || crewProfile?.email || user.email || "";
@@ -79,9 +80,13 @@ export default function SettingsPage() {
       baseProfile?.phone ||
       crewProfile?.phone ||
       (typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "");
+    const currentPosition =
+      cleanText(crewProfile?.current_position) ||
+      cleanStringList(crewProfile?.current_positions)[0] ||
+      "";
     const role =
       normalizeRole(baseProfile?.role || user.user_metadata?.role) ||
-      inferRoleFromPosition(crewProfile?.current_position) ||
+      inferRoleFromPosition(currentPosition) ||
       "crew";
 
     setProfile({
@@ -90,7 +95,8 @@ export default function SettingsPage() {
       full_name: fullName,
       phone,
       role,
-      current_position: cleanText(crewProfile?.current_position) || getDefaultPositionForAccountType(role) || "Deckhand",
+      current_position: currentPosition || getDefaultPositionForAccountType(role) || "Deckhand",
+      current_positions: currentPosition ? [currentPosition] : [],
     });
     setOriginalEmail(email);
     setLoading(false);
@@ -167,6 +173,7 @@ export default function SettingsPage() {
           full_name: fullName,
           phone,
           current_position: currentPosition,
+          current_positions: currentPosition ? [currentPosition] : [],
           public_crew_id: user.id.slice(0, 8).toUpperCase(),
         }
       ),
@@ -180,7 +187,7 @@ export default function SettingsPage() {
     }
 
     setOriginalEmail(email);
-    setProfile((current) => ({ ...current, email, full_name: fullName, phone, role, current_position: currentPosition }));
+    setProfile((current) => ({ ...current, email, full_name: fullName, phone, role, current_position: currentPosition, current_positions: currentPosition ? [currentPosition] : [] }));
     setNotice({
       tone: "success",
       message:
@@ -304,10 +311,12 @@ export default function SettingsPage() {
                       required
                       onChange={(event) => {
                         const nextRole = event.target.value;
+                        const nextPosition = profile.current_position || getDefaultPositionForAccountType(nextRole);
                         setProfile({
                           ...profile,
                           role: nextRole,
-                          current_position: profile.current_position || getDefaultPositionForAccountType(nextRole),
+                          current_position: nextPosition,
+                          current_positions: nextPosition ? [nextPosition] : [],
                         });
                       }}
                       className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none shadow-sm transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
@@ -327,7 +336,10 @@ export default function SettingsPage() {
                   <select
                     value={profile.current_position}
                     required
-                    onChange={(event) => setProfile({ ...profile, current_position: event.target.value })}
+                    onChange={(event) => {
+                      const nextPosition = event.target.value;
+                      setProfile({ ...profile, current_position: nextPosition, current_positions: nextPosition ? [nextPosition] : [] });
+                    }}
                     className="min-h-[54px] w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none shadow-sm transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10"
                   >
                     <option value="">Select yacht position</option>
@@ -560,6 +572,11 @@ function getPasswordStrength(password: string): PasswordStrength {
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanStringList(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => cleanText(item)).filter(Boolean);
 }
 
 function normalizeRole(value: unknown) {
