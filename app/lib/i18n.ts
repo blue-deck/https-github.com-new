@@ -563,6 +563,11 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Certificates and CV visibility.": { tr: "Sertifikalar ve CV görünürlüğü." },
   "Portfolio": { tr: "Portfolyo" },
   "Yacht and work photos.": { tr: "Yat ve iş fotoğrafları." },
+  "Professional photo portfolio": { tr: "Profesyonel fotoğraf portfolyosu" },
+  "Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear as a clean photo grid on your BlueDeck CV.": {
+    tr: "Bu bölümde yat çalışmalarınızdan, servis anlarından, tekne üzerindeki projelerden veya denizcilik deneyiminizden profesyonel fotoğraflar ekleyebilirsiniz. Fotoğraflar BlueDeck CV'nizde temiz bir grid olarak görünür.",
+  },
+  "Add a portfolio photo": { tr: "Portfolyo fotoğrafı ekle" },
   "Languages": { tr: "Diller" },
   "Language level profile.": { tr: "Dil seviyesi profili." },
   "Preview / Download": { tr: "Önizleme / İndir" },
