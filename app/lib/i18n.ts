@@ -549,6 +549,44 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Refresh": { tr: "Yenile" },
   "Reference": { tr: "Referans" },
   "Related yacht / vessel": { tr: "İlgili yat / tekne" },
+  "Personal Details": { tr: "Kişisel Bilgiler" },
+  "Personal details": { tr: "Kişisel Bilgiler" },
+  "Identity, contact, photo and summary.": { tr: "Kimlik, iletişim, fotoğraf ve özet." },
+  "Yacht Experience": { tr: "Yat Deneyimi" },
+  "Yacht experience": { tr: "Yat Deneyimi" },
+  "Yachts, duties, photos and references.": { tr: "Yatlar, görevler, fotoğraflar ve referanslar." },
+  "Skills & Characteristics": { tr: "Beceriler ve Özellikler" },
+  "Skills & characteristics": { tr: "Beceriler ve Özellikler" },
+  "Skills, traits, preferences and seeking roles.": {
+    tr: "Beceriler, özellikler, tercihler ve aranan roller.",
+  },
+  "Certificates and CV visibility.": { tr: "Sertifikalar ve CV görünürlüğü." },
+  "Portfolio": { tr: "Portfolyo" },
+  "Yacht and work photos.": { tr: "Yat ve iş fotoğrafları." },
+  "Languages": { tr: "Diller" },
+  "Language level profile.": { tr: "Dil seviyesi profili." },
+  "Preview / Download": { tr: "Önizleme / İndir" },
+  "Review the final CV and save PDF.": { tr: "Final CV'yi gözden geçir ve PDF olarak kaydet." },
+  "PDF ready": { tr: "PDF hazır" },
+  "BlueDeck Profile": { tr: "BlueDeck Profili" },
+  "Professional Crew Profile": { tr: "Profesyonel Mürettebat Profili" },
+  "Build a clean yachting CV from verified profile data, documents, work preferences, skills, references and portfolio.": {
+    tr: "Doğrulanmış profil verileri, belgeler, çalışma tercihleri, beceriler, referanslar ve portfolyodan temiz bir yatçılık CV'si oluştur.",
+  },
+  "Experience": { tr: "Deneyim" },
+  "Alerts": { tr: "Uyarılar" },
+  "Actions": { tr: "Aksiyonlar" },
+  "Save profile": { tr: "Profili kaydet" },
+  "Saving...": { tr: "Kaydediliyor..." },
+  "Saved": { tr: "Kaydedildi" },
+  "Unsaved": { tr: "Kaydedilmedi" },
+  "Contracts": { tr: "Kontratlar" },
+  "My checklists": { tr: "Kontrol listelerim" },
+  "Final BlueDeck CV": { tr: "Final BlueDeck CV" },
+  "Review the generated CV below. Use the Save as PDF button inside the preview to download the exact CV layout.": {
+    tr: "Oluşturulan CV'yi aşağıda gözden geçir. Birebir CV tasarımını indirmek için önizleme içindeki PDF olarak kaydet butonunu kullan.",
+  },
+  "CV docs": { tr: "CV belgeleri" },
   "Verified Crew Profile": { tr: "Doğrulanmış Mürettebat Profili" },
   "Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.": {
     tr: "Özel yat işe alımı ve yönetim incelemesi için BlueDeck profil verilerinden hazırlanmış kaptan seviyesinde denizcilik CV'si.",
@@ -720,9 +758,63 @@ export const phraseTranslations: Record<string, Partial<Record<Language, string>
   ...manualPhraseTranslations,
 };
 
+function normalizeTranslationPhrase(phrase: string) {
+  return phrase.replace(/\s+/g, " ").trim();
+}
+
+const normalizedPhraseTranslations = Object.entries(phraseTranslations).reduce<
+  Record<string, Partial<Record<Language, string>>>
+>((lookup, [phrase, value]) => {
+  const normalized = normalizeTranslationPhrase(phrase).toLocaleLowerCase("en-US");
+  lookup[normalized] = value;
+  return lookup;
+}, {});
+
+function translateDynamicPhrase(phrase: string, language: Language) {
+  if (language !== "tr") return phrase;
+
+  const countMatch = phrase.match(/^(\d+)\s+(added|saved|selected|docs|photos)$/i);
+  if (countMatch) {
+    const [, count, label] = countMatch;
+    const labels: Record<string, string> = {
+      added: "eklendi",
+      docs: "belge",
+      photos: "fotoğraf",
+      saved: "kaydedildi",
+      selected: "seçildi",
+    };
+    return `${count} ${labels[label.toLocaleLowerCase("en-US")]}`;
+  }
+
+  const alertMatch = phrase.match(/^(\d+)\s+(alert|alerts)$/i);
+  if (alertMatch) return `${alertMatch[1]} uyarı`;
+
+  const cvDocsMatch = phrase.match(/^(\d+)\s+CV docs$/i);
+  if (cvDocsMatch) return `${cvDocsMatch[1]} CV belgesi`;
+
+  const yearsMatch = phrase.match(/^(\d+\+?)\s*(yrs|years)$/i);
+  if (yearsMatch) return `${yearsMatch[1]} yıl`;
+
+  return phrase;
+}
+
 export function translatePhrase(phrase: string, language: Language) {
   if (language === "en") return phrase;
-  return phraseTranslations[phrase]?.[language] || phrase;
+
+  const direct = phraseTranslations[phrase]?.[language];
+  if (direct) return direct;
+
+  const normalized = normalizeTranslationPhrase(phrase);
+  const normalizedDirect = phraseTranslations[normalized]?.[language];
+  if (normalizedDirect) return normalizedDirect;
+
+  const dynamic = translateDynamicPhrase(normalized, language);
+  if (dynamic !== normalized) return dynamic;
+
+  return (
+    normalizedPhraseTranslations[normalized.toLocaleLowerCase("en-US")]?.[language] ||
+    phrase
+  );
 }
 
 export function isLanguage(value: string | null | undefined): value is Language {

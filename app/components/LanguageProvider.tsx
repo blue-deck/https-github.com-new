@@ -27,14 +27,25 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 const originalTextNodes = new WeakMap<Text, string>();
-const translatableAttributes = ["aria-label", "placeholder", "title"] as const;
+const supportedLanguages: Language[] = ["en", "tr"];
+const translatableAttributes = ["aria-label", "placeholder", "title", "alt"] as const;
 const originalAttributes = new WeakMap<Element, Partial<Record<(typeof translatableAttributes)[number], string>>>();
+
+function normalizePhrase(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
 
 function translateMaybeWithPrefix(text: string, language: Language) {
   const direct = translatePhrase(text, language);
   if (direct !== text) return direct;
 
-  const prefixMatch = text.match(/^([^:]+:)(\s*)(.*)$/);
+  const normalized = normalizePhrase(text);
+  if (normalized !== text) {
+    const normalizedTranslation = translatePhrase(normalized, language);
+    if (normalizedTranslation !== normalized) return normalizedTranslation;
+  }
+
+  const prefixMatch = normalized.match(/^([^:]+:)(\s*)(.*)$/);
   if (!prefixMatch) return text;
 
   const [, prefix, space, rest] = prefixMatch;
@@ -47,6 +58,19 @@ function translateMaybeWithPrefix(text: string, language: Language) {
   }
 
   return text;
+}
+
+function isStoredOriginalCurrent(current: string, storedOriginal: string) {
+  const normalizedCurrent = normalizePhrase(current);
+  const normalizedOriginal = normalizePhrase(storedOriginal);
+  const translatedOriginals = supportedLanguages.map((supportedLanguage) =>
+    normalizePhrase(translateMaybeWithPrefix(normalizedOriginal, supportedLanguage)),
+  );
+
+  return (
+    normalizedCurrent === normalizedOriginal ||
+    translatedOriginals.includes(normalizedCurrent)
+  );
 }
 
 function translateElementAttributes(language: Language) {
@@ -63,11 +87,19 @@ function translateElementAttributes(language: Language) {
       const current = element.getAttribute(attribute);
       if (!current) return;
 
-      const original = stored[attribute] || current;
+      const storedOriginal = stored[attribute];
+      const original =
+        storedOriginal && isStoredOriginalCurrent(current, storedOriginal)
+          ? storedOriginal
+          : current;
       stored[attribute] = original;
 
-      const translated = translateMaybeWithPrefix(original.trim(), language);
-      element.setAttribute(attribute, translated === original.trim() ? original : translated);
+      const trimmedOriginal = normalizePhrase(original);
+      const translated = translateMaybeWithPrefix(trimmedOriginal, language);
+      const nextValue = translated === trimmedOriginal ? original : translated;
+      if (current !== nextValue) {
+        element.setAttribute(attribute, nextValue);
+      }
     });
 
     originalAttributes.set(element, stored);
@@ -103,13 +135,15 @@ function translateVisibleText(language: Language) {
 
   for (const node of nodes) {
     const current = node.textContent || "";
-    const original = originalTextNodes.get(node) || current;
-    const trimmedOriginal = original.trim();
+    const storedOriginal = originalTextNodes.get(node);
+    const original =
+      storedOriginal && isStoredOriginalCurrent(current, storedOriginal)
+        ? storedOriginal
+        : current;
+    const trimmedOriginal = normalizePhrase(original);
     const translated = translateMaybeWithPrefix(trimmedOriginal, language);
 
-    if (!originalTextNodes.has(node)) {
-      originalTextNodes.set(node, original);
-    }
+    originalTextNodes.set(node, original);
 
     if (translated === trimmedOriginal) {
       if (current !== original) {
@@ -159,6 +193,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     translateVisibleText(language);
+    const initialFrame = window.requestAnimationFrame(() => {
+      translateVisibleText(language);
+    });
 
     let frame = 0;
     const observer = new MutationObserver(() => {
@@ -170,11 +207,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     });
 
     observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: [...translatableAttributes],
       childList: true,
+      characterData: true,
       subtree: true,
     });
 
     return () => {
+      window.cancelAnimationFrame(initialFrame);
       if (frame) window.cancelAnimationFrame(frame);
       observer.disconnect();
     };
