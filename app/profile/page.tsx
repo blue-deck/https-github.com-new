@@ -297,7 +297,6 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
-  const [photoGalleryDraftUrl, setPhotoGalleryDraftUrl] = useState("");
   const [photoGallerySaving, setPhotoGallerySaving] = useState(false);
   const uploadRunRef = useRef(0);
 
@@ -643,20 +642,15 @@ export default function ProfilePage() {
     return true;
   }
 
-  async function savePhotoGalleryDraft() {
-    if (!photoGalleryDraftUrl) return false;
-
+  async function savePhotoGalleryPhoto(imageUrl: string) {
+    if (!imageUrl) return false;
     setPhotoGallerySaving(true);
     const saved = await savePortfolioPhoto({
       ...emptyPhoto,
-      image_url: photoGalleryDraftUrl,
+      image_url: imageUrl,
       location: "",
     });
     setPhotoGallerySaving(false);
-
-    if (saved) {
-      setPhotoGalleryDraftUrl("");
-    }
 
     return saved;
   }
@@ -1026,49 +1020,30 @@ export default function ProfilePage() {
                     Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear as a clean photo grid on your BlueDeck CV.
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
+                    <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" || photoGallerySaving ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
                       <Upload className="h-4 w-4 text-cyan-700" />
-                      {uploading === "photo-gallery-new" ? "Uploading..." : photoGalleryDraftUrl ? "Change photo" : "Add photo"}
+                      {uploading === "photo-gallery-new" ? "Uploading..." : photoGallerySaving ? "Saving..." : "Add photo"}
                       <input
                         type="file"
                         accept="image/*"
-                        disabled={uploading === "photo-gallery-new"}
+                        disabled={uploading === "photo-gallery-new" || photoGallerySaving}
                         className="hidden"
                         onChange={async (event) => {
                           const file = event.currentTarget.files?.[0];
                           event.currentTarget.value = "";
                           if (!file) return;
                           const url = await uploadFile(file, "crew-portfolio", "photo-gallery-new");
-                          if (url) setPhotoGalleryDraftUrl(url);
+                          if (url) await savePhotoGalleryPhoto(url);
                         }}
                       />
                     </label>
-                    <button
-                      type="button"
-                      disabled={!photoGalleryDraftUrl || photoGallerySaving || uploading === "photo-gallery-new"}
-                      onClick={savePhotoGalleryDraft}
-                      className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817] shadow-sm transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-                    >
-                      {photoGallerySaving ? <Plus className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                      {photoGallerySaving ? "Saving..." : "Save photo"}
-                    </button>
                     {uploading === "photo-gallery-new" && (
                       <button type="button" onClick={cancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
                         Cancel upload
                       </button>
                     )}
                   </div>
-                  {photoGalleryDraftUrl && (
-                    <div className="mt-4 flex items-center gap-3 rounded-2xl border border-cyan-100 bg-white/75 p-3">
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#f5fafb]">
-                        <img src={photoGalleryDraftUrl} alt="Selected gallery photo" className="h-full w-full object-contain" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-[#06111f]">Ready to save</p>
-                        <p className="mt-1 text-xs font-semibold text-[#5a6870]">Save it to place this photo at the start of your gallery.</p>
-                      </div>
-                    </div>
-                  )}
+                  <p className="mt-2 text-xs font-semibold text-[#6b7a82]">Photos are saved automatically after upload.</p>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
