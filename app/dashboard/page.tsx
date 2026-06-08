@@ -292,7 +292,7 @@ export default function DashboardPage() {
             <UserRound className="h-8 w-8 text-cyan-700" />
             <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
             <p className="mt-3 leading-7 text-slate-600">
-              Manage your crew ID, documents, expiry dates, portfolio and CV.
+              Manage your crew ID, documents, expiry dates, photo gallery and CV.
             </p>
           </Link>
 

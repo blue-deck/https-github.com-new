@@ -3,7 +3,7 @@ import { PublicPageShell } from "../components/PublicSiteChrome";
 const sections = [
   {
     title: "Information We Collect",
-    text: "BlueDeck may collect name, email address, phone number, account type, yacht position, profile details, maritime documents, expiry dates, yacht experience, references, portfolio images, invitations, contracts and checklist activity.",
+    text: "BlueDeck may collect name, email address, phone number, account type, yacht position, profile details, maritime documents, expiry dates, yacht experience, references, photo gallery images, invitations, contracts and checklist activity.",
   },
   {
     title: "How We Use Information",
@@ -11,7 +11,7 @@ const sections = [
   },
   {
     title: "Documents and Photos",
-    text: "Documents and images uploaded by users are used for profile, CV, portfolio, yacht record, checklist proof and operational history purposes inside the BlueDeck account experience.",
+    text: "Documents and images uploaded by users are used for profile, CV, photo gallery, yacht record, checklist proof and operational history purposes inside the BlueDeck account experience.",
   },
   {
     title: "Security",

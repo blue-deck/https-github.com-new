@@ -122,7 +122,7 @@ const en = {
   "management.modelText":
     "The platform avoids scattered files and chat-based follow-up by keeping each action connected to an account, yacht, role and date.",
   "management.workflow1": "Owner, captain, management and crew accounts are separated by role.",
-  "management.workflow2": "Crew members maintain their own profile, documents, portfolio and CV.",
+  "management.workflow2": "Crew members maintain their own profile, documents, photo gallery and CV.",
   "management.workflow3": "Captains invite crew into a yacht workspace and assign contracts or checklist duties.",
   "management.workflow4": "Checklist progress, timestamps and proof images stay attached to the yacht record.",
   "management.workflow5": "Document expiry alerts keep operational risk visible before it becomes urgent.",
@@ -379,7 +379,7 @@ const tr: Record<TranslationKey, string> = {
   "management.modelTitle": "Mürettebat profilinden kaptan komutasına kadar akış bağlı kalır.",
   "management.modelText": "Platform, her aksiyonu hesap, yat, rol ve tarih ile bağlayarak dağınık dosya ve mesaj takibini azaltır.",
   "management.workflow1": "Sahip, kaptan, yönetim ve mürettebat hesapları role göre ayrılır.",
-  "management.workflow2": "Mürettebat kendi profilini, belgelerini, portfolyosunu ve CV’sini yönetir.",
+  "management.workflow2": "Mürettebat kendi profilini, belgelerini, fotoğraf galerisini ve CV’sini yönetir.",
   "management.workflow3": "Kaptanlar mürettebatı yat çalışma alanına davet eder, kontrat veya checklist görevleri atar.",
   "management.workflow4": "Checklist ilerlemesi, zaman damgaları ve kanıt fotoğrafları yat kaydına bağlı kalır.",
   "management.workflow5": "Belge bitiş uyarıları operasyon riskini acil olmadan görünür tutar.",
@@ -561,13 +561,22 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
     tr: "Beceriler, özellikler, tercihler ve aranan roller.",
   },
   "Certificates and CV visibility.": { tr: "Sertifikalar ve CV görünürlüğü." },
-  "Portfolio": { tr: "Portfolyo" },
+  "Photo Gallery": { tr: "Fotoğraf Galerisi" },
   "Yacht and work photos.": { tr: "Yat ve iş fotoğrafları." },
-  "Professional photo portfolio": { tr: "Profesyonel fotoğraf portfolyosu" },
+  "Manage your crew ID, documents, expiry dates, photo gallery and CV.": {
+    tr: "Crew ID'nizi, belgelerinizi, bitiş tarihlerini, fotoğraf galerinizi ve CV'nizi yönetin.",
+  },
+  "BlueDeck may collect name, email address, phone number, account type, yacht position, profile details, maritime documents, expiry dates, yacht experience, references, photo gallery images, invitations, contracts and checklist activity.": {
+    tr: "BlueDeck ad, e-posta adresi, telefon numarası, hesap türü, yat pozisyonu, profil detayları, denizcilik belgeleri, bitiş tarihleri, yat deneyimi, referanslar, fotoğraf galerisi görselleri, davetler, kontratlar ve kontrol listesi aktivitelerini toplayabilir.",
+  },
+  "Documents and images uploaded by users are used for profile, CV, photo gallery, yacht record, checklist proof and operational history purposes inside the BlueDeck account experience.": {
+    tr: "Kullanıcıların yüklediği belgeler ve görseller BlueDeck hesap deneyimi içinde profil, CV, fotoğraf galerisi, yat kaydı, kontrol listesi kanıtı ve operasyon geçmişi amaçlarıyla kullanılır.",
+  },
+  "Professional photo gallery": { tr: "Profesyonel fotoğraf galerisi" },
   "Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear as a clean photo grid on your BlueDeck CV.": {
     tr: "Bu bölümde yat çalışmalarınızdan, servis anlarından, tekne üzerindeki projelerden veya denizcilik deneyiminizden profesyonel fotoğraflar ekleyebilirsiniz. Fotoğraflar BlueDeck CV'nizde temiz bir grid olarak görünür.",
   },
-  "Add a portfolio photo": { tr: "Portfolyo fotoğrafı ekle" },
+  "Add a gallery photo": { tr: "Galeri fotoğrafı ekle" },
   "Languages": { tr: "Diller" },
   "Language level profile.": { tr: "Dil seviyesi profili." },
   "Preview / Download": { tr: "Önizleme / İndir" },
@@ -575,8 +584,8 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "PDF ready": { tr: "PDF hazır" },
   "BlueDeck Profile": { tr: "BlueDeck Profili" },
   "Professional Crew Profile": { tr: "Profesyonel Mürettebat Profili" },
-  "Build a clean yachting CV from verified profile data, documents, work preferences, skills, references and portfolio.": {
-    tr: "Doğrulanmış profil verileri, belgeler, çalışma tercihleri, beceriler, referanslar ve portfolyodan temiz bir yatçılık CV'si oluştur.",
+  "Build a clean yachting CV from verified profile data, documents, work preferences, skills, references and photo gallery.": {
+    tr: "Doğrulanmış profil verileri, belgeler, çalışma tercihleri, beceriler, referanslar ve fotoğraf galerisinden temiz bir yatçılık CV'si oluştur.",
   },
   "Experience": { tr: "Deneyim" },
   "Alerts": { tr: "Uyarılar" },

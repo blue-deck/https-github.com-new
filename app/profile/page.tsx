@@ -358,7 +358,7 @@ export default function ProfilePage() {
     },
     {
       id: "portfolio",
-      label: "Portfolio",
+      label: "Photo Gallery",
       description: "Yacht and work photos.",
       status: `${portfolioPhotoCount} photos`,
       icon: <Camera className="h-4 w-4" />,
@@ -738,7 +738,7 @@ export default function ProfilePage() {
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                 Build a clean yachting CV from verified profile data, documents,
-                work preferences, skills, references and portfolio.
+                work preferences, skills, references and photo gallery.
               </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-4">
                 <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
@@ -982,13 +982,13 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel active={activeStudioTab === "portfolio"} title="Portfolio photos" icon={<Camera className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "portfolio"} title="Photo Gallery" icon={<Camera className="h-5 w-5" />}>
               <div className="mb-5 flex gap-3 rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
                   <Camera className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-sm font-black text-[#06111f]">Professional photo portfolio</p>
+                  <p className="text-sm font-black text-[#06111f]">Professional photo gallery</p>
                   <p className="mt-1 text-sm leading-6 text-[#5a6870]">
                     Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear as a clean photo grid on your BlueDeck CV.
                   </p>
@@ -1480,11 +1480,11 @@ function SeazoneStyleCvPreview({
               )}
 
               {cleanPortfolio.length > 0 && (
-                <SeazoneSection title="Portfolio">
+                <SeazoneSection title="Photo Gallery">
                   <div className="grid grid-cols-3 gap-3">
                     {cleanPortfolio.slice(0, 6).map((photo) => (
                       <figure key={photo.id || photo.image_url} className="aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <img src={photo.image_url} alt="Portfolio" className="h-full w-full object-cover" />
+                        <img src={photo.image_url} alt="Photo gallery" className="h-full w-full object-cover" />
                       </figure>
                     ))}
                   </div>
@@ -2448,11 +2448,11 @@ function PortfolioEditor({
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-[#f5fafb]">
         {draft.image_url ? (
-          <img src={draft.image_url} alt="Portfolio" className="h-full w-full object-cover" />
+          <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center text-slate-400">
             <Camera className="h-9 w-9" />
-            <p className="mt-3 text-sm font-semibold text-slate-500">Add a portfolio photo</p>
+            <p className="mt-3 text-sm font-semibold text-slate-500">Add a gallery photo</p>
           </div>
         )}
       </div>

@@ -259,16 +259,11 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             )}
 
             {cleanPortfolio.length > 0 && (
-              <CvSection title="Portfolio">
+              <CvSection title="Photo Gallery">
                 <div className="grid grid-cols-3 gap-3">
                   {cleanPortfolio.slice(0, 6).map((photo) => (
-                    <figure key={text(photo, "id") || text(photo, "image_url")} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                      <img src={text(photo, "image_url")} alt={text(photo, "title") || "Portfolio"} className="h-28 w-full object-cover" />
-                      {(text(photo, "title") || text(photo, "location")) && (
-                        <figcaption className="px-3 py-2 text-xs font-semibold text-slate-600">
-                          {text(photo, "title") || text(photo, "location")}
-                        </figcaption>
-                      )}
+                    <figure key={text(photo, "id") || text(photo, "image_url")} className="aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                      <img src={text(photo, "image_url")} alt="Photo gallery" className="h-full w-full object-cover" />
                     </figure>
                   ))}
                 </div>
