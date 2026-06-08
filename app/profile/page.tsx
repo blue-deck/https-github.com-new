@@ -1046,7 +1046,7 @@ export default function ProfilePage() {
                   <p className="mt-2 text-xs font-semibold text-[#6b7a82]">Photos are saved automatically after upload.</p>
                 </div>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {editablePortfolio.map((item) => (
                   <PortfolioEditor
                     key={item.id || item.image_url}
@@ -2496,7 +2496,7 @@ function PortfolioEditor({
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="aspect-square overflow-hidden rounded-xl border border-slate-200 bg-[#f5fafb]">
+      <div className="aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 bg-[#f5fafb]">
         <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-contain" />
       </div>
       <div className="mt-3 flex flex-col gap-2">
