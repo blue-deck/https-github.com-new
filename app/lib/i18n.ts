@@ -577,6 +577,15 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
     tr: "Bu bölümde yat çalışmalarınızdan, servis anlarından, tekne üzerindeki projelerden veya denizcilik deneyiminizden profesyonel fotoğraflar ekleyebilirsiniz. Fotoğraflar BlueDeck CV'nizde temiz bir grid olarak görünür.",
   },
   "Add a gallery photo": { tr: "Galeri fotoğrafı ekle" },
+  "Ready to save": { tr: "Kaydetmeye hazır" },
+  "Save it to place this photo at the start of your gallery.": {
+    tr: "Bu fotoğrafı galerinizin başına eklemek için kaydedin.",
+  },
+  "No gallery photos yet. Add another photo whenever you are ready.": {
+    tr: "Henüz galeri fotoğrafı yok. Hazır olduğunuzda yeni bir fotoğraf ekleyebilirsiniz.",
+  },
+  "Show on CV": { tr: "CV'de göster" },
+  "Selected gallery photo": { tr: "Seçilen galeri fotoğrafı" },
   "Languages": { tr: "Diller" },
   "Language level profile.": { tr: "Dil seviyesi profili." },
   "Preview / Download": { tr: "Önizleme / İndir" },

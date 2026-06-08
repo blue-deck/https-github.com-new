@@ -90,6 +90,7 @@ type Experience = {
 
 type PortfolioPhoto = {
   id?: string;
+  created_at?: string;
   title: string;
   image_url: string;
   location: string;
@@ -279,6 +280,7 @@ const emptyPhoto: PortfolioPhoto = {
   image_url: "",
   location: "",
 };
+const hiddenPhotoGalleryMarker = "__bluedeck_cv_hidden";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<CrewProfile>({});
@@ -295,6 +297,8 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
+  const [photoGalleryDraftUrl, setPhotoGalleryDraftUrl] = useState("");
+  const [photoGallerySaving, setPhotoGallerySaving] = useState(false);
   const uploadRunRef = useRef(0);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
@@ -312,6 +316,17 @@ export default function ProfilePage() {
         return secondCreatedAt - firstCreatedAt;
       }),
     [experiences],
+  );
+  const editablePortfolio = useMemo(
+    () =>
+      [...portfolio]
+        .filter((photo) => photo.image_url)
+        .sort((first, second) => {
+          const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
+          const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
+          return secondCreatedAt - firstCreatedAt;
+        }),
+    [portfolio],
   );
 
   const totalExperienceYears = useMemo(() => {
@@ -619,13 +634,31 @@ export default function ProfilePage() {
 
   async function savePortfolioPhoto(item: PortfolioPhoto) {
     if (!profile.id) return false;
-    const response = await saveRelatedRecord("portfolio", item, item.id);
+    const response = await saveRelatedRecord("portfolio", { ...item, title: "", location: item.location || "" }, item.id);
     if (!response.ok) {
       alert(response.error);
       return false;
     }
     await loadRelated(profile.id);
     return true;
+  }
+
+  async function savePhotoGalleryDraft() {
+    if (!photoGalleryDraftUrl) return false;
+
+    setPhotoGallerySaving(true);
+    const saved = await savePortfolioPhoto({
+      ...emptyPhoto,
+      image_url: photoGalleryDraftUrl,
+      location: "",
+    });
+    setPhotoGallerySaving(false);
+
+    if (saved) {
+      setPhotoGalleryDraftUrl("");
+    }
+
+    return saved;
   }
 
   async function deletePortfolioPhoto(id?: string) {
@@ -992,25 +1025,66 @@ export default function ProfilePage() {
                   <p className="mt-1 text-sm leading-6 text-[#5a6870]">
                     Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear as a clean photo grid on your BlueDeck CV.
                   </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
+                      <Upload className="h-4 w-4 text-cyan-700" />
+                      {uploading === "photo-gallery-new" ? "Uploading..." : photoGalleryDraftUrl ? "Change photo" : "Add photo"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploading === "photo-gallery-new"}
+                        className="hidden"
+                        onChange={async (event) => {
+                          const file = event.currentTarget.files?.[0];
+                          event.currentTarget.value = "";
+                          if (!file) return;
+                          const url = await uploadFile(file, "crew-portfolio", "photo-gallery-new");
+                          if (url) setPhotoGalleryDraftUrl(url);
+                        }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={!photoGalleryDraftUrl || photoGallerySaving || uploading === "photo-gallery-new"}
+                      onClick={savePhotoGalleryDraft}
+                      className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-3 py-2 text-sm font-semibold text-[#020817] shadow-sm transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                    >
+                      {photoGallerySaving ? <Plus className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                      {photoGallerySaving ? "Saving..." : "Save photo"}
+                    </button>
+                    {uploading === "photo-gallery-new" && (
+                      <button type="button" onClick={cancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                        Cancel upload
+                      </button>
+                    )}
+                  </div>
+                  {photoGalleryDraftUrl && (
+                    <div className="mt-4 flex items-center gap-3 rounded-2xl border border-cyan-100 bg-white/75 p-3">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#f5fafb]">
+                        <img src={photoGalleryDraftUrl} alt="Selected gallery photo" className="h-full w-full object-contain" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black text-[#06111f]">Ready to save</p>
+                        <p className="mt-1 text-xs font-semibold text-[#5a6870]">Save it to place this photo at the start of your gallery.</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div className="grid gap-4 lg:grid-cols-2">
-                {[...portfolio, emptyPhoto].map((item, index) => {
-                  const uploadSlot = item.id ? `portfolio-photo-${item.id}` : `portfolio-photo-new-${index}`;
-
-                  return (
-                    <PortfolioEditor
-                      key={item.id || `new-${index}`}
-                      item={item}
-                      isNew={!item.id}
-                      onSave={savePortfolioPhoto}
-                      onDelete={deletePortfolioPhoto}
-                      onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
-                      onCancelUpload={cancelUpload}
-                      uploading={uploading === uploadSlot}
-                    />
-                  );
-                })}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {editablePortfolio.map((item) => (
+                  <PortfolioEditor
+                    key={item.id || item.image_url}
+                    item={item}
+                    onSave={savePortfolioPhoto}
+                    onDelete={deletePortfolioPhoto}
+                  />
+                ))}
+                {editablePortfolio.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-cyan-200 bg-white/70 p-5 text-sm font-semibold text-slate-500">
+                    No gallery photos yet. Add another photo whenever you are ready.
+                  </div>
+                )}
               </div>
             </Panel>
 
@@ -1261,12 +1335,6 @@ function referenceSaveState(reference: ReferenceEntry) {
   };
 }
 
-function portfolioSaveState(photo: PortfolioPhoto) {
-  return {
-    image_url: cleanSaveText(photo.image_url),
-  };
-}
-
 function phoneCountryFromValue(value: string) {
   const normalized = value.trim();
   if (!normalized) return null;
@@ -1275,6 +1343,10 @@ function phoneCountryFromValue(value: string) {
       .sort((a, b) => b.dial.length - a.dial.length)
       .find((country) => normalized.startsWith(country.dial)) || null
   );
+}
+
+function isPortfolioPhotoVisibleOnCv(photo: PortfolioPhoto) {
+  return photo.location !== hiddenPhotoGalleryMarker;
 }
 
 function localPhoneFromValue(value: string, country: PhoneCountryOption | null) {
@@ -1324,7 +1396,7 @@ function SeazoneStyleCvPreview({
   const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
   const cleanReferences = cleanReferenceEntries(references);
   const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
-  const cleanPortfolio = portfolio.filter((photo) => photo.image_url);
+  const cleanPortfolio = portfolio.filter((photo) => photo.image_url && isPortfolioPhotoVisibleOnCv(photo));
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const professionalSummary =
     profile.bio?.trim() ||
@@ -1481,10 +1553,10 @@ function SeazoneStyleCvPreview({
 
               {cleanPortfolio.length > 0 && (
                 <SeazoneSection title="Photo Gallery">
-                  <div className="grid grid-cols-3 gap-3">
-                    {cleanPortfolio.slice(0, 6).map((photo) => (
-                      <figure key={photo.id || photo.image_url} className="aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                        <img src={photo.image_url} alt="Photo gallery" className="h-full w-full object-cover" />
+                  <div className="grid grid-cols-4 gap-2.5">
+                    {cleanPortfolio.map((photo) => (
+                      <figure key={photo.id || photo.image_url} className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-[#f7fafb] shadow-sm">
+                        <img src={photo.image_url} alt="Photo gallery" className="h-full w-full object-contain" />
                       </figure>
                     ))}
                   </div>
@@ -2422,80 +2494,52 @@ function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange
 
 function PortfolioEditor({
   item,
-  isNew,
   onSave,
   onDelete,
-  onUpload,
-  onCancelUpload,
-  uploading,
 }: {
   item: PortfolioPhoto;
-  isNew: boolean;
   onSave: (item: PortfolioPhoto) => Promise<boolean>;
   onDelete: (id?: string) => void;
-  onUpload: (file: File) => Promise<string>;
-  onCancelUpload: () => void;
-  uploading: boolean;
 }) {
   const [draft, setDraft] = useState(item);
-  const dirty = !saveStateEquals(portfolioSaveState(draft), portfolioSaveState(item));
+  const [savingVisibility, setSavingVisibility] = useState(false);
+  const visibleOnCv = isPortfolioPhotoVisibleOnCv(draft);
 
-  function removePhoto() {
-    setDraft({ ...draft, image_url: "" });
+  async function updateCvVisibility(showOnCv: boolean) {
+    const nextDraft = {
+      ...draft,
+      location: showOnCv ? "" : hiddenPhotoGalleryMarker,
+    };
+
+    setDraft(nextDraft);
+    setSavingVisibility(true);
+    const saved = await onSave(nextDraft);
+    setSavingVisibility(false);
+
+    if (!saved) setDraft(draft);
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="aspect-square overflow-hidden rounded-2xl border border-slate-200 bg-[#f5fafb]">
-        {draft.image_url ? (
-          <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center px-6 text-center text-slate-400">
-            <Camera className="h-9 w-9" />
-            <p className="mt-3 text-sm font-semibold text-slate-500">Add a gallery photo</p>
-          </div>
-        )}
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="aspect-square overflow-hidden rounded-xl border border-slate-200 bg-[#f5fafb]">
+        <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-contain" />
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-[#fbfaf7] px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
-          <Upload className="h-4 w-4 text-cyan-700" />
-          {uploading ? "Uploading..." : draft.image_url ? "Change photo" : "Add photo"}
+      <div className="mt-3 flex flex-col gap-2">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-[#f8fbfc] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] transition hover:border-cyan-300">
           <input
-            type="file"
-            accept="image/*"
-            disabled={uploading}
-            className="hidden"
-            onChange={async (event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (!file) return;
-              const url = await onUpload(file);
-              if (url) setDraft((current) => ({ ...current, image_url: url }));
-            }}
+            type="checkbox"
+            checked={visibleOnCv}
+            disabled={savingVisibility}
+            onChange={(event) => updateCvVisibility(event.target.checked)}
+            className="h-4 w-4 accent-cyan-400"
           />
+          {savingVisibility ? "Saving..." : "Show on CV"}
         </label>
-        {uploading && (
-          <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-            Cancel upload
-          </button>
-        )}
-        {draft.image_url && !uploading && (
-          <button type="button" onClick={removePhoto} className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-            <Trash2 className="h-4 w-4" />
-            Remove photo
-          </button>
-        )}
+        <button type="button" onClick={() => onDelete(draft.id)} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
+          <Trash2 className="h-4 w-4" />
+          Delete
+        </button>
       </div>
-      <EditorButtons
-        isNew={isNew}
-        dirty={dirty}
-        onSave={() => {
-          if (isNew && !draft.image_url) return false;
-          return onSave({ ...draft, title: "", location: "" });
-        }}
-        onDelete={() => onDelete(draft.id)}
-        addLabel="Save photo"
-      />
     </div>
   );
 }

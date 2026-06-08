@@ -36,6 +36,7 @@ type CrewCvData = {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const hiddenPhotoGalleryMarker = "__bluedeck_cv_hidden";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { crewId } = await params;
@@ -73,7 +74,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
     ...stringArray(profile.personal_skills),
     ...stringArray(profile.personal_characteristics),
   ].slice(0, 18);
-  const cleanPortfolio = portfolio.filter((photo) => text(photo, "image_url"));
+  const cleanPortfolio = portfolio.filter((photo) => text(photo, "image_url") && text(photo, "location") !== hiddenPhotoGalleryMarker);
   const cleanReferences = publicReferenceEntries(references);
   const standaloneReferences = publicUnmatchedExperienceReferences(experiences, cleanReferences);
   const professionalSummary =
@@ -260,10 +261,10 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
             {cleanPortfolio.length > 0 && (
               <CvSection title="Photo Gallery">
-                <div className="grid grid-cols-3 gap-3">
-                  {cleanPortfolio.slice(0, 6).map((photo) => (
-                    <figure key={text(photo, "id") || text(photo, "image_url")} className="aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                      <img src={text(photo, "image_url")} alt="Photo gallery" className="h-full w-full object-cover" />
+                <div className="grid grid-cols-4 gap-2.5">
+                  {cleanPortfolio.map((photo) => (
+                    <figure key={text(photo, "id") || text(photo, "image_url")} className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-[#f7fafb] shadow-sm">
+                      <img src={text(photo, "image_url")} alt="Photo gallery" className="h-full w-full object-contain" />
                     </figure>
                   ))}
                 </div>
