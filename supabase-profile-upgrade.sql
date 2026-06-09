@@ -45,6 +45,11 @@ create table if not exists public.crew_references (
   created_at timestamptz default now()
 );
 
+alter table if exists public.crew_experiences
+  add column if not exists yacht_type text,
+  add column if not exists yacht_program text,
+  add column if not exists yacht_size text;
+
 alter table public.crew_references
   add column if not exists crew_profile_id uuid,
   add column if not exists name text,

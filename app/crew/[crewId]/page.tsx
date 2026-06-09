@@ -148,13 +148,14 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 <div className="space-y-2">
                   {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
                   {documents.slice(0, 10).map((document) => (
-                    <div key={text(document, "id") || text(document, "document_type")} className="rounded-xl border border-[#c7d2d6] bg-white px-4 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-black text-[#06111f]">{text(document, "document_type") || "Document"}</p>
-                          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
+                    <div key={text(document, "id") || text(document, "document_type")} className="rounded-lg border border-[#c7d2d6] bg-white px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{text(document, "document_type") || "Document"}</p>
+                          <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
+                          {text(document, "issuer") && <p className="mt-1 truncate text-[10px] font-semibold text-[#5a6870]">{text(document, "issuer")}</p>}
                         </div>
-                        <p className="text-right text-xs font-black text-[#2d7482]">
+                        <p className="shrink-0 text-right text-[10px] font-black text-[#2d7482]">
                           {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
                         </p>
                       </div>
@@ -163,7 +164,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 </div>
               </SideSection>
 
-              <SideSection title="Skills">
+              <SideSection title="Skills & Characteristics">
                 <Pills items={visibleSkills} />
               </SideSection>
 
@@ -194,8 +195,8 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </aside>
 
           <section className="bg-white">
-            <header className="bd-cv-header relative bg-transparent py-10 text-white print:py-9">
-              <div className="bd-cv-name-band ml-0 flex min-h-[150px] items-center bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
+            <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
+              <div className="bd-cv-name-band mr-10 ml-0 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
                   <h1 className="mt-3 text-4xl font-black uppercase leading-none tracking-[0.08em] text-white sm:text-5xl">{name}</h1>
@@ -205,7 +206,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             </header>
 
             <div className="bd-cv-main p-6 sm:p-8 print:p-7">
-              <CvSection title="About Me">
+              <CvSection title="About Me" className="mt-0">
                 <p className="rounded-2xl border border-[#d8e2e6] bg-[#f6f8f8] p-4 text-[14px] leading-7 text-[#3d454c]">
                   {professionalSummary}
                 </p>
@@ -233,6 +234,11 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                           <div className="mt-3">
                             <h2 className="text-[15px] font-black leading-tight text-[#06111f]">{text(experience, "yacht_name") || "Yacht"}</h2>
                             <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
+                            {[experienceText(experience, "yacht_type"), experienceText(experience, "yacht_program"), experienceText(experience, "yacht_size")].filter(Boolean).length > 0 && (
+                              <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
+                                {[experienceText(experience, "yacht_type"), experienceText(experience, "yacht_program"), experienceText(experience, "yacht_size")].filter(Boolean).join(" / ")}
+                              </p>
+                            )}
                             <span className="mt-2 inline-flex rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
                               {text(experience, "position") || "Position"}
                             </span>
@@ -242,7 +248,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                         <div className="bd-cv-experience-body rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
                           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
                           <p className="mt-2 text-[13px] leading-5 text-[#364650]">
-                            {text(experience, "description") || "Responsibilities and onboard duties will appear here."}
+                            {experienceText(experience, "description") || "Responsibilities and onboard duties will appear here."}
                           </p>
                           <PublicExperienceReferences references={experienceReferences} />
                         </div>
@@ -355,6 +361,38 @@ function primaryPosition(profile: Row) {
 function text(row: Row, key: string) {
   const value = row[key];
   return typeof value === "string" ? value.trim() : "";
+}
+
+const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
+
+function experienceText(row: Row, key: string) {
+  if (key === "description") return splitExperienceDescription(text(row, "description")).description.trim();
+  if (key === "yacht_type" || key === "yacht_program" || key === "yacht_size") {
+    return text(row, key) || splitExperienceDescription(text(row, "description")).meta[key] || "";
+  }
+
+  return text(row, key);
+}
+
+function splitExperienceDescription(value: string): { description: string; meta: Record<string, string> } {
+  if (!value.startsWith(experienceMetadataPrefix)) return { description: value, meta: {} };
+  const lineBreak = value.indexOf("\n");
+  const metaText = value.slice(experienceMetadataPrefix.length, lineBreak === -1 ? undefined : lineBreak).trim();
+  const description = lineBreak === -1 ? "" : value.slice(lineBreak + 1);
+
+  try {
+    const meta = JSON.parse(metaText) as Record<string, unknown>;
+    return {
+      description,
+      meta: {
+        yacht_type: typeof meta.yacht_type === "string" ? meta.yacht_type.trim() : "",
+        yacht_program: typeof meta.yacht_program === "string" ? meta.yacht_program.trim() : "",
+        yacht_size: typeof meta.yacht_size === "string" ? meta.yacht_size.trim() : "",
+      },
+    };
+  } catch {
+    return { description, meta: {} };
+  }
 }
 
 function boolean(row: Row, key: string) {
@@ -478,14 +516,16 @@ function CvSection({
   badge,
   icon,
   children,
+  className = "mt-6",
 }: {
   title: string;
   badge?: string;
   icon?: ReactNode;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="bd-cv-section mt-6">
+    <section className={`bd-cv-section ${className}`}>
       <div className="mb-3 flex items-center justify-between gap-4 border-b border-[#b9c8cd] pb-2">
         <h2 className="flex items-center gap-2 text-[13px] font-black uppercase tracking-[0.14em] text-[#06111f]">
           {icon}

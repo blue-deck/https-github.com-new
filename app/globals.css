@@ -798,7 +798,7 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-header {
-    padding: 9mm 0 !important;
+    padding: 8mm 0 2mm !important;
   }
 
   #bluedeck-cv .bd-cv-header > div {
@@ -808,8 +808,11 @@ textarea:-webkit-autofill:focus {
   #bluedeck-cv .bd-cv-name-band {
     min-height: 39mm !important;
     margin-left: -10mm !important;
+    margin-right: 10mm !important;
     padding-left: 28mm !important;
     padding-right: 8mm !important;
+    border-top-right-radius: 999px !important;
+    border-bottom-right-radius: 999px !important;
   }
 
   #bluedeck-cv .bd-cv-main {

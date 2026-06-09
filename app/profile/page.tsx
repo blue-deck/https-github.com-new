@@ -81,6 +81,9 @@ type Experience = {
   id?: string;
   created_at?: string;
   yacht_name: string;
+  yacht_type?: string;
+  yacht_program?: string;
+  yacht_size?: string;
   position: string;
   start_date: string;
   end_date: string;
@@ -204,15 +207,56 @@ const languageOptions = [
 
 const languageLevels = ["Basic", "Intermediate", "Advanced", "Fluent", "Native"];
 
+const yachtTypeOptions = [
+  "Motor yacht",
+  "Sailing yacht",
+  "Catamaran",
+  "Motor catamaran",
+  "Gulet",
+  "Expedition yacht",
+  "Classic yacht",
+  "Support vessel",
+  "Chase boat",
+  "Commercial vessel",
+];
+
+const yachtProgramOptions = [
+  "Private",
+  "Charter",
+  "Private / Charter",
+  "New build",
+  "Refit",
+  "Delivery",
+  "Yard period",
+  "Race / Regatta",
+];
+
 const documentCatalog = [
   {
     category: "Identity & Travel",
-    items: ["Passport", "Seaman's Book", "Schengen Visa", "US B1/B2 Visa", "UK Visa", "Residence Permit", "National ID"],
+    items: [
+      "Passport",
+      "National ID",
+      "Seaman's Book",
+      "Seafarer Discharge Book",
+      "Schengen Visa",
+      "US B1/B2 Visa",
+      "UK Visa",
+      "Australian Maritime Crew Visa",
+      "Residence Permit",
+      "Work Permit",
+      "Vaccination Record",
+      "Yellow Fever Certificate",
+    ],
   },
   {
     category: "STCW & Safety",
     items: [
       "STCW Basic Safety Training",
+      "STCW Elementary First Aid",
+      "STCW Personal Survival Techniques",
+      "STCW Fire Prevention and Fire Fighting",
+      "STCW Personal Safety and Social Responsibility",
       "STCW Security Awareness",
       "Designated Security Duties",
       "Proficiency in Survival Craft",
@@ -222,41 +266,116 @@ const documentCatalog = [
       "PDSD",
       "Crowd Management",
       "Crisis Management",
+      "Passenger Ship Safety",
+      "Ship Security Officer",
+      "Helicopter Underwater Escape Training",
     ],
   },
   {
     category: "Deck & Captain",
     items: [
       "Certificate of Competency",
-      "Yacht Master",
+      "RYA Day Skipper",
+      "RYA Coastal Skipper",
+      "RYA Yachtmaster Coastal",
+      "RYA Yachtmaster Offshore",
+      "RYA Yachtmaster Ocean",
       "Master 200GT",
       "Master 500GT",
+      "Master 3000GT",
       "OOW",
+      "OOW Yachts",
+      "Chief Mate Yachts",
       "GMDSS GOC",
       "GMDSS ROC",
       "Radar / ARPA",
       "ECDIS",
+      "Electronic Navigation Systems",
+      "Efficient Deckhand",
+      "Bridge Resource Management",
+      "MCA HELM Operational",
+      "MCA HELM Management",
       "RYA Powerboat Level 2",
+      "RYA Advanced Powerboat",
       "Tender Operator",
+      "Personal Watercraft Certificate",
       "PWC / Jetski Instructor",
+      "VHF Short Range Certificate",
+      "Boatmaster Licence",
     ],
   },
   {
     category: "Engineering",
-    items: ["AEC 1", "AEC 2", "MEOL", "Y4 Engineer", "Y3 Engineer", "High Voltage", "Refrigeration", "Engine Manufacturer Training"],
+    items: [
+      "AEC 1",
+      "AEC 2",
+      "Approved Engine Course",
+      "MEOL",
+      "Small Vessel Second Engineer",
+      "Small Vessel Chief Engineer",
+      "Y4 Engineer",
+      "Y3 Engineer",
+      "Y2 Engineer",
+      "Y1 Engineer",
+      "High Voltage Operational",
+      "High Voltage Management",
+      "Refrigeration",
+      "Hydraulics",
+      "Watermaker Training",
+      "Engine Manufacturer Training",
+    ],
   },
   {
     category: "Interior & Galley",
-    items: ["Food Hygiene Level 2", "Food Hygiene Level 3", "Wine Service", "Silver Service", "Barista", "Mixology", "Housekeeping", "Floristry"],
+    items: [
+      "Food Hygiene Level 2",
+      "Food Hygiene Level 3",
+      "Food Safety Level 2",
+      "Food Safety Level 3",
+      "HACCP",
+      "Allergen Awareness",
+      "Ship's Cook Certificate",
+      "Chef Diploma",
+      "Culinary Arts Certificate",
+      "Galley Management",
+      "Wine Service",
+      "WSET Level 1",
+      "WSET Level 2",
+      "Silver Service",
+      "Barista",
+      "Mixology",
+      "Housekeeping",
+      "Laundry",
+      "Floristry",
+      "Spa / Massage Certificate",
+    ],
   },
   {
-    category: "Medical & Other",
-    items: ["ENG1 Medical", "ML5 Medical", "COVID Vaccination", "Yellow Fever", "Diving Certificate", "Driving License"],
+    category: "Medical, Driving & Diving",
+    items: [
+      "ENG1 Medical",
+      "ML5 Medical",
+      "Medical Fitness Certificate",
+      "COVID Vaccination",
+      "Driving License",
+      "International Driving Permit",
+      "Diving Certificate",
+      "PADI Open Water",
+      "PADI Advanced Open Water",
+      "PADI Rescue Diver",
+      "PADI Divemaster",
+      "SSI Diving Certificate",
+      "RYA Personal Watercraft",
+      "Jet Ski Licence",
+    ],
   },
 ];
 
 const emptyExperience: Experience = {
   yacht_name: "",
+  yacht_type: "",
+  yacht_program: "",
+  yacht_size: "",
   position: "",
   start_date: "",
   end_date: "",
@@ -482,7 +601,7 @@ export default function ProfilePage() {
     }
 
     setDocuments(result.documents || []);
-    setExperiences(result.experiences || []);
+    setExperiences((result.experiences || []).map(normalizeExperienceRecord));
     setReferences(result.references || []);
     setPortfolio(result.portfolio || []);
   }
@@ -559,13 +678,27 @@ export default function ProfilePage() {
   }
 
   async function saveDocument(nextDraft: CrewDocument = documentDraft) {
-    if (!profile.id || !nextDraft.document_type) {
-      alert("Select a document type.");
+    const hasDocumentDetail = [
+      nextDraft.document_type,
+      nextDraft.category,
+      nextDraft.issuer,
+      nextDraft.issue_date,
+      nextDraft.expiry_date,
+      nextDraft.file_url,
+      nextDraft.notes,
+    ].some((value) => typeof value === "string" && value.trim().length > 0);
+
+    if (!profile.id || !hasDocumentDetail) {
+      alert("Add a document type, issuer, expiry date or file before saving.");
       return;
     }
 
+    const documentType = cleanSaveText(nextDraft.document_type) || "Document";
+    const category = cleanSaveText(nextDraft.category) || "General";
     const response = await saveRelatedRecord("document", {
       ...nextDraft,
+      document_type: documentType,
+      category,
       expiry_date: nextDraft.no_expiry ? null : nextDraft.expiry_date || null,
     });
 
@@ -1007,7 +1140,7 @@ export default function ProfilePage() {
 
                   const nextDraft = { ...uploadedDraft, file_url: url };
                   setDocumentDraft(nextDraft);
-                  if (nextDraft.document_type) await saveDocument(nextDraft);
+                  await saveDocument(nextDraft);
                 }}
                 onCancelUpload={cancelUpload}
                 uploading={uploading === "document-file"}
@@ -1117,7 +1250,19 @@ export default function ProfilePage() {
             </Panel>
 
             <Panel active={activeStudioTab === "skills"} title="Work preferences" icon={<Star className="h-5 w-5" />}>
-              <DropdownChoiceGroup title="Select preferences" options={workPreferences} value={profile.work_preferences || []} onChange={(value) => setProfile({ ...profile, work_preferences: value })} />
+              <DropdownChoiceGroup
+                title="Work preferences"
+                options={workPreferences}
+                value={profile.work_preferences || []}
+                onChange={(value) => {
+                  const nextProfile = { ...profile, work_preferences: value };
+                  setProfile(nextProfile);
+                  void saveProfile(nextProfile);
+                }}
+                maxSelected={5}
+                inlineSelected
+                commitOnSelect
+              />
             </Panel>
 
             <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
@@ -1125,21 +1270,41 @@ export default function ProfilePage() {
                 title="Personal skills"
                 options={personalSkills}
                 value={profile.personal_skills || []}
-                onChange={(value) => setProfile({ ...profile, personal_skills: value })}
+                onChange={(value) => {
+                  const nextProfile = { ...profile, personal_skills: value };
+                  setProfile(nextProfile);
+                  void saveProfile(nextProfile);
+                }}
                 maxSelected={5}
-                selectedPanel
+                inlineSelected
                 commitOnSelect
               />
               <DropdownChoiceGroup
                 title="Personal characteristics"
                 options={characteristics}
                 value={profile.personal_characteristics || []}
-                onChange={(value) => setProfile({ ...profile, personal_characteristics: value })}
+                onChange={(value) => {
+                  const nextProfile = { ...profile, personal_characteristics: value };
+                  setProfile(nextProfile);
+                  void saveProfile(nextProfile);
+                }}
                 maxSelected={5}
-                selectedPanel
+                inlineSelected
                 commitOnSelect
               />
-              <DropdownChoiceGroup title="Seeking positions" options={yachtPositionTitles} value={profile.seeking_positions || []} onChange={(value) => setProfile({ ...profile, seeking_positions: value })} />
+              <DropdownChoiceGroup
+                title="Seeking positions"
+                options={yachtPositionTitles}
+                value={profile.seeking_positions || []}
+                onChange={(value) => {
+                  const nextProfile = { ...profile, seeking_positions: value };
+                  setProfile(nextProfile);
+                  void saveProfile(nextProfile);
+                }}
+                maxSelected={5}
+                inlineSelected
+                commitOnSelect
+              />
             </Panel>
 
             {activeStudioTab === "preview" && (
@@ -1305,6 +1470,37 @@ function cleanSaveText(value?: string | null) {
   return (value || "").trim();
 }
 
+const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
+
+function splitExperienceDescription(value?: string) {
+  const description = value || "";
+  if (!description.startsWith(experienceMetadataPrefix)) {
+    return { description, meta: {} as Partial<Experience> };
+  }
+
+  const lineBreak = description.indexOf("\n");
+  const metaText = description.slice(experienceMetadataPrefix.length, lineBreak === -1 ? undefined : lineBreak).trim();
+  const cleanDescription = lineBreak === -1 ? "" : description.slice(lineBreak + 1);
+
+  try {
+    const meta = JSON.parse(metaText) as Partial<Experience>;
+    return { description: cleanDescription, meta };
+  } catch {
+    return { description: cleanDescription, meta: {} as Partial<Experience> };
+  }
+}
+
+function normalizeExperienceRecord(experience: Experience) {
+  const parsed = splitExperienceDescription(experience.description);
+  return {
+    ...experience,
+    yacht_type: cleanSaveText(experience.yacht_type) || cleanSaveText(parsed.meta.yacht_type),
+    yacht_program: cleanSaveText(experience.yacht_program) || cleanSaveText(parsed.meta.yacht_program),
+    yacht_size: cleanSaveText(experience.yacht_size) || cleanSaveText(parsed.meta.yacht_size),
+    description: parsed.description,
+  };
+}
+
 function cleanSaveNumber(value?: number | null) {
   return value ? String(value) : "";
 }
@@ -1363,6 +1559,9 @@ function profileSaveState(profile: CrewProfile) {
 function experienceSaveState(experience: Experience) {
   return {
     yacht_name: cleanSaveText(experience.yacht_name),
+    yacht_type: cleanSaveText(experience.yacht_type),
+    yacht_program: cleanSaveText(experience.yacht_program),
+    yacht_size: cleanSaveText(experience.yacht_size),
     position: cleanSaveText(experience.position),
     start_date: cleanSaveText(experience.start_date),
     end_date: cleanSaveText(experience.end_date),
@@ -1521,7 +1720,7 @@ function SeazoneStyleCvPreview({
                   </div>
                 </SeazoneSideSection>
 
-                <SeazoneSideSection title="Skills">
+                <SeazoneSideSection title="Skills & Characteristics">
                   <PillList items={visibleSkills} light />
                 </SeazoneSideSection>
 
@@ -1559,8 +1758,8 @@ function SeazoneStyleCvPreview({
             </aside>
 
             <div className="bg-white">
-              <header className="bd-cv-header relative bg-transparent py-10 text-white print:py-9">
-                <div className="bd-cv-name-band ml-0 flex min-h-[150px] items-center bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
+              <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
+                <div className="bd-cv-name-band mr-10 ml-0 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
                     <h2 className="mt-3 text-4xl font-black uppercase leading-none tracking-[0.08em] text-white sm:text-5xl">{profile.full_name || "Crew Member"}</h2>
@@ -1570,7 +1769,7 @@ function SeazoneStyleCvPreview({
               </header>
 
               <main className="bd-cv-main p-6 sm:p-8 print:p-7">
-                <SeazoneSection title="About Me">
+                <SeazoneSection title="About Me" className="mt-0">
                   <p className="rounded-2xl border border-[#d8e2e6] bg-[#f6f8f8] p-4 text-[14px] leading-7 text-[#3d454c]">
                     {professionalSummary}
                   </p>
@@ -1694,9 +1893,19 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
   );
 }
 
-function SeazoneSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) {
+function SeazoneSection({
+  title,
+  badge,
+  children,
+  className = "mt-6",
+}: {
+  title: string;
+  badge?: string;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <section className="bd-cv-section mt-6">
+    <section className={`bd-cv-section ${className}`}>
       <div className="mb-3 flex items-center justify-between gap-4 border-b border-[#b9c8cd] pb-2">
         <h3 className="text-[13px] font-black uppercase tracking-[0.14em] text-[#06111f]">{title}</h3>
         {badge && <span className="rounded-full bg-[#173f4a] px-3 py-1 text-[11px] font-black text-white shadow-sm shadow-[#173f4a]/20">{badge}</span>}
@@ -1751,6 +1960,11 @@ function SeazoneExperienceCard({ experience, references }: { experience: Experie
           <div className="mt-3">
             <h4 className="text-[15px] font-black leading-tight text-[#06111f]">{experience.yacht_name || "Yacht"}</h4>
             <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
+            {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).length > 0 && (
+              <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
+                {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ")}
+              </p>
+            )}
             <span className="mt-2 inline-flex rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
               {experience.position || "Position"}
             </span>
@@ -1795,13 +2009,14 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
-    <div className={`rounded-xl border px-4 py-3 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-black text-[#06111f]">{document.document_type}</p>
-          <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#7a858b]">{document.category || "Certificate"}</p>
+    <div className={`rounded-lg border px-3 py-2 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{document.document_type || "Document"}</p>
+          <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#7a858b]">{document.category || "Certificate"}</p>
+          {document.issuer && <p className="mt-1 truncate text-[10px] font-semibold text-[#5a6870]">{document.issuer}</p>}
         </div>
-        <p className={expiring ? "text-xs font-black text-[#9a4b2e]" : "text-xs font-black text-[#2d7482]"}>
+        <p className={`shrink-0 text-right text-[10px] font-black ${expiring ? "text-[#9a4b2e]" : "text-[#2d7482]"}`}>
           {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
         </p>
       </div>
@@ -1906,6 +2121,7 @@ function DropdownChoiceGroup({
   singleSelect = false,
   maxSelected,
   selectedPanel = false,
+  inlineSelected = false,
   commitOnSelect = false,
 }: {
   title: string;
@@ -1916,6 +2132,7 @@ function DropdownChoiceGroup({
   singleSelect?: boolean;
   maxSelected?: number;
   selectedPanel?: boolean;
+  inlineSelected?: boolean;
   commitOnSelect?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -1924,7 +2141,7 @@ function DropdownChoiceGroup({
   const hasSelection = displayValue.length > 0;
   const selectedText = hasSelection ? displayValue.join(", ") : "Select";
   const triggerTitle = selectedAsTitle && hasSelection ? selectedText : title;
-  const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedPanel ? `${displayValue.length}${maxSelected ? `/${maxSelected}` : ""} selected` : selectedText;
+  const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedPanel || inlineSelected ? `${displayValue.length}${maxSelected ? `/${maxSelected}` : ""} selected` : selectedText;
 
   useEffect(() => {
     setDraft(displayValue);
@@ -1945,6 +2162,7 @@ function DropdownChoiceGroup({
     const nextDraft = selected ? draft.filter((item) => item !== option) : [...draft, option];
     setDraft(nextDraft);
     if (commitOnSelect) onChange(nextDraft);
+    if (!selected && maxSelected && nextDraft.length >= maxSelected) setOpen(false);
   }
 
   function removeSelection(item: string) {
@@ -1995,7 +2213,33 @@ function DropdownChoiceGroup({
           </div>
         )}
       </div>
-      {displayValue.length > 0 && !selectedAsTitle && !selectedPanel && <PillList items={displayValue} light />}
+      {inlineSelected && (
+        <div className="mt-2 rounded-xl border border-cyan-100 bg-[#f8fcfd] p-3 shadow-sm">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2d7482]">{title}</p>
+            <p className="text-[10px] font-black text-slate-500">{displayValue.length}{maxSelected ? ` / ${maxSelected}` : ""}</p>
+          </div>
+          {displayValue.length === 0 ? (
+            <p className="text-xs font-semibold text-slate-400">Nothing selected yet.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {displayValue.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => removeSelection(item)}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-cyan-100 bg-white px-2 py-1 text-[11px] font-black text-[#173f4a] shadow-sm transition hover:border-rose-200 hover:text-rose-700"
+                  title={`Remove ${item}`}
+                >
+                  {item}
+                  <span aria-hidden="true" className="text-xs leading-none">×</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {displayValue.length > 0 && !selectedAsTitle && !selectedPanel && !inlineSelected && <PillList items={displayValue} light />}
       {open && (
         <div className="mt-3 rounded-2xl border border-slate-200 bg-[#fbfaf7] p-3">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -2180,9 +2424,10 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
   return (
     <article className={`rounded-2xl border p-4 ${alert ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="font-semibold text-slate-950">{document.document_type}</p>
-          <p className="mt-1 text-xs text-slate-500">{document.category}</p>
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-slate-950">{document.document_type || "Document"}</p>
+          <p className="mt-1 text-xs text-slate-500">{document.category || "General"}</p>
+          {document.issuer && <p className="mt-1 truncate text-xs font-semibold text-cyan-800">{document.issuer}</p>}
         </div>
         <button onClick={() => onDelete(document.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
       </div>
@@ -2251,7 +2496,7 @@ function ExperienceEditor({
 
   return (
     <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-      <div className="grid items-stretch gap-3 sm:grid-cols-[128px_1fr]">
+      <div className="grid items-stretch gap-3 sm:grid-cols-[156px_1fr]">
         <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           <div className="relative overflow-hidden rounded-lg border border-[#d8e2e6] bg-white">
             {draft.photo_url ? (
@@ -2284,9 +2529,27 @@ function ExperienceEditor({
             <ExperienceCardInput
               label="Yacht name"
               value={draft.yacht_name}
-              placeholder="Yacht"
+              placeholder="Yacht name"
               strong
               onChange={(value) => setDraft({ ...draft, yacht_name: value })}
+            />
+            <ExperienceCardSelect
+              label="Yacht type"
+              value={draft.yacht_type || ""}
+              options={yachtTypeOptions}
+              onChange={(value) => setDraft({ ...draft, yacht_type: value })}
+            />
+            <ExperienceCardSelect
+              label="Yacht program"
+              value={draft.yacht_program || ""}
+              options={yachtProgramOptions}
+              onChange={(value) => setDraft({ ...draft, yacht_program: value })}
+            />
+            <ExperienceCardInput
+              label="Yacht size"
+              value={draft.yacht_size || ""}
+              placeholder="Size"
+              onChange={(value) => setDraft({ ...draft, yacht_size: value })}
             />
             <div className="grid gap-1.5">
               <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
@@ -2391,6 +2654,37 @@ function ExperienceCardInput({
         placeholder={placeholder}
         className={`w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${strong ? "text-[15px] font-black leading-tight text-[#06111f]" : "text-[12px] font-semibold text-[#2d7482]"}`}
       />
+    </div>
+  );
+}
+
+function ExperienceCardSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value?: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="block">
+      <span className="sr-only">{label}</span>
+      <select
+        aria-label={label}
+        value={value || ""}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full cursor-pointer rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+      >
+        <option value="">{label}</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

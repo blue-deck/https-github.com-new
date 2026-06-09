@@ -26,7 +26,7 @@ const relatedTables: Record<RelatedKind, { table: string; columns: string[] }> =
   },
   experience: {
     table: "crew_experiences",
-    columns: ["yacht_name", "position", "start_date", "end_date", "description", "photo_url"],
+    columns: ["yacht_name", "yacht_type", "yacht_program", "yacht_size", "position", "start_date", "end_date", "description", "photo_url"],
   },
   reference: {
     table: "crew_references",
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
   const payload = cleanPayload(body.payload || {}, config.columns);
   const row = { ...payload, crew_profile_id: body.profileId };
 
-  const response = body.id
+  let response = body.id
     ? await serviceClient
         .from(config.table)
         .update(row)
@@ -155,6 +155,19 @@ export async function POST(request: NextRequest) {
         .select("*")
         .single()
     : await serviceClient.from(config.table).insert(row).select("*").single();
+
+  if (response.error && body.kind === "experience" && /yacht_type|yacht_program|yacht_size|schema cache|column/i.test(response.error.message)) {
+    const fallbackRow = encodeExperienceMetadataFallback(row);
+    response = body.id
+      ? await serviceClient
+          .from(config.table)
+          .update(fallbackRow)
+          .eq("id", body.id)
+          .eq("crew_profile_id", body.profileId)
+          .select("*")
+          .single()
+      : await serviceClient.from(config.table).insert(fallbackRow).select("*").single();
+  }
 
   if (response.error) {
     return NextResponse.json({ ok: false, error: response.error.message }, { status: 500 });
@@ -167,6 +180,35 @@ function cleanPayload(payload: Record<string, unknown>, columns: string[]) {
   return Object.fromEntries(
     Object.entries(payload).filter(([key, value]) => columns.includes(key) && value !== undefined),
   );
+}
+
+const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
+
+function encodeExperienceMetadataFallback(row: Record<string, unknown>) {
+  const meta = {
+    yacht_type: typeof row.yacht_type === "string" ? row.yacht_type.trim() : "",
+    yacht_program: typeof row.yacht_program === "string" ? row.yacht_program.trim() : "",
+    yacht_size: typeof row.yacht_size === "string" ? row.yacht_size.trim() : "",
+  };
+  const cleanDescription = stripExperienceMetadata(typeof row.description === "string" ? row.description : "");
+  const fallbackRow = { ...row };
+  delete fallbackRow.yacht_type;
+  delete fallbackRow.yacht_program;
+  delete fallbackRow.yacht_size;
+
+  if (meta.yacht_type || meta.yacht_program || meta.yacht_size) {
+    fallbackRow.description = `${experienceMetadataPrefix}${JSON.stringify(meta)}\n${cleanDescription}`;
+  } else {
+    fallbackRow.description = cleanDescription;
+  }
+
+  return fallbackRow;
+}
+
+function stripExperienceMetadata(value: string) {
+  if (!value.startsWith(experienceMetadataPrefix)) return value;
+  const lineBreak = value.indexOf("\n");
+  return lineBreak === -1 ? "" : value.slice(lineBreak + 1);
 }
 
 async function getAuthorizedClients(token: string, profileId: string) {
