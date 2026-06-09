@@ -100,9 +100,20 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
+        <div className="bd-cv-verified-strip flex items-center justify-between gap-4 border-b border-[#c7d2d6] bg-[#f7fafb] px-7 py-4 print:px-7">
+          <div className="flex items-center gap-3">
+            <BlueDeckMark className="h-11 w-16 rounded-xl border-[#c7d2d6] bg-[#07131f] shadow-none" imageClassName="p-1" />
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2d7482]">BlueDeck Verified CV</p>
+              <p className="mt-0.5 text-xs font-semibold text-[#5a6870]">Verified crew profile prepared by BlueDeck.app</p>
+            </div>
+          </div>
+          <p className="text-right text-[10px] font-black uppercase tracking-[0.18em] text-[#7a858b]">Crew profile / Yacht recruitment</p>
+        </div>
+
         <div className="bd-cv-layout grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
-          <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-52 text-[#242a31] print:pt-48">
-            <div className="bd-cv-avatar absolute left-1/2 top-9 z-10 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
+          <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
+            <div className="bd-cv-avatar absolute left-1/2 top-8 z-20 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12 lg:left-auto lg:right-[-42px] lg:translate-x-0">
               {text(profile, "profile_photo_url") ? (
                 <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
               ) : (
@@ -113,15 +124,15 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             </div>
 
             <div className="bd-cv-side-stack space-y-8">
-              <SideSection title="About Me">
-                <p className="text-[14px] leading-7 text-[#3d454c]">{professionalSummary}</p>
-              </SideSection>
-
               <SideSection title="Profile">
                 <div className="space-y-2.5">
                   <SidebarLine label="Date of Birth" value={formatFullCvDate(text(profile, "date_of_birth"))} />
                   <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
-                  <SidebarLine label="Experience" value={`${totalExperienceYears(experiences)}y`} />
+                  <SidebarLine label="Gender" value={text(profile, "gender") || "-"} />
+                  <SidebarLine label="Height" value={text(profile, "height_cm") ? `${text(profile, "height_cm")} cm` : "-"} />
+                  <SidebarLine label="Weight" value={text(profile, "weight_kg") ? `${text(profile, "weight_kg")} kg` : "-"} />
+                  <SidebarLine label="Smoker" value={text(profile, "smoker") || "-"} />
+                  <SidebarLine label="Visible tattoos" value={text(profile, "visible_tattoos") || "-"} />
                 </div>
               </SideSection>
 
@@ -133,7 +144,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 </div>
               </SideSection>
 
-              <SideSection title="Documents">
+              <SideSection title="Documents & Certificates">
                 <div className="space-y-2">
                   {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
                   {documents.slice(0, 10).map((document) => (
@@ -183,24 +194,23 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </aside>
 
           <section className="bg-white">
-            <header className="bd-cv-header bg-[#07131f] px-8 py-8 text-white sm:px-10 print:px-8">
-              <div className="flex min-h-[132px] flex-col justify-center gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <header className="bd-cv-header relative bg-transparent py-10 text-white print:py-9">
+              <div className="bd-cv-name-band ml-0 flex min-h-[150px] items-center bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-[#8ed8e6]">Verified Crew Profile</p>
-                  <h1 className="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">{name}</h1>
-                  <p className="mt-3 text-lg font-semibold tracking-[0.18em] text-white/80">{position}</p>
-                </div>
-                <div className="flex items-center gap-4 rounded-2xl border border-white/14 bg-white/8 p-4 shadow-lg shadow-black/10">
-                  <BlueDeckMark className="h-14 w-24 rounded-xl border-white/20 bg-white/10 shadow-none" imageClassName="p-1" />
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.28em] text-white">BlueDeck</p>
-                    <p className="mt-1 text-sm font-semibold text-white/68">Yachtos CV</p>
-                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
+                  <h1 className="mt-3 text-4xl font-black uppercase leading-none tracking-[0.08em] text-white sm:text-5xl">{name}</h1>
+                  <p className="mt-3 text-lg font-semibold tracking-[0.26em] text-white/82">{position}</p>
                 </div>
               </div>
             </header>
 
             <div className="bd-cv-main p-6 sm:p-8 print:p-7">
+              <CvSection title="About Me">
+                <p className="rounded-2xl border border-[#d8e2e6] bg-[#f6f8f8] p-4 text-[14px] leading-7 text-[#3d454c]">
+                  {professionalSummary}
+                </p>
+              </CvSection>
+
               <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" />}>
               <div className="bd-cv-experience-list space-y-4">
                 {experiences.length === 0 && (

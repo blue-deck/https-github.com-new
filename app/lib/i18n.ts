@@ -629,6 +629,12 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Name and surname": { tr: "İsim ve soyisim" },
   "CV docs": { tr: "CV belgeleri" },
   "Verified Crew Profile": { tr: "Doğrulanmış Mürettebat Profili" },
+  "BlueDeck Verified CV": { tr: "BlueDeck Doğrulanmış CV" },
+  "Verified crew profile prepared by BlueDeck.app": {
+    tr: "BlueDeck.app tarafından hazırlanmış doğrulanmış mürettebat profili",
+  },
+  "Crew profile / Yacht recruitment": { tr: "Mürettebat profili / Yat işe alımı" },
+  "About Me": { tr: "Hakkımda" },
   "Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.": {
     tr: "Özel yat işe alımı ve yönetim incelemesi için BlueDeck profil verilerinden hazırlanmış kaptan seviyesinde denizcilik CV'si.",
   },

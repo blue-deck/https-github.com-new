@@ -761,6 +761,10 @@ textarea:-webkit-autofill:focus {
     max-width: none !important;
   }
 
+  #bluedeck-cv .bd-cv-verified-strip {
+    padding: 4mm 7mm !important;
+  }
+
   #bluedeck-cv .bd-cv-layout {
     display: grid !important;
     grid-template-columns: 74mm 136mm !important;
@@ -770,11 +774,14 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-sidebar {
-    padding: 64mm 7mm 8mm !important;
+    padding: 58mm 7mm 8mm !important;
   }
 
   #bluedeck-cv .bd-cv-avatar {
-    top: 9mm !important;
+    top: 8mm !important;
+    left: auto !important;
+    right: -11mm !important;
+    transform: none !important;
     width: 45mm !important;
     height: 45mm !important;
     border-width: 2.8mm !important;
@@ -791,11 +798,18 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-header {
-    padding: 8mm !important;
+    padding: 9mm 0 !important;
   }
 
   #bluedeck-cv .bd-cv-header > div {
-    min-height: 34mm !important;
+    min-height: 39mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-name-band {
+    min-height: 39mm !important;
+    margin-left: -10mm !important;
+    padding-left: 28mm !important;
+    padding-right: 8mm !important;
   }
 
   #bluedeck-cv .bd-cv-main {
