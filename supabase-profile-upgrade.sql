@@ -1,5 +1,6 @@
 alter table public.crew_profiles
   add column if not exists profile_photo_url text,
+  add column if not exists gender text,
   add column if not exists date_of_birth date,
   add column if not exists height_cm integer,
   add column if not exists weight_kg integer,

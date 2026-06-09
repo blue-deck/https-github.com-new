@@ -14,6 +14,7 @@ create table if not exists public.crew_profiles (
   email text unique,
   full_name text,
   phone text,
+  gender text,
   nationality text,
   current_position text,
   location text,

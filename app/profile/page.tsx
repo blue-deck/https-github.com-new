@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import {
   AlertTriangle,
   BriefcaseBusiness,
@@ -42,6 +41,7 @@ type CrewProfile = {
   full_name?: string;
   profile_photo_url?: string;
   phone?: string;
+  gender?: string;
   nationality?: string;
   current_position?: string;
   location?: string;
@@ -298,6 +298,7 @@ export default function ProfilePage() {
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const [photoGallerySaving, setPhotoGallerySaving] = useState(false);
+  const [photoGalleryPreview, setPhotoGalleryPreview] = useState<PortfolioPhoto | null>(null);
   const uploadRunRef = useRef(0);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
@@ -365,7 +366,7 @@ export default function ProfilePage() {
     },
     {
       id: "documents",
-      label: "Documents",
+      label: "Documents & Certificates",
       description: "Certificates and CV visibility.",
       status: expiryAlerts.length ? `${expiryAlerts.length} alert` : `${documents.length} docs`,
       icon: <IdCard className="h-4 w-4" />,
@@ -387,7 +388,7 @@ export default function ProfilePage() {
     {
       id: "preview",
       label: "Preview / Download",
-      description: "Review the final CV and save PDF.",
+      description: "Review the final CV and download PDF.",
       status: "PDF ready",
       icon: <Download className="h-4 w-4" />,
     },
@@ -411,7 +412,10 @@ export default function ProfilePage() {
       .maybeSingle();
 
     if (existingProfile) {
-      const normalizedProfile = normalizeProfile(existingProfile);
+      const normalizedProfile = normalizeProfile({
+        ...existingProfile,
+        gender: existingProfile.gender || user.user_metadata?.gender || "",
+      });
       setProfile(normalizedProfile);
       setSavedProfile(normalizedProfile);
       await loadRelated(existingProfile.id);
@@ -438,7 +442,10 @@ export default function ProfilePage() {
       .select()
       .single();
 
-    const normalizedProfile = normalizeProfile(data || newProfile);
+    const normalizedProfile = normalizeProfile({
+      ...(data || newProfile),
+      gender: user.user_metadata?.gender || "",
+    });
     setProfile(normalizedProfile);
     setSavedProfile(normalizedProfile);
     setLoading(false);
@@ -480,7 +487,7 @@ export default function ProfilePage() {
     setPortfolio(result.portfolio || []);
   }
 
-  async function saveProfile() {
+  async function saveProfile(nextProfile: CrewProfile = profile) {
     setSaving(true);
     const {
       data: { user },
@@ -492,7 +499,7 @@ export default function ProfilePage() {
       return false;
     }
 
-    const normalizedForSave = normalizeProfile(profile);
+    const normalizedForSave = normalizeProfile(nextProfile);
     const profilePayload: Record<string, unknown> = {
       ...normalizedForSave,
       email: normalizedForSave.email || user.email,
@@ -500,11 +507,22 @@ export default function ProfilePage() {
     };
     delete profilePayload.id;
 
-    const { data, error } = await saveCrewProfileByUserId<CrewProfile>(
+    let { data, error } = await saveCrewProfileByUserId<CrewProfile>(
       supabase,
       user.id,
       profilePayload
     );
+
+    if (error && /gender/i.test(error.message) && /column|schema|field/i.test(error.message)) {
+      delete profilePayload.gender;
+      const retry = await saveCrewProfileByUserId<CrewProfile>(
+        supabase,
+        user.id,
+        profilePayload
+      );
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       setSaving(false);
@@ -524,26 +542,31 @@ export default function ProfilePage() {
         data: {
           full_name: normalizedForSave.full_name || user.email,
           phone: normalizedForSave.phone || "",
+          gender: normalizedForSave.gender || "",
         },
       }),
     ]);
 
-    const normalizedProfile = normalizeProfile(data || { ...normalizedForSave, user_id: user.id });
+    const normalizedProfile = normalizeProfile({
+      ...normalizedForSave,
+      ...(data || {}),
+      user_id: user.id,
+    });
     setProfile(normalizedProfile);
     setSavedProfile(normalizedProfile);
     setSaving(false);
     return true;
   }
 
-  async function saveDocument() {
-    if (!profile.id || !documentDraft.document_type) {
+  async function saveDocument(nextDraft: CrewDocument = documentDraft) {
+    if (!profile.id || !nextDraft.document_type) {
       alert("Select a document type.");
       return;
     }
 
     const response = await saveRelatedRecord("document", {
-      ...documentDraft,
-      expiry_date: documentDraft.no_expiry ? null : documentDraft.expiry_date || null,
+      ...nextDraft,
+      expiry_date: nextDraft.no_expiry ? null : nextDraft.expiry_date || null,
     });
 
     if (!response.ok) {
@@ -757,46 +780,20 @@ export default function ProfilePage() {
       <div className="bd-ocean-content mx-auto max-w-[1520px]">
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_45%,#2d7482_100%)]" />
-          <div className="grid gap-0 xl:grid-cols-[1fr_420px]">
-            <div className="p-6 sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-              <h1 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c] sm:text-5xl">
-                {profile.full_name || "Professional Crew Profile"}
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Build a clean yachting CV from verified profile data, documents,
-                work preferences, skills, references and photo gallery.
-              </p>
-              <div className="mt-6 grid gap-3 sm:grid-cols-4">
-                <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
-                <Snapshot label="Experience" value={`${totalExperienceYears} yrs`} tone="cyan" />
-                <Snapshot label="Documents" value={String(documents.length)} tone="gold" />
-                <Snapshot label="Alerts" value={String(expiryAlerts.length)} tone="rose" />
-              </div>
-            </div>
-            <div className="border-t border-cyan-100 bg-[#f8fcfd] p-5 xl:border-l xl:border-t-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Actions</p>
-              <div className="mt-4 grid gap-2">
-                <button
-                  type="button"
-                  onClick={saveProfile}
-                  disabled={saving || !profileDirty}
-                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold shadow-sm transition disabled:cursor-default ${
-                    profileDirty
-                      ? "bg-slate-950 text-white hover:bg-cyan-900 disabled:opacity-70"
-                      : "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                  }`}
-                >
-                  {saving ? <Plus className="h-4 w-4" /> : profileDirty ? <Plus className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                  {saving ? "Saving..." : profileDirty ? "Save profile" : "Saved"}
-                </button>
-                <Link href="/contracts" className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-700 shadow-sm transition hover:border-cyan-300">
-                  Contracts
-                </Link>
-                <Link href="/crew/tasks" className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-semibold text-slate-700 shadow-sm transition hover:border-cyan-300">
-                  My checklists
-                </Link>
-              </div>
+          <div className="p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
+            <h1 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c] sm:text-5xl">
+              {profile.full_name || "Professional Crew Profile"}
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              Build a clean yachting CV from verified profile data, documents,
+              work preferences, skills, references and photo gallery.
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-4">
+              <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
+              <Snapshot label="Experience" value={`${totalExperienceYears} yrs`} tone="cyan" />
+              <Snapshot label="Documents" value={String(documents.length)} tone="gold" />
+              <Snapshot label="Alerts" value={String(expiryAlerts.length)} tone="rose" />
             </div>
           </div>
         </header>
@@ -886,7 +883,26 @@ export default function ProfilePage() {
 
           <div className="bg-[#f6f9fa] p-4 sm:p-5">
             <div className="contents">
-            <Panel active={activeStudioTab === "personal"} title="Personal details" icon={<UserRound className="h-5 w-5" />}>
+            <Panel
+              active={activeStudioTab === "personal"}
+              title="Personal details"
+              icon={<UserRound className="h-5 w-5" />}
+              action={
+                <button
+                  type="button"
+                  onClick={() => saveProfile()}
+                  disabled={saving || !profileDirty}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
+                    profileDirty
+                      ? "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3] disabled:opacity-70"
+                      : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                  }`}
+                >
+                  {saving ? <Plus className="h-4 w-4" /> : profileDirty ? <Plus className="h-4 w-4" /> : <Check className="h-4 w-4" />}
+                  {saving ? "Saving..." : profileDirty ? "Save" : "Saved"}
+                </button>
+              }
+            >
               <div className="grid gap-4 xl:grid-cols-[minmax(320px,440px)_1fr]">
                 <ProfilePhoto
                   url={profile.profile_photo_url}
@@ -926,6 +942,7 @@ export default function ProfilePage() {
               />
               <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
               <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
+              <SelectField label="Gender" value={profile.gender || ""} options={["Male", "Female", "Other", "Prefer not to say"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Height cm" type="number" value={String(profile.height_cm || "")} onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })} />
                 <Field label="Weight kg" type="number" value={String(profile.weight_kg || "")} onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })} />
@@ -938,12 +955,6 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel active={activeStudioTab === "languages"} title="Languages" icon={<Languages className="h-5 w-5" />}>
-              <LanguagePicker
-                value={profile.languages || []}
-                onChange={(languages) => setProfile({ ...profile, languages })}
-              />
-            </Panel>
           </div>
 
           <div className="contents">
@@ -985,14 +996,18 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel active={activeStudioTab === "documents"} title="Documents" icon={<IdCard className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "documents"} title="Documents & Certificates" icon={<IdCard className="h-5 w-5" />}>
               <DocumentCreator
                 draft={documentDraft}
                 setDraft={setDocumentDraft}
                 onSave={saveDocument}
-                onUpload={async (file) => {
+                onUpload={async (file, uploadedDraft) => {
                   const url = await uploadFile(file, "crew-documents", "document-file");
-                  if (url) setDocumentDraft((current) => ({ ...current, file_url: url }));
+                  if (!url) return;
+
+                  const nextDraft = { ...uploadedDraft, file_url: url };
+                  setDocumentDraft(nextDraft);
+                  if (nextDraft.document_type) await saveDocument(nextDraft);
                 }}
                 onCancelUpload={cancelUpload}
                 uploading={uploading === "document-file"}
@@ -1046,13 +1061,14 @@ export default function ProfilePage() {
                   <p className="mt-2 text-xs font-semibold text-[#6b7a82]">Photos are saved automatically after upload.</p>
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
                 {editablePortfolio.map((item) => (
                   <PortfolioEditor
                     key={item.id || item.image_url}
                     item={item}
                     onSave={savePortfolioPhoto}
                     onDelete={deletePortfolioPhoto}
+                    onPreview={setPhotoGalleryPreview}
                   />
                 ))}
                 {editablePortfolio.length === 0 && (
@@ -1063,13 +1079,66 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
+            {photoGalleryPreview && (
+              <div
+                className="fixed inset-0 z-[80] flex items-center justify-center bg-[#06111f]/55 p-4 backdrop-blur-sm"
+                onMouseDown={() => setPhotoGalleryPreview(null)}
+              >
+                <div
+                  className="relative w-[min(760px,86vw)] rounded-3xl bg-white p-3 shadow-2xl shadow-slate-950/30"
+                  onMouseDown={(event) => event.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setPhotoGalleryPreview(null)}
+                    className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/92 text-xl font-semibold text-[#06111f] shadow-lg shadow-slate-950/15 transition hover:bg-cyan-50"
+                    aria-label="Close photo preview"
+                  >
+                    ×
+                  </button>
+                  <img
+                    src={photoGalleryPreview.image_url}
+                    alt="Photo gallery preview"
+                    className="max-h-[70vh] w-full rounded-2xl object-contain"
+                  />
+                </div>
+              </div>
+            )}
+
+            <Panel active={activeStudioTab === "languages"} title="Languages" icon={<Languages className="h-5 w-5" />}>
+              <LanguagePicker
+                value={profile.languages || []}
+                onChange={(languages) => {
+                  const nextProfile = { ...profile, languages };
+                  setProfile(nextProfile);
+                  void saveProfile(nextProfile);
+                }}
+              />
+            </Panel>
+
             <Panel active={activeStudioTab === "skills"} title="Work preferences" icon={<Star className="h-5 w-5" />}>
               <DropdownChoiceGroup title="Select preferences" options={workPreferences} value={profile.work_preferences || []} onChange={(value) => setProfile({ ...profile, work_preferences: value })} />
             </Panel>
 
             <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
-              <DropdownChoiceGroup title="Personal skills" options={personalSkills} value={profile.personal_skills || []} onChange={(value) => setProfile({ ...profile, personal_skills: value })} />
-              <DropdownChoiceGroup title="Personal characteristics" options={characteristics} value={profile.personal_characteristics || []} onChange={(value) => setProfile({ ...profile, personal_characteristics: value })} />
+              <DropdownChoiceGroup
+                title="Personal skills"
+                options={personalSkills}
+                value={profile.personal_skills || []}
+                onChange={(value) => setProfile({ ...profile, personal_skills: value })}
+                maxSelected={5}
+                selectedPanel
+                commitOnSelect
+              />
+              <DropdownChoiceGroup
+                title="Personal characteristics"
+                options={characteristics}
+                value={profile.personal_characteristics || []}
+                onChange={(value) => setProfile({ ...profile, personal_characteristics: value })}
+                maxSelected={5}
+                selectedPanel
+                commitOnSelect
+              />
               <DropdownChoiceGroup title="Seeking positions" options={yachtPositionTitles} value={profile.seeking_positions || []} onChange={(value) => setProfile({ ...profile, seeking_positions: value })} />
             </Panel>
 
@@ -1080,7 +1149,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-black text-[#06111f]">Final BlueDeck CV</p>
                       <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                        Review the generated CV below. Use the Save as PDF button inside the preview to download the exact CV layout.
+                        Review the generated CV below. Use the Download button inside the preview to save the exact CV layout.
                       </p>
                     </div>
                     <span className="rounded-full bg-[#173f4a] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white">
@@ -1116,8 +1185,8 @@ function DocumentCreator({
 }: {
   draft: CrewDocument;
   setDraft: (draft: CrewDocument) => void;
-  onSave: () => void;
-  onUpload: (file: File) => void | Promise<void>;
+  onSave: (draft?: CrewDocument) => void;
+  onUpload: (file: File, draft: CrewDocument) => void | Promise<void>;
   onCancelUpload: () => void;
   uploading: boolean;
 }) {
@@ -1163,7 +1232,7 @@ function DocumentCreator({
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
               event.currentTarget.value = "";
-              if (file) onUpload(file);
+              if (file) onUpload(file, draft);
             }}
           />
         </label>
@@ -1177,7 +1246,7 @@ function DocumentCreator({
             Remove file
           </button>
         )}
-        <button type="button" onClick={onSave} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817]">
+        <button type="button" onClick={() => onSave()} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817]">
           Add document
         </button>
       </div>
@@ -1272,6 +1341,7 @@ function profileSaveState(profile: CrewProfile) {
     full_name: cleanSaveText(profile.full_name),
     email: cleanSaveText(profile.email),
     phone: cleanSaveText(profile.phone),
+    gender: cleanSaveText(profile.gender),
     nationality: cleanSaveText(profile.nationality),
     current_position: currentPosition,
     location: cleanSaveText(profile.location),
@@ -1389,10 +1459,10 @@ function SeazoneStyleCvPreview({
         </div>
         <button
           onClick={() => window.print()}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#06111f] px-4 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/20"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3]"
         >
           <Download className="h-4 w-4" />
-          Save as PDF
+          Download
         </button>
       </div>
 
@@ -1430,7 +1500,7 @@ function SeazoneStyleCvPreview({
                   </div>
                 </SeazoneSideSection>
 
-                <SeazoneSideSection title="Documents">
+                <SeazoneSideSection title="Documents & Certificates">
                   <div className="space-y-2">
                     {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
                     {documents.slice(0, 8).map((doc) => (
@@ -1728,18 +1798,33 @@ function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   );
 }
 
-function Panel({ title, icon, children, active = true }: { title: string; icon: ReactNode; children: ReactNode; active?: boolean }) {
+function Panel({
+  title,
+  icon,
+  children,
+  action,
+  active = true,
+}: {
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+  action?: ReactNode;
+  active?: boolean;
+}) {
   if (!active) return null;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
       <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#2d7482)]" />
       <div className="p-4">
-      <div className="mb-4 flex items-center gap-3 border-b border-slate-200 pb-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>
-        <h2 className="text-base font-semibold text-slate-950">{title}</h2>
-      </div>
-      <div className="space-y-3.5">{children}</div>
+        <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>
+            <h2 className="truncate text-base font-semibold text-slate-950">{title}</h2>
+          </div>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+        <div className="space-y-3.5">{children}</div>
       </div>
     </section>
   );
@@ -1808,6 +1893,9 @@ function DropdownChoiceGroup({
   onChange,
   selectedAsTitle = false,
   singleSelect = false,
+  maxSelected,
+  selectedPanel = false,
+  commitOnSelect = false,
 }: {
   title: string;
   options: string[];
@@ -1815,6 +1903,9 @@ function DropdownChoiceGroup({
   onChange: (value: string[]) => void;
   selectedAsTitle?: boolean;
   singleSelect?: boolean;
+  maxSelected?: number;
+  selectedPanel?: boolean;
+  commitOnSelect?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const displayValue = singleSelect ? value.slice(0, 1) : value;
@@ -1822,49 +1913,105 @@ function DropdownChoiceGroup({
   const hasSelection = displayValue.length > 0;
   const selectedText = hasSelection ? displayValue.join(", ") : "Select";
   const triggerTitle = selectedAsTitle && hasSelection ? selectedText : title;
-  const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedText;
+  const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedPanel ? `${displayValue.length}${maxSelected ? `/${maxSelected}` : ""} selected` : selectedText;
+
+  useEffect(() => {
+    setDraft(displayValue);
+  }, [value]);
+
+  function updateSelection(option: string) {
+    const selected = draft.includes(option);
+
+    if (singleSelect) {
+      onChange([option]);
+      setDraft([option]);
+      setOpen(false);
+      return;
+    }
+
+    if (!selected && maxSelected && draft.length >= maxSelected) return;
+
+    const nextDraft = selected ? draft.filter((item) => item !== option) : [...draft, option];
+    setDraft(nextDraft);
+    if (commitOnSelect) onChange(nextDraft);
+  }
+
+  function removeSelection(item: string) {
+    const nextValue = displayValue.filter((selected) => selected !== item);
+    setDraft(nextValue);
+    onChange(nextValue);
+  }
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={() => {
-          setDraft(displayValue);
-          setOpen(!open);
-        }}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"
-      >
-        <span className="min-w-0 truncate">{triggerTitle}</span>
-        <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
-      </button>
-      {displayValue.length > 0 && !selectedAsTitle && <PillList items={displayValue} light />}
+      <div className={selectedPanel ? "grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.85fr)]" : ""}>
+        <button
+          type="button"
+          onClick={() => {
+            setDraft(displayValue);
+            setOpen(!open);
+          }}
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"
+        >
+          <span className="min-w-0 truncate">{triggerTitle}</span>
+          <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
+        </button>
+
+        {selectedPanel && (
+          <div className="rounded-xl border border-cyan-100 bg-[#f8fcfd] p-3 shadow-sm">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2d7482]">Selected</p>
+              <p className="text-[10px] font-black text-slate-500">{displayValue.length}{maxSelected ? ` / ${maxSelected}` : ""}</p>
+            </div>
+            {displayValue.length === 0 ? (
+              <p className="text-xs font-semibold text-slate-400">Nothing selected yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {displayValue.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => removeSelection(item)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-cyan-100 bg-white px-2 py-1 text-[11px] font-black text-[#173f4a] shadow-sm transition hover:border-rose-200 hover:text-rose-700"
+                    title={`Remove ${item}`}
+                  >
+                    {item}
+                    <span aria-hidden="true" className="text-xs leading-none">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {displayValue.length > 0 && !selectedAsTitle && !selectedPanel && <PillList items={displayValue} light />}
       {open && (
         <div className="mt-3 rounded-2xl border border-slate-200 bg-[#fbfaf7] p-3">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {options.map((option) => {
               const selected = draft.includes(option);
+              const locked = !selected && Boolean(maxSelected && draft.length >= maxSelected);
               return (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => {
-                    if (singleSelect) {
-                      onChange([option]);
-                      setDraft([option]);
-                      setOpen(false);
-                      return;
-                    }
-
-                    setDraft(selected ? draft.filter((item) => item !== option) : [...draft, option]);
-                  }}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${selected ? "border-cyan-600 bg-cyan-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-cyan-400"}`}
+                  disabled={locked}
+                  onClick={() => updateSelection(option)}
+                  className={`rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                    selected
+                      ? "border-cyan-600 bg-cyan-600 text-white"
+                      : locked
+                        ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-cyan-400"
+                  }`}
                 >
                   {option}
                 </button>
               );
             })}
           </div>
-          {!singleSelect && <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
+          {maxSelected && <p className="mt-3 text-xs font-semibold text-slate-500">Maximum {maxSelected} selections.</p>}
+          {!singleSelect && !commitOnSelect && <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
             <button
               type="button"
               onClick={() => {
@@ -2471,10 +2618,12 @@ function PortfolioEditor({
   item,
   onSave,
   onDelete,
+  onPreview,
 }: {
   item: PortfolioPhoto;
   onSave: (item: PortfolioPhoto) => Promise<boolean>;
   onDelete: (id?: string) => void;
+  onPreview: (item: PortfolioPhoto) => void;
 }) {
   const [draft, setDraft] = useState(item);
   const [savingVisibility, setSavingVisibility] = useState(false);
@@ -2495,12 +2644,16 @@ function PortfolioEditor({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-      <div className="aspect-[4/3] overflow-hidden rounded-xl border border-slate-200 bg-[#f5fafb]">
-        <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-contain" />
-      </div>
-      <div className="mt-3 flex flex-col gap-2">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-[#f8fbfc] px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] transition hover:border-cyan-300">
+    <div className="min-w-0">
+      <button
+        type="button"
+        onClick={() => onPreview(draft)}
+        className="group block aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-[#eef6f8] shadow-sm shadow-slate-950/8 transition hover:shadow-lg hover:shadow-cyan-950/12"
+      >
+        <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
+      </button>
+      <div className="mt-2 grid gap-1.5">
+        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-100 bg-[#f8fbfc] px-2 text-[10px] font-black uppercase tracking-[0.08em] text-[#173f4a] transition hover:border-cyan-300">
           <input
             type="checkbox"
             checked={visibleOnCv}
@@ -2510,7 +2663,7 @@ function PortfolioEditor({
           />
           {savingVisibility ? "Saving..." : "Show on CV"}
         </label>
-        <button type="button" onClick={() => onDelete(draft.id)} className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
+        <button type="button" onClick={() => onDelete(draft.id)} className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rose-100 bg-white px-2 text-[10px] font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
           <Trash2 className="h-4 w-4" />
           Delete
         </button>
@@ -2938,6 +3091,7 @@ function normalizeProfile(profile: CrewProfile) {
 
   return {
     ...profile,
+    gender: cleanSaveText(profile.gender),
     current_position: currentPosition,
     current_positions: currentPosition ? [currentPosition] : [],
     seeking_positions: cleanSaveList(profile.seeking_positions),

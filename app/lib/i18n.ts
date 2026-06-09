@@ -560,6 +560,7 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Skills, traits, preferences and seeking roles.": {
     tr: "Beceriler, özellikler, tercihler ve aranan roller.",
   },
+  "Documents & Certificates": { tr: "Belgeler & Sertifikalar" },
   "Certificates and CV visibility.": { tr: "Sertifikalar ve CV görünürlüğü." },
   "Photo Gallery": { tr: "Fotoğraf Galerisi" },
   "Yacht and work photos.": { tr: "Yat ve iş fotoğrafları." },
@@ -588,6 +589,7 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Language level profile.": { tr: "Dil seviyesi profili." },
   "Preview / Download": { tr: "Önizleme / İndir" },
   "Review the final CV and save PDF.": { tr: "Final CV'yi gözden geçir ve PDF olarak kaydet." },
+  "Review the final CV and download PDF.": { tr: "Final CV'yi gözden geçir ve PDF olarak indir." },
   "PDF ready": { tr: "PDF hazır" },
   "BlueDeck Profile": { tr: "BlueDeck Profili" },
   "Professional Crew Profile": { tr: "Profesyonel Mürettebat Profili" },
@@ -607,6 +609,14 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Review the generated CV below. Use the Save as PDF button inside the preview to download the exact CV layout.": {
     tr: "Oluşturulan CV'yi aşağıda gözden geçir. Birebir CV tasarımını indirmek için önizleme içindeki PDF olarak kaydet butonunu kullan.",
   },
+  "Review the generated CV below. Use the Download button inside the preview to save the exact CV layout.": {
+    tr: "Oluşturulan CV'yi aşağıda gözden geçir. Birebir CV tasarımını kaydetmek için önizleme içindeki İndir butonunu kullan.",
+  },
+  "Download": { tr: "İndir" },
+  "Gender": { tr: "Cinsiyet" },
+  "Male": { tr: "Erkek" },
+  "Female": { tr: "Kadın" },
+  "Prefer not to say": { tr: "Belirtmek istemiyorum" },
   "CV docs": { tr: "CV belgeleri" },
   "Verified Crew Profile": { tr: "Doğrulanmış Mürettebat Profili" },
   "Captain-grade maritime CV prepared from BlueDeck profile data for private yacht recruitment and management review.": {
