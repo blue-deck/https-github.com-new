@@ -924,7 +924,6 @@ export default function ProfilePage() {
                 />
               </div>
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
-              <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
               <DropdownChoiceGroup
                 title="Position"
                 options={yachtPositionTitles}
@@ -940,19 +939,20 @@ export default function ProfilePage() {
                 selectedAsTitle
                 singleSelect
               />
-              <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
               <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
-              <SelectField label="Gender" value={profile.gender || ""} options={["Male", "Female", "Other", "Prefer not to say"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
+              <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
+              <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Height cm" type="number" value={String(profile.height_cm || "")} onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })} />
                 <Field label="Weight kg" type="number" value={String(profile.weight_kg || "")} onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })} />
               </div>
-              <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
-              <LocationSelect value={profile.location || ""} onChange={(value) => setProfile({ ...profile, location: value })} />
               <div className="grid grid-cols-2 gap-3">
                 <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
                 <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
               </div>
+              <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
+              <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
+              <LocationSelect value={profile.location || ""} onChange={(value) => setProfile({ ...profile, location: value })} />
             </Panel>
 
           </div>
@@ -1489,6 +1489,11 @@ function SeazoneStyleCvPreview({
                   <div className="space-y-2.5">
                     <SeazoneSidebarLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
                     <SeazoneSidebarLine label="Nationality" value={profile.nationality || "-"} />
+                    <SeazoneSidebarLine label="Gender" value={profile.gender || "-"} />
+                    <SeazoneSidebarLine label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
+                    <SeazoneSidebarLine label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
+                    <SeazoneSidebarLine label="Smoker" value={profile.smoker || "-"} />
+                    <SeazoneSidebarLine label="Visible tattoos" value={profile.visible_tattoos || "-"} />
                   </div>
                 </SeazoneSideSection>
 
