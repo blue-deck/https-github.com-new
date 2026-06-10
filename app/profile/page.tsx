@@ -1693,8 +1693,8 @@ function cvPdfFileName(profile: CrewProfile) {
 }
 
 async function downloadCvPdf(profile: CrewProfile) {
-  const sheet = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-sheet");
-  if (!sheet) {
+  const printRoot = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-print-root");
+  if (!printRoot) {
     alert("CV preview is not ready yet.");
     return;
   }
@@ -1702,6 +1702,7 @@ async function downloadCvPdf(profile: CrewProfile) {
   const originalTitle = document.title;
   document.title = cvPdfFileName(profile).replace(/\.pdf$/i, "");
   document.body.classList.add("bd-pdf-exporting");
+  await waitForCvPrintAssets(printRoot);
 
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
@@ -1719,6 +1720,24 @@ async function downloadCvPdf(profile: CrewProfile) {
   window.addEventListener("afterprint", cleanup, { once: true });
   window.print();
   window.setTimeout(cleanup, 5000);
+}
+
+async function waitForCvPrintAssets(root: HTMLElement) {
+  const images = Array.from(root.querySelectorAll("img")).filter((image) => !image.complete);
+  if (images.length === 0) return;
+
+  await Promise.race([
+    Promise.all(
+      images.map(
+        (image) =>
+          new Promise<void>((resolve) => {
+            image.addEventListener("load", () => resolve(), { once: true });
+            image.addEventListener("error", () => resolve(), { once: true });
+          }),
+      ),
+    ),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 1800)),
+  ]);
 }
 
 type YachtSizeUnit = "ft" | "m";
@@ -2082,6 +2101,17 @@ function SeazoneStyleCvPreview({
           </div>
         </div>
       </CvScaleFrame>
+      <PrintableCvPages
+        profile={profile}
+        documents={documents}
+        experiences={cleanExperiences}
+        references={cleanReferences}
+        professionalSummary={professionalSummary}
+        totalExperienceYears={totalExperienceYears}
+        crewName={crewName}
+        primaryPosition={primaryPosition}
+        visibleSkills={visibleSkills}
+      />
     </section>
   );
 }
@@ -2146,6 +2176,305 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
         <ExternalLink className="h-3.5 w-3.5" />
       </span>
     </a>
+  );
+}
+
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function PrintableCvPages({
+  profile,
+  documents,
+  experiences,
+  references,
+  professionalSummary,
+  totalExperienceYears,
+  crewName,
+  primaryPosition,
+  visibleSkills,
+}: {
+  profile: CrewProfile;
+  documents: CrewDocument[];
+  experiences: Experience[];
+  references: ReferenceEntry[];
+  professionalSummary: string;
+  totalExperienceYears: string;
+  crewName: string;
+  primaryPosition: string;
+  visibleSkills: string[];
+}) {
+  const firstPageExperiences = experiences.slice(0, 2);
+  const remainingPages = chunkItems(experiences.slice(2), 3);
+  const pages = [
+    { kind: "first" as const, experiences: firstPageExperiences },
+    ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items })),
+  ];
+  if (pages.length === 1 && firstPageExperiences.length === 0) {
+    pages[0].experiences = [];
+  }
+
+  return (
+    <div className="bd-cv-print-root" aria-hidden="true">
+      {pages.map((page, pageIndex) => (
+        <section className="bd-print-page" key={`${page.kind}-${pageIndex}`}>
+          <aside className="bd-print-sidebar">
+            {pageIndex === 0 ? (
+              <PrintablePrimarySidebar profile={profile} documents={documents} visibleSkills={visibleSkills} />
+            ) : pageIndex === 1 ? (
+              <PrintableDocumentSidebar profile={profile} documents={documents} />
+            ) : (
+              <PrintableContinuationSidebar profile={profile} />
+            )}
+          </aside>
+
+          <main className="bd-print-main">
+            {pageIndex === 0 ? (
+              <>
+                <PrintableHero profile={profile} crewName={crewName} primaryPosition={primaryPosition} />
+                <PrintableSection title="About Me">
+                  <p className="bd-print-summary">{professionalSummary}</p>
+                </PrintableSection>
+                <PrintableSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
+                  <PrintableExperienceList experiences={page.experiences} references={references} />
+                </PrintableSection>
+              </>
+            ) : (
+              <PrintableSection title="Yacht Experience" badge="continued">
+                <PrintableExperienceList experiences={page.experiences} references={references} />
+              </PrintableSection>
+            )}
+          </main>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewProfile; crewName: string; primaryPosition: string }) {
+  return (
+    <header className="bd-print-hero">
+      <div className="bd-print-hero-mark">
+        <BlueDeckMark className="h-9 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+        <div>
+          <p>BlueDeck.app</p>
+          <span>Yachtos</span>
+        </div>
+      </div>
+      <div className="bd-print-hero-band">
+        <div className="bd-print-avatar">
+          {profile.profile_photo_url ? (
+            <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} />
+          ) : (
+            <UserRound />
+          )}
+        </div>
+        <div className="bd-print-hero-text">
+          <p>Verified Crew Profile</p>
+          <h1 style={crewNameStyle(crewName)}>{crewName}</h1>
+          <h2>{primaryPosition}</h2>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function PrintablePrimarySidebar({
+  profile,
+  documents,
+  visibleSkills,
+}: {
+  profile: CrewProfile;
+  documents: CrewDocument[];
+  visibleSkills: string[];
+}) {
+  return (
+    <div className="bd-print-sidebar-stack">
+      <PrintableSideSection title="Profile">
+        <PrintableSideLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
+        <PrintableSideLine label="Nationality" value={profile.nationality || "-"} />
+        <PrintableSideLine label="Gender" value={profile.gender || "-"} />
+        <PrintableSideLine label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
+        <PrintableSideLine label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
+        <PrintableSideLine label="Smoker" value={profile.smoker || "-"} />
+        <PrintableSideLine label="Visible tattoos" value={profile.visible_tattoos || "-"} />
+      </PrintableSideSection>
+
+      <PrintableSideSection title="Contact">
+        <PrintableContactLine icon={<Phone />} value={profile.phone || "-"} />
+        <PrintableContactLine icon={<Mail />} value={profile.email || "-"} />
+        <PrintableContactLine icon={<MapPin />} value={profile.location || "-"} />
+      </PrintableSideSection>
+
+      <PrintableSideSection title="Language">
+        {(profile.languages || []).slice(0, 4).map((language) => (
+          <div className="bd-print-language" key={language.name}>
+            <div><b>{language.name}</b><span>{language.level}</span></div>
+            <i><span style={{ width: languageLevelWidth(language.level) }} /></i>
+          </div>
+        ))}
+      </PrintableSideSection>
+
+      <PrintableSideSection title="Skills & Characteristics">
+        <PrintablePills items={visibleSkills.slice(0, 10)} />
+      </PrintableSideSection>
+
+      <PrintableSideSection title="Preferences">
+        <PrintablePills items={(profile.work_preferences || []).slice(0, 5)} />
+      </PrintableSideSection>
+
+      {documents.length > 0 && (
+        <p className="bd-print-doc-hint">{documents.length} documents continue on the next page.</p>
+      )}
+    </div>
+  );
+}
+
+function PrintableDocumentSidebar({ profile, documents }: { profile: CrewProfile; documents: CrewDocument[] }) {
+  return (
+    <div className="bd-print-sidebar-stack">
+      <PrintableSideSection title="Documents & Certificates">
+        {documents.slice(0, 8).map((document) => (
+          <PrintableDocumentRow key={document.id || document.document_type} document={document} />
+        ))}
+      </PrintableSideSection>
+      <div className="bd-print-qr">
+        <CrewProfileQr crewId={profile.public_crew_id} />
+        <p>{profile.public_crew_id || "Crew ID"}</p>
+        <b>Photo Gallery</b>
+        <span>Scan to view verified yacht work photos on BlueDeck.</span>
+      </div>
+    </div>
+  );
+}
+
+function PrintableContinuationSidebar({ profile }: { profile: CrewProfile }) {
+  return (
+    <div className="bd-print-continuation">
+      <BlueDeckMark className="h-9 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+      <p>{profile.full_name || "BlueDeck Crew"}</p>
+      <span>Yacht Experience</span>
+    </div>
+  );
+}
+
+function PrintableSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) {
+  return (
+    <section className="bd-print-section">
+      <div className="bd-print-section-title">
+        <h3>{title}</h3>
+        {badge && <span>{badge}</span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function PrintableSideSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="bd-print-side-section">
+      <div><h3>{title}</h3><span /></div>
+      {children}
+    </section>
+  );
+}
+
+function PrintableSideLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bd-print-side-line">
+      <span>{label}</span>
+      <b>{value}</b>
+    </div>
+  );
+}
+
+function PrintableContactLine({ icon, value }: { icon: ReactNode; value: string }) {
+  return (
+    <div className="bd-print-contact-line">
+      <i>{icon}</i>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function PrintablePills({ items }: { items: string[] }) {
+  if (items.length === 0) return <p className="bd-print-empty">-</p>;
+  return (
+    <div className="bd-print-pills">
+      {items.map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}
+    </div>
+  );
+}
+
+function PrintableExperienceList({ experiences, references }: { experiences: Experience[]; references: ReferenceEntry[] }) {
+  if (experiences.length === 0) {
+    return <p className="bd-print-empty-card">No yacht experience added yet.</p>;
+  }
+
+  return (
+    <div className="bd-print-experience-list">
+      {experiences.map((experience) => (
+        <PrintableExperienceCard
+          key={experience.id || `${experience.yacht_name}-${experience.start_date}`}
+          experience={experience}
+          references={referencesForExperience(experience, references)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PrintableExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
+  const yachtName = experience.yacht_name || "Yacht";
+
+  return (
+    <article className="bd-print-experience-card">
+      <div className="bd-print-experience-meta">
+        {experience.photo_url ? (
+          <img src={experience.photo_url} alt={yachtName} />
+        ) : (
+          <div />
+        )}
+        <b style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</b>
+        <span>{[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ")}</span>
+        <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
+        {experience.location && <small><MapPin /> {experience.location}</small>}
+      </div>
+      <div className="bd-print-experience-body">
+        <div className="bd-print-experience-top">
+          <h4 style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
+          <span>{experience.position || "Position"}</span>
+        </div>
+        <p className="bd-print-label">Duties</p>
+        <p className="bd-print-duties">{experience.description || "Responsibilities and onboard duties will appear here."}</p>
+        {references.length > 0 && (
+          <div className="bd-print-reference-block">
+            <p className="bd-print-label">Reference</p>
+            {references.slice(0, 2).map((reference) => (
+              <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
+                <b>{referenceDisplayName(reference)}</b>
+                <span>{[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}</span>
+                {(reference.email || reference.phone) && <em>{[reference.email, reference.phone].filter(Boolean).join(" / ")}</em>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function PrintableDocumentRow({ document }: { document: CrewDocument }) {
+  return (
+    <div className="bd-print-document-row">
+      <b>{document.document_type || "Document"}</b>
+      <span>{document.expiry_date ? formatCvDate(document.expiry_date) : "No expiry"}</span>
+      <em>{document.issuer || document.category || "Document"}</em>
+    </div>
   );
 }
 
