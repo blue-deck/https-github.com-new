@@ -692,6 +692,42 @@ textarea:-webkit-autofill:focus {
   }
 }
 
+#bluedeck-cv .bd-cv-experience-break-before {
+  break-before: page;
+  page-break-before: always;
+}
+
+body.bd-pdf-exporting #bluedeck-cv .bd-cv-sheet,
+body.bd-pdf-exporting #bluedeck-cv.bd-cv-root {
+  zoom: 1 !important;
+  transform: none !important;
+}
+
+@media screen and (max-width: 767px) {
+  #bluedeck-cv .bd-cv-sheet,
+  #bluedeck-cv.bd-cv-root {
+    width: 980px !important;
+    max-width: none !important;
+    zoom: calc((100vw - 32px) / 980);
+  }
+
+  #bluedeck-cv .bd-cv-layout {
+    display: grid !important;
+    grid-template-columns: 320px 1fr !important;
+    align-items: start !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-grid {
+    display: grid !important;
+    grid-template-columns: 136px 1fr !important;
+    align-items: stretch !important;
+  }
+
+  #bluedeck-cv .bd-cv-crew-name {
+    white-space: nowrap !important;
+  }
+}
+
 @media print {
   @page {
     size: A4;

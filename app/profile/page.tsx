@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
   BriefcaseBusiness,
   Camera,
   Check,
@@ -12,6 +14,7 @@ import {
   Languages,
   Mail,
   MapPin,
+  Pencil,
   Phone,
   Plus,
   Star,
@@ -98,6 +101,7 @@ type PortfolioPhoto = {
   title: string;
   image_url: string;
   location: string;
+  gallery_order?: number;
 };
 
 type ReferenceEntry = {
@@ -242,10 +246,13 @@ const documentCatalog = [
       "National ID",
       "Seaman's Book",
       "Seafarer Discharge Book",
+      "Discharge Certificate",
+      "Certificate of Equivalent Competency",
       "Schengen Visa",
       "US B1/B2 Visa",
       "UK Visa",
       "Australian Maritime Crew Visa",
+      "Australian Maritime Crew Visa 988",
       "Residence Permit",
       "Work Permit",
       "Vaccination Record",
@@ -272,17 +279,36 @@ const documentCatalog = [
       "Passenger Ship Safety",
       "Ship Security Officer",
       "Helicopter Underwater Escape Training",
+      "MCA Security Awareness",
+      "MCA Designated Security Duties",
     ],
   },
   {
     category: "Deck & Captain",
     items: [
       "Certificate of Competency",
+      "MCA Master 200GT",
+      "MCA Master 500GT",
+      "MCA Master 3000GT",
+      "MCA OOW Yachts",
+      "MCA Chief Mate Yachts",
       "RYA Day Skipper",
       "RYA Coastal Skipper",
       "RYA Yachtmaster Coastal",
       "RYA Yachtmaster Offshore",
       "RYA Yachtmaster Ocean",
+      "RYA/MCA Yachtmaster Coastal Commercial Endorsement",
+      "RYA/MCA Yachtmaster Offshore Commercial Endorsement",
+      "RYA/MCA Yachtmaster Ocean Commercial Endorsement",
+      "IYT International Bareboat Skipper",
+      "IYT Master of Yachts Coastal",
+      "IYT Master of Yachts Limited",
+      "IYT Master of Yachts Unlimited",
+      "IYT Superyacht Deck Crew",
+      "AMSA Master <24m",
+      "AMSA Master <35m",
+      "AMSA Master <45m",
+      "AMSA Mate <80m",
       "Master 200GT",
       "Master 500GT",
       "Master 3000GT",
@@ -298,13 +324,28 @@ const documentCatalog = [
       "Bridge Resource Management",
       "MCA HELM Operational",
       "MCA HELM Management",
-      "RYA Powerboat Level 2",
-      "RYA Advanced Powerboat",
-      "Tender Operator",
-      "Personal Watercraft Certificate",
-      "PWC / Jetski Instructor",
-      "VHF Short Range Certificate",
+      "Celestial Navigation",
+      "Ocean Passage Making",
       "Boatmaster Licence",
+    ],
+  },
+  {
+    category: "Powerboat, RIB & PWC",
+    items: [
+      "RYA Powerboat Level 2",
+      "RYA Intermediate Powerboat",
+      "RYA Advanced Powerboat",
+      "RYA Tender Operator",
+      "RYA Personal Watercraft",
+      "RYA PWC Proficiency",
+      "RYA PWC Instructor",
+      "IYT Small Powerboat & RIB Master",
+      "IYT Rib Master",
+      "IYT Tender Operator",
+      "IYT Personal Watercraft Operator",
+      "Jet Ski Licence",
+      "PWC / Jet Ski Instructor",
+      "VHF Short Range Certificate",
     ],
   },
   {
@@ -314,8 +355,15 @@ const documentCatalog = [
       "AEC 2",
       "Approved Engine Course",
       "MEOL",
+      "MCA Marine Engine Operator Licence",
       "Small Vessel Second Engineer",
       "Small Vessel Chief Engineer",
+      "MCA SV Second Engineer",
+      "MCA SV Chief Engineer",
+      "AMSA Marine Engine Driver Grade 3",
+      "AMSA Marine Engine Driver Grade 2",
+      "AMSA Marine Engine Driver Grade 1",
+      "AMSA Engineer Class 3",
       "Y4 Engineer",
       "Y3 Engineer",
       "Y2 Engineer",
@@ -354,22 +402,35 @@ const documentCatalog = [
     ],
   },
   {
-    category: "Medical, Driving & Diving",
+    category: "Medical",
     items: [
       "ENG1 Medical",
       "ML5 Medical",
       "Medical Fitness Certificate",
+      "Seafarer Medical Certificate",
       "COVID Vaccination",
+    ],
+  },
+  {
+    category: "Driving",
+    items: [
       "Driving License",
       "International Driving Permit",
+      "Commercial Driver Licence",
+    ],
+  },
+  {
+    category: "Diving",
+    items: [
       "Diving Certificate",
       "PADI Open Water",
       "PADI Advanced Open Water",
       "PADI Rescue Diver",
       "PADI Divemaster",
+      "PADI Instructor",
+      "SSI Open Water",
+      "SSI Advanced Adventurer",
       "SSI Diving Certificate",
-      "RYA Personal Watercraft",
-      "Jet Ski Licence",
     ],
   },
 ];
@@ -420,7 +481,9 @@ export default function ProfilePage() {
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const [photoGallerySaving, setPhotoGallerySaving] = useState(false);
+  const [photoGalleryEditing, setPhotoGalleryEditing] = useState(false);
   const [photoGalleryPreview, setPhotoGalleryPreview] = useState<PortfolioPhoto | null>(null);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
   const uploadRunRef = useRef(0);
 
   const cvDocuments = documents.filter((item) => item.show_on_cv);
@@ -441,13 +504,7 @@ export default function ProfilePage() {
   );
   const editablePortfolio = useMemo(
     () =>
-      [...portfolio]
-        .filter((photo) => photo.image_url)
-        .sort((first, second) => {
-          const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
-          const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
-          return secondCreatedAt - firstCreatedAt;
-        }),
+      sortPortfolioPhotos(portfolio.filter((photo) => photo.image_url)),
     [portfolio],
   );
 
@@ -606,7 +663,7 @@ export default function ProfilePage() {
     setDocuments(result.documents || []);
     setExperiences((result.experiences || []).map(normalizeExperienceRecord));
     setReferences(result.references || []);
-    setPortfolio(result.portfolio || []);
+    setPortfolio(sortPortfolioPhotos((result.portfolio || []).map(normalizePortfolioRecord)));
   }
 
   async function saveProfile(nextProfile: CrewProfile = profile) {
@@ -792,7 +849,11 @@ export default function ProfilePage() {
 
   async function savePortfolioPhoto(item: PortfolioPhoto) {
     if (!profile.id) return false;
-    const response = await saveRelatedRecord("portfolio", { ...item, title: "", location: item.location || "" }, item.id);
+    const response = await saveRelatedRecord(
+      "portfolio",
+      { ...item, title: "", location: encodeGalleryLocation(item.location, item.gallery_order) },
+      item.id,
+    );
     if (!response.ok) {
       alert(response.error);
       return false;
@@ -808,10 +869,44 @@ export default function ProfilePage() {
       ...emptyPhoto,
       image_url: imageUrl,
       location: "",
+      gallery_order: nextPortfolioOrder(editablePortfolio),
     });
     setPhotoGallerySaving(false);
 
     return saved;
+  }
+
+  async function reorderPortfolioPhoto(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= editablePortfolio.length || photoGallerySaving) return;
+
+    const nextOrder = [...editablePortfolio];
+    [nextOrder[index], nextOrder[nextIndex]] = [nextOrder[nextIndex], nextOrder[index]];
+    const orderedPortfolio = nextOrder.map((photo, order) => ({ ...photo, gallery_order: order }));
+    setPortfolio((current) => {
+      const orderedIds = new Set(orderedPortfolio.map((photo) => photo.id || photo.image_url));
+      const untouched = current.filter((photo) => !orderedIds.has(photo.id || photo.image_url));
+      return [...orderedPortfolio, ...untouched];
+    });
+
+    if (!profile.id) return;
+    setPhotoGallerySaving(true);
+    const results = await Promise.all(
+      orderedPortfolio.map((photo) =>
+        saveRelatedRecord(
+          "portfolio",
+          { ...photo, title: "", location: encodeGalleryLocation(photo.location, photo.gallery_order) },
+          photo.id,
+        ),
+      ),
+    );
+    setPhotoGallerySaving(false);
+
+    const failed = results.find((result) => !result.ok);
+    if (failed) {
+      alert(failed.error);
+    }
+    await loadRelated(profile.id);
   }
 
   async function deletePortfolioPhoto(id?: string) {
@@ -1162,47 +1257,70 @@ export default function ProfilePage() {
             </Panel>
 
             <Panel active={activeStudioTab === "portfolio"} title="Photo Gallery" icon={<Camera className="h-5 w-5" />}>
-              <div className="mb-5 flex gap-3 rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
-                  <Camera className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-sm font-black text-[#06111f]">Professional photo gallery</p>
-                  <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                    Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear in your public BlueDeck photo gallery.
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" || photoGallerySaving ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
-                      <Upload className="h-4 w-4 text-cyan-700" />
-                      {uploading === "photo-gallery-new" ? "Uploading..." : photoGallerySaving ? "Saving..." : "Add photo"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={uploading === "photo-gallery-new" || photoGallerySaving}
-                        className="hidden"
-                        onChange={async (event) => {
-                          const file = event.currentTarget.files?.[0];
-                          event.currentTarget.value = "";
-                          if (!file) return;
-                          const url = await uploadFile(file, "crew-portfolio", "photo-gallery-new");
-                          if (url) await savePhotoGalleryPhoto(url);
-                        }}
-                      />
-                    </label>
-                    {uploading === "photo-gallery-new" && (
-                      <button type="button" onClick={cancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-                        Cancel upload
-                      </button>
-                    )}
+              <div className="mb-5 rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex min-w-0 gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
+                      <Camera className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-[#06111f]">Professional photo gallery</p>
+                      <p className="mt-1 max-w-4xl text-sm leading-6 text-[#5a6870]">
+                        Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear in your public BlueDeck photo gallery.
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-2 text-xs font-semibold text-[#6b7a82]">Photos are saved automatically after upload.</p>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoGalleryEditing((current) => !current)}
+                    disabled={editablePortfolio.length < 2 || photoGallerySaving}
+                    className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${
+                      photoGalleryEditing
+                        ? "bg-[#173f4a] text-white"
+                        : "border border-slate-200 bg-white text-[#173f4a] hover:border-cyan-300"
+                    }`}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {photoGalleryEditing ? "Done" : "Edit order"}
+                  </button>
                 </div>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" || photoGallerySaving ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
+                    <Upload className="h-4 w-4 text-cyan-700" />
+                    {uploading === "photo-gallery-new" ? "Uploading..." : photoGallerySaving ? "Saving..." : "Add photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploading === "photo-gallery-new" || photoGallerySaving}
+                      className="hidden"
+                      onChange={async (event) => {
+                        const file = event.currentTarget.files?.[0];
+                        event.currentTarget.value = "";
+                        if (!file) return;
+                        const url = await uploadFile(file, "crew-portfolio", "photo-gallery-new");
+                        if (url) await savePhotoGalleryPhoto(url);
+                      }}
+                    />
+                  </label>
+                  {uploading === "photo-gallery-new" && (
+                    <button type="button" onClick={cancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                      Cancel upload
+                    </button>
+                  )}
+                  {photoGallerySaving && <span className="text-xs font-black uppercase tracking-[0.12em] text-[#2d7482]">Saving order...</span>}
+                </div>
+                <p className="mt-2 text-xs font-semibold text-[#6b7a82]">Photos are saved automatically after upload. Use edit order to arrange the public gallery.</p>
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-                {editablePortfolio.map((item) => (
+                {editablePortfolio.map((item, index) => (
                   <PortfolioEditor
                     key={item.id || item.image_url}
                     item={item}
+                    editing={photoGalleryEditing}
+                    canMoveLeft={index > 0}
+                    canMoveRight={index < editablePortfolio.length - 1}
+                    onMoveLeft={() => reorderPortfolioPhoto(index, -1)}
+                    onMoveRight={() => reorderPortfolioPhoto(index, 1)}
                     onDelete={deletePortfolioPhoto}
                     onPreview={setPhotoGalleryPreview}
                   />
@@ -1325,13 +1443,24 @@ export default function ProfilePage() {
                     </span>
                   </div>
                 </Panel>
-                <SeazoneStyleCvPreview
-                  profile={profile}
-                  documents={cvDocuments}
-                  experiences={experiences}
-                  references={cvReferences}
-                  totalExperienceYears={totalExperienceYears}
-                />
+                  <SeazoneStyleCvPreview
+                    profile={profile}
+                    documents={cvDocuments}
+                    experiences={experiences}
+                    references={cvReferences}
+                    totalExperienceYears={totalExperienceYears}
+                    downloading={pdfDownloading}
+                    onDownload={async () => {
+                      setPdfDownloading(true);
+                      try {
+                        await downloadCvPdf(profile);
+                      } catch (error) {
+                        alert(error instanceof Error ? error.message : "CV PDF could not be downloaded.");
+                      } finally {
+                        setPdfDownloading(false);
+                      }
+                    }}
+                  />
               </div>
             )}
           </div>
@@ -1382,7 +1511,7 @@ function DocumentCreator({
             ))}
           </select>
         </div>
-        <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: value })} />
+        <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
         <DateField label="Issue date" value={draft.issue_date} onChange={(value) => setDraft({ ...draft, issue_date: value })} />
         <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry} />
       </div>
@@ -1497,6 +1626,109 @@ function cleanSaveText(value?: string | null) {
 
 function cleanLimitedText(value: string | null | undefined, maxLength: number) {
   return cleanSaveText(value).slice(0, maxLength);
+}
+
+function capitalizeFirstCharacter(value: string) {
+  const firstLetterIndex = value.search(/\p{L}/u);
+  if (firstLetterIndex === -1) return value;
+  return `${value.slice(0, firstLetterIndex)}${value.charAt(firstLetterIndex).toLocaleUpperCase("tr-TR")}${value.slice(firstLetterIndex + 1)}`;
+}
+
+const galleryOrderPrefix = "__BLUDECK_GALLERY_ORDER__";
+
+function splitGalleryLocation(value?: string | null) {
+  const location = value || "";
+  if (!location.startsWith(galleryOrderPrefix)) return { location, order: undefined as number | undefined };
+  const lineBreak = location.indexOf("\n");
+  const orderText = location.slice(galleryOrderPrefix.length, lineBreak === -1 ? undefined : lineBreak).trim();
+  const parsedOrder = Number(orderText);
+  return {
+    location: lineBreak === -1 ? "" : location.slice(lineBreak + 1),
+    order: Number.isFinite(parsedOrder) ? parsedOrder : undefined,
+  };
+}
+
+function encodeGalleryLocation(location?: string | null, order?: number) {
+  const cleanLocation = cleanSaveText(location);
+  if (typeof order !== "number" || !Number.isFinite(order)) return cleanLocation;
+  return `${galleryOrderPrefix}${order}\n${cleanLocation}`;
+}
+
+function normalizePortfolioRecord(photo: PortfolioPhoto) {
+  const parsed = splitGalleryLocation(photo.location);
+  return {
+    ...photo,
+    location: parsed.location,
+    gallery_order: typeof photo.gallery_order === "number" ? photo.gallery_order : parsed.order,
+  };
+}
+
+function portfolioSortValue(photo: PortfolioPhoto, index: number) {
+  if (typeof photo.gallery_order === "number" && Number.isFinite(photo.gallery_order)) return photo.gallery_order;
+  const createdAt = photo.created_at ? Date.parse(photo.created_at) : 0;
+  return createdAt ? -createdAt : index;
+}
+
+function sortPortfolioPhotos(photos: PortfolioPhoto[]) {
+  return [...photos].sort((first, second) => {
+    const firstIndex = photos.indexOf(first);
+    const secondIndex = photos.indexOf(second);
+    return portfolioSortValue(first, firstIndex) - portfolioSortValue(second, secondIndex);
+  });
+}
+
+function nextPortfolioOrder(photos: PortfolioPhoto[]) {
+  if (photos.length === 0) return 0;
+  return Math.min(...photos.map((photo, index) => portfolioSortValue(photo, index))) - 1;
+}
+
+function cvPdfFileName(profile: CrewProfile) {
+  const name = cleanSaveText(profile.full_name)
+    .replace(/[\\/:*?"<>|]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleUpperCase("tr-TR");
+  return `${name || "BLUEDECK CREW"} - CV BlueDeck Yacht Management Platform.pdf`;
+}
+
+async function downloadCvPdf(profile: CrewProfile) {
+  const sheet = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-sheet");
+  if (!sheet) {
+    alert("CV preview is not ready yet.");
+    return;
+  }
+
+  const { default: html2pdf } = await import("html2pdf.js");
+  const filename = cvPdfFileName(profile);
+  const pdfOptions = {
+    margin: 0,
+    filename,
+    image: { type: "jpeg" as const, quality: 0.98 },
+    html2canvas: {
+      scale: Math.min(2, window.devicePixelRatio || 1.5),
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 980,
+    },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
+    pagebreak: {
+      mode: ["css", "legacy"],
+      before: [".bd-cv-experience-break-before", ".bd-cv-documents-section"],
+    },
+  };
+  document.body.classList.add("bd-pdf-exporting");
+
+  try {
+    await html2pdf()
+      .set(pdfOptions)
+      .from(sheet)
+      .save(filename);
+  } finally {
+    document.body.classList.remove("bd-pdf-exporting");
+  }
 }
 
 type YachtSizeUnit = "ft" | "m";
@@ -1673,12 +1905,16 @@ function SeazoneStyleCvPreview({
   experiences,
   references,
   totalExperienceYears,
+  downloading,
+  onDownload,
 }: {
   profile: CrewProfile;
   documents: CrewDocument[];
   experiences: Experience[];
   references: ReferenceEntry[];
   totalExperienceYears: string;
+  downloading: boolean;
+  onDownload: () => void | Promise<void>;
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
   const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
@@ -1701,11 +1937,12 @@ function SeazoneStyleCvPreview({
           <p className="mt-1 text-sm text-slate-500">Minimal maritime CV generated from your saved profile.</p>
         </div>
         <button
-          onClick={() => window.print()}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3]"
+          onClick={onDownload}
+          disabled={downloading}
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70"
         >
-          <Download className="h-4 w-4" />
-          Download
+          {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+          {downloading ? "Preparing..." : "Download"}
         </button>
       </div>
 
@@ -2605,7 +2842,7 @@ function ExperienceEditor({
               <input
                 aria-label="Location"
                 value={draft.location || ""}
-                onChange={(event) => setDraft({ ...draft, location: event.target.value })}
+                onChange={(event) => setDraft({ ...draft, location: capitalizeFirstCharacter(event.target.value) })}
                 placeholder="Location"
                 className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
               />
@@ -3035,10 +3272,20 @@ function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange
 
 function PortfolioEditor({
   item,
+  editing,
+  canMoveLeft,
+  canMoveRight,
+  onMoveLeft,
+  onMoveRight,
   onDelete,
   onPreview,
 }: {
   item: PortfolioPhoto;
+  editing: boolean;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+  onMoveLeft: () => void;
+  onMoveRight: () => void;
   onDelete: (id?: string) => void;
   onPreview: (item: PortfolioPhoto) => void;
 }) {
@@ -3052,6 +3299,28 @@ function PortfolioEditor({
         <img src={item.image_url} alt="Photo gallery" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
       </button>
       <div className="mt-2 grid gap-1.5">
+        {editing && (
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={onMoveLeft}
+              disabled={!canMoveLeft}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-cyan-100 bg-white text-[#173f4a] transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Move photo left"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoveRight}
+              disabled={!canMoveRight}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-cyan-100 bg-white text-[#173f4a] transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-35"
+              aria-label="Move photo right"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
         <button type="button" onClick={() => onDelete(item.id)} className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rose-100 bg-white px-2 text-[10px] font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
           <Trash2 className="h-4 w-4" />
           Delete

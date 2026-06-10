@@ -155,7 +155,7 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
 
   const { data: photos } = await serviceClient
     .from("crew_portfolio_photos")
-    .select("id,image_url,created_at")
+    .select("id,image_url,created_at,location")
     .eq("crew_profile_id", String(profile.id))
     .not("image_url", "is", null)
     .order("created_at", { ascending: false });
@@ -166,7 +166,9 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
       .map((photo) => ({
         id: text(photo as Row, "id") || text(photo as Row, "image_url"),
         imageUrl: text(photo as Row, "image_url"),
+        order: gallerySortValue(photo as Row),
       }))
+      .sort((first, second) => first.order - second.order)
       .filter((photo) => photo.imageUrl),
   };
 });
@@ -187,6 +189,21 @@ function stringArray(value: unknown) {
 
 function primaryPosition(profile: Row) {
   return stringArray(profile.current_positions)[0] || text(profile, "current_position") || "Yacht Crew";
+}
+
+const galleryOrderPrefix = "__BLUDECK_GALLERY_ORDER__";
+
+function gallerySortValue(photo: Row) {
+  const location = text(photo, "location");
+  if (location.startsWith(galleryOrderPrefix)) {
+    const lineBreak = location.indexOf("\n");
+    const orderText = location.slice(galleryOrderPrefix.length, lineBreak === -1 ? undefined : lineBreak).trim();
+    const order = Number(orderText);
+    if (Number.isFinite(order)) return order;
+  }
+
+  const createdAt = Date.parse(text(photo, "created_at"));
+  return createdAt ? -createdAt : 0;
 }
 
 function InfoLine({ label, value }: { label: string; value: string }) {
