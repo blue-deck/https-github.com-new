@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
+import { CvScaleFrame } from "../components/CvScaleFrame";
 import { PhoneInput } from "../components/PhoneInput";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
@@ -1698,7 +1699,8 @@ async function downloadCvPdf(profile: CrewProfile) {
     return;
   }
 
-  const { default: html2pdf } = await import("html2pdf.js");
+  const html2pdfModule = await import("html2pdf.js");
+  const html2pdf = html2pdfModule.default || (html2pdfModule as unknown as typeof html2pdfModule.default);
   const filename = cvPdfFileName(profile);
   const pdfOptions = {
     margin: 0,
@@ -1712,6 +1714,7 @@ async function downloadCvPdf(profile: CrewProfile) {
       scrollX: 0,
       scrollY: 0,
       windowWidth: 980,
+      imageTimeout: 30000,
     },
     jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     pagebreak: {
@@ -1719,14 +1722,42 @@ async function downloadCvPdf(profile: CrewProfile) {
       before: [".bd-cv-experience-break-before", ".bd-cv-documents-section"],
     },
   };
+  const exportHost = document.createElement("div");
+  const exportSheet = sheet.cloneNode(true) as HTMLElement;
+  exportHost.style.position = "fixed";
+  exportHost.style.left = "0";
+  exportHost.style.top = "0";
+  exportHost.style.width = "980px";
+  exportHost.style.maxWidth = "none";
+  exportHost.style.background = "#ffffff";
+  exportHost.style.pointerEvents = "none";
+  exportHost.style.transform = "translateX(-140vw)";
+  exportHost.style.zIndex = "-1";
+  exportSheet.style.width = "980px";
+  exportSheet.style.maxWidth = "none";
+  exportSheet.style.transform = "none";
+  exportSheet.style.margin = "0";
+  exportHost.appendChild(exportSheet);
   document.body.classList.add("bd-pdf-exporting");
+  document.body.appendChild(exportHost);
 
   try {
-    await html2pdf()
+    const pdfBlob = await html2pdf()
       .set(pdfOptions)
-      .from(sheet)
-      .save(filename);
+      .from(exportSheet)
+      .outputPdf("blob");
+    const downloadUrl = URL.createObjectURL(pdfBlob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 45000);
   } finally {
+    exportHost.remove();
     document.body.classList.remove("bd-pdf-exporting");
   }
 }
@@ -1937,22 +1968,22 @@ function SeazoneStyleCvPreview({
       id="bluedeck-cv"
       className="bd-cv-root overflow-hidden rounded-[24px] border border-[#d8e2e6] bg-[#f3f7f8] text-slate-950 shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:bg-white print:shadow-none"
     >
-      <div className="flex items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-[#228fc4]">BlueDeck crew CV</p>
           <p className="mt-1 text-sm text-slate-500">Minimal maritime CV generated from your saved profile.</p>
         </div>
         <button
           onClick={onDownload}
           disabled={downloading}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70"
+          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70 sm:w-auto"
         >
           {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
           {downloading ? "Preparing..." : "Download"}
         </button>
       </div>
 
-      <div className="overflow-x-auto bg-[#f3f7f8] p-3 sm:p-5 print:overflow-visible print:p-0">
+      <CvScaleFrame>
         <div className="bd-cv-sheet mx-auto w-[980px] max-w-none overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
           <div className="bd-cv-layout grid min-h-[1120px] grid-cols-[320px_1fr] bg-white print:min-h-0 print:grid-cols-[300px_1fr]">
             <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
@@ -2091,7 +2122,7 @@ function SeazoneStyleCvPreview({
             </div>
           </div>
         </div>
-      </div>
+      </CvScaleFrame>
     </section>
   );
 }

@@ -697,18 +697,36 @@ textarea:-webkit-autofill:focus {
   page-break-before: always;
 }
 
+.bd-cv-scale-wrap {
+  width: 100%;
+  max-width: 1020px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.bd-cv-scale-content {
+  max-width: none;
+  will-change: transform;
+}
+
 body.bd-pdf-exporting #bluedeck-cv .bd-cv-sheet,
-body.bd-pdf-exporting #bluedeck-cv.bd-cv-root {
+body.bd-pdf-exporting #bluedeck-cv.bd-cv-root,
+body.bd-pdf-exporting .bd-cv-scale-content {
   zoom: 1 !important;
   transform: none !important;
 }
 
+body.bd-pdf-exporting .bd-cv-scale-wrap {
+  height: auto !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
 @media screen and (max-width: 767px) {
   #bluedeck-cv .bd-cv-sheet,
-  #bluedeck-cv.bd-cv-root {
+  #bluedeck-cv.bd-cv-public-sheet {
     width: 980px !important;
     max-width: none !important;
-    zoom: calc((100vw - 32px) / 980);
   }
 
   #bluedeck-cv .bd-cv-layout {
