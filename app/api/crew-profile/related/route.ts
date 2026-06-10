@@ -26,7 +26,7 @@ const relatedTables: Record<RelatedKind, { table: string; columns: string[] }> =
   },
   experience: {
     table: "crew_experiences",
-    columns: ["yacht_name", "yacht_type", "yacht_program", "yacht_size", "position", "start_date", "end_date", "description", "photo_url"],
+    columns: ["yacht_name", "yacht_type", "yacht_program", "yacht_size", "location", "position", "start_date", "end_date", "description", "photo_url"],
   },
   reference: {
     table: "crew_references",
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         .single()
     : await serviceClient.from(config.table).insert(row).select("*").single();
 
-  if (response.error && body.kind === "experience" && /yacht_type|yacht_program|yacht_size|schema cache|column/i.test(response.error.message)) {
+  if (response.error && body.kind === "experience" && /yacht_type|yacht_program|yacht_size|location|schema cache|column/i.test(response.error.message)) {
     const fallbackRow = encodeExperienceMetadataFallback(row);
     response = body.id
       ? await serviceClient
@@ -189,14 +189,16 @@ function encodeExperienceMetadataFallback(row: Record<string, unknown>) {
     yacht_type: typeof row.yacht_type === "string" ? row.yacht_type.trim() : "",
     yacht_program: typeof row.yacht_program === "string" ? row.yacht_program.trim() : "",
     yacht_size: typeof row.yacht_size === "string" ? row.yacht_size.trim() : "",
+    location: typeof row.location === "string" ? row.location.trim() : "",
   };
   const cleanDescription = stripExperienceMetadata(typeof row.description === "string" ? row.description : "");
   const fallbackRow = { ...row };
   delete fallbackRow.yacht_type;
   delete fallbackRow.yacht_program;
   delete fallbackRow.yacht_size;
+  delete fallbackRow.location;
 
-  if (meta.yacht_type || meta.yacht_program || meta.yacht_size) {
+  if (meta.yacht_type || meta.yacht_program || meta.yacht_size || meta.location) {
     fallbackRow.description = `${experienceMetadataPrefix}${JSON.stringify(meta)}\n${cleanDescription}`;
   } else {
     fallbackRow.description = cleanDescription;

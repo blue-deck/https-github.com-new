@@ -206,12 +206,12 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                     No yacht experience added yet.
                   </p>
                 )}
-                {experiences.map((experience) => {
+                {experiences.map((experience, index) => {
                   const experienceReferences = publicReferencesForExperience(experience, cleanReferences);
                   const yachtName = text(experience, "yacht_name") || "Yacht";
 
                   return (
-                    <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
+                    <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className={`bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5 ${shouldBreakBeforeExperience(index) ? "bd-cv-experience-break-before" : ""}`}>
                       <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
                         <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
                           {text(experience, "photo_url") ? (
@@ -221,10 +221,16 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                           )}
                           <div className="mt-3">
                             <h2 className="font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h2>
-                            <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
                             {[experienceText(experience, "yacht_type"), experienceText(experience, "yacht_program"), experienceText(experience, "yacht_size")].filter(Boolean).length > 0 && (
                               <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
                                 {[experienceText(experience, "yacht_type"), experienceText(experience, "yacht_program"), experienceText(experience, "yacht_size")].filter(Boolean).join(" / ")}
+                              </p>
+                            )}
+                            <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
+                            {experienceText(experience, "location") && (
+                              <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
+                                <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+                                <span>{experienceText(experience, "location")}</span>
                               </p>
                             )}
                             <span className="mt-2 inline-flex rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
@@ -337,7 +343,7 @@ const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
 
 function experienceText(row: Row, key: string) {
   if (key === "description") return splitExperienceDescription(text(row, "description")).description.trim();
-  if (key === "yacht_type" || key === "yacht_program" || key === "yacht_size") {
+  if (key === "yacht_type" || key === "yacht_program" || key === "yacht_size" || key === "location") {
     return text(row, key) || splitExperienceDescription(text(row, "description")).meta[key] || "";
   }
 
@@ -358,11 +364,16 @@ function splitExperienceDescription(value: string): { description: string; meta:
         yacht_type: typeof meta.yacht_type === "string" ? meta.yacht_type.trim() : "",
         yacht_program: typeof meta.yacht_program === "string" ? meta.yacht_program.trim() : "",
         yacht_size: typeof meta.yacht_size === "string" ? meta.yacht_size.trim() : "",
+        location: typeof meta.location === "string" ? meta.location.trim() : "",
       },
     };
   } catch {
     return { description, meta: {} };
   }
+}
+
+function shouldBreakBeforeExperience(index: number) {
+  return index >= 2 && (index - 2) % 3 === 0;
 }
 
 function boolean(row: Row, key: string) {

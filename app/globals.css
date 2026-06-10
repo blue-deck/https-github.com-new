@@ -770,7 +770,7 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-sidebar {
-    padding: 54mm 7mm 8mm !important;
+    padding: 52mm 7mm 8mm !important;
   }
 
   #bluedeck-cv .bd-cv-avatar {
@@ -792,7 +792,7 @@ textarea:-webkit-autofill:focus {
 
   #bluedeck-cv .bd-cv-side-stack {
     display: grid !important;
-    gap: 4.2mm !important;
+    gap: 3.4mm !important;
   }
 
   #bluedeck-cv .bd-cv-side-stack > :not([hidden]) ~ :not([hidden]) {
@@ -849,8 +849,13 @@ textarea:-webkit-autofill:focus {
   #bluedeck-cv .bd-cv-experience {
     margin: 0 !important;
     padding: 2.8mm !important;
-    break-inside: auto !important;
-    page-break-inside: auto !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  #bluedeck-cv .bd-cv-experience-break-before {
+    break-before: page !important;
+    page-break-before: always !important;
   }
 
   #bluedeck-cv .bd-cv-experience-grid {
@@ -915,8 +920,8 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-experience-body {
-    break-inside: auto !important;
-    page-break-inside: auto !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   #bluedeck-cv .bd-cv-experience-meta > img,

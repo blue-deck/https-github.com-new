@@ -84,6 +84,7 @@ type Experience = {
   yacht_type?: string;
   yacht_program?: string;
   yacht_size?: string;
+  location?: string;
   position: string;
   start_date: string;
   end_date: string;
@@ -378,6 +379,7 @@ const emptyExperience: Experience = {
   yacht_type: "",
   yacht_program: "",
   yacht_size: "",
+  location: "",
   position: "",
   start_date: "",
   end_date: "",
@@ -1456,6 +1458,10 @@ function crewNameStyle(value: string) {
   return { fontSize: "17px", letterSpacing: "0" };
 }
 
+function shouldBreakBeforeExperience(index: number) {
+  return index >= 2 && (index - 2) % 3 === 0;
+}
+
 function formatDateRange(start?: string, end?: string) {
   const startText = formatCvDate(start);
   const endText = end ? formatCvDate(end) : "Present";
@@ -1539,6 +1545,7 @@ function normalizeExperienceRecord(experience: Experience) {
     yacht_type: cleanSaveText(experience.yacht_type) || cleanSaveText(parsed.meta.yacht_type),
     yacht_program: cleanSaveText(experience.yacht_program) || cleanSaveText(parsed.meta.yacht_program),
     yacht_size: normalizeYachtSize(experience.yacht_size) || normalizeYachtSize(parsed.meta.yacht_size),
+    location: cleanSaveText(experience.location) || cleanSaveText(parsed.meta.location),
     description: parsed.description,
   };
 }
@@ -1604,6 +1611,7 @@ function experienceSaveState(experience: Experience) {
     yacht_type: cleanSaveText(experience.yacht_type),
     yacht_program: cleanSaveText(experience.yacht_program),
     yacht_size: normalizeYachtSize(experience.yacht_size),
+    location: cleanSaveText(experience.location),
     position: cleanSaveText(experience.position),
     start_date: cleanSaveText(experience.start_date),
     end_date: cleanSaveText(experience.end_date),
@@ -1808,11 +1816,12 @@ function SeazoneStyleCvPreview({
                       No yacht experience added yet.
                     </p>
                   )}
-                  {cleanExperiences.map((item) => (
+                  {cleanExperiences.map((item, index) => (
                     <SeazoneExperienceCard
                       key={item.id || `${item.yacht_name}-${item.start_date}`}
                       experience={item}
                       references={referencesForExperience(item, cleanReferences)}
+                      breakBefore={shouldBreakBeforeExperience(index)}
                     />
                   ))}
                 </div>
@@ -1973,11 +1982,19 @@ function SeazoneSidebarLine({ label, value }: { label: string; value: string }) 
   );
 }
 
-function SeazoneExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
+function SeazoneExperienceCard({
+  experience,
+  references,
+  breakBefore = false,
+}: {
+  experience: Experience;
+  references: ReferenceEntry[];
+  breakBefore?: boolean;
+}) {
   const yachtName = experience.yacht_name || "Yacht";
 
   return (
-    <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
+    <article className={`bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5 ${breakBefore ? "bd-cv-experience-break-before" : ""}`}>
       <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
         <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           {experience.photo_url ? (
@@ -1987,10 +2004,16 @@ function SeazoneExperienceCard({ experience, references }: { experience: Experie
           )}
           <div className="mt-3">
             <h4 className="font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
-            <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
             {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).length > 0 && (
               <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
                 {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ")}
+              </p>
+            )}
+            <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
+            {experience.location && (
+              <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
+                <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>{experience.location}</span>
               </p>
             )}
             <span className="mt-2 inline-flex rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
@@ -2555,13 +2578,6 @@ function ExperienceEditor({
           </div>
 
           <div className="mt-3 space-y-2">
-            <ExperienceCardInput
-              label="Yacht name"
-              value={draft.yacht_name}
-              placeholder="Yacht name"
-              strong
-              onChange={(value) => setDraft({ ...draft, yacht_name: value })}
-            />
             <ExperienceCardSelect
               label="Yacht type"
               value={draft.yacht_type || ""}
@@ -2582,21 +2598,17 @@ function ExperienceEditor({
               <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
               <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
             </div>
-            <div className="block">
-              <span className="sr-only">Position</span>
-              <select
-                aria-label="Position"
-                value={draft.position || ""}
-                onChange={(event) => setDraft({ ...draft, position: event.target.value })}
-                className="w-full cursor-pointer appearance-none rounded-md border border-[#173f4a] bg-[#173f4a] px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.08em] text-white outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/20"
-              >
-                <option value="">Position</option>
-                {yachtPositionTitles.map((position) => (
-                  <option key={position} value={position}>
-                    {position}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-[22px_1fr] items-center overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
+              <span className="flex h-full items-center justify-center text-[#2d7482]">
+                <MapPin className="h-3.5 w-3.5" />
+              </span>
+              <input
+                aria-label="Location"
+                value={draft.location || ""}
+                onChange={(event) => setDraft({ ...draft, location: event.target.value })}
+                placeholder="Location"
+                className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
+              />
             </div>
           </div>
 
@@ -2616,6 +2628,30 @@ function ExperienceEditor({
         </div>
 
         <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+          <div className="mb-3 rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
+            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
+              <ExperienceCardInput
+                label="Yacht name"
+                value={draft.yacht_name}
+                placeholder="Yacht name"
+                strong
+                onChange={(value) => setDraft({ ...draft, yacht_name: value })}
+              />
+              <select
+                aria-label="Position"
+                value={draft.position || ""}
+                onChange={(event) => setDraft({ ...draft, position: event.target.value })}
+                className="w-full cursor-pointer rounded-lg border border-[#173f4a] bg-[#173f4a] px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-white outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/20"
+              >
+                <option value="">Position</option>
+                {yachtPositionTitles.map((position) => (
+                  <option key={position} value={position}>
+                    {position}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="flex flex-1 flex-col">
             <div className="flex items-center justify-between gap-3">
               <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
