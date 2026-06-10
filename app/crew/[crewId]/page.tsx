@@ -100,15 +100,14 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
-        <div className="bd-cv-verified-strip flex items-center justify-between gap-4 border-b border-[#c7d2d6] bg-[#f7fafb] px-7 py-4 print:px-7">
-          <div className="flex items-center gap-3">
-            <BlueDeckMark className="h-11 w-16 rounded-xl border-[#c7d2d6] bg-[#07131f] shadow-none" imageClassName="p-1" />
+        <div className="bd-cv-verified-strip bg-white px-7 pb-2 pt-5 print:px-7">
+          <div className="inline-flex items-center gap-2.5 rounded-xl border border-[#d8e2e6] bg-white px-3 py-2 shadow-sm shadow-slate-950/5">
+            <BlueDeckMark className="h-8 w-11 rounded-lg border-[#d8e2e6] bg-[#07131f] shadow-none" imageClassName="p-1" />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2d7482]">BlueDeck Verified CV</p>
-              <p className="mt-0.5 text-xs font-semibold text-[#5a6870]">Verified crew profile prepared by BlueDeck.app</p>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2d7482]">BlueDeck.app</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-[#5a6870]">Verified crew profile</p>
             </div>
           </div>
-          <p className="text-right text-[10px] font-black uppercase tracking-[0.18em] text-[#7a858b]">Crew profile / Yacht recruitment</p>
         </div>
 
         <div className="bd-cv-layout grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
@@ -199,7 +198,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               <div className="bd-cv-name-band mr-10 ml-0 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
-                  <h1 className="mt-3 text-4xl font-black uppercase leading-none tracking-[0.08em] text-white sm:text-5xl">{name}</h1>
+                  <h1 className="bd-cv-crew-name mt-3 block max-w-full whitespace-nowrap font-black uppercase leading-none text-white" style={crewNameStyle(name)}>{name}</h1>
                   <p className="mt-3 text-lg font-semibold tracking-[0.26em] text-white/82">{position}</p>
                 </div>
               </div>
@@ -452,6 +451,16 @@ function yachtNameFontSize(value: string) {
   if (length <= 26) return "12.5px";
   if (length <= 34) return "11.5px";
   return "10.5px";
+}
+
+function crewNameStyle(value: string) {
+  const length = value.trim().replace(/\s+/g, " ").length;
+  if (length <= 16) return { fontSize: "38px", letterSpacing: "0.055em" };
+  if (length <= 24) return { fontSize: "34px", letterSpacing: "0.04em" };
+  if (length <= 34) return { fontSize: "29px", letterSpacing: "0.025em" };
+  if (length <= 46) return { fontSize: "24px", letterSpacing: "0.01em" };
+  if (length <= 60) return { fontSize: "20px", letterSpacing: "0" };
+  return { fontSize: "17px", letterSpacing: "0" };
 }
 
 function formatDateRange(start?: string, end?: string) {

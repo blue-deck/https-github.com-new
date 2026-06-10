@@ -762,7 +762,7 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-verified-strip {
-    padding: 4mm 7mm !important;
+    padding: 4mm 7mm 1mm !important;
   }
 
   #bluedeck-cv .bd-cv-layout {
@@ -813,6 +813,13 @@ textarea:-webkit-autofill:focus {
     padding-right: 8mm !important;
     border-top-right-radius: 999px !important;
     border-bottom-right-radius: 999px !important;
+  }
+
+  #bluedeck-cv .bd-cv-crew-name {
+    display: block !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
   }
 
   #bluedeck-cv .bd-cv-main {
