@@ -761,10 +761,6 @@ textarea:-webkit-autofill:focus {
     max-width: none !important;
   }
 
-  #bluedeck-cv .bd-cv-verified-strip {
-    padding: 4mm 7mm 1mm !important;
-  }
-
   #bluedeck-cv .bd-cv-layout {
     display: grid !important;
     grid-template-columns: 74mm 136mm !important;
@@ -786,6 +782,12 @@ textarea:-webkit-autofill:focus {
     height: 45mm !important;
     border-width: 2.8mm !important;
     box-shadow: none !important;
+  }
+
+  #bluedeck-cv .bd-cv-sidebar-signature {
+    top: 7mm !important;
+    left: 7mm !important;
+    max-width: 38mm !important;
   }
 
   #bluedeck-cv .bd-cv-side-stack {

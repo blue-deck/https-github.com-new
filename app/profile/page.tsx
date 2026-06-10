@@ -401,7 +401,6 @@ const emptyPhoto: PortfolioPhoto = {
   image_url: "",
   location: "",
 };
-const hiddenPhotoGalleryMarker = "__bluedeck_cv_hidden";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<CrewProfile>({});
@@ -1168,7 +1167,7 @@ export default function ProfilePage() {
                 <div>
                   <p className="text-sm font-black text-[#06111f]">Professional photo gallery</p>
                   <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                    Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear as a clean photo grid on your BlueDeck CV.
+                    Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear in your public BlueDeck photo gallery.
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-2">
                     <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" || photoGallerySaving ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
@@ -1202,7 +1201,6 @@ export default function ProfilePage() {
                   <PortfolioEditor
                     key={item.id || item.image_url}
                     item={item}
-                    onSave={savePortfolioPhoto}
                     onDelete={deletePortfolioPhoto}
                     onPreview={setPhotoGalleryPreview}
                   />
@@ -1330,7 +1328,6 @@ export default function ProfilePage() {
                   documents={cvDocuments}
                   experiences={experiences}
                   references={cvReferences}
-                  portfolio={portfolio}
                   totalExperienceYears={totalExperienceYears}
                 />
               </div>
@@ -1634,10 +1631,6 @@ function phoneCountryFromValue(value: string) {
   );
 }
 
-function isPortfolioPhotoVisibleOnCv(photo: PortfolioPhoto) {
-  return photo.location !== hiddenPhotoGalleryMarker;
-}
-
 function localPhoneFromValue(value: string, country: PhoneCountryOption | null) {
   let local = value.trim();
   if (country && local.startsWith(country.dial)) local = local.slice(country.dial.length).trim();
@@ -1671,21 +1664,18 @@ function SeazoneStyleCvPreview({
   documents,
   experiences,
   references,
-  portfolio,
   totalExperienceYears,
 }: {
   profile: CrewProfile;
   documents: CrewDocument[];
   experiences: Experience[];
   references: ReferenceEntry[];
-  portfolio: PortfolioPhoto[];
   totalExperienceYears: string;
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
   const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
   const cleanReferences = cleanReferenceEntries(references);
   const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
-  const cleanPortfolio = portfolio.filter((photo) => photo.image_url && isPortfolioPhotoVisibleOnCv(photo));
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const crewName = profile.full_name || "Crew Member";
   const professionalSummary =
@@ -1711,21 +1701,12 @@ function SeazoneStyleCvPreview({
         </button>
       </div>
 
-      <div className="bg-[#f3f7f8] p-3 sm:p-5 print:p-0">
-        <div className="bd-cv-sheet mx-auto max-w-[980px] overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
-          <div className="bd-cv-verified-strip bg-white px-7 pb-2 pt-5 print:px-7">
-            <div className="inline-flex items-center gap-2.5 rounded-xl border border-[#d8e2e6] bg-white px-3 py-2 shadow-sm shadow-slate-950/5">
-              <BlueDeckMark className="h-8 w-11 rounded-lg border-[#d8e2e6] bg-[#07131f] shadow-none" imageClassName="p-1" />
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2d7482]">BlueDeck.app</p>
-                <p className="mt-0.5 text-[11px] font-semibold text-[#5a6870]">Verified crew profile</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bd-cv-layout grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
+      <div className="overflow-x-auto bg-[#f3f7f8] p-3 sm:p-5 print:overflow-visible print:p-0">
+        <div className="bd-cv-sheet mx-auto w-[980px] max-w-none overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+          <div className="bd-cv-layout grid min-h-[1120px] grid-cols-[320px_1fr] bg-white print:min-h-0 print:grid-cols-[300px_1fr]">
             <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
-              <div className="bd-cv-avatar absolute left-1/2 top-8 z-20 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12 lg:left-auto lg:right-[-42px] lg:translate-x-0">
+              <CvSidebarSignature />
+              <div className="bd-cv-avatar absolute right-[-42px] top-8 z-20 h-44 w-44 translate-x-0 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
                 {profile.profile_photo_url ? (
                   <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full rounded-full object-cover" />
                 ) : (
@@ -1796,15 +1777,15 @@ function SeazoneStyleCvPreview({
                 <div className="rounded-2xl border border-[#cbd7dc] bg-white p-4 text-[#40535d]">
                   <CrewProfileQr crewId={profile.public_crew_id} />
                   <p className="mt-2 text-center text-[10px] font-black uppercase tracking-[0.16em] text-[#6b747a]">{profile.public_crew_id || "Crew ID"}</p>
-                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Public CV Access</p>
-                  <p className="mt-1 text-sm font-semibold">Scan the QR code to open this crew CV on BlueDeck.</p>
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Photo Gallery</p>
+                  <p className="mt-1 text-sm font-semibold">Scan to view verified yacht work photos on BlueDeck.</p>
                 </div>
               </div>
             </aside>
 
             <div className="bg-white">
               <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
-                <div className="bd-cv-name-band mr-10 ml-0 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
+                <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-28 shadow-lg shadow-slate-950/10">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
                     <h2 className="bd-cv-crew-name mt-3 block max-w-full whitespace-nowrap font-black uppercase leading-none text-white" style={crewNameStyle(crewName)}>{crewName}</h2>
@@ -1851,18 +1832,6 @@ function SeazoneStyleCvPreview({
                 </SeazoneSection>
               )}
 
-              {cleanPortfolio.length > 0 && (
-                <SeazoneSection title="Photo Gallery">
-                  <div className="grid grid-cols-4 gap-2.5">
-                    {cleanPortfolio.map((photo) => (
-                      <figure key={photo.id || photo.image_url} className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-[#f7fafb] shadow-sm">
-                        <img src={photo.image_url} alt="Photo gallery" className="h-full w-full object-contain" />
-                      </figure>
-                    ))}
-                  </div>
-                </SeazoneSection>
-              )}
-
               <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
                 This CV is generated from verified BlueDeck profile data and can be updated from any device.
               </footer>
@@ -1878,7 +1847,7 @@ function SeazoneStyleCvPreview({
 function CrewProfileQr({ crewId }: { crewId?: string }) {
   const [qrDataUrl, setQrDataUrl] = useState("");
   const profileUrl = useMemo(
-    () => (crewId ? absoluteSiteUrl(`/crew/${encodeURIComponent(crewId)}`) : ""),
+    () => (crewId ? absoluteSiteUrl(`/crew/${encodeURIComponent(crewId)}/gallery`) : ""),
     [crewId],
   );
 
@@ -1924,10 +1893,10 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
       target="_blank"
       rel="noreferrer"
       className="group relative flex h-24 items-center justify-center rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm transition hover:border-[#2d7482]"
-      title={`Open public CV: ${profileUrl}`}
+      title={`Open public photo gallery: ${profileUrl}`}
     >
       {qrDataUrl ? (
-        <img src={qrDataUrl} alt={`QR code for BlueDeck CV ${crewId}`} className="h-full w-full object-contain" />
+        <img src={qrDataUrl} alt={`QR code for BlueDeck photo gallery ${crewId}`} className="h-full w-full object-contain" />
       ) : (
         <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">QR loading</span>
       )}
@@ -1969,6 +1938,18 @@ function SeazoneSideSection({ title, children }: { title: string; children: Reac
       </div>
       {children}
     </section>
+  );
+}
+
+function CvSidebarSignature() {
+  return (
+    <div className="bd-cv-sidebar-signature absolute left-7 top-6 z-10 flex max-w-[142px] items-center gap-2.5">
+      <BlueDeckMark className="h-8 w-10 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase leading-3 tracking-[0.22em] text-[#2d7482]">BlueDeck.app</p>
+        <p className="mt-0.5 text-[10px] font-bold leading-3 text-[#59666d]">Verified crew photo gallery</p>
+      </div>
+    </div>
   );
 }
 
@@ -3018,54 +2999,24 @@ function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange
 
 function PortfolioEditor({
   item,
-  onSave,
   onDelete,
   onPreview,
 }: {
   item: PortfolioPhoto;
-  onSave: (item: PortfolioPhoto) => Promise<boolean>;
   onDelete: (id?: string) => void;
   onPreview: (item: PortfolioPhoto) => void;
 }) {
-  const [draft, setDraft] = useState(item);
-  const [savingVisibility, setSavingVisibility] = useState(false);
-  const visibleOnCv = isPortfolioPhotoVisibleOnCv(draft);
-
-  async function updateCvVisibility(showOnCv: boolean) {
-    const nextDraft = {
-      ...draft,
-      location: showOnCv ? "" : hiddenPhotoGalleryMarker,
-    };
-
-    setDraft(nextDraft);
-    setSavingVisibility(true);
-    const saved = await onSave(nextDraft);
-    setSavingVisibility(false);
-
-    if (!saved) setDraft(draft);
-  }
-
   return (
     <div className="min-w-0">
       <button
         type="button"
-        onClick={() => onPreview(draft)}
+        onClick={() => onPreview(item)}
         className="group block aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-[#eef6f8] shadow-sm shadow-slate-950/8 transition hover:shadow-lg hover:shadow-cyan-950/12"
       >
-        <img src={draft.image_url} alt="Photo gallery" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
+        <img src={item.image_url} alt="Photo gallery" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
       </button>
       <div className="mt-2 grid gap-1.5">
-        <label className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-cyan-100 bg-[#f8fbfc] px-2 text-[10px] font-black uppercase tracking-[0.08em] text-[#173f4a] transition hover:border-cyan-300">
-          <input
-            type="checkbox"
-            checked={visibleOnCv}
-            disabled={savingVisibility}
-            onChange={(event) => updateCvVisibility(event.target.checked)}
-            className="h-4 w-4 accent-cyan-400"
-          />
-          {savingVisibility ? "Saving..." : "Show on CV"}
-        </label>
-        <button type="button" onClick={() => onDelete(draft.id)} className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rose-100 bg-white px-2 text-[10px] font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
+        <button type="button" onClick={() => onDelete(item.id)} className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rose-100 bg-white px-2 text-[10px] font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
           <Trash2 className="h-4 w-4" />
           Delete
         </button>

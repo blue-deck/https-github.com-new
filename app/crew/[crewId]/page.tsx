@@ -31,12 +31,10 @@ type CrewCvData = {
   documents: Row[];
   experiences: Row[];
   references: Row[];
-  portfolio: Row[];
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const hiddenPhotoGalleryMarker = "__bluedeck_cv_hidden";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { crewId } = await params;
@@ -66,7 +64,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
   if (!cv) notFound();
 
-  const { profile, documents, experiences, references, portfolio } = cv;
+  const { profile, documents, experiences, references } = cv;
   const name = text(profile, "full_name") || "Crew Member";
   const position = primaryPosition(profile);
   const languages = languageEntries(profile.languages);
@@ -74,7 +72,6 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
     ...stringArray(profile.personal_skills),
     ...stringArray(profile.personal_characteristics),
   ].slice(0, 18);
-  const cleanPortfolio = portfolio.filter((photo) => text(photo, "image_url") && text(photo, "location") !== hiddenPhotoGalleryMarker);
   const cleanReferences = publicReferenceEntries(references);
   const standaloneReferences = publicUnmatchedExperienceReferences(experiences, cleanReferences);
   const professionalSummary =
@@ -82,8 +79,8 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
     `I am a ${position.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
 
   return (
-    <main className="min-h-screen bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <section id="bluedeck-cv" className="bd-cv-root mx-auto max-w-[1120px] overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
+    <main className="min-h-screen overflow-x-auto bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+      <section id="bluedeck-cv" className="bd-cv-root mx-auto w-[980px] max-w-none overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
           <div className="flex items-center gap-3">
             <BlueDeckMark className="h-12 w-16 rounded-2xl border-slate-200 bg-slate-950" imageClassName="p-1" />
@@ -100,19 +97,10 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
-        <div className="bd-cv-verified-strip bg-white px-7 pb-2 pt-5 print:px-7">
-          <div className="inline-flex items-center gap-2.5 rounded-xl border border-[#d8e2e6] bg-white px-3 py-2 shadow-sm shadow-slate-950/5">
-            <BlueDeckMark className="h-8 w-11 rounded-lg border-[#d8e2e6] bg-[#07131f] shadow-none" imageClassName="p-1" />
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2d7482]">BlueDeck.app</p>
-              <p className="mt-0.5 text-[11px] font-semibold text-[#5a6870]">Verified crew profile</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bd-cv-layout grid min-h-[1120px] bg-white lg:grid-cols-[320px_1fr] print:min-h-0 print:grid-cols-[300px_1fr]">
+        <div className="bd-cv-layout grid min-h-[1120px] grid-cols-[320px_1fr] bg-white print:min-h-0 print:grid-cols-[300px_1fr]">
           <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
-            <div className="bd-cv-avatar absolute left-1/2 top-8 z-20 h-44 w-44 -translate-x-1/2 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12 lg:left-auto lg:right-[-42px] lg:translate-x-0">
+            <CvSidebarSignature />
+            <div className="bd-cv-avatar absolute right-[-42px] top-8 z-20 h-44 w-44 translate-x-0 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
               {text(profile, "profile_photo_url") ? (
                 <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
               ) : (
@@ -195,7 +183,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
           <section className="bg-white">
             <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
-              <div className="bd-cv-name-band mr-10 ml-0 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-20 shadow-lg shadow-slate-950/10 lg:-ml-10 lg:pl-28">
+              <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-28 shadow-lg shadow-slate-950/10">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
                   <h1 className="bd-cv-crew-name mt-3 block max-w-full whitespace-nowrap font-black uppercase leading-none text-white" style={crewNameStyle(name)}>{name}</h1>
@@ -275,18 +263,6 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               </CvSection>
             )}
 
-            {cleanPortfolio.length > 0 && (
-              <CvSection title="Photo Gallery">
-                <div className="grid grid-cols-4 gap-2.5">
-                  {cleanPortfolio.map((photo) => (
-                    <figure key={text(photo, "id") || text(photo, "image_url")} className="aspect-square overflow-hidden rounded-lg border border-slate-200 bg-[#f7fafb] shadow-sm">
-                      <img src={text(photo, "image_url")} alt="Photo gallery" className="h-full w-full object-contain" />
-                    </figure>
-                  ))}
-                </div>
-              </CvSection>
-            )}
-
             <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
               This CV is generated from BlueDeck profile data and opened through a Crew ID QR code.
             </footer>
@@ -320,7 +296,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   if (error || !profile?.id) return null;
 
   const profileId = String(profile.id);
-  const [documentRes, experienceRes, referenceRes, portfolioRes] = await Promise.all([
+  const [documentRes, experienceRes, referenceRes] = await Promise.all([
     serviceClient
       .from("crew_documents")
       .select("*")
@@ -338,11 +314,6 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false }),
-    serviceClient
-      .from("crew_portfolio_photos")
-      .select("*")
-      .eq("crew_profile_id", profileId)
-      .order("created_at", { ascending: false }),
   ]);
 
   return {
@@ -350,7 +321,6 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
     documents: (documentRes.data || []) as Row[],
     experiences: (experienceRes.data || []) as Row[],
     references: (referenceRes.data || []) as Row[],
-    portfolio: (portfolioRes.data || []) as Row[],
   };
 });
 
@@ -566,6 +536,18 @@ function SideSection({ title, children }: { title: string; children: ReactNode }
       </div>
       {children}
     </section>
+  );
+}
+
+function CvSidebarSignature() {
+  return (
+    <div className="bd-cv-sidebar-signature absolute left-7 top-6 z-10 flex max-w-[142px] items-center gap-2.5">
+      <BlueDeckMark className="h-8 w-10 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+      <div className="min-w-0">
+        <p className="text-[9px] font-black uppercase leading-3 tracking-[0.22em] text-[#2d7482]">BlueDeck.app</p>
+        <p className="mt-0.5 text-[10px] font-bold leading-3 text-[#59666d]">Verified crew photo gallery</p>
+      </div>
+    </div>
   );
 }
 
