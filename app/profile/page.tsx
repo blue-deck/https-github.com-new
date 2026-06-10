@@ -1437,6 +1437,15 @@ function formatCvDate(value?: string) {
   return display || value;
 }
 
+function yachtNameFontSize(value: string) {
+  const length = value.trim().length;
+  if (length <= 12) return "15px";
+  if (length <= 18) return "14px";
+  if (length <= 26) return "12.5px";
+  if (length <= 34) return "11.5px";
+  return "10.5px";
+}
+
 function formatDateRange(start?: string, end?: string) {
   const startText = formatCvDate(start);
   const endText = end ? formatCvDate(end) : "Present";
@@ -1948,17 +1957,19 @@ function SeazoneSidebarLine({ label, value }: { label: string; value: string }) 
 }
 
 function SeazoneExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
+  const yachtName = experience.yacht_name || "Yacht";
+
   return (
     <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-      <div className="bd-cv-experience-grid grid items-start gap-3 sm:grid-cols-[136px_1fr]">
-        <div className="bd-cv-experience-meta rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
+        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           {experience.photo_url ? (
-            <img src={experience.photo_url} alt={experience.yacht_name || "Yacht"} className="h-24 w-full rounded-lg object-cover" />
+            <img src={experience.photo_url} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
           ) : (
             <div className="h-24 rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)]" />
           )}
           <div className="mt-3">
-            <h4 className="text-[15px] font-black leading-tight text-[#06111f]">{experience.yacht_name || "Yacht"}</h4>
+            <h4 className="font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
             <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
             {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).length > 0 && (
               <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
@@ -1971,7 +1982,7 @@ function SeazoneExperienceCard({ experience, references }: { experience: Experie
           </div>
         </div>
 
-        <div className="bd-cv-experience-body rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+        <div className="bd-cv-experience-body h-full rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
             <p className="mt-2 text-[13px] leading-5 text-[#364650]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
@@ -1988,8 +1999,7 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 
   return (
     <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
-      <div className="mt-2 grid gap-2">
+      <div className="grid gap-2">
         {references.slice(0, 2).map((reference) => (
           <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{reference.name || "Reference"}</p>

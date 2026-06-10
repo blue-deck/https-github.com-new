@@ -848,7 +848,7 @@ textarea:-webkit-autofill:focus {
     display: grid !important;
     grid-template-columns: 34mm 1fr !important;
     gap: 3mm !important;
-    align-items: start !important;
+    align-items: stretch !important;
   }
 
   #bluedeck-cv .bd-cv-experience-meta,
