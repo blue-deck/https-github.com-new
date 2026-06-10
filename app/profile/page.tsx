@@ -206,6 +206,8 @@ const languageOptions = [
 ];
 
 const languageLevels = ["Basic", "Intermediate", "Advanced", "Fluent", "Native"];
+const professionalSummaryMaxLength = 250;
+const yachtDutiesMaxLength = 200;
 
 const yachtTypeOptions = [
   "Motor yacht",
@@ -727,7 +729,7 @@ export default function ProfilePage() {
 
   async function saveExperience(item: Experience) {
     if (!profile.id) return false;
-    const response = await saveRelatedRecord("experience", item, item.id);
+    const response = await saveRelatedRecord("experience", { ...item, ...experienceSaveState(item) }, item.id);
     if (!response.ok) {
       alert(response.error);
       return false;
@@ -1051,9 +1053,10 @@ export default function ProfilePage() {
                 <TextArea
                   label="Professional summary"
                   value={profile.bio || ""}
-                  onChange={(value) => setProfile({ ...profile, bio: value })}
+                  onChange={(value) => setProfile({ ...profile, bio: value.slice(0, professionalSummaryMaxLength) })}
                   className="min-h-full"
                   textareaClassName="h-[calc(100%-30px)] min-h-40"
+                  maxLength={professionalSummaryMaxLength}
                 />
               </div>
               <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
@@ -1479,6 +1482,10 @@ function cleanSaveText(value?: string | null) {
   return (value || "").trim();
 }
 
+function cleanLimitedText(value: string | null | undefined, maxLength: number) {
+  return cleanSaveText(value).slice(0, maxLength);
+}
+
 const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
 
 function splitExperienceDescription(value?: string) {
@@ -1550,7 +1557,7 @@ function profileSaveState(profile: CrewProfile) {
     nationality: cleanSaveText(profile.nationality),
     current_position: currentPosition,
     location: cleanSaveText(profile.location),
-    bio: cleanSaveText(profile.bio),
+    bio: cleanLimitedText(profile.bio, professionalSummaryMaxLength),
     date_of_birth: cleanSaveText(profile.date_of_birth),
     height_cm: cleanSaveNumber(profile.height_cm),
     weight_kg: cleanSaveNumber(profile.weight_kg),
@@ -1574,7 +1581,7 @@ function experienceSaveState(experience: Experience) {
     position: cleanSaveText(experience.position),
     start_date: cleanSaveText(experience.start_date),
     end_date: cleanSaveText(experience.end_date),
-    description: cleanSaveText(experience.description),
+    description: cleanLimitedText(experience.description, yachtDutiesMaxLength),
     photo_url: cleanSaveText(experience.photo_url),
   };
 }
@@ -2481,6 +2488,8 @@ function ExperienceEditor({
 }) {
   const [draft, setDraft] = useState(item);
   const dirty = !saveStateEquals(experienceSaveState(draft), experienceSaveState(item));
+  const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
+  const dutiesLength = dutiesValue.length;
 
   function removePhoto() {
     setDraft({ ...draft, photo_url: "" });
@@ -2600,10 +2609,16 @@ function ExperienceEditor({
 
         <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
           <div className="flex flex-1 flex-col">
-            <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+              <span className="rounded-full border border-[#c7d2d6] bg-white px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-[#2d7482]">
+                {dutiesLength}/{yachtDutiesMaxLength}
+              </span>
+            </div>
             <textarea
-              value={draft.description || ""}
-              onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+              value={dutiesValue}
+              maxLength={yachtDutiesMaxLength}
+              onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
               placeholder="Responsibilities and onboard duties"
               className="mt-2 min-h-24 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
             />
@@ -3362,17 +3377,34 @@ function TextArea({
   onChange,
   className = "mt-4",
   textareaClassName = "",
+  maxLength,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   className?: string;
   textareaClassName?: string;
+  maxLength?: number;
 }) {
+  const displayValue = maxLength ? value.slice(0, maxLength) : value;
+  const currentLength = maxLength ? Math.min(displayValue.length, maxLength) : displayValue.length;
+
   return (
     <div className={`${className} block`}>
-      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} className={`h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 ${textareaClassName}`} />
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="block select-text text-sm font-medium text-slate-600">{label}</p>
+        {maxLength && (
+          <span className="rounded-full border border-cyan-100 bg-[#f8fdff] px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-cyan-800 shadow-sm shadow-cyan-950/5">
+            {currentLength}/{maxLength}
+          </span>
+        )}
+      </div>
+      <textarea
+        value={displayValue}
+        maxLength={maxLength}
+        onChange={(event) => onChange(maxLength ? event.target.value.slice(0, maxLength) : event.target.value)}
+        className={`h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 ${textareaClassName}`}
+      />
     </div>
   );
 }
@@ -3406,6 +3438,7 @@ function normalizeProfile(profile: CrewProfile) {
 
   return {
     ...profile,
+    bio: cleanLimitedText(profile.bio, professionalSummaryMaxLength),
     gender: cleanSaveText(profile.gender),
     current_position: currentPosition,
     current_positions: currentPosition ? [currentPosition] : [],
