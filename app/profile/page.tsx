@@ -1692,88 +1692,6 @@ function cvPdfFileName(profile: CrewProfile) {
   return `${name || "BLUEDECK CREW"} - CV BlueDeck Yacht Management Platform.pdf`;
 }
 
-const unsupportedPdfColorPattern = /\b(?:oklab|oklch|lab|lch|color|color-mix|light-dark)\(/i;
-
-function safePdfColor(value: string | null | undefined, fallback: string) {
-  const cleanValue = (value || "").trim();
-  if (!cleanValue || cleanValue === "initial" || cleanValue === "inherit") return fallback;
-  if (unsupportedPdfColorPattern.test(cleanValue)) return fallback;
-  return cleanValue;
-}
-
-function elementClassName(element: Element) {
-  return element.getAttribute("class") || "";
-}
-
-function cvPdfTextFallback(element: Element) {
-  const classes = elementClassName(element);
-  if (element.closest(".bd-cv-name-band")) return "#ffffff";
-  if (classes.includes("text-white") || classes.includes("text-cyan-200")) return "#ffffff";
-  if (classes.includes("text-cyan") || classes.includes("text-sky")) return "#2f7c8d";
-  if (classes.includes("text-slate-500") || classes.includes("text-slate-600")) return "#52616d";
-  return "#25313a";
-}
-
-function cvPdfBackgroundFallback(element: Element) {
-  const classes = elementClassName(element);
-  if (element.classList.contains("bd-cv-name-band")) return "#20242a";
-  if (element.classList.contains("bd-cv-sidebar")) return "#e7ecee";
-  if (element.classList.contains("bd-cv-sheet") || element.classList.contains("bd-cv-layout")) return "#ffffff";
-  if (element.classList.contains("bd-cv-experience-meta")) return "#f6f8f8";
-  if (element.classList.contains("bd-cv-experience-body")) return "#f6f8f8";
-  if (element.classList.contains("bd-cv-experience-titlebar")) return "#ffffff";
-  if (element.classList.contains("bd-cv-reference-card")) return "#ffffff";
-  if (element.classList.contains("bd-cv-qr-section")) return "#ffffff";
-  if (element.classList.contains("bd-cv-document-row")) {
-    return classes.includes("bg-[#fff7f3]") ? "#fff7f3" : "#f6f8f8";
-  }
-  if (classes.includes("bg-white")) return "#ffffff";
-  if (classes.includes("bg-[#20242a]")) return "#20242a";
-  if (classes.includes("bg-[#e7ecee]")) return "#e7ecee";
-  if (classes.includes("bg-[#f6f8f8]")) return "#f6f8f8";
-  if (classes.includes("bg-[#f3f7f8]")) return "#f3f7f8";
-  if (classes.includes("bg-[#1d4852]")) return "#1d4852";
-  return "rgba(0, 0, 0, 0)";
-}
-
-function normalizeCvExportColors(root: HTMLElement) {
-  const view = root.ownerDocument.defaultView || window;
-  const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement | SVGElement>("*"))];
-
-  elements.forEach((element) => {
-    const computed = view.getComputedStyle(element);
-    const style = (element as HTMLElement | SVGElement).style;
-    const textFallback = cvPdfTextFallback(element);
-    const backgroundFallback = cvPdfBackgroundFallback(element);
-    const borderFallback = "#d8e2e6";
-
-    style.color = safePdfColor(computed.color, textFallback);
-    style.backgroundColor = safePdfColor(computed.backgroundColor, backgroundFallback);
-
-    const backgroundImage = computed.backgroundImage || "";
-    if (unsupportedPdfColorPattern.test(backgroundImage)) {
-      style.backgroundImage = "none";
-    }
-
-    style.borderTopColor = safePdfColor(computed.borderTopColor, borderFallback);
-    style.borderRightColor = safePdfColor(computed.borderRightColor, borderFallback);
-    style.borderBottomColor = safePdfColor(computed.borderBottomColor, borderFallback);
-    style.borderLeftColor = safePdfColor(computed.borderLeftColor, borderFallback);
-    style.outlineColor = safePdfColor(computed.outlineColor, borderFallback);
-    style.textDecorationColor = safePdfColor(computed.textDecorationColor, style.color || textFallback);
-    style.boxShadow = "none";
-    style.textShadow = "none";
-    style.filter = "none";
-    style.backdropFilter = "none";
-    style.setProperty("-webkit-backdrop-filter", "none");
-
-    if (element instanceof SVGElement) {
-      style.fill = safePdfColor(computed.getPropertyValue("fill"), style.color || textFallback);
-      style.stroke = safePdfColor(computed.getPropertyValue("stroke"), style.color || textFallback);
-    }
-  });
-}
-
 async function downloadCvPdf(profile: CrewProfile) {
   const sheet = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-sheet");
   if (!sheet) {
@@ -1781,72 +1699,26 @@ async function downloadCvPdf(profile: CrewProfile) {
     return;
   }
 
-  const html2pdfModule = await import("html2pdf.js");
-  const html2pdf = html2pdfModule.default || (html2pdfModule as unknown as typeof html2pdfModule.default);
-  const filename = cvPdfFileName(profile);
-  const pdfOptions = {
-    margin: 0,
-    filename,
-    image: { type: "jpeg" as const, quality: 0.98 },
-    html2canvas: {
-      scale: Math.min(2, window.devicePixelRatio || 1.5),
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: "#ffffff",
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: 980,
-      imageTimeout: 30000,
-      onclone: (clonedDocument: Document) => {
-        const clonedSheet = clonedDocument.querySelector<HTMLElement>(".bd-cv-sheet");
-        if (clonedSheet) normalizeCvExportColors(clonedSheet);
-      },
-    },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
-    pagebreak: {
-      mode: ["css", "legacy"],
-      before: [".bd-cv-experience-break-before", ".bd-cv-documents-section"],
-    },
-  };
-  const exportHost = document.createElement("div");
-  const exportSheet = sheet.cloneNode(true) as HTMLElement;
-  exportHost.style.position = "fixed";
-  exportHost.style.left = "0";
-  exportHost.style.top = "0";
-  exportHost.style.width = "980px";
-  exportHost.style.maxWidth = "none";
-  exportHost.style.background = "#ffffff";
-  exportHost.style.pointerEvents = "none";
-  exportHost.style.transform = "translateX(-140vw)";
-  exportHost.style.zIndex = "-1";
-  exportSheet.style.width = "980px";
-  exportSheet.style.maxWidth = "none";
-  exportSheet.style.transform = "none";
-  exportSheet.style.margin = "0";
-  exportHost.appendChild(exportSheet);
+  const originalTitle = document.title;
+  document.title = cvPdfFileName(profile).replace(/\.pdf$/i, "");
   document.body.classList.add("bd-pdf-exporting");
-  document.body.appendChild(exportHost);
-  normalizeCvExportColors(exportSheet);
 
-  try {
-    const pdfBlob = await html2pdf()
-      .set(pdfOptions)
-      .from(exportSheet)
-      .outputPdf("blob");
-    const downloadUrl = URL.createObjectURL(pdfBlob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = filename;
-    link.rel = "noopener";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 
-    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 45000);
-  } finally {
-    exportHost.remove();
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
     document.body.classList.remove("bd-pdf-exporting");
-  }
+    document.title = originalTitle;
+    window.removeEventListener("afterprint", cleanup);
+  };
+
+  window.addEventListener("afterprint", cleanup, { once: true });
+  window.print();
+  window.setTimeout(cleanup, 5000);
 }
 
 type YachtSizeUnit = "ft" | "m";
@@ -2402,7 +2274,8 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 
   return (
     <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
-      <div className="grid gap-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
+      <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
           <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{referenceDisplayName(reference)}</p>

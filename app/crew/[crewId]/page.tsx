@@ -587,7 +587,8 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
 
   return (
     <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
-      <div className="grid gap-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
+      <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
           <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
