@@ -1899,6 +1899,12 @@ function unmatchedExperienceReferences(experiences: Experience[], references: Re
   return references.filter((reference) => !experiences.some((experience) => referenceMatchesExperience(reference, experience)));
 }
 
+function referenceDisplayName(reference: ReferenceEntry) {
+  const name = cleanSaveText(reference.name);
+  if (name && name.toLowerCase() !== "reference") return name;
+  return cleanSaveText(reference.company) || cleanSaveText(reference.vessel) || "Contact";
+}
+
 function SeazoneStyleCvPreview({
   profile,
   documents,
@@ -2069,7 +2075,7 @@ function SeazoneStyleCvPreview({
                   <div className="grid gap-3 sm:grid-cols-2">
                     {standaloneReferences.slice(0, 4).map((ref) => (
                       <div key={ref.id || ref.email || ref.name} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
-                        <p className="font-black text-[#06111f]">{ref.name || "Reference"}</p>
+                        <p className="font-black text-[#06111f]">{referenceDisplayName(ref)}</p>
                         <p className="mt-1 text-sm font-semibold text-[#2d7482]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
                         <p className="mt-2 text-xs text-[#5a6870]">{[ref.email, ref.phone].filter(Boolean).join(" / ")}</p>
                       </div>
@@ -2240,7 +2246,6 @@ function SeazoneExperienceCard({
             <div className="h-24 rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)]" />
           )}
           <div className="mt-3">
-            <h4 className="font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
             {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).length > 0 && (
               <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
                 {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ")}
@@ -2253,13 +2258,16 @@ function SeazoneExperienceCard({
                 <span>{experience.location}</span>
               </p>
             )}
-            <span className="mt-2 inline-flex rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-              {experience.position || "Position"}
-            </span>
           </div>
         </div>
 
         <div className="bd-cv-experience-body h-full rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+            <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+              <h4 className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
+              <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+                {experience.position || "Position"}
+              </span>
+            </div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
             <p className="mt-2 text-[13px] leading-5 text-[#364650]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
@@ -2279,7 +2287,7 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
       <div className="grid gap-2">
         {references.slice(0, 2).map((reference) => (
           <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
-            <p className="text-[13px] font-black text-[#06111f]">{reference.name || "Reference"}</p>
+            <p className="text-[13px] font-black text-[#06111f]">{referenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
             </p>

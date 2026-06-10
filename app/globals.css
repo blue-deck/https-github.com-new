@@ -960,6 +960,11 @@ body.bd-pdf-exporting #bluedeck-cv.bd-cv-root {
     page-break-inside: avoid !important;
   }
 
+  #bluedeck-cv .bd-cv-experience-titlebar {
+    margin-bottom: 2.2mm !important;
+    padding: 1.7mm 2.2mm !important;
+  }
+
   #bluedeck-cv .bd-cv-experience-meta > img,
   #bluedeck-cv .bd-cv-experience-meta > div:first-child {
     height: 22mm !important;
