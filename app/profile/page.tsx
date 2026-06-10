@@ -1723,21 +1723,34 @@ async function downloadCvPdf(profile: CrewProfile) {
 }
 
 async function waitForCvPrintAssets(root: HTMLElement) {
-  const images = Array.from(root.querySelectorAll("img")).filter((image) => !image.complete);
+  const images = Array.from(root.querySelectorAll("img"));
   if (images.length === 0) return;
+
+  images.forEach((image) => {
+    image.loading = "eager";
+    image.decoding = "sync";
+  });
+
+  const sources = Array.from(new Set(images.map((image) => image.currentSrc || image.src).filter(Boolean)));
 
   await Promise.race([
     Promise.all(
-      images.map(
-        (image) =>
-          new Promise<void>((resolve) => {
-            image.addEventListener("load", () => resolve(), { once: true });
-            image.addEventListener("error", () => resolve(), { once: true });
-          }),
-      ),
+      sources.map((source) => preloadPrintImage(source)),
     ),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 1800)),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 3500)),
   ]);
+}
+
+function preloadPrintImage(source: string) {
+  return new Promise<void>((resolve) => {
+    const image = new Image();
+    image.decoding = "sync";
+    image.loading = "eager";
+    image.onload = () => resolve();
+    image.onerror = () => resolve();
+    image.src = source;
+    if (image.complete) resolve();
+  });
 }
 
 type YachtSizeUnit = "ft" | "m";
@@ -2268,7 +2281,7 @@ function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewPr
       <div className="bd-print-hero-band">
         <div className="bd-print-avatar">
           {profile.profile_photo_url ? (
-            <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} />
+            <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} loading="eager" decoding="sync" />
           ) : (
             <UserRound />
           )}
@@ -2435,7 +2448,7 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
     <article className="bd-print-experience-card">
       <div className="bd-print-experience-meta">
         {experience.photo_url ? (
-          <img src={experience.photo_url} alt={yachtName} />
+          <img src={experience.photo_url} alt={yachtName} loading="eager" decoding="sync" />
         ) : (
           <div />
         )}

@@ -725,16 +725,20 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 .bd-cv-print-root {
   position: absolute;
   top: 0;
-  left: -10000px;
+  left: 0;
+  transform: translateX(-120vw);
   width: 210mm;
-  visibility: hidden;
+  opacity: 0;
   pointer-events: none;
 }
 
 .bd-print-page {
   width: 210mm;
-  min-height: 297mm;
+  height: 260mm;
+  min-height: 260mm;
+  max-height: 260mm;
   background: #ffffff;
+  overflow: hidden;
 }
 
 @media screen and (max-width: 767px) {
@@ -838,8 +842,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     position: static !important;
     left: auto !important;
     top: auto !important;
+    transform: none !important;
     display: block !important;
     visibility: visible !important;
+    opacity: 1 !important;
     width: 210mm !important;
     min-height: 0 !important;
     margin: 0 !important;
@@ -853,8 +859,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     display: grid !important;
     grid-template-columns: 74mm 136mm !important;
     width: 210mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
+    height: 260mm !important;
+    min-height: 260mm !important;
+    max-height: 260mm !important;
     break-after: page !important;
     page-break-after: always !important;
     overflow: hidden !important;
@@ -868,15 +875,21 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-sidebar {
-    min-height: 297mm !important;
+    height: 260mm !important;
+    min-height: 260mm !important;
+    max-height: 260mm !important;
     background: #e7ecee !important;
     padding: 9mm 7mm 8mm !important;
+    overflow: hidden !important;
   }
 
   .bd-print-main {
     background: #ffffff !important;
     padding: 0 8mm 8mm !important;
+    height: 260mm !important;
+    max-height: 260mm !important;
     min-width: 0 !important;
+    overflow: hidden !important;
   }
 
   .bd-print-sidebar-stack {
