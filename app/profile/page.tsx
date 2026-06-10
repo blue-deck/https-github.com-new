@@ -1486,6 +1486,25 @@ function cleanLimitedText(value: string | null | undefined, maxLength: number) {
   return cleanSaveText(value).slice(0, maxLength);
 }
 
+type YachtSizeUnit = "ft" | "m";
+
+function parseYachtSize(value?: string | null): { amount: string; unit: YachtSizeUnit } {
+  const cleanValue = cleanSaveText(value).toLowerCase();
+  const amount = cleanValue.replace(/[^\d]/g, "");
+  const unit: YachtSizeUnit = /\bm\b|meter|metre/.test(cleanValue) ? "m" : "ft";
+  return { amount, unit };
+}
+
+function composeYachtSize(amount: string, unit: YachtSizeUnit) {
+  const cleanAmount = amount.replace(/[^\d]/g, "");
+  return cleanAmount ? `${cleanAmount} ${unit}` : "";
+}
+
+function normalizeYachtSize(value?: string | null) {
+  const parsed = parseYachtSize(value);
+  return composeYachtSize(parsed.amount, parsed.unit);
+}
+
 const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
 
 function splitExperienceDescription(value?: string) {
@@ -1512,7 +1531,7 @@ function normalizeExperienceRecord(experience: Experience) {
     ...experience,
     yacht_type: cleanSaveText(experience.yacht_type) || cleanSaveText(parsed.meta.yacht_type),
     yacht_program: cleanSaveText(experience.yacht_program) || cleanSaveText(parsed.meta.yacht_program),
-    yacht_size: cleanSaveText(experience.yacht_size) || cleanSaveText(parsed.meta.yacht_size),
+    yacht_size: normalizeYachtSize(experience.yacht_size) || normalizeYachtSize(parsed.meta.yacht_size),
     description: parsed.description,
   };
 }
@@ -1577,7 +1596,7 @@ function experienceSaveState(experience: Experience) {
     yacht_name: cleanSaveText(experience.yacht_name),
     yacht_type: cleanSaveText(experience.yacht_type),
     yacht_program: cleanSaveText(experience.yacht_program),
-    yacht_size: cleanSaveText(experience.yacht_size),
+    yacht_size: normalizeYachtSize(experience.yacht_size),
     position: cleanSaveText(experience.position),
     start_date: cleanSaveText(experience.start_date),
     end_date: cleanSaveText(experience.end_date),
@@ -2564,10 +2583,8 @@ function ExperienceEditor({
               options={yachtProgramOptions}
               onChange={(value) => setDraft({ ...draft, yacht_program: value })}
             />
-            <ExperienceCardInput
-              label="Yacht size"
+            <ExperienceSizeField
               value={draft.yacht_size || ""}
-              placeholder="Size"
               onChange={(value) => setDraft({ ...draft, yacht_size: value })}
             />
             <div className="grid gap-1.5">
@@ -2710,6 +2727,51 @@ function ExperienceCardSelect({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function ExperienceSizeField({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
+  const parsed = parseYachtSize(value);
+  const [unitDraft, setUnitDraft] = useState<YachtSizeUnit>(parsed.unit);
+  const selectedUnit = parsed.amount ? parsed.unit : unitDraft;
+
+  useEffect(() => {
+    if (parsed.amount) setUnitDraft(parsed.unit);
+  }, [parsed.amount, parsed.unit]);
+
+  function updateAmount(nextAmount: string) {
+    onChange(composeYachtSize(nextAmount, selectedUnit));
+  }
+
+  function updateUnit(nextUnit: YachtSizeUnit) {
+    setUnitDraft(nextUnit);
+    onChange(composeYachtSize(parsed.amount, nextUnit));
+  }
+
+  return (
+    <div className="block">
+      <span className="sr-only">Yacht size</span>
+      <div className="grid grid-cols-[1fr_58px] overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
+        <input
+          aria-label="Yacht size"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={parsed.amount}
+          onChange={(event) => updateAmount(event.target.value.replace(/[^\d]/g, ""))}
+          placeholder="Size"
+          className="min-w-0 border-0 bg-white px-2.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
+        />
+        <select
+          aria-label="Yacht size unit"
+          value={selectedUnit}
+          onChange={(event) => updateUnit(event.target.value as YachtSizeUnit)}
+          className="cursor-pointer border-0 border-l border-[#d8e2e6] bg-[#f6f8f8] px-1.5 py-2 text-[11px] font-black uppercase tracking-[0.06em] text-[#173f4a] outline-none"
+        >
+          <option value="ft">ft</option>
+          <option value="m">m</option>
+        </select>
+      </div>
     </div>
   );
 }
