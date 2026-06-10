@@ -1737,19 +1737,6 @@ function SeazoneStyleCvPreview({
                   </div>
                 </SeazoneSideSection>
 
-                <SeazoneSideSection title="Documents & Certificates">
-                  <div className="space-y-2">
-                    {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
-                    {documents.slice(0, 8).map((doc) => (
-                      <SeazoneDocumentRow key={doc.id || doc.document_type} document={doc} />
-                    ))}
-                  </div>
-                </SeazoneSideSection>
-
-                <SeazoneSideSection title="Skills & Characteristics">
-                  <PillList items={visibleSkills} light />
-                </SeazoneSideSection>
-
                 <SeazoneSideSection title="Language">
                   <div className="space-y-3">
                     {profile.languages?.length ? (
@@ -1770,11 +1757,24 @@ function SeazoneStyleCvPreview({
                   </div>
                 </SeazoneSideSection>
 
+                <SeazoneSideSection title="Skills & Characteristics">
+                  <PillList items={visibleSkills} light />
+                </SeazoneSideSection>
+
                 <SeazoneSideSection title="Preferences">
                   <PillList items={profile.work_preferences || []} light />
                 </SeazoneSideSection>
 
-                <div className="rounded-2xl border border-[#cbd7dc] bg-white p-4 text-[#40535d]">
+                <SeazoneSideSection title="Documents & Certificates" className="bd-cv-documents-section">
+                  <div className="space-y-2">
+                    {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
+                    {documents.slice(0, 8).map((doc) => (
+                      <SeazoneDocumentRow key={doc.id || doc.document_type} document={doc} />
+                    ))}
+                  </div>
+                </SeazoneSideSection>
+
+                <div className="bd-cv-qr-section rounded-2xl border border-[#cbd7dc] bg-white p-4 text-[#40535d]">
                   <CrewProfileQr crewId={profile.public_crew_id} />
                   <p className="mt-2 text-center text-[10px] font-black uppercase tracking-[0.16em] text-[#6b747a]">{profile.public_crew_id || "Crew ID"}</p>
                   <p className="mt-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Photo Gallery</p>
@@ -1929,9 +1929,9 @@ function SeazoneSection({
   );
 }
 
-function SeazoneSideSection({ title, children }: { title: string; children: ReactNode }) {
+function SeazoneSideSection({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <section className="bd-cv-side-section">
+    <section className={`bd-cv-side-section ${className}`}>
       <div className="mb-3 flex items-center gap-4">
         <h3 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#242a31]">{title}</h3>
         <div className="h-px flex-1 bg-[#242a31]/45" />
@@ -1943,11 +1943,11 @@ function SeazoneSideSection({ title, children }: { title: string; children: Reac
 
 function CvSidebarSignature() {
   return (
-    <div className="bd-cv-sidebar-signature absolute left-7 top-6 z-10 flex max-w-[142px] items-center gap-2.5">
-      <BlueDeckMark className="h-8 w-10 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+    <div className="bd-cv-sidebar-signature absolute left-7 top-6 z-10 flex max-w-[176px] items-center gap-3">
+      <BlueDeckMark className="h-10 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
       <div className="min-w-0">
         <p className="text-[9px] font-black uppercase leading-3 tracking-[0.22em] text-[#2d7482]">BlueDeck.app</p>
-        <p className="mt-0.5 text-[10px] font-bold leading-3 text-[#59666d]">Verified crew photo gallery</p>
+        <p className="mt-0.5 text-[10px] font-bold uppercase leading-3 tracking-[0.16em] text-[#59666d]">Yachtos</p>
       </div>
     </div>
   );
@@ -2036,7 +2036,7 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
-    <div className={`rounded-lg border px-3 py-2 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
+    <div className={`bd-cv-document-row rounded-lg border px-3 py-2 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{document.document_type || "Document"}</p>
@@ -3453,7 +3453,7 @@ function Snapshot({ label, value, tone = "cyan" }: { label: string; value: strin
 
 function PillList({ items, light = false }: { items: string[]; light?: boolean }) {
   if (items.length === 0) return <p className={light ? "text-slate-500" : "text-slate-500"}>-</p>;
-  return <div className="flex flex-wrap gap-2">{items.map((item, index) => <span key={`${item}-${index}`} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${light ? "border border-slate-200 bg-white text-slate-700" : "bg-cyan-400/10 text-cyan-200"}`}>{item}</span>)}</div>;
+  return <div className="bd-cv-pill-list flex flex-wrap gap-2">{items.map((item, index) => <span key={`${item}-${index}`} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${light ? "border border-slate-200 bg-white text-slate-700" : "bg-cyan-400/10 text-cyan-200"}`}>{item}</span>)}</div>;
 }
 
 function normalizeProfile(profile: CrewProfile) {

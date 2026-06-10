@@ -131,30 +131,6 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 </div>
               </SideSection>
 
-              <SideSection title="Documents & Certificates">
-                <div className="space-y-2">
-                  {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
-                  {documents.slice(0, 10).map((document) => (
-                    <div key={text(document, "id") || text(document, "document_type")} className="rounded-lg border border-[#c7d2d6] bg-white px-3 py-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{text(document, "document_type") || "Document"}</p>
-                          <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
-                          {text(document, "issuer") && <p className="mt-1 truncate text-[10px] font-semibold text-[#5a6870]">{text(document, "issuer")}</p>}
-                        </div>
-                        <p className="shrink-0 text-right text-[10px] font-black text-[#2d7482]">
-                          {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </SideSection>
-
-              <SideSection title="Skills & Characteristics">
-                <Pills items={visibleSkills} />
-              </SideSection>
-
               <SideSection title="Language">
                 <div className="space-y-3">
                   {languages.length ? (
@@ -175,8 +151,32 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 </div>
               </SideSection>
 
+              <SideSection title="Skills & Characteristics">
+                <Pills items={visibleSkills} />
+              </SideSection>
+
               <SideSection title="Preferences">
                 <Pills items={stringArray(profile.work_preferences)} />
+              </SideSection>
+
+              <SideSection title="Documents & Certificates" className="bd-cv-documents-section">
+                <div className="space-y-2">
+                  {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
+                  {documents.slice(0, 10).map((document) => (
+                    <div key={text(document, "id") || text(document, "document_type")} className="bd-cv-document-row rounded-lg border border-[#c7d2d6] bg-white px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{text(document, "document_type") || "Document"}</p>
+                          <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
+                          {text(document, "issuer") && <p className="mt-1 truncate text-[10px] font-semibold text-[#5a6870]">{text(document, "issuer")}</p>}
+                        </div>
+                        <p className="shrink-0 text-right text-[10px] font-black text-[#2d7482]">
+                          {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </SideSection>
             </div>
           </aside>
@@ -527,9 +527,9 @@ function CvSection({
   );
 }
 
-function SideSection({ title, children }: { title: string; children: ReactNode }) {
+function SideSection({ title, children, className = "" }: { title: string; children: ReactNode; className?: string }) {
   return (
-    <section className="bd-cv-side-section">
+    <section className={`bd-cv-side-section ${className}`}>
       <div className="mb-3 flex items-center gap-4">
         <h2 className="text-[14px] font-black uppercase tracking-[0.2em] text-[#242a31]">{title}</h2>
         <div className="h-px flex-1 bg-[#242a31]/45" />
@@ -541,11 +541,11 @@ function SideSection({ title, children }: { title: string; children: ReactNode }
 
 function CvSidebarSignature() {
   return (
-    <div className="bd-cv-sidebar-signature absolute left-7 top-6 z-10 flex max-w-[142px] items-center gap-2.5">
-      <BlueDeckMark className="h-8 w-10 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+    <div className="bd-cv-sidebar-signature absolute left-7 top-6 z-10 flex max-w-[176px] items-center gap-3">
+      <BlueDeckMark className="h-10 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
       <div className="min-w-0">
         <p className="text-[9px] font-black uppercase leading-3 tracking-[0.22em] text-[#2d7482]">BlueDeck.app</p>
-        <p className="mt-0.5 text-[10px] font-bold leading-3 text-[#59666d]">Verified crew photo gallery</p>
+        <p className="mt-0.5 text-[10px] font-bold uppercase leading-3 tracking-[0.16em] text-[#59666d]">Yachtos</p>
       </div>
     </div>
   );
@@ -586,7 +586,7 @@ function Pills({ items }: { items: string[] }) {
   if (items.length === 0) return <p className="text-sm text-slate-500">No items added yet.</p>;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="bd-cv-pill-list flex flex-wrap gap-2">
       {items.map((item, index) => (
         <span key={`${item}-${index}`} className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700">
           {item}

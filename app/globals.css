@@ -770,7 +770,7 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-sidebar {
-    padding: 58mm 7mm 8mm !important;
+    padding: 54mm 7mm 8mm !important;
   }
 
   #bluedeck-cv .bd-cv-avatar {
@@ -785,14 +785,14 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-sidebar-signature {
-    top: 7mm !important;
+    top: 6mm !important;
     left: 7mm !important;
-    max-width: 38mm !important;
+    max-width: 48mm !important;
   }
 
   #bluedeck-cv .bd-cv-side-stack {
     display: grid !important;
-    gap: 7mm !important;
+    gap: 4.2mm !important;
   }
 
   #bluedeck-cv .bd-cv-side-stack > :not([hidden]) ~ :not([hidden]) {
@@ -861,12 +861,52 @@ textarea:-webkit-autofill:focus {
   }
 
   #bluedeck-cv .bd-cv-experience-meta,
-  #bluedeck-cv .bd-cv-reference-list,
   #bluedeck-cv .bd-cv-reference-card,
   #bluedeck-cv .bd-cv-side-section,
+  #bluedeck-cv .bd-cv-document-row,
+  #bluedeck-cv .bd-cv-qr-section,
   #bluedeck-cv figure {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  #bluedeck-cv .bd-cv-documents-section {
+    break-before: page !important;
+    page-break-before: always !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  #bluedeck-cv .bd-cv-side-section > div:first-child {
+    margin-bottom: 2.2mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-side-section h2,
+  #bluedeck-cv .bd-cv-side-section h3 {
+    font-size: 10px !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  #bluedeck-cv .bd-cv-side-section .space-y-2\.5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1.7mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-side-section .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 2mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-pill-list {
+    gap: 1.4mm !important;
+  }
+
+  #bluedeck-cv .bd-cv-pill-list span {
+    padding: 1mm 2mm !important;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+  #bluedeck-cv .bd-cv-document-row {
+    padding: 2mm 2.5mm !important;
   }
 
   #bluedeck-cv .bd-cv-experience-meta,
