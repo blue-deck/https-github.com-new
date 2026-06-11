@@ -1902,12 +1902,60 @@ function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string)
     }
   `;
   clonedDocument.head.append(style);
+
+  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
+    sanitizeCvCanvasColors(page, clonedDocument.defaultView);
+  });
 }
 
 function waitForNextPaint() {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
+}
+
+const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|color-mix)\(/i;
+
+function sanitizeCvCanvasColors(root: HTMLElement, view: Window | null) {
+  if (!view) return;
+
+  const elements: Element[] = [root, ...Array.from(root.querySelectorAll("*"))];
+  elements.forEach((element) => {
+    const computed = view.getComputedStyle(element);
+    const target = element as HTMLElement | SVGElement;
+    const style = target.style;
+
+    style.setProperty("color", safeCanvasColor(computed.color, "#242a31"), "important");
+    style.setProperty("background-color", safeCanvasColor(computed.backgroundColor, "transparent"), "important");
+    style.setProperty("border-top-color", safeCanvasColor(computed.borderTopColor, "#d8e2e6"), "important");
+    style.setProperty("border-right-color", safeCanvasColor(computed.borderRightColor, "#d8e2e6"), "important");
+    style.setProperty("border-bottom-color", safeCanvasColor(computed.borderBottomColor, "#d8e2e6"), "important");
+    style.setProperty("border-left-color", safeCanvasColor(computed.borderLeftColor, "#d8e2e6"), "important");
+    style.setProperty("outline-color", safeCanvasColor(computed.outlineColor, "#d8e2e6"), "important");
+    style.setProperty("text-decoration-color", safeCanvasColor(computed.textDecorationColor, "currentColor"), "important");
+    style.setProperty("box-shadow", safeCanvasShadow(computed.boxShadow), "important");
+    style.setProperty("text-shadow", safeCanvasShadow(computed.textShadow), "important");
+
+    const fill = computed.getPropertyValue("fill");
+    const stroke = computed.getPropertyValue("stroke");
+    if (fill && fill !== "none") style.setProperty("fill", safeCanvasColor(fill, "currentColor"), "important");
+    if (stroke && stroke !== "none") style.setProperty("stroke", safeCanvasColor(stroke, "currentColor"), "important");
+
+    const backgroundImage = computed.backgroundImage || "";
+    if (unsupportedCanvasColorPattern.test(backgroundImage) || (backgroundImage !== "none" && !backgroundImage.includes("url("))) {
+      style.setProperty("background-image", "none", "important");
+    }
+  });
+}
+
+function safeCanvasColor(value: string, fallback: string) {
+  if (!value || unsupportedCanvasColorPattern.test(value)) return fallback;
+  return value;
+}
+
+function safeCanvasShadow(value: string) {
+  if (!value || value === "none" || unsupportedCanvasColorPattern.test(value)) return "none";
+  return value;
 }
 
 async function waitForCvPrintAssets(root: HTMLElement) {
