@@ -1471,6 +1471,167 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     font-size: 7.8px !important;
   }
 
+  .bd-print-page:first-child .bd-print-hero {
+    padding: 20mm 0 3mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-hero-band {
+    min-height: 34mm !important;
+    margin-left: -15mm !important;
+    margin-right: 8mm !important;
+    padding-left: 35mm !important;
+    padding-right: 8mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-avatar {
+    left: -12mm !important;
+    top: -3mm !important;
+    width: 40mm !important;
+    height: 40mm !important;
+    border-width: 2.5mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-hero-text p {
+    font-size: 8px !important;
+    letter-spacing: 0.28em !important;
+  }
+
+  .bd-print-page:first-child .bd-print-hero-text h2 {
+    margin-top: 1.5mm !important;
+    font-size: 13px !important;
+  }
+
+  .bd-print-page:first-child .bd-print-primary-sidebar-stack > .bd-print-side-section:first-of-type {
+    margin-top: 45mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-section {
+    margin-top: 3.4mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-section-title {
+    padding-bottom: 1.5mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-section-title h3 {
+    font-size: 10.4px !important;
+  }
+
+  .bd-print-page:first-child .bd-print-section-title span {
+    padding: 1mm 2.6mm !important;
+    font-size: 8.4px !important;
+  }
+
+  .bd-print-page:first-child .bd-print-summary {
+    margin-top: 2mm !important;
+    border-radius: 3mm !important;
+    padding: 2.3mm !important;
+    font-size: 10px !important;
+    line-height: 1.38 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-list {
+    gap: 2.4mm !important;
+    margin-top: 2.4mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-card {
+    grid-template-columns: 31mm 1fr !important;
+    gap: 2.3mm !important;
+    border-radius: 3.2mm !important;
+    padding: 2mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta,
+  .bd-print-page:first-child .bd-print-experience-body {
+    border-radius: 2.4mm !important;
+    padding: 1.8mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta img,
+  .bd-print-page:first-child .bd-print-experience-meta > div {
+    height: 17mm !important;
+    border-radius: 1.7mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta b,
+  .bd-print-page:first-child .bd-print-experience-top h4 {
+    margin-top: 1.3mm !important;
+    line-height: 1 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta span {
+    margin-top: 0.9mm !important;
+    font-size: 7.3px !important;
+    line-height: 1.2 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta em {
+    margin-top: 0.9mm !important;
+    font-size: 8.6px !important;
+    line-height: 1.22 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta small {
+    margin-top: 0.9mm !important;
+    font-size: 7.3px !important;
+    line-height: 1.15 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-meta small svg {
+    width: 2.1mm !important;
+    height: 2.1mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-top {
+    gap: 2mm !important;
+    border-radius: 1.7mm !important;
+    padding: 1.2mm 1.7mm !important;
+    margin-bottom: 1.3mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-experience-top span {
+    border-radius: 1.3mm !important;
+    padding: 0.7mm 1.7mm !important;
+    font-size: 7.3px !important;
+  }
+
+  .bd-print-page:first-child .bd-print-label {
+    font-size: 7.5px !important;
+    letter-spacing: 0.15em !important;
+  }
+
+  .bd-print-page:first-child .bd-print-duties {
+    margin-top: 1mm !important;
+    font-size: 9px !important;
+    line-height: 1.27 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-block {
+    margin-top: 1.3mm !important;
+    padding-top: 1.2mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-card {
+    margin-top: 0.9mm !important;
+    border-radius: 1.7mm !important;
+    padding: 1.3mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-card b {
+    font-size: 8.4px !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-card span {
+    margin-top: 0.5mm !important;
+    font-size: 7.7px !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-card em {
+    margin-top: 0.4mm !important;
+    font-size: 7.5px !important;
+  }
+
   .bd-print-document-row {
     position: relative !important;
     display: grid !important;

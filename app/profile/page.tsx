@@ -3120,8 +3120,8 @@ function PrintableCvPages({
   primaryPosition: string;
   visibleSkills: string[];
 }) {
-  const firstPageExperiences = experiences.slice(0, 2);
-  const remainingPages = chunkItems(experiences.slice(2), 4);
+  const firstPageExperiences = experiences.slice(0, 3);
+  const remainingPages = chunkItems(experiences.slice(3), 4);
   const pages = [
     { kind: "first" as const, experiences: firstPageExperiences },
     ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items })),
