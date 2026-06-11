@@ -1729,6 +1729,7 @@ async function waitForCvPrintAssets(root: HTMLElement) {
   images.forEach((image) => {
     image.loading = "eager";
     image.decoding = "sync";
+    (image as HTMLImageElement & { fetchPriority?: string }).fetchPriority = "high";
   });
 
   const sources = Array.from(new Set(images.map((image) => image.currentSrc || image.src).filter(Boolean)));
@@ -1738,6 +1739,11 @@ async function waitForCvPrintAssets(root: HTMLElement) {
       sources.map((source) => preloadPrintImage(source)),
     ),
     new Promise<void>((resolve) => window.setTimeout(resolve, 3500)),
+  ]);
+
+  await Promise.race([
+    Promise.all(images.map((image) => waitForDomPrintImage(image))),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 1800)),
   ]);
 }
 
@@ -1750,6 +1756,16 @@ function preloadPrintImage(source: string) {
     image.onerror = () => resolve();
     image.src = source;
     if (image.complete) resolve();
+  });
+}
+
+function waitForDomPrintImage(image: HTMLImageElement) {
+  if (image.complete && image.naturalWidth > 0) return Promise.resolve();
+  if (image.decode) return image.decode().catch(() => undefined);
+
+  return new Promise<void>((resolve) => {
+    image.addEventListener("load", () => resolve(), { once: true });
+    image.addEventListener("error", () => resolve(), { once: true });
   });
 }
 
@@ -2271,15 +2287,11 @@ function PrintableCvPages({
 function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewProfile; crewName: string; primaryPosition: string }) {
   return (
     <header className="bd-print-hero">
-      <div className="bd-print-hero-mark">
-        <BlueDeckMark className="h-9 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
-        <div>
-          <p>BlueDeck.app</p>
-          <span>Yachtos</span>
-        </div>
-      </div>
       <div className="bd-print-hero-band">
-        <div className="bd-print-avatar">
+        <div
+          className="bd-print-avatar"
+          style={profile.profile_photo_url ? { backgroundImage: `url("${profile.profile_photo_url}")` } : undefined}
+        >
           {profile.profile_photo_url ? (
             <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} loading="eager" decoding="sync" />
           ) : (
@@ -2306,7 +2318,15 @@ function PrintablePrimarySidebar({
   visibleSkills: string[];
 }) {
   return (
-    <div className="bd-print-sidebar-stack">
+    <div className="bd-print-sidebar-stack bd-print-primary-sidebar-stack">
+      <div className="bd-print-sidebar-brand">
+        <BlueDeckMark className="h-11 w-16 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+        <div>
+          <p>BlueDeck.app</p>
+          <span>Yachtos</span>
+        </div>
+      </div>
+
       <PrintableSideSection title="Profile">
         <PrintableSideLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
         <PrintableSideLine label="Nationality" value={profile.nationality || "-"} />

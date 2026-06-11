@@ -899,35 +899,38 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-hero {
     position: relative !important;
-    padding: 11mm 0 4mm !important;
+    padding: 26mm 0 4mm !important;
   }
 
-  .bd-print-hero-mark {
+  .bd-print-sidebar-brand {
     display: flex !important;
     align-items: center !important;
     gap: 3mm !important;
-    margin-bottom: 6mm !important;
   }
 
-  .bd-print-hero-mark p,
-  .bd-print-hero-mark span {
+  .bd-print-sidebar-brand p,
+  .bd-print-sidebar-brand span {
     display: block !important;
     margin: 0 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.2em !important;
+    letter-spacing: 0.18em !important;
     line-height: 1.1 !important;
   }
 
-  .bd-print-hero-mark p {
+  .bd-print-sidebar-brand p {
     color: #2d7482 !important;
     font-size: 9px !important;
     font-weight: 900 !important;
   }
 
-  .bd-print-hero-mark span {
+  .bd-print-sidebar-brand span {
     color: #59666d !important;
     font-size: 9px !important;
     font-weight: 800 !important;
+  }
+
+  .bd-print-primary-sidebar-stack > .bd-print-side-section:first-of-type {
+    margin-top: 52mm !important;
   }
 
   .bd-print-hero-band {
@@ -954,6 +957,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border-radius: 999px !important;
     overflow: hidden !important;
     background: #edf3f5 !important;
+    background-position: center !important;
+    background-size: cover !important;
   }
 
   .bd-print-avatar img,
