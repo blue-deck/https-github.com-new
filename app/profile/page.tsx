@@ -3335,7 +3335,7 @@ function PrintableExperienceList({ experiences, references }: { experiences: Exp
   }
 
   return (
-    <div className="bd-print-experience-list">
+    <div className={`bd-print-experience-list bd-print-experience-list-${Math.min(experiences.length, 4)}`}>
       {experiences.map((experience) => (
         <PrintableExperienceCard
           key={experience.id || `${experience.yacht_name}-${experience.start_date}`}
