@@ -908,6 +908,17 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     gap: 3mm !important;
   }
 
+  .bd-print-brand-logo {
+    display: block !important;
+    width: 17mm !important;
+    height: 10mm !important;
+    object-fit: contain !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
   .bd-print-sidebar-brand p,
   .bd-print-sidebar-brand span {
     display: block !important;
@@ -1385,6 +1396,33 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     width: 30mm !important;
     height: 30mm !important;
     margin: 0 auto !important;
+  }
+
+  .bd-print-qr-link {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #d8e2e6 !important;
+    border-radius: 2mm !important;
+    background: #ffffff !important;
+    color: #6b747a !important;
+    text-decoration: none !important;
+  }
+
+  .bd-print-qr-link img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .bd-print-qr-link span {
+    margin: 0 !important;
+    color: #6b747a !important;
+    font-size: 8px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
   }
 
   .bd-print-qr p,

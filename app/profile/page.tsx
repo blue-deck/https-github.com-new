@@ -1713,10 +1713,201 @@ type PdfImageAsset = {
 
 async function downloadCvPdf(payload: CvPdfPayload) {
   const { jsPDF } = await import("jspdf");
+  const html2canvas = (await import("html2canvas")).default;
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+  const root = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-print-root");
+  const pages = root ? Array.from(root.querySelectorAll<HTMLElement>(".bd-print-page")) : [];
 
-  await drawBlueDeckPdf(pdf, payload);
-  savePdfBlob(pdf.output("blob"), cvPdfFileName(payload.profile));
+  if (!root || pages.length === 0) {
+    throw new Error("CV preview is not ready yet.");
+  }
+
+  const restoreImages = await prepareCvExportImages(root);
+  const exportCss = printableCvCssForCanvasExport();
+
+  try {
+    await waitForCvPrintAssets(root);
+    await waitForNextPaint();
+
+    const a4PixelWidth = Math.ceil((210 / 25.4) * 96);
+    const a4PixelHeight = Math.ceil((297 / 25.4) * 96);
+
+    for (const [index, page] of pages.entries()) {
+      if (index > 0) pdf.addPage("a4", "portrait");
+
+      const canvas = await html2canvas(page, {
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        imageTimeout: 15000,
+        logging: false,
+        scale: Math.min(2, window.devicePixelRatio || 2),
+        useCORS: true,
+        windowHeight: Math.max(a4PixelHeight, Math.ceil(page.scrollHeight || page.offsetHeight)),
+        windowWidth: Math.max(a4PixelWidth, Math.ceil(page.scrollWidth || page.offsetWidth)),
+        onclone: (clonedDocument) => injectCvCanvasExportStyles(clonedDocument, exportCss),
+      });
+
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297, `bluedeck-cv-page-${index}`, "FAST");
+    }
+
+    savePdfBlob(pdf.output("blob"), cvPdfFileName(payload.profile));
+  } finally {
+    restoreImages();
+  }
+}
+
+async function prepareCvExportImages(root: HTMLElement) {
+  const restore: Array<() => void> = [];
+  const images = Array.from(root.querySelectorAll("img"));
+  const backgroundElements = Array.from(root.querySelectorAll<HTMLElement>("[style*='background-image']"));
+
+  await Promise.all(
+    images.map(async (image) => {
+      const source = image.currentSrc || image.src;
+      if (!source || source.startsWith("data:")) return;
+
+      const dataUrl = await imageSourceToDataUrl(source);
+      if (!dataUrl) return;
+
+      const previousSource = image.getAttribute("src");
+      const previousSourceSet = image.getAttribute("srcset");
+      restore.push(() => {
+        if (previousSource === null) image.removeAttribute("src");
+        else image.setAttribute("src", previousSource);
+        if (previousSourceSet === null) image.removeAttribute("srcset");
+        else image.setAttribute("srcset", previousSourceSet);
+      });
+      image.removeAttribute("srcset");
+      image.src = dataUrl;
+    }),
+  );
+
+  await Promise.all(
+    backgroundElements.map(async (element) => {
+      const source = cssBackgroundImageUrl(element.style.backgroundImage);
+      if (!source || source.startsWith("data:")) return;
+
+      const dataUrl = await imageSourceToDataUrl(source);
+      if (!dataUrl) return;
+
+      const previousBackground = element.style.backgroundImage;
+      restore.push(() => {
+        element.style.backgroundImage = previousBackground;
+      });
+      element.style.backgroundImage = `url("${dataUrl}")`;
+    }),
+  );
+
+  return () => {
+    [...restore].reverse().forEach((restoreItem) => restoreItem());
+  };
+}
+
+async function imageSourceToDataUrl(source: string) {
+  try {
+    const response = await fetch(cvImageRequestSource(source), { cache: "force-cache" });
+    if (!response.ok) return "";
+    const blob = await response.blob();
+    if (!blob.type.toLowerCase().startsWith("image/")) return "";
+    return blobToDataUrl(blob);
+  } catch {
+    return "";
+  }
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => resolve("");
+    reader.readAsDataURL(blob);
+  });
+}
+
+function cssBackgroundImageUrl(value: string) {
+  return value.match(/url\(["']?(.*?)["']?\)/)?.[1] || "";
+}
+
+function printableCvCssForCanvasExport() {
+  let css = "";
+
+  Array.from(document.styleSheets).forEach((sheet) => {
+    let rules: CSSRuleList;
+    try {
+      rules = sheet.cssRules;
+    } catch {
+      return;
+    }
+
+    Array.from(rules).forEach((rule) => {
+      if (rule.type !== CSSRule.MEDIA_RULE) return;
+      const mediaRule = rule as CSSMediaRule;
+      if (!mediaRule.conditionText.includes("print")) return;
+
+      Array.from(mediaRule.cssRules).forEach((nestedRule) => {
+        if (nestedRule.type !== CSSRule.STYLE_RULE) return;
+        const styleRule = nestedRule as CSSStyleRule;
+        const selectorText = styleRule.selectorText || "";
+        if (!selectorText.split(",").some((selector) => selector.trim().startsWith(".bd-print") || selector.includes(".bd-print") || selector.includes(".bd-cv-print-root"))) return;
+        css += `${styleRule.cssText}\n`;
+      });
+    });
+  });
+
+  return css;
+}
+
+function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string) {
+  const style = clonedDocument.createElement("style");
+  style.textContent = `
+    ${exportCss}
+    .bd-cv-print-root {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      width: 210mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      background: #ffffff !important;
+      pointer-events: auto !important;
+    }
+    .bd-print-page {
+      display: grid !important;
+      grid-template-columns: 74mm 136mm !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      min-height: 297mm !important;
+      max-height: 297mm !important;
+      overflow: hidden !important;
+      background: #ffffff !important;
+      color: #242a31 !important;
+      box-shadow: none !important;
+    }
+    .bd-print-sidebar,
+    .bd-print-main {
+      height: 297mm !important;
+      min-height: 297mm !important;
+      max-height: 297mm !important;
+    }
+    .bd-print-page,
+    .bd-print-page * {
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  `;
+  clonedDocument.head.append(style);
+}
+
+function waitForNextPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
 }
 
 async function waitForCvPrintAssets(root: HTMLElement) {
@@ -2811,6 +3002,50 @@ function CrewProfileQr({ crewId }: { crewId?: string }) {
   );
 }
 
+function PrintableCrewProfileQr({ crewId }: { crewId?: string }) {
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const profileUrl = useMemo(
+    () => (crewId ? absoluteSiteUrl(`/crew/${encodeURIComponent(crewId)}/gallery`) : ""),
+    [crewId],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!profileUrl) return;
+
+    void toDataURL(profileUrl, {
+      errorCorrectionLevel: "H",
+      margin: 1,
+      width: 192,
+      color: {
+        dark: "#173f4a",
+        light: "#ffffff",
+      },
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl("");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profileUrl]);
+
+  if (!profileUrl) {
+    return <div className="bd-print-qr-link"><span>Save profile</span></div>;
+  }
+
+  return (
+    <a href={profileUrl} className="bd-print-qr-link">
+      {qrDataUrl ? <img src={qrDataUrl} alt={`QR code for BlueDeck photo gallery ${crewId}`} /> : <span>QR loading</span>}
+    </a>
+  );
+}
+
 function chunkItems<T>(items: T[], size: number) {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) {
@@ -2923,7 +3158,7 @@ function PrintablePrimarySidebar({
   return (
     <div className="bd-print-sidebar-stack bd-print-primary-sidebar-stack">
       <div className="bd-print-sidebar-brand">
-        <BlueDeckMark className="h-11 w-16 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+        <img className="bd-print-brand-logo" src="/bluedeck-logo-mark.png" alt="BlueDeck" loading="eager" decoding="sync" />
         <div>
           <p>BlueDeck.app</p>
           <span>Yachtos</span>
@@ -2979,7 +3214,7 @@ function PrintableDocumentSidebar({ profile, documents }: { profile: CrewProfile
         ))}
       </PrintableSideSection>
       <div className="bd-print-qr">
-        <CrewProfileQr crewId={profile.public_crew_id} />
+        <PrintableCrewProfileQr crewId={profile.public_crew_id} />
         <p>{profile.public_crew_id || "Crew ID"}</p>
         <b>Photo Gallery</b>
         <span>Scan to view verified yacht work photos on BlueDeck.</span>
@@ -2991,7 +3226,7 @@ function PrintableDocumentSidebar({ profile, documents }: { profile: CrewProfile
 function PrintableContinuationSidebar({ profile }: { profile: CrewProfile }) {
   return (
     <div className="bd-print-continuation">
-      <BlueDeckMark className="h-9 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+      <img className="bd-print-brand-logo" src="/bluedeck-logo-mark.png" alt="BlueDeck" loading="eager" decoding="sync" />
       <p>{profile.full_name || "BlueDeck Crew"}</p>
       <span>Yacht Experience</span>
     </div>
