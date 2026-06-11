@@ -1854,11 +1854,14 @@ function printableCvCssForCanvasExport() {
     });
   });
 
-  return css;
+  return sanitizeCanvasCss(css);
 }
 
 function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string) {
+  removeClonedPageStyles(clonedDocument);
+
   const style = clonedDocument.createElement("style");
+  style.setAttribute("data-bluedeck-cv-export", "true");
   style.textContent = `
     ${exportCss}
     .bd-cv-print-root {
@@ -1906,6 +1909,16 @@ function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string)
   Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
     sanitizeCvCanvasColors(page, clonedDocument.defaultView);
   });
+}
+
+function removeClonedPageStyles(clonedDocument: Document) {
+  clonedDocument.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => node.remove());
+}
+
+function sanitizeCanvasCss(css: string) {
+  return css
+    .replace(/\b(?:oklab|oklch|lab|lch)\([^)]*\)/gi, "#242a31")
+    .replace(/\bcolor-mix\([^)]*\)/gi, "#ffffff");
 }
 
 function waitForNextPaint() {
