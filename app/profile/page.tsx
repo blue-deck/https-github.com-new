@@ -3144,7 +3144,7 @@ function PrintableCvPages({
             )}
           </aside>
 
-          <main className="bd-print-main">
+          <main className={`bd-print-main ${pageIndex > 0 ? "bd-print-main-continuation" : ""}`}>
             {pageIndex === 0 ? (
               <>
                 <PrintableHero profile={profile} crewName={crewName} primaryPosition={primaryPosition} />
@@ -3156,9 +3156,9 @@ function PrintableCvPages({
                 </PrintableSection>
               </>
             ) : (
-              <PrintableSection title="Yacht Experience" badge="continued">
+              <div className="bd-print-continuation-experiences">
                 <PrintableExperienceList experiences={page.experiences} references={references} />
-              </PrintableSection>
+              </div>
             )}
           </main>
         </section>
@@ -3269,13 +3269,7 @@ function PrintableDocumentSidebar({ profile, documents }: { profile: CrewProfile
 }
 
 function PrintableContinuationSidebar({ profile }: { profile: CrewProfile }) {
-  return (
-    <div className="bd-print-continuation">
-      <img className="bd-print-brand-logo" src="/bluedeck-logo-mark.png" alt="BlueDeck" loading="eager" decoding="sync" />
-      <p>{profile.full_name || "BlueDeck Crew"}</p>
-      <span>Yacht Experience</span>
-    </div>
-  );
+  return <div className="bd-print-continuation" aria-label={profile.full_name || "BlueDeck Crew"} />;
 }
 
 function PrintableSection({ title, badge, children }: { title: string; badge?: string; children: ReactNode }) {

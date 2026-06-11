@@ -734,9 +734,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
 .bd-print-page {
   width: 210mm;
-  height: 260mm;
-  min-height: 260mm;
-  max-height: 260mm;
+  height: 297mm;
+  min-height: 297mm;
+  max-height: 297mm;
   background: #ffffff;
   overflow: hidden;
 }
@@ -859,9 +859,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     display: grid !important;
     grid-template-columns: 74mm 136mm !important;
     width: 210mm !important;
-    height: 260mm !important;
-    min-height: 260mm !important;
-    max-height: 260mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     break-after: page !important;
     page-break-after: always !important;
     overflow: hidden !important;
@@ -875,21 +875,29 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-sidebar {
-    height: 260mm !important;
-    min-height: 260mm !important;
-    max-height: 260mm !important;
+    position: relative !important;
+    z-index: 1 !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
     background: #e7ecee !important;
     padding: 9mm 7mm 8mm !important;
     overflow: hidden !important;
   }
 
   .bd-print-main {
+    position: relative !important;
+    z-index: 2 !important;
     background: #ffffff !important;
     padding: 0 8mm 8mm !important;
-    height: 260mm !important;
-    max-height: 260mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
     min-width: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+  }
+
+  .bd-print-main-continuation {
+    padding-top: 9mm !important;
   }
 
   .bd-print-sidebar-stack {
@@ -899,6 +907,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-hero {
     position: relative !important;
+    z-index: 5 !important;
     padding: 26mm 0 4mm !important;
   }
 
@@ -946,6 +955,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-hero-band {
     position: relative !important;
+    z-index: 6 !important;
     min-height: 40mm !important;
     margin-left: -17mm !important;
     margin-right: 6mm !important;
@@ -960,6 +970,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-avatar {
     position: absolute !important;
+    z-index: 7 !important;
     left: -13mm !important;
     top: -4mm !important;
     width: 46mm !important;
@@ -1011,6 +1022,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-section {
     margin-top: 5mm !important;
+  }
+
+  .bd-print-continuation-experiences .bd-print-experience-list {
+    margin-top: 0 !important;
   }
 
   .bd-print-section-title {
