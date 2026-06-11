@@ -1436,7 +1436,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-black text-[#06111f]">Final BlueDeck CV</p>
                       <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                        Review the generated CV below. Use the Download button inside the preview to save the exact CV layout.
+                        Review the generated CV below. Use Print / Save PDF to open the browser print dialog and save the CV.
                       </p>
                     </div>
                     <span className="rounded-full bg-[#173f4a] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white">
@@ -1456,7 +1456,7 @@ export default function ProfilePage() {
                       try {
                         await downloadCvPdf(payload);
                       } catch (error) {
-                        alert(error instanceof Error ? error.message : "CV PDF could not be downloaded.");
+                        alert(error instanceof Error ? error.message : "CV print dialog could not be opened.");
                       } finally {
                         setPdfDownloading(false);
                       }
@@ -1712,9 +1712,6 @@ type PdfImageAsset = {
 };
 
 async function downloadCvPdf(payload: CvPdfPayload) {
-  const { jsPDF } = await import("jspdf");
-  const html2canvas = (await import("html2canvas")).default;
-  const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
   const root = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-print-root");
   const pages = root ? Array.from(root.querySelectorAll<HTMLElement>(".bd-print-page")) : [];
 
@@ -1722,38 +1719,25 @@ async function downloadCvPdf(payload: CvPdfPayload) {
     throw new Error("CV preview is not ready yet.");
   }
 
-  const restoreImages = await prepareCvExportImages(root);
-  const exportCss = printableCvCssForCanvasExport();
+  await waitForCvPrintAssets(root);
+  await waitForNextPaint();
+  openCvPrintDialog(cvPdfFileName(payload.profile));
+}
 
-  try {
-    await waitForCvPrintAssets(root);
-    await waitForNextPaint();
+function openCvPrintDialog(fileName: string) {
+  const previousTitle = document.title;
+  const printTitle = fileName.replace(/\.pdf$/i, "");
+  let restored = false;
+  const restoreTitle = () => {
+    if (restored) return;
+    restored = true;
+    document.title = previousTitle;
+  };
 
-    const a4PixelWidth = Math.ceil((210 / 25.4) * 96);
-    const a4PixelHeight = Math.ceil((297 / 25.4) * 96);
-
-    for (const [index, page] of pages.entries()) {
-      if (index > 0) pdf.addPage("a4", "portrait");
-
-      const canvas = await html2canvas(page, {
-        allowTaint: false,
-        backgroundColor: "#ffffff",
-        imageTimeout: 15000,
-        logging: false,
-        scale: Math.min(2, window.devicePixelRatio || 2),
-        useCORS: true,
-        windowHeight: Math.max(a4PixelHeight, Math.ceil(page.scrollHeight || page.offsetHeight)),
-        windowWidth: Math.max(a4PixelWidth, Math.ceil(page.scrollWidth || page.offsetWidth)),
-        onclone: (clonedDocument) => injectCvCanvasExportStyles(clonedDocument, exportCss),
-      });
-
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, 210, 297, `bluedeck-cv-page-${index}`, "FAST");
-    }
-
-    savePdfBlob(pdf.output("blob"), cvPdfFileName(payload.profile));
-  } finally {
-    restoreImages();
-  }
+  document.title = printTitle;
+  window.addEventListener("afterprint", restoreTitle, { once: true });
+  window.setTimeout(restoreTitle, 5000);
+  window.print();
 }
 
 async function prepareCvExportImages(root: HTMLElement) {
@@ -2841,7 +2825,7 @@ function SeazoneStyleCvPreview({
           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70 sm:w-auto"
         >
           {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-          {downloading ? "Preparing..." : "Download"}
+          {downloading ? "Opening print..." : "Print / Save PDF"}
         </button>
       </div>
 
