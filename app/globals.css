@@ -889,7 +889,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     position: relative !important;
     z-index: 2 !important;
     background: #ffffff !important;
-    padding: 0 8mm 8mm !important;
+    padding: 0 8mm 18mm !important;
     height: 297mm !important;
     max-height: 297mm !important;
     min-width: 0 !important;
@@ -897,7 +897,22 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-main-continuation {
-    padding-top: 9mm !important;
+    padding-top: 8mm !important;
+    padding-bottom: 18mm !important;
+  }
+
+  .bd-print-page-footer {
+    position: absolute !important;
+    right: 8mm !important;
+    bottom: 6mm !important;
+    left: 8mm !important;
+    border-top: 1px solid #c7d2d6 !important;
+    padding-top: 1.8mm !important;
+    color: #6b747a !important;
+    font-size: 7.8px !important;
+    font-weight: 800 !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0.02em !important;
   }
 
   .bd-print-sidebar-stack {
@@ -1025,6 +1040,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-continuation-experiences .bd-print-experience-list {
+    gap: 3mm !important;
     margin-top: 0 !important;
   }
 
@@ -1356,6 +1372,103 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     color: #5a6870 !important;
     font-size: 8.8px !important;
     font-style: normal !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-card {
+    grid-template-columns: 31mm 1fr !important;
+    gap: 2.4mm !important;
+    border-radius: 3.4mm !important;
+    padding: 2.2mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta,
+  .bd-print-main-continuation .bd-print-experience-body {
+    border-radius: 2.6mm !important;
+    padding: 2mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta img,
+  .bd-print-main-continuation .bd-print-experience-meta > div {
+    height: 18mm !important;
+    border-radius: 1.8mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta b,
+  .bd-print-main-continuation .bd-print-experience-top h4 {
+    margin-top: 1.5mm !important;
+    line-height: 1 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta span {
+    margin-top: 1mm !important;
+    font-size: 7.6px !important;
+    line-height: 1.25 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta em {
+    margin-top: 1mm !important;
+    font-size: 9px !important;
+    line-height: 1.25 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta small {
+    margin-top: 1mm !important;
+    font-size: 7.6px !important;
+    line-height: 1.2 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-meta small svg {
+    width: 2.2mm !important;
+    height: 2.2mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-top {
+    gap: 2mm !important;
+    border-radius: 1.8mm !important;
+    padding: 1.4mm 1.8mm !important;
+    margin-bottom: 1.5mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-experience-top span {
+    border-radius: 1.4mm !important;
+    padding: 0.8mm 1.8mm !important;
+    font-size: 7.7px !important;
+  }
+
+  .bd-print-main-continuation .bd-print-label {
+    font-size: 7.8px !important;
+    letter-spacing: 0.16em !important;
+  }
+
+  .bd-print-main-continuation .bd-print-duties {
+    margin-top: 1.1mm !important;
+    font-size: 9.5px !important;
+    line-height: 1.34 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-block {
+    margin-top: 1.5mm !important;
+    padding-top: 1.3mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-card {
+    margin-top: 1mm !important;
+    border-radius: 1.8mm !important;
+    padding: 1.5mm !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-card b {
+    font-size: 8.8px !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-card span {
+    margin-top: 0.6mm !important;
+    font-size: 8px !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-card em {
+    margin-top: 0.5mm !important;
+    font-size: 7.8px !important;
   }
 
   .bd-print-document-row {

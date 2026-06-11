@@ -3121,7 +3121,7 @@ function PrintableCvPages({
   visibleSkills: string[];
 }) {
   const firstPageExperiences = experiences.slice(0, 2);
-  const remainingPages = chunkItems(experiences.slice(2), 3);
+  const remainingPages = chunkItems(experiences.slice(2), 4);
   const pages = [
     { kind: "first" as const, experiences: firstPageExperiences },
     ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items })),
@@ -3160,10 +3160,19 @@ function PrintableCvPages({
                 <PrintableExperienceList experiences={page.experiences} references={references} />
               </div>
             )}
+            <PrintablePageFooter />
           </main>
         </section>
       ))}
     </div>
+  );
+}
+
+function PrintablePageFooter() {
+  return (
+    <footer className="bd-print-page-footer">
+      This CV is generated from verified BlueDeck profile data and can be updated from any device.
+    </footer>
   );
 }
 
