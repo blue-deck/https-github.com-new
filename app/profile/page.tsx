@@ -119,7 +119,7 @@ type ReferenceEntry = {
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
-type CvStudioTab = "personal" | "experience" | "skills" | "documents" | "portfolio" | "languages" | "preview";
+type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "portfolio" | "languages" | "preview";
 
 const workPreferences = [
   "Seasonal",
@@ -214,6 +214,7 @@ const languageOptions = [
 const languageLevels = ["Basic", "Intermediate", "Advanced", "Fluent", "Native"];
 const professionalSummaryMaxLength = 250;
 const yachtDutiesMaxLength = 200;
+const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
 
 const yachtTypeOptions = [
   "Motor yacht",
@@ -449,6 +450,11 @@ const emptyExperience: Experience = {
   photo_url: "",
 };
 
+const emptyOtherWorkExperience: Experience = {
+  ...emptyExperience,
+  yacht_type: otherWorkExperienceMarker,
+};
+
 const emptyReference: ReferenceEntry = {
   name: "",
   role: "",
@@ -494,14 +500,31 @@ export default function ProfilePage() {
   const currentPositionValue = getProfileCurrentPosition(profile);
   const portfolioPhotoCount = portfolio.filter((item) => item.image_url).length;
   const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
+  const yachtExperiences = useMemo(
+    () => experiences.filter((item) => !isOtherWorkExperience(item)),
+    [experiences],
+  );
+  const otherWorkExperiences = useMemo(
+    () => experiences.filter(isOtherWorkExperience),
+    [experiences],
+  );
   const editableExperiences = useMemo(
     () =>
-      [...experiences].sort((first, second) => {
+      [...yachtExperiences].sort((first, second) => {
         const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
         const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
         return secondCreatedAt - firstCreatedAt;
       }),
-    [experiences],
+    [yachtExperiences],
+  );
+  const editableOtherWorkExperiences = useMemo(
+    () =>
+      [...otherWorkExperiences].sort((first, second) => {
+        const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
+        const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
+        return secondCreatedAt - firstCreatedAt;
+      }),
+    [otherWorkExperiences],
   );
   const editablePortfolio = useMemo(
     () =>
@@ -510,12 +533,12 @@ export default function ProfilePage() {
   );
 
   const totalExperienceYears = useMemo(() => {
-    const firstYear = experiences
+    const firstYear = yachtExperiences
       .map((item) => Number((item.start_date || "").slice(0, 4)))
       .filter(Boolean)
       .sort((a, b) => a - b)[0];
     return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
-  }, [experiences]);
+  }, [yachtExperiences]);
   const studioTabs: Array<{
     id: CvStudioTab;
     label: string;
@@ -534,7 +557,14 @@ export default function ProfilePage() {
       id: "experience",
       label: "Yacht Experience",
       description: "Yachts, duties, photos and references.",
-      status: `${experiences.length} saved`,
+      status: `${yachtExperiences.length} saved`,
+      icon: <BriefcaseBusiness className="h-4 w-4" />,
+    },
+    {
+      id: "otherWork",
+      label: "Other Work Experience",
+      description: "Non-yacht roles, duties and references.",
+      status: `${otherWorkExperiences.length} saved`,
       icon: <BriefcaseBusiness className="h-4 w-4" />,
     },
     {
@@ -789,6 +819,17 @@ export default function ProfilePage() {
   async function saveExperience(item: Experience) {
     if (!profile.id) return false;
     const response = await saveRelatedRecord("experience", { ...item, ...experienceSaveState(item) }, item.id);
+    if (!response.ok) {
+      alert(response.error);
+      return false;
+    }
+    await loadRelated(profile.id);
+    return true;
+  }
+
+  async function saveOtherWorkExperience(item: Experience) {
+    if (!profile.id) return false;
+    const response = await saveRelatedRecord("experience", { ...item, ...otherWorkExperienceSaveState(item) }, item.id);
     if (!response.ok) {
       alert(response.error);
       return false;
@@ -1206,7 +1247,7 @@ export default function ProfilePage() {
                 )}
                 {[emptyExperience, ...editableExperiences].map((item) => {
                   const isNewExperience = !item.id;
-                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${experiences.length}`;
+                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${yachtExperiences.length}`;
                   const linkedReferences = referencesForExperience(item, references);
 
                   return (
@@ -1223,6 +1264,46 @@ export default function ProfilePage() {
                       onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
                       onCancelUpload={cancelUpload}
                       uploading={uploading === uploadSlot}
+                    />
+                  );
+                })}
+              </div>
+            </Panel>
+
+            <Panel active={activeStudioTab === "otherWork"} title="Other work experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
+                  <p className="text-sm font-black text-[#06111f]">Non-yacht professional experience</p>
+                  <p className="mt-1 max-w-3xl text-sm leading-6 text-[#5a6870]">
+                    Add relevant shore-based, hospitality, technical, management or service work that supports your BlueDeck CV.
+                  </p>
+                </div>
+                {referenceStatus && (
+                  <p
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
+                      referenceStatus.type === "success"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-rose-200 bg-rose-50 text-rose-800"
+                    }`}
+                  >
+                    {referenceStatus.message}
+                  </p>
+                )}
+                {[emptyOtherWorkExperience, ...editableOtherWorkExperiences].map((item) => {
+                  const isNewExperience = !item.id;
+                  const linkedReferences = referencesForExperience(item, references);
+
+                  return (
+                    <OtherWorkExperienceEditor
+                      key={item.id || `new-other-work-${otherWorkExperiences.length}`}
+                      item={item}
+                      isNew={isNewExperience}
+                      references={linkedReferences}
+                      referenceSaving={referenceSaving}
+                      onSave={saveOtherWorkExperience}
+                      onDelete={deleteExperience}
+                      onSaveReference={saveReference}
+                      onDeleteReference={deleteReference}
                     />
                   );
                 })}
@@ -1696,6 +1777,7 @@ type CvPdfPayload = {
   profile: CrewProfile;
   documents: CrewDocument[];
   experiences: Experience[];
+  otherWorkExperiences: Experience[];
   references: ReferenceEntry[];
   professionalSummary: string;
   totalExperienceYears: string;
@@ -2647,6 +2729,14 @@ function normalizeExperienceRecord(experience: Experience) {
   };
 }
 
+function isOtherWorkExperience(experience: Experience) {
+  return cleanSaveText(experience.yacht_type) === otherWorkExperienceMarker;
+}
+
+function isFilledExperience(experience: Experience) {
+  return Boolean(experience.yacht_name || experience.position || experience.description);
+}
+
 function cleanSaveNumber(value?: number | null) {
   return value ? String(value) : "";
 }
@@ -2714,6 +2804,21 @@ function experienceSaveState(experience: Experience) {
     end_date: cleanSaveText(experience.end_date),
     description: cleanLimitedText(experience.description, yachtDutiesMaxLength),
     photo_url: cleanSaveText(experience.photo_url),
+  };
+}
+
+function otherWorkExperienceSaveState(experience: Experience) {
+  return {
+    yacht_name: cleanSaveText(experience.yacht_name),
+    yacht_type: otherWorkExperienceMarker,
+    yacht_program: "",
+    yacht_size: "",
+    location: cleanSaveText(experience.location),
+    position: cleanSaveText(experience.position),
+    start_date: cleanSaveText(experience.start_date),
+    end_date: cleanSaveText(experience.end_date),
+    description: cleanLimitedText(experience.description, yachtDutiesMaxLength),
+    photo_url: "",
   };
 }
 
@@ -2788,9 +2893,10 @@ function SeazoneStyleCvPreview({
   onDownload: (payload: CvPdfPayload) => void | Promise<void>;
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
-  const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
+  const cleanExperiences = experiences.filter((item) => !isOtherWorkExperience(item) && isFilledExperience(item));
+  const cleanOtherWorkExperiences = experiences.filter((item) => isOtherWorkExperience(item) && isFilledExperience(item));
   const cleanReferences = cleanReferenceEntries(references);
-  const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
+  const standaloneReferences = unmatchedExperienceReferences([...cleanExperiences, ...cleanOtherWorkExperiences], cleanReferences);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const crewName = profile.full_name || "Crew Member";
   const professionalSummary =
@@ -2813,6 +2919,7 @@ function SeazoneStyleCvPreview({
               profile,
               documents,
               experiences: cleanExperiences,
+              otherWorkExperiences: cleanOtherWorkExperiences,
               references: cleanReferences,
               professionalSummary,
               totalExperienceYears,
@@ -2936,8 +3043,8 @@ function SeazoneStyleCvPreview({
                       No yacht experience added yet.
                     </p>
                   )}
-                  {cleanExperiences.map((item, index) => (
-                    <SeazoneExperienceCard
+                {cleanExperiences.map((item, index) => (
+                  <SeazoneExperienceCard
                       key={item.id || `${item.yacht_name}-${item.start_date}`}
                       experience={item}
                       references={referencesForExperience(item, cleanReferences)}
@@ -2946,6 +3053,20 @@ function SeazoneStyleCvPreview({
                   ))}
                 </div>
               </SeazoneSection>
+
+              {cleanOtherWorkExperiences.length > 0 && (
+                <SeazoneSection title="Other Work Experience">
+                  <div className="bd-cv-experience-list space-y-4">
+                    {cleanOtherWorkExperiences.map((item) => (
+                      <SeazoneOtherWorkCard
+                        key={item.id || `${item.yacht_name}-${item.start_date}`}
+                        experience={item}
+                        references={referencesForExperience(item, cleanReferences)}
+                      />
+                    ))}
+                  </div>
+                </SeazoneSection>
+              )}
 
               {standaloneReferences.length > 0 && (
                 <SeazoneSection title="References">
@@ -2973,6 +3094,7 @@ function SeazoneStyleCvPreview({
         profile={profile}
         documents={documents}
         experiences={cleanExperiences}
+        otherWorkExperiences={cleanOtherWorkExperiences}
         references={cleanReferences}
         professionalSummary={professionalSummary}
         totalExperienceYears={totalExperienceYears}
@@ -3103,6 +3225,7 @@ function PrintableCvPages({
   profile,
   documents,
   experiences,
+  otherWorkExperiences,
   references,
   professionalSummary,
   totalExperienceYears,
@@ -3113,6 +3236,7 @@ function PrintableCvPages({
   profile: CrewProfile;
   documents: CrewDocument[];
   experiences: Experience[];
+  otherWorkExperiences: Experience[];
   references: ReferenceEntry[];
   professionalSummary: string;
   totalExperienceYears: string;
@@ -3122,9 +3246,11 @@ function PrintableCvPages({
 }) {
   const firstPageExperiences = experiences.slice(0, 3);
   const remainingPages = chunkItems(experiences.slice(3), 4);
+  const otherWorkPages = chunkItems(otherWorkExperiences, 4);
   const pages = [
-    { kind: "first" as const, experiences: firstPageExperiences },
-    ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items })),
+    { kind: "first" as const, experiences: firstPageExperiences, otherWorkExperiences: [] as Experience[] },
+    ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items, otherWorkExperiences: [] as Experience[] })),
+    ...otherWorkPages.map((items, index) => ({ kind: index === 0 ? "otherWork" as const : "otherWorkContinued" as const, experiences: [] as Experience[], otherWorkExperiences: items })),
   ];
   if (pages.length === 1 && firstPageExperiences.length === 0) {
     pages[0].experiences = [];
@@ -3145,7 +3271,7 @@ function PrintableCvPages({
           </aside>
 
           <main className={`bd-print-main ${pageIndex > 0 ? "bd-print-main-continuation" : ""}`}>
-            {pageIndex === 0 ? (
+            {page.kind === "first" ? (
               <>
                 <PrintableHero profile={profile} crewName={crewName} primaryPosition={primaryPosition} />
                 <PrintableSection title="About Me">
@@ -3155,6 +3281,12 @@ function PrintableCvPages({
                   <PrintableExperienceList experiences={page.experiences} references={references} />
                 </PrintableSection>
               </>
+            ) : page.kind === "otherWork" || page.kind === "otherWorkContinued" ? (
+              <div className="bd-print-continuation-experiences">
+                <PrintableSection title={page.kind === "otherWork" ? "Other Work Experience" : "Other Work Experience"}>
+                  <PrintableOtherWorkList experiences={page.otherWorkExperiences} references={references} />
+                </PrintableSection>
+              </div>
             ) : (
               <div className="bd-print-continuation-experiences">
                 <PrintableExperienceList experiences={page.experiences} references={references} />
@@ -3387,6 +3519,60 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
   );
 }
 
+function PrintableOtherWorkList({ experiences, references }: { experiences: Experience[]; references: ReferenceEntry[] }) {
+  if (experiences.length === 0) {
+    return <p className="bd-print-empty-card">No other work experience added yet.</p>;
+  }
+
+  return (
+    <div className={`bd-print-experience-list bd-print-experience-list-${Math.min(experiences.length, 4)}`}>
+      {experiences.map((experience) => (
+        <PrintableOtherWorkCard
+          key={experience.id || `${experience.yacht_name}-${experience.start_date}`}
+          experience={experience}
+          references={referencesForExperience(experience, references)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function PrintableOtherWorkCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
+  const workName = experience.yacht_name || "Work experience";
+  const position = experience.position || "Role";
+
+  return (
+    <article className="bd-print-experience-card bd-print-other-work-card">
+      <div className="bd-print-experience-meta">
+        <b style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</b>
+        <span>{position}</span>
+        <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
+        {experience.location && <small><MapPin /> {experience.location}</small>}
+      </div>
+      <div className="bd-print-experience-body">
+        <div className="bd-print-experience-top">
+          <h4 style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</h4>
+          <span>{position}</span>
+        </div>
+        <p className="bd-print-label">Duties</p>
+        <p className="bd-print-duties">{experience.description || "Responsibilities and duties will appear here."}</p>
+        {references.length > 0 && (
+          <div className="bd-print-reference-block">
+            <p className="bd-print-label">Reference</p>
+            {references.slice(0, 2).map((reference) => (
+              <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
+                <b>{referenceDisplayName(reference)}</b>
+                <span>{[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Work reference"}</span>
+                {(reference.email || reference.phone) && <em>{[reference.email, reference.phone].filter(Boolean).join(" / ")}</em>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function PrintableDocumentRow({ document }: { document: CrewDocument }) {
   return (
     <div className="bd-print-document-row">
@@ -3511,6 +3697,46 @@ function SeazoneExperienceCard({
               {experience.description || "Responsibilities and onboard duties will appear here."}
             </p>
             <SeazoneExperienceReferences references={references} />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SeazoneOtherWorkCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
+  const workName = experience.yacht_name || "Work experience";
+  const position = experience.position || "Role";
+
+  return (
+    <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
+      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[170px_1fr]">
+        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Other Work</p>
+          <h4 className="mt-3 font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(workName) }}>
+            {workName}
+          </h4>
+          <p className="mt-2 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">{position}</p>
+          <p className="mt-2 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
+          {experience.location && (
+            <p className="mt-2 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
+              <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{experience.location}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="bd-cv-experience-body h-full rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+          <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+            <h4 className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</h4>
+            <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+              {position}
+            </span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+          <p className="mt-2 text-[13px] leading-5 text-[#364650]">
+            {experience.description || "Responsibilities and duties will appear here."}
+          </p>
+          <SeazoneExperienceReferences references={references} />
         </div>
       </div>
     </article>
@@ -4178,6 +4404,146 @@ function ExperienceEditor({
             </div>
           </div>
           <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function OtherWorkExperienceEditor({
+  item,
+  isNew,
+  references,
+  referenceSaving,
+  onSave,
+  onDelete,
+  onSaveReference,
+  onDeleteReference,
+}: {
+  item: Experience;
+  isNew: boolean;
+  references: ReferenceEntry[];
+  referenceSaving: boolean;
+  onSave: (item: Experience) => Promise<boolean>;
+  onDelete: (id?: string) => void;
+  onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
+  onDeleteReference: (id?: string) => void;
+}) {
+  const [draft, setDraft] = useState({ ...item, yacht_type: otherWorkExperienceMarker, photo_url: "" });
+  const dirty = !saveStateEquals(otherWorkExperienceSaveState(draft), otherWorkExperienceSaveState(item));
+  const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
+  const dutiesLength = dutiesValue.length;
+
+  async function saveLinkedReference(reference: ReferenceEntry) {
+    const workName = draft.yacht_name.trim();
+
+    if (!workName) {
+      alert("Add the work or company name before saving a reference.");
+      return false;
+    }
+
+    return onSaveReference({
+      ...reference,
+      name: (reference.name || reference.company).trim(),
+      vessel: workName,
+      company: "",
+      notes: "",
+      show_on_cv: true,
+    });
+  }
+
+  return (
+    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
+      <div className="grid items-stretch gap-3 lg:grid-cols-[260px_1fr]">
+        <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-3">
+          <div className="rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
+            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Work details</p>
+            <div className="space-y-2">
+              <ExperienceCardInput
+                label="Work / company"
+                value={draft.yacht_name}
+                placeholder="Work / company"
+                strong
+                onChange={(value) => setDraft({ ...draft, yacht_name: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })}
+              />
+              <ExperienceCardInput
+                label="Job position"
+                value={draft.position}
+                placeholder="Job position"
+                onChange={(value) => setDraft({ ...draft, position: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })}
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <div className="grid gap-1.5">
+              <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })} />
+              <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })} />
+            </div>
+            <div className="grid grid-cols-[22px_1fr] items-center overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
+              <span className="flex h-full items-center justify-center text-[#2d7482]">
+                <MapPin className="h-3.5 w-3.5" />
+              </span>
+              <input
+                aria-label="Location"
+                value={draft.location || ""}
+                onChange={(event) => setDraft({ ...draft, location: capitalizeFirstCharacter(event.target.value), yacht_type: otherWorkExperienceMarker, photo_url: "" })}
+                placeholder="Location"
+                className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
+              />
+            </div>
+          </div>
+
+          <div className="mt-auto pt-3">
+            <p className="rounded-xl border border-[#c7d2d6] bg-white px-3 py-2 text-xs font-semibold leading-5 text-[#5a6870]">
+              This section is for relevant non-yacht work such as hospitality, shore support, technical, management or service roles.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+          <div className="flex flex-1 flex-col">
+            <div className="flex items-center justify-between gap-3">
+              <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+              <span className="rounded-full border border-[#c7d2d6] bg-white px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-[#2d7482]">
+                {dutiesLength}/{yachtDutiesMaxLength}
+              </span>
+            </div>
+            <textarea
+              value={dutiesValue}
+              maxLength={yachtDutiesMaxLength}
+              onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength), yacht_type: otherWorkExperienceMarker, photo_url: "" })}
+              placeholder="Responsibilities, achievements or duties"
+              className="mt-2 min-h-28 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+            />
+          </div>
+          <div className="mt-3 border-t border-[#c7d2d6] pt-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
+              <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this work experience</p>
+            </div>
+            <div className="space-y-2">
+              {references.map((reference) => (
+                <ExperienceReferenceEditor
+                  key={reference.id || `${reference.name}-${reference.email}`}
+                  item={reference}
+                  isNew={false}
+                  saving={referenceSaving}
+                  onSave={saveLinkedReference}
+                  onDelete={onDeleteReference}
+                />
+              ))}
+              <ExperienceReferenceEditor
+                key={`new-other-reference-${item.id || "draft"}`}
+                item={emptyReference}
+                isNew
+                saving={referenceSaving}
+                onSave={saveLinkedReference}
+                onDelete={onDeleteReference}
+              />
+            </div>
+          </div>
+          <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave({ ...draft, yacht_type: otherWorkExperienceMarker, photo_url: "" })} onDelete={() => onDelete(draft.id)} addLabel="Add work experience" />
         </div>
       </div>
     </article>

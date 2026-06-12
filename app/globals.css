@@ -1433,6 +1433,16 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     height: 2.2mm !important;
   }
 
+  .bd-print-other-work-card .bd-print-experience-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+
+  .bd-print-other-work-card .bd-print-experience-meta b {
+    margin-top: 0 !important;
+  }
+
   .bd-print-main-continuation .bd-print-experience-top {
     gap: 2mm !important;
     border-radius: 1.8mm !important;
@@ -1607,6 +1617,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-page:first-child .bd-print-experience-meta small svg {
     width: 2.1mm !important;
     height: 2.1mm !important;
+  }
+
+  .bd-print-page:first-child .bd-print-other-work-card .bd-print-experience-meta b,
+  .bd-print-main-continuation .bd-print-other-work-card .bd-print-experience-meta b {
+    margin-top: 0 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-top {
