@@ -1719,59 +1719,9 @@ async function downloadCvPdf(payload: CvPdfPayload) {
     throw new Error("CV preview is not ready yet.");
   }
 
-  const fileName = cvPdfFileName(payload.profile);
   await waitForCvPrintAssets(root);
   await waitForNextPaint();
-  if (shouldUseDirectCvPdfDownload()) {
-    await saveRenderedCvPagesAsPdf(root, fileName);
-    return;
-  }
-  openCvPrintDialog(fileName);
-}
-
-function shouldUseDirectCvPdfDownload() {
-  if (typeof navigator === "undefined" || typeof window === "undefined") return false;
-  const userAgent = navigator.userAgent || "";
-  const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile/i.test(userAgent);
-  const isSmallScreen = window.matchMedia("(max-width: 767px)").matches;
-  const isTouchDevice = navigator.maxTouchPoints > 1 && window.matchMedia("(max-width: 1024px)").matches;
-  return isMobileBrowser || isSmallScreen || isTouchDevice;
-}
-
-async function saveRenderedCvPagesAsPdf(root: HTMLElement, fileName: string) {
-  const pages = Array.from(root.querySelectorAll<HTMLElement>(".bd-print-page"));
-  if (pages.length === 0) throw new Error("CV pages are not ready yet.");
-
-  const [{ jsPDF }, html2canvasModule] = await Promise.all([
-    import("jspdf"),
-    import("html2canvas"),
-  ]);
-  const html2canvas = html2canvasModule.default;
-  const exportCss = printableCvCssForCanvasExport();
-  const restoreImages = await prepareCvExportImages(root);
-
-  try {
-    if (document.fonts?.ready) await document.fonts.ready.catch(() => undefined);
-    await waitForNextPaint();
-
-    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-    for (const [index, page] of pages.entries()) {
-      if (index > 0) pdf.addPage("a4", "portrait");
-      const canvas = await html2canvas(page, {
-        backgroundColor: "#ffffff",
-        logging: false,
-        scale: Math.min(2.4, Math.max(2, window.devicePixelRatio || 2)),
-        useCORS: true,
-        allowTaint: false,
-        onclone: (clonedDocument) => injectCvCanvasExportStyles(clonedDocument, exportCss),
-      });
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297, undefined, "FAST");
-    }
-
-    savePdfBlob(pdf.output("blob"), fileName);
-  } finally {
-    restoreImages();
-  }
+  openCvPrintDialog(cvPdfFileName(payload.profile));
 }
 
 function openCvPrintDialog(fileName: string) {
