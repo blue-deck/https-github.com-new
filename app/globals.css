@@ -767,32 +767,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
 @media print {
   @page {
-    size: 210mm 297mm;
-    margin: 0 !important;
-
-    @top-left {
-      content: "";
-    }
-
-    @top-center {
-      content: "";
-    }
-
-    @top-right {
-      content: "";
-    }
-
-    @bottom-left {
-      content: "";
-    }
-
-    @bottom-center {
-      content: "";
-    }
-
-    @bottom-right {
-      content: "";
-    }
+    size: A4;
+    margin: 0;
   }
 
   html:has(#bluedeck-cv) {
