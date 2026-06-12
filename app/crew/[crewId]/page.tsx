@@ -37,6 +37,8 @@ type CrewCvData = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
+const referenceUponRequestMarker = "__BLUDECK_REFERENCE_UPON_REQUEST__";
+const referenceUponRequestText = "References available upon request.";
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { crewId } = await params;
@@ -441,7 +443,7 @@ function formatCvDate(value?: string) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function formatFullCvDate(value?: string) {
@@ -519,9 +521,27 @@ function publicUnmatchedExperienceReferences(experiences: Row[], references: Row
 }
 
 function publicReferenceDisplayName(reference: Row) {
+  if (isPublicReferenceAvailableUponRequest(reference)) return referenceUponRequestText;
   const name = text(reference, "name");
   if (name && name.toLowerCase() !== "reference") return name;
   return text(reference, "company") || text(reference, "vessel") || "Contact";
+}
+
+function isPublicReferenceAvailableUponRequest(reference: Row) {
+  return (
+    text(reference, "notes") === referenceUponRequestMarker ||
+    text(reference, "name").toLowerCase() === referenceUponRequestText.toLowerCase()
+  );
+}
+
+function publicReferenceDetailLine(reference: Row, fallback: string) {
+  if (isPublicReferenceAvailableUponRequest(reference)) return "";
+  return [text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || fallback;
+}
+
+function publicReferenceContactLine(reference: Row) {
+  if (isPublicReferenceAvailableUponRequest(reference)) return "";
+  return [text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ");
 }
 
 function languageLevelWidth(level: string) {
@@ -613,11 +633,11 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
         {references.slice(0, 2).map((reference) => (
           <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
-            <p className="mt-1 text-xs font-semibold text-[#2d7482]">
-              {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
-            </p>
-            {(text(reference, "email") || text(reference, "phone")) && (
-              <p className="mt-1 text-xs text-[#5a6870]">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
+            {publicReferenceDetailLine(reference, "Yacht reference") && (
+              <p className="mt-1 text-xs font-semibold text-[#2d7482]">{publicReferenceDetailLine(reference, "Yacht reference")}</p>
+            )}
+            {publicReferenceContactLine(reference) && (
+              <p className="mt-1 text-xs text-[#5a6870]">{publicReferenceContactLine(reference)}</p>
             )}
           </div>
         ))}
@@ -632,16 +652,18 @@ function PublicOtherWorkExperienceCard({ experience, references }: { experience:
 
   return (
     <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[170px_1fr]">
-        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Other Work</p>
+      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
+        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+          <div className="flex h-24 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-center text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">
+            Other Work
+          </div>
           <h2 className="mt-3 font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(workName) }}>
             {workName}
           </h2>
-          <p className="mt-2 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">{position}</p>
-          <p className="mt-2 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
+          <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">{position}</p>
+          <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
           {experienceText(experience, "location") && (
-            <p className="mt-2 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
+            <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
               <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
               <span>{experienceText(experience, "location")}</span>
             </p>

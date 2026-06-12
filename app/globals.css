@@ -1434,13 +1434,18 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-other-work-card .bd-print-experience-meta {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
+    display: block !important;
   }
 
-  .bd-print-other-work-card .bd-print-experience-meta b {
-    margin-top: 0 !important;
+  .bd-print-other-work-label {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #2d7482 !important;
+    font-size: 8px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.16em !important;
+    text-transform: uppercase !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-top {
@@ -1617,11 +1622,6 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-page:first-child .bd-print-experience-meta small svg {
     width: 2.1mm !important;
     height: 2.1mm !important;
-  }
-
-  .bd-print-page:first-child .bd-print-other-work-card .bd-print-experience-meta b,
-  .bd-print-main-continuation .bd-print-other-work-card .bd-print-experience-meta b {
-    margin-top: 0 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-top {

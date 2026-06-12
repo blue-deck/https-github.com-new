@@ -215,6 +215,8 @@ const languageLevels = ["Basic", "Intermediate", "Advanced", "Fluent", "Native"]
 const professionalSummaryMaxLength = 250;
 const yachtDutiesMaxLength = 200;
 const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
+const referenceUponRequestMarker = "__BLUDECK_REFERENCE_UPON_REQUEST__";
+const referenceUponRequestText = "References available upon request.";
 
 const yachtTypeOptions = [
   "Motor yacht",
@@ -877,7 +879,7 @@ export default function ProfilePage() {
     await loadRelated(profile.id);
     setReferenceStatus({
       type: "success",
-      message: "Reference saved under this yacht experience.",
+      message: "Reference saved under this experience.",
     });
     return true;
   }
@@ -1568,7 +1570,10 @@ function DocumentCreator({
   onCancelUpload: () => void;
   uploading: boolean;
 }) {
-  const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
+  const selectedCatalogGroup = documentCatalog.find((group) => group.items.includes(draft.document_type));
+  const selectedDocumentType = selectedCatalogGroup ? draft.document_type : "";
+  const manualDocumentName = selectedCatalogGroup ? "" : draft.document_type;
+  const selectedCategory = selectedCatalogGroup?.category || (manualDocumentName ? "Other" : "");
 
   return (
     <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
@@ -1576,7 +1581,7 @@ function DocumentCreator({
         <div>
           <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
           <select
-            value={draft.document_type}
+            value={selectedDocumentType}
             onChange={(event) => {
               const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
               setDraft({ ...draft, document_type: event.target.value, category });
@@ -1592,9 +1597,14 @@ function DocumentCreator({
               </optgroup>
             ))}
           </select>
+          <input
+            value={manualDocumentName}
+            onChange={(event) => setDraft({ ...draft, document_type: event.target.value, category: "Other" })}
+            placeholder="Other"
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500"
+          />
         </div>
         <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
-        <DateField label="Issue date" value={draft.issue_date} onChange={(value) => setDraft({ ...draft, issue_date: value })} />
         <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry} />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -2831,6 +2841,23 @@ function referenceSaveState(reference: ReferenceEntry) {
   };
 }
 
+function isReferenceAvailableUponRequest(reference: ReferenceEntry) {
+  return (
+    cleanSaveText(reference.notes) === referenceUponRequestMarker ||
+    cleanSaveText(reference.name).toLowerCase() === referenceUponRequestText.toLowerCase()
+  );
+}
+
+function referenceDetailLine(reference: ReferenceEntry, fallback: string) {
+  if (isReferenceAvailableUponRequest(reference)) return "";
+  return [reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || fallback;
+}
+
+function referenceContactLine(reference: ReferenceEntry) {
+  if (isReferenceAvailableUponRequest(reference)) return "";
+  return [reference.email, reference.phone].filter(Boolean).join(" / ");
+}
+
 function phoneCountryFromValue(value: string) {
   const normalized = value.trim();
   if (!normalized) return null;
@@ -2870,6 +2897,7 @@ function unmatchedExperienceReferences(experiences: Experience[], references: Re
 }
 
 function referenceDisplayName(reference: ReferenceEntry) {
+  if (isReferenceAvailableUponRequest(reference)) return referenceUponRequestText;
   const name = cleanSaveText(reference.name);
   if (name && name.toLowerCase() !== "reference") return name;
   return cleanSaveText(reference.company) || cleanSaveText(reference.vessel) || "Contact";
@@ -3244,15 +3272,18 @@ function PrintableCvPages({
   primaryPosition: string;
   visibleSkills: string[];
 }) {
-  const firstPageExperiences = experiences.slice(0, 3);
-  const remainingPages = chunkItems(experiences.slice(3), 4);
-  const otherWorkPages = chunkItems(otherWorkExperiences, 4);
+  const firstPageYachtCount = Math.min(experiences.length, 3);
+  const firstPageExperiences = experiences.slice(0, firstPageYachtCount);
+  const firstPageOtherCapacity = Math.max(0, 3 - firstPageExperiences.length);
+  const firstPageOtherWorkExperiences = otherWorkExperiences.slice(0, firstPageOtherCapacity);
+  const remainingPages = chunkItems(experiences.slice(firstPageYachtCount), 4);
+  const otherWorkPages = chunkItems(otherWorkExperiences.slice(firstPageOtherWorkExperiences.length), 4);
   const pages = [
-    { kind: "first" as const, experiences: firstPageExperiences, otherWorkExperiences: [] as Experience[] },
+    { kind: "first" as const, experiences: firstPageExperiences, otherWorkExperiences: firstPageOtherWorkExperiences },
     ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items, otherWorkExperiences: [] as Experience[] })),
     ...otherWorkPages.map((items, index) => ({ kind: index === 0 ? "otherWork" as const : "otherWorkContinued" as const, experiences: [] as Experience[], otherWorkExperiences: items })),
   ];
-  if (pages.length === 1 && firstPageExperiences.length === 0) {
+  if (pages.length === 1 && firstPageExperiences.length === 0 && firstPageOtherWorkExperiences.length === 0) {
     pages[0].experiences = [];
   }
 
@@ -3277,9 +3308,16 @@ function PrintableCvPages({
                 <PrintableSection title="About Me">
                   <p className="bd-print-summary">{professionalSummary}</p>
                 </PrintableSection>
-                <PrintableSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
-                  <PrintableExperienceList experiences={page.experiences} references={references} />
-                </PrintableSection>
+                {page.experiences.length > 0 || page.otherWorkExperiences.length === 0 ? (
+                  <PrintableSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
+                    <PrintableExperienceList experiences={page.experiences} references={references} />
+                  </PrintableSection>
+                ) : null}
+                {page.otherWorkExperiences.length > 0 && (
+                  <PrintableSection title="Other Work Experience">
+                    <PrintableOtherWorkList experiences={page.otherWorkExperiences} references={references} />
+                  </PrintableSection>
+                )}
               </>
             ) : page.kind === "otherWork" || page.kind === "otherWorkContinued" ? (
               <div className="bd-print-continuation-experiences">
@@ -3508,8 +3546,8 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
             {references.slice(0, 2).map((reference) => (
               <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
                 <b>{referenceDisplayName(reference)}</b>
-                <span>{[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}</span>
-                {(reference.email || reference.phone) && <em>{[reference.email, reference.phone].filter(Boolean).join(" / ")}</em>}
+                {referenceDetailLine(reference, "Yacht reference") && <span>{referenceDetailLine(reference, "Yacht reference")}</span>}
+                {referenceContactLine(reference) && <em>{referenceContactLine(reference)}</em>}
               </div>
             ))}
           </div>
@@ -3544,6 +3582,7 @@ function PrintableOtherWorkCard({ experience, references }: { experience: Experi
   return (
     <article className="bd-print-experience-card bd-print-other-work-card">
       <div className="bd-print-experience-meta">
+        <div className="bd-print-other-work-label">Other Work</div>
         <b style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</b>
         <span>{position}</span>
         <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
@@ -3562,8 +3601,8 @@ function PrintableOtherWorkCard({ experience, references }: { experience: Experi
             {references.slice(0, 2).map((reference) => (
               <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
                 <b>{referenceDisplayName(reference)}</b>
-                <span>{[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Work reference"}</span>
-                {(reference.email || reference.phone) && <em>{[reference.email, reference.phone].filter(Boolean).join(" / ")}</em>}
+                {referenceDetailLine(reference, "Work reference") && <span>{referenceDetailLine(reference, "Work reference")}</span>}
+                {referenceContactLine(reference) && <em>{referenceContactLine(reference)}</em>}
               </div>
             ))}
           </div>
@@ -3709,16 +3748,18 @@ function SeazoneOtherWorkCard({ experience, references }: { experience: Experien
 
   return (
     <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[170px_1fr]">
-        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Other Work</p>
+      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
+        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+          <div className="flex h-24 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-center text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">
+            Other Work
+          </div>
           <h4 className="mt-3 font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(workName) }}>
             {workName}
           </h4>
-          <p className="mt-2 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">{position}</p>
-          <p className="mt-2 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
+          <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">{position}</p>
+          <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
           {experience.location && (
-            <p className="mt-2 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
+            <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
               <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
               <span>{experience.location}</span>
             </p>
@@ -3753,12 +3794,10 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
         {references.slice(0, 2).map((reference) => (
           <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{referenceDisplayName(reference)}</p>
-            <p className="mt-1 text-xs font-semibold text-[#2d7482]">
-              {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
-            </p>
-            {(reference.email || reference.phone) && (
-              <p className="mt-1 text-xs text-[#5a6870]">{[reference.email, reference.phone].filter(Boolean).join(" / ")}</p>
+            {referenceDetailLine(reference, "Yacht reference") && (
+              <p className="mt-1 text-xs font-semibold text-[#2d7482]">{referenceDetailLine(reference, "Yacht reference")}</p>
             )}
+            {referenceContactLine(reference) && <p className="mt-1 text-xs text-[#5a6870]">{referenceContactLine(reference)}</p>}
           </div>
         ))}
       </div>
@@ -4191,8 +4230,7 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
         </div>
         <button onClick={() => onDelete(document.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <DateField label="Issue" value={document.issue_date} onChange={(value) => onChange({ ...document, issue_date: value })} />
+      <div className="mt-4 grid gap-3">
         <DateField label="Expiry" value={document.expiry_date} disabled={document.no_expiry} onChange={(value) => onChange({ ...document, expiry_date: value })} />
       </div>
       <div className="mt-3 flex flex-wrap gap-4">
@@ -4233,6 +4271,8 @@ function ExperienceEditor({
   const dirty = !saveStateEquals(experienceSaveState(draft), experienceSaveState(item));
   const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
   const dutiesLength = dutiesValue.length;
+  const requestReference = references.find(isReferenceAvailableUponRequest);
+  const editableReferences = references.filter((reference) => !isReferenceAvailableUponRequest(reference));
 
   function removePhoto() {
     setDraft({ ...draft, photo_url: "" });
@@ -4252,6 +4292,23 @@ function ExperienceEditor({
       vessel: yachtName,
       company: "",
       notes: "",
+      show_on_cv: true,
+    });
+  }
+
+  async function saveReferenceUponRequest() {
+    const yachtName = draft.yacht_name.trim();
+
+    if (!yachtName) {
+      alert("Add the yacht name before saving a reference note.");
+      return false;
+    }
+
+    return onSaveReference({
+      ...emptyReference,
+      name: referenceUponRequestText,
+      vessel: yachtName,
+      notes: referenceUponRequestMarker,
       show_on_cv: true,
     });
   }
@@ -4383,7 +4440,13 @@ function ExperienceEditor({
               <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this yacht</p>
             </div>
             <div className="space-y-2">
-              {references.map((reference) => (
+              <ReferenceRequestButton
+                selected={Boolean(requestReference)}
+                saving={referenceSaving}
+                onSelect={saveReferenceUponRequest}
+                onRemove={() => requestReference?.id && onDeleteReference(requestReference.id)}
+              />
+              {editableReferences.map((reference) => (
                 <ExperienceReferenceEditor
                   key={reference.id || `${reference.name}-${reference.email}`}
                   item={reference}
@@ -4433,6 +4496,8 @@ function OtherWorkExperienceEditor({
   const dirty = !saveStateEquals(otherWorkExperienceSaveState(draft), otherWorkExperienceSaveState(item));
   const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
   const dutiesLength = dutiesValue.length;
+  const requestReference = references.find(isReferenceAvailableUponRequest);
+  const editableReferences = references.filter((reference) => !isReferenceAvailableUponRequest(reference));
 
   async function saveLinkedReference(reference: ReferenceEntry) {
     const workName = draft.yacht_name.trim();
@@ -4448,6 +4513,23 @@ function OtherWorkExperienceEditor({
       vessel: workName,
       company: "",
       notes: "",
+      show_on_cv: true,
+    });
+  }
+
+  async function saveReferenceUponRequest() {
+    const workName = draft.yacht_name.trim();
+
+    if (!workName) {
+      alert("Add the work or company name before saving a reference note.");
+      return false;
+    }
+
+    return onSaveReference({
+      ...emptyReference,
+      name: referenceUponRequestText,
+      vessel: workName,
+      notes: referenceUponRequestMarker,
       show_on_cv: true,
     });
   }
@@ -4523,7 +4605,13 @@ function OtherWorkExperienceEditor({
               <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this work experience</p>
             </div>
             <div className="space-y-2">
-              {references.map((reference) => (
+              <ReferenceRequestButton
+                selected={Boolean(requestReference)}
+                saving={referenceSaving}
+                onSelect={saveReferenceUponRequest}
+                onRemove={() => requestReference?.id && onDeleteReference(requestReference.id)}
+              />
+              {editableReferences.map((reference) => (
                 <ExperienceReferenceEditor
                   key={reference.id || `${reference.name}-${reference.email}`}
                   item={reference}
@@ -4761,6 +4849,39 @@ function ExperienceReferenceEditor({
         </div>
       </div>
     </div>
+  );
+}
+
+function ReferenceRequestButton({
+  selected,
+  saving,
+  onSelect,
+  onRemove,
+}: {
+  selected: boolean;
+  saving: boolean;
+  onSelect: () => Promise<boolean>;
+  onRemove: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={saving}
+      onClick={() => {
+        if (selected) onRemove();
+        else void onSelect();
+      }}
+      className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition disabled:cursor-wait disabled:opacity-70 ${
+        selected
+          ? "border-[#9bd6df] bg-[#eefbfc] text-[#173f4a]"
+          : "border-[#d8e2e6] bg-white text-[#40535d] hover:border-[#9bd6df] hover:bg-[#f7fdff]"
+      }`}
+    >
+      <span className="text-[12px] font-black uppercase tracking-[0.06em]">{referenceUponRequestText}</span>
+      <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${selected ? "bg-[#173f4a] text-white" : "bg-[#e7eef1] text-[#2d7482]"}`}>
+        {selected ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+      </span>
+    </button>
   );
 }
 
@@ -5032,7 +5153,7 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
       <input
         inputMode="numeric"
-        placeholder="DD.MM.YYYY"
+        placeholder="DD/MM/YYYY"
         value={display}
         disabled={disabled}
         onChange={(event) => commit(event.target.value)}
@@ -5420,7 +5541,7 @@ function formatDateTyping(value: string) {
   const day = digits.slice(0, 2);
   const month = digits.slice(2, 4);
   const year = digits.slice(4, 8);
-  return [day, month, year].filter(Boolean).join(".");
+  return [day, month, year].filter(Boolean).join("/");
 }
 
 function parseDisplayDate(value: string) {
@@ -5442,5 +5563,5 @@ function formatDateForDisplay(value: string) {
   if (!value) return "";
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) return formatDateTyping(value);
-  return `${day}.${month}.${year}`;
+  return `${day}/${month}/${year}`;
 }
