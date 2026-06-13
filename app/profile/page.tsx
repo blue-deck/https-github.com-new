@@ -1906,6 +1906,7 @@ async function mountCvPagesInExportFrame(frame: HTMLIFrameElement, pages: HTMLEl
   frameDocument.body.replaceChildren(printRoot);
   sanitizeCanvasStyleAttributes(printRoot);
   await waitForCvPrintAssets(printRoot);
+  await waitForCvExportFonts(frameDocument);
   await waitForNextPaint();
   sanitizeCvCanvasColors(printRoot, frameWindow);
   sanitizeCanvasStyleAttributes(printRoot);
@@ -2092,6 +2093,9 @@ function cvCanvasExportStyleText(exportCss: string) {
       background: #ffffff !important;
       color: #242a31 !important;
       color-scheme: light !important;
+      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
+      font-synthesis: none !important;
+      text-rendering: geometricPrecision !important;
     }
     ${exportCss}
     .bd-cv-print-root {
@@ -2129,7 +2133,10 @@ function cvCanvasExportStyleText(exportCss: string) {
     }
     .bd-print-page,
     .bd-print-page * {
+      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
+      font-synthesis: none !important;
       box-sizing: border-box !important;
+      text-rendering: geometricPrecision !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -2150,6 +2157,16 @@ function waitForNextPaint() {
   return new Promise<void>((resolve) => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
   });
+}
+
+async function waitForCvExportFonts(documentRef: Document) {
+  const fonts = (documentRef as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
+  if (!fonts?.ready) return;
+
+  await Promise.race([
+    fonts.ready.catch(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, 1200)),
+  ]);
 }
 
 const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|hwb|color|color-mix)\(/i;

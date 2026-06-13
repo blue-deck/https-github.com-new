@@ -807,6 +807,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   #bluedeck-cv,
   #bluedeck-cv * {
+    font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
+    font-synthesis: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -1064,12 +1066,16 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-section-title span {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     border-radius: 999px !important;
     background: #173f4a !important;
     color: #ffffff !important;
     padding: 1.3mm 3mm !important;
     font-size: 9px !important;
     font-weight: 900 !important;
+    line-height: 1.05 !important;
   }
 
   .bd-print-summary,
@@ -1189,13 +1195,16 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-pills span {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     border-radius: 999px !important;
     background: #ffffff !important;
     color: #3d454c !important;
     padding: 1mm 2mm !important;
     font-size: 9px !important;
     font-weight: 800 !important;
-    line-height: 1.1 !important;
+    line-height: 1.05 !important;
   }
 
   .bd-print-doc-hint,
@@ -1305,19 +1314,23 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     color: #06111f !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
-    line-height: 1 !important;
+    line-height: 1.18 !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
   }
 
   .bd-print-experience-top span {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     border-radius: 1.6mm !important;
     background: #173f4a !important;
     color: #ffffff !important;
     padding: 1mm 2.2mm !important;
     font-size: 8.5px !important;
     font-weight: 900 !important;
+    line-height: 1.05 !important;
     text-transform: uppercase !important;
   }
 
@@ -1410,7 +1423,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-meta b {
     margin-top: 1.5mm !important;
-    line-height: 1 !important;
+    line-height: 1.12 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-meta span {
@@ -1600,7 +1613,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-meta b {
     margin-top: 1.3mm !important;
-    line-height: 1 !important;
+    line-height: 1.12 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-meta span {
