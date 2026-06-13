@@ -1519,7 +1519,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-black text-[#06111f]">Final BlueDeck CV</p>
                       <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                        Review the generated CV below. Use Print / Save PDF to open the browser print dialog and save the CV.
+                        Review the generated CV below. Use Download PDF to save the exact CV layout as a file.
                       </p>
                     </div>
                     <span className="rounded-full bg-[#173f4a] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white">
@@ -1539,7 +1539,7 @@ export default function ProfilePage() {
                       try {
                         await downloadCvPdf(payload);
                       } catch (error) {
-                        alert(error instanceof Error ? error.message : "CV print dialog could not be opened.");
+                        alert(error instanceof Error ? error.message : "CV PDF could not be prepared.");
                       } finally {
                         setPdfDownloading(false);
                       }
@@ -1813,23 +1813,99 @@ async function downloadCvPdf(payload: CvPdfPayload) {
 
   await waitForCvPrintAssets(root);
   await waitForNextPaint();
-  openCvPrintDialog(cvPdfFileName(payload.profile));
+  await exportCvPrintPagesToPdf(root, pages, cvPdfFileName(payload.profile));
 }
 
-function openCvPrintDialog(fileName: string) {
-  const previousTitle = document.title;
-  const printTitle = fileName.replace(/\.pdf$/i, "");
-  let restored = false;
-  const restoreTitle = () => {
-    if (restored) return;
-    restored = true;
-    document.title = previousTitle;
+async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], fileName: string) {
+  const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas"),
+  ]);
+  const restoreRoot = prepareCvExportRoot(root);
+  const restoreImages = await prepareCvExportImages(root);
+  const exportCss = printableCvCssForCanvasExport();
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+  const renderScale = Math.min(2.25, Math.max(2, window.devicePixelRatio || 2));
+
+  try {
+    for (const [pageIndex, page] of pages.entries()) {
+      const canvas = await html2canvas(page, {
+        backgroundColor: "#ffffff",
+        scale: renderScale,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        imageTimeout: 8000,
+        windowWidth: millimetersToPixels(210),
+        windowHeight: millimetersToPixels(297),
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (clonedDocument) => {
+          injectCvCanvasExportStyles(clonedDocument, exportCss);
+          isolateClonedPrintPage(clonedDocument, pageIndex);
+        },
+      });
+
+      if (pageIndex > 0) pdf.addPage("a4", "portrait");
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+
+    savePdfBlob(pdf.output("blob"), fileName);
+  } finally {
+    restoreImages();
+    restoreRoot();
+  }
+}
+
+function isolateClonedPrintPage(clonedDocument: Document, activePageIndex: number) {
+  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page, index) => {
+    if (index !== activePageIndex) page.style.setProperty("display", "none", "important");
+  });
+}
+
+function millimetersToPixels(value: number) {
+  return Math.round((value * 96) / 25.4);
+}
+
+function prepareCvExportRoot(root: HTMLElement) {
+  const previous = {
+    position: root.style.position,
+    left: root.style.left,
+    top: root.style.top,
+    transform: root.style.transform,
+    opacity: root.style.opacity,
+    visibility: root.style.visibility,
+    display: root.style.display,
+    width: root.style.width,
+    zIndex: root.style.zIndex,
+    pointerEvents: root.style.pointerEvents,
   };
 
-  document.title = printTitle;
-  window.addEventListener("afterprint", restoreTitle, { once: true });
-  window.setTimeout(restoreTitle, 5000);
-  window.print();
+  root.style.position = "fixed";
+  root.style.left = "0";
+  root.style.top = "0";
+  root.style.transform = "none";
+  root.style.opacity = "0";
+  root.style.visibility = "visible";
+  root.style.display = "block";
+  root.style.width = "210mm";
+  root.style.zIndex = "-1";
+  root.style.pointerEvents = "none";
+
+  return () => {
+    root.style.position = previous.position;
+    root.style.left = previous.left;
+    root.style.top = previous.top;
+    root.style.transform = previous.transform;
+    root.style.opacity = previous.opacity;
+    root.style.visibility = previous.visibility;
+    root.style.display = previous.display;
+    root.style.width = previous.width;
+    root.style.zIndex = previous.zIndex;
+    root.style.pointerEvents = previous.pointerEvents;
+  };
 }
 
 async function prepareCvExportImages(root: HTMLElement) {
@@ -2960,7 +3036,7 @@ function SeazoneStyleCvPreview({
           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70 sm:w-auto"
         >
           {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-          {downloading ? "Opening print..." : "Print / Save PDF"}
+          {downloading ? "Preparing PDF..." : "Download PDF"}
         </button>
       </div>
 
