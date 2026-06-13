@@ -807,8 +807,6 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   #bluedeck-cv,
   #bluedeck-cv * {
-    font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-    font-synthesis: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -1066,16 +1064,12 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-section-title span {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     border-radius: 999px !important;
     background: #173f4a !important;
     color: #ffffff !important;
     padding: 1.3mm 3mm !important;
     font-size: 9px !important;
     font-weight: 900 !important;
-    line-height: 1.05 !important;
   }
 
   .bd-print-summary,
@@ -1195,16 +1189,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-pills span {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     border-radius: 999px !important;
     background: #ffffff !important;
     color: #3d454c !important;
     padding: 1mm 2mm !important;
     font-size: 9px !important;
     font-weight: 800 !important;
-    line-height: 1.05 !important;
+    line-height: 1.1 !important;
   }
 
   .bd-print-doc-hint,
@@ -1250,7 +1241,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     background: #edf3f5 !important;
   }
 
-  .bd-print-experience-meta b {
+  .bd-print-experience-meta b,
+  .bd-print-experience-top h4 {
     display: block !important;
     margin: 2.4mm 0 0 !important;
     color: #06111f !important;
@@ -1309,28 +1301,19 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-experience-top h4 {
-    display: block !important;
     margin: 0 !important;
-    color: #06111f !important;
-    font-weight: 900 !important;
-    text-transform: uppercase !important;
-    line-height: 1.18 !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
   }
 
   .bd-print-experience-top span {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
     border-radius: 1.6mm !important;
     background: #173f4a !important;
     color: #ffffff !important;
     padding: 1mm 2.2mm !important;
     font-size: 8.5px !important;
     font-weight: 900 !important;
-    line-height: 1.05 !important;
     text-transform: uppercase !important;
   }
 
@@ -1421,9 +1404,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border-radius: 1.8mm !important;
   }
 
-  .bd-print-main-continuation .bd-print-experience-meta b {
+  .bd-print-main-continuation .bd-print-experience-meta b,
+  .bd-print-main-continuation .bd-print-experience-top h4 {
     margin-top: 1.5mm !important;
-    line-height: 1.12 !important;
+    line-height: 1 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-meta span {
@@ -1447,21 +1431,6 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-main-continuation .bd-print-experience-meta small svg {
     width: 2.2mm !important;
     height: 2.2mm !important;
-  }
-
-  .bd-print-other-work-card .bd-print-experience-meta {
-    display: block !important;
-  }
-
-  .bd-print-other-work-label {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    color: #2d7482 !important;
-    font-size: 8px !important;
-    font-weight: 900 !important;
-    letter-spacing: 0.16em !important;
-    text-transform: uppercase !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-top {
@@ -1611,9 +1580,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border-radius: 1.7mm !important;
   }
 
-  .bd-print-page:first-child .bd-print-experience-meta b {
+  .bd-print-page:first-child .bd-print-experience-meta b,
+  .bd-print-page:first-child .bd-print-experience-top h4 {
     margin-top: 1.3mm !important;
-    line-height: 1.12 !important;
+    line-height: 1 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-meta span {

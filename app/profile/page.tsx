@@ -119,7 +119,7 @@ type ReferenceEntry = {
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
-type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "portfolio" | "languages" | "preview";
+type CvStudioTab = "personal" | "experience" | "skills" | "documents" | "portfolio" | "languages" | "preview";
 
 const workPreferences = [
   "Seasonal",
@@ -214,9 +214,6 @@ const languageOptions = [
 const languageLevels = ["Basic", "Intermediate", "Advanced", "Fluent", "Native"];
 const professionalSummaryMaxLength = 250;
 const yachtDutiesMaxLength = 200;
-const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
-const referenceUponRequestMarker = "__BLUDECK_REFERENCE_UPON_REQUEST__";
-const referenceUponRequestText = "References available upon request.";
 
 const yachtTypeOptions = [
   "Motor yacht",
@@ -452,11 +449,6 @@ const emptyExperience: Experience = {
   photo_url: "",
 };
 
-const emptyOtherWorkExperience: Experience = {
-  ...emptyExperience,
-  yacht_type: otherWorkExperienceMarker,
-};
-
 const emptyReference: ReferenceEntry = {
   name: "",
   role: "",
@@ -502,31 +494,14 @@ export default function ProfilePage() {
   const currentPositionValue = getProfileCurrentPosition(profile);
   const portfolioPhotoCount = portfolio.filter((item) => item.image_url).length;
   const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
-  const yachtExperiences = useMemo(
-    () => experiences.filter((item) => !isOtherWorkExperience(item)),
-    [experiences],
-  );
-  const otherWorkExperiences = useMemo(
-    () => experiences.filter(isOtherWorkExperience),
-    [experiences],
-  );
   const editableExperiences = useMemo(
     () =>
-      [...yachtExperiences].sort((first, second) => {
+      [...experiences].sort((first, second) => {
         const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
         const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
         return secondCreatedAt - firstCreatedAt;
       }),
-    [yachtExperiences],
-  );
-  const editableOtherWorkExperiences = useMemo(
-    () =>
-      [...otherWorkExperiences].sort((first, second) => {
-        const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
-        const secondCreatedAt = second.created_at ? Date.parse(second.created_at) : 0;
-        return secondCreatedAt - firstCreatedAt;
-      }),
-    [otherWorkExperiences],
+    [experiences],
   );
   const editablePortfolio = useMemo(
     () =>
@@ -535,12 +510,12 @@ export default function ProfilePage() {
   );
 
   const totalExperienceYears = useMemo(() => {
-    const firstYear = yachtExperiences
+    const firstYear = experiences
       .map((item) => Number((item.start_date || "").slice(0, 4)))
       .filter(Boolean)
       .sort((a, b) => a - b)[0];
     return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
-  }, [yachtExperiences]);
+  }, [experiences]);
   const studioTabs: Array<{
     id: CvStudioTab;
     label: string;
@@ -559,14 +534,7 @@ export default function ProfilePage() {
       id: "experience",
       label: "Yacht Experience",
       description: "Yachts, duties, photos and references.",
-      status: `${yachtExperiences.length} saved`,
-      icon: <BriefcaseBusiness className="h-4 w-4" />,
-    },
-    {
-      id: "otherWork",
-      label: "Other Work Experience",
-      description: "Non-yacht roles, duties and references.",
-      status: `${otherWorkExperiences.length} saved`,
+      status: `${experiences.length} saved`,
       icon: <BriefcaseBusiness className="h-4 w-4" />,
     },
     {
@@ -829,17 +797,6 @@ export default function ProfilePage() {
     return true;
   }
 
-  async function saveOtherWorkExperience(item: Experience) {
-    if (!profile.id) return false;
-    const response = await saveRelatedRecord("experience", { ...item, ...otherWorkExperienceSaveState(item) }, item.id);
-    if (!response.ok) {
-      alert(response.error);
-      return false;
-    }
-    await loadRelated(profile.id);
-    return true;
-  }
-
   async function deleteExperience(id?: string) {
     if (!profile.id || !id) return;
     const response = await deleteRelatedRecord("experience", id);
@@ -855,7 +812,7 @@ export default function ProfilePage() {
       return false;
     }
 
-    const hasReferenceDetail = [item.name, item.role, item.company, item.phone, item.email, item.notes].some(
+    const hasReferenceDetail = [item.name, item.role, item.company, item.phone, item.email].some(
       (value) => typeof value === "string" && value.trim().length > 0,
     );
 
@@ -879,7 +836,7 @@ export default function ProfilePage() {
     await loadRelated(profile.id);
     setReferenceStatus({
       type: "success",
-      message: "Reference saved under this experience.",
+      message: "Reference saved under this yacht experience.",
     });
     return true;
   }
@@ -1249,7 +1206,7 @@ export default function ProfilePage() {
                 )}
                 {[emptyExperience, ...editableExperiences].map((item) => {
                   const isNewExperience = !item.id;
-                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${yachtExperiences.length}`;
+                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${experiences.length}`;
                   const linkedReferences = referencesForExperience(item, references);
 
                   return (
@@ -1266,46 +1223,6 @@ export default function ProfilePage() {
                       onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
                       onCancelUpload={cancelUpload}
                       uploading={uploading === uploadSlot}
-                    />
-                  );
-                })}
-              </div>
-            </Panel>
-
-            <Panel active={activeStudioTab === "otherWork"} title="Other work experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
-                  <p className="text-sm font-black text-[#06111f]">Non-yacht professional experience</p>
-                  <p className="mt-1 max-w-3xl text-sm leading-6 text-[#5a6870]">
-                    Add relevant shore-based, hospitality, technical, management or service work that supports your BlueDeck CV.
-                  </p>
-                </div>
-                {referenceStatus && (
-                  <p
-                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
-                      referenceStatus.type === "success"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-rose-200 bg-rose-50 text-rose-800"
-                    }`}
-                  >
-                    {referenceStatus.message}
-                  </p>
-                )}
-                {[emptyOtherWorkExperience, ...editableOtherWorkExperiences].map((item) => {
-                  const isNewExperience = !item.id;
-                  const linkedReferences = referencesForExperience(item, references);
-
-                  return (
-                    <OtherWorkExperienceEditor
-                      key={item.id || `new-other-work-${otherWorkExperiences.length}`}
-                      item={item}
-                      isNew={isNewExperience}
-                      references={linkedReferences}
-                      referenceSaving={referenceSaving}
-                      onSave={saveOtherWorkExperience}
-                      onDelete={deleteExperience}
-                      onSaveReference={saveReference}
-                      onDeleteReference={deleteReference}
                     />
                   );
                 })}
@@ -1519,7 +1436,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-black text-[#06111f]">Final BlueDeck CV</p>
                       <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                        Review the generated CV below. Use Download PDF to save the exact CV layout as a file.
+                        Review the generated CV below. Use Print / Save PDF to open the browser print dialog and save the CV.
                       </p>
                     </div>
                     <span className="rounded-full bg-[#173f4a] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white">
@@ -1539,7 +1456,7 @@ export default function ProfilePage() {
                       try {
                         await downloadCvPdf(payload);
                       } catch (error) {
-                        alert(error instanceof Error ? error.message : "CV PDF could not be prepared.");
+                        alert(error instanceof Error ? error.message : "CV print dialog could not be opened.");
                       } finally {
                         setPdfDownloading(false);
                       }
@@ -1570,10 +1487,7 @@ function DocumentCreator({
   onCancelUpload: () => void;
   uploading: boolean;
 }) {
-  const selectedCatalogGroup = documentCatalog.find((group) => group.items.includes(draft.document_type));
-  const selectedDocumentType = selectedCatalogGroup ? draft.document_type : "";
-  const manualDocumentName = selectedCatalogGroup ? "" : draft.document_type;
-  const selectedCategory = selectedCatalogGroup?.category || (manualDocumentName ? "Other" : "");
+  const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
 
   return (
     <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
@@ -1581,7 +1495,7 @@ function DocumentCreator({
         <div>
           <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
           <select
-            value={selectedDocumentType}
+            value={draft.document_type}
             onChange={(event) => {
               const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
               setDraft({ ...draft, document_type: event.target.value, category });
@@ -1597,14 +1511,9 @@ function DocumentCreator({
               </optgroup>
             ))}
           </select>
-          <input
-            value={manualDocumentName}
-            onChange={(event) => setDraft({ ...draft, document_type: event.target.value, category: "Other" })}
-            placeholder="Other"
-            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500"
-          />
         </div>
         <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
+        <DateField label="Issue date" value={draft.issue_date} onChange={(value) => setDraft({ ...draft, issue_date: value })} />
         <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry} />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -1787,7 +1696,6 @@ type CvPdfPayload = {
   profile: CrewProfile;
   documents: CrewDocument[];
   experiences: Experience[];
-  otherWorkExperiences: Experience[];
   references: ReferenceEntry[];
   professionalSummary: string;
   totalExperienceYears: string;
@@ -1813,299 +1721,23 @@ async function downloadCvPdf(payload: CvPdfPayload) {
 
   await waitForCvPrintAssets(root);
   await waitForNextPaint();
-  submitCvPdfDownload({
-    html: serializeCvPrintRootForPdf(root),
-    css: cvServerPdfStyleText(printableCvCssForCanvasExport()),
-    fileName: cvPdfFileName(payload.profile),
-  });
+  openCvPrintDialog(cvPdfFileName(payload.profile));
 }
 
-function serializeCvPrintRootForPdf(root: HTMLElement) {
-  const clone = root.cloneNode(true) as HTMLElement;
-  absolutizeCvPrintAssets(root, clone);
-  sanitizeCanvasStyleAttributes(clone);
-  return clone.outerHTML;
-}
-
-function absolutizeCvPrintAssets(sourceRoot: HTMLElement, cloneRoot: HTMLElement) {
-  const sourceImages = Array.from(sourceRoot.querySelectorAll<HTMLImageElement>("img"));
-  const cloneImages = Array.from(cloneRoot.querySelectorAll<HTMLImageElement>("img"));
-
-  cloneImages.forEach((image, index) => {
-    const sourceImage = sourceImages[index];
-    const source = sourceImage?.currentSrc || sourceImage?.src || image.getAttribute("src") || "";
-    const absoluteSource = absoluteCvAssetUrl(source);
-    if (absoluteSource) image.setAttribute("src", absoluteSource);
-    image.removeAttribute("srcset");
-    image.setAttribute("loading", "eager");
-    image.setAttribute("decoding", "sync");
-    image.setAttribute("crossorigin", "anonymous");
-  });
-
-  Array.from(cloneRoot.querySelectorAll<HTMLElement>("[style*='background-image']")).forEach((element) => {
-    const source = cssBackgroundImageUrl(element.style.backgroundImage);
-    const absoluteSource = absoluteCvAssetUrl(source);
-    if (absoluteSource) element.style.backgroundImage = `url("${absoluteSource}")`;
-  });
-
-  Array.from(cloneRoot.querySelectorAll("script")).forEach((script) => script.remove());
-}
-
-function absoluteCvAssetUrl(source: string) {
-  if (!source) return "";
-  if (source.startsWith("data:") || source.startsWith("blob:")) return source;
-
-  try {
-    return new URL(source, window.location.origin).href;
-  } catch {
-    return "";
-  }
-}
-
-function cvServerPdfStyleText(exportCss: string) {
-  return sanitizeCanvasCss(`
-    @page {
-      size: A4;
-      margin: 0;
-    }
-
-    html,
-    body {
-      width: 210mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      background: #ffffff !important;
-      color: #242a31 !important;
-      color-scheme: light !important;
-      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-      font-synthesis: none !important;
-      text-rendering: geometricPrecision !important;
-    }
-
-    ${exportCss}
-
-    .bd-cv-print-root {
-      position: static !important;
-      left: auto !important;
-      top: auto !important;
-      transform: none !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      width: 210mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      overflow: visible !important;
-      background: #ffffff !important;
-      pointer-events: auto !important;
-    }
-
-    .bd-print-page {
-      display: grid !important;
-      grid-template-columns: 74mm 136mm !important;
-      width: 210mm !important;
-      height: 297mm !important;
-      min-height: 297mm !important;
-      max-height: 297mm !important;
-      overflow: hidden !important;
-      background: #ffffff !important;
-      color: #242a31 !important;
-      box-shadow: none !important;
-      break-after: page !important;
-      page-break-after: always !important;
-    }
-
-    .bd-print-page:last-child {
-      break-after: auto !important;
-      page-break-after: auto !important;
-    }
-
-    .bd-print-sidebar,
-    .bd-print-main {
-      height: 297mm !important;
-      min-height: 297mm !important;
-      max-height: 297mm !important;
-    }
-
-    .bd-print-page,
-    .bd-print-page * {
-      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-      font-synthesis: none !important;
-      box-sizing: border-box !important;
-      text-rendering: geometricPrecision !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-  `);
-}
-
-function submitCvPdfDownload(payload: { html: string; css: string; fileName: string }) {
-  const form = document.createElement("form");
-
-  form.method = "post";
-  form.action = "/api/cv-pdf";
-  form.target = "_self";
-  form.acceptCharset = "UTF-8";
-  form.style.display = "none";
-
-  Object.entries(payload).forEach(([name, value]) => {
-    const field = document.createElement("textarea");
-    field.name = name;
-    field.value = value;
-    form.append(field);
-  });
-
-  document.body.append(form);
-  form.submit();
-  form.remove();
-}
-
-async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], fileName: string) {
-  const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
-    import("jspdf"),
-    import("html2canvas"),
-  ]);
-  const restoreRoot = prepareCvExportRoot(root);
-  const restoreImages = await prepareCvExportImages(root);
-  const exportCss = printableCvCssForCanvasExport();
-  const exportFrame = createCvCanvasExportFrame(exportCss);
-  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  const renderScale = Math.min(2.25, Math.max(2, window.devicePixelRatio || 2));
-
-  try {
-    for (const [pageIndex] of pages.entries()) {
-      const page = await mountCvPagesInExportFrame(exportFrame, pages, pageIndex);
-      const canvas = await html2canvas(page, {
-        backgroundColor: "#ffffff",
-        scale: renderScale,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        imageTimeout: 8000,
-        windowWidth: millimetersToPixels(210),
-        windowHeight: millimetersToPixels(297),
-        scrollX: 0,
-        scrollY: 0,
-        onclone: (clonedDocument) => {
-          injectCvCanvasExportStyles(clonedDocument, exportCss);
-          isolateClonedPrintPage(clonedDocument, pageIndex);
-        },
-      });
-
-      if (pageIndex > 0) pdf.addPage("a4", "portrait");
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297, undefined, "FAST");
-      canvas.width = 0;
-      canvas.height = 0;
-    }
-
-    savePdfBlob(pdf.output("blob"), fileName);
-  } finally {
-    exportFrame.remove();
-    restoreImages();
-    restoreRoot();
-  }
-}
-
-function createCvCanvasExportFrame(exportCss: string) {
-  const frame = document.createElement("iframe");
-  frame.setAttribute("title", "BlueDeck CV PDF export");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.left = "0";
-  frame.style.top = "0";
-  frame.style.width = "210mm";
-  frame.style.height = "297mm";
-  frame.style.border = "0";
-  frame.style.opacity = "0";
-  frame.style.pointerEvents = "none";
-  frame.style.zIndex = "-1";
-  document.body.append(frame);
-
-  const frameDocument = frame.contentDocument;
-  if (!frameDocument) throw new Error("Could not prepare CV PDF export frame.");
-
-  frameDocument.open();
-  frameDocument.write(`<!doctype html><html><head><meta charset="utf-8"><style>${cvCanvasExportStyleText(exportCss)}</style></head><body></body></html>`);
-  frameDocument.close();
-
-  return frame;
-}
-
-async function mountCvPagesInExportFrame(frame: HTMLIFrameElement, pages: HTMLElement[], activePageIndex: number) {
-  const frameDocument = frame.contentDocument;
-  const frameWindow = frame.contentWindow;
-  if (!frameDocument || !frameWindow) throw new Error("Could not render CV PDF export frame.");
-
-  const printRoot = frameDocument.createElement("div");
-  printRoot.className = "bd-cv-print-root";
-
-  let activePage: HTMLElement | null = null;
-  pages.forEach((page, index) => {
-    const clonedPage = frameDocument.importNode(page, true) as HTMLElement;
-    if (index !== activePageIndex) clonedPage.style.setProperty("display", "none", "important");
-    else activePage = clonedPage;
-    printRoot.append(clonedPage);
-  });
-
-  frameDocument.body.replaceChildren(printRoot);
-  sanitizeCanvasStyleAttributes(printRoot);
-  await waitForCvPrintAssets(printRoot);
-  await waitForCvExportFonts(frameDocument);
-  await waitForNextPaint();
-  sanitizeCvCanvasColors(printRoot, frameWindow);
-  sanitizeCanvasStyleAttributes(printRoot);
-
-  if (!activePage) throw new Error("Could not find CV page for PDF export.");
-  return activePage;
-}
-
-function isolateClonedPrintPage(clonedDocument: Document, activePageIndex: number) {
-  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page, index) => {
-    if (index !== activePageIndex) page.style.setProperty("display", "none", "important");
-  });
-}
-
-function millimetersToPixels(value: number) {
-  return Math.round((value * 96) / 25.4);
-}
-
-function prepareCvExportRoot(root: HTMLElement) {
-  const previous = {
-    position: root.style.position,
-    left: root.style.left,
-    top: root.style.top,
-    transform: root.style.transform,
-    opacity: root.style.opacity,
-    visibility: root.style.visibility,
-    display: root.style.display,
-    width: root.style.width,
-    zIndex: root.style.zIndex,
-    pointerEvents: root.style.pointerEvents,
+function openCvPrintDialog(fileName: string) {
+  const previousTitle = document.title;
+  const printTitle = fileName.replace(/\.pdf$/i, "");
+  let restored = false;
+  const restoreTitle = () => {
+    if (restored) return;
+    restored = true;
+    document.title = previousTitle;
   };
 
-  root.style.position = "fixed";
-  root.style.left = "0";
-  root.style.top = "0";
-  root.style.transform = "none";
-  root.style.opacity = "0";
-  root.style.visibility = "visible";
-  root.style.display = "block";
-  root.style.width = "210mm";
-  root.style.zIndex = "-1";
-  root.style.pointerEvents = "none";
-
-  return () => {
-    root.style.position = previous.position;
-    root.style.left = previous.left;
-    root.style.top = previous.top;
-    root.style.transform = previous.transform;
-    root.style.opacity = previous.opacity;
-    root.style.visibility = previous.visibility;
-    root.style.display = previous.display;
-    root.style.width = previous.width;
-    root.style.zIndex = previous.zIndex;
-    root.style.pointerEvents = previous.pointerEvents;
-  };
+  document.title = printTitle;
+  window.addEventListener("afterprint", restoreTitle, { once: true });
+  window.setTimeout(restoreTitle, 5000);
+  window.print();
 }
 
 async function prepareCvExportImages(root: HTMLElement) {
@@ -2214,33 +1846,7 @@ function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string)
 
   const style = clonedDocument.createElement("style");
   style.setAttribute("data-bluedeck-cv-export", "true");
-  style.textContent = cvCanvasExportStyleText(exportCss);
-  clonedDocument.head.append(style);
-
-  sanitizeCanvasStyleAttributes(clonedDocument);
-  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
-    sanitizeCvCanvasColors(page, clonedDocument.defaultView);
-  });
-  sanitizeCanvasStyleAttributes(clonedDocument);
-}
-
-function cvCanvasExportStyleText(exportCss: string) {
-  return sanitizeCanvasCss(`
-    html,
-    body {
-      width: 210mm !important;
-      min-width: 210mm !important;
-      min-height: 297mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      overflow: hidden !important;
-      background: #ffffff !important;
-      color: #242a31 !important;
-      color-scheme: light !important;
-      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-      font-synthesis: none !important;
-      text-rendering: geometricPrecision !important;
-    }
+  style.textContent = `
     ${exportCss}
     .bd-cv-print-root {
       position: static !important;
@@ -2277,14 +1883,16 @@ function cvCanvasExportStyleText(exportCss: string) {
     }
     .bd-print-page,
     .bd-print-page * {
-      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-      font-synthesis: none !important;
       box-sizing: border-box !important;
-      text-rendering: geometricPrecision !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-  `);
+  `;
+  clonedDocument.head.append(style);
+
+  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
+    sanitizeCvCanvasColors(page, clonedDocument.defaultView);
+  });
 }
 
 function removeClonedPageStyles(clonedDocument: Document) {
@@ -2293,8 +1901,8 @@ function removeClonedPageStyles(clonedDocument: Document) {
 
 function sanitizeCanvasCss(css: string) {
   return css
-    .replace(/\b(?:oklab|oklch|lab|lch|hwb|color)\([^;{}]*\)/gi, "#242a31")
-    .replace(/\bcolor-mix\([^;{}]*\)/gi, "#ffffff");
+    .replace(/\b(?:oklab|oklch|lab|lch)\([^)]*\)/gi, "#242a31")
+    .replace(/\bcolor-mix\([^)]*\)/gi, "#ffffff");
 }
 
 function waitForNextPaint() {
@@ -2303,28 +1911,7 @@ function waitForNextPaint() {
   });
 }
 
-async function waitForCvExportFonts(documentRef: Document) {
-  const fonts = (documentRef as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
-  if (!fonts?.ready) return;
-
-  await Promise.race([
-    fonts.ready.catch(() => undefined),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 1200)),
-  ]);
-}
-
-const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|hwb|color|color-mix)\(/i;
-
-function sanitizeCanvasStyleAttributes(root: ParentNode) {
-  const elements = root.nodeType === Node.ELEMENT_NODE
-    ? [root as HTMLElement, ...Array.from(root.querySelectorAll<HTMLElement>("[style]"))]
-    : Array.from(root.querySelectorAll<HTMLElement>("[style]"));
-  elements.forEach((element) => {
-    const style = element.getAttribute("style");
-    if (!style || !unsupportedCanvasColorPattern.test(style)) return;
-    element.setAttribute("style", sanitizeCanvasCss(style));
-  });
-}
+const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|color-mix)\(/i;
 
 function sanitizeCvCanvasColors(root: HTMLElement, view: Window | null) {
   if (!view) return;
@@ -3060,14 +2647,6 @@ function normalizeExperienceRecord(experience: Experience) {
   };
 }
 
-function isOtherWorkExperience(experience: Experience) {
-  return cleanSaveText(experience.yacht_type) === otherWorkExperienceMarker;
-}
-
-function isFilledExperience(experience: Experience) {
-  return Boolean(experience.yacht_name || experience.position || experience.description);
-}
-
 function cleanSaveNumber(value?: number | null) {
   return value ? String(value) : "";
 }
@@ -3138,21 +2717,6 @@ function experienceSaveState(experience: Experience) {
   };
 }
 
-function otherWorkExperienceSaveState(experience: Experience) {
-  return {
-    yacht_name: cleanSaveText(experience.yacht_name),
-    yacht_type: otherWorkExperienceMarker,
-    yacht_program: "",
-    yacht_size: "",
-    location: cleanSaveText(experience.location),
-    position: cleanSaveText(experience.position),
-    start_date: cleanSaveText(experience.start_date),
-    end_date: cleanSaveText(experience.end_date),
-    description: cleanLimitedText(experience.description, yachtDutiesMaxLength),
-    photo_url: "",
-  };
-}
-
 function referenceSaveState(reference: ReferenceEntry) {
   return {
     name: cleanSaveText(reference.name || reference.company),
@@ -3160,23 +2724,6 @@ function referenceSaveState(reference: ReferenceEntry) {
     phone: cleanSaveText(reference.phone),
     email: cleanSaveText(reference.email),
   };
-}
-
-function isReferenceAvailableUponRequest(reference: ReferenceEntry) {
-  return (
-    cleanSaveText(reference.notes) === referenceUponRequestMarker ||
-    cleanSaveText(reference.name).toLowerCase() === referenceUponRequestText.toLowerCase()
-  );
-}
-
-function referenceDetailLine(reference: ReferenceEntry, fallback: string) {
-  if (isReferenceAvailableUponRequest(reference)) return "";
-  return [reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || fallback;
-}
-
-function referenceContactLine(reference: ReferenceEntry) {
-  if (isReferenceAvailableUponRequest(reference)) return "";
-  return [reference.email, reference.phone].filter(Boolean).join(" / ");
 }
 
 function phoneCountryFromValue(value: string) {
@@ -3218,7 +2765,6 @@ function unmatchedExperienceReferences(experiences: Experience[], references: Re
 }
 
 function referenceDisplayName(reference: ReferenceEntry) {
-  if (isReferenceAvailableUponRequest(reference)) return referenceUponRequestText;
   const name = cleanSaveText(reference.name);
   if (name && name.toLowerCase() !== "reference") return name;
   return cleanSaveText(reference.company) || cleanSaveText(reference.vessel) || "Contact";
@@ -3242,10 +2788,9 @@ function SeazoneStyleCvPreview({
   onDownload: (payload: CvPdfPayload) => void | Promise<void>;
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
-  const cleanExperiences = experiences.filter((item) => !isOtherWorkExperience(item) && isFilledExperience(item));
-  const cleanOtherWorkExperiences = experiences.filter((item) => isOtherWorkExperience(item) && isFilledExperience(item));
+  const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
   const cleanReferences = cleanReferenceEntries(references);
-  const standaloneReferences = unmatchedExperienceReferences([...cleanExperiences, ...cleanOtherWorkExperiences], cleanReferences);
+  const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const crewName = profile.full_name || "Crew Member";
   const professionalSummary =
@@ -3268,7 +2813,6 @@ function SeazoneStyleCvPreview({
               profile,
               documents,
               experiences: cleanExperiences,
-              otherWorkExperiences: cleanOtherWorkExperiences,
               references: cleanReferences,
               professionalSummary,
               totalExperienceYears,
@@ -3281,7 +2825,7 @@ function SeazoneStyleCvPreview({
           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70 sm:w-auto"
         >
           {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-          {downloading ? "Preparing PDF..." : "Download PDF"}
+          {downloading ? "Opening print..." : "Print / Save PDF"}
         </button>
       </div>
 
@@ -3392,8 +2936,8 @@ function SeazoneStyleCvPreview({
                       No yacht experience added yet.
                     </p>
                   )}
-                {cleanExperiences.map((item, index) => (
-                  <SeazoneExperienceCard
+                  {cleanExperiences.map((item, index) => (
+                    <SeazoneExperienceCard
                       key={item.id || `${item.yacht_name}-${item.start_date}`}
                       experience={item}
                       references={referencesForExperience(item, cleanReferences)}
@@ -3402,20 +2946,6 @@ function SeazoneStyleCvPreview({
                   ))}
                 </div>
               </SeazoneSection>
-
-              {cleanOtherWorkExperiences.length > 0 && (
-                <SeazoneSection title="Other Work Experience">
-                  <div className="bd-cv-experience-list space-y-4">
-                    {cleanOtherWorkExperiences.map((item) => (
-                      <SeazoneOtherWorkCard
-                        key={item.id || `${item.yacht_name}-${item.start_date}`}
-                        experience={item}
-                        references={referencesForExperience(item, cleanReferences)}
-                      />
-                    ))}
-                  </div>
-                </SeazoneSection>
-              )}
 
               {standaloneReferences.length > 0 && (
                 <SeazoneSection title="References">
@@ -3443,7 +2973,6 @@ function SeazoneStyleCvPreview({
         profile={profile}
         documents={documents}
         experiences={cleanExperiences}
-        otherWorkExperiences={cleanOtherWorkExperiences}
         references={cleanReferences}
         professionalSummary={professionalSummary}
         totalExperienceYears={totalExperienceYears}
@@ -3574,7 +3103,6 @@ function PrintableCvPages({
   profile,
   documents,
   experiences,
-  otherWorkExperiences,
   references,
   professionalSummary,
   totalExperienceYears,
@@ -3585,7 +3113,6 @@ function PrintableCvPages({
   profile: CrewProfile;
   documents: CrewDocument[];
   experiences: Experience[];
-  otherWorkExperiences: Experience[];
   references: ReferenceEntry[];
   professionalSummary: string;
   totalExperienceYears: string;
@@ -3593,18 +3120,13 @@ function PrintableCvPages({
   primaryPosition: string;
   visibleSkills: string[];
 }) {
-  const firstPageYachtCount = Math.min(experiences.length, 3);
-  const firstPageExperiences = experiences.slice(0, firstPageYachtCount);
-  const firstPageOtherCapacity = Math.max(0, 3 - firstPageExperiences.length);
-  const firstPageOtherWorkExperiences = otherWorkExperiences.slice(0, firstPageOtherCapacity);
-  const remainingPages = chunkItems(experiences.slice(firstPageYachtCount), 4);
-  const otherWorkPages = chunkItems(otherWorkExperiences.slice(firstPageOtherWorkExperiences.length), 4);
+  const firstPageExperiences = experiences.slice(0, 3);
+  const remainingPages = chunkItems(experiences.slice(3), 4);
   const pages = [
-    { kind: "first" as const, experiences: firstPageExperiences, otherWorkExperiences: firstPageOtherWorkExperiences },
-    ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items, otherWorkExperiences: [] as Experience[] })),
-    ...otherWorkPages.map((items, index) => ({ kind: index === 0 ? "otherWork" as const : "otherWorkContinued" as const, experiences: [] as Experience[], otherWorkExperiences: items })),
+    { kind: "first" as const, experiences: firstPageExperiences },
+    ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items })),
   ];
-  if (pages.length === 1 && firstPageExperiences.length === 0 && firstPageOtherWorkExperiences.length === 0) {
+  if (pages.length === 1 && firstPageExperiences.length === 0) {
     pages[0].experiences = [];
   }
 
@@ -3623,29 +3145,16 @@ function PrintableCvPages({
           </aside>
 
           <main className={`bd-print-main ${pageIndex > 0 ? "bd-print-main-continuation" : ""}`}>
-            {page.kind === "first" ? (
+            {pageIndex === 0 ? (
               <>
                 <PrintableHero profile={profile} crewName={crewName} primaryPosition={primaryPosition} />
                 <PrintableSection title="About Me">
                   <p className="bd-print-summary">{professionalSummary}</p>
                 </PrintableSection>
-                {page.experiences.length > 0 || page.otherWorkExperiences.length === 0 ? (
-                  <PrintableSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
-                    <PrintableExperienceList experiences={page.experiences} references={references} />
-                  </PrintableSection>
-                ) : null}
-                {page.otherWorkExperiences.length > 0 && (
-                  <PrintableSection title="Other Work Experience">
-                    <PrintableOtherWorkList experiences={page.otherWorkExperiences} references={references} />
-                  </PrintableSection>
-                )}
-              </>
-            ) : page.kind === "otherWork" || page.kind === "otherWorkContinued" ? (
-              <div className="bd-print-continuation-experiences">
-                <PrintableSection title={page.kind === "otherWork" ? "Other Work Experience" : "Other Work Experience"}>
-                  <PrintableOtherWorkList experiences={page.otherWorkExperiences} references={references} />
+                <PrintableSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
+                  <PrintableExperienceList experiences={page.experiences} references={references} />
                 </PrintableSection>
-              </div>
+              </>
             ) : (
               <div className="bd-print-continuation-experiences">
                 <PrintableExperienceList experiences={page.experiences} references={references} />
@@ -3867,63 +3376,8 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
             {references.slice(0, 2).map((reference) => (
               <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
                 <b>{referenceDisplayName(reference)}</b>
-                {referenceDetailLine(reference, "Yacht reference") && <span>{referenceDetailLine(reference, "Yacht reference")}</span>}
-                {referenceContactLine(reference) && <em>{referenceContactLine(reference)}</em>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function PrintableOtherWorkList({ experiences, references }: { experiences: Experience[]; references: ReferenceEntry[] }) {
-  if (experiences.length === 0) {
-    return <p className="bd-print-empty-card">No other work experience added yet.</p>;
-  }
-
-  return (
-    <div className={`bd-print-experience-list bd-print-experience-list-${Math.min(experiences.length, 4)}`}>
-      {experiences.map((experience) => (
-        <PrintableOtherWorkCard
-          key={experience.id || `${experience.yacht_name}-${experience.start_date}`}
-          experience={experience}
-          references={referencesForExperience(experience, references)}
-        />
-      ))}
-    </div>
-  );
-}
-
-function PrintableOtherWorkCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
-  const workName = experience.yacht_name || "Work experience";
-  const position = experience.position || "Role";
-
-  return (
-    <article className="bd-print-experience-card bd-print-other-work-card">
-      <div className="bd-print-experience-meta">
-        <div className="bd-print-other-work-label">Other Work</div>
-        <b style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</b>
-        <span>{position}</span>
-        <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
-        {experience.location && <small><MapPin /> {experience.location}</small>}
-      </div>
-      <div className="bd-print-experience-body">
-        <div className="bd-print-experience-top">
-          <h4 style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</h4>
-          <span>{position}</span>
-        </div>
-        <p className="bd-print-label">Duties</p>
-        <p className="bd-print-duties">{experience.description || "Responsibilities and duties will appear here."}</p>
-        {references.length > 0 && (
-          <div className="bd-print-reference-block">
-            <p className="bd-print-label">Reference</p>
-            {references.slice(0, 2).map((reference) => (
-              <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
-                <b>{referenceDisplayName(reference)}</b>
-                {referenceDetailLine(reference, "Work reference") && <span>{referenceDetailLine(reference, "Work reference")}</span>}
-                {referenceContactLine(reference) && <em>{referenceContactLine(reference)}</em>}
+                <span>{[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}</span>
+                {(reference.email || reference.phone) && <em>{[reference.email, reference.phone].filter(Boolean).join(" / ")}</em>}
               </div>
             ))}
           </div>
@@ -4063,48 +3517,6 @@ function SeazoneExperienceCard({
   );
 }
 
-function SeazoneOtherWorkCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
-  const workName = experience.yacht_name || "Work experience";
-  const position = experience.position || "Role";
-
-  return (
-    <article className="bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5">
-      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
-        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
-          <div className="flex h-24 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-center text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">
-            Other Work
-          </div>
-          <h4 className="mt-3 font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(workName) }}>
-            {workName}
-          </h4>
-          <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">{position}</p>
-          <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
-          {experience.location && (
-            <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
-              <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>{experience.location}</span>
-            </p>
-          )}
-        </div>
-
-        <div className="bd-cv-experience-body h-full rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
-          <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
-            <h4 className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(workName) }}>{workName}</h4>
-            <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-              {position}
-            </span>
-          </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-          <p className="mt-2 text-[13px] leading-5 text-[#364650]">
-            {experience.description || "Responsibilities and duties will appear here."}
-          </p>
-          <SeazoneExperienceReferences references={references} />
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function SeazoneExperienceReferences({ references }: { references: ReferenceEntry[] }) {
   if (references.length === 0) return null;
 
@@ -4115,10 +3527,12 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
         {references.slice(0, 2).map((reference) => (
           <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{referenceDisplayName(reference)}</p>
-            {referenceDetailLine(reference, "Yacht reference") && (
-              <p className="mt-1 text-xs font-semibold text-[#2d7482]">{referenceDetailLine(reference, "Yacht reference")}</p>
+            <p className="mt-1 text-xs font-semibold text-[#2d7482]">
+              {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
+            </p>
+            {(reference.email || reference.phone) && (
+              <p className="mt-1 text-xs text-[#5a6870]">{[reference.email, reference.phone].filter(Boolean).join(" / ")}</p>
             )}
-            {referenceContactLine(reference) && <p className="mt-1 text-xs text-[#5a6870]">{referenceContactLine(reference)}</p>}
           </div>
         ))}
       </div>
@@ -4551,7 +3965,8 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
         </div>
         <button onClick={() => onDelete(document.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
       </div>
-      <div className="mt-4 grid gap-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <DateField label="Issue" value={document.issue_date} onChange={(value) => onChange({ ...document, issue_date: value })} />
         <DateField label="Expiry" value={document.expiry_date} disabled={document.no_expiry} onChange={(value) => onChange({ ...document, expiry_date: value })} />
       </div>
       <div className="mt-3 flex flex-wrap gap-4">
@@ -4592,14 +4007,6 @@ function ExperienceEditor({
   const dirty = !saveStateEquals(experienceSaveState(draft), experienceSaveState(item));
   const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
   const dutiesLength = dutiesValue.length;
-  const requestReference = references.find(isReferenceAvailableUponRequest);
-  const editableReferences = references.filter((reference) => !isReferenceAvailableUponRequest(reference));
-  const [requestReferenceSelected, setRequestReferenceSelected] = useState(Boolean(requestReference));
-  const referenceRequestDirty = requestReferenceSelected !== Boolean(requestReference);
-
-  useEffect(() => {
-    setRequestReferenceSelected(Boolean(requestReference));
-  }, [requestReference?.id]);
 
   function removePhoto() {
     setDraft({ ...draft, photo_url: "" });
@@ -4621,45 +4028,6 @@ function ExperienceEditor({
       notes: "",
       show_on_cv: true,
     });
-  }
-
-  async function persistReferenceUponRequest(yachtName: string) {
-    return onSaveReference({
-      ...(requestReference || emptyReference),
-      name: referenceUponRequestText,
-      vessel: yachtName,
-      company: "",
-      role: "",
-      phone: "",
-      email: "",
-      notes: referenceUponRequestMarker,
-      show_on_cv: true,
-    });
-  }
-
-  function toggleReferenceUponRequest() {
-    if (requestReferenceSelected) {
-      setRequestReferenceSelected(false);
-      if (requestReference?.id) onDeleteReference(requestReference.id);
-      return;
-    }
-
-    setRequestReferenceSelected(true);
-    const yachtName = draft.yacht_name.trim();
-    if (!isNew && !dirty && yachtName) void persistReferenceUponRequest(yachtName);
-  }
-
-  async function handleSaveExperience() {
-    const saved = await onSave(draft);
-    if (!saved || !requestReferenceSelected) return saved;
-
-    const yachtName = draft.yacht_name.trim();
-    if (!yachtName) {
-      alert("Add the yacht name to link the reference request note to this experience.");
-      return saved;
-    }
-
-    return persistReferenceUponRequest(yachtName);
   }
 
   return (
@@ -4789,12 +4157,7 @@ function ExperienceEditor({
               <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this yacht</p>
             </div>
             <div className="space-y-2">
-              <ReferenceRequestButton
-                selected={requestReferenceSelected}
-                saving={referenceSaving}
-                onToggle={toggleReferenceUponRequest}
-              />
-              {editableReferences.map((reference) => (
+              {references.map((reference) => (
                 <ExperienceReferenceEditor
                   key={reference.id || `${reference.name}-${reference.email}`}
                   item={reference}
@@ -4814,200 +4177,7 @@ function ExperienceEditor({
               />
             </div>
           </div>
-          <EditorButtons isNew={isNew} dirty={dirty || referenceRequestDirty} onSave={handleSaveExperience} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function OtherWorkExperienceEditor({
-  item,
-  isNew,
-  references,
-  referenceSaving,
-  onSave,
-  onDelete,
-  onSaveReference,
-  onDeleteReference,
-}: {
-  item: Experience;
-  isNew: boolean;
-  references: ReferenceEntry[];
-  referenceSaving: boolean;
-  onSave: (item: Experience) => Promise<boolean>;
-  onDelete: (id?: string) => void;
-  onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
-  onDeleteReference: (id?: string) => void;
-}) {
-  const [draft, setDraft] = useState({ ...item, yacht_type: otherWorkExperienceMarker, photo_url: "" });
-  const dirty = !saveStateEquals(otherWorkExperienceSaveState(draft), otherWorkExperienceSaveState(item));
-  const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
-  const dutiesLength = dutiesValue.length;
-  const requestReference = references.find(isReferenceAvailableUponRequest);
-  const editableReferences = references.filter((reference) => !isReferenceAvailableUponRequest(reference));
-  const [requestReferenceSelected, setRequestReferenceSelected] = useState(Boolean(requestReference));
-  const referenceRequestDirty = requestReferenceSelected !== Boolean(requestReference);
-
-  useEffect(() => {
-    setRequestReferenceSelected(Boolean(requestReference));
-  }, [requestReference?.id]);
-
-  async function saveLinkedReference(reference: ReferenceEntry) {
-    const workName = draft.yacht_name.trim();
-
-    if (!workName) {
-      alert("Add the work or company name before saving a reference.");
-      return false;
-    }
-
-    return onSaveReference({
-      ...reference,
-      name: (reference.name || reference.company).trim(),
-      vessel: workName,
-      company: "",
-      notes: "",
-      show_on_cv: true,
-    });
-  }
-
-  async function persistReferenceUponRequest(workName: string) {
-    return onSaveReference({
-      ...(requestReference || emptyReference),
-      name: referenceUponRequestText,
-      vessel: workName,
-      company: "",
-      role: "",
-      phone: "",
-      email: "",
-      notes: referenceUponRequestMarker,
-      show_on_cv: true,
-    });
-  }
-
-  function toggleReferenceUponRequest() {
-    if (requestReferenceSelected) {
-      setRequestReferenceSelected(false);
-      if (requestReference?.id) onDeleteReference(requestReference.id);
-      return;
-    }
-
-    setRequestReferenceSelected(true);
-    const workName = draft.yacht_name.trim();
-    if (!isNew && !dirty && workName) void persistReferenceUponRequest(workName);
-  }
-
-  async function handleSaveOtherWorkExperience() {
-    const nextDraft = { ...draft, yacht_type: otherWorkExperienceMarker, photo_url: "" };
-    const saved = await onSave(nextDraft);
-    if (!saved || !requestReferenceSelected) return saved;
-
-    const workName = draft.yacht_name.trim();
-    if (!workName) {
-      alert("Add the work or company name to link the reference request note to this work experience.");
-      return saved;
-    }
-
-    return persistReferenceUponRequest(workName);
-  }
-
-  return (
-    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-      <div className="grid items-stretch gap-3 lg:grid-cols-[260px_1fr]">
-        <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-3">
-          <div className="rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Work details</p>
-            <div className="space-y-2">
-              <ExperienceCardInput
-                label="Work / company"
-                value={draft.yacht_name}
-                placeholder="Work / company"
-                strong
-                onChange={(value) => setDraft({ ...draft, yacht_name: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })}
-              />
-              <ExperienceCardInput
-                label="Job position"
-                value={draft.position}
-                placeholder="Job position"
-                onChange={(value) => setDraft({ ...draft, position: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })}
-              />
-            </div>
-          </div>
-
-          <div className="mt-3 space-y-2">
-            <div className="grid gap-1.5">
-              <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })} />
-              <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value, yacht_type: otherWorkExperienceMarker, photo_url: "" })} />
-            </div>
-            <div className="grid grid-cols-[22px_1fr] items-center overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
-              <span className="flex h-full items-center justify-center text-[#2d7482]">
-                <MapPin className="h-3.5 w-3.5" />
-              </span>
-              <input
-                aria-label="Location"
-                value={draft.location || ""}
-                onChange={(event) => setDraft({ ...draft, location: capitalizeFirstCharacter(event.target.value), yacht_type: otherWorkExperienceMarker, photo_url: "" })}
-                placeholder="Location"
-                className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
-              />
-            </div>
-          </div>
-
-          <div className="mt-auto pt-3">
-            <p className="rounded-xl border border-[#c7d2d6] bg-white px-3 py-2 text-xs font-semibold leading-5 text-[#5a6870]">
-              This section is for relevant non-yacht work such as hospitality, shore support, technical, management or service roles.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
-          <div className="flex flex-1 flex-col">
-            <div className="flex items-center justify-between gap-3">
-              <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-              <span className="rounded-full border border-[#c7d2d6] bg-white px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-[#2d7482]">
-                {dutiesLength}/{yachtDutiesMaxLength}
-              </span>
-            </div>
-            <textarea
-              value={dutiesValue}
-              maxLength={yachtDutiesMaxLength}
-              onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength), yacht_type: otherWorkExperienceMarker, photo_url: "" })}
-              placeholder="Responsibilities, achievements or duties"
-              className="mt-2 min-h-28 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
-            />
-          </div>
-          <div className="mt-3 border-t border-[#c7d2d6] pt-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
-              <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this work experience</p>
-            </div>
-            <div className="space-y-2">
-              <ReferenceRequestButton
-                selected={requestReferenceSelected}
-                saving={referenceSaving}
-                onToggle={toggleReferenceUponRequest}
-              />
-              {editableReferences.map((reference) => (
-                <ExperienceReferenceEditor
-                  key={reference.id || `${reference.name}-${reference.email}`}
-                  item={reference}
-                  isNew={false}
-                  saving={referenceSaving}
-                  onSave={saveLinkedReference}
-                  onDelete={onDeleteReference}
-                />
-              ))}
-              <ExperienceReferenceEditor
-                key={`new-other-reference-${item.id || "draft"}`}
-                item={emptyReference}
-                isNew
-                saving={referenceSaving}
-                onSave={saveLinkedReference}
-                onDelete={onDeleteReference}
-              />
-            </div>
-          </div>
-          <EditorButtons isNew={isNew} dirty={dirty || referenceRequestDirty} onSave={handleSaveOtherWorkExperience} onDelete={() => onDelete(draft.id)} addLabel="Add work experience" />
+          <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
         </div>
       </div>
     </article>
@@ -5225,34 +4395,6 @@ function ExperienceReferenceEditor({
         </div>
       </div>
     </div>
-  );
-}
-
-function ReferenceRequestButton({
-  selected,
-  saving,
-  onToggle,
-}: {
-  selected: boolean;
-  saving: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={saving}
-      onClick={onToggle}
-      className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition disabled:cursor-wait disabled:opacity-70 ${
-        selected
-          ? "border-[#9bd6df] bg-[#eefbfc] text-[#173f4a]"
-          : "border-[#d8e2e6] bg-white text-[#40535d] hover:border-[#9bd6df] hover:bg-[#f7fdff]"
-      }`}
-    >
-      <span className="text-[12px] font-black uppercase tracking-[0.06em]">{referenceUponRequestText}</span>
-      <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${selected ? "bg-[#173f4a] text-white" : "bg-[#e7eef1] text-[#2d7482]"}`}>
-        {selected ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-      </span>
-    </button>
   );
 }
 
@@ -5524,7 +4666,7 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
       <input
         inputMode="numeric"
-        placeholder="DD/MM/YYYY"
+        placeholder="DD.MM.YYYY"
         value={display}
         disabled={disabled}
         onChange={(event) => commit(event.target.value)}
@@ -5912,7 +5054,7 @@ function formatDateTyping(value: string) {
   const day = digits.slice(0, 2);
   const month = digits.slice(2, 4);
   const year = digits.slice(4, 8);
-  return [day, month, year].filter(Boolean).join("/");
+  return [day, month, year].filter(Boolean).join(".");
 }
 
 function parseDisplayDate(value: string) {
@@ -5934,5 +5076,5 @@ function formatDateForDisplay(value: string) {
   if (!value) return "";
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) return formatDateTyping(value);
-  return `${day}/${month}/${year}`;
+  return `${day}.${month}.${year}`;
 }
