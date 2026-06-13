@@ -1803,483 +1803,26 @@ type PdfImageAsset = {
   format: "JPEG" | "PNG";
 };
 
+const blueDeckPdfFontName = "BlueDeckGeist";
+
 async function downloadCvPdf(payload: CvPdfPayload) {
-  const root = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-print-root");
-  const pages = root ? Array.from(root.querySelectorAll<HTMLElement>(".bd-print-page")) : [];
-
-  if (!root || pages.length === 0) {
-    throw new Error("CV preview is not ready yet.");
-  }
-
-  await waitForCvPrintAssets(root);
-  await waitForNextPaint();
-  await exportCvPrintPagesToPdf(root, pages, cvPdfFileName(payload.profile));
-}
-
-async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], fileName: string) {
-  const [{ jsPDF }, { default: html2canvas }] = await Promise.all([
-    import("jspdf"),
-    import("html2canvas"),
-  ]);
-  const restoreRoot = prepareCvExportRoot(root);
-  const restoreImages = await prepareCvExportImages(root);
-  const exportCss = printableCvCssForCanvasExport();
-  const exportFrame = createCvCanvasExportFrame(exportCss);
+  const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-  const renderScale = Math.min(2.25, Math.max(2, window.devicePixelRatio || 2));
 
-  try {
-    for (const [pageIndex] of pages.entries()) {
-      const page = await mountCvPagesInExportFrame(exportFrame, pages, pageIndex);
-      const canvas = await html2canvas(page, {
-        backgroundColor: "#ffffff",
-        scale: renderScale,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        imageTimeout: 8000,
-        windowWidth: millimetersToPixels(210),
-        windowHeight: millimetersToPixels(297),
-        scrollX: 0,
-        scrollY: 0,
-        onclone: (clonedDocument) => {
-          injectCvCanvasExportStyles(clonedDocument, exportCss);
-          isolateClonedPrintPage(clonedDocument, pageIndex);
-        },
-      });
-
-      if (pageIndex > 0) pdf.addPage("a4", "portrait");
-      pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297, undefined, "FAST");
-      canvas.width = 0;
-      canvas.height = 0;
-    }
-
-    savePdfBlob(pdf.output("blob"), fileName);
-  } finally {
-    exportFrame.remove();
-    restoreImages();
-    restoreRoot();
-  }
-}
-
-function createCvCanvasExportFrame(exportCss: string) {
-  const frame = document.createElement("iframe");
-  frame.setAttribute("title", "BlueDeck CV PDF export");
-  frame.setAttribute("aria-hidden", "true");
-  frame.style.position = "fixed";
-  frame.style.left = "0";
-  frame.style.top = "0";
-  frame.style.width = "210mm";
-  frame.style.height = "297mm";
-  frame.style.border = "0";
-  frame.style.opacity = "0";
-  frame.style.pointerEvents = "none";
-  frame.style.zIndex = "-1";
-  document.body.append(frame);
-
-  const frameDocument = frame.contentDocument;
-  if (!frameDocument) throw new Error("Could not prepare CV PDF export frame.");
-
-  frameDocument.open();
-  frameDocument.write(`<!doctype html><html><head><meta charset="utf-8"><style>${cvCanvasExportStyleText(exportCss)}</style></head><body></body></html>`);
-  frameDocument.close();
-
-  return frame;
-}
-
-async function mountCvPagesInExportFrame(frame: HTMLIFrameElement, pages: HTMLElement[], activePageIndex: number) {
-  const frameDocument = frame.contentDocument;
-  const frameWindow = frame.contentWindow;
-  if (!frameDocument || !frameWindow) throw new Error("Could not render CV PDF export frame.");
-
-  const printRoot = frameDocument.createElement("div");
-  printRoot.className = "bd-cv-print-root";
-
-  let activePage: HTMLElement | null = null;
-  pages.forEach((page, index) => {
-    const clonedPage = frameDocument.importNode(page, true) as HTMLElement;
-    if (index !== activePageIndex) clonedPage.style.setProperty("display", "none", "important");
-    else activePage = clonedPage;
-    printRoot.append(clonedPage);
-  });
-
-  frameDocument.body.replaceChildren(printRoot);
-  sanitizeCanvasStyleAttributes(printRoot);
-  await waitForCvPrintAssets(printRoot);
-  await waitForCvExportFonts(frameDocument);
-  await waitForNextPaint();
-  sanitizeCvCanvasColors(printRoot, frameWindow);
-  sanitizeCanvasStyleAttributes(printRoot);
-
-  if (!activePage) throw new Error("Could not find CV page for PDF export.");
-  return activePage;
-}
-
-function isolateClonedPrintPage(clonedDocument: Document, activePageIndex: number) {
-  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page, index) => {
-    if (index !== activePageIndex) page.style.setProperty("display", "none", "important");
-  });
-}
-
-function millimetersToPixels(value: number) {
-  return Math.round((value * 96) / 25.4);
-}
-
-function prepareCvExportRoot(root: HTMLElement) {
-  const previous = {
-    position: root.style.position,
-    left: root.style.left,
-    top: root.style.top,
-    transform: root.style.transform,
-    opacity: root.style.opacity,
-    visibility: root.style.visibility,
-    display: root.style.display,
-    width: root.style.width,
-    zIndex: root.style.zIndex,
-    pointerEvents: root.style.pointerEvents,
-  };
-
-  root.style.position = "fixed";
-  root.style.left = "0";
-  root.style.top = "0";
-  root.style.transform = "none";
-  root.style.opacity = "0";
-  root.style.visibility = "visible";
-  root.style.display = "block";
-  root.style.width = "210mm";
-  root.style.zIndex = "-1";
-  root.style.pointerEvents = "none";
-
-  return () => {
-    root.style.position = previous.position;
-    root.style.left = previous.left;
-    root.style.top = previous.top;
-    root.style.transform = previous.transform;
-    root.style.opacity = previous.opacity;
-    root.style.visibility = previous.visibility;
-    root.style.display = previous.display;
-    root.style.width = previous.width;
-    root.style.zIndex = previous.zIndex;
-    root.style.pointerEvents = previous.pointerEvents;
-  };
-}
-
-async function prepareCvExportImages(root: HTMLElement) {
-  const restore: Array<() => void> = [];
-  const images = Array.from(root.querySelectorAll("img"));
-  const backgroundElements = Array.from(root.querySelectorAll<HTMLElement>("[style*='background-image']"));
-
-  await Promise.all(
-    images.map(async (image) => {
-      const source = image.currentSrc || image.src;
-      if (!source || source.startsWith("data:")) return;
-
-      const dataUrl = await imageSourceToDataUrl(source);
-      if (!dataUrl) return;
-
-      const previousSource = image.getAttribute("src");
-      const previousSourceSet = image.getAttribute("srcset");
-      restore.push(() => {
-        if (previousSource === null) image.removeAttribute("src");
-        else image.setAttribute("src", previousSource);
-        if (previousSourceSet === null) image.removeAttribute("srcset");
-        else image.setAttribute("srcset", previousSourceSet);
-      });
-      image.removeAttribute("srcset");
-      image.src = dataUrl;
-    }),
-  );
-
-  await Promise.all(
-    backgroundElements.map(async (element) => {
-      const source = cssBackgroundImageUrl(element.style.backgroundImage);
-      if (!source || source.startsWith("data:")) return;
-
-      const dataUrl = await imageSourceToDataUrl(source);
-      if (!dataUrl) return;
-
-      const previousBackground = element.style.backgroundImage;
-      restore.push(() => {
-        element.style.backgroundImage = previousBackground;
-      });
-      element.style.backgroundImage = `url("${dataUrl}")`;
-    }),
-  );
-
-  return () => {
-    [...restore].reverse().forEach((restoreItem) => restoreItem());
-  };
-}
-
-async function imageSourceToDataUrl(source: string) {
-  try {
-    const response = await fetch(cvImageRequestSource(source), { cache: "force-cache" });
-    if (!response.ok) return "";
-    const blob = await response.blob();
-    if (!blob.type.toLowerCase().startsWith("image/")) return "";
-    return blobToDataUrl(blob);
-  } catch {
-    return "";
-  }
-}
-
-function blobToDataUrl(blob: Blob) {
-  return new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => resolve("");
-    reader.readAsDataURL(blob);
-  });
-}
-
-function cssBackgroundImageUrl(value: string) {
-  return value.match(/url\(["']?(.*?)["']?\)/)?.[1] || "";
-}
-
-function printableCvCssForCanvasExport() {
-  let css = "";
-
-  Array.from(document.styleSheets).forEach((sheet) => {
-    let rules: CSSRuleList;
-    try {
-      rules = sheet.cssRules;
-    } catch {
-      return;
-    }
-
-    Array.from(rules).forEach((rule) => {
-      if (rule.type !== CSSRule.MEDIA_RULE) return;
-      const mediaRule = rule as CSSMediaRule;
-      if (!mediaRule.conditionText.includes("print")) return;
-
-      Array.from(mediaRule.cssRules).forEach((nestedRule) => {
-        if (nestedRule.type !== CSSRule.STYLE_RULE) return;
-        const styleRule = nestedRule as CSSStyleRule;
-        const selectorText = styleRule.selectorText || "";
-        if (!selectorText.split(",").some((selector) => selector.trim().startsWith(".bd-print") || selector.includes(".bd-print") || selector.includes(".bd-cv-print-root"))) return;
-        css += `${styleRule.cssText}\n`;
-      });
-    });
-  });
-
-  return sanitizeCanvasCss(css);
-}
-
-function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string) {
-  removeClonedPageStyles(clonedDocument);
-
-  const style = clonedDocument.createElement("style");
-  style.setAttribute("data-bluedeck-cv-export", "true");
-  style.textContent = cvCanvasExportStyleText(exportCss);
-  clonedDocument.head.append(style);
-
-  sanitizeCanvasStyleAttributes(clonedDocument);
-  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
-    sanitizeCvCanvasColors(page, clonedDocument.defaultView);
-  });
-  sanitizeCanvasStyleAttributes(clonedDocument);
-}
-
-function cvCanvasExportStyleText(exportCss: string) {
-  return sanitizeCanvasCss(`
-    html,
-    body {
-      width: 210mm !important;
-      min-width: 210mm !important;
-      min-height: 297mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      overflow: hidden !important;
-      background: #ffffff !important;
-      color: #242a31 !important;
-      color-scheme: light !important;
-      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-      font-synthesis: none !important;
-      text-rendering: geometricPrecision !important;
-    }
-    ${exportCss}
-    .bd-cv-print-root {
-      position: static !important;
-      left: auto !important;
-      top: auto !important;
-      transform: none !important;
-      display: block !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      width: 210mm !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      overflow: visible !important;
-      background: #ffffff !important;
-      pointer-events: auto !important;
-    }
-    .bd-print-page {
-      display: grid !important;
-      grid-template-columns: 74mm 136mm !important;
-      width: 210mm !important;
-      height: 297mm !important;
-      min-height: 297mm !important;
-      max-height: 297mm !important;
-      overflow: hidden !important;
-      background: #ffffff !important;
-      color: #242a31 !important;
-      box-shadow: none !important;
-    }
-    .bd-print-sidebar,
-    .bd-print-main {
-      height: 297mm !important;
-      min-height: 297mm !important;
-      max-height: 297mm !important;
-    }
-    .bd-print-page,
-    .bd-print-page * {
-      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
-      font-synthesis: none !important;
-      box-sizing: border-box !important;
-      text-rendering: geometricPrecision !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-  `);
-}
-
-function removeClonedPageStyles(clonedDocument: Document) {
-  clonedDocument.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => node.remove());
-}
-
-function sanitizeCanvasCss(css: string) {
-  return css
-    .replace(/\b(?:oklab|oklch|lab|lch|hwb|color)\([^;{}]*\)/gi, "#242a31")
-    .replace(/\bcolor-mix\([^;{}]*\)/gi, "#ffffff");
-}
-
-function waitForNextPaint() {
-  return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
-
-async function waitForCvExportFonts(documentRef: Document) {
-  const fonts = (documentRef as Document & { fonts?: { ready?: Promise<unknown> } }).fonts;
-  if (!fonts?.ready) return;
-
-  await Promise.race([
-    fonts.ready.catch(() => undefined),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 1200)),
-  ]);
-}
-
-const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|hwb|color|color-mix)\(/i;
-
-function sanitizeCanvasStyleAttributes(root: ParentNode) {
-  const elements = root.nodeType === Node.ELEMENT_NODE
-    ? [root as HTMLElement, ...Array.from(root.querySelectorAll<HTMLElement>("[style]"))]
-    : Array.from(root.querySelectorAll<HTMLElement>("[style]"));
-  elements.forEach((element) => {
-    const style = element.getAttribute("style");
-    if (!style || !unsupportedCanvasColorPattern.test(style)) return;
-    element.setAttribute("style", sanitizeCanvasCss(style));
-  });
-}
-
-function sanitizeCvCanvasColors(root: HTMLElement, view: Window | null) {
-  if (!view) return;
-
-  const elements: Element[] = [root, ...Array.from(root.querySelectorAll("*"))];
-  elements.forEach((element) => {
-    const computed = view.getComputedStyle(element);
-    const target = element as HTMLElement | SVGElement;
-    const style = target.style;
-
-    style.setProperty("color", safeCanvasColor(computed.color, "#242a31"), "important");
-    style.setProperty("background-color", safeCanvasColor(computed.backgroundColor, "transparent"), "important");
-    style.setProperty("border-top-color", safeCanvasColor(computed.borderTopColor, "#d8e2e6"), "important");
-    style.setProperty("border-right-color", safeCanvasColor(computed.borderRightColor, "#d8e2e6"), "important");
-    style.setProperty("border-bottom-color", safeCanvasColor(computed.borderBottomColor, "#d8e2e6"), "important");
-    style.setProperty("border-left-color", safeCanvasColor(computed.borderLeftColor, "#d8e2e6"), "important");
-    style.setProperty("outline-color", safeCanvasColor(computed.outlineColor, "#d8e2e6"), "important");
-    style.setProperty("text-decoration-color", safeCanvasColor(computed.textDecorationColor, "currentColor"), "important");
-    style.setProperty("box-shadow", safeCanvasShadow(computed.boxShadow), "important");
-    style.setProperty("text-shadow", safeCanvasShadow(computed.textShadow), "important");
-
-    const fill = computed.getPropertyValue("fill");
-    const stroke = computed.getPropertyValue("stroke");
-    if (fill && fill !== "none") style.setProperty("fill", safeCanvasColor(fill, "currentColor"), "important");
-    if (stroke && stroke !== "none") style.setProperty("stroke", safeCanvasColor(stroke, "currentColor"), "important");
-
-    const backgroundImage = computed.backgroundImage || "";
-    if (unsupportedCanvasColorPattern.test(backgroundImage) || (backgroundImage !== "none" && !backgroundImage.includes("url("))) {
-      style.setProperty("background-image", "none", "important");
-    }
-  });
-}
-
-function safeCanvasColor(value: string, fallback: string) {
-  if (!value || unsupportedCanvasColorPattern.test(value)) return fallback;
-  return value;
-}
-
-function safeCanvasShadow(value: string) {
-  if (!value || value === "none" || unsupportedCanvasColorPattern.test(value)) return "none";
-  return value;
-}
-
-async function waitForCvPrintAssets(root: HTMLElement) {
-  const images = Array.from(root.querySelectorAll("img"));
-  if (images.length === 0) return;
-
-  images.forEach((image) => {
-    image.loading = "eager";
-    image.decoding = "sync";
-    (image as HTMLImageElement & { fetchPriority?: string }).fetchPriority = "high";
-  });
-
-  const sources = Array.from(new Set(images.map((image) => image.currentSrc || image.src).filter(Boolean)));
-
-  await Promise.race([
-    Promise.all(
-      sources.map((source) => preloadPrintImage(source)),
-    ),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 3500)),
-  ]);
-
-  await Promise.race([
-    Promise.all(images.map((image) => waitForDomPrintImage(image))),
-    new Promise<void>((resolve) => window.setTimeout(resolve, 1800)),
-  ]);
-}
-
-function preloadPrintImage(source: string) {
-  return new Promise<void>((resolve) => {
-    const image = new Image();
-    image.decoding = "sync";
-    image.loading = "eager";
-    image.onload = () => resolve();
-    image.onerror = () => resolve();
-    image.src = source;
-    if (image.complete) resolve();
-  });
-}
-
-function waitForDomPrintImage(image: HTMLImageElement) {
-  if (image.complete && image.naturalWidth > 0) return Promise.resolve();
-  if (image.decode) return image.decode().catch(() => undefined);
-
-  return new Promise<void>((resolve) => {
-    image.addEventListener("load", () => resolve(), { once: true });
-    image.addEventListener("error", () => resolve(), { once: true });
-  });
+  await drawBlueDeckPdf(pdf, payload);
+  await savePdfBlob(pdf.output("blob"), cvPdfFileName(payload.profile));
 }
 
 async function drawBlueDeckPdf(pdf: PdfDoc, payload: CvPdfPayload) {
-  const logo = await loadPdfImageAsset("/bluedeck-logo-mark.png", { width: 520, height: 260, fit: "contain" });
-  const profilePhoto = await loadPdfImageAsset(payload.profile.profile_photo_url, { width: 520, height: 520, fit: "circle" });
+  await registerPdfFont(pdf);
+  const logo = await loadPdfImageAsset("/bluedeck-logo-mark.png", { width: 760, height: 380, fit: "contain" });
+  const profilePhoto = await loadPdfImageAsset(payload.profile.profile_photo_url, { width: 760, height: 760, fit: "circle" });
   const experienceImages = new Map<string, PdfImageAsset>();
 
   await Promise.all(
     payload.experiences.map(async (experience) => {
       if (!experience.photo_url || experienceImages.has(experience.photo_url)) return;
-      const image = await loadPdfImageAsset(experience.photo_url, { width: 560, height: 420, fit: "cover" });
+      const image = await loadPdfImageAsset(experience.photo_url, { width: 900, height: 675, fit: "cover" });
       if (image) experienceImages.set(experience.photo_url, image);
     }),
   );
@@ -2293,11 +1836,26 @@ async function drawBlueDeckPdf(pdf: PdfDoc, payload: CvPdfPayload) {
       }).catch(() => "")
     : "";
 
-  const firstPageExperiences = payload.experiences.slice(0, 2);
-  const remainingPages = chunkItems(payload.experiences.slice(2), 3);
-  const pages = [
-    { kind: "first" as const, experiences: firstPageExperiences },
-    ...remainingPages.map((experiences) => ({ kind: "continued" as const, experiences })),
+  type PdfCvPage = {
+    kind: "first" | "continued" | "otherWork" | "otherWorkContinued";
+    experiences: Experience[];
+    otherWorkExperiences: Experience[];
+  };
+
+  const firstPageYachtCount = Math.min(payload.experiences.length, 3);
+  const firstPageExperiences = payload.experiences.slice(0, firstPageYachtCount);
+  const firstPageOtherCapacity = Math.max(0, 3 - firstPageExperiences.length);
+  const firstPageOtherWorkExperiences = payload.otherWorkExperiences.slice(0, firstPageOtherCapacity);
+  const remainingYachtPages = chunkItems(payload.experiences.slice(firstPageYachtCount), 4);
+  const remainingOtherWorkPages = chunkItems(payload.otherWorkExperiences.slice(firstPageOtherWorkExperiences.length), 4);
+  const pages: PdfCvPage[] = [
+    { kind: "first", experiences: firstPageExperiences, otherWorkExperiences: firstPageOtherWorkExperiences },
+    ...remainingYachtPages.map((experiences) => ({ kind: "continued" as const, experiences, otherWorkExperiences: [] })),
+    ...remainingOtherWorkPages.map((experiences, index) => ({
+      kind: index === 0 ? "otherWork" as const : "otherWorkContinued" as const,
+      experiences: [],
+      otherWorkExperiences: experiences,
+    })),
   ];
 
   pages.forEach((page, index) => {
@@ -2307,7 +1865,8 @@ async function drawBlueDeckPdf(pdf: PdfDoc, payload: CvPdfPayload) {
     if (index === 0) {
       drawPdfPrimarySidebar(pdf, payload, logo, qrDataUrl);
       drawPdfHero(pdf, payload, profilePhoto);
-      drawPdfAboutAndExperiences(pdf, payload, page.experiences, experienceImages, 96);
+      drawPdfFirstPageContent(pdf, payload, page.experiences, page.otherWorkExperiences, experienceImages, 96);
+      drawPdfFooter(pdf);
       return;
     }
 
@@ -2317,11 +1876,31 @@ async function drawBlueDeckPdf(pdf: PdfDoc, payload: CvPdfPayload) {
       drawPdfContinuationSidebar(pdf, payload, logo);
     }
 
-    drawPdfContinuedExperiences(pdf, payload, page.experiences, experienceImages);
+    if (page.kind === "otherWork" || page.kind === "otherWorkContinued") {
+      drawPdfExperiencePage(pdf, payload, page.otherWorkExperiences, experienceImages, {
+        title: "Other Work Experience",
+        showTitle: true,
+      });
+    } else {
+      drawPdfExperiencePage(pdf, payload, page.experiences, experienceImages, {
+        title: "Yacht Experience",
+        showTitle: false,
+      });
+    }
+    drawPdfFooter(pdf);
   });
 }
 
-function savePdfBlob(blob: Blob, fileName: string) {
+async function savePdfBlob(blob: Blob, fileName: string) {
+  const file = new File([blob], fileName, { type: "application/pdf" });
+  if (isAppleTouchDevice() && navigator.canShare?.({ files: [file] })) {
+    await navigator.share({
+      files: [file],
+      title: fileName,
+    });
+    return;
+  }
+
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
@@ -2331,6 +1910,34 @@ function savePdfBlob(blob: Blob, fileName: string) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function isAppleTouchDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+async function registerPdfFont(pdf: PdfDoc) {
+  try {
+    const response = await fetch("/fonts/Geist-Regular.ttf", { cache: "force-cache" });
+    if (!response.ok) return;
+    const fontBase64 = arrayBufferToBase64(await response.arrayBuffer());
+    pdf.addFileToVFS("Geist-Regular.ttf", fontBase64);
+    pdf.addFont("Geist-Regular.ttf", blueDeckPdfFontName, "normal");
+    pdf.addFont("Geist-Regular.ttf", blueDeckPdfFontName, "bold");
+    setPdfFont(pdf, "normal");
+  } catch {
+    pdf.setFont("helvetica", "normal");
+  }
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return btoa(binary);
 }
 
 function drawPdfPageBase(pdf: PdfDoc) {
@@ -2359,7 +1966,7 @@ function drawPdfPrimarySidebar(pdf: PdfDoc, payload: CvPdfPayload, logo: PdfImag
   y = drawPdfPillSection(pdf, "Preferences", (payload.profile.work_preferences || []).slice(0, 5), y + 4);
 
   if (payload.documents.length > 0 && y < 252) {
-    pdf.setFont("helvetica", "normal");
+    setPdfFont(pdf, "normal");
     pdf.setFontSize(7.4);
     setPdfText(pdf, "#6b747a");
     pdf.text(`${payload.documents.length} documents continue on the next pages.`, 18, y + 3);
@@ -2383,12 +1990,12 @@ function drawPdfDocumentSidebar(pdf: PdfDoc, payload: CvPdfPayload, logo: PdfIma
   if (qrDataUrl && y < 226) {
     drawPdfRoundRect(pdf, 20, Math.max(y + 5, 188), 50, 48, 3, "#ffffff", "#cbd7dc");
     pdf.addImage(qrDataUrl, "PNG", 30, Math.max(y + 10, 193), 30, 30);
-    pdf.setFont("helvetica", "bold");
+    setPdfFont(pdf, "bold");
     pdf.setFontSize(7);
     setPdfText(pdf, "#2d7482");
     pdf.text(payload.profile.public_crew_id || "Crew ID", 45, Math.max(y + 43, 226), { align: "center" });
     pdf.text("PHOTO GALLERY", 45, Math.max(y + 48, 231), { align: "center" });
-    pdf.setFont("helvetica", "normal");
+    setPdfFont(pdf, "normal");
     pdf.setFontSize(6.8);
     setPdfText(pdf, "#40535d");
     pdf.text("Scan to view verified yacht", 45, Math.max(y + 53, 236), { align: "center" });
@@ -2398,24 +2005,18 @@ function drawPdfDocumentSidebar(pdf: PdfDoc, payload: CvPdfPayload, logo: PdfIma
 
 function drawPdfContinuationSidebar(pdf: PdfDoc, payload: CvPdfPayload, logo: PdfImageAsset | null) {
   drawPdfSidebarBackground(pdf);
-  if (logo) pdf.addImage(logo.dataUrl, logo.format, 18, 20, 14, 7);
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(8);
-  setPdfText(pdf, "#06111f");
-  pdf.text((payload.profile.full_name || "BlueDeck Crew").toUpperCase(), 18, 34, { maxWidth: 48 });
-  pdf.setFontSize(7);
-  setPdfText(pdf, "#2d7482");
-  pdf.text("YACHT EXPERIENCE", 18, 40);
+  void payload;
+  void logo;
 }
 
 function drawPdfSidebarBackground(pdf: PdfDoc) {
   setPdfFill(pdf, "#e7ecee");
-  pdf.rect(14, 16, 64, 245, "F");
+  pdf.rect(0, 0, 74, 297, "F");
 }
 
 function drawPdfBrand(pdf: PdfDoc, logo: PdfImageAsset | null, x: number, y: number) {
   if (logo) pdf.addImage(logo.dataUrl, logo.format, x, y, 15, 8);
-  pdf.setFont("helvetica", "bold");
+  setPdfFont(pdf, "bold");
   pdf.setFontSize(6.6);
   setPdfText(pdf, "#2d7482");
   pdf.text("BLUEDECK.APP", x + 20, y + 3.2);
@@ -2435,7 +2036,7 @@ function drawPdfHero(pdf: PdfDoc, payload: CvPdfPayload, profilePhoto: PdfImageA
     pdf.circle(83, 52, 21, "FD");
   }
 
-  pdf.setFont("helvetica", "bold");
+  setPdfFont(pdf, "bold");
   pdf.setFontSize(7);
   setPdfText(pdf, "#8ed8e6");
   pdf.text("VERIFIED CREW PROFILE", 105, 47);
@@ -2444,50 +2045,75 @@ function drawPdfHero(pdf: PdfDoc, payload: CvPdfPayload, profilePhoto: PdfImageA
   setPdfText(pdf, "#ffffff");
   pdf.text(payload.crewName.toUpperCase(), 105, 58, { maxWidth: 76 });
 
-  pdf.setFont("helvetica", "normal");
+  setPdfFont(pdf, "normal");
   pdf.setFontSize(10);
   setPdfText(pdf, "#ffffff");
   pdf.text(payload.primaryPosition, 105, 68);
 }
 
-function drawPdfAboutAndExperiences(
+function drawPdfFirstPageContent(
   pdf: PdfDoc,
   payload: CvPdfPayload,
   experiences: Experience[],
+  otherWorkExperiences: Experience[],
   images: Map<string, PdfImageAsset>,
   startY: number,
 ) {
   let y = startY;
   drawPdfMainTitle(pdf, "About Me", 84, y, 106);
   y += 8;
-  const summaryHeight = drawPdfTextCard(pdf, payload.professionalSummary, 84, y, 106, 23, 8.5);
-  y += summaryHeight + 9;
+  const summaryHeight = drawPdfTextCard(pdf, payload.professionalSummary, 84, y, 106, 21, 7.4);
+  y += summaryHeight + 8;
 
-  drawPdfMainTitle(pdf, "Yacht Experience", 84, y, 88);
-  drawPdfPill(pdf, `${payload.totalExperienceYears} years`, 174, y - 4.8, 18, 7, "#173f4a", "#ffffff", 6.6);
-  y += 9;
+  if (experiences.length > 0 || otherWorkExperiences.length === 0) {
+    drawPdfMainTitle(pdf, "Yacht Experience", 84, y, 88);
+    drawPdfPill(pdf, `${payload.totalExperienceYears} years`, 174, y - 4.8, 18, 7, "#173f4a", "#ffffff", 6.6);
+    y += 9;
 
-  experiences.forEach((experience) => {
-    drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 49);
-    y += 58;
-  });
+    experiences.forEach((experience) => {
+      drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 43);
+      y += 45;
+    });
+  }
+
+  if (otherWorkExperiences.length > 0) {
+    y += experiences.length > 0 ? 2 : 0;
+    drawPdfMainTitle(pdf, "Other Work Experience", 84, y, 106);
+    y += 9;
+    otherWorkExperiences.forEach((experience) => {
+      drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), undefined, 84, y, 106, 43);
+      y += 45;
+    });
+  }
 }
 
-function drawPdfContinuedExperiences(
+function drawPdfExperiencePage(
   pdf: PdfDoc,
   payload: CvPdfPayload,
   experiences: Experience[],
   images: Map<string, PdfImageAsset>,
+  options: { title: string; showTitle: boolean },
 ) {
-  let y = 26;
-  drawPdfMainTitle(pdf, "Yacht Experience", 84, y, 88);
-  drawPdfPill(pdf, "continued", 174, y - 4.8, 18, 7, "#173f4a", "#ffffff", 6.6);
-  y += 11;
+  let y = options.showTitle ? 24 : 18;
+  if (options.showTitle) {
+    drawPdfMainTitle(pdf, options.title, 84, y, 106);
+    y += 10;
+  }
 
   experiences.forEach((experience) => {
-    drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 59);
-    y += 70;
+    drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 56);
+    y += 62;
   });
+}
+
+function drawPdfFooter(pdf: PdfDoc) {
+  pdf.setDrawColor(199, 210, 214);
+  pdf.setLineWidth(0.2);
+  pdf.line(84, 282, 194, 282);
+  setPdfFont(pdf, "bold");
+  pdf.setFontSize(5.8);
+  setPdfText(pdf, "#6b747a");
+  pdf.text("This CV is generated from verified BlueDeck profile data and can be updated from any device.", 84, 288);
 }
 
 function drawPdfExperienceCard(
@@ -2500,79 +2126,112 @@ function drawPdfExperienceCard(
   width: number,
   height: number,
 ) {
+  const compact = height <= 42;
+  const isOtherWork = isOtherWorkExperience(experience);
   const metaWidth = 32;
   const bodyX = x + metaWidth + 4;
   const bodyWidth = width - metaWidth - 4;
-  const yachtName = experience.yacht_name || "Yacht";
+  const title = cleanSaveText(experience.yacht_name) || (isOtherWork ? "Work Experience" : "Yacht");
+  const role = cleanSaveText(experience.position) || (isOtherWork ? "Role" : "Position");
+  const metaLines = isOtherWork
+    ? [role, formatDateRange(experience.start_date, experience.end_date), experience.location].filter(Boolean)
+    : [experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean);
+  const imageHeight = compact ? 14 : 18;
+  const imageY = y + (compact ? 4 : 6);
+  const metaTitleY = y + (compact ? 22.5 : 29);
+  const metaDetailsY = y + (compact ? 29.5 : 38);
+  const dateY = y + height - (compact ? 8 : 13);
+  const locationY = y + height - (compact ? 3.8 : 4);
 
   drawPdfRoundRect(pdf, x, y, width, height, 4, "#ffffff", "#d8e2e6");
   drawPdfRoundRect(pdf, x + 3, y + 3, metaWidth - 6, height - 6, 3, "#f6f8f8", "#d8e2e6");
 
-  if (image) {
-    pdf.addImage(image.dataUrl, image.format, x + 6, y + 6, metaWidth - 12, 17);
+  if (image && !isOtherWork) {
+    pdf.addImage(image.dataUrl, image.format, x + 6, imageY, metaWidth - 12, imageHeight);
   } else {
-    drawPdfRoundRect(pdf, x + 6, y + 6, metaWidth - 12, 17, 2, "#edf3f5");
+    drawPdfRoundRect(pdf, x + 6, imageY, metaWidth - 12, imageHeight, 2, "#edf3f5");
+    setPdfFont(pdf, "bold");
+    pdf.setFontSize(compact ? 4.6 : 5.6);
+    setPdfText(pdf, "#2d7482");
+    pdf.text(isOtherWork ? "OTHER WORK" : "PHOTO", x + metaWidth / 2, imageY + imageHeight / 2 + 0.4, { align: "center" });
   }
 
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(pdfYachtNameSize(yachtName));
+  setPdfFont(pdf, "bold");
+  pdf.setFontSize(pdfYachtNameSize(title) - (compact ? 1 : 0));
   setPdfText(pdf, "#06111f");
-  drawPdfWrappedText(pdf, yachtName.toUpperCase(), x + 6, y + 29, metaWidth - 12, 7.8, 3.3, 2);
+  drawPdfWrappedText(pdf, title.toUpperCase(), x + 6, metaTitleY, metaWidth - 12, 7.2, compact ? 2.8 : 3.3, 2);
 
-  pdf.setFontSize(6.6);
+  pdf.setFontSize(compact ? 5.5 : 6.6);
   setPdfText(pdf, "#6b747a");
   drawPdfWrappedText(
     pdf,
-    [experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ").toUpperCase(),
+    metaLines.join(" / ").toUpperCase(),
     x + 6,
-    y + 38,
+    metaDetailsY,
     metaWidth - 12,
-    6.6,
-    3,
-    3,
+    compact ? 5.5 : 6.6,
+    compact ? 2.5 : 3,
+    compact ? 2 : 3,
   );
 
-  pdf.setFontSize(7.6);
-  setPdfText(pdf, "#2d7482");
-  drawPdfWrappedText(pdf, formatDateRange(experience.start_date, experience.end_date), x + 6, y + height - 13, metaWidth - 12, 7.6, 3.4, 2);
-  if (experience.location) {
-    pdf.setFontSize(6.4);
-    pdf.text(`• ${experience.location.toUpperCase()}`, x + 6, y + height - 4);
+  if (!isOtherWork) {
+    pdf.setFontSize(compact ? 6.5 : 7.6);
+    setPdfText(pdf, "#2d7482");
+    drawPdfWrappedText(pdf, formatDateRange(experience.start_date, experience.end_date), x + 6, dateY, metaWidth - 12, 7, compact ? 2.8 : 3.4, 2);
+    if (experience.location) {
+      pdf.setFontSize(compact ? 5.4 : 6.4);
+      pdf.text(`• ${experience.location.toUpperCase()}`, x + 6, locationY);
+    }
   }
 
   drawPdfRoundRect(pdf, bodyX, y + 3, bodyWidth - 3, height - 6, 3, "#f6f8f8", "#d8e2e6");
-  drawPdfRoundRect(pdf, bodyX + 3, y + 6, bodyWidth - 9, 10, 2, "#ffffff", "#d8e2e6");
-  pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(pdfYachtTitleSize(yachtName));
+  drawPdfRoundRect(pdf, bodyX + 3, y + (compact ? 4 : 6), bodyWidth - 9, compact ? 8 : 10, 2, "#ffffff", "#d8e2e6");
+  setPdfFont(pdf, "bold");
+  pdf.setFontSize(pdfYachtTitleSize(title) - (compact ? 1.4 : 0));
   setPdfText(pdf, "#06111f");
-  pdf.text(yachtName.toUpperCase(), bodyX + 6, y + 12.6, { maxWidth: bodyWidth - 33 });
-  drawPdfPill(pdf, (experience.position || "Position").toUpperCase(), bodyX + bodyWidth - 30, y + 7.2, 22, 5.8, "#173f4a", "#ffffff", 5.2);
+  pdf.text(title.toUpperCase(), bodyX + 6, y + (compact ? 9.5 : 12.6), { maxWidth: bodyWidth - 33 });
+  drawPdfPill(pdf, role.toUpperCase(), bodyX + bodyWidth - 30, y + (compact ? 5.7 : 7.2), 22, compact ? 5.2 : 5.8, "#173f4a", "#ffffff", compact ? 4.4 : 5.2);
 
   pdf.setFontSize(6.4);
   setPdfText(pdf, "#2d7482");
-  pdf.text("DUTIES", bodyX + 6, y + 22);
-  pdf.setFont("helvetica", "normal");
+  pdf.text("DUTIES", bodyX + 6, y + (compact ? 16.5 : 22));
+  setPdfFont(pdf, "normal");
   setPdfText(pdf, "#364650");
-  drawPdfWrappedText(pdf, experience.description || "Responsibilities and onboard duties will appear here.", bodyX + 6, y + 28, bodyWidth - 15, 7.2, 3.8, references.length > 0 ? 4 : 6);
+  drawPdfWrappedText(
+    pdf,
+    experience.description || "Responsibilities and duties will appear here.",
+    bodyX + 6,
+    y + (compact ? 21 : 28),
+    bodyWidth - 15,
+    compact ? 5.8 : 7.2,
+    compact ? 2.9 : 3.8,
+    references.length > 0 ? (compact ? 2 : 4) : (compact ? 5 : 6),
+  );
 
   if (references.length > 0) {
     pdf.setDrawColor(199, 210, 214);
-    pdf.line(bodyX + 6, y + height - 25, bodyX + bodyWidth - 9, y + height - 25);
-    pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(6.4);
+    pdf.line(bodyX + 6, y + height - (compact ? 14.5 : 25), bodyX + bodyWidth - 9, y + height - (compact ? 14.5 : 25));
+    setPdfFont(pdf, "bold");
+    pdf.setFontSize(compact ? 5.6 : 6.4);
     setPdfText(pdf, "#2d7482");
-    pdf.text("REFERENCE", bodyX + 6, y + height - 19.5);
-    drawPdfRoundRect(pdf, bodyX + 6, y + height - 17, bodyWidth - 15, 11, 2, "#ffffff", "#d8e2e6");
+    pdf.text("REFERENCE", bodyX + 6, y + height - (compact ? 10.8 : 19.5));
+    drawPdfRoundRect(pdf, bodyX + 6, y + height - (compact ? 8.8 : 17), bodyWidth - 15, compact ? 7.4 : 11, 2, "#ffffff", "#d8e2e6");
     const reference = references[0];
-    pdf.setFontSize(7.6);
+    pdf.setFontSize(compact ? 5.9 : 7.6);
     setPdfText(pdf, "#06111f");
-    pdf.text(referenceDisplayName(reference), bodyX + 9, y + height - 11.6, { maxWidth: bodyWidth - 21 });
-    pdf.setFontSize(6.4);
+    pdf.text(referenceDisplayName(reference), bodyX + 9, y + height - (compact ? 5.8 : 11.6), { maxWidth: bodyWidth - 21 });
+    pdf.setFontSize(compact ? 4.8 : 6.4);
     setPdfText(pdf, "#2d7482");
-    pdf.text([reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference", bodyX + 9, y + height - 7.5, { maxWidth: bodyWidth - 21 });
-    pdf.setFont("helvetica", "normal");
-    setPdfText(pdf, "#5a6870");
-    pdf.text([reference.email, reference.phone].filter(Boolean).join(" / "), bodyX + 9, y + height - 3.8, { maxWidth: bodyWidth - 21 });
+    const detailLine = referenceDetailLine(reference, isOtherWork ? "Work reference" : "Yacht reference");
+    if (detailLine) {
+      pdf.text(detailLine, bodyX + 9, y + height - (compact ? 2.8 : 7.5), { maxWidth: bodyWidth - 21 });
+    }
+    const contactLine = referenceContactLine(reference);
+    if (!compact && contactLine) {
+      setPdfFont(pdf, "normal");
+      setPdfText(pdf, "#5a6870");
+      pdf.text(contactLine, bodyX + 9, y + height - 3.8, { maxWidth: bodyWidth - 21 });
+    }
   }
 }
 
@@ -2582,11 +2241,11 @@ function drawPdfSideSection(pdf: PdfDoc, title: string, y: number, rows: Array<[
   rows.forEach(([label, value]) => {
     pdf.setDrawColor(203, 215, 220);
     pdf.line(18, y + 5, 72, y + 5);
-    pdf.setFont("helvetica", "normal");
+    setPdfFont(pdf, "normal");
     pdf.setFontSize(7.2);
     setPdfText(pdf, "#6b747a");
     pdf.text(label, 18, y + 3.4);
-    pdf.setFont("helvetica", "bold");
+    setPdfFont(pdf, "bold");
     setPdfText(pdf, "#242a31");
     pdf.text(value || "-", 72, y + 3.4, { align: "right", maxWidth: 28 });
     y += 7;
@@ -2603,7 +2262,7 @@ function drawPdfContactSection(pdf: PdfDoc, profile: CrewProfile, y: number) {
     ["L", profile.location || "-"],
   ].forEach(([icon, value]) => {
     drawPdfRoundRect(pdf, 18, y - 3.5, 5, 5, 1, "#173f4a");
-    pdf.setFont("helvetica", "bold");
+    setPdfFont(pdf, "bold");
     pdf.setFontSize(4.6);
     setPdfText(pdf, "#ffffff");
     pdf.text(icon, 20.5, y, { align: "center" });
@@ -2619,7 +2278,7 @@ function drawPdfLanguageSection(pdf: PdfDoc, languages: LanguageEntry[], y: numb
   drawPdfSideTitle(pdf, "Language", 18, y, 54);
   y += 8;
   languages.slice(0, 4).forEach((language) => {
-    pdf.setFont("helvetica", "bold");
+    setPdfFont(pdf, "bold");
     pdf.setFontSize(7.5);
     setPdfText(pdf, "#242a31");
     pdf.text(language.name, 18, y);
@@ -2652,7 +2311,7 @@ function drawPdfPillSection(pdf: PdfDoc, title: string, items: string[], y: numb
 }
 
 function drawPdfSideTitle(pdf: PdfDoc, title: string, x: number, y: number, width: number) {
-  pdf.setFont("helvetica", "bold");
+  setPdfFont(pdf, "bold");
   pdf.setFontSize(8.2);
   setPdfText(pdf, "#06111f");
   pdf.text(title.toUpperCase(), x, y);
@@ -2662,7 +2321,7 @@ function drawPdfSideTitle(pdf: PdfDoc, title: string, x: number, y: number, widt
 }
 
 function drawPdfMainTitle(pdf: PdfDoc, title: string, x: number, y: number, width: number) {
-  pdf.setFont("helvetica", "bold");
+  setPdfFont(pdf, "bold");
   pdf.setFontSize(9.5);
   setPdfText(pdf, "#06111f");
   pdf.text(title.toUpperCase(), x, y);
@@ -2673,7 +2332,7 @@ function drawPdfMainTitle(pdf: PdfDoc, title: string, x: number, y: number, widt
 
 function drawPdfTextCard(pdf: PdfDoc, text: string, x: number, y: number, width: number, height: number, fontSize: number) {
   drawPdfRoundRect(pdf, x, y, width, height, 4, "#f6f8f8", "#d8e2e6");
-  pdf.setFont("helvetica", "normal");
+  setPdfFont(pdf, "normal");
   pdf.setFontSize(fontSize);
   setPdfText(pdf, "#3d454c");
   drawPdfWrappedText(pdf, text, x + 5, y + 8, width - 10, fontSize, 5, 4);
@@ -2682,7 +2341,7 @@ function drawPdfTextCard(pdf: PdfDoc, text: string, x: number, y: number, width:
 
 function drawPdfDocumentRow(pdf: PdfDoc, document: CrewDocument, x: number, y: number, width: number, height: number) {
   drawPdfRoundRect(pdf, x, y, width, height, 2, "#f6f8f8", "#c7d2d6");
-  pdf.setFont("helvetica", "bold");
+  setPdfFont(pdf, "bold");
   pdf.setFontSize(7.4);
   setPdfText(pdf, "#06111f");
   pdf.text(document.document_type || "Document", x + 3, y + 5.2, { maxWidth: width - 22 });
@@ -2704,7 +2363,7 @@ function drawPdfWrappedText(pdf: PdfDoc, text: string, x: number, y: number, wid
 
 function drawPdfPill(pdf: PdfDoc, label: string, x: number, y: number, width: number, height: number, fill: string, text: string, fontSize: number) {
   drawPdfRoundRect(pdf, x, y, width, height, height / 2, fill);
-  pdf.setFont("helvetica", "bold");
+  setPdfFont(pdf, "bold");
   pdf.setFontSize(fontSize);
   setPdfText(pdf, text);
   pdf.text(label, x + width / 2, y + height / 2 + fontSize * 0.13, { align: "center", baseline: "middle" });
@@ -2836,6 +2495,14 @@ function setPdfStroke(pdf: PdfDoc, color: string) {
 function setPdfText(pdf: PdfDoc, color: string) {
   const [red, green, blue] = hexToRgb(color);
   pdf.setTextColor(red, green, blue);
+}
+
+function setPdfFont(pdf: PdfDoc, style: "normal" | "bold" = "normal") {
+  try {
+    pdf.setFont(blueDeckPdfFontName, style);
+  } catch {
+    pdf.setFont("helvetica", style);
+  }
 }
 
 function hexToRgb(color: string): [number, number, number] {
