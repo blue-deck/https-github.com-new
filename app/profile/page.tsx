@@ -1813,7 +1813,174 @@ async function downloadCvPdf(payload: CvPdfPayload) {
 
   await waitForCvPrintAssets(root);
   await waitForNextPaint();
-  await exportCvPrintPagesToPdf(root, pages, cvPdfFileName(payload.profile));
+  submitCvPdfDownload({
+    html: serializeCvPrintRootForPdf(root),
+    css: cvServerPdfStyleText(printableCvCssForCanvasExport()),
+    fileName: cvPdfFileName(payload.profile),
+  });
+}
+
+function serializeCvPrintRootForPdf(root: HTMLElement) {
+  const clone = root.cloneNode(true) as HTMLElement;
+  absolutizeCvPrintAssets(root, clone);
+  sanitizeCanvasStyleAttributes(clone);
+  return clone.outerHTML;
+}
+
+function absolutizeCvPrintAssets(sourceRoot: HTMLElement, cloneRoot: HTMLElement) {
+  const sourceImages = Array.from(sourceRoot.querySelectorAll<HTMLImageElement>("img"));
+  const cloneImages = Array.from(cloneRoot.querySelectorAll<HTMLImageElement>("img"));
+
+  cloneImages.forEach((image, index) => {
+    const sourceImage = sourceImages[index];
+    const source = sourceImage?.currentSrc || sourceImage?.src || image.getAttribute("src") || "";
+    const absoluteSource = absoluteCvAssetUrl(source);
+    if (absoluteSource) image.setAttribute("src", absoluteSource);
+    image.removeAttribute("srcset");
+    image.setAttribute("loading", "eager");
+    image.setAttribute("decoding", "sync");
+    image.setAttribute("crossorigin", "anonymous");
+  });
+
+  Array.from(cloneRoot.querySelectorAll<HTMLElement>("[style*='background-image']")).forEach((element) => {
+    const source = cssBackgroundImageUrl(element.style.backgroundImage);
+    const absoluteSource = absoluteCvAssetUrl(source);
+    if (absoluteSource) element.style.backgroundImage = `url("${absoluteSource}")`;
+  });
+
+  Array.from(cloneRoot.querySelectorAll("script")).forEach((script) => script.remove());
+}
+
+function absoluteCvAssetUrl(source: string) {
+  if (!source) return "";
+  if (source.startsWith("data:") || source.startsWith("blob:")) return source;
+
+  try {
+    return new URL(source, window.location.origin).href;
+  } catch {
+    return "";
+  }
+}
+
+function cvServerPdfStyleText(exportCss: string) {
+  return sanitizeCanvasCss(`
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    html,
+    body {
+      width: 210mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #242a31 !important;
+      color-scheme: light !important;
+      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
+      font-synthesis: none !important;
+      text-rendering: geometricPrecision !important;
+    }
+
+    ${exportCss}
+
+    .bd-cv-print-root {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      width: 210mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      background: #ffffff !important;
+      pointer-events: auto !important;
+    }
+
+    .bd-print-page {
+      display: grid !important;
+      grid-template-columns: 74mm 136mm !important;
+      width: 210mm !important;
+      height: 297mm !important;
+      min-height: 297mm !important;
+      max-height: 297mm !important;
+      overflow: hidden !important;
+      background: #ffffff !important;
+      color: #242a31 !important;
+      box-shadow: none !important;
+      break-after: page !important;
+      page-break-after: always !important;
+    }
+
+    .bd-print-page:last-child {
+      break-after: auto !important;
+      page-break-after: auto !important;
+    }
+
+    .bd-print-sidebar,
+    .bd-print-main {
+      height: 297mm !important;
+      min-height: 297mm !important;
+      max-height: 297mm !important;
+    }
+
+    .bd-print-page,
+    .bd-print-page * {
+      font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif !important;
+      font-synthesis: none !important;
+      box-sizing: border-box !important;
+      text-rendering: geometricPrecision !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  `);
+}
+
+function submitCvPdfDownload(payload: { html: string; css: string; fileName: string }) {
+  const target = isAppleTouchDevice() ? "_self" : "bluedeck_cv_pdf_download";
+  const iframe = target === "bluedeck_cv_pdf_download" ? document.createElement("iframe") : null;
+  const form = document.createElement("form");
+
+  if (iframe) {
+    iframe.name = target;
+    iframe.title = "BlueDeck CV PDF download";
+    iframe.style.position = "fixed";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+    iframe.style.border = "0";
+    iframe.style.left = "-100vw";
+    iframe.style.top = "0";
+    document.body.append(iframe);
+  }
+
+  form.method = "post";
+  form.action = "/api/cv-pdf";
+  form.target = target;
+  form.style.display = "none";
+
+  Object.entries(payload).forEach(([name, value]) => {
+    const field = document.createElement("textarea");
+    field.name = name;
+    field.value = value;
+    form.append(field);
+  });
+
+  document.body.append(form);
+  form.submit();
+  form.remove();
+
+  if (iframe) {
+    window.setTimeout(() => iframe.remove(), 60000);
+  }
+}
+
+function isAppleTouchDevice() {
+  return /iPad|iPhone|iPod/.test(window.navigator.userAgent) || (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
 }
 
 async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], fileName: string) {
