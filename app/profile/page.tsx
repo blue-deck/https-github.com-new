@@ -855,7 +855,7 @@ export default function ProfilePage() {
       return false;
     }
 
-    const hasReferenceDetail = [item.name, item.role, item.company, item.phone, item.email].some(
+    const hasReferenceDetail = [item.name, item.role, item.company, item.phone, item.email, item.notes].some(
       (value) => typeof value === "string" && value.trim().length > 0,
     );
 
@@ -4273,6 +4273,12 @@ function ExperienceEditor({
   const dutiesLength = dutiesValue.length;
   const requestReference = references.find(isReferenceAvailableUponRequest);
   const editableReferences = references.filter((reference) => !isReferenceAvailableUponRequest(reference));
+  const [requestReferenceSelected, setRequestReferenceSelected] = useState(Boolean(requestReference));
+  const referenceRequestDirty = requestReferenceSelected !== Boolean(requestReference);
+
+  useEffect(() => {
+    setRequestReferenceSelected(Boolean(requestReference));
+  }, [requestReference?.id]);
 
   function removePhoto() {
     setDraft({ ...draft, photo_url: "" });
@@ -4296,21 +4302,43 @@ function ExperienceEditor({
     });
   }
 
-  async function saveReferenceUponRequest() {
-    const yachtName = draft.yacht_name.trim();
-
-    if (!yachtName) {
-      alert("Add the yacht name before saving a reference note.");
-      return false;
-    }
-
+  async function persistReferenceUponRequest(yachtName: string) {
     return onSaveReference({
-      ...emptyReference,
+      ...(requestReference || emptyReference),
       name: referenceUponRequestText,
       vessel: yachtName,
+      company: "",
+      role: "",
+      phone: "",
+      email: "",
       notes: referenceUponRequestMarker,
       show_on_cv: true,
     });
+  }
+
+  function toggleReferenceUponRequest() {
+    if (requestReferenceSelected) {
+      setRequestReferenceSelected(false);
+      if (requestReference?.id) onDeleteReference(requestReference.id);
+      return;
+    }
+
+    setRequestReferenceSelected(true);
+    const yachtName = draft.yacht_name.trim();
+    if (!isNew && !dirty && yachtName) void persistReferenceUponRequest(yachtName);
+  }
+
+  async function handleSaveExperience() {
+    const saved = await onSave(draft);
+    if (!saved || !requestReferenceSelected) return saved;
+
+    const yachtName = draft.yacht_name.trim();
+    if (!yachtName) {
+      alert("Add the yacht name to link the reference request note to this experience.");
+      return saved;
+    }
+
+    return persistReferenceUponRequest(yachtName);
   }
 
   return (
@@ -4441,10 +4469,9 @@ function ExperienceEditor({
             </div>
             <div className="space-y-2">
               <ReferenceRequestButton
-                selected={Boolean(requestReference)}
+                selected={requestReferenceSelected}
                 saving={referenceSaving}
-                onSelect={saveReferenceUponRequest}
-                onRemove={() => requestReference?.id && onDeleteReference(requestReference.id)}
+                onToggle={toggleReferenceUponRequest}
               />
               {editableReferences.map((reference) => (
                 <ExperienceReferenceEditor
@@ -4466,7 +4493,7 @@ function ExperienceEditor({
               />
             </div>
           </div>
-          <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
+          <EditorButtons isNew={isNew} dirty={dirty || referenceRequestDirty} onSave={handleSaveExperience} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
         </div>
       </div>
     </article>
@@ -4498,6 +4525,12 @@ function OtherWorkExperienceEditor({
   const dutiesLength = dutiesValue.length;
   const requestReference = references.find(isReferenceAvailableUponRequest);
   const editableReferences = references.filter((reference) => !isReferenceAvailableUponRequest(reference));
+  const [requestReferenceSelected, setRequestReferenceSelected] = useState(Boolean(requestReference));
+  const referenceRequestDirty = requestReferenceSelected !== Boolean(requestReference);
+
+  useEffect(() => {
+    setRequestReferenceSelected(Boolean(requestReference));
+  }, [requestReference?.id]);
 
   async function saveLinkedReference(reference: ReferenceEntry) {
     const workName = draft.yacht_name.trim();
@@ -4517,21 +4550,44 @@ function OtherWorkExperienceEditor({
     });
   }
 
-  async function saveReferenceUponRequest() {
-    const workName = draft.yacht_name.trim();
-
-    if (!workName) {
-      alert("Add the work or company name before saving a reference note.");
-      return false;
-    }
-
+  async function persistReferenceUponRequest(workName: string) {
     return onSaveReference({
-      ...emptyReference,
+      ...(requestReference || emptyReference),
       name: referenceUponRequestText,
       vessel: workName,
+      company: "",
+      role: "",
+      phone: "",
+      email: "",
       notes: referenceUponRequestMarker,
       show_on_cv: true,
     });
+  }
+
+  function toggleReferenceUponRequest() {
+    if (requestReferenceSelected) {
+      setRequestReferenceSelected(false);
+      if (requestReference?.id) onDeleteReference(requestReference.id);
+      return;
+    }
+
+    setRequestReferenceSelected(true);
+    const workName = draft.yacht_name.trim();
+    if (!isNew && !dirty && workName) void persistReferenceUponRequest(workName);
+  }
+
+  async function handleSaveOtherWorkExperience() {
+    const nextDraft = { ...draft, yacht_type: otherWorkExperienceMarker, photo_url: "" };
+    const saved = await onSave(nextDraft);
+    if (!saved || !requestReferenceSelected) return saved;
+
+    const workName = draft.yacht_name.trim();
+    if (!workName) {
+      alert("Add the work or company name to link the reference request note to this work experience.");
+      return saved;
+    }
+
+    return persistReferenceUponRequest(workName);
   }
 
   return (
@@ -4606,10 +4662,9 @@ function OtherWorkExperienceEditor({
             </div>
             <div className="space-y-2">
               <ReferenceRequestButton
-                selected={Boolean(requestReference)}
+                selected={requestReferenceSelected}
                 saving={referenceSaving}
-                onSelect={saveReferenceUponRequest}
-                onRemove={() => requestReference?.id && onDeleteReference(requestReference.id)}
+                onToggle={toggleReferenceUponRequest}
               />
               {editableReferences.map((reference) => (
                 <ExperienceReferenceEditor
@@ -4631,7 +4686,7 @@ function OtherWorkExperienceEditor({
               />
             </div>
           </div>
-          <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave({ ...draft, yacht_type: otherWorkExperienceMarker, photo_url: "" })} onDelete={() => onDelete(draft.id)} addLabel="Add work experience" />
+          <EditorButtons isNew={isNew} dirty={dirty || referenceRequestDirty} onSave={handleSaveOtherWorkExperience} onDelete={() => onDelete(draft.id)} addLabel="Add work experience" />
         </div>
       </div>
     </article>
@@ -4855,22 +4910,17 @@ function ExperienceReferenceEditor({
 function ReferenceRequestButton({
   selected,
   saving,
-  onSelect,
-  onRemove,
+  onToggle,
 }: {
   selected: boolean;
   saving: boolean;
-  onSelect: () => Promise<boolean>;
-  onRemove: () => void;
+  onToggle: () => void;
 }) {
   return (
     <button
       type="button"
       disabled={saving}
-      onClick={() => {
-        if (selected) onRemove();
-        else void onSelect();
-      }}
+      onClick={onToggle}
       className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition disabled:cursor-wait disabled:opacity-70 ${
         selected
           ? "border-[#9bd6df] bg-[#eefbfc] text-[#173f4a]"
