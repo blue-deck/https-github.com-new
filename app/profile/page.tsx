@@ -1824,11 +1824,13 @@ async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], 
   const restoreRoot = prepareCvExportRoot(root);
   const restoreImages = await prepareCvExportImages(root);
   const exportCss = printableCvCssForCanvasExport();
+  const exportFrame = createCvCanvasExportFrame(exportCss);
   const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   const renderScale = Math.min(2.25, Math.max(2, window.devicePixelRatio || 2));
 
   try {
-    for (const [pageIndex, page] of pages.entries()) {
+    for (const [pageIndex] of pages.entries()) {
+      const page = await mountCvPagesInExportFrame(exportFrame, pages, pageIndex);
       const canvas = await html2canvas(page, {
         backgroundColor: "#ffffff",
         scale: renderScale,
@@ -1854,9 +1856,62 @@ async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], 
 
     savePdfBlob(pdf.output("blob"), fileName);
   } finally {
+    exportFrame.remove();
     restoreImages();
     restoreRoot();
   }
+}
+
+function createCvCanvasExportFrame(exportCss: string) {
+  const frame = document.createElement("iframe");
+  frame.setAttribute("title", "BlueDeck CV PDF export");
+  frame.setAttribute("aria-hidden", "true");
+  frame.style.position = "fixed";
+  frame.style.left = "0";
+  frame.style.top = "0";
+  frame.style.width = "210mm";
+  frame.style.height = "297mm";
+  frame.style.border = "0";
+  frame.style.opacity = "0";
+  frame.style.pointerEvents = "none";
+  frame.style.zIndex = "-1";
+  document.body.append(frame);
+
+  const frameDocument = frame.contentDocument;
+  if (!frameDocument) throw new Error("Could not prepare CV PDF export frame.");
+
+  frameDocument.open();
+  frameDocument.write(`<!doctype html><html><head><meta charset="utf-8"><style>${cvCanvasExportStyleText(exportCss)}</style></head><body></body></html>`);
+  frameDocument.close();
+
+  return frame;
+}
+
+async function mountCvPagesInExportFrame(frame: HTMLIFrameElement, pages: HTMLElement[], activePageIndex: number) {
+  const frameDocument = frame.contentDocument;
+  const frameWindow = frame.contentWindow;
+  if (!frameDocument || !frameWindow) throw new Error("Could not render CV PDF export frame.");
+
+  const printRoot = frameDocument.createElement("div");
+  printRoot.className = "bd-cv-print-root";
+
+  let activePage: HTMLElement | null = null;
+  pages.forEach((page, index) => {
+    const clonedPage = frameDocument.importNode(page, true) as HTMLElement;
+    if (index !== activePageIndex) clonedPage.style.setProperty("display", "none", "important");
+    else activePage = clonedPage;
+    printRoot.append(clonedPage);
+  });
+
+  frameDocument.body.replaceChildren(printRoot);
+  sanitizeCanvasStyleAttributes(printRoot);
+  await waitForCvPrintAssets(printRoot);
+  await waitForNextPaint();
+  sanitizeCvCanvasColors(printRoot, frameWindow);
+  sanitizeCanvasStyleAttributes(printRoot);
+
+  if (!activePage) throw new Error("Could not find CV page for PDF export.");
+  return activePage;
 }
 
 function isolateClonedPrintPage(clonedDocument: Document, activePageIndex: number) {
@@ -2014,7 +2069,30 @@ function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string)
 
   const style = clonedDocument.createElement("style");
   style.setAttribute("data-bluedeck-cv-export", "true");
-  style.textContent = `
+  style.textContent = cvCanvasExportStyleText(exportCss);
+  clonedDocument.head.append(style);
+
+  sanitizeCanvasStyleAttributes(clonedDocument);
+  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
+    sanitizeCvCanvasColors(page, clonedDocument.defaultView);
+  });
+  sanitizeCanvasStyleAttributes(clonedDocument);
+}
+
+function cvCanvasExportStyleText(exportCss: string) {
+  return sanitizeCanvasCss(`
+    html,
+    body {
+      width: 210mm !important;
+      min-width: 210mm !important;
+      min-height: 297mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      background: #ffffff !important;
+      color: #242a31 !important;
+      color-scheme: light !important;
+    }
     ${exportCss}
     .bd-cv-print-root {
       position: static !important;
@@ -2055,12 +2133,7 @@ function injectCvCanvasExportStyles(clonedDocument: Document, exportCss: string)
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-  `;
-  clonedDocument.head.append(style);
-
-  Array.from(clonedDocument.querySelectorAll<HTMLElement>(".bd-print-page")).forEach((page) => {
-    sanitizeCvCanvasColors(page, clonedDocument.defaultView);
-  });
+  `);
 }
 
 function removeClonedPageStyles(clonedDocument: Document) {
@@ -2069,8 +2142,8 @@ function removeClonedPageStyles(clonedDocument: Document) {
 
 function sanitizeCanvasCss(css: string) {
   return css
-    .replace(/\b(?:oklab|oklch|lab|lch)\([^)]*\)/gi, "#242a31")
-    .replace(/\bcolor-mix\([^)]*\)/gi, "#ffffff");
+    .replace(/\b(?:oklab|oklch|lab|lch|hwb|color)\([^;{}]*\)/gi, "#242a31")
+    .replace(/\bcolor-mix\([^;{}]*\)/gi, "#ffffff");
 }
 
 function waitForNextPaint() {
@@ -2079,7 +2152,18 @@ function waitForNextPaint() {
   });
 }
 
-const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|color-mix)\(/i;
+const unsupportedCanvasColorPattern = /\b(?:lab|lch|oklab|oklch|hwb|color|color-mix)\(/i;
+
+function sanitizeCanvasStyleAttributes(root: ParentNode) {
+  const elements = root.nodeType === Node.ELEMENT_NODE
+    ? [root as HTMLElement, ...Array.from(root.querySelectorAll<HTMLElement>("[style]"))]
+    : Array.from(root.querySelectorAll<HTMLElement>("[style]"));
+  elements.forEach((element) => {
+    const style = element.getAttribute("style");
+    if (!style || !unsupportedCanvasColorPattern.test(style)) return;
+    element.setAttribute("style", sanitizeCanvasCss(style));
+  });
+}
 
 function sanitizeCvCanvasColors(root: HTMLElement, view: Window | null) {
   if (!view) return;
