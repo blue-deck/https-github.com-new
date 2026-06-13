@@ -1,21 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import {
   Anchor,
+  AlertTriangle,
   Bell,
+  CalendarClock,
   Camera,
   CheckCircle,
   CheckSquare,
   ChevronDown,
   ClipboardList,
   Clock3,
+  FileCheck2,
   LifeBuoy,
+  ListChecks,
   Plus,
   RefreshCcw,
+  Search,
+  ShieldAlert,
   ShipWheel,
+  TimerReset,
   Trash2,
   Utensils,
   UserRound,
@@ -119,6 +126,39 @@ export default function CrewPage({
       return matchesDepartment && matchesFrequency && matchesSearch;
     });
   }, [availableTemplates, templateDepartmentFilter, templateFrequencyFilter, templateSearch]);
+
+  const selectedTemplateObjects = useMemo(
+    () => checklistTemplates.filter((template) => selectedTemplates.includes(template.id)),
+    [selectedTemplates]
+  );
+
+  const checklistInsights = useMemo(() => {
+    const allTasks = checklists.flatMap((checklist) => checklist.yacht_checklist_items || []);
+    const completedTasks = allTasks.filter((task: any) => task.completed).length;
+    const openTasks = Math.max(allTasks.length - completedTasks, 0);
+    const completedChecklists = checklists.filter((checklist) => checklist.status === "completed").length;
+    const openChecklists = Math.max(checklists.length - completedChecklists, 0);
+    const proofItems = allTasks.filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
+    const dueSoon = checklists.filter((checklist) => {
+      if (!checklist.due_date || checklist.status === "completed") return false;
+      const dueTime = new Date(checklist.due_date).getTime();
+      const now = Date.now();
+      const threeDays = 1000 * 60 * 60 * 24 * 3;
+      return dueTime >= now - threeDays && dueTime <= now + threeDays;
+    }).length;
+    const progress = allTasks.length ? Math.round((completedTasks / allTasks.length) * 100) : 0;
+
+    return {
+      allTasks: allTasks.length,
+      completedTasks,
+      openTasks,
+      openChecklists,
+      completedChecklists,
+      proofItems,
+      dueSoon,
+      progress,
+    };
+  }, [checklists]);
 
   function toggleProgressCard(id: string) {
     setExpandedProgress((current) =>
@@ -649,18 +689,29 @@ export default function CrewPage({
       <div className="mx-auto max-w-[1700px]">
         <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
-          <div className="p-5 sm:p-10">
-            <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
-              {isChecklistSystem ? "BlueDeck ChecklistOS" : "BlueDeck CrewOS"}
-            </p>
-            <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
-              {isChecklistSystem ? "Checklist System" : "Yacht Crew Command"}
-            </h1>
-            <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-5 sm:text-xl">
-              {isChecklistSystem
-                ? "Assign professional yacht checklists through the correct onboard hierarchy, review crew progress and keep proof records in one focused workspace."
-                : "Invite crew, manage onboard roles and send yacht contracts from one clean crew command workspace."}
-            </p>
+          <div className={isChecklistSystem ? "grid gap-6 p-5 sm:p-8 xl:grid-cols-[1.15fr_0.85fr]" : "p-5 sm:p-10"}>
+            <div>
+              <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
+                {isChecklistSystem ? "BlueDeck ChecklistOS" : "BlueDeck CrewOS"}
+              </p>
+              <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
+                {isChecklistSystem ? "Checklist System" : "Yacht Crew Command"}
+              </h1>
+              <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-5 sm:text-xl">
+                {isChecklistSystem
+                  ? "Assign yacht-ready operational routines, verify crew progress and keep proof photos in one controlled captain workspace."
+                  : "Invite crew, manage onboard roles and send yacht contracts from one clean crew command workspace."}
+              </p>
+            </div>
+
+            {isChecklistSystem && (
+              <div className="grid gap-3 rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#071827_0%,#0d3143_58%,#eafcff_58%,#ffffff_100%)] p-4 shadow-inner shadow-cyan-950/15 sm:grid-cols-2">
+                <InsightCard label="Open tasks" value={checklistInsights.openTasks} tone="dark" icon={<ListChecks />} />
+                <InsightCard label="Progress" value={`${checklistInsights.progress}%`} tone="aqua" icon={<CheckCircle />} />
+                <InsightCard label="Due soon" value={checklistInsights.dueSoon} tone="amber" icon={<CalendarClock />} />
+                <InsightCard label="Proof records" value={checklistInsights.proofItems} tone="white" icon={<FileCheck2 />} />
+              </div>
+            )}
           </div>
         </div>
 
@@ -668,7 +719,7 @@ export default function CrewPage({
           <Stat title="Crew" value={crew.length} icon={<Bell />} />
           {isChecklistSystem ? (
             <>
-              <Stat title="Open Checklists" value={checklists.length} icon={<ClipboardList />} />
+              <Stat title="Open Checklists" value={checklistInsights.openChecklists} icon={<ClipboardList />} />
               <Stat title="Library" value={`${checklistTemplates.length} templates`} icon={<ShipWheel />} />
             </>
           ) : (
@@ -771,61 +822,133 @@ export default function CrewPage({
             )}
 
             {isChecklistSystem && (
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
-              <p className="text-cyan-700">Assign To</p>
-              <h2 className="mt-2 text-3xl font-black sm:text-4xl">Crew Member</h2>
-
-              <select
-                value={selectedCrew}
-                onChange={(e) => setSelectedCrew(e.target.value)}
-                className="mt-8 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
-              >
-                <option value="">Select crew</option>
-                {assignableCrew.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.crew_profiles?.full_name || member.invited_email} — {member.position}
-                  </option>
-                ))}
-              </select>
-              {assignableCrew.length === 0 && (
-                <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-slate-600">
-                  No crew below your current hierarchy is available for assignment yet.
+            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
+              <div className="bg-[linear-gradient(135deg,#071827_0%,#0d3143_100%)] p-5 text-white sm:p-7">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
+                  Assignment Console
                 </p>
-              )}
-
-              <button
-                onClick={assignSelectedChecklists}
-                disabled={loading}
-                className="mt-5 w-full rounded-2xl bg-slate-950 py-4 text-xl font-bold text-white transition hover:bg-cyan-700 disabled:opacity-60"
-              >
-                {loading ? "Assigning..." : "Assign Selected Checklists"}
-              </button>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <select
-                  value={frequency}
-                  onChange={(e) => setFrequency(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
-                >
-                  {checklistFrequencies.map((item) => (
-                    <option key={item}>{item}</option>
-                  ))}
-                </select>
-
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
-                />
+                <h2 className="mt-2 text-3xl font-black sm:text-4xl">Create Checklist</h2>
+                <p className="mt-3 text-sm leading-6 text-cyan-50/78">
+                  Select crew, schedule the routine, then assign one or more verified BlueDeck templates.
+                </p>
               </div>
 
-              <textarea
-                placeholder="Captain note for this checklist"
-                value={captainNote}
-                onChange={(e) => setCaptainNote(e.target.value)}
-                className="mt-4 h-24 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-              />
+              <div className="p-5 sm:p-7">
+                <label className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                  Crew member
+                </label>
+                <select
+                  value={selectedCrew}
+                  onChange={(e) => setSelectedCrew(e.target.value)}
+                  className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-bold text-slate-950 outline-none focus:border-cyan-300"
+                >
+                  <option value="">Select crew</option>
+                  {assignableCrew.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.crew_profiles?.full_name || member.invited_email} — {member.position}
+                    </option>
+                  ))}
+                </select>
+                {assignableCrew.length === 0 && (
+                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-slate-600">
+                    No crew below your current hierarchy is available for assignment yet.
+                  </p>
+                )}
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Frequency
+                    </span>
+                    <select
+                      value={frequency}
+                      onChange={(e) => setFrequency(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                    >
+                      {checklistFrequencies.map((item) => (
+                        <option key={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Due date
+                    </span>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                    />
+                  </label>
+                </div>
+
+                <label className="mt-5 block">
+                  <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                    Captain note
+                  </span>
+                  <textarea
+                    placeholder="Optional note for the assigned crew"
+                    value={captainNote}
+                    onChange={(e) => setCaptainNote(e.target.value)}
+                    className="mt-2 h-24 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                  />
+                </label>
+
+                <div className="mt-6 rounded-3xl border border-cyan-100 bg-[#f5fcfd] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                        Selected templates
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {selectedTemplateObjects.length
+                          ? `${selectedTemplateObjects.length} routine${selectedTemplateObjects.length === 1 ? "" : "s"} ready`
+                          : "Choose templates from the library"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-950 px-3 py-1 text-sm font-black text-white">
+                      {selectedTemplates.length}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {selectedTemplateObjects.slice(0, 4).map((template) => (
+                      <div key={template.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 shadow-sm">
+                        <div className="min-w-0">
+                          <p className="truncate font-black text-slate-950">{template.title}</p>
+                          <p className="text-xs font-semibold text-cyan-700">
+                            {template.department} · {frequency === "Template default" ? template.frequency : frequency}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleTemplate(template.id)}
+                          className="bd-focus flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-[#b9423b]"
+                          title="Remove selected checklist"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {selectedTemplateObjects.length > 4 && (
+                      <p className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-500">
+                        +{selectedTemplateObjects.length - 4} more selected
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={assignSelectedChecklists}
+                  disabled={loading}
+                  className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 text-lg font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:opacity-60"
+                >
+                  {loading ? "Assigning..." : "Assign Selected Checklists"}
+                </button>
+              </div>
             </div>
             )}
 
@@ -878,6 +1001,12 @@ export default function CrewPage({
                 >
                   <RefreshCcw className="h-5 w-5" />
                 </button>
+              </div>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <MiniOpsStat label="Open tasks" value={checklistInsights.openTasks} icon={<ListChecks />} />
+                <MiniOpsStat label="Completed" value={checklistInsights.completedTasks} icon={<CheckCircle />} />
+                <MiniOpsStat label="Due soon" value={checklistInsights.dueSoon} icon={<AlertTriangle />} />
               </div>
 
               <div className="mt-8 space-y-4">
@@ -1121,12 +1250,15 @@ export default function CrewPage({
               </div>
 
               <div className="mt-6 grid gap-3 sm:mt-8 lg:grid-cols-[1.2fr_0.9fr_0.9fr] lg:gap-4">
-                <input
-                  value={templateSearch}
-                  onChange={(event) => setTemplateSearch(event.target.value)}
-                  placeholder="Search checklist, task or department"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                />
+                <label className="relative block">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-700" />
+                  <input
+                    value={templateSearch}
+                    onChange={(event) => setTemplateSearch(event.target.value)}
+                    placeholder="Search checklist, task or department"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-5 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                  />
+                </label>
                 <select
                   value={templateDepartmentFilter}
                   onChange={(event) => setTemplateDepartmentFilter(event.target.value)}
@@ -1153,6 +1285,24 @@ export default function CrewPage({
                       </option>
                     ))}
                 </select>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                <WorkflowCard
+                  icon={<ShieldAlert />}
+                  title="Critical checks"
+                  text="Safety, machinery and departure routines stay visible before assignment."
+                />
+                <WorkflowCard
+                  icon={<Camera />}
+                  title="Proof ready"
+                  text="Crew can attach before and after photos from the task portal."
+                />
+                <WorkflowCard
+                  icon={<TimerReset />}
+                  title="Recurring rhythm"
+                  text="Daily, weekly, voyage and seasonal routines can be scheduled cleanly."
+                />
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3 text-xs font-black uppercase tracking-[0.14em]">
@@ -1460,6 +1610,85 @@ function TaskPhotoPreview({
         className="h-28 w-full object-cover transition group-hover:scale-[1.02]"
       />
     </button>
+  );
+}
+
+function InsightCard({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: string | number;
+  icon: ReactNode;
+  tone: "dark" | "aqua" | "amber" | "white";
+}) {
+  const toneClass =
+    tone === "dark"
+      ? "border-white/10 bg-white/10 text-white"
+      : tone === "aqua"
+        ? "border-cyan-200 bg-cyan-50 text-slate-950"
+        : tone === "amber"
+          ? "border-amber-200 bg-amber-50 text-slate-950"
+          : "border-slate-200 bg-white text-slate-950";
+
+  return (
+    <div className={`rounded-3xl border p-4 ${toneClass}`}>
+      <div className="flex items-center justify-between gap-3">
+        <span className={tone === "dark" ? "text-cyan-200" : "text-cyan-800"}>{icon}</span>
+        <span className="text-2xl font-black">{value}</span>
+      </div>
+      <p className={`mt-3 text-xs font-black uppercase tracking-[0.15em] ${tone === "dark" ? "text-cyan-50/75" : "text-slate-500"}`}>
+        {label}
+      </p>
+    </div>
+  );
+}
+
+function WorkflowCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f3fbfc_100%)] p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-cyan-900 text-cyan-100 shadow-lg shadow-cyan-950/10">
+          {icon}
+        </div>
+        <div>
+          <p className="font-black text-slate-950">{title}</p>
+          <p className="mt-1 text-sm leading-5 text-slate-500">{text}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MiniOpsStat({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  icon: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-cyan-800">{icon}</span>
+        <span className="text-xl font-black text-slate-950">{value}</span>
+      </div>
+      <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+        {label}
+      </p>
+    </div>
   );
 }
 
