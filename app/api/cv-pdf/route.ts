@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       await page.setJavaScriptEnabled(false);
       await page.setRequestInterception(true);
       page.on("request", (resourceRequest) => {
-        if (isAllowedPdfResource(resourceRequest.url(), requestUrl)) {
+        if (isAllowedPdfResource(resourceRequest.url(), request, requestUrl)) {
           resourceRequest.continue();
           return;
         }
@@ -79,7 +79,8 @@ function isSameOriginRequest(request: Request, requestUrl: URL) {
   if (!origin) return true;
 
   try {
-    return new URL(origin).origin === requestUrl.origin;
+    const originHost = new URL(origin).hostname;
+    return requestHostnames(request, requestUrl).some((hostname) => hostsMatch(originHost, hostname));
   } catch {
     return false;
   }
@@ -196,7 +197,7 @@ function sanitizeCss(css: string) {
     .replace(/@import[^;]+;/gi, "");
 }
 
-function isAllowedPdfResource(resourceUrl: string, requestUrl: URL) {
+function isAllowedPdfResource(resourceUrl: string, request: Request, requestUrl: URL) {
   if (resourceUrl === "about:blank" || resourceUrl.startsWith("data:") || resourceUrl.startsWith("blob:")) return true;
 
   let parsed: URL;
@@ -206,7 +207,7 @@ function isAllowedPdfResource(resourceUrl: string, requestUrl: URL) {
     return false;
   }
 
-  if (parsed.origin === requestUrl.origin) return true;
+  if (requestHostnames(request, requestUrl).some((hostname) => hostsMatch(parsed.hostname, hostname))) return true;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) return false;
@@ -216,6 +217,34 @@ function isAllowedPdfResource(resourceUrl: string, requestUrl: URL) {
   } catch {
     return false;
   }
+}
+
+function requestHostnames(request: Request, requestUrl: URL) {
+  return [
+    requestUrl.hostname,
+    headerHostname(request.headers.get("x-forwarded-host")),
+    headerHostname(request.headers.get("host")),
+  ].filter((hostname): hostname is string => Boolean(hostname));
+}
+
+function headerHostname(value: string | null) {
+  if (!value) return "";
+  return value.split(",")[0]?.trim().replace(/:\d+$/, "") || "";
+}
+
+function hostsMatch(first: string, second: string) {
+  if (first === second) return true;
+  if (isLocalHost(first) && isLocalHost(second)) return true;
+  return isBlueDeckHost(first) && isBlueDeckHost(second);
+}
+
+function isBlueDeckHost(hostname: string) {
+  const host = hostname.toLowerCase();
+  return host === "bluedeck.app" || host === "www.bluedeck.app";
+}
+
+function isLocalHost(hostname: string) {
+  return ["localhost", "127.0.0.1", "::1"].includes(hostname.toLowerCase());
 }
 
 function contentDispositionHeader(fileName: string) {

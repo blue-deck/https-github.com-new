@@ -1940,27 +1940,12 @@ function cvServerPdfStyleText(exportCss: string) {
 }
 
 function submitCvPdfDownload(payload: { html: string; css: string; fileName: string }) {
-  const target = isAppleTouchDevice() ? "_self" : "bluedeck_cv_pdf_download";
-  const iframe = target === "bluedeck_cv_pdf_download" ? document.createElement("iframe") : null;
   const form = document.createElement("form");
-
-  if (iframe) {
-    iframe.name = target;
-    iframe.title = "BlueDeck CV PDF download";
-    iframe.style.position = "fixed";
-    iframe.style.width = "1px";
-    iframe.style.height = "1px";
-    iframe.style.opacity = "0";
-    iframe.style.pointerEvents = "none";
-    iframe.style.border = "0";
-    iframe.style.left = "-100vw";
-    iframe.style.top = "0";
-    document.body.append(iframe);
-  }
 
   form.method = "post";
   form.action = "/api/cv-pdf";
-  form.target = target;
+  form.target = "_self";
+  form.acceptCharset = "UTF-8";
   form.style.display = "none";
 
   Object.entries(payload).forEach(([name, value]) => {
@@ -1973,14 +1958,6 @@ function submitCvPdfDownload(payload: { html: string; css: string; fileName: str
   document.body.append(form);
   form.submit();
   form.remove();
-
-  if (iframe) {
-    window.setTimeout(() => iframe.remove(), 60000);
-  }
-}
-
-function isAppleTouchDevice() {
-  return /iPad|iPhone|iPod/.test(window.navigator.userAgent) || (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
 }
 
 async function exportCvPrintPagesToPdf(root: HTMLElement, pages: HTMLElement[], fileName: string) {
