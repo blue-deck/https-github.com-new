@@ -80,6 +80,11 @@ export default function CrewPage({
   const [templateDepartmentFilter, setTemplateDepartmentFilter] = useState("All");
   const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
   const [templateSearch, setTemplateSearch] = useState("");
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualDepartment, setManualDepartment] = useState("Deck");
+  const [manualType, setManualType] = useState("Custom Routine");
+  const [manualTaskDraft, setManualTaskDraft] = useState("");
+  const [manualTasks, setManualTasks] = useState<string[]>([]);
 
   const assignableDepartments = useMemo(
     () => getAssignableDepartments(operator.position, operator.department),
@@ -107,6 +112,13 @@ export default function CrewPage({
         operator.role
       )
     );
+  }, [operator.department, operator.position, operator.role]);
+
+  const manualDepartmentOptions = useMemo(() => {
+    const allowed = yachtDepartments.filter((item) =>
+      canAssignChecklistDepartment(operator.position, operator.department, item, operator.role)
+    );
+    return allowed.length ? allowed : yachtDepartments;
   }, [operator.department, operator.position, operator.role]);
 
   const visibleTemplates = useMemo(() => {
@@ -213,6 +225,124 @@ export default function CrewPage({
     });
   }
 
+  function addManualTask() {
+    const task = manualTaskDraft.trim();
+    if (!task) return;
+
+    setManualTasks((current) => [...current, task]);
+    setManualTaskDraft("");
+  }
+
+  function updateManualTask(index: number, value: string) {
+    setManualTasks((current) => {
+      const next = [...current];
+      next[index] = value;
+      return next;
+    });
+  }
+
+  function removeManualTask(index: number) {
+    setManualTasks((current) => current.filter((_, taskIndex) => taskIndex !== index));
+  }
+
+  async function createManualChecklist() {
+    if (!selectedCrew) {
+      alert("Select crew member");
+      return;
+    }
+
+    const title = manualTitle.trim();
+    const type = manualType.trim() || "Custom Routine";
+    const tasks = manualTasks.map((task) => task.trim()).filter(Boolean);
+
+    if (!title) {
+      alert("Manual checklist title required.");
+      return;
+    }
+
+    if (tasks.length === 0) {
+      alert("Add at least one checklist task.");
+      return;
+    }
+
+    const member = crew.find((item) => item.id === selectedCrew);
+    if (
+      !member ||
+      !canAssignToCrew(
+        operator.position,
+        operator.department,
+        member.position || member.crew_profiles?.current_position,
+        member.department,
+        operator.role
+      )
+    ) {
+      alert("You can only assign checklists to crew below you in the yacht hierarchy.");
+      return;
+    }
+
+    if (
+      !canAssignChecklistDepartment(
+        operator.position,
+        operator.department,
+        manualDepartment,
+        operator.role
+      )
+    ) {
+      alert(`${manualDepartment} is outside your checklist authority.`);
+      return;
+    }
+
+    setLoading(true);
+
+    const { data: checklist, error } = await createChecklist({
+      yacht_id: yachtId,
+      title,
+      department: manualDepartment,
+      checklist_type: type,
+      assigned_to: member?.crew_profile_id,
+      due_date: dueDate || null,
+      status: "open",
+      items: {
+        frequency: frequency === "Template default" ? "One-time" : frequency,
+        captain_note: captainNote || null,
+        tasks,
+        source_template: "manual",
+        summary: "Manual BlueDeck checklist created onboard.",
+      },
+    });
+
+    if (error) {
+      alert(error.message);
+      setLoading(false);
+      return;
+    }
+
+    const { error: itemError } = await insertChecklistItems(
+      tasks.map((task) => ({
+        checklist_id: checklist.id,
+        task_text: task,
+        completed: false,
+      }))
+    );
+
+    if (itemError) {
+      alert(itemError.message);
+      setLoading(false);
+      return;
+    }
+
+    setManualTitle("");
+    setManualType("Custom Routine");
+    setManualTaskDraft("");
+    setManualTasks([]);
+    setCaptainNote("");
+    setDueDate("");
+    setLoading(false);
+    loadData();
+
+    alert("Manual checklist assigned.");
+  }
+
   async function loadData(silent = false) {
     const {
       data: { user },
@@ -265,7 +395,7 @@ export default function CrewPage({
       );
     });
 
-    if (!membership && role !== "captain" && role !== "management") {
+    if (!membership && role !== "captain" && role !== "management" && role !== "owner") {
       setOperator({ position: "", department: "", role });
       return;
     }
@@ -312,6 +442,11 @@ export default function CrewPage({
       setSelectedCrew("");
     }
   }, [assignableCrew, selectedCrew]);
+
+  useEffect(() => {
+    if (manualDepartmentOptions.includes(manualDepartment as any)) return;
+    setManualDepartment(manualDepartmentOptions[0] || "Deck");
+  }, [manualDepartment, manualDepartmentOptions]);
 
   async function addCrew() {
     if (!inviteEmail && !crewPublicId) {
@@ -952,6 +1087,116 @@ export default function CrewPage({
             </div>
             )}
 
+            {isChecklistSystem && (
+            <div className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
+              <div className="border-b border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#e9f8fb_100%)] p-5 sm:p-7">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
+                  Manual Checklist
+                </p>
+                <h2 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
+                  Write Your Own
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-slate-500">
+                  Create a one-off yacht routine when the ready library does not cover the job.
+                </p>
+              </div>
+
+              <div className="space-y-4 p-5 sm:p-7">
+                <input
+                  value={manualTitle}
+                  onChange={(event) => setManualTitle(event.target.value)}
+                  placeholder="Checklist title"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                />
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <select
+                    value={manualDepartment}
+                    onChange={(event) => setManualDepartment(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                  >
+                    {manualDepartmentOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    value={manualType}
+                    onChange={(event) => setManualType(event.target.value)}
+                    placeholder="Checklist type"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                  />
+                </div>
+
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                  <div className="flex gap-2">
+                    <input
+                      value={manualTaskDraft}
+                      onChange={(event) => setManualTaskDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addManualTask();
+                        }
+                      }}
+                      placeholder="Write checklist item"
+                      className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={addManualTask}
+                      className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
+                      title="Add manual checklist item"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {manualTasks.map((task, index) => (
+                      <div key={`${task}-${index}`} className="flex items-center gap-2">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-900 text-xs font-black text-white">
+                          {index + 1}
+                        </span>
+                        <input
+                          value={task}
+                          onChange={(event) => updateManualTask(index, event.target.value)}
+                          className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-cyan-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeManualTask(index)}
+                          className="bd-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-rose-100 bg-white text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-50"
+                          title="Remove manual item"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {manualTasks.length === 0 && (
+                      <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-500">
+                        Add manual checklist items here.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={createManualChecklist}
+                  disabled={loading}
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 py-4 text-lg font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-slate-950 disabled:opacity-60"
+                >
+                  <ListChecks className="h-5 w-5" />
+                  {loading ? "Creating..." : "Create Manual Checklist"}
+                </button>
+              </div>
+            </div>
+            )}
+
             {!isChecklistSystem && (
             <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <p className="text-cyan-700">Contract</p>
@@ -1363,6 +1608,20 @@ export default function CrewPage({
                       </div>
 
                       <p className="mt-4 text-sm leading-6 text-slate-500">{template.summary}</p>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleTemplate(template.id)}
+                        className={`bd-focus mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition ${
+                          selected
+                            ? "bg-cyan-700 text-white shadow-lg shadow-cyan-700/20 hover:bg-cyan-800"
+                            : "border border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                        }`}
+                        aria-pressed={selected}
+                      >
+                        {selected ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                        {selected ? "Selected" : "Add to assignment"}
+                      </button>
 
                       <button
                         type="button"

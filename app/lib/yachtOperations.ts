@@ -190,9 +190,9 @@ export function getDefaultPositionForAccountType(role?: string) {
 
 export function isCaptainLevel(position?: string | null, accountRole?: string | null) {
   const role = (accountRole || "").toLowerCase();
-  if (role === "captain" || role === "management") return true;
+  if (role === "captain" || role === "management" || role === "owner") return true;
   const normalized = normalizePosition(position);
-  return ["master", "captain", "fleet captain", "relief captain", "staff captain", "build captain", "yacht manager"].includes(normalized);
+  return ["master", "captain", "fleet captain", "relief captain", "staff captain", "build captain", "owner", "yacht manager"].includes(normalized);
 }
 
 export function canAssignToCrew(
