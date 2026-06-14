@@ -35,6 +35,7 @@ import {
   canAssignChecklistDepartment,
   canAssignToCrew,
   checklistFrequencies,
+  checklistLibraryPacks,
   checklistTemplates,
   getAssignableDepartments,
   getDefaultPositionForAccountType,
@@ -80,6 +81,7 @@ export default function CrewPage({
   const [templateDepartmentFilter, setTemplateDepartmentFilter] = useState("All");
   const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
   const [templateSearch, setTemplateSearch] = useState("");
+  const [activeChecklistPack, setActiveChecklistPack] = useState("departure-ready");
   const [manualTitle, setManualTitle] = useState("");
   const [manualDepartment, setManualDepartment] = useState("Deck");
   const [manualType, setManualType] = useState("Custom Routine");
@@ -114,6 +116,18 @@ export default function CrewPage({
     );
   }, [operator.department, operator.position, operator.role]);
 
+  const authorizedTemplateIds = useMemo(
+    () => new Set(availableTemplates.map((template) => template.id)),
+    [availableTemplates]
+  );
+
+  const activeChecklistPackData = useMemo(
+    () =>
+      checklistLibraryPacks.find((pack) => pack.id === activeChecklistPack) ||
+      checklistLibraryPacks[0],
+    [activeChecklistPack]
+  );
+
   const manualDepartmentOptions = useMemo(() => {
     const allowed = yachtDepartments.filter((item) =>
       canAssignChecklistDepartment(operator.position, operator.department, item, operator.role)
@@ -123,8 +137,17 @@ export default function CrewPage({
 
   const visibleTemplates = useMemo(() => {
     const search = templateSearch.trim().toLowerCase();
+    const isFiltered =
+      Boolean(search) ||
+      templateDepartmentFilter !== "All" ||
+      templateFrequencyFilter !== "All";
+    const baseTemplates = isFiltered
+      ? checklistTemplates
+      : checklistTemplates.filter((template) =>
+          activeChecklistPackData?.templateIds.includes(template.id)
+        );
 
-    return availableTemplates.filter((template) => {
+    return baseTemplates.filter((template) => {
       const matchesDepartment =
         templateDepartmentFilter === "All" || template.department === templateDepartmentFilter;
       const matchesFrequency =
@@ -137,7 +160,7 @@ export default function CrewPage({
 
       return matchesDepartment && matchesFrequency && matchesSearch;
     });
-  }, [availableTemplates, templateDepartmentFilter, templateFrequencyFilter, templateSearch]);
+  }, [activeChecklistPackData, templateDepartmentFilter, templateFrequencyFilter, templateSearch]);
 
   const selectedTemplateObjects = useMemo(
     () => checklistTemplates.filter((template) => selectedTemplates.includes(template.id)),
@@ -178,6 +201,13 @@ export default function CrewPage({
         ? current.filter((item) => item !== id)
         : [...current, id]
     );
+  }
+
+  function openChecklistPack(id: string) {
+    setActiveChecklistPack(id);
+    setTemplateSearch("");
+    setTemplateDepartmentFilter("All");
+    setTemplateFrequencyFilter("All");
   }
 
   function toggleTemplateTaskPanel(id: string) {
@@ -614,6 +644,20 @@ export default function CrewPage({
   }
 
   function toggleTemplate(key: string) {
+    const template = checklistTemplates.find((item) => item.id === key);
+    if (
+      template &&
+      !canAssignChecklistDepartment(
+        operator.position,
+        operator.department,
+        template.department,
+        operator.role
+      )
+    ) {
+      alert(`${template.title} is outside your checklist authority.`);
+      return;
+    }
+
     setSelectedTemplates((current) =>
       current.includes(key)
         ? current.filter((item) => item !== key)
@@ -869,6 +913,85 @@ export default function CrewPage({
           )}
           <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
         </div>
+
+        {isChecklistSystem && (
+          <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
+            <div className="grid gap-0 lg:grid-cols-[0.42fr_0.58fr]">
+              <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_62%,#0f5663_100%)] p-6 text-white sm:p-8">
+                <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-cyan-300/12 blur-3xl" />
+                <p className="relative text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+                  Ready Checklist Library
+                </p>
+                <h2 className="relative mt-3 max-w-lg text-4xl font-black leading-tight sm:text-5xl">
+                  Yacht operations, one-tap ready.
+                </h2>
+                <p className="relative mt-4 max-w-xl text-sm leading-7 text-cyan-50/82 sm:text-base">
+                  Select a professional routine pack, review the task list, adjust if needed and assign it to crew.
+                  The library covers departure, charter turnaround, daily yacht standard, SMS safety, engineering,
+                  toys and seasonal operations.
+                </p>
+                <div className="relative mt-6 grid grid-cols-3 gap-3">
+                  <LibraryMetric label="Packs" value={checklistLibraryPacks.length} />
+                  <LibraryMetric label="Templates" value={checklistTemplates.length} />
+                  <LibraryMetric label="Tasks" value={checklistTemplates.reduce((total, template) => total + template.tasks.length, 0)} />
+                </div>
+              </div>
+
+              <div className="grid gap-3 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_52%,#fff8ea_100%)] p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+                {checklistLibraryPacks.map((pack, index) => {
+                  const active = activeChecklistPack === pack.id;
+                  const authorizedCount = pack.templateIds.filter((id) => authorizedTemplateIds.has(id)).length;
+
+                  return (
+                    <button
+                      key={pack.id}
+                      type="button"
+                      onClick={() => openChecklistPack(pack.id)}
+                      className={`bd-focus group min-h-[190px] rounded-[24px] border p-4 text-left transition ${
+                        active
+                          ? "border-cyan-400 bg-white shadow-2xl shadow-cyan-950/12"
+                          : "border-slate-200/80 bg-white/76 shadow-sm hover:border-cyan-300 hover:bg-white hover:shadow-xl hover:shadow-cyan-950/8"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                          index % 4 === 0
+                            ? "bg-cyan-700 text-white"
+                            : index % 4 === 1
+                              ? "bg-slate-950 text-white"
+                              : index % 4 === 2
+                                ? "bg-[#e8f8f7] text-cyan-800"
+                                : "bg-[#fff4da] text-[#9d6b15]"
+                        }`}>
+                          <PackIcon packId={pack.id} />
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
+                          active ? "bg-cyan-100 text-cyan-900" : "bg-slate-100 text-slate-500"
+                        }`}>
+                          {pack.templateIds.length} ready
+                        </span>
+                      </div>
+                      <h3 className="mt-4 text-xl font-black leading-tight text-slate-950">
+                        {pack.title}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-slate-500">
+                        {pack.subtitle}
+                      </p>
+                      <div className="mt-4 border-t border-slate-100 pt-3">
+                        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-800">
+                          {pack.cadence}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {authorizedCount}/{pack.templateIds.length} assignable · {pack.focus}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
 
         <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
           <div className="space-y-6 xl:space-y-8">
@@ -1476,10 +1599,12 @@ export default function CrewPage({
                     <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
                       Professional Yacht Library
                     </p>
-                    <h2 className="text-3xl font-black sm:text-5xl">Checklist System</h2>
+                    <h2 className="text-3xl font-black sm:text-5xl">
+                      {activeChecklistPackData?.title || "Checklist System"}
+                    </h2>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
-                      Command, deck, engineering, interior, galley, safety, toys and guest
-                      operations are grouped for fast assignment without crowding the page.
+                      {activeChecklistPackData?.subtitle ||
+                        "Command, deck, engineering, interior, galley, safety, toys and guest operations are grouped for fast assignment without crowding the page."}
                     </p>
                   </div>
                 </div>
@@ -1494,7 +1619,46 @@ export default function CrewPage({
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-3 sm:mt-8 lg:grid-cols-[1.2fr_0.9fr_0.9fr] lg:gap-4">
+              <div className="mt-6 flex gap-2 overflow-x-auto rounded-[28px] border border-slate-200 bg-slate-50/80 p-2">
+                {checklistLibraryPacks.map((pack) => (
+                  <button
+                    key={pack.id}
+                    type="button"
+                    onClick={() => openChecklistPack(pack.id)}
+                    className={`bd-focus flex shrink-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition ${
+                      activeChecklistPack === pack.id
+                        ? "bg-slate-950 text-white shadow-lg shadow-slate-950/12"
+                        : "bg-white text-slate-600 hover:bg-cyan-50 hover:text-cyan-900"
+                    }`}
+                  >
+                    <PackIcon packId={pack.id} />
+                    {pack.title}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#ffffff_100%)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                      Active pack
+                    </p>
+                    <p className="mt-1 text-lg font-black text-slate-950">
+                      {activeChecklistPackData?.title}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs font-black uppercase tracking-[0.12em]">
+                    <span className="rounded-full bg-cyan-100 px-3 py-1.5 text-cyan-900">
+                      {activeChecklistPackData?.templateIds.length || 0} templates
+                    </span>
+                    <span className="rounded-full bg-slate-950 px-3 py-1.5 text-white">
+                      {activeChecklistPackData?.cadence}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:mt-6 lg:grid-cols-[1.2fr_0.9fr_0.9fr] lg:gap-4">
                 <label className="relative block">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-700" />
                   <input
@@ -1565,6 +1729,7 @@ export default function CrewPage({
               <div className="mt-6 grid gap-4 sm:mt-8 md:grid-cols-2 2xl:grid-cols-3">
                 {visibleTemplates.map((template) => {
                   const selected = selectedTemplates.includes(template.id);
+                  const authorized = authorizedTemplateIds.has(template.id);
                   const taskPanelOpen = expandedTemplateTasks.includes(template.id);
                   const assignmentTasks = getTemplateAssignmentTasks(template);
                   const trimmedTasks = assignmentTasks.map((task) => task.trim()).filter(Boolean);
@@ -1583,10 +1748,13 @@ export default function CrewPage({
                           <button
                             type="button"
                             onClick={() => toggleTemplate(template.id)}
+                            disabled={!authorized}
                             className={`bd-focus mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
                               selected
                                 ? "border-cyan-600 bg-cyan-600 text-white shadow-lg shadow-cyan-700/20"
-                                : "border-slate-300 bg-white text-slate-300 hover:border-cyan-300 hover:text-cyan-700"
+                                : authorized
+                                  ? "border-slate-300 bg-white text-slate-300 hover:border-cyan-300 hover:text-cyan-700"
+                                  : "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
                             }`}
                             aria-pressed={selected}
                             title={selected ? "Remove from assignment" : "Select checklist"}
@@ -1603,24 +1771,33 @@ export default function CrewPage({
                         </div>
 
                         <span className="w-fit rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
-                          {template.frequency}
+                          {authorized ? template.frequency : "Locked"}
                         </span>
                       </div>
 
                       <p className="mt-4 text-sm leading-6 text-slate-500">{template.summary}</p>
 
+                      {!authorized && (
+                        <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold leading-5 text-slate-600">
+                          Visible in the professional library, but outside your current assignment authority.
+                        </p>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => toggleTemplate(template.id)}
+                        disabled={!authorized}
                         className={`bd-focus mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition ${
                           selected
                             ? "bg-cyan-700 text-white shadow-lg shadow-cyan-700/20 hover:bg-cyan-800"
-                            : "border border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                            : authorized
+                              ? "border border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                              : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400"
                         }`}
                         aria-pressed={selected}
                       >
                         {selected ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                        {selected ? "Selected" : "Add to assignment"}
+                        {selected ? "Selected" : authorized ? "Add to assignment" : "Outside authority"}
                       </button>
 
                       <button
@@ -1760,6 +1937,29 @@ export default function CrewPage({
       )}
     </main>
   );
+}
+
+function LibraryMetric({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-white/12 bg-white/10 px-3 py-4 backdrop-blur">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/80">
+        {label}
+      </p>
+      <p className="mt-1 text-2xl font-black text-white">{value}</p>
+    </div>
+  );
+}
+
+function PackIcon({ packId }: { packId: string }) {
+  if (packId.includes("departure")) return <ShipWheel className="h-5 w-5" />;
+  if (packId.includes("charter")) return <RefreshCcw className="h-5 w-5" />;
+  if (packId.includes("daily")) return <CheckSquare className="h-5 w-5" />;
+  if (packId.includes("guest")) return <Anchor className="h-5 w-5" />;
+  if (packId.includes("safety")) return <ShieldAlert className="h-5 w-5" />;
+  if (packId.includes("engineering")) return <Wrench className="h-5 w-5" />;
+  if (packId.includes("toys")) return <Waves className="h-5 w-5" />;
+  if (packId.includes("season")) return <CalendarClock className="h-5 w-5" />;
+  return <ClipboardList className="h-5 w-5" />;
 }
 
 function DepartmentIcon({ department }: any) {

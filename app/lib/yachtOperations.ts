@@ -28,6 +28,15 @@ export type ChecklistTemplate = {
   tasks: string[];
 };
 
+export type ChecklistLibraryPack = {
+  id: string;
+  title: string;
+  subtitle: string;
+  focus: string;
+  cadence: string;
+  templateIds: string[];
+};
+
 export const yachtDepartments: YachtDepartmentId[] = [
   "Command",
   "Deck",
@@ -479,6 +488,23 @@ export const checklistTemplates: ChecklistTemplate[] = [
     ],
   },
   {
+    id: "deck-night-secure-round",
+    title: "Deck Night Secure Round",
+    department: "Deck",
+    type: "Night Round",
+    frequency: "Daily",
+    summary: "Final exterior walk-through before night mode, anchor watch or alongside security.",
+    tasks: [
+      "Fenders, lines and passerelle checked",
+      "Exterior cushions, covers and loose gear secured",
+      "Tender, toys and lifting points checked",
+      "Anchor light or deck lighting confirmed",
+      "Guest deck areas clear and safe",
+      "Weather exposure risks reviewed",
+      "Night watch or security notes handed over",
+    ],
+  },
+  {
     id: "engineering-engine-room-round",
     title: "Engine Room Daily Round",
     department: "Engineering",
@@ -594,6 +620,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
       "Safety critical equipment tasks verified",
       "Contractor work permits reviewed",
       "Captain updated on defects and downtime",
+    ],
+  },
+  {
+    id: "engineering-bilge-leak-control",
+    title: "Bilge and Leak Control",
+    department: "Engineering",
+    type: "Machinery Space",
+    frequency: "Daily",
+    summary: "Focused inspection for bilges, leaks, smells and pollution risk before they become operational issues.",
+    tasks: [
+      "Engine room bilges checked clean and dry",
+      "Forward and aft bilge alarms tested or reviewed",
+      "Fuel, oil, coolant and hydraulic leaks checked",
+      "Stern gland, shaft seals and sea valves inspected",
+      "Grey and black water alarms reviewed",
+      "Any abnormal smell, sheen or water ingress reported",
     ],
   },
   {
@@ -715,6 +757,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
     ],
   },
   {
+    id: "interior-guest-departure-reset",
+    title: "Guest Departure Reset",
+    department: "Interior",
+    type: "Guest Departure",
+    frequency: "After Guest Departure",
+    summary: "Controlled guest departure flow for lost property, cabin reset, laundry and damage reporting.",
+    tasks: [
+      "Guest luggage, personal items and lost property checked",
+      "Cabins stripped and laundry separated",
+      "Bathroom amenities and yacht stock counted",
+      "Guest damage, stains or repairs photographed",
+      "Cabin safe, drawers and wardrobes cleared",
+      "Chief stew departure inspection completed",
+    ],
+  },
+  {
     id: "galley-opening",
     title: "Galley Opening",
     department: "Galley",
@@ -777,6 +835,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
       "Fridges closed and temperatures checked",
       "Knives and equipment secured",
       "Next day prep labelled",
+    ],
+  },
+  {
+    id: "galley-food-safety-temperature-log",
+    title: "Food Safety Temperature Log",
+    department: "Galley",
+    type: "Food Safety",
+    frequency: "Daily",
+    summary: "Temperature, labelling and hygiene control for guest and crew food safety.",
+    tasks: [
+      "Fridge and freezer temperatures recorded",
+      "Hot holding and cooling records checked where used",
+      "Opened items labelled and dated",
+      "Expired or high-risk food removed",
+      "Allergy and dietary notes reviewed",
+      "Sanitizer and hand wash stations stocked",
     ],
   },
   {
@@ -897,6 +971,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
     ],
   },
   {
+    id: "safety-abandon-ship-muster",
+    title: "Abandon Ship and Muster Drill",
+    department: "Safety",
+    type: "Drill",
+    frequency: "Safety Drill",
+    summary: "Crew readiness check for alarms, muster roles, lifesaving appliances and guest control.",
+    tasks: [
+      "Alarm signal and muster list reviewed",
+      "Crew emergency roles assigned and confirmed",
+      "Lifejackets, immersion suits and grab bags checked",
+      "Liferaft launch points and embarkation routes reviewed",
+      "Guest control and head count procedure briefed",
+      "Drill debrief and corrective actions recorded",
+    ],
+  },
+  {
     id: "safety-hot-work-permit",
     title: "Hot Work Permit Control",
     department: "Safety",
@@ -964,6 +1054,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
     ],
   },
   {
+    id: "toys-watersports-safety-briefing",
+    title: "Watersports Safety Briefing",
+    department: "Toys",
+    type: "Guest Toys",
+    frequency: "Before Guest Arrival",
+    summary: "Guest briefing and operating control before toys, seabobs, jetskis, boards or towables are launched.",
+    tasks: [
+      "Local rules, permits and no-go zones confirmed",
+      "Guest ability, age and medical limits checked",
+      "Lifejackets and safety equipment issued",
+      "Rescue tender or spotter assigned",
+      "Hand signals and kill cord rules explained",
+      "Post-use rinse, battery and damage check planned",
+    ],
+  },
+  {
     id: "toys-dive-operations",
     title: "Dive Operations",
     department: "Toys",
@@ -1014,6 +1120,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
     ],
   },
   {
+    id: "guest-charter-welcome-flow",
+    title: "Charter Guest Welcome Flow",
+    department: "Guest",
+    type: "Guest Experience",
+    frequency: "Before Guest Arrival",
+    summary: "Coordinated arrival routine for first impression, service timing and guest movement.",
+    tasks: [
+      "Arrival ETA and transfer plan confirmed",
+      "Welcome drinks, cold towels and music ready",
+      "Cabin allocation and luggage plan briefed",
+      "Safety briefing owner or guest timing agreed",
+      "Dietary, allergies and preferences shared",
+      "Captain, chief stew and deck team aligned",
+    ],
+  },
+  {
     id: "security-night-round",
     title: "Night Security Round",
     department: "Security",
@@ -1027,6 +1149,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
       "Tender and toys secured",
       "Visitor log reviewed",
       "Suspicious activity reported to officer on watch",
+    ],
+  },
+  {
+    id: "security-visitor-access-control",
+    title: "Visitor and Contractor Access Control",
+    department: "Security",
+    type: "Security",
+    frequency: "One-time",
+    summary: "Controlled access for contractors, suppliers, agents and visitors while protecting guest privacy.",
+    tasks: [
+      "Visitor or contractor identity confirmed",
+      "Work scope, area and escort requirement agreed",
+      "Guest privacy zones protected",
+      "Tool bags, deliveries or stores logged as required",
+      "Departure time and access badges checked",
+      "Security or captain notified of any concern",
     ],
   },
   {
@@ -1044,6 +1182,22 @@ export const checklistTemplates: ChecklistTemplate[] = [
       "First aid kits restocked",
       "Medical log updated",
       "Captain informed of shortages",
+    ],
+  },
+  {
+    id: "medical-guest-readiness",
+    title: "Guest Medical Readiness",
+    department: "Medical",
+    type: "Medical",
+    frequency: "Before Guest Arrival",
+    summary: "Medical preparation for guests, allergies, medications and emergency response readiness.",
+    tasks: [
+      "Known allergies and medical notes reviewed",
+      "First aid kits and AED checked",
+      "Seasickness and minor care supplies stocked",
+      "Nearest clinic, medevac and emergency contacts reviewed",
+      "Chef and service team informed of relevant allergies",
+      "Captain briefed on any medical risk",
     ],
   },
   {
@@ -1079,6 +1233,129 @@ export const checklistTemplates: ChecklistTemplate[] = [
       "Crew travel and leave plan confirmed",
       "Documents, logs and reports archived",
       "Management handover sent",
+    ],
+  },
+];
+
+export const checklistLibraryPacks: ChecklistLibraryPack[] = [
+  {
+    id: "departure-ready",
+    title: "Departure Ready",
+    subtitle: "Bridge, deck and machinery checks before the yacht moves.",
+    focus: "Command / Deck / Engineering",
+    cadence: "Before departure",
+    templateIds: [
+      "bridge-passage-plan-review",
+      "bridge-pre-departure-setup",
+      "deck-departure-preparation",
+      "engineering-pre-departure-machinery",
+      "safety-weekly-lsa-ffe",
+    ],
+  },
+  {
+    id: "charter-turnaround",
+    title: "Charter Turnaround",
+    subtitle: "Fast exterior, interior, galley and guest reset between trips.",
+    focus: "Deck / Interior / Galley / Guest",
+    cadence: "Guest changeover",
+    templateIds: [
+      "deck-charter-turnaround-exterior",
+      "interior-charter-turnaround",
+      "interior-guest-departure-reset",
+      "galley-provision-receiving",
+      "guest-charter-welcome-flow",
+    ],
+  },
+  {
+    id: "daily-yacht-standard",
+    title: "Daily Yacht Standard",
+    subtitle: "Morning routines, hotel systems, housekeeping and night secure.",
+    focus: "Whole yacht",
+    cadence: "Daily",
+    templateIds: [
+      "command-daily-operations-brief",
+      "deck-exterior-morning-washdown",
+      "engineering-engine-room-round",
+      "engineering-bilge-leak-control",
+      "interior-daily-cabin-service",
+      "galley-opening",
+      "deck-night-secure-round",
+    ],
+  },
+  {
+    id: "guest-experience",
+    title: "Guest Experience",
+    subtitle: "Arrival, cabins, service, tenders, toys and owner-ready presentation.",
+    focus: "Guest / Interior / Toys",
+    cadence: "Guest operations",
+    templateIds: [
+      "guest-owner-arrival",
+      "guest-charter-welcome-flow",
+      "interior-guest-arrival-suites",
+      "interior-table-service",
+      "guest-tender-transfer",
+      "toys-beach-club-setup",
+    ],
+  },
+  {
+    id: "safety-sms",
+    title: "Safety and SMS",
+    subtitle: "Drills, firefighting, lifesaving, pollution, medical and permits.",
+    focus: "Safety / Medical / Security",
+    cadence: "Weekly / drill",
+    templateIds: [
+      "safety-weekly-lsa-ffe",
+      "safety-drill-preparation",
+      "safety-abandon-ship-muster",
+      "safety-pollution-prevention",
+      "safety-hot-work-permit",
+      "medical-locker-check",
+      "security-visitor-access-control",
+    ],
+  },
+  {
+    id: "engineering-control",
+    title: "Engineering Control",
+    subtitle: "Engine room, generators, watermaker, HVAC, bunkering and PMS.",
+    focus: "Engineering",
+    cadence: "Daily / weekly",
+    templateIds: [
+      "engineering-engine-room-round",
+      "engineering-pre-departure-machinery",
+      "engineering-bilge-leak-control",
+      "engineering-generator-watch",
+      "engineering-watermaker",
+      "engineering-hvac-guest-comfort",
+      "engineering-weekly-planned-maintenance",
+    ],
+  },
+  {
+    id: "tenders-toys",
+    title: "Tenders and Toys",
+    subtitle: "Launch, guest briefing, water toys, diving and recovery control.",
+    focus: "Deck / Toys / Safety",
+    cadence: "Guest activity",
+    templateIds: [
+      "deck-tender-safety",
+      "toys-beach-club-setup",
+      "toys-jetski-prep",
+      "toys-seabob-prep",
+      "toys-watersports-safety-briefing",
+      "toys-dive-operations",
+    ],
+  },
+  {
+    id: "season-management",
+    title: "Season Management",
+    subtitle: "Season opening, compliance, APA, documents and layup.",
+    focus: "Command / Purser",
+    cadence: "Seasonal",
+    templateIds: [
+      "season-start-readiness",
+      "purser-crew-documents",
+      "purser-apa-cash-log",
+      "purser-guest-preferences",
+      "season-end-layup",
     ],
   },
 ];
