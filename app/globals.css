@@ -1212,6 +1212,22 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     margin-top: 4mm !important;
   }
 
+  .bd-print-experience-item {
+    display: grid !important;
+    min-height: 0 !important;
+    gap: 1.4mm !important;
+  }
+
+  .bd-print-subsection-label {
+    margin: 0 !important;
+    color: #2d7482 !important;
+    font-size: 8.4px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.18em !important;
+    line-height: 1 !important;
+  }
+
   .bd-print-experience-card {
     display: grid !important;
     grid-template-columns: 34mm 1fr !important;
@@ -1239,6 +1255,18 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     object-fit: cover !important;
     border-radius: 2mm !important;
     background: #edf3f5 !important;
+  }
+
+  .bd-print-experience-placeholder {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #2d7482 !important;
+  }
+
+  .bd-print-experience-placeholder svg {
+    width: 7mm !important;
+    height: 7mm !important;
   }
 
   .bd-print-experience-meta b,
@@ -1385,6 +1413,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-main-continuation .bd-print-experience-list-4 {
     min-height: 264mm !important;
     grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .bd-print-main-continuation .bd-print-subsection-label {
+    font-size: 7.6px !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-meta,
@@ -1553,6 +1585,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-page:first-child .bd-print-experience-list-3 {
     min-height: 172mm !important;
     grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .bd-print-page:first-child .bd-print-subsection-label {
+    font-size: 7.4px !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-card {

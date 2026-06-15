@@ -119,7 +119,7 @@ type ReferenceEntry = {
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
-type CvStudioTab = "personal" | "experience" | "skills" | "documents" | "portfolio" | "languages" | "preview";
+type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "portfolio" | "languages" | "preview";
 
 const workPreferences = [
   "Seasonal",
@@ -449,6 +449,16 @@ const emptyExperience: Experience = {
   photo_url: "",
 };
 
+const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
+const referenceUponRequestText = "References available upon request.";
+const referenceUponRequestMarker = "__BLUDECK_REFERENCE_ON_REQUEST__";
+
+const emptyOtherWorkExperience: Experience = {
+  ...emptyExperience,
+  yacht_type: otherWorkExperienceMarker,
+  yacht_program: "Other work",
+};
+
 const emptyReference: ReferenceEntry = {
   name: "",
   role: "",
@@ -494,7 +504,7 @@ export default function ProfilePage() {
   const currentPositionValue = getProfileCurrentPosition(profile);
   const portfolioPhotoCount = portfolio.filter((item) => item.image_url).length;
   const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
-  const editableExperiences = useMemo(
+  const sortedExperiences = useMemo(
     () =>
       [...experiences].sort((first, second) => {
         const firstCreatedAt = first.created_at ? Date.parse(first.created_at) : 0;
@@ -503,6 +513,14 @@ export default function ProfilePage() {
       }),
     [experiences],
   );
+  const editableYachtExperiences = useMemo(
+    () => sortedExperiences.filter((item) => !isOtherWorkExperience(item)),
+    [sortedExperiences],
+  );
+  const editableOtherWorkExperiences = useMemo(
+    () => sortedExperiences.filter(isOtherWorkExperience),
+    [sortedExperiences],
+  );
   const editablePortfolio = useMemo(
     () =>
       sortPortfolioPhotos(portfolio.filter((photo) => photo.image_url)),
@@ -510,12 +528,12 @@ export default function ProfilePage() {
   );
 
   const totalExperienceYears = useMemo(() => {
-    const firstYear = experiences
+    const firstYear = editableYachtExperiences
       .map((item) => Number((item.start_date || "").slice(0, 4)))
       .filter(Boolean)
       .sort((a, b) => a - b)[0];
     return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
-  }, [experiences]);
+  }, [editableYachtExperiences]);
   const studioTabs: Array<{
     id: CvStudioTab;
     label: string;
@@ -534,7 +552,14 @@ export default function ProfilePage() {
       id: "experience",
       label: "Yacht Experience",
       description: "Yachts, duties, photos and references.",
-      status: `${experiences.length} saved`,
+      status: `${editableYachtExperiences.length} saved`,
+      icon: <BriefcaseBusiness className="h-4 w-4" />,
+    },
+    {
+      id: "otherWork",
+      label: "Other Work Experience",
+      description: "Non-yacht work history, duties and references.",
+      status: `${editableOtherWorkExperiences.length} saved`,
       icon: <BriefcaseBusiness className="h-4 w-4" />,
     },
     {
@@ -743,7 +768,6 @@ export default function ProfilePage() {
       nextDraft.document_type,
       nextDraft.category,
       nextDraft.issuer,
-      nextDraft.issue_date,
       nextDraft.expiry_date,
       nextDraft.file_url,
       nextDraft.notes,
@@ -760,6 +784,7 @@ export default function ProfilePage() {
       ...nextDraft,
       document_type: documentType,
       category,
+      issue_date: "",
       expiry_date: nextDraft.no_expiry ? null : nextDraft.expiry_date || null,
     });
 
@@ -812,12 +837,12 @@ export default function ProfilePage() {
       return false;
     }
 
-    const hasReferenceDetail = [item.name, item.role, item.company, item.phone, item.email].some(
+    const hasReferenceDetail = isReferenceUponRequest(item) || [item.name, item.role, item.company, item.phone, item.email].some(
       (value) => typeof value === "string" && value.trim().length > 0,
     );
 
     if (!hasReferenceDetail) {
-      setReferenceStatus({ type: "error", message: "Add a reference name/company, role, phone or email before saving." });
+      setReferenceStatus({ type: "error", message: "Add a reference name/company, role, phone or email, or choose references available upon request." });
       return false;
     }
 
@@ -836,7 +861,7 @@ export default function ProfilePage() {
     await loadRelated(profile.id);
     setReferenceStatus({
       type: "success",
-      message: "Reference saved under this yacht experience.",
+      message: "Reference saved under this experience.",
     });
     return true;
   }
@@ -1204,9 +1229,9 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
-                {[emptyExperience, ...editableExperiences].map((item) => {
+                {[emptyExperience, ...editableYachtExperiences].map((item) => {
                   const isNewExperience = !item.id;
-                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${experiences.length}`;
+                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${editableYachtExperiences.length}`;
                   const linkedReferences = referencesForExperience(item, references);
 
                   return (
@@ -1223,6 +1248,40 @@ export default function ProfilePage() {
                       onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
                       onCancelUpload={cancelUpload}
                       uploading={uploading === uploadSlot}
+                    />
+                  );
+                })}
+              </div>
+            </Panel>
+
+            <Panel active={activeStudioTab === "otherWork"} title="Other work experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
+              <div className="space-y-4">
+                {referenceStatus && (
+                  <p
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
+                      referenceStatus.type === "success"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-rose-200 bg-rose-50 text-rose-800"
+                    }`}
+                  >
+                    {referenceStatus.message}
+                  </p>
+                )}
+                {[emptyOtherWorkExperience, ...editableOtherWorkExperiences].map((item) => {
+                  const isNewExperience = !item.id;
+                  const linkedReferences = referencesForExperience(item, references);
+
+                  return (
+                    <OtherWorkExperienceEditor
+                      key={item.id || `new-other-work-${editableOtherWorkExperiences.length}`}
+                      item={item}
+                      isNew={isNewExperience}
+                      references={linkedReferences}
+                      referenceSaving={referenceSaving}
+                      onSave={saveExperience}
+                      onDelete={deleteExperience}
+                      onSaveReference={saveReference}
+                      onDeleteReference={deleteReference}
                     />
                   );
                 })}
@@ -1488,6 +1547,7 @@ function DocumentCreator({
   uploading: boolean;
 }) {
   const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
+  const customDocumentName = draft.document_type && !selectedCategory ? draft.document_type : "";
 
   return (
     <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
@@ -1512,8 +1572,19 @@ function DocumentCreator({
             ))}
           </select>
         </div>
+        <Field
+          label="Other document name"
+          value={customDocumentName}
+          placeholder="other"
+          onChange={(value) =>
+            setDraft({
+              ...draft,
+              document_type: value,
+              category: value.trim() ? "Other" : "",
+            })
+          }
+        />
         <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
-        <DateField label="Issue date" value={draft.issue_date} onChange={(value) => setDraft({ ...draft, issue_date: value })} />
         <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry} />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -2024,8 +2095,8 @@ async function drawBlueDeckPdf(pdf: PdfDoc, payload: CvPdfPayload) {
       }).catch(() => "")
     : "";
 
-  const firstPageExperiences = payload.experiences.slice(0, 2);
-  const remainingPages = chunkItems(payload.experiences.slice(2), 3);
+  const firstPageExperiences = payload.experiences.slice(0, 3);
+  const remainingPages = chunkItems(payload.experiences.slice(3), 4);
   const pages = [
     { kind: "first" as const, experiences: firstPageExperiences },
     ...remainingPages.map((experiences) => ({ kind: "continued" as const, experiences })),
@@ -2234,7 +2305,8 @@ function drawPdfExperienceCard(
   const metaWidth = 32;
   const bodyX = x + metaWidth + 4;
   const bodyWidth = width - metaWidth - 4;
-  const yachtName = experience.yacht_name || "Yacht";
+  const yachtName = displayExperienceTitle(experience);
+  const metaParts = displayExperienceMetaParts(experience);
 
   drawPdfRoundRect(pdf, x, y, width, height, 4, "#ffffff", "#d8e2e6");
   drawPdfRoundRect(pdf, x + 3, y + 3, metaWidth - 6, height - 6, 3, "#f6f8f8", "#d8e2e6");
@@ -2254,7 +2326,7 @@ function drawPdfExperienceCard(
   setPdfText(pdf, "#6b747a");
   drawPdfWrappedText(
     pdf,
-    [experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ").toUpperCase(),
+    metaParts.join(" / ").toUpperCase(),
     x + 6,
     y + 38,
     metaWidth - 12,
@@ -2300,10 +2372,12 @@ function drawPdfExperienceCard(
     pdf.text(referenceDisplayName(reference), bodyX + 9, y + height - 11.6, { maxWidth: bodyWidth - 21 });
     pdf.setFontSize(6.4);
     setPdfText(pdf, "#2d7482");
-    pdf.text([reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference", bodyX + 9, y + height - 7.5, { maxWidth: bodyWidth - 21 });
+    pdf.text(referenceDetailText(reference), bodyX + 9, y + height - 7.5, { maxWidth: bodyWidth - 21 });
     pdf.setFont("helvetica", "normal");
     setPdfText(pdf, "#5a6870");
-    pdf.text([reference.email, reference.phone].filter(Boolean).join(" / "), bodyX + 9, y + height - 3.8, { maxWidth: bodyWidth - 21 });
+    if (referenceContactText(reference)) {
+      pdf.text(referenceContactText(reference), bodyX + 9, y + height - 3.8, { maxWidth: bodyWidth - 21 });
+    }
   }
 }
 
@@ -2647,6 +2721,50 @@ function normalizeExperienceRecord(experience: Experience) {
   };
 }
 
+function isOtherWorkExperience(experience: Experience) {
+  return cleanSaveText(experience.yacht_type) === otherWorkExperienceMarker;
+}
+
+function normalizeOtherWorkExperience(experience: Experience) {
+  return {
+    ...experience,
+    yacht_type: otherWorkExperienceMarker,
+    yacht_program: "Other work",
+    yacht_size: "",
+    photo_url: "",
+  };
+}
+
+function displayExperienceTitle(experience: Experience) {
+  if (isOtherWorkExperience(experience)) return cleanSaveText(experience.yacht_name) || "Workplace";
+  return cleanSaveText(experience.yacht_name) || "Yacht";
+}
+
+function displayExperienceMetaParts(experience: Experience) {
+  if (isOtherWorkExperience(experience)) return [];
+  return [experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean);
+}
+
+function isReferenceUponRequest(reference: ReferenceEntry) {
+  const name = cleanSaveText(reference.name).toLowerCase();
+  return cleanSaveText(reference.notes) === referenceUponRequestMarker || name === referenceUponRequestText.toLowerCase();
+}
+
+function referenceUponRequestEntry(targetName: string, existing?: ReferenceEntry): ReferenceEntry {
+  return {
+    ...emptyReference,
+    ...(existing || {}),
+    name: referenceUponRequestText,
+    role: "",
+    vessel: targetName,
+    company: "",
+    phone: "",
+    email: "",
+    notes: referenceUponRequestMarker,
+    show_on_cv: true,
+  };
+}
+
 function cleanSaveNumber(value?: number | null) {
   return value ? String(value) : "";
 }
@@ -2723,6 +2841,7 @@ function referenceSaveState(reference: ReferenceEntry) {
     role: cleanSaveText(reference.role),
     phone: cleanSaveText(reference.phone),
     email: cleanSaveText(reference.email),
+    notes: cleanSaveText(reference.notes),
   };
 }
 
@@ -2765,9 +2884,20 @@ function unmatchedExperienceReferences(experiences: Experience[], references: Re
 }
 
 function referenceDisplayName(reference: ReferenceEntry) {
+  if (isReferenceUponRequest(reference)) return referenceUponRequestText;
   const name = cleanSaveText(reference.name);
   if (name && name.toLowerCase() !== "reference") return name;
   return cleanSaveText(reference.company) || cleanSaveText(reference.vessel) || "Contact";
+}
+
+function referenceDetailText(reference: ReferenceEntry, fallback = "Yacht reference") {
+  if (isReferenceUponRequest(reference)) return "Professional references available upon request";
+  return [reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || fallback;
+}
+
+function referenceContactText(reference: ReferenceEntry) {
+  if (isReferenceUponRequest(reference)) return "";
+  return [reference.email, reference.phone].filter(Boolean).join(" / ");
 }
 
 function SeazoneStyleCvPreview({
@@ -2788,7 +2918,9 @@ function SeazoneStyleCvPreview({
   onDownload: (payload: CvPdfPayload) => void | Promise<void>;
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
-  const cleanExperiences = experiences.filter((item) => item.yacht_name || item.position || item.description);
+  const cleanYachtExperiences = experiences.filter((item) => !isOtherWorkExperience(item) && (item.yacht_name || item.position || item.description));
+  const cleanOtherWorkExperiences = experiences.filter((item) => isOtherWorkExperience(item) && (item.yacht_name || item.position || item.description));
+  const cleanExperiences = [...cleanYachtExperiences, ...cleanOtherWorkExperiences];
   const cleanReferences = cleanReferenceEntries(references);
   const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
@@ -2931,12 +3063,12 @@ function SeazoneStyleCvPreview({
 
                 <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
                 <div className="bd-cv-experience-list space-y-4">
-                  {cleanExperiences.length === 0 && (
+                  {cleanYachtExperiences.length === 0 && (
                     <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
                       No yacht experience added yet.
                     </p>
                   )}
-                  {cleanExperiences.map((item, index) => (
+                  {cleanYachtExperiences.map((item, index) => (
                     <SeazoneExperienceCard
                       key={item.id || `${item.yacht_name}-${item.start_date}`}
                       experience={item}
@@ -2947,14 +3079,29 @@ function SeazoneStyleCvPreview({
                 </div>
               </SeazoneSection>
 
+              {cleanOtherWorkExperiences.length > 0 && (
+                <SeazoneSection title="Other Work Experience">
+                  <div className="bd-cv-experience-list space-y-4">
+                    {cleanOtherWorkExperiences.map((item, index) => (
+                      <SeazoneExperienceCard
+                        key={item.id || `${item.yacht_name}-${item.start_date}`}
+                        experience={item}
+                        references={referencesForExperience(item, cleanReferences)}
+                        breakBefore={shouldBreakBeforeExperience(cleanYachtExperiences.length + index)}
+                      />
+                    ))}
+                  </div>
+                </SeazoneSection>
+              )}
+
               {standaloneReferences.length > 0 && (
                 <SeazoneSection title="References">
                   <div className="grid gap-3 sm:grid-cols-2">
                     {standaloneReferences.slice(0, 4).map((ref) => (
                       <div key={ref.id || ref.email || ref.name} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                         <p className="font-black text-[#06111f]">{referenceDisplayName(ref)}</p>
-                        <p className="mt-1 text-sm font-semibold text-[#2d7482]">{[ref.role, ref.vessel || ref.company].filter(Boolean).join(" / ") || "Yacht reference"}</p>
-                        <p className="mt-2 text-xs text-[#5a6870]">{[ref.email, ref.phone].filter(Boolean).join(" / ")}</p>
+                        <p className="mt-1 text-sm font-semibold text-[#2d7482]">{referenceDetailText(ref)}</p>
+                        {referenceContactText(ref) && <p className="mt-2 text-xs text-[#5a6870]">{referenceContactText(ref)}</p>}
                       </div>
                     ))}
                   </div>
@@ -3151,7 +3298,10 @@ function PrintableCvPages({
                 <PrintableSection title="About Me">
                   <p className="bd-print-summary">{professionalSummary}</p>
                 </PrintableSection>
-                <PrintableSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
+                <PrintableSection
+                  title={page.experiences.some((experience) => !isOtherWorkExperience(experience)) ? "Yacht Experience" : "Other Work Experience"}
+                  badge={page.experiences.some((experience) => !isOtherWorkExperience(experience)) ? `${totalExperienceYears} years` : undefined}
+                >
                   <PrintableExperienceList experiences={page.experiences} references={references} />
                 </PrintableSection>
               </>
@@ -3336,19 +3486,25 @@ function PrintableExperienceList({ experiences, references }: { experiences: Exp
 
   return (
     <div className={`bd-print-experience-list bd-print-experience-list-${Math.min(experiences.length, 4)}`}>
-      {experiences.map((experience) => (
-        <PrintableExperienceCard
-          key={experience.id || `${experience.yacht_name}-${experience.start_date}`}
-          experience={experience}
-          references={referencesForExperience(experience, references)}
-        />
+      {experiences.map((experience, index) => (
+        <div className="bd-print-experience-item" key={experience.id || `${experience.yacht_name}-${experience.start_date}`}>
+          {isOtherWorkExperience(experience) && !isOtherWorkExperience(experiences[index - 1] || emptyExperience) && (
+            <p className="bd-print-subsection-label">Other Work Experience</p>
+          )}
+          <PrintableExperienceCard
+            experience={experience}
+            references={referencesForExperience(experience, references)}
+          />
+        </div>
       ))}
     </div>
   );
 }
 
 function PrintableExperienceCard({ experience, references }: { experience: Experience; references: ReferenceEntry[] }) {
-  const yachtName = experience.yacht_name || "Yacht";
+  const yachtName = displayExperienceTitle(experience);
+  const metaParts = displayExperienceMetaParts(experience);
+  const isOtherWork = isOtherWorkExperience(experience);
 
   return (
     <article className="bd-print-experience-card">
@@ -3356,10 +3512,10 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
         {experience.photo_url ? (
           <img src={experience.photo_url} alt={yachtName} loading="eager" decoding="sync" />
         ) : (
-          <div />
+          <div className="bd-print-experience-placeholder">{isOtherWork ? <BriefcaseBusiness /> : null}</div>
         )}
         <b style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</b>
-        <span>{[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ")}</span>
+        {metaParts.length > 0 && <span>{metaParts.join(" / ")}</span>}
         <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
         {experience.location && <small><MapPin /> {experience.location}</small>}
       </div>
@@ -3376,8 +3532,8 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
             {references.slice(0, 2).map((reference) => (
               <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
                 <b>{referenceDisplayName(reference)}</b>
-                <span>{[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}</span>
-                {(reference.email || reference.phone) && <em>{[reference.email, reference.phone].filter(Boolean).join(" / ")}</em>}
+                <span>{referenceDetailText(reference)}</span>
+                {referenceContactText(reference) && <em>{referenceContactText(reference)}</em>}
               </div>
             ))}
           </div>
@@ -3472,7 +3628,9 @@ function SeazoneExperienceCard({
   references: ReferenceEntry[];
   breakBefore?: boolean;
 }) {
-  const yachtName = experience.yacht_name || "Yacht";
+  const yachtName = displayExperienceTitle(experience);
+  const metaParts = displayExperienceMetaParts(experience);
+  const isOtherWork = isOtherWorkExperience(experience);
 
   return (
     <article className={`bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5 ${breakBefore ? "bd-cv-experience-break-before" : ""}`}>
@@ -3481,12 +3639,14 @@ function SeazoneExperienceCard({
           {experience.photo_url ? (
             <img src={experience.photo_url} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
           ) : (
-            <div className="h-24 rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)]" />
+            <div className="flex h-24 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-[#2d7482]">
+              {isOtherWork ? <BriefcaseBusiness className="h-7 w-7" /> : <Camera className="h-6 w-6 opacity-45" />}
+            </div>
           )}
           <div className="mt-3">
-            {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).length > 0 && (
+            {metaParts.length > 0 && (
               <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
-                {[experience.yacht_type, experience.yacht_program, experience.yacht_size].filter(Boolean).join(" / ")}
+                {metaParts.join(" / ")}
               </p>
             )}
             <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(experience.start_date, experience.end_date)}</p>
@@ -3528,11 +3688,9 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
           <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{referenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
-              {[reference.role, reference.vessel || reference.company].filter(Boolean).join(" / ") || "Yacht reference"}
+              {referenceDetailText(reference)}
             </p>
-            {(reference.email || reference.phone) && (
-              <p className="mt-1 text-xs text-[#5a6870]">{[reference.email, reference.phone].filter(Boolean).join(" / ")}</p>
-            )}
+            {referenceContactText(reference) && <p className="mt-1 text-xs text-[#5a6870]">{referenceContactText(reference)}</p>}
           </div>
         ))}
       </div>
@@ -3965,8 +4123,7 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
         </div>
         <button onClick={() => onDelete(document.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
       </div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <DateField label="Issue" value={document.issue_date} onChange={(value) => onChange({ ...document, issue_date: value })} />
+      <div className="mt-4 grid gap-3">
         <DateField label="Expiry" value={document.expiry_date} disabled={document.no_expiry} onChange={(value) => onChange({ ...document, expiry_date: value })} />
       </div>
       <div className="mt-3 flex flex-wrap gap-4">
@@ -4010,24 +4167,6 @@ function ExperienceEditor({
 
   function removePhoto() {
     setDraft({ ...draft, photo_url: "" });
-  }
-
-  async function saveLinkedReference(reference: ReferenceEntry) {
-    const yachtName = draft.yacht_name.trim();
-
-    if (!yachtName) {
-      alert("Add the yacht name before saving a reference.");
-      return false;
-    }
-
-    return onSaveReference({
-      ...reference,
-      name: (reference.name || reference.company).trim(),
-      vessel: yachtName,
-      company: "",
-      notes: "",
-      show_on_cv: true,
-    });
   }
 
   return (
@@ -4151,36 +4290,229 @@ function ExperienceEditor({
               className="mt-2 min-h-24 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
             />
           </div>
-          <div className="mt-3 border-t border-[#c7d2d6] pt-3">
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
-              <p className="text-[10px] font-semibold text-[#6b7b84]">Linked to this yacht</p>
-            </div>
-            <div className="space-y-2">
-              {references.map((reference) => (
-                <ExperienceReferenceEditor
-                  key={reference.id || `${reference.name}-${reference.email}`}
-                  item={reference}
-                  isNew={false}
-                  saving={referenceSaving}
-                  onSave={saveLinkedReference}
-                  onDelete={onDeleteReference}
-                />
-              ))}
-              <ExperienceReferenceEditor
-                key={`new-reference-${item.id || "draft"}`}
-                item={emptyReference}
-                isNew
-                saving={referenceSaving}
-                onSave={saveLinkedReference}
-                onDelete={onDeleteReference}
-              />
-            </div>
-          </div>
+          <LinkedReferencePanel
+            targetName={draft.yacht_name}
+            targetKind="yacht"
+            references={references}
+            referenceSaving={referenceSaving}
+            onSaveReference={onSaveReference}
+            onDeleteReference={onDeleteReference}
+          />
           <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" />
         </div>
       </div>
     </article>
+  );
+}
+
+function OtherWorkExperienceEditor({
+  item,
+  isNew,
+  references,
+  referenceSaving,
+  onSave,
+  onDelete,
+  onSaveReference,
+  onDeleteReference,
+}: {
+  item: Experience;
+  isNew: boolean;
+  references: ReferenceEntry[];
+  referenceSaving: boolean;
+  onSave: (item: Experience) => Promise<boolean>;
+  onDelete: (id?: string) => void;
+  onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
+  onDeleteReference: (id?: string) => void;
+}) {
+  const [draft, setDraft] = useState(normalizeOtherWorkExperience(item));
+  const normalizedDraft = normalizeOtherWorkExperience(draft);
+  const dirty = !saveStateEquals(experienceSaveState(normalizedDraft), experienceSaveState(normalizeOtherWorkExperience(item)));
+  const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
+  const dutiesLength = dutiesValue.length;
+
+  useEffect(() => {
+    setDraft(normalizeOtherWorkExperience(item));
+  }, [item]);
+
+  return (
+    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
+      <div className="grid items-stretch gap-3 sm:grid-cols-[156px_1fr]">
+        <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+          <div className="flex h-20 items-center justify-center rounded-lg border border-[#d8e2e6] bg-white text-[#2d7482]">
+            <BriefcaseBusiness className="h-7 w-7" />
+          </div>
+          <div className="mt-3 space-y-2">
+            <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
+            <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
+            <div className="grid grid-cols-[22px_1fr] items-center overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
+              <span className="flex h-full items-center justify-center text-[#2d7482]">
+                <MapPin className="h-3.5 w-3.5" />
+              </span>
+              <input
+                aria-label="Location"
+                value={draft.location || ""}
+                onChange={(event) => setDraft({ ...draft, location: capitalizeFirstCharacter(event.target.value) })}
+                placeholder="Location"
+                className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
+              />
+            </div>
+          </div>
+          <p className="mt-auto pt-3 text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-[#6b7b84]">
+            Non-yacht work, yard periods, hospitality, management or technical roles.
+          </p>
+        </div>
+
+        <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+          <div className="mb-3 rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
+            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
+              <ExperienceCardInput
+                label="Workplace / company"
+                value={draft.yacht_name}
+                placeholder="Workplace / company"
+                strong
+                onChange={(value) => setDraft({ ...draft, yacht_name: capitalizeFirstCharacter(value) })}
+              />
+              <ExperienceCardInput
+                label="Position"
+                value={draft.position}
+                placeholder="Position"
+                onChange={(value) => setDraft({ ...draft, position: capitalizeFirstCharacter(value) })}
+              />
+            </div>
+          </div>
+          <div className="flex flex-1 flex-col">
+            <div className="flex items-center justify-between gap-3">
+              <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+              <span className="rounded-full border border-[#c7d2d6] bg-white px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-[#2d7482]">
+                {dutiesLength}/{yachtDutiesMaxLength}
+              </span>
+            </div>
+            <textarea
+              value={dutiesValue}
+              maxLength={yachtDutiesMaxLength}
+              onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
+              placeholder="Responsibilities, achievements and work duties"
+              className="mt-2 min-h-24 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+            />
+          </div>
+          <LinkedReferencePanel
+            targetName={draft.yacht_name}
+            targetKind="workplace"
+            references={references}
+            referenceSaving={referenceSaving}
+            onSaveReference={onSaveReference}
+            onDeleteReference={onDeleteReference}
+          />
+          <EditorButtons
+            isNew={isNew}
+            dirty={dirty}
+            onSave={() => onSave(normalizedDraft)}
+            onDelete={() => onDelete(draft.id)}
+            addLabel="Add work experience"
+          />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function LinkedReferencePanel({
+  targetName,
+  targetKind,
+  references,
+  referenceSaving,
+  onSaveReference,
+  onDeleteReference,
+}: {
+  targetName: string;
+  targetKind: "yacht" | "workplace";
+  references: ReferenceEntry[];
+  referenceSaving: boolean;
+  onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
+  onDeleteReference: (id?: string) => void;
+}) {
+  const requestReference = references.find(isReferenceUponRequest);
+  const regularReferences = references.filter((reference) => !isReferenceUponRequest(reference));
+  const targetLabel = targetKind === "yacht" ? "yacht name" : "workplace / company";
+  const linkedText = targetKind === "yacht" ? "Linked to this yacht" : "Linked to this work";
+
+  async function saveLinkedReference(reference: ReferenceEntry) {
+    const cleanTargetName = targetName.trim();
+
+    if (!cleanTargetName) {
+      alert(`Add the ${targetLabel} before saving a reference.`);
+      return false;
+    }
+
+    if (isReferenceUponRequest(reference)) {
+      return onSaveReference(referenceUponRequestEntry(cleanTargetName, reference));
+    }
+
+    return onSaveReference({
+      ...reference,
+      name: (reference.name || reference.company).trim(),
+      vessel: cleanTargetName,
+      company: "",
+      notes: "",
+      show_on_cv: true,
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t border-[#c7d2d6] pt-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
+        <p className="text-[10px] font-semibold text-[#6b7b84]">{linkedText}</p>
+      </div>
+
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={referenceSaving || Boolean(requestReference)}
+          onClick={() => saveLinkedReference(referenceUponRequestEntry(targetName))}
+          className={`inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-black uppercase tracking-[0.06em] transition disabled:cursor-default ${
+            requestReference
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-[#b9dce3] bg-white text-[#173f4a] hover:border-[#2d7482] hover:bg-[#eef7f8] disabled:opacity-60"
+          }`}
+        >
+          {requestReference ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          References available upon request
+        </button>
+        {requestReference && (
+          <button
+            type="button"
+            disabled={referenceSaving}
+            onClick={() => onDeleteReference(requestReference.id)}
+            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-rose-100 bg-white px-2.5 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Remove references available upon request"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        {regularReferences.map((reference) => (
+          <ExperienceReferenceEditor
+            key={reference.id || `${reference.name}-${reference.email}`}
+            item={reference}
+            isNew={false}
+            saving={referenceSaving}
+            onSave={saveLinkedReference}
+            onDelete={onDeleteReference}
+          />
+        ))}
+        <ExperienceReferenceEditor
+          key={`new-reference-${targetKind}`}
+          item={emptyReference}
+          isNew
+          saving={referenceSaving}
+          onSave={saveLinkedReference}
+          onDelete={onDeleteReference}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -4632,6 +4964,7 @@ function Field({
   type = "text",
   disabled = false,
   listId,
+  placeholder,
 }: {
   label: string;
   value?: string;
@@ -4639,11 +4972,12 @@ function Field({
   type?: string;
   disabled?: boolean;
   listId?: string;
+  placeholder?: string;
 }) {
   return (
     <div className="block">
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
-      <input type={type} value={value || ""} list={listId} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40" />
+      <input type={type} value={value || ""} list={listId} disabled={disabled} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40" />
     </div>
   );
 }
@@ -4666,7 +5000,7 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
       <input
         inputMode="numeric"
-        placeholder="DD.MM.YYYY"
+        placeholder="DD/MM/YYYY"
         value={display}
         disabled={disabled}
         onChange={(event) => commit(event.target.value)}
@@ -5054,7 +5388,7 @@ function formatDateTyping(value: string) {
   const day = digits.slice(0, 2);
   const month = digits.slice(2, 4);
   const year = digits.slice(4, 8);
-  return [day, month, year].filter(Boolean).join(".");
+  return [day, month, year].filter(Boolean).join("/");
 }
 
 function parseDisplayDate(value: string) {
@@ -5076,5 +5410,5 @@ function formatDateForDisplay(value: string) {
   if (!value) return "";
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) return formatDateTyping(value);
-  return `${day}.${month}.${year}`;
+  return `${day}/${month}/${year}`;
 }
