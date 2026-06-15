@@ -178,7 +178,14 @@ export async function POST(request: NextRequest) {
 
 function cleanPayload(payload: Record<string, unknown>, columns: string[]) {
   return Object.fromEntries(
-    Object.entries(payload).filter(([key, value]) => columns.includes(key) && value !== undefined),
+    Object.entries(payload)
+      .filter(([key, value]) => columns.includes(key) && value !== undefined)
+      .map(([key, value]) => {
+        if (["issue_date", "expiry_date", "start_date", "end_date"].includes(key) && value === "") {
+          return [key, null];
+        }
+        return [key, value];
+      }),
   );
 }
 

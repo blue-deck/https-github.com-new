@@ -793,13 +793,11 @@ export default function ProfilePage() {
 
     const documentType = cleanSaveText(nextDraft.document_type) || "Document";
     const category = cleanSaveText(nextDraft.category) || "General";
-    const response = await saveRelatedRecord("document", {
+    const response = await saveRelatedRecord("document", documentPayloadForSave({
       ...nextDraft,
       document_type: documentType,
       category,
-      issue_date: "",
-      expiry_date: nextDraft.no_expiry ? null : nextDraft.expiry_date || null,
-    });
+    }));
 
     if (!response.ok) {
       alert(response.error);
@@ -812,7 +810,7 @@ export default function ProfilePage() {
 
   async function updateDocument(document: CrewDocument) {
     if (!profile.id || !document.id) return;
-    const response = await saveRelatedRecord("document", document, document.id);
+    const response = await saveRelatedRecord("document", documentPayloadForSave(document), document.id);
     if (!response.ok) alert(response.error);
     await loadRelated(profile.id);
   }
@@ -1241,14 +1239,13 @@ export default function ProfilePage() {
                 {[emptyExperience, ...editableYachtExperiences].map((item) => {
                   const isNewExperience = !item.id;
                   const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${editableYachtExperiences.length}`;
-                  const linkedReferences = referencesForExperience(item, references);
 
                   return (
                     <ExperienceEditor
                       key={item.id || `new-${experiences.length}`}
                       item={item}
                       isNew={isNewExperience}
-                      references={linkedReferences}
+                      references={references}
                       referenceSaving={referenceSaving}
                       onSave={saveExperience}
                       onDelete={deleteExperience}
@@ -1274,14 +1271,13 @@ export default function ProfilePage() {
                 )}
                 {[emptyOtherWorkExperience, ...editableOtherWorkExperiences].map((item) => {
                   const isNewExperience = !item.id;
-                  const linkedReferences = referencesForExperience(item, references);
 
                   return (
                     <OtherWorkExperienceEditor
                       key={item.id || `new-other-work-${editableOtherWorkExperiences.length}`}
                       item={item}
                       isNew={isNewExperience}
-                      references={linkedReferences}
+                      references={references}
                       referenceSaving={referenceSaving}
                       onSave={saveExperience}
                       onDelete={deleteExperience}
@@ -2785,11 +2781,8 @@ function getProfileCurrentPosition(profile: CrewProfile) {
 
 function calculateCvCompletion({
   profile,
-  documents,
   yachtExperiences,
   otherWorkExperiences,
-  references,
-  portfolio,
 }: {
   profile: CrewProfile;
   documents: CrewDocument[];
@@ -2805,42 +2798,66 @@ function calculateCvCompletion({
   const visiblePreferences = (profile.work_preferences || []).filter(Boolean);
   const visibleLanguages = (profile.languages || []).filter((language) => language.name && language.level);
   const allExperiences = [...yachtExperiences, ...otherWorkExperiences];
-  const completeExperiences = allExperiences.filter((experience) => {
-    const hasCoreInfo = cleanSaveText(experience.yacht_name) && cleanSaveText(experience.position);
-    const hasDates = cleanSaveText(experience.start_date) && cleanSaveText(experience.end_date);
-    const hasDuties = cleanSaveText(experience.description).length >= 40;
-    return hasCoreInfo && hasDates && hasDuties;
-  });
-  const hasReferenceSignal = references.some((reference) =>
-    reference.show_on_cv && (isReferenceUponRequest(reference) || Boolean(reference.name || reference.role || reference.phone || reference.email)),
-  );
-  const completionChecks: Array<{ complete: boolean; weight: number }> = [
-    { complete: Boolean(profile.profile_photo_url), weight: 6 },
-    { complete: Boolean(cleanSaveText(profile.full_name)), weight: 7 },
-    { complete: Boolean(getProfileCurrentPosition(profile)), weight: 7 },
-    { complete: Boolean(cleanSaveText(profile.date_of_birth)), weight: 4 },
-    { complete: Boolean(cleanSaveText(profile.nationality)), weight: 4 },
-    { complete: Boolean(cleanSaveText(profile.gender)), weight: 3 },
-    { complete: Boolean(profile.height_cm), weight: 3 },
-    { complete: Boolean(profile.weight_kg), weight: 3 },
-    { complete: Boolean(cleanSaveText(profile.smoker)), weight: 2 },
-    { complete: Boolean(cleanSaveText(profile.visible_tattoos)), weight: 2 },
-    { complete: Boolean(cleanSaveText(profile.phone)), weight: 5 },
-    { complete: Boolean(cleanSaveText(profile.email)), weight: 5 },
-    { complete: Boolean(cleanSaveText(profile.location)), weight: 5 },
-    { complete: cleanSaveText(profile.bio).length >= 80, weight: 8 },
-    { complete: completeExperiences.length >= 1, weight: 12 },
-    { complete: completeExperiences.length >= 2, weight: 5 },
-    { complete: documents.length >= 1, weight: 7 },
-    { complete: visibleSkills.length >= 5, weight: 6 },
-    { complete: visiblePreferences.length >= 3, weight: 4 },
-    { complete: visibleLanguages.length >= 1, weight: 4 },
-    { complete: portfolio.some((photo) => photo.image_url), weight: 2 },
-    { complete: hasReferenceSignal, weight: 3 },
+  const firstPageExperienceScore =
+    allExperiences
+      .slice(0, 3)
+      .reduce((sum, experience) => sum + experienceCompletionRatio(experience), 0) / 3;
+  const completionChecks: Array<{ ratio: number; weight: number }> = [
+    { ratio: profile.profile_photo_url ? 1 : 0, weight: 8 },
+    { ratio: cleanSaveText(profile.full_name) ? 1 : 0, weight: 5 },
+    { ratio: getProfileCurrentPosition(profile) ? 1 : 0, weight: 5 },
+    {
+      ratio: filledRatio([
+        profile.date_of_birth,
+        profile.nationality,
+        profile.gender,
+        profile.height_cm,
+        profile.weight_kg,
+        profile.smoker,
+        profile.visible_tattoos,
+      ]),
+      weight: 14,
+    },
+    { ratio: filledRatio([profile.phone, profile.email, profile.location]), weight: 12 },
+    { ratio: textCompletionRatio(profile.bio, 200), weight: 14 },
+    { ratio: firstPageExperienceScore, weight: 24 },
+    { ratio: Math.min(visibleLanguages.length / 4, 1), weight: 6 },
+    { ratio: Math.min(visibleSkills.length / 10, 1), weight: 8 },
+    { ratio: Math.min(visiblePreferences.length / 5, 1), weight: 4 },
   ];
   const totalWeight = completionChecks.reduce((sum, item) => sum + item.weight, 0);
-  const completedWeight = completionChecks.reduce((sum, item) => sum + (item.complete ? item.weight : 0), 0);
+  const completedWeight = completionChecks.reduce((sum, item) => sum + item.ratio * item.weight, 0);
   return Math.max(0, Math.min(100, Math.round((completedWeight / totalWeight) * 100)));
+}
+
+function filledRatio(values: Array<unknown>) {
+  if (values.length === 0) return 0;
+  const filled = values.filter((value) => {
+    if (typeof value === "number") return value > 0;
+    return Boolean(cleanSaveText(typeof value === "string" ? value : ""));
+  }).length;
+  return filled / values.length;
+}
+
+function textCompletionRatio(value: string | undefined, fullLength: number) {
+  return Math.min(cleanSaveText(value).length / fullLength, 1);
+}
+
+function experienceCompletionRatio(experience: Experience) {
+  const isOtherWork = isOtherWorkExperience(experience);
+  const fields = [
+    cleanSaveText(experience.yacht_name),
+    cleanSaveText(experience.position),
+    cleanSaveText(experience.start_date),
+    cleanSaveText(experience.end_date),
+    cleanSaveText(experience.location),
+    isOtherWork ? "other-work" : cleanSaveText(experience.yacht_type),
+    isOtherWork ? "other-work" : cleanSaveText(experience.yacht_program),
+    isOtherWork ? "other-work" : cleanSaveText(experience.yacht_size),
+  ];
+  const fieldScore = filledRatio(fields) * 0.5;
+  const dutiesScore = textCompletionRatio(experience.description, 160) * 0.5;
+  return fieldScore + dutiesScore;
 }
 
 function inferBaseRoleFromPosition(value?: string) {
@@ -2933,11 +2950,15 @@ function composeReferencePhone(country: PhoneCountryOption | null, localNumber: 
 }
 
 function referenceMatchesExperience(reference: ReferenceEntry, experience: Experience) {
+  return referenceMatchesTargetName(reference, experience.yacht_name);
+}
+
+function referenceMatchesTargetName(reference: ReferenceEntry, targetName: string) {
   const vessel = normalizeVesselName(reference.vessel);
-  const yacht = normalizeVesselName(experience.yacht_name);
-  if (!vessel || !yacht) return false;
-  if (vessel === yacht) return true;
-  return vessel.length >= 3 && yacht.length >= 3 && (vessel.includes(yacht) || yacht.includes(vessel));
+  const target = normalizeVesselName(targetName);
+  if (!vessel || !target) return false;
+  if (vessel === target) return true;
+  return vessel.length >= 3 && target.length >= 3 && (vessel.includes(target) || target.includes(vessel));
 }
 
 function referencesForExperience(experience: Experience, references: ReferenceEntry[]) {
@@ -2970,6 +2991,14 @@ function referenceDetailText(reference: ReferenceEntry, fallback = "Yacht refere
 function referenceContactText(reference: ReferenceEntry) {
   if (isReferenceUponRequest(reference)) return "";
   return [reference.email, reference.phone].filter(Boolean).join(" / ");
+}
+
+function documentPayloadForSave(document: CrewDocument) {
+  return {
+    ...document,
+    issue_date: cleanSaveText(document.issue_date) || null,
+    expiry_date: document.no_expiry ? null : cleanSaveText(document.expiry_date) || null,
+  };
 }
 
 function SeazoneStyleCvPreview({
@@ -4202,7 +4231,7 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
         <Checkbox label="No expiry" checked={document.no_expiry} onChange={(checked) => onChange({ ...document, no_expiry: checked, expiry_date: checked ? "" : document.expiry_date })} />
         <Checkbox label="Show on CV" checked={document.show_on_cv} onChange={(checked) => onChange({ ...document, show_on_cv: checked })} />
       </div>
-      {alert && <p className="mt-3 text-sm text-amber-100">Expiry alert: update this document soon.</p>}
+      {alert && <p className="mt-3 text-sm font-semibold text-amber-800">Expiry alert: update this document soon.</p>}
     </article>
   );
 }
@@ -4500,14 +4529,14 @@ function LinkedReferencePanel({
   onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
   onDeleteReference: (id?: string) => void;
 }) {
-  const requestReference = references.find(isReferenceUponRequest);
-  const regularReferences = references.filter((reference) => !isReferenceUponRequest(reference));
+  const cleanTargetName = targetName.trim();
+  const linkedReferences = cleanTargetName ? references.filter((reference) => referenceMatchesTargetName(reference, cleanTargetName)) : [];
+  const requestReference = linkedReferences.find(isReferenceUponRequest);
+  const regularReferences = linkedReferences.filter((reference) => !isReferenceUponRequest(reference));
   const targetLabel = targetKind === "yacht" ? "yacht name" : "workplace / company";
   const linkedText = targetKind === "yacht" ? "Linked to this yacht" : "Linked to this work";
 
   async function saveLinkedReference(reference: ReferenceEntry) {
-    const cleanTargetName = targetName.trim();
-
     if (!cleanTargetName) {
       alert(`Add the ${targetLabel} before saving a reference.`);
       return false;
@@ -5452,7 +5481,7 @@ function CvCompletionRing({ percent }: { percent: number }) {
       </span>
       <span className="hidden leading-tight sm:block">
         <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-[#8ed8e6]">CV</span>
-        <span className="block text-xs font-black uppercase tracking-[0.08em] text-white">Complete</span>
+        <span className="block text-xs font-black uppercase tracking-[0.08em] text-white">Completion</span>
       </span>
     </div>
   );
