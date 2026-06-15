@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import {
   Anchor,
+  Archive,
   AlertTriangle,
   Bell,
   CalendarClock,
@@ -14,12 +15,15 @@ import {
   ChevronDown,
   ClipboardList,
   Clock3,
+  Download,
   FileCheck2,
+  FileText,
   LifeBuoy,
   ListChecks,
   Plus,
   RefreshCcw,
   Search,
+  Send,
   ShieldAlert,
   ShipWheel,
   TimerReset,
@@ -82,6 +86,8 @@ export default function CrewPage({
   const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
   const [templateSearch, setTemplateSearch] = useState("");
   const [activeChecklistPack, setActiveChecklistPack] = useState("departure-ready");
+  const [checklistSection, setChecklistSection] = useState<"assign" | "monitor" | "archive">("assign");
+  const [archiveRetention, setArchiveRetention] = useState<{ months: number; cutoff: string; purged: number } | null>(null);
   const [manualTitle, setManualTitle] = useState("");
   const [manualDepartment, setManualDepartment] = useState("Deck");
   const [manualType, setManualType] = useState("Custom Routine");
@@ -194,6 +200,38 @@ export default function CrewPage({
       progress,
     };
   }, [checklists]);
+
+  const checklistRecords = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - 6);
+    return checklists.filter((checklist) => {
+      const createdAt = checklist.created_at ? new Date(checklist.created_at) : null;
+      return !createdAt || createdAt >= cutoff;
+    });
+  }, [checklists]);
+
+  const monitorChecklists = useMemo(
+    () =>
+      [...checklists].sort((first, second) => {
+        const firstOpen = first.status === "completed" ? 1 : 0;
+        const secondOpen = second.status === "completed" ? 1 : 0;
+        if (firstOpen !== secondOpen) return firstOpen - secondOpen;
+        return new Date(second.created_at || 0).getTime() - new Date(first.created_at || 0).getTime();
+      }),
+    [checklists]
+  );
+
+  const archiveStats = useMemo(() => {
+    const archivedTasks = checklistRecords.flatMap((checklist) => checklist.yacht_checklist_items || []);
+    const completed = checklistRecords.filter((checklist) => checklist.status === "completed").length;
+    const proofItems = archivedTasks.filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
+    return {
+      records: checklistRecords.length,
+      tasks: archivedTasks.length,
+      completed,
+      proofItems,
+    };
+  }, [checklistRecords]);
 
   function toggleProgressCard(id: string) {
     setExpandedProgress((current) =>
@@ -407,6 +445,7 @@ export default function CrewPage({
 
     setCrew(crewData);
     setChecklists(checklistData);
+    setArchiveRetention(payload.checklist_retention || null);
     loadCurrentOperator(crewData, user);
   }
 
@@ -811,6 +850,132 @@ export default function CrewPage({
     loadData();
   }
 
+  function getAssignedCrewLabel(checklist: any) {
+    const assignedCrew = crew.find(
+      (member) => member.crew_profile_id === checklist.assigned_to
+    );
+    return (
+      assignedCrew?.crew_profiles?.full_name ||
+      assignedCrew?.invited_email ||
+      checklist.assigned_to ||
+      "Crew member"
+    );
+  }
+
+  async function downloadChecklistArchivePdf() {
+    if (checklistRecords.length === 0) {
+      alert("No checklist records are available in the 6-month archive.");
+      return;
+    }
+
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 42;
+    const contentWidth = pageWidth - margin * 2;
+    let y = 48;
+
+    function ensureSpace(height: number) {
+      if (y + height <= pageHeight - 58) return;
+      doc.setDrawColor(23, 84, 96);
+      doc.line(margin, pageHeight - 44, pageWidth - margin, pageHeight - 44);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("BlueDeck checklist archive - records are retained for 6 months.", margin, pageHeight - 28);
+      doc.addPage();
+      y = 48;
+    }
+
+    function writeWrapped(text: string, x: number, maxWidth: number, lineHeight = 13) {
+      const lines = doc.splitTextToSize(text || "-", maxWidth);
+      lines.forEach((line: string) => {
+        ensureSpace(lineHeight + 3);
+        doc.text(line, x, y);
+        y += lineHeight;
+      });
+    }
+
+    doc.setFillColor(7, 24, 39);
+    doc.roundedRect(margin, y, contentWidth, 58, 14, 14, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("BlueDeck Checklist Archive", margin + 18, y + 25);
+    doc.setFontSize(9);
+    doc.setTextColor(175, 239, 247);
+    doc.text(`Last 6 months / ${checklistRecords.length} checklist records`, margin + 18, y + 43);
+    y += 82;
+
+    checklistRecords.forEach((checklist, index) => {
+      const progress = getChecklistProgress(checklist);
+      const tasks = checklist.yacht_checklist_items || [];
+      const assignedCrew = getAssignedCrewLabel(checklist);
+      const created = checklist.created_at ? formatDateTime(checklist.created_at) : "-";
+      const completed = checklist.completed_at ? formatDateTime(checklist.completed_at) : "-";
+
+      ensureSpace(126);
+      doc.setDrawColor(210, 226, 232);
+      doc.setFillColor(248, 252, 253);
+      doc.roundedRect(margin, y, contentWidth, 86, 10, 10, "FD");
+
+      doc.setTextColor(7, 24, 39);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(`${index + 1}. ${checklist.title || "Checklist"}`, margin + 14, y + 20);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Crew: ${assignedCrew}`, margin + 14, y + 37);
+      doc.text(`Department: ${checklist.department || "-"} / ${checklist.checklist_type || "-"}`, margin + 14, y + 52);
+      doc.text(`Created: ${created}   Completed: ${completed}`, margin + 14, y + 67);
+      doc.text(`Status: ${checklist.status || "open"}   Progress: ${progress.done}/${progress.total} (${progress.percent}%)`, pageWidth - margin - 210, y + 37);
+      doc.text(`Frequency: ${getChecklistFrequency(checklist) || "-"}`, pageWidth - margin - 210, y + 52);
+      doc.text(`Due: ${checklist.due_date || "-"}`, pageWidth - margin - 210, y + 67);
+      y += 106;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(9);
+      doc.setTextColor(21, 94, 117);
+      doc.text("Tasks", margin, y);
+      y += 15;
+
+      tasks.forEach((task: any, taskIndex: number) => {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.6);
+        doc.setTextColor(51, 65, 85);
+        const status = task.completed ? "done" : "open";
+        const proof = getTaskPhoto(task, "before") || getTaskPhoto(task, "after") ? " / proof" : "";
+        writeWrapped(`${taskIndex + 1}. [${status}${proof}] ${task.task_text || "-"}`, margin + 8, contentWidth - 16, 12);
+      });
+
+      const note = getChecklistNote(checklist);
+      if (note) {
+        y += 4;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8.6);
+        doc.setTextColor(7, 24, 39);
+        doc.text("Captain note", margin, y);
+        y += 12;
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(71, 85, 105);
+        writeWrapped(note, margin + 8, contentWidth - 16, 12);
+      }
+
+      y += 16;
+    });
+
+    doc.setDrawColor(23, 84, 96);
+    doc.line(margin, pageHeight - 44, pageWidth - margin, pageHeight - 44);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("BlueDeck checklist archive - records are retained for 6 months.", margin, pageHeight - 28);
+    doc.save(`BlueDeck-checklist-archive-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
   async function assignContract() {
     if (!selectedCrew) {
       alert("Select crew member");
@@ -883,7 +1048,7 @@ export default function CrewPage({
               </p>
             </div>
 
-            {isChecklistSystem && (
+            {isChecklistSystem && checklistSection === "monitor" && (
               <div className="grid gap-3 rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#071827_0%,#0d3143_58%,#eafcff_58%,#ffffff_100%)] p-4 shadow-inner shadow-cyan-950/15 sm:grid-cols-2">
                 <InsightCard label="Open tasks" value={checklistInsights.openTasks} tone="dark" icon={<ListChecks />} />
                 <InsightCard label="Progress" value={`${checklistInsights.progress}%`} tone="aqua" icon={<CheckCircle />} />
@@ -915,6 +1080,35 @@ export default function CrewPage({
         </div>
 
         {isChecklistSystem && (
+          <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-3 sm:rounded-[36px] sm:p-4">
+            <ChecklistSectionButton
+              active={checklistSection === "assign"}
+              icon={<Send className="h-5 w-5" />}
+              title="Create & Send"
+              text="Choose ready templates or write a manual checklist."
+              meta={`${selectedTemplates.length} selected`}
+              onClick={() => setChecklistSection("assign")}
+            />
+            <ChecklistSectionButton
+              active={checklistSection === "monitor"}
+              icon={<ActivityIcon />}
+              title="Sent Status"
+              text="Track what crew completed, missed or attached proof to."
+              meta={`${checklistInsights.openChecklists} open`}
+              onClick={() => setChecklistSection("monitor")}
+            />
+            <ChecklistSectionButton
+              active={checklistSection === "archive"}
+              icon={<Archive className="h-5 w-5" />}
+              title="6-Month Archive"
+              text="Keep recent records and export a clean PDF archive."
+              meta={`${archiveStats.records} records`}
+              onClick={() => setChecklistSection("archive")}
+            />
+          </section>
+        )}
+
+        {isChecklistSystem && checklistSection === "assign" && (
           <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
             <div className="grid gap-0 lg:grid-cols-[0.42fr_0.58fr]">
               <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_62%,#0f5663_100%)] p-6 text-white sm:p-8">
@@ -993,6 +1187,7 @@ export default function CrewPage({
           </section>
         )}
 
+        {(!isChecklistSystem || checklistSection === "assign") && (
         <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
           <div className="space-y-6 xl:space-y-8">
             {!isChecklistSystem && (
@@ -1897,6 +2092,279 @@ export default function CrewPage({
             )}
           </div>
         </div>
+        )}
+
+        {isChecklistSystem && checklistSection === "monitor" && (
+          <section className="rounded-[34px] border border-slate-200 bg-white/90 p-5 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px] sm:p-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="font-black uppercase tracking-[0.18em] text-cyan-700">
+                  Sent Checklist Status
+                </p>
+                <h2 className="mt-2 text-4xl font-black text-slate-950 sm:text-5xl">
+                  Crew completion board
+                </h2>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
+                  Review every checklist sent to crew, completion percentage, due status, proof photos and captain notes.
+                </p>
+              </div>
+              <button
+                onClick={() => loadData()}
+                className="bd-focus inline-flex items-center justify-center gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 px-5 py-3 font-black text-cyan-900 transition hover:border-cyan-300 hover:bg-cyan-100"
+              >
+                <RefreshCcw className="h-5 w-5" />
+                Refresh
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <MonitorMetric title="Open checklists" value={checklistInsights.openChecklists} icon={<ClipboardList />} tone="navy" />
+              <MonitorMetric title="Completed" value={checklistInsights.completedChecklists} icon={<CheckCircle />} tone="green" />
+              <MonitorMetric title="Due soon" value={checklistInsights.dueSoon} icon={<AlertTriangle />} tone="amber" />
+              <MonitorMetric title="Proof records" value={checklistInsights.proofItems} icon={<Camera />} tone="blue" />
+            </div>
+
+            <div className="mt-8 grid gap-4">
+              {monitorChecklists.map((item) => {
+                const progress = getChecklistProgress(item);
+                const tasks = item.yacht_checklist_items || [];
+                const expanded = expandedProgress.includes(item.id);
+                const crewName = getAssignedCrewLabel(item);
+                const dueStatus = getChecklistDueStatus(item);
+                const proofCount = tasks.filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
+
+                return (
+                  <article
+                    key={item.id}
+                    className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm transition hover:border-cyan-200 hover:shadow-xl hover:shadow-cyan-950/8"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleProgressCard(item.id)}
+                      className="bd-focus block w-full p-5 text-left sm:p-6"
+                      aria-expanded={expanded}
+                    >
+                      <div className="grid gap-5 xl:grid-cols-[1fr_220px] xl:items-center">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${getStatusBadgeClass(item.status)}`}>
+                              {item.status === "completed" ? "Completed" : "Open"}
+                            </span>
+                            <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${dueStatus.className}`}>
+                              {dueStatus.label}
+                            </span>
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                              {proofCount} proof
+                            </span>
+                          </div>
+                          <h3 className="mt-3 break-words text-2xl font-black text-slate-950">
+                            {item.title || "Checklist"}
+                          </h3>
+                          <p className="mt-2 text-sm font-semibold text-cyan-800">
+                            {item.department || "Yacht"} · {item.checklist_type || "Checklist"} · {getChecklistFrequency(item) || "One-time"}
+                          </p>
+                          <p className="mt-3 flex flex-wrap items-center gap-2 text-sm font-bold text-slate-600">
+                            <UserRound className="h-4 w-4 text-cyan-700" />
+                            {crewName}
+                            <span className="text-slate-300">/</span>
+                            Sent {item.created_at ? formatDateTime(item.created_at) : "-"}
+                          </p>
+                        </div>
+
+                        <div className="rounded-3xl border border-cyan-100 bg-[#f4fbfd] p-4">
+                          <div className="flex items-center justify-between text-sm font-black text-slate-950">
+                            <span>{progress.done}/{progress.total}</span>
+                            <span>{progress.percent}%</span>
+                          </div>
+                          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200">
+                            <div
+                              className="h-full rounded-full bg-[linear-gradient(90deg,#0e7490,#22d3ee)] transition-all"
+                              style={{ width: `${progress.percent}%` }}
+                            />
+                          </div>
+                          <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                            {expanded ? "Hide task details" : "View task details"}
+                          </p>
+                        </div>
+                      </div>
+                    </button>
+
+                    {expanded && (
+                      <div className="border-t border-slate-100 bg-slate-50/60 px-5 pb-5 sm:px-6 sm:pb-6">
+                        {getChecklistNote(item) && (
+                          <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-700">
+                            Captain note: {getChecklistNote(item)}
+                          </div>
+                        )}
+
+                        <div className="mt-5 grid gap-3">
+                          {tasks.map((task: any) => {
+                            const beforePhoto = getTaskPhoto(task, "before");
+                            const afterPhoto = getTaskPhoto(task, "after");
+
+                            return (
+                              <div
+                                key={task.id}
+                                className={`rounded-2xl border p-4 ${
+                                  task.completed
+                                    ? "border-emerald-200 bg-emerald-50"
+                                    : "border-slate-200 bg-white"
+                                }`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <div
+                                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
+                                      task.completed
+                                        ? "border-emerald-500 bg-emerald-500 text-white"
+                                        : "border-slate-300 bg-white text-slate-300"
+                                    }`}
+                                  >
+                                    {task.completed && <CheckCircle className="h-5 w-5" />}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-semibold text-slate-700">{task.task_text}</p>
+                                    {task.completed && (
+                                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                                        Done by {task.completed_by || crewName}
+                                        {task.completed_at ? ` · ${formatDateTime(task.completed_at)}` : ""}
+                                      </p>
+                                    )}
+                                    {(beforePhoto || afterPhoto) && (
+                                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                        <TaskPhotoPreview label="Before" url={beforePhoto} onOpen={setPhotoPreview} />
+                                        <TaskPhotoPreview label="After" url={afterPhoto} onOpen={setPhotoPreview} />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+
+              {monitorChecklists.length === 0 && (
+                <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                  <p className="text-xl font-black text-slate-950">No checklist has been sent yet.</p>
+                  <p className="mt-2 text-slate-500">Create and send one from the first section.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {isChecklistSystem && checklistSection === "archive" && (
+          <section className="overflow-hidden rounded-[34px] border border-slate-200 bg-white/90 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px]">
+            <div className="grid gap-0 xl:grid-cols-[0.38fr_0.62fr]">
+              <div className="bg-[linear-gradient(135deg,#071827_0%,#0c3040_70%,#135e68_100%)] p-6 text-white sm:p-8">
+                <p className="font-black uppercase tracking-[0.2em] text-cyan-200">
+                  6-Month Record Vault
+                </p>
+                <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
+                  Checklist archive
+                </h2>
+                <p className="mt-4 text-sm leading-7 text-cyan-50/82 sm:text-base">
+                  BlueDeck keeps checklist records for the last 6 months. Older records are cleaned automatically
+                  when the yacht checklist data is loaded.
+                </p>
+
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <LibraryMetric label="Records" value={archiveStats.records} />
+                  <LibraryMetric label="Tasks" value={archiveStats.tasks} />
+                  <LibraryMetric label="Completed" value={archiveStats.completed} />
+                  <LibraryMetric label="Proof" value={archiveStats.proofItems} />
+                </div>
+
+                <div className="mt-6 rounded-3xl border border-white/12 bg-white/10 p-4 text-sm leading-6 text-cyan-50/82">
+                  <p className="font-black text-white">Retention</p>
+                  <p className="mt-1">
+                    {archiveRetention?.cutoff
+                      ? `Records older than ${formatDateTime(archiveRetention.cutoff)} are removed.`
+                      : "Records older than 6 months are removed automatically."}
+                  </p>
+                  {archiveRetention?.purged ? (
+                    <p className="mt-2 font-bold text-cyan-100">
+                      {archiveRetention.purged} old checklist record{archiveRetention.purged === 1 ? "" : "s"} cleaned on this load.
+                    </p>
+                  ) : null}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={downloadChecklistArchivePdf}
+                  className="bd-focus mt-6 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-300 px-5 py-4 text-lg font-black text-slate-950 shadow-xl shadow-cyan-950/18 transition hover:bg-white"
+                >
+                  <Download className="h-5 w-5" />
+                  Download PDF Archive
+                </button>
+              </div>
+
+              <div className="p-5 sm:p-8">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
+                      Recent records
+                    </p>
+                    <h3 className="mt-1 text-3xl font-black text-slate-950">
+                      Last 6 months
+                    </h3>
+                  </div>
+                  <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-900">
+                    Auto-clean enabled
+                  </span>
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {checklistRecords.map((item) => {
+                    const progress = getChecklistProgress(item);
+                    const proofCount = (item.yacht_checklist_items || []).filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
+
+                    return (
+                      <article
+                        key={item.id}
+                        className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+                      >
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div className="min-w-0">
+                            <h4 className="truncate text-xl font-black text-slate-950">
+                              {item.title || "Checklist"}
+                            </h4>
+                            <p className="mt-1 text-sm font-semibold text-cyan-800">
+                              {getAssignedCrewLabel(item)} · {item.department || "Yacht"} · {formatDateTime(item.created_at)}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] ${getStatusBadgeClass(item.status)}`}>
+                              {item.status === "completed" ? "Completed" : "Open"}
+                            </span>
+                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
+                              {progress.percent}% done
+                            </span>
+                            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-cyan-900">
+                              {proofCount} proof
+                            </span>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+
+                  {checklistRecords.length === 0 && (
+                    <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+                      <FileText className="mx-auto h-10 w-10 text-cyan-700" />
+                      <p className="mt-3 text-xl font-black text-slate-950">No archived checklist records yet.</p>
+                      <p className="mt-2 text-slate-500">Sent checklists will appear here for 6 months.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
       {photoPreview && (
@@ -1962,6 +2430,93 @@ function PackIcon({ packId }: { packId: string }) {
   return <ClipboardList className="h-5 w-5" />;
 }
 
+function ActivityIcon() {
+  return (
+    <span className="relative flex h-5 w-5 items-center justify-center">
+      <span className="absolute h-5 w-5 rounded-full border-2 border-current opacity-30" />
+      <span className="h-2.5 w-2.5 rounded-full bg-current" />
+    </span>
+  );
+}
+
+function ChecklistSectionButton({
+  active,
+  icon,
+  title,
+  text,
+  meta,
+  onClick,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  title: string;
+  text: string;
+  meta: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`bd-focus rounded-[26px] border p-4 text-left transition ${
+        active
+          ? "border-cyan-400 bg-[linear-gradient(135deg,#071827_0%,#0d3143_100%)] text-white shadow-xl shadow-cyan-950/14"
+          : "border-slate-200 bg-white text-slate-800 hover:border-cyan-300 hover:bg-cyan-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+          active ? "bg-cyan-300 text-slate-950" : "bg-cyan-50 text-cyan-800"
+        }`}>
+          {icon}
+        </span>
+        <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
+          active ? "bg-white/12 text-cyan-100" : "bg-slate-100 text-slate-500"
+        }`}>
+          {meta}
+        </span>
+      </div>
+      <h3 className="mt-4 text-xl font-black">{title}</h3>
+      <p className={`mt-2 text-sm leading-6 ${active ? "text-cyan-50/78" : "text-slate-500"}`}>
+        {text}
+      </p>
+    </button>
+  );
+}
+
+function MonitorMetric({
+  title,
+  value,
+  icon,
+  tone,
+}: {
+  title: string;
+  value: ReactNode;
+  icon: ReactNode;
+  tone: "navy" | "green" | "amber" | "blue";
+}) {
+  const toneClass =
+    tone === "navy"
+      ? "border-slate-900 bg-slate-950 text-white"
+      : tone === "green"
+        ? "border-emerald-200 bg-emerald-50 text-slate-950"
+        : tone === "amber"
+          ? "border-amber-200 bg-amber-50 text-slate-950"
+          : "border-cyan-200 bg-cyan-50 text-slate-950";
+
+  return (
+    <div className={`rounded-3xl border p-5 ${toneClass}`}>
+      <div className="flex items-center justify-between gap-4">
+        <span className={tone === "navy" ? "text-cyan-200" : "text-cyan-800"}>{icon}</span>
+        <span className="text-3xl font-black">{value}</span>
+      </div>
+      <p className={`mt-3 text-xs font-black uppercase tracking-[0.16em] ${tone === "navy" ? "text-cyan-100/80" : "text-slate-500"}`}>
+        {title}
+      </p>
+    </div>
+  );
+}
+
 function DepartmentIcon({ department }: any) {
   if (department === "Command") return <ShipWheel className="h-12 w-12 text-cyan-700" />;
   if (department === "Deck") return <ShipWheel className="h-12 w-12 text-cyan-700" />;
@@ -1999,6 +2554,53 @@ function getChecklistProgress(checklist: any) {
     total,
     done,
     percent: total ? Math.round((done / total) * 100) : 0,
+  };
+}
+
+function getStatusBadgeClass(status?: string) {
+  return status === "completed"
+    ? "bg-emerald-100 text-emerald-800"
+    : "bg-cyan-100 text-cyan-900";
+}
+
+function getChecklistDueStatus(checklist: any) {
+  if (checklist.status === "completed") {
+    return {
+      label: "Closed",
+      className: "bg-emerald-100 text-emerald-800",
+    };
+  }
+
+  if (!checklist.due_date) {
+    return {
+      label: "No due date",
+      className: "bg-slate-100 text-slate-500",
+    };
+  }
+
+  const dueTime = new Date(checklist.due_date).getTime();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayTime = today.getTime();
+  const twoDays = 1000 * 60 * 60 * 24 * 2;
+
+  if (dueTime < todayTime) {
+    return {
+      label: "Overdue",
+      className: "bg-rose-100 text-rose-800",
+    };
+  }
+
+  if (dueTime <= todayTime + twoDays) {
+    return {
+      label: "Due soon",
+      className: "bg-amber-100 text-amber-800",
+    };
+  }
+
+  return {
+    label: "On schedule",
+    className: "bg-cyan-100 text-cyan-900",
   };
 }
 

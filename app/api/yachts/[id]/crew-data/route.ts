@@ -91,6 +91,38 @@ export async function GET(
     return NextResponse.json({ ok: false, error: crewResponse.error.message }, { status: 500 });
   }
 
+  const normalizedUserEmail = normalizeEmail(user.email);
+  const isYachtOwner = yacht.owner_id === user.id;
+  const isYachtMember = (crewResponse.data || []).some((member: any) => {
+    return (
+      member.crew_profiles?.user_id === user.id ||
+      normalizeEmail(member.crew_profiles?.email) === normalizedUserEmail ||
+      normalizeEmail(member.invited_email) === normalizedUserEmail
+    );
+  });
+
+  if (!isYachtOwner && !isYachtMember) {
+    return NextResponse.json({ ok: false, error: "You do not have access to this yacht." }, { status: 403 });
+  }
+
+  const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const retentionCutoff = sixMonthsAgo.toISOString();
+  let purgedChecklists = 0;
+
+  const { data: staleChecklists } = await serviceClient
+    .from("yacht_checklists")
+    .select("id")
+    .eq("yacht_id", yachtId)
+    .lt("created_at", retentionCutoff);
+
+  if (staleChecklists?.length) {
+    const staleIds = staleChecklists.map((item: { id: string }) => item.id);
+    await serviceClient.from("yacht_checklist_items").delete().in("checklist_id", staleIds);
+    const purgeResponse = await serviceClient.from("yacht_checklists").delete().in("id", staleIds);
+    if (!purgeResponse.error) purgedChecklists = staleIds.length;
+  }
+
   const { data: checklists, error: checklistError } = await serviceClient
     .from("yacht_checklists")
     .select(`
@@ -108,7 +140,16 @@ export async function GET(
     ok: true,
     crew: crewResponse.data || [],
     checklists: checklists || [],
+    checklist_retention: {
+      months: 6,
+      cutoff: retentionCutoff,
+      purged: purgedChecklists,
+    },
   });
+}
+
+function normalizeEmail(value?: string | null) {
+  return (value || "").trim().toLowerCase();
 }
 
 function isSchemaCacheError(error: { message?: string; code?: string } | null) {
