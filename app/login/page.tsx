@@ -34,30 +34,26 @@ export default function LoginPage() {
     : "/forgot-password";
 
   useEffect(() => {
-    async function redirectIfLoggedIn() {
-      const searchParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const requestedMode = searchParams.get("mode");
-      const isPasswordRecovery =
-        requestedMode === "recovery" ||
-        searchParams.get("type") === "recovery" ||
-        hashParams.get("type") === "recovery";
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const requestedMode = searchParams.get("mode");
+    const isPasswordRecovery =
+      requestedMode === "recovery" ||
+      searchParams.get("type") === "recovery" ||
+      hashParams.get("type") === "recovery";
 
-      if (isPasswordRecovery) {
-        window.location.replace(`/reset-password${window.location.search}${window.location.hash}`);
-        return;
-      }
-
-      if (requestedMode === "signup") setMode("signup");
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session) window.location.href = "/dashboard";
+    if (isPasswordRecovery) {
+      window.location.replace(`/reset-password${window.location.search}${window.location.hash}`);
+      return;
     }
 
-    redirectIfLoggedIn();
+    if (requestedMode !== "signup") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      setMode("signup");
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   async function submit() {

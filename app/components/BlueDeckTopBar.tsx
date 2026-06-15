@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, Settings, UserRound } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings, UserRound } from "lucide-react";
+import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -16,6 +17,11 @@ export function BlueDeckTopBar({
   subtitle = "YachtOS",
 }: BlueDeckTopBarProps) {
   const { t } = useLanguage();
+
+  async function logout() {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  }
 
   return (
     <header className="bd-app-topbar border-b border-white/10 bg-[linear-gradient(90deg,#020817_0%,#06172b_52%,#0b2842_100%)] shadow-2xl shadow-slate-950/22">
@@ -64,6 +70,15 @@ export function BlueDeckTopBar({
           </Link>
 
           <LanguageSwitcher size="compact" />
+
+          <button
+            type="button"
+            onClick={logout}
+            className="bd-focus inline-flex items-center gap-2 rounded-full border border-rose-100/30 bg-white/8 px-4 py-3 text-sm font-black text-white/86 shadow-lg shadow-slate-950/10 transition hover:border-rose-100 hover:bg-rose-50 hover:text-[#07182d]"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden lg:inline">{t("topbar.logout")}</span>
+          </button>
         </nav>
       </div>
     </header>

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Mail, MapPin, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, LayoutDashboard, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
+import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -18,6 +20,38 @@ const publicNavigation = [
 
 export function PublicHeader() {
   const { t } = useLanguage();
+  const [sessionEmail, setSessionEmail] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!active) return;
+      setSessionEmail(session?.user?.email || "");
+    }
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionEmail(session?.user?.email || "");
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function logout() {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  }
 
   return (
     <header className="bd-public-header">
@@ -38,18 +72,49 @@ export function PublicHeader() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/login"
-            className="bd-focus rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-5 sm:py-3 sm:text-sm"
-          >
-            {t("auth.login")}
-          </Link>
-          <Link
-            href="/login?mode=signup"
-            className="bd-focus rounded-full bg-white px-3 py-2.5 text-xs font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100 sm:px-5 sm:py-3 sm:text-sm"
-          >
-            {t("auth.signUp")}
-          </Link>
+          {sessionEmail ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="bd-focus inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-4 sm:py-3 sm:text-sm"
+                title={sessionEmail}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden md:inline">{t("topbar.dashboard")}</span>
+              </Link>
+              <Link
+                href="/profile"
+                className="bd-focus inline-flex items-center gap-2 rounded-full bg-white px-3 py-2.5 text-xs font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100 sm:px-4 sm:py-3 sm:text-sm"
+                title={sessionEmail}
+              >
+                <UserRound className="h-4 w-4" />
+                <span className="hidden sm:inline">{t("topbar.profile")}</span>
+              </Link>
+              <button
+                type="button"
+                onClick={logout}
+                className="bd-focus inline-flex items-center gap-2 rounded-full border border-rose-200/30 bg-rose-50/10 px-3 py-2.5 text-xs font-black text-white/88 shadow-lg shadow-cyan-950/10 transition hover:border-rose-100 hover:bg-rose-100 hover:text-[#07182d] sm:px-4 sm:py-3 sm:text-sm"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden lg:inline">{t("topbar.logout")}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="bd-focus rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-5 sm:py-3 sm:text-sm"
+              >
+                {t("auth.login")}
+              </Link>
+              <Link
+                href="/login?mode=signup"
+                className="bd-focus rounded-full bg-white px-3 py-2.5 text-xs font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100 sm:px-5 sm:py-3 sm:text-sm"
+              >
+                {t("auth.signUp")}
+              </Link>
+            </>
+          )}
           <LanguageSwitcher size="compact" />
         </div>
       </div>

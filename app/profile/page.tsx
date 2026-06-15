@@ -632,6 +632,7 @@ export default function ProfilePage() {
     if (existingProfile) {
       const normalizedProfile = normalizeProfile({
         ...existingProfile,
+        email: existingProfile.email || user.email || "",
         gender: existingProfile.gender || user.user_metadata?.gender || "",
       });
       setProfile(normalizedProfile);
@@ -751,7 +752,7 @@ export default function ProfilePage() {
     await Promise.all([
       saveBaseProfileById(supabase, {
         id: user.id,
-        email: normalizedForSave.email || user.email,
+        email: user.email || "",
         full_name: normalizedForSave.full_name || user.email,
         phone: normalizedForSave.phone || "",
         role: inferBaseRoleFromPosition(normalizedForSave.current_position),
