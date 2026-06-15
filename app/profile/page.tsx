@@ -451,6 +451,7 @@ const emptyExperience: Experience = {
 
 const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
 const referenceUponRequestText = "References available upon request.";
+const referenceUponRequestCvText = "REFERENCES AVAILABLE UPON REQUEST";
 const referenceUponRequestMarker = "__BLUDECK_REFERENCE_ON_REQUEST__";
 
 const emptyOtherWorkExperience: Experience = {
@@ -534,6 +535,18 @@ export default function ProfilePage() {
       .sort((a, b) => a - b)[0];
     return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
   }, [editableYachtExperiences]);
+  const cvCompletionPercent = useMemo(
+    () =>
+      calculateCvCompletion({
+        profile,
+        documents: cvDocuments,
+        yachtExperiences: editableYachtExperiences,
+        otherWorkExperiences: editableOtherWorkExperiences,
+        references: cvReferences,
+        portfolio,
+      }),
+    [profile, cvDocuments, editableYachtExperiences, editableOtherWorkExperiences, cvReferences, portfolio],
+  );
   const studioTabs: Array<{
     id: CvStudioTab;
     label: string;
@@ -859,10 +872,7 @@ export default function ProfilePage() {
     }
 
     await loadRelated(profile.id);
-    setReferenceStatus({
-      type: "success",
-      message: "Reference saved under this experience.",
-    });
+    setReferenceStatus(null);
     return true;
   }
 
@@ -1099,9 +1109,12 @@ export default function ProfilePage() {
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
                 <p className="mt-1 text-sm font-semibold text-white/70">{activeStudioTabInfo.description}</p>
               </div>
-              <span className="rounded-full border border-[#8ed8e6]/35 bg-white/10 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-black/10">
-                {activeStudioTabInfo.status}
-              </span>
+              <div className="flex items-center gap-3">
+                <CvCompletionRing percent={cvCompletionPercent} />
+                <span className="rounded-full border border-[#8ed8e6]/35 bg-white/10 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-black/10">
+                  {activeStudioTabInfo.status}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1218,13 +1231,9 @@ export default function ProfilePage() {
           <div className="contents">
             <Panel active={activeStudioTab === "experience"} title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
               <div className="space-y-4">
-                {referenceStatus && (
+                {referenceStatus?.type === "error" && (
                   <p
-                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
-                      referenceStatus.type === "success"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-rose-200 bg-rose-50 text-rose-800"
-                    }`}
+                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
                   >
                     {referenceStatus.message}
                   </p>
@@ -1256,13 +1265,9 @@ export default function ProfilePage() {
 
             <Panel active={activeStudioTab === "otherWork"} title="Other work experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
               <div className="space-y-4">
-                {referenceStatus && (
+                {referenceStatus?.type === "error" && (
                   <p
-                    className={`rounded-xl border px-4 py-3 text-sm font-semibold ${
-                      referenceStatus.type === "success"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                        : "border-rose-200 bg-rose-50 text-rose-800"
-                    }`}
+                    className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
                   >
                     {referenceStatus.message}
                   </p>
@@ -2270,7 +2275,7 @@ function drawPdfAboutAndExperiences(
   y += 9;
 
   experiences.forEach((experience) => {
-    drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 49);
+    drawPdfExperienceCard(pdf, experience, cvReferencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 49);
     y += 58;
   });
 }
@@ -2287,7 +2292,7 @@ function drawPdfContinuedExperiences(
   y += 11;
 
   experiences.forEach((experience) => {
-    drawPdfExperienceCard(pdf, experience, referencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 59);
+    drawPdfExperienceCard(pdf, experience, cvReferencesForExperience(experience, payload.references), images.get(experience.photo_url), 84, y, 106, 59);
     y += 70;
   });
 }
@@ -2778,6 +2783,66 @@ function getProfileCurrentPosition(profile: CrewProfile) {
   return cleanSaveText(profile.current_position) || cleanSaveList(profile.current_positions)[0] || "";
 }
 
+function calculateCvCompletion({
+  profile,
+  documents,
+  yachtExperiences,
+  otherWorkExperiences,
+  references,
+  portfolio,
+}: {
+  profile: CrewProfile;
+  documents: CrewDocument[];
+  yachtExperiences: Experience[];
+  otherWorkExperiences: Experience[];
+  references: ReferenceEntry[];
+  portfolio: PortfolioPhoto[];
+}) {
+  const visibleSkills = [
+    ...(profile.personal_skills || []),
+    ...(profile.personal_characteristics || []),
+  ].filter(Boolean);
+  const visiblePreferences = (profile.work_preferences || []).filter(Boolean);
+  const visibleLanguages = (profile.languages || []).filter((language) => language.name && language.level);
+  const allExperiences = [...yachtExperiences, ...otherWorkExperiences];
+  const completeExperiences = allExperiences.filter((experience) => {
+    const hasCoreInfo = cleanSaveText(experience.yacht_name) && cleanSaveText(experience.position);
+    const hasDates = cleanSaveText(experience.start_date) && cleanSaveText(experience.end_date);
+    const hasDuties = cleanSaveText(experience.description).length >= 40;
+    return hasCoreInfo && hasDates && hasDuties;
+  });
+  const hasReferenceSignal = references.some((reference) =>
+    reference.show_on_cv && (isReferenceUponRequest(reference) || Boolean(reference.name || reference.role || reference.phone || reference.email)),
+  );
+  const completionChecks: Array<{ complete: boolean; weight: number }> = [
+    { complete: Boolean(profile.profile_photo_url), weight: 6 },
+    { complete: Boolean(cleanSaveText(profile.full_name)), weight: 7 },
+    { complete: Boolean(getProfileCurrentPosition(profile)), weight: 7 },
+    { complete: Boolean(cleanSaveText(profile.date_of_birth)), weight: 4 },
+    { complete: Boolean(cleanSaveText(profile.nationality)), weight: 4 },
+    { complete: Boolean(cleanSaveText(profile.gender)), weight: 3 },
+    { complete: Boolean(profile.height_cm), weight: 3 },
+    { complete: Boolean(profile.weight_kg), weight: 3 },
+    { complete: Boolean(cleanSaveText(profile.smoker)), weight: 2 },
+    { complete: Boolean(cleanSaveText(profile.visible_tattoos)), weight: 2 },
+    { complete: Boolean(cleanSaveText(profile.phone)), weight: 5 },
+    { complete: Boolean(cleanSaveText(profile.email)), weight: 5 },
+    { complete: Boolean(cleanSaveText(profile.location)), weight: 5 },
+    { complete: cleanSaveText(profile.bio).length >= 80, weight: 8 },
+    { complete: completeExperiences.length >= 1, weight: 12 },
+    { complete: completeExperiences.length >= 2, weight: 5 },
+    { complete: documents.length >= 1, weight: 7 },
+    { complete: visibleSkills.length >= 5, weight: 6 },
+    { complete: visiblePreferences.length >= 3, weight: 4 },
+    { complete: visibleLanguages.length >= 1, weight: 4 },
+    { complete: portfolio.some((photo) => photo.image_url), weight: 2 },
+    { complete: hasReferenceSignal, weight: 3 },
+  ];
+  const totalWeight = completionChecks.reduce((sum, item) => sum + item.weight, 0);
+  const completedWeight = completionChecks.reduce((sum, item) => sum + (item.complete ? item.weight : 0), 0);
+  return Math.max(0, Math.min(100, Math.round((completedWeight / totalWeight) * 100)));
+}
+
 function inferBaseRoleFromPosition(value?: string) {
   const position = cleanSaveText(value).toLowerCase();
   if (position.includes("captain")) return "captain";
@@ -2879,12 +2944,19 @@ function referencesForExperience(experience: Experience, references: ReferenceEn
   return references.filter((reference) => referenceMatchesExperience(reference, experience));
 }
 
+function cvReferencesForExperience(experience: Experience, references: ReferenceEntry[]) {
+  const linkedReferences = referencesForExperience(experience, references);
+  const requestReference = linkedReferences.find(isReferenceUponRequest);
+  if (requestReference) return [requestReference];
+  return linkedReferences.filter((reference) => !isReferenceUponRequest(reference));
+}
+
 function unmatchedExperienceReferences(experiences: Experience[], references: ReferenceEntry[]) {
   return references.filter((reference) => !experiences.some((experience) => referenceMatchesExperience(reference, experience)));
 }
 
 function referenceDisplayName(reference: ReferenceEntry) {
-  if (isReferenceUponRequest(reference)) return referenceUponRequestText;
+  if (isReferenceUponRequest(reference)) return referenceUponRequestCvText;
   const name = cleanSaveText(reference.name);
   if (name && name.toLowerCase() !== "reference") return name;
   return cleanSaveText(reference.company) || cleanSaveText(reference.vessel) || "Contact";
@@ -3072,7 +3144,7 @@ function SeazoneStyleCvPreview({
                     <SeazoneExperienceCard
                       key={item.id || `${item.yacht_name}-${item.start_date}`}
                       experience={item}
-                      references={referencesForExperience(item, cleanReferences)}
+                      references={cvReferencesForExperience(item, cleanReferences)}
                       breakBefore={shouldBreakBeforeExperience(index)}
                     />
                   ))}
@@ -3086,7 +3158,7 @@ function SeazoneStyleCvPreview({
                       <SeazoneExperienceCard
                         key={item.id || `${item.yacht_name}-${item.start_date}`}
                         experience={item}
-                        references={referencesForExperience(item, cleanReferences)}
+                        references={cvReferencesForExperience(item, cleanReferences)}
                         breakBefore={shouldBreakBeforeExperience(cleanYachtExperiences.length + index)}
                       />
                     ))}
@@ -3493,7 +3565,7 @@ function PrintableExperienceList({ experiences, references }: { experiences: Exp
           )}
           <PrintableExperienceCard
             experience={experience}
-            references={referencesForExperience(experience, references)}
+            references={cvReferencesForExperience(experience, references)}
           />
         </div>
       ))}
@@ -4357,9 +4429,6 @@ function OtherWorkExperienceEditor({
               />
             </div>
           </div>
-          <p className="mt-auto pt-3 text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-[#6b7b84]">
-            Non-yacht work, yard periods, hospitality, management or technical roles.
-          </p>
         </div>
 
         <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
@@ -4492,13 +4561,19 @@ function LinkedReferencePanel({
         )}
       </div>
 
-      <div className="space-y-2">
+      <div
+        className={`space-y-2 rounded-xl transition ${
+          requestReference ? "bg-[#f6f8f8]/70 opacity-55 grayscale-[0.35]" : ""
+        }`}
+        aria-disabled={Boolean(requestReference)}
+      >
         {regularReferences.map((reference) => (
           <ExperienceReferenceEditor
             key={reference.id || `${reference.name}-${reference.email}`}
             item={reference}
             isNew={false}
             saving={referenceSaving}
+            disabled={Boolean(requestReference)}
             onSave={saveLinkedReference}
             onDelete={onDeleteReference}
           />
@@ -4508,6 +4583,7 @@ function LinkedReferencePanel({
           item={emptyReference}
           isNew
           saving={referenceSaving}
+          disabled={Boolean(requestReference)}
           onSave={saveLinkedReference}
           onDelete={onDeleteReference}
         />
@@ -4648,12 +4724,14 @@ function ExperienceReferenceEditor({
   item,
   isNew,
   saving,
+  disabled = false,
   onSave,
   onDelete,
 }: {
   item: ReferenceEntry;
   isNew: boolean;
   saving: boolean;
+  disabled?: boolean;
   onSave: (item: ReferenceEntry) => Promise<boolean>;
   onDelete: (id?: string) => void;
 }) {
@@ -4661,6 +4739,7 @@ function ExperienceReferenceEditor({
   const nameValue = draft.name || draft.company || "";
   const dirty = !saveStateEquals(referenceSaveState({ ...draft, name: nameValue }), referenceSaveState(item));
   const saved = !isNew && !dirty;
+  const editorLocked = disabled || saving;
 
   async function handleSave() {
     const saved = await onSave({
@@ -4674,22 +4753,25 @@ function ExperienceReferenceEditor({
   }
 
   return (
-    <div className="rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5">
+    <div className={`rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5 transition ${disabled ? "pointer-events-none" : ""}`}>
       <div className="grid items-center gap-2 lg:grid-cols-[1.05fr_0.7fr_1.2fr_1fr_auto]">
         <ReferenceMiniField
           label="Name / Company"
           value={nameValue}
           placeholder="Name / Company"
+          disabled={disabled}
           onChange={(value) => setDraft({ ...draft, name: value, company: "" })}
         />
         <ReferenceMiniField
           label="Role"
           value={draft.role}
           placeholder="Role"
+          disabled={disabled}
           onChange={(value) => setDraft({ ...draft, role: value })}
         />
         <ReferenceMiniPhoneField
           value={draft.phone}
+          disabled={disabled}
           onChange={(value) => setDraft({ ...draft, phone: value })}
         />
         <ReferenceMiniField
@@ -4697,12 +4779,13 @@ function ExperienceReferenceEditor({
           value={draft.email}
           placeholder="Email"
           type="email"
+          disabled={disabled}
           onChange={(value) => setDraft({ ...draft, email: value })}
         />
         <div className="flex gap-1.5 lg:justify-end">
           <button
             type="button"
-            disabled={saving || saved}
+            disabled={editorLocked || saved}
             onClick={handleSave}
             className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] font-black uppercase tracking-[0.08em] transition disabled:cursor-default ${
               saved
@@ -4716,7 +4799,7 @@ function ExperienceReferenceEditor({
           {!isNew && (
             <button
               type="button"
-              disabled={saving}
+              disabled={editorLocked}
               onClick={() => onDelete(draft.id)}
               className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-rose-100 bg-white px-2.5 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
               aria-label="Delete reference"
@@ -4736,12 +4819,14 @@ function ReferenceMiniField({
   placeholder,
   onChange,
   type = "text",
+  disabled = false,
 }: {
   label: string;
   value?: string;
   placeholder: string;
   onChange: (value: string) => void;
   type?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="block">
@@ -4750,15 +4835,24 @@ function ReferenceMiniField({
         aria-label={label}
         type={type}
         value={value || ""}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="h-9 w-full rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] px-2.5 text-[12px] font-semibold text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:bg-white focus:ring-2 focus:ring-[#2d7482]/15"
+        className="h-9 w-full rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] px-2.5 text-[12px] font-semibold text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:bg-white focus:ring-2 focus:ring-[#2d7482]/15 disabled:cursor-not-allowed disabled:opacity-70"
       />
     </div>
   );
 }
 
-function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
+function ReferenceMiniPhoneField({
+  value,
+  disabled = false,
+  onChange,
+}: {
+  value?: string;
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -4787,11 +4881,13 @@ function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange
       <div className="flex h-9 overflow-hidden rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] transition focus-within:border-[#2d7482] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2d7482]/15">
         <button
           type="button"
+          disabled={disabled}
           onClick={() => {
+            if (disabled) return;
             setOpen(!open);
             setQuery("");
           }}
-          className={`flex w-[74px] shrink-0 cursor-pointer items-center justify-center gap-1 border-r border-[#d8e2e6] bg-white px-1.5 text-[11px] font-black transition hover:bg-[#eef7f8] ${country ? "text-[#06111f]" : "text-[#9aa8ae]"}`}
+          className={`flex w-[74px] shrink-0 cursor-pointer items-center justify-center gap-1 border-r border-[#d8e2e6] bg-white px-1.5 text-[11px] font-black transition hover:bg-[#eef7f8] disabled:cursor-not-allowed ${country ? "text-[#06111f]" : "text-[#9aa8ae]"}`}
           aria-label="Select reference country code"
         >
           {country ? (
@@ -4805,15 +4901,16 @@ function ReferenceMiniPhoneField({ value, onChange }: { value?: string; onChange
         </button>
         <input
           value={localNumber}
+          disabled={disabled}
           onChange={(event) => onChange(composeReferencePhone(country, event.target.value))}
           inputMode="tel"
           autoComplete="tel"
           placeholder="Phone"
-          className="min-w-0 flex-1 bg-transparent px-2 text-[12px] font-semibold text-[#364650] outline-none placeholder:text-[#9aa8ae]"
+          className="min-w-0 flex-1 bg-transparent px-2 text-[12px] font-semibold text-[#364650] outline-none placeholder:text-[#9aa8ae] disabled:cursor-not-allowed"
         />
       </div>
 
-      {open && (
+      {open && !disabled && (
         <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[min(330px,84vw)] overflow-hidden rounded-xl border border-[#d8e2e6] bg-white shadow-2xl shadow-slate-900/18">
           <input
             autoFocus
@@ -5335,6 +5432,30 @@ function Snapshot({ label, value, tone = "cyan" }: { label: string; value: strin
     rose: "border-rose-200 bg-rose-50 text-rose-950",
   };
   return <div className={`rounded-xl border p-3 ${tones[tone]}`}><p className="text-xs opacity-65">{label}</p><p className="mt-1 text-lg font-semibold">{value}</p></div>;
+}
+
+function CvCompletionRing({ percent }: { percent: number }) {
+  const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+
+  return (
+    <div className="flex items-center gap-2 rounded-2xl border border-[#8ed8e6]/35 bg-white/10 px-3 py-2 text-white shadow-lg shadow-black/10">
+      <span
+        className="grid h-12 w-12 place-items-center rounded-full"
+        style={{
+          background: `conic-gradient(#8ed8e6 ${safePercent * 3.6}deg, rgba(255,255,255,0.16) 0deg)`,
+        }}
+        aria-label={`CV completion ${safePercent}%`}
+      >
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0d3f4b] text-[11px] font-black tabular-nums text-white">
+          {safePercent}%
+        </span>
+      </span>
+      <span className="hidden leading-tight sm:block">
+        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-[#8ed8e6]">CV</span>
+        <span className="block text-xs font-black uppercase tracking-[0.08em] text-white">Complete</span>
+      </span>
+    </div>
+  );
 }
 
 function PillList({ items, light = false }: { items: string[]; light?: boolean }) {
