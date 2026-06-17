@@ -817,10 +817,14 @@ export default function ProfilePage() {
   }
 
   async function updateDocument(document: CrewDocument) {
-    if (!profile.id || !document.id) return;
+    if (!profile.id || !document.id) return false;
     const response = await saveRelatedRecord("document", documentPayloadForSave(document), document.id);
-    if (!response.ok) alert(response.error);
+    if (!response.ok) {
+      alert(response.error);
+      return false;
+    }
     await loadRelated(profile.id);
+    return true;
   }
 
   async function deleteDocument(id?: string) {
@@ -1603,11 +1607,11 @@ function DocumentCreator({
           }
         />
         <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry || documentLimitReached} />
-        <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_minmax(220px,1fr)_220px]">
-          <div className="flex min-h-[46px] items-center rounded-xl border border-white/70 bg-white/75 px-3 shadow-sm shadow-cyan-950/5">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex min-h-[46px] w-full items-center rounded-xl border border-white/70 bg-white/75 px-3 shadow-sm shadow-cyan-950/5 sm:w-auto">
             <Checkbox label="No expiry / unlimited" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
           </div>
-          <label className={`inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-cyan-950/5 transition ${uploading ? "cursor-progress opacity-70" : documentLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300"}`}>
+          <label className={`inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-cyan-950/5 transition sm:w-auto ${uploading ? "cursor-progress opacity-70" : documentLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300"}`}>
             <Upload className="h-4 w-4 text-cyan-700" />
             {uploading ? "Uploading..." : draft.file_url ? "File attached" : "Attach file/photo"}
             <input
@@ -1621,7 +1625,7 @@ function DocumentCreator({
               }}
             />
           </label>
-          <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="min-h-[46px] rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
+          <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="min-h-[46px] w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:ml-auto sm:w-auto sm:min-w-[180px]">
             Add document
           </button>
         </div>
@@ -3017,6 +3021,17 @@ function referenceSaveState(reference: ReferenceEntry) {
   };
 }
 
+function documentSaveState(document: CrewDocument) {
+  return {
+    document_type: cleanSaveText(document.document_type),
+    category: cleanSaveText(document.category),
+    expiry_date: cleanSaveText(document.expiry_date),
+    no_expiry: Boolean(document.no_expiry),
+    show_on_cv: Boolean(document.show_on_cv),
+    file_url: cleanSaveText(document.file_url),
+  };
+}
+
 function phoneCountryFromValue(value: string) {
   const normalized = value.trim();
   if (!normalized) return null;
@@ -4284,26 +4299,58 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
   );
 }
 
-function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument; onChange: (document: CrewDocument) => void; onDelete: (id?: string) => void }) {
-  const alert = !document.no_expiry && isWithin90Days(document.expiry_date);
+function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument; onChange: (document: CrewDocument) => Promise<boolean>; onDelete: (id?: string) => void }) {
+  const [draft, setDraft] = useState(document);
+  const [savedDocument, setSavedDocument] = useState(document);
+  const [saving, setSaving] = useState(false);
+  const alert = !draft.no_expiry && isWithin90Days(draft.expiry_date);
+  const dirty = !saveStateEquals(documentSaveState(draft), documentSaveState(savedDocument));
+  const saved = !dirty;
+
+  async function handleSave() {
+    if (saved || saving) return;
+    setSaving(true);
+    try {
+      const ok = await onChange(draft);
+      if (ok) setSavedDocument(draft);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <article className={`rounded-2xl border p-4 ${alert ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-slate-950">{document.document_type || "Document"}</p>
-          <p className="mt-1 text-xs text-slate-500">{document.category || "General"}</p>
-          {document.issuer && <p className="mt-1 truncate text-xs font-semibold text-cyan-800">{document.issuer}</p>}
+          <p className="truncate font-semibold text-slate-950">{draft.document_type || "Document"}</p>
+          <p className="mt-1 text-xs text-slate-500">{draft.category || "General"}</p>
+          {draft.issuer && <p className="mt-1 truncate text-xs font-semibold text-cyan-800">{draft.issuer}</p>}
         </div>
-        <button onClick={() => onDelete(document.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
+        <button onClick={() => onDelete(draft.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
       </div>
       <div className="mt-4 grid gap-3">
-        <DateField label="Expiry" value={document.expiry_date} disabled={document.no_expiry} onChange={(value) => onChange({ ...document, expiry_date: value })} />
+        <DateField label="Expiry" value={draft.expiry_date} disabled={draft.no_expiry} onChange={(value) => setDraft({ ...draft, expiry_date: value })} />
       </div>
       <div className="mt-3 flex flex-wrap gap-4">
-        <Checkbox label="No expiry" checked={document.no_expiry} onChange={(checked) => onChange({ ...document, no_expiry: checked, expiry_date: checked ? "" : document.expiry_date })} />
-        <Checkbox label="Show on CV" checked={document.show_on_cv} onChange={(checked) => onChange({ ...document, show_on_cv: checked })} />
+        <Checkbox label="No expiry" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
+        <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
       </div>
       {alert && <p className="mt-3 text-sm font-semibold text-amber-800">Expiry alert: update this document soon.</p>}
+      <div className="mt-4 flex justify-end">
+        <button
+          type="button"
+          disabled={saving || saved}
+          onClick={handleSave}
+          className={`inline-flex h-9 min-w-[92px] items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] font-black uppercase tracking-[0.08em] transition disabled:cursor-default ${
+            saved
+              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "cursor-pointer bg-[#173f4a] text-white hover:bg-[#235866] disabled:cursor-wait disabled:opacity-60"
+          }`}
+        >
+          {saving ? <Plus className="h-3.5 w-3.5" /> : saved ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          {saving ? "Saving" : saved ? "Saved" : "Save"}
+        </button>
+      </div>
     </article>
   );
 }
