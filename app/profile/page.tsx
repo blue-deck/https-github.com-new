@@ -70,6 +70,7 @@ type LanguageEntry = {
 
 type CrewDocument = {
   id?: string;
+  created_at?: string;
   document_type: string;
   category: string;
   issuer: string;
@@ -453,6 +454,7 @@ const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
 const referenceUponRequestText = "References available upon request.";
 const referenceUponRequestCvText = "REFERENCES AVAILABLE UPON REQUEST";
 const referenceUponRequestMarker = "__BLUDECK_REFERENCE_ON_REQUEST__";
+const maxCvDocuments = 15;
 
 const emptyOtherWorkExperience: Experience = {
   ...emptyExperience,
@@ -498,7 +500,8 @@ export default function ProfilePage() {
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const uploadRunRef = useRef(0);
 
-  const cvDocuments = documents.filter((item) => item.show_on_cv);
+  const sortedDocuments = useMemo(() => sortCrewDocuments(documents), [documents]);
+  const cvDocuments = sortedDocuments.filter((item) => item.show_on_cv).slice(0, maxCvDocuments);
   const cvReferences = references.filter((item) => item.show_on_cv);
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
   const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
@@ -700,7 +703,7 @@ export default function ProfilePage() {
       return;
     }
 
-    setDocuments(result.documents || []);
+    setDocuments(sortCrewDocuments(result.documents || []));
     setExperiences((result.experiences || []).map(normalizeExperienceRecord));
     setReferences(result.references || []);
     setPortfolio(sortPortfolioPhotos((result.portfolio || []).map(normalizePortfolioRecord)));
@@ -778,6 +781,11 @@ export default function ProfilePage() {
   }
 
   async function saveDocument(nextDraft: CrewDocument = documentDraft) {
+    if (documents.length >= maxCvDocuments) {
+      alert(`You can add up to ${maxCvDocuments} documents and certificates to your BlueDeck CV.`);
+      return;
+    }
+
     const hasDocumentDetail = [
       nextDraft.document_type,
       nextDraft.category,
@@ -1305,9 +1313,11 @@ export default function ProfilePage() {
                 }}
                 onCancelUpload={cancelUpload}
                 uploading={uploading === "document-file"}
+                documentCount={documents.length}
+                maxDocuments={maxCvDocuments}
               />
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                {documents.map((document) => (
+                {sortedDocuments.map((document) => (
                   <DocumentCard
                     key={document.id}
                     document={document}
@@ -1540,6 +1550,8 @@ function DocumentCreator({
   onUpload,
   onCancelUpload,
   uploading,
+  documentCount,
+  maxDocuments,
 }: {
   draft: CrewDocument;
   setDraft: (draft: CrewDocument) => void;
@@ -1547,9 +1559,12 @@ function DocumentCreator({
   onUpload: (file: File, draft: CrewDocument) => void | Promise<void>;
   onCancelUpload: () => void;
   uploading: boolean;
+  documentCount: number;
+  maxDocuments: number;
 }) {
   const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
   const customDocumentName = draft.document_type && !selectedCategory ? draft.document_type : "";
+  const documentLimitReached = documentCount >= maxDocuments;
 
   return (
     <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
@@ -1558,11 +1573,12 @@ function DocumentCreator({
           <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
           <select
             value={draft.document_type}
+            disabled={documentLimitReached}
             onChange={(event) => {
               const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
               setDraft({ ...draft, document_type: event.target.value, category });
             }}
-            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none focus:border-cyan-500"
+            className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40"
           >
             <option value="">Select document</option>
             {documentCatalog.map((group) => (
@@ -1578,6 +1594,7 @@ function DocumentCreator({
           label="Other document name"
           value={customDocumentName}
           placeholder="other"
+          disabled={documentLimitReached}
           onChange={(value) =>
             setDraft({
               ...draft,
@@ -1586,18 +1603,23 @@ function DocumentCreator({
             })
           }
         />
-        <Field label="Issuer / authority" value={draft.issuer} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
-        <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry} />
+        <Field label="Issuer / authority" value={draft.issuer} disabled={documentLimitReached} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
+        <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry || documentLimitReached} />
       </div>
+      {documentLimitReached && (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+          Maximum {maxDocuments} documents and certificates can be added to this CV.
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <Checkbox label="No expiry / unlimited" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
         <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
-        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300"}`}>
+        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : documentLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300"}`}>
           <Upload className="h-4 w-4 text-cyan-700" />
           {uploading ? "Uploading..." : draft.file_url ? "File attached" : "Attach file/photo"}
           <input
             type="file"
-            disabled={uploading}
+            disabled={uploading || documentLimitReached}
             className="hidden"
             onChange={(event) => {
               const file = event.currentTarget.files?.[0];
@@ -1616,7 +1638,7 @@ function DocumentCreator({
             Remove file
           </button>
         )}
-        <button type="button" onClick={() => onSave()} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817]">
+        <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817] transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
           Add document
         </button>
       </div>
@@ -1696,6 +1718,68 @@ function saveStateEquals(left: unknown, right: unknown) {
 
 function cleanSaveText(value?: string | null) {
   return (value || "").trim();
+}
+
+function normalizeDocumentText(value?: string | null) {
+  return cleanSaveText(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function catalogCategoryForDocumentType(documentType?: string | null) {
+  const cleanType = cleanSaveText(documentType);
+  if (!cleanType) return "";
+  return documentCatalog.find((group) => group.items.includes(cleanType))?.category || "";
+}
+
+function documentDisplayCategory(document: CrewDocument) {
+  return cleanSaveText(document.category) || catalogCategoryForDocumentType(document.document_type);
+}
+
+function documentSubtitle(document: CrewDocument) {
+  const issuer = cleanSaveText(document.issuer);
+  if (issuer) return issuer;
+
+  const category = documentDisplayCategory(document);
+  if (!category || ["other", "general"].includes(normalizeDocumentText(category))) return "";
+  return category;
+}
+
+function documentPriorityRank(document: CrewDocument) {
+  const type = normalizeDocumentText(document.document_type);
+  const category = normalizeDocumentText(documentDisplayCategory(document));
+  const combined = `${type} ${category}`;
+
+  if (/\bpassport\b/.test(combined)) return 0;
+  if (/\bschengen\b/.test(combined)) return 1;
+  if (/\b(seaman|seafarer|discharge)\b/.test(combined)) return 2;
+  if (
+    category.includes("deck & captain") ||
+    /\b(master|captain|chief mate|oow|coc|certificate of competency|yachtmaster|helm|gmdss)\b|\d+\s*gt\b|\bgt\b/.test(combined)
+  ) {
+    return 3;
+  }
+
+  return 10;
+}
+
+function documentExpiryTime(document: CrewDocument) {
+  if (document.no_expiry || !document.expiry_date) return Number.POSITIVE_INFINITY;
+  const time = Date.parse(document.expiry_date);
+  return Number.isFinite(time) ? time : Number.POSITIVE_INFINITY - 1;
+}
+
+function sortCrewDocuments(documents: CrewDocument[]) {
+  return [...documents].sort((first, second) => {
+    const priorityDifference = documentPriorityRank(first) - documentPriorityRank(second);
+    if (priorityDifference !== 0) return priorityDifference;
+
+    const expiryDifference = documentExpiryTime(first) - documentExpiryTime(second);
+    if (expiryDifference !== 0) return expiryDifference;
+
+    return cleanSaveText(first.document_type).localeCompare(cleanSaveText(second.document_type), "en", { sensitivity: "base" });
+  });
 }
 
 function cleanLimitedText(value: string | null | undefined, maxLength: number) {
@@ -2179,24 +2263,25 @@ function drawPdfDocumentSidebar(pdf: PdfDoc, payload: CvPdfPayload, logo: PdfIma
   drawPdfSideTitle(pdf, "Documents & Certificates", 18, y, 54);
   y += 8;
 
-  payload.documents.slice(0, 8).forEach((document) => {
-    drawPdfDocumentRow(pdf, document, 18, y, 54, 14);
-    y += 17;
+  payload.documents.slice(0, maxCvDocuments).forEach((document) => {
+    drawPdfDocumentRow(pdf, document, 18, y, 54, 9.4);
+    y += 10.8;
   });
 
-  if (qrDataUrl && y < 226) {
-    drawPdfRoundRect(pdf, 20, Math.max(y + 5, 188), 50, 48, 3, "#ffffff", "#cbd7dc");
-    pdf.addImage(qrDataUrl, "PNG", 30, Math.max(y + 10, 193), 30, 30);
+  if (qrDataUrl && y < 240) {
+    const qrY = Math.max(y + 5, 202);
+    drawPdfRoundRect(pdf, 20, qrY, 50, 42, 3, "#ffffff", "#cbd7dc");
+    pdf.addImage(qrDataUrl, "PNG", 31, qrY + 5, 28, 28);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7);
+    pdf.setFontSize(6.4);
     setPdfText(pdf, "#2d7482");
-    pdf.text(payload.profile.public_crew_id || "Crew ID", 45, Math.max(y + 43, 226), { align: "center" });
-    pdf.text("PHOTO GALLERY", 45, Math.max(y + 48, 231), { align: "center" });
+    pdf.text(payload.profile.public_crew_id || "Crew ID", 45, qrY + 35, { align: "center" });
+    pdf.text("PHOTO GALLERY", 45, qrY + 39, { align: "center" });
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(6.8);
+    pdf.setFontSize(6);
     setPdfText(pdf, "#40535d");
-    pdf.text("Scan to view verified yacht", 45, Math.max(y + 53, 236), { align: "center" });
-    pdf.text("work photos on BlueDeck.", 45, Math.max(y + 57, 240), { align: "center" });
+    pdf.text("Scan to view verified yacht", 45, qrY + 43, { align: "center" });
+    pdf.text("work photos on BlueDeck.", 45, qrY + 46.5, { align: "center" });
   }
 }
 
@@ -2488,16 +2573,18 @@ function drawPdfTextCard(pdf: PdfDoc, text: string, x: number, y: number, width:
 }
 
 function drawPdfDocumentRow(pdf: PdfDoc, document: CrewDocument, x: number, y: number, width: number, height: number) {
+  const subtitle = documentSubtitle(document);
   drawPdfRoundRect(pdf, x, y, width, height, 2, "#f6f8f8", "#c7d2d6");
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(7.4);
+  pdf.setFontSize(height <= 10 ? 6.4 : 7.4);
   setPdfText(pdf, "#06111f");
-  pdf.text(document.document_type || "Document", x + 3, y + 5.2, { maxWidth: width - 22 });
+  pdf.text(document.document_type || "Document", x + 3, y + (height <= 10 ? 3.8 : 5.2), { maxWidth: width - 22 });
   setPdfText(pdf, "#2d7482");
-  pdf.text(document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date), x + width - 3, y + 5.2, { align: "right" });
-  pdf.setFontSize(6.4);
+  pdf.text(document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date), x + width - 3, y + (height <= 10 ? 3.8 : 5.2), { align: "right" });
+  if (!subtitle) return;
+  pdf.setFontSize(height <= 10 ? 5.4 : 6.4);
   setPdfText(pdf, "#6b747a");
-  pdf.text(document.issuer || document.category || "Document", x + 3, y + 10.5, { maxWidth: width - 6 });
+  pdf.text(subtitle, x + 3, y + (height <= 10 ? 7.2 : 10.5), { maxWidth: width - 6 });
 }
 
 function drawPdfWrappedText(pdf: PdfDoc, text: string, x: number, y: number, width: number, fontSize: number, lineHeight: number, maxLines: number) {
@@ -2973,10 +3060,6 @@ function cvReferencesForExperience(experience: Experience, references: Reference
   return linkedReferences.filter((reference) => !isReferenceUponRequest(reference));
 }
 
-function unmatchedExperienceReferences(experiences: Experience[], references: ReferenceEntry[]) {
-  return references.filter((reference) => !experiences.some((experience) => referenceMatchesExperience(reference, experience)));
-}
-
 function referenceDisplayName(reference: ReferenceEntry) {
   if (isReferenceUponRequest(reference)) return referenceUponRequestCvText;
   const name = cleanSaveText(reference.name);
@@ -3024,7 +3107,6 @@ function SeazoneStyleCvPreview({
   const cleanOtherWorkExperiences = experiences.filter((item) => isOtherWorkExperience(item) && (item.yacht_name || item.position || item.description));
   const cleanExperiences = [...cleanYachtExperiences, ...cleanOtherWorkExperiences];
   const cleanReferences = cleanReferenceEntries(references);
-  const standaloneReferences = unmatchedExperienceReferences(cleanExperiences, cleanReferences);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
   const crewName = profile.full_name || "Crew Member";
   const professionalSummary =
@@ -3130,7 +3212,7 @@ function SeazoneStyleCvPreview({
                 <SeazoneSideSection title="Documents & Certificates" className="bd-cv-documents-section">
                   <div className="space-y-2">
                     {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
-                    {documents.slice(0, 8).map((doc) => (
+                    {documents.slice(0, maxCvDocuments).map((doc) => (
                       <SeazoneDocumentRow key={doc.id || doc.document_type} document={doc} />
                     ))}
                   </div>
@@ -3191,20 +3273,6 @@ function SeazoneStyleCvPreview({
                         references={cvReferencesForExperience(item, cleanReferences)}
                         breakBefore={shouldBreakBeforeExperience(cleanYachtExperiences.length + index)}
                       />
-                    ))}
-                  </div>
-                </SeazoneSection>
-              )}
-
-              {standaloneReferences.length > 0 && (
-                <SeazoneSection title="References">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {standaloneReferences.slice(0, 4).map((ref) => (
-                      <div key={ref.id || ref.email || ref.name} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
-                        <p className="font-black text-[#06111f]">{referenceDisplayName(ref)}</p>
-                        <p className="mt-1 text-sm font-semibold text-[#2d7482]">{referenceDetailText(ref)}</p>
-                        {referenceContactText(ref) && <p className="mt-2 text-xs text-[#5a6870]">{referenceContactText(ref)}</p>}
-                      </div>
                     ))}
                   </div>
                 </SeazoneSection>
@@ -3515,7 +3583,7 @@ function PrintableDocumentSidebar({ profile, documents }: { profile: CrewProfile
   return (
     <div className="bd-print-sidebar-stack">
       <PrintableSideSection title="Documents & Certificates">
-        {documents.slice(0, 8).map((document) => (
+        {documents.slice(0, maxCvDocuments).map((document) => (
           <PrintableDocumentRow key={document.id || document.document_type} document={document} />
         ))}
       </PrintableSideSection>
@@ -3646,11 +3714,12 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
 }
 
 function PrintableDocumentRow({ document }: { document: CrewDocument }) {
+  const subtitle = documentSubtitle(document);
   return (
     <div className="bd-print-document-row">
       <b>{document.document_type || "Document"}</b>
       <span>{document.expiry_date ? formatCvDate(document.expiry_date) : "No expiry"}</span>
-      <em>{document.issuer || document.category || "Document"}</em>
+      {subtitle && <em>{subtitle}</em>}
     </div>
   );
 }
@@ -3802,15 +3871,15 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 
 function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
+  const subtitle = documentSubtitle(document);
   return (
-    <div className={`bd-cv-document-row rounded-lg border px-3 py-2 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
+    <div className={`bd-cv-document-row rounded-lg border px-2.5 py-1.5 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{document.document_type || "Document"}</p>
-          <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#7a858b]">{document.category || "Certificate"}</p>
-          {document.issuer && <p className="mt-1 truncate text-[10px] font-semibold text-[#5a6870]">{document.issuer}</p>}
+          <p className="truncate text-[11px] font-black leading-3 text-[#06111f]">{document.document_type || "Document"}</p>
+          {subtitle && <p className="mt-0.5 truncate text-[8px] font-black uppercase tracking-[0.08em] text-[#7a858b]">{subtitle}</p>}
         </div>
-        <p className={`shrink-0 text-right text-[10px] font-black ${expiring ? "text-[#9a4b2e]" : "text-[#2d7482]"}`}>
+        <p className={`shrink-0 text-right text-[9px] font-black leading-3 ${expiring ? "text-[#9a4b2e]" : "text-[#2d7482]"}`}>
           {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
         </p>
       </div>

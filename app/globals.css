@@ -1702,37 +1702,37 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     position: relative !important;
     display: grid !important;
     grid-template-columns: 1fr auto !important;
-    gap: 2mm !important;
+    gap: 1.4mm !important;
     border: 1px solid #c7d2d6 !important;
-    border-radius: 2mm !important;
+    border-radius: 1.6mm !important;
     background: #f6f8f8 !important;
-    padding: 2mm !important;
-    margin-top: 2mm !important;
+    padding: 1.15mm 1.45mm !important;
+    margin-top: 1.15mm !important;
   }
 
   .bd-print-document-row b,
   .bd-print-document-row span,
   .bd-print-document-row em {
     margin: 0 !important;
-    line-height: 1.2 !important;
+    line-height: 1.12 !important;
   }
 
   .bd-print-document-row b {
     color: #06111f !important;
-    font-size: 10px !important;
+    font-size: 7.8px !important;
     font-weight: 900 !important;
   }
 
   .bd-print-document-row span {
     color: #2d7482 !important;
-    font-size: 9px !important;
+    font-size: 7.1px !important;
     font-weight: 900 !important;
   }
 
   .bd-print-document-row em {
     grid-column: 1 / -1 !important;
     color: #6b747a !important;
-    font-size: 8.8px !important;
+    font-size: 6.8px !important;
     font-style: normal !important;
     font-weight: 800 !important;
   }
@@ -1741,15 +1741,15 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border: 1px solid #cbd7dc !important;
     border-radius: 3mm !important;
     background: #ffffff !important;
-    padding: 3mm !important;
+    padding: 2.2mm !important;
     color: #40535d !important;
     text-align: center !important;
   }
 
   .bd-print-qr a,
   .bd-print-qr > div {
-    width: 30mm !important;
-    height: 30mm !important;
+    width: 25mm !important;
+    height: 25mm !important;
     margin: 0 auto !important;
   }
 
@@ -1784,13 +1784,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-qr b,
   .bd-print-qr span {
     display: block !important;
-    margin: 1.8mm 0 0 !important;
+    margin: 1.2mm 0 0 !important;
   }
 
   .bd-print-qr p,
   .bd-print-qr b {
     color: #2d7482 !important;
-    font-size: 8.5px !important;
+    font-size: 7.4px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.15em !important;
@@ -1798,7 +1798,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-qr span {
     color: #40535d !important;
-    font-size: 9px !important;
+    font-size: 7.8px !important;
     font-weight: 700 !important;
     line-height: 1.35 !important;
   }
@@ -1983,7 +1983,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   #bluedeck-cv .bd-cv-document-row {
-    padding: 2mm 2.5mm !important;
+    padding: 1.15mm 1.45mm !important;
   }
 
   #bluedeck-cv .bd-cv-experience-meta,
