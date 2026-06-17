@@ -1598,7 +1598,7 @@ function DocumentCreator({
           onChange={(value) =>
             setDraft({
               ...draft,
-              document_type: value,
+              document_type: capitalizeFirstCharacter(value),
               category: value.trim() ? "Other" : "",
             })
           }
