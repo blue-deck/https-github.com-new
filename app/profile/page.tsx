@@ -789,14 +789,13 @@ export default function ProfilePage() {
     const hasDocumentDetail = [
       nextDraft.document_type,
       nextDraft.category,
-      nextDraft.issuer,
       nextDraft.expiry_date,
       nextDraft.file_url,
       nextDraft.notes,
     ].some((value) => typeof value === "string" && value.trim().length > 0);
 
     if (!profile.id || !hasDocumentDetail) {
-      alert("Add a document type, issuer, expiry date or file before saving.");
+      alert("Add a document type, expiry date or file before saving.");
       return;
     }
 
@@ -1565,84 +1564,98 @@ function DocumentCreator({
   const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
   const customDocumentName = draft.document_type && !selectedCategory ? draft.document_type : "";
   const documentLimitReached = documentCount >= maxDocuments;
+  const previewTitle = draft.document_type || "Document name";
+  const previewDate = draft.no_expiry ? "No expiry" : formatCvDate(draft.expiry_date);
 
   return (
-    <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div>
-          <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
-          <select
-            value={draft.document_type}
+    <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 sm:p-5">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-3">
+          <div>
+            <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
+            <select
+              value={draft.document_type}
+              disabled={documentLimitReached}
+              onChange={(event) => {
+                const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
+                setDraft({ ...draft, document_type: event.target.value, category });
+              }}
+              className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40"
+            >
+              <option value="">Select document</option>
+              {documentCatalog.map((group) => (
+                <optgroup key={group.category} label={group.category}>
+                  {group.items.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <Field
+            label="Other document name"
+            value={customDocumentName}
+            placeholder="other"
             disabled={documentLimitReached}
-            onChange={(event) => {
-              const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
-              setDraft({ ...draft, document_type: event.target.value, category });
-            }}
-            className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40"
-          >
-            <option value="">Select document</option>
-            {documentCatalog.map((group) => (
-              <optgroup key={group.category} label={group.category}>
-                {group.items.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-        <Field
-          label="Other document name"
-          value={customDocumentName}
-          placeholder="other"
-          disabled={documentLimitReached}
-          onChange={(value) =>
-            setDraft({
-              ...draft,
-              document_type: capitalizeFirstCharacter(value),
-              category: value.trim() ? "Other" : "",
-            })
-          }
-        />
-        <Field label="Issuer / authority" value={draft.issuer} disabled={documentLimitReached} onChange={(value) => setDraft({ ...draft, issuer: capitalizeFirstCharacter(value) })} />
-        <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry || documentLimitReached} />
-      </div>
-      {documentLimitReached && (
-        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
-          Maximum {maxDocuments} documents and certificates can be added to this CV.
-        </p>
-      )}
-      <div className="mt-4 flex flex-wrap items-center gap-4">
-        <Checkbox label="No expiry / unlimited" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
-        <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
-        <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : documentLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300"}`}>
-          <Upload className="h-4 w-4 text-cyan-700" />
-          {uploading ? "Uploading..." : draft.file_url ? "File attached" : "Attach file/photo"}
-          <input
-            type="file"
-            disabled={uploading || documentLimitReached}
-            className="hidden"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (file) onUpload(file, draft);
-            }}
+            onChange={(value) =>
+              setDraft({
+                ...draft,
+                document_type: capitalizeFirstCharacter(value),
+                category: value.trim() ? "Other" : "",
+              })
+            }
           />
-        </label>
-        {uploading && (
-          <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-            Cancel upload
-          </button>
-        )}
-        {draft.file_url && !uploading && (
-          <button type="button" onClick={() => setDraft({ ...draft, file_url: "" })} className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-            Remove file
-          </button>
-        )}
-        <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817] transition disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
-          Add document
-        </button>
+          <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry || documentLimitReached} />
+          {documentLimitReached && (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+              Maximum {maxDocuments} documents and certificates can be added to this CV.
+            </p>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm shadow-cyan-950/5">
+          <div className="rounded-xl border border-slate-200 bg-[#f7fbfc] p-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#2d7482]">CV display</p>
+            <div className="mt-2 flex items-start justify-between gap-3">
+              <p className="min-w-0 truncate text-sm font-black text-slate-950">{previewTitle}</p>
+              <p className="shrink-0 text-xs font-black text-[#2d7482]">{previewDate}</p>
+            </div>
+            {selectedCategory && <p className="mt-2 truncate text-[11px] font-semibold text-slate-500">{selectedCategory}</p>}
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <Checkbox label="No expiry / unlimited" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
+            <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
+            <label className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition ${uploading ? "cursor-progress opacity-70" : documentLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300"}`}>
+              <Upload className="h-4 w-4 text-cyan-700" />
+              {uploading ? "Uploading..." : draft.file_url ? "File attached" : "Attach file/photo"}
+              <input
+                type="file"
+                disabled={uploading || documentLimitReached}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file) onUpload(file, draft);
+                }}
+              />
+            </label>
+            {uploading && (
+              <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                Cancel upload
+              </button>
+            )}
+            {draft.file_url && !uploading && (
+              <button type="button" onClick={() => setDraft({ ...draft, file_url: "" })} className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+                Remove file
+              </button>
+            )}
+            <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="rounded-xl bg-cyan-400 px-4 py-2 text-sm font-semibold text-[#020817] transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
+              Add document
+            </button>
+          </div>
+        </div>
       </div>
-      {selectedCategory && <p className="mt-3 text-xs text-slate-500">Category: {selectedCategory}</p>}
     </div>
   );
 }
