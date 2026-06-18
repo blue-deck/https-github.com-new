@@ -1883,11 +1883,13 @@ async function downloadCvPdf(payload: CvPdfPayload) {
   }
 
   await waitForCvPrintAssets(root);
+  const restoreExportImages = await prepareCvExportImages(root);
+  await waitForCvPrintAssets(root);
   await waitForNextPaint();
-  openCvPrintDialog(cvPdfFileName(payload.profile));
+  openCvPrintDialog(cvPdfFileName(payload.profile), restoreExportImages);
 }
 
-function openCvPrintDialog(fileName: string) {
+function openCvPrintDialog(fileName: string, cleanup?: () => void) {
   const previousTitle = document.title;
   const printTitle = fileName.replace(/\.pdf$/i, "");
   let restored = false;
@@ -1895,11 +1897,12 @@ function openCvPrintDialog(fileName: string) {
     if (restored) return;
     restored = true;
     document.title = previousTitle;
+    cleanup?.();
   };
 
   document.title = printTitle;
   window.addEventListener("afterprint", restoreTitle, { once: true });
-  window.setTimeout(restoreTitle, 5000);
+  window.setTimeout(restoreTitle, 15000);
   window.print();
 }
 
@@ -2436,7 +2439,7 @@ function drawPdfExperienceCard(
     pdf.text(`• ${experience.location.toUpperCase()}`, x + 6, y + height - 4);
   }
 
-  drawPdfRoundRect(pdf, bodyX, y + 3, bodyWidth - 3, height - 6, 3, "#f8fbfc", "#cbd8dd");
+  drawPdfRoundRect(pdf, bodyX, y + 3, bodyWidth - 3, height - 6, 3, "#ffffff", "#b8c9d0");
   drawPdfRoundRect(pdf, bodyX + 3, y + 6, bodyWidth - 9, 10, 2, "#ffffff", "#d8e2e6");
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(pdfYachtTitleSize(yachtName));
@@ -2448,7 +2451,7 @@ function drawPdfExperienceCard(
   setPdfText(pdf, "#2d7482");
   pdf.text("DUTIES", bodyX + 6, y + 22);
   pdf.setFont("helvetica", "normal");
-  setPdfText(pdf, "#27343d");
+  setPdfText(pdf, "#17232c");
   drawPdfWrappedText(pdf, experience.description || "Responsibilities and onboard duties will appear here.", bodyX + 6, y + 28, bodyWidth - 15, 7.2, 3.8, references.length > 0 ? 4 : 6);
 
   if (references.length > 0) {
@@ -2570,10 +2573,10 @@ function drawPdfMainTitle(pdf: PdfDoc, title: string, x: number, y: number, widt
 }
 
 function drawPdfTextCard(pdf: PdfDoc, text: string, x: number, y: number, width: number, height: number, fontSize: number) {
-  drawPdfRoundRect(pdf, x, y, width, height, 4, "#f8fbfc", "#cbd8dd");
+  drawPdfRoundRect(pdf, x, y, width, height, 4, "#ffffff", "#b8c9d0");
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(fontSize);
-  setPdfText(pdf, "#27343d");
+  setPdfText(pdf, "#17232c");
   drawPdfWrappedText(pdf, text, x + 5, y + 8, width - 10, fontSize, 5, 4);
   return height;
 }
@@ -3257,7 +3260,7 @@ function SeazoneStyleCvPreview({
 
               <main className="bd-cv-main p-6 sm:p-8 print:p-7">
                 <SeazoneSection title="About Me" className="mt-0">
-                  <p className="rounded-2xl border border-[#cbd8dd] bg-[#f8fbfc] p-4 text-[14px] font-medium leading-7 text-[#27343d]">
+                  <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[14px] font-semibold leading-7 text-[#17232c]">
                     {professionalSummary}
                   </p>
                 </SeazoneSection>
@@ -3847,7 +3850,7 @@ function SeazoneExperienceCard({
           </div>
         </div>
 
-        <div className="bd-cv-experience-body h-full rounded-xl border border-[#cbd8dd] bg-[#f8fbfc] p-3">
+        <div className="bd-cv-experience-body h-full rounded-xl border border-[#b8c9d0] bg-white p-3">
             <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
               <h4 className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
               <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
@@ -3855,7 +3858,7 @@ function SeazoneExperienceCard({
               </span>
             </div>
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-            <p className="mt-2 text-[13px] font-medium leading-5 text-[#27343d]">
+            <p className="mt-2 text-[13px] font-semibold leading-5 text-[#17232c]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
             </p>
             <SeazoneExperienceReferences references={references} />

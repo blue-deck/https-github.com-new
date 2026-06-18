@@ -1075,13 +1075,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-summary,
   .bd-print-empty-card {
     margin: 3mm 0 0 !important;
-    border: 1px solid #cbd8dd !important;
+    border: 1px solid #b8c9d0 !important;
     border-radius: 4mm !important;
-    background: #f8fbfc !important;
+    background: #ffffff !important;
     padding: 3mm !important;
-    color: #27343d !important;
+    color: #17232c !important;
     font-size: 11px !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     line-height: 1.55 !important;
   }
 
@@ -1243,9 +1243,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-experience-meta,
   .bd-print-experience-body {
-    border: 1px solid #cbd8dd !important;
+    border: 1px solid #b8c9d0 !important;
     border-radius: 3mm !important;
-    background: #f8fbfc !important;
+    background: #ffffff !important;
     padding: 2.4mm !important;
   }
 
@@ -1357,9 +1357,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-duties {
     margin: 1.8mm 0 0 !important;
-    color: #27343d !important;
+    color: #17232c !important;
     font-size: 10.5px !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
     line-height: 1.5 !important;
   }
 
