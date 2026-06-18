@@ -1596,7 +1596,7 @@ function DocumentCreator({
         <Field
           label="Other document name"
           value={customDocumentName}
-          placeholder="other"
+          placeholder="Other"
           disabled={documentLimitReached}
           onChange={(value) =>
             setDraft({
