@@ -2681,7 +2681,8 @@ async function fetchPdfImageBlob(source: string) {
 }
 
 function cvImageRequestSource(source: string, options: CvImageProxyOptions = {}) {
-  if (source.startsWith("/") || source.startsWith(window.location.origin)) return source;
+  const sameOriginSource = typeof window !== "undefined" && source.startsWith(window.location.origin);
+  if (source.startsWith("/") || sameOriginSource) return source;
 
   const params = new URLSearchParams({ src: source });
   if (options.width) params.set("w", String(options.width));
@@ -3556,15 +3557,19 @@ function PrintablePageFooter() {
 }
 
 function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewProfile; crewName: string; primaryPosition: string }) {
+  const profilePhotoSource = profile.profile_photo_url
+    ? cvImageRequestSource(profile.profile_photo_url, { width: 720, height: 720, fit: "cover" })
+    : "";
+
   return (
     <header className="bd-print-hero">
       <div className="bd-print-hero-band">
         <div
           className="bd-print-avatar"
-          style={profile.profile_photo_url ? { backgroundImage: `url("${profile.profile_photo_url}")` } : undefined}
+          style={profilePhotoSource ? { backgroundImage: `url("${profilePhotoSource}")` } : undefined}
         >
-          {profile.profile_photo_url ? (
-            <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} loading="eager" decoding="sync" />
+          {profilePhotoSource ? (
+            <img src={profilePhotoSource} alt={profile.full_name || "Profile"} loading="eager" decoding="sync" />
           ) : (
             <UserRound />
           )}

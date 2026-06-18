@@ -1000,7 +1000,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border: 3mm solid #ffffff !important;
     border-radius: 999px !important;
     overflow: hidden !important;
-    background: #edf3f5 !important;
+    background-color: #edf3f5 !important;
     background-position: center !important;
     background-size: cover !important;
   }
