@@ -1896,13 +1896,14 @@ function openCvPrintDialog(fileName: string, cleanup?: () => void) {
   const restoreTitle = () => {
     if (restored) return;
     restored = true;
+    window.clearTimeout(restoreTimeout);
     document.title = previousTitle;
     cleanup?.();
   };
 
   document.title = printTitle;
   window.addEventListener("afterprint", restoreTitle, { once: true });
-  window.setTimeout(restoreTitle, 15000);
+  const restoreTimeout = window.setTimeout(restoreTitle, 10 * 60 * 1000);
   window.print();
 }
 
@@ -1916,7 +1917,7 @@ async function prepareCvExportImages(root: HTMLElement) {
       const source = image.currentSrc || image.src;
       if (!source || source.startsWith("data:")) return;
 
-      const dataUrl = await imageSourceToDataUrl(source);
+      const dataUrl = (await imageSourceToDataUrl(source)) || domImageToDataUrl(image);
       if (!dataUrl) return;
 
       const previousSource = image.getAttribute("src");
@@ -1928,6 +1929,7 @@ async function prepareCvExportImages(root: HTMLElement) {
         else image.setAttribute("srcset", previousSourceSet);
       });
       image.removeAttribute("srcset");
+      image.setAttribute("src", dataUrl);
       image.src = dataUrl;
     }),
   );
@@ -1972,6 +1974,23 @@ function blobToDataUrl(blob: Blob) {
     reader.onerror = () => resolve("");
     reader.readAsDataURL(blob);
   });
+}
+
+function domImageToDataUrl(image: HTMLImageElement) {
+  if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return "";
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    if (!context) return "";
+
+    context.drawImage(image, 0, 0);
+    return canvas.toDataURL("image/png");
+  } catch {
+    return "";
+  }
 }
 
 function cssBackgroundImageUrl(value: string) {
@@ -3601,7 +3620,7 @@ function PrintablePrimarySidebar({
 
 function PrintableDocumentSidebar({ profile, documents }: { profile: CrewProfile; documents: CrewDocument[] }) {
   return (
-    <div className="bd-print-sidebar-stack">
+    <div className="bd-print-sidebar-stack bd-print-document-sidebar-stack">
       <PrintableSideSection title="Documents & Certificates">
         {documents.slice(0, maxCvDocuments).map((document) => (
           <PrintableDocumentRow key={document.id || document.document_type} document={document} />

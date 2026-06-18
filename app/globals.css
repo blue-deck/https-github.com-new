@@ -920,6 +920,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     gap: 4mm !important;
   }
 
+  .bd-print-document-sidebar-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 5mm !important;
+    min-height: 280mm !important;
+  }
+
   .bd-print-hero {
     position: relative !important;
     z-index: 5 !important;
@@ -1000,9 +1007,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-avatar img,
   .bd-print-avatar svg {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
     width: 100% !important;
     height: 100% !important;
     object-fit: cover !important;
+    object-position: center !important;
   }
 
   .bd-print-hero-text p,
@@ -1706,10 +1717,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     grid-template-columns: 1fr auto !important;
     gap: 1.4mm !important;
     border: 1px solid #c7d2d6 !important;
-    border-radius: 1.6mm !important;
+    border-radius: 2mm !important;
     background: #f6f8f8 !important;
-    padding: 1.15mm 1.45mm !important;
-    margin-top: 1.15mm !important;
+    min-height: 11.4mm !important;
+    padding: 1.75mm 1.8mm !important;
+    margin-top: 1.25mm !important;
   }
 
   .bd-print-document-row b,
@@ -1721,20 +1733,20 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-document-row b {
     color: #06111f !important;
-    font-size: 7.8px !important;
+    font-size: 8.4px !important;
     font-weight: 900 !important;
   }
 
   .bd-print-document-row span {
     color: #2d7482 !important;
-    font-size: 7.1px !important;
+    font-size: 7.7px !important;
     font-weight: 900 !important;
   }
 
   .bd-print-document-row em {
     grid-column: 1 / -1 !important;
     color: #6b747a !important;
-    font-size: 6.8px !important;
+    font-size: 7.1px !important;
     font-style: normal !important;
     font-weight: 800 !important;
   }
@@ -1743,15 +1755,15 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border: 1px solid #cbd7dc !important;
     border-radius: 3mm !important;
     background: #ffffff !important;
-    padding: 2.2mm !important;
+    padding: 3mm !important;
     color: #40535d !important;
     text-align: center !important;
   }
 
   .bd-print-qr a,
   .bd-print-qr > div {
-    width: 25mm !important;
-    height: 25mm !important;
+    width: 30mm !important;
+    height: 30mm !important;
     margin: 0 auto !important;
   }
 
@@ -1792,7 +1804,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-qr p,
   .bd-print-qr b {
     color: #2d7482 !important;
-    font-size: 7.4px !important;
+    font-size: 7.8px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.15em !important;
@@ -1800,7 +1812,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-qr span {
     color: #40535d !important;
-    font-size: 7.8px !important;
+    font-size: 8.2px !important;
     font-weight: 700 !important;
     line-height: 1.35 !important;
   }
