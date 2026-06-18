@@ -1625,7 +1625,7 @@ function DocumentCreator({
               }}
             />
           </label>
-          <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="min-h-[46px] w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:ml-auto sm:w-auto sm:min-w-[180px]">
+          <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="min-h-[46px] w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:min-w-[180px]">
             Add document
           </button>
         </div>
