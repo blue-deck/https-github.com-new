@@ -1,4 +1,7 @@
-const maxImageBytes = 6 * 1024 * 1024;
+import sharp from "sharp";
+
+const maxImageBytes = 24 * 1024 * 1024;
+const defaultMaxImageDimension = 1800;
 
 export const runtime = "nodejs";
 
@@ -46,15 +49,17 @@ export async function GET(request: Request) {
       return new Response("Image is too large", { status: 413 });
     }
 
-    const buffer = await response.arrayBuffer();
+    const buffer = Buffer.from(await response.arrayBuffer());
     if (buffer.byteLength > maxImageBytes) {
       return new Response("Image is too large", { status: 413 });
     }
 
-    return new Response(buffer, {
+    const normalizedImage = await normalizeCvImage(buffer, contentType, requestUrl.searchParams);
+
+    return new Response(bufferToArrayBuffer(normalizedImage.buffer), {
       headers: {
         "Cache-Control": "private, max-age=3600",
-        "Content-Type": contentType,
+        "Content-Type": normalizedImage.contentType,
         "X-Content-Type-Options": "nosniff",
       },
     });
@@ -63,6 +68,67 @@ export async function GET(request: Request) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function bufferToArrayBuffer(buffer: Buffer) {
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+}
+
+async function normalizeCvImage(buffer: Buffer, sourceContentType: string, searchParams: URLSearchParams) {
+  const width = parseImageDimension(searchParams.get("w"));
+  const height = parseImageDimension(searchParams.get("h"));
+  const max = parseImageDimension(searchParams.get("max")) || defaultMaxImageDimension;
+  const fit = parseImageFit(searchParams.get("fit"));
+
+  try {
+    let pipeline = sharp(buffer, { animated: false, failOn: "none" }).rotate();
+    const metadata = await pipeline.metadata();
+    const currentWidth = metadata.width || 0;
+    const currentHeight = metadata.height || 0;
+
+    if (width || height) {
+      pipeline = pipeline.resize({
+        width,
+        height,
+        fit,
+        position: "center",
+        withoutEnlargement: false,
+      });
+    } else if (Math.max(currentWidth, currentHeight) > max) {
+      pipeline = pipeline.resize({
+        width: max,
+        height: max,
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+    }
+
+    if (metadata.hasAlpha || sourceContentType.toLowerCase().includes("png")) {
+      return {
+        buffer: await pipeline.png({ compressionLevel: 8, adaptiveFiltering: true }).toBuffer(),
+        contentType: "image/png",
+      };
+    }
+
+    return {
+      buffer: await pipeline.jpeg({ quality: 88, mozjpeg: true }).toBuffer(),
+      contentType: "image/jpeg",
+    };
+  } catch {
+    return { buffer, contentType: sourceContentType };
+  }
+}
+
+function parseImageDimension(value: string | null) {
+  if (!value) return undefined;
+  const dimension = Number.parseInt(value, 10);
+  if (!Number.isFinite(dimension)) return undefined;
+  return Math.min(Math.max(dimension, 32), 2400);
+}
+
+function parseImageFit(value: string | null): "cover" | "contain" | "inside" {
+  if (value === "contain" || value === "inside") return value;
+  return "cover";
 }
 
 function isAllowedCvImageHost(imageUrl: URL, requestUrl: URL) {

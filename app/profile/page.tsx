@@ -1917,7 +1917,7 @@ async function prepareCvExportImages(root: HTMLElement) {
       const source = image.currentSrc || image.src;
       if (!source || source.startsWith("data:")) return;
 
-      const dataUrl = (await imageSourceToDataUrl(source)) || domImageToDataUrl(image);
+      const dataUrl = (await imageSourceToDataUrl(source, cvImageProxyOptionsForElement(image))) || domImageToDataUrl(image);
       if (!dataUrl) return;
 
       const previousSource = image.getAttribute("src");
@@ -1939,7 +1939,7 @@ async function prepareCvExportImages(root: HTMLElement) {
       const source = cssBackgroundImageUrl(element.style.backgroundImage);
       if (!source || source.startsWith("data:")) return;
 
-      const dataUrl = await imageSourceToDataUrl(source);
+      const dataUrl = await imageSourceToDataUrl(source, cvImageProxyOptionsForElement(element));
       if (!dataUrl) return;
 
       const previousBackground = element.style.backgroundImage;
@@ -1955,9 +1955,23 @@ async function prepareCvExportImages(root: HTMLElement) {
   };
 }
 
-async function imageSourceToDataUrl(source: string) {
+type CvImageProxyOptions = {
+  width?: number;
+  height?: number;
+  max?: number;
+  fit?: "cover" | "contain" | "inside";
+};
+
+function cvImageProxyOptionsForElement(element: Element): CvImageProxyOptions {
+  if (element.closest(".bd-print-avatar")) return { width: 720, height: 720, fit: "cover" };
+  if (element.closest(".bd-print-brand-logo")) return { max: 720, fit: "contain" };
+  if (element.closest(".bd-print-experience-meta")) return { width: 720, height: 520, fit: "cover" };
+  return { max: 1800 };
+}
+
+async function imageSourceToDataUrl(source: string, options: CvImageProxyOptions = {}) {
   try {
-    const response = await fetch(cvImageRequestSource(source), { cache: "force-cache" });
+    const response = await fetch(cvImageRequestSource(source, options), { cache: "force-cache" });
     if (!response.ok) return "";
     const blob = await response.blob();
     if (!blob.type.toLowerCase().startsWith("image/")) return "";
@@ -2666,9 +2680,15 @@ async function fetchPdfImageBlob(source: string) {
   return blob;
 }
 
-function cvImageRequestSource(source: string) {
+function cvImageRequestSource(source: string, options: CvImageProxyOptions = {}) {
   if (source.startsWith("/") || source.startsWith(window.location.origin)) return source;
-  return `/api/cv-image?src=${encodeURIComponent(source)}`;
+
+  const params = new URLSearchParams({ src: source });
+  if (options.width) params.set("w", String(options.width));
+  if (options.height) params.set("h", String(options.height));
+  if (options.max) params.set("max", String(options.max));
+  if (options.fit) params.set("fit", options.fit);
+  return `/api/cv-image?${params.toString()}`;
 }
 
 async function imageBlobToCoverJpeg(blob: Blob, width: number, height: number) {
