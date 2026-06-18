@@ -134,6 +134,7 @@ function parseImageFit(value: string | null): "cover" | "contain" | "inside" {
 function isAllowedCvImageHost(imageUrl: URL, requestUrl: URL) {
   if (imageUrl.hostname === requestUrl.hostname) return true;
   if (isLocalAddress(imageUrl.hostname)) return false;
+  if (isSupabaseStorageObjectUrl(imageUrl)) return true;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!supabaseUrl) return false;
@@ -143,6 +144,14 @@ function isAllowedCvImageHost(imageUrl: URL, requestUrl: URL) {
   } catch {
     return false;
   }
+}
+
+function isSupabaseStorageObjectUrl(imageUrl: URL) {
+  const host = imageUrl.hostname.toLowerCase();
+  const isSupabaseProjectHost = /^[a-z0-9-]+\.supabase\.(co|in)$/.test(host);
+  if (!isSupabaseProjectHost) return false;
+
+  return imageUrl.pathname.startsWith("/storage/v1/object/");
 }
 
 function isLocalAddress(hostname: string) {
