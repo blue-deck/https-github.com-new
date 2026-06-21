@@ -30,6 +30,7 @@ import {
   Trash2,
   Utensils,
   UserRound,
+  UserPlus,
   Wrench,
   Waves,
   X,
@@ -40,8 +41,10 @@ import {
   canAssignToCrew,
   checklistFrequencies,
   checklistLibraryPacks,
+  checklistTaskCategories,
   checklistTemplates,
   getAssignableDepartments,
+  getChecklistTaskSuggestions,
   getDefaultPositionForAccountType,
   getDepartmentByPosition,
   positionSelectGroups,
@@ -86,11 +89,12 @@ export default function CrewPage({
   const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
   const [templateSearch, setTemplateSearch] = useState("");
   const [activeChecklistPack, setActiveChecklistPack] = useState("departure-ready");
-  const [checklistSection, setChecklistSection] = useState<"assign" | "monitor" | "archive">("assign");
+  const [checklistSection, setChecklistSection] = useState<"invite" | "builder" | "monitor" | "archive">("invite");
   const [archiveRetention, setArchiveRetention] = useState<{ months: number; cutoff: string; purged: number } | null>(null);
   const [manualTitle, setManualTitle] = useState("");
   const [manualDepartment, setManualDepartment] = useState("Deck");
   const [manualType, setManualType] = useState("Custom Routine");
+  const [manualCategoryId, setManualCategoryId] = useState("deck");
   const [manualTaskDraft, setManualTaskDraft] = useState("");
   const [manualTasks, setManualTasks] = useState<string[]>([]);
 
@@ -140,6 +144,30 @@ export default function CrewPage({
     );
     return allowed.length ? allowed : yachtDepartments;
   }, [operator.department, operator.position, operator.role]);
+
+  const manualCategoryOptions = useMemo(() => {
+    const allowed = checklistTaskCategories.filter((category) =>
+      canAssignChecklistDepartment(
+        operator.position,
+        operator.department,
+        category.department,
+        operator.role
+      )
+    );
+    return allowed.length ? allowed : checklistTaskCategories;
+  }, [operator.department, operator.position, operator.role]);
+
+  const activeManualCategory = useMemo(
+    () =>
+      checklistTaskCategories.find((category) => category.id === manualCategoryId) ||
+      checklistTaskCategories[0],
+    [manualCategoryId]
+  );
+
+  const manualTaskSuggestions = useMemo(
+    () => getChecklistTaskSuggestions(manualTaskDraft, activeManualCategory?.id, 8),
+    [activeManualCategory?.id, manualTaskDraft]
+  );
 
   const visibleTemplates = useMemo(() => {
     const search = templateSearch.trim().toLowerCase();
@@ -293,8 +321,8 @@ export default function CrewPage({
     });
   }
 
-  function addManualTask() {
-    const task = manualTaskDraft.trim();
+  function addManualTask(taskOverride?: string) {
+    const task = (taskOverride || manualTaskDraft).trim();
     if (!task) return;
 
     setManualTasks((current) => [...current, task]);
@@ -319,14 +347,11 @@ export default function CrewPage({
       return;
     }
 
-    const title = manualTitle.trim();
-    const type = manualType.trim() || "Custom Routine";
+    const category = activeManualCategory || checklistTaskCategories[0];
+    const assignmentDepartment = category.department;
+    const title = manualTitle.trim() || `${category.label} Checklist`;
+    const type = manualType.trim() || category.type || "Custom Routine";
     const tasks = manualTasks.map((task) => task.trim()).filter(Boolean);
-
-    if (!title) {
-      alert("Manual checklist title required.");
-      return;
-    }
 
     if (tasks.length === 0) {
       alert("Add at least one checklist task.");
@@ -352,11 +377,11 @@ export default function CrewPage({
       !canAssignChecklistDepartment(
         operator.position,
         operator.department,
-        manualDepartment,
+        assignmentDepartment,
         operator.role
       )
     ) {
-      alert(`${manualDepartment} is outside your checklist authority.`);
+      alert(`${assignmentDepartment} is outside your checklist authority.`);
       return;
     }
 
@@ -365,8 +390,10 @@ export default function CrewPage({
     const { data: checklist, error } = await createChecklist({
       yacht_id: yachtId,
       title,
-      department: manualDepartment,
+      department: assignmentDepartment,
       checklist_type: type,
+      frequency: frequency === "Template default" ? "One-time" : frequency,
+      captain_note: captainNote || null,
       assigned_to: member?.crew_profile_id,
       due_date: dueDate || null,
       status: "open",
@@ -516,6 +543,11 @@ export default function CrewPage({
     if (manualDepartmentOptions.includes(manualDepartment as any)) return;
     setManualDepartment(manualDepartmentOptions[0] || "Deck");
   }, [manualDepartment, manualDepartmentOptions]);
+
+  useEffect(() => {
+    if (manualCategoryOptions.some((category) => category.id === manualCategoryId)) return;
+    setManualCategoryId(manualCategoryOptions[0]?.id || "deck");
+  }, [manualCategoryId, manualCategoryOptions]);
 
   async function addCrew() {
     if (!inviteEmail && !crewPublicId) {
@@ -762,6 +794,8 @@ export default function CrewPage({
         title: template.title,
         department: template.department,
         checklist_type: template.type,
+        frequency: frequency === "Template default" ? template.frequency : frequency,
+        captain_note: captainNote || null,
         assigned_to: member?.crew_profile_id,
         due_date: dueDate || null,
         status: "open",
@@ -801,9 +835,17 @@ export default function CrewPage({
   async function createChecklist(payload: Record<string, any>) {
     const variants = [
       payload,
+      omitKeys(payload, ["captain_note"]),
+      omitKeys(payload, ["frequency"]),
+      omitKeys(payload, ["frequency", "captain_note"]),
       omitKeys(payload, ["items"]),
+      omitKeys(payload, ["items", "captain_note"]),
+      omitKeys(payload, ["items", "frequency"]),
+      omitKeys(payload, ["items", "frequency", "captain_note"]),
       omitKeys(payload, ["items", "due_date"]),
       omitKeys(payload, ["items", "due_date", "status"]),
+      omitKeys(payload, ["items", "frequency", "captain_note", "due_date"]),
+      omitKeys(payload, ["items", "frequency", "captain_note", "due_date", "status"]),
     ];
 
     let lastResponse: any = null;
@@ -1080,14 +1122,22 @@ export default function CrewPage({
         </div>
 
         {isChecklistSystem && (
-          <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-3 sm:rounded-[36px] sm:p-4">
+          <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-2 sm:rounded-[36px] sm:p-4 xl:grid-cols-4">
             <ChecklistSectionButton
-              active={checklistSection === "assign"}
+              active={checklistSection === "invite"}
+              icon={<UserPlus className="h-5 w-5" />}
+              title="Invite Crew"
+              text="Send a private yacht invitation with Crew ID and position."
+              meta={`${crew.filter((member) => member.status === "invited").length} invited`}
+              onClick={() => setChecklistSection("invite")}
+            />
+            <ChecklistSectionButton
+              active={checklistSection === "builder"}
               icon={<Send className="h-5 w-5" />}
-              title="Create & Send"
-              text="Choose ready templates or write a manual checklist."
+              title="Checklist Builder"
+              text="Select crew, category, recurrence and unlimited tasks."
               meta={`${selectedTemplates.length} selected`}
-              onClick={() => setChecklistSection("assign")}
+              onClick={() => setChecklistSection("builder")}
             />
             <ChecklistSectionButton
               active={checklistSection === "monitor"}
@@ -1108,7 +1158,139 @@ export default function CrewPage({
           </section>
         )}
 
-        {isChecklistSystem && checklistSection === "assign" && (
+        {isChecklistSystem && checklistSection === "invite" && (
+          <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
+            <div className="grid gap-0 xl:grid-cols-[0.48fr_0.52fr]">
+              <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_54%,#176678_100%)] p-6 text-white sm:p-8">
+                <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-cyan-300/14 blur-3xl" />
+                <p className="relative text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+                  Private Crew Bridge
+                </p>
+                <h2 className="relative mt-3 max-w-xl text-4xl font-black leading-tight sm:text-5xl">
+                  Invite crew into this yacht portal.
+                </h2>
+                <p className="relative mt-4 max-w-2xl text-sm leading-7 text-cyan-50/82 sm:text-base">
+                  Enter the crew member&apos;s BlueDeck Crew ID, choose the role and send a controlled yacht invitation.
+                  Once accepted, the connection becomes the crew member&apos;s My Deck access.
+                </p>
+                <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
+                  <LibraryMetric label="Crew" value={crew.length} />
+                  <LibraryMetric label="Invited" value={crew.filter((member) => member.status === "invited").length} />
+                  <LibraryMetric label="Active" value={crew.filter((member) => member.status === "active").length} />
+                </div>
+              </div>
+
+              <div className="bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_54%,#eefcff_100%)] p-5 sm:p-7">
+                <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+                  <div className="rounded-[28px] border border-white bg-white/88 p-5 shadow-xl shadow-cyan-950/6">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
+                        <UserPlus className="h-7 w-7" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                          Crew Invitation
+                        </p>
+                        <h3 className="text-2xl font-black text-slate-950">Send invite</h3>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-4">
+                      <input
+                        placeholder="Crew ID"
+                        value={crewPublicId}
+                        onChange={(e) => setCrewPublicId(e.target.value.toUpperCase())}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black uppercase tracking-[0.08em] text-slate-950 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:border-cyan-300"
+                      />
+
+                      <select
+                        value={position}
+                        onChange={(e) => {
+                          const nextPosition = e.target.value;
+                          setPosition(nextPosition);
+                          setDepartment(getDepartmentByPosition(nextPosition));
+                        }}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-950 outline-none focus:border-cyan-300"
+                      >
+                        {positionSelectGroups.map((group) => (
+                          <optgroup key={group.department} label={group.department}>
+                            {group.positions.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+
+                      <input
+                        placeholder="Crew email if Crew ID is not known"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={addCrew}
+                        disabled={loading}
+                        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 text-lg font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:opacity-60"
+                      >
+                        <Send className="h-5 w-5" />
+                        {loading ? "Sending..." : "Send Yacht Invite"}
+                      </button>
+
+                      {inviteNotice && (
+                        <div className="rounded-2xl border border-cyan-400/25 bg-cyan-50 p-4 text-sm text-slate-700">
+                          <p className="font-bold">Invitation sent</p>
+                          <p className="mt-2 leading-6">{inviteNotice}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-cyan-100 bg-white/78 p-5 shadow-inner shadow-cyan-950/6">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                      Invite Status
+                    </p>
+                    <h3 className="mt-2 text-2xl font-black text-slate-950">Recent crew bridge</h3>
+                    <div className="mt-5 space-y-3">
+                      {crew.slice(0, 6).map((member) => (
+                        <div key={member.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-black text-slate-950">
+                                {member.crew_profiles?.full_name || member.invited_email || member.crew_profiles?.email || "Crew member"}
+                              </p>
+                              <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-cyan-800">
+                                {member.position || "Crew"} · {member.department || "Yacht"}
+                              </p>
+                            </div>
+                            <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
+                              member.status === "active"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}>
+                              {member.status || "invited"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {crew.length === 0 && (
+                        <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
+                          Invite your first crew member to open this yacht&apos;s operational bridge.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {isChecklistSystem && checklistSection === "builder" && (
           <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
             <div className="grid gap-0 lg:grid-cols-[0.42fr_0.58fr]">
               <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_62%,#0f5663_100%)] p-6 text-white sm:p-8">
@@ -1187,7 +1369,7 @@ export default function CrewPage({
           </section>
         )}
 
-        {(!isChecklistSystem || checklistSection === "assign") && (
+        {(!isChecklistSystem || checklistSection === "builder") && (
         <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
           <div className="space-y-6 xl:space-y-8">
             {!isChecklistSystem && (
@@ -1409,13 +1591,13 @@ export default function CrewPage({
             <div className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
               <div className="border-b border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#e9f8fb_100%)] p-5 sm:p-7">
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
-                  Manual Checklist
+                  Quick Checklist Builder
                 </p>
                 <h2 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
-                  Write Your Own
+                  Build From Tasks
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-slate-500">
-                  Create a one-off yacht routine when the ready library does not cover the job.
+                  Type a duty, choose from professional yacht task suggestions, or add your own wording.
                 </p>
               </div>
 
@@ -1423,53 +1605,99 @@ export default function CrewPage({
                 <input
                   value={manualTitle}
                   onChange={(event) => setManualTitle(event.target.value)}
-                  placeholder="Checklist title"
+                  placeholder={`${activeManualCategory?.label || "Custom"} checklist title (optional)`}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                 />
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <select
-                    value={manualDepartment}
-                    onChange={(event) => setManualDepartment(event.target.value)}
+                    value={manualCategoryId}
+                    onChange={(event) => {
+                      const nextCategory = checklistTaskCategories.find((category) => category.id === event.target.value);
+                      setManualCategoryId(event.target.value);
+                      if (nextCategory) {
+                        setManualDepartment(nextCategory.department);
+                        setManualType(nextCategory.type);
+                      }
+                    }}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
                   >
-                    {manualDepartmentOptions.map((item) => (
-                      <option key={item} value={item}>
-                        {item}
+                    {manualCategoryOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
                       </option>
                     ))}
                   </select>
 
-                  <input
-                    value={manualType}
-                    onChange={(event) => setManualType(event.target.value)}
-                    placeholder="Checklist type"
+                  <select
+                    value={frequency === "Template default" ? "One-time" : frequency}
+                    onChange={(event) => setFrequency(event.target.value)}
                     className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                  />
+                  >
+                    {["One-time", "Daily", "Weekly", "Monthly", "Before Departure", "After Arrival", "Before Guest Arrival", "After Guest Departure", "Season Start", "Season End"].map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
                 </div>
 
+                {activeManualCategory?.hint && (
+                  <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm font-semibold leading-6 text-slate-600">
+                    {activeManualCategory.hint}
+                  </p>
+                )}
+
                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
-                  <div className="flex gap-2">
-                    <input
-                      value={manualTaskDraft}
-                      onChange={(event) => setManualTaskDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          addManualTask();
-                        }
-                      }}
-                      placeholder="Write checklist item"
-                      className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                    />
-                    <button
-                      type="button"
-                      onClick={addManualTask}
-                      className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
-                      title="Add manual checklist item"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
+                  <div className="relative">
+                    <div className="flex gap-2">
+                      <input
+                        value={manualTaskDraft}
+                        onChange={(event) => setManualTaskDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            addManualTask();
+                          }
+                        }}
+                        placeholder="Start typing a yacht task"
+                        className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => addManualTask()}
+                        className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
+                        title="Add manual checklist item"
+                      >
+                        <Plus className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    {(manualTaskDraft.trim() || manualTaskSuggestions.length > 0) && (
+                      <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-100 bg-white shadow-lg shadow-cyan-950/8">
+                        {manualTaskSuggestions.map((suggestion) => (
+                          <button
+                            key={`${suggestion.categoryId}-${suggestion.task}`}
+                            type="button"
+                            onClick={() => addManualTask(suggestion.task)}
+                            className="bd-focus flex w-full items-start justify-between gap-4 border-b border-slate-100 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition last:border-b-0 hover:bg-cyan-50"
+                          >
+                            <span>{suggestion.task}</span>
+                            <span className="shrink-0 rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-800">
+                              {activeManualCategory?.label}
+                            </span>
+                          </button>
+                        ))}
+                        {manualTaskDraft.trim() && !manualTaskSuggestions.some((suggestion) => suggestion.task.toLowerCase() === manualTaskDraft.trim().toLowerCase()) && (
+                          <button
+                            type="button"
+                            onClick={() => addManualTask()}
+                            className="bd-focus flex w-full items-center justify-between gap-4 px-4 py-3 text-left text-sm font-black text-slate-950 transition hover:bg-cyan-50"
+                          >
+                            <span>Add custom task</span>
+                            <span className="truncate text-xs font-semibold text-cyan-800">{manualTaskDraft.trim()}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-4 space-y-2">

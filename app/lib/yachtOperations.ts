@@ -37,6 +37,14 @@ export type ChecklistLibraryPack = {
   templateIds: string[];
 };
 
+export type ChecklistTaskCategory = {
+  id: string;
+  label: string;
+  department: YachtDepartmentId;
+  type: string;
+  hint: string;
+};
+
 export const yachtDepartments: YachtDepartmentId[] = [
   "Command",
   "Deck",
@@ -65,6 +73,65 @@ export const checklistFrequencies = [
   "Safety Drill",
   "Season Start",
   "Season End",
+];
+
+export const checklistTaskCategories: ChecklistTaskCategory[] = [
+  {
+    id: "deck",
+    label: "Deck",
+    department: "Deck",
+    type: "Deck Operations",
+    hint: "Washdowns, mooring, tender, exterior, anchoring and deck rounds.",
+  },
+  {
+    id: "interior",
+    label: "Interior",
+    department: "Interior",
+    type: "Interior Service",
+    hint: "Housekeeping, cabins, laundry, service and guest areas.",
+  },
+  {
+    id: "maintenance",
+    label: "Maintenance",
+    department: "Engineering",
+    type: "Maintenance",
+    hint: "PMS, defects, deck gear, hotel systems and planned maintenance.",
+  },
+  {
+    id: "engineering",
+    label: "Engineering",
+    department: "Engineering",
+    type: "Engineering",
+    hint: "Engine room rounds, generators, HVAC, watermaker and machinery checks.",
+  },
+  {
+    id: "bridge",
+    label: "Bridge",
+    department: "Command",
+    type: "Bridge / Navigation",
+    hint: "Passage planning, logs, watch handover, departure and arrival control.",
+  },
+  {
+    id: "safety",
+    label: "Safety",
+    department: "Safety",
+    type: "Safety / SMS",
+    hint: "LSA, FFE, drills, permits, security and pollution prevention.",
+  },
+  {
+    id: "galley",
+    label: "Galley",
+    department: "Galley",
+    type: "Galley",
+    hint: "Provisioning, hygiene, fridges, meal prep and galley close-down.",
+  },
+  {
+    id: "guest",
+    label: "Guest",
+    department: "Guest",
+    type: "Guest Operations",
+    hint: "Guest arrival, preferences, transfers, toys and owner-ready routines.",
+  },
 ];
 
 export const yachtCrewPositions: YachtPosition[] = [
@@ -1362,4 +1429,108 @@ export const checklistLibraryPacks: ChecklistLibraryPack[] = [
 
 export function getChecklistTemplate(id: string) {
   return checklistTemplates.find((template) => template.id === id);
+}
+
+const supplementalChecklistTasks: Array<{ categoryId: string; task: string }> = [
+  { categoryId: "deck", task: "Check all mooring lines for chafe and correct tension" },
+  { categoryId: "deck", task: "Inspect fender covers, pressure and placement" },
+  { categoryId: "deck", task: "Wash and dry teak decks without leaving standing water" },
+  { categoryId: "deck", task: "Polish stainless rails and remove salt marks" },
+  { categoryId: "deck", task: "Secure exterior cushions, loose gear and guest furniture" },
+  { categoryId: "deck", task: "Inspect passerelle, gangway and boarding area" },
+  { categoryId: "deck", task: "Check tender fuel, kill cord, lifejackets and handheld VHF" },
+  { categoryId: "deck", task: "Rinse tender, toys and beach club after guest use" },
+  { categoryId: "interior", task: "Refresh guest cabins and check bathroom amenities" },
+  { categoryId: "interior", task: "Inspect guest laundry, crew laundry and linen stock" },
+  { categoryId: "interior", task: "Set table service according to guest plan" },
+  { categoryId: "interior", task: "Check minibar, pantry and service fridge levels" },
+  { categoryId: "interior", task: "Dust high-touch interior surfaces and polish glass" },
+  { categoryId: "interior", task: "Prepare guest welcome towels and arrival drinks" },
+  { categoryId: "engineering", task: "Record main engine oil, coolant and bilge condition" },
+  { categoryId: "engineering", task: "Check generator load, oil pressure and operating hours" },
+  { categoryId: "engineering", task: "Inspect seawater strainers and sea chest condition" },
+  { categoryId: "engineering", task: "Check HVAC temperature, condensate drains and guest comfort" },
+  { categoryId: "engineering", task: "Inspect watermaker pressure, salinity and filters" },
+  { categoryId: "engineering", task: "Log fuel, fresh water, grey water and black water levels" },
+  { categoryId: "maintenance", task: "Review open defects and update planned maintenance status" },
+  { categoryId: "maintenance", task: "Inspect deck hardware, hinges, latches and lifting points" },
+  { categoryId: "maintenance", task: "Check spare parts, filters, belts and consumable levels" },
+  { categoryId: "maintenance", task: "Test bilge alarms, float switches and pump operation" },
+  { categoryId: "maintenance", task: "Inspect paint, varnish, caulking and teak repair needs" },
+  { categoryId: "bridge", task: "Update passage plan with weather, tides and no-go areas" },
+  { categoryId: "bridge", task: "Check AIS, VHF, radar, GPS and navigation lights" },
+  { categoryId: "bridge", task: "Complete bridge logbook and noon report entries" },
+  { categoryId: "bridge", task: "Review night orders, standing orders and watch handover notes" },
+  { categoryId: "bridge", task: "Confirm berth plan, fender side and local port requirements" },
+  { categoryId: "safety", task: "Inspect fire extinguishers, seals and access routes" },
+  { categoryId: "safety", task: "Check lifejackets, immersion suits and muster equipment" },
+  { categoryId: "safety", task: "Test emergency lighting, alarms and muster communication" },
+  { categoryId: "safety", task: "Review hot work, enclosed space and permit controls" },
+  { categoryId: "safety", task: "Inspect spill kit, garbage segregation and pollution controls" },
+  { categoryId: "galley", task: "Check galley fridges, freezers and temperature logs" },
+  { categoryId: "galley", task: "Clean work surfaces, knives, boards and food prep zones" },
+  { categoryId: "galley", task: "Receive provisions and verify quality, labels and storage" },
+  { categoryId: "galley", task: "Update crew and guest meal prep list" },
+  { categoryId: "guest", task: "Confirm guest movement plan with bridge and deck team" },
+  { categoryId: "guest", task: "Prepare beach club, towels, water toys and shade setup" },
+  { categoryId: "guest", task: "Check guest preferences, allergies and service notes" },
+  { categoryId: "guest", task: "Brief tender transfer timing, boarding route and safety points" },
+];
+
+function categoryIdsForTemplate(template: ChecklistTemplate) {
+  return checklistTaskCategories
+    .filter((category) => category.department === template.department || category.type === template.type)
+    .map((category) => category.id);
+}
+
+export const checklistTaskSuggestions = Array.from(
+  new Map(
+    [
+      ...checklistTemplates.flatMap((template) =>
+        template.tasks.flatMap((task) => {
+          const categories = categoryIdsForTemplate(template);
+          return (categories.length ? categories : [template.department.toLowerCase()]).map((categoryId) => [
+            `${categoryId}:${task.toLowerCase()}`,
+            {
+              categoryId,
+              department: template.department,
+              task,
+            },
+          ]);
+        })
+      ),
+      ...supplementalChecklistTasks.map((item) => [
+        `${item.categoryId}:${item.task.toLowerCase()}`,
+        {
+          categoryId: item.categoryId,
+          department:
+            checklistTaskCategories.find((category) => category.id === item.categoryId)?.department || "Deck",
+          task: item.task,
+        },
+      ]),
+    ].map((entry) => entry as [string, { categoryId: string; department: YachtDepartmentId; task: string }])
+  ).values()
+);
+
+export function getChecklistTaskSuggestions(query: string, categoryId?: string, limit = 8) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
+
+  const candidates = checklistTaskSuggestions.filter((item) => {
+    const matchesCategory = !categoryId || item.categoryId === categoryId;
+    if (!matchesCategory) return false;
+    const task = item.task.toLowerCase();
+    return task.includes(normalizedQuery) || normalizedQuery.split(/\s+/).every((part) => task.includes(part));
+  });
+
+  return candidates
+    .sort((a, b) => {
+      const aTask = a.task.toLowerCase();
+      const bTask = b.task.toLowerCase();
+      const aStarts = aTask.startsWith(normalizedQuery) ? 0 : 1;
+      const bStarts = bTask.startsWith(normalizedQuery) ? 0 : 1;
+      if (aStarts !== bStarts) return aStarts - bStarts;
+      return a.task.length - b.task.length;
+    })
+    .slice(0, limit);
 }

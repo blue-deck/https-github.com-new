@@ -123,9 +123,127 @@ export default function CrewTasksPage() {
       return;
     }
 
-    setChecklists(lists || []);
-    setActiveChecklist((lists || [])[0] || null);
+    let nextLists = lists || [];
+    const createdRecurring = await ensureRecurringChecklistInstances(nextLists, crewProfile.id);
+
+    if (createdRecurring > 0) {
+      const { data: refreshedLists, error: refreshError } = await supabase
+        .from("yacht_checklists")
+        .select(`
+          *,
+          yacht_checklist_items (*)
+        `)
+        .eq("assigned_to", crewProfile.id)
+        .order("created_at", { ascending: false });
+
+      if (!refreshError) nextLists = refreshedLists || nextLists;
+    }
+
+    setChecklists(nextLists);
+    setActiveChecklist(nextLists[0] || null);
     setLoading(false);
+  }
+
+  async function ensureRecurringChecklistInstances(lists: any[], crewProfileId: string) {
+    const sourceBySignature = new Map<string, any>();
+    const currentPeriodSignatures = new Set<string>();
+    const now = new Date();
+
+    lists.forEach((list) => {
+      const frequency = getChecklistFrequency(list);
+      if (!isRecurringFrequency(frequency)) return;
+
+      const signature = getRecurringSignature(list, frequency);
+      if (!signature) return;
+
+      if (!sourceBySignature.has(signature)) {
+        sourceBySignature.set(signature, list);
+      }
+
+      if (getPeriodKey(list.created_at, frequency) === getPeriodKey(now.toISOString(), frequency)) {
+        currentPeriodSignatures.add(signature);
+      }
+    });
+
+    let created = 0;
+
+    for (const [signature, source] of sourceBySignature.entries()) {
+      const frequency = getChecklistFrequency(source);
+      if (currentPeriodSignatures.has(signature)) continue;
+
+      const checklistPayload = {
+        yacht_id: source.yacht_id,
+        title: source.title,
+        department: source.department,
+        checklist_type: source.checklist_type,
+        frequency,
+        due_date: now.toISOString().slice(0, 10),
+        captain_note: getCaptainNote(source) || null,
+        assigned_to: crewProfileId,
+        status: "open",
+        items: {
+          ...(typeof source.items === "object" && source.items ? source.items : {}),
+          frequency,
+          captain_note: getCaptainNote(source) || null,
+          recurring_from: source.id,
+          recurring_period: getPeriodKey(now.toISOString(), frequency),
+        },
+      };
+
+      const { data: checklist, error } = await insertRecurringChecklist(checklistPayload);
+
+      if (error || !checklist?.id) continue;
+
+      const sourceTasks = (source.yacht_checklist_items || [])
+        .map((task: any) => (task.task_text || "").trim())
+        .filter(Boolean);
+
+      if (sourceTasks.length) {
+        await supabase.from("yacht_checklist_items").insert(
+          sourceTasks.map((task: string) => ({
+            checklist_id: checklist.id,
+            task_text: task,
+            completed: false,
+          }))
+        );
+      }
+
+      created += 1;
+    }
+
+    return created;
+  }
+
+  async function insertRecurringChecklist(payload: Record<string, any>) {
+    const variants = [
+      payload,
+      omitKeys(payload, ["captain_note"]),
+      omitKeys(payload, ["frequency"]),
+      omitKeys(payload, ["frequency", "captain_note"]),
+      omitKeys(payload, ["items"]),
+      omitKeys(payload, ["items", "captain_note"]),
+      omitKeys(payload, ["items", "frequency"]),
+      omitKeys(payload, ["items", "frequency", "captain_note"]),
+      omitKeys(payload, ["items", "frequency", "captain_note", "due_date"]),
+      omitKeys(payload, ["items", "frequency", "captain_note", "due_date", "status"]),
+    ];
+
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase
+        .from("yacht_checklists")
+        .insert(variant)
+        .select()
+        .single();
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
   }
 
   async function acceptInvitation(invitation: any) {
@@ -737,6 +855,44 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
 
 function getCaptainNote(checklist: any) {
   return checklist?.captain_note || checklist?.items?.captain_note || "";
+}
+
+function getChecklistFrequency(checklist: any) {
+  return checklist?.frequency || checklist?.items?.frequency || "";
+}
+
+function isRecurringFrequency(frequency?: string) {
+  return ["daily", "weekly", "monthly"].includes((frequency || "").toLowerCase());
+}
+
+function getRecurringSignature(checklist: any, frequency: string) {
+  if (!checklist?.assigned_to || !checklist?.title) return "";
+  return [
+    checklist.assigned_to,
+    checklist.yacht_id,
+    checklist.title,
+    checklist.department,
+    checklist.checklist_type,
+    frequency,
+  ].join("|").toLowerCase();
+}
+
+function getPeriodKey(value: string, frequency: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  const normalized = (frequency || "").toLowerCase();
+
+  if (normalized === "daily") return `${year}-${month}-${day}`;
+  if (normalized === "monthly") return `${year}-${month}`;
+
+  const firstDay = new Date(year, 0, 1);
+  const dayOfYear = Math.floor((date.getTime() - firstDay.getTime()) / 86400000) + 1;
+  const week = Math.ceil((dayOfYear + firstDay.getDay()) / 7);
+  return `${year}-W${`${week}`.padStart(2, "0")}`;
 }
 
 function parseTaskNote(task: any) {

@@ -2,12 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserPlus, UserRound } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
 import { BLUEDECK } from "../config";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
+import {
+  markInvitationAccepted,
+  saveYachtMembership,
+} from "../lib/yachtMemberships";
 
 type DashboardProfile = {
   id?: string;
@@ -19,10 +23,39 @@ type DashboardProfile = {
   profile_photo_url?: string;
 };
 
+type DashboardYachtInvite = {
+  id: string;
+  yacht_id: string;
+  yacht_name: string;
+  position?: string;
+  department?: string;
+  public_crew_id?: string;
+  invited_email?: string;
+  created_at?: string;
+  crew_profile_id?: string;
+  sender_name?: string;
+  sender_role?: string;
+};
+
+type DashboardDeck = {
+  id: string;
+  yacht_id: string;
+  yacht_name: string;
+  position?: string;
+  department?: string;
+};
+
 function cleanDisplayName(profile?: DashboardProfile | null) {
   const name = profile?.full_name?.trim();
   if (name && name !== profile?.email) return name;
   return "";
+}
+
+function uniqueById<T extends { id?: string }>(items: T[]) {
+  return items.filter(
+    (item, index, list) =>
+      Boolean(item.id) && list.findIndex((candidate) => candidate.id === item.id) === index
+  );
 }
 
 export default function DashboardPage() {
@@ -31,7 +64,101 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [deckInvites, setDeckInvites] = useState<DashboardYachtInvite[]>([]);
+  const [myDecks, setMyDecks] = useState<DashboardDeck[]>([]);
+  const [acceptingInviteId, setAcceptingInviteId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function hydrateDeckAccess(crewProfile: any, userEmail?: string | null) {
+    const normalizedEmail = (userEmail || crewProfile?.email || "").trim().toLowerCase();
+    const inviteQueries = [];
+
+    if (normalizedEmail) {
+      inviteQueries.push(
+        supabase
+          .from("crew_invitations")
+          .select("*")
+          .eq("status", "pending")
+          .eq("invited_email", normalizedEmail)
+          .order("created_at", { ascending: false })
+      );
+    }
+
+    if (crewProfile?.id) {
+      inviteQueries.push(
+        supabase
+          .from("crew_invitations")
+          .select("*")
+          .eq("status", "pending")
+          .eq("crew_profile_id", crewProfile.id)
+          .order("created_at", { ascending: false })
+      );
+    }
+
+    const inviteResponses = await Promise.all(inviteQueries);
+    const inviteRows = uniqueById(inviteResponses.flatMap((response) => response.data || []));
+
+    let membershipRows: any[] = [];
+    if (crewProfile?.id) {
+      const { data } = await supabase
+        .from("yacht_crew_memberships")
+        .select("*")
+        .eq("crew_profile_id", crewProfile.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+      membershipRows = data || [];
+    }
+
+    const yachtIds = Array.from(
+      new Set([
+        ...inviteRows.map((item) => item.yacht_id),
+        ...membershipRows.map((item) => item.yacht_id),
+      ].filter(Boolean))
+    );
+
+    let yachtMap = new Map<string, any>();
+    let profileMap = new Map<string, any>();
+
+    if (yachtIds.length) {
+      const { data: yachts } = await supabase
+        .from("yachts")
+        .select("id, name, owner_id")
+        .in("id", yachtIds);
+      yachtMap = new Map((yachts || []).map((yacht: any) => [yacht.id, yacht]));
+
+      const ownerIds = Array.from(new Set((yachts || []).map((yacht: any) => yacht.owner_id).filter(Boolean)));
+      if (ownerIds.length) {
+        const { data: senders } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, role")
+          .in("id", ownerIds);
+        profileMap = new Map((senders || []).map((sender: any) => [sender.id, sender]));
+      }
+    }
+
+    setDeckInvites(
+      inviteRows.map((invite: any) => {
+        const yacht = yachtMap.get(invite.yacht_id);
+        const sender = yacht?.owner_id ? profileMap.get(yacht.owner_id) : null;
+        return {
+          ...invite,
+          yacht_name: yacht?.name || "BlueDeck yacht",
+          sender_name: cleanDisplayName(sender) || sender?.email || "BlueDeck captain",
+          sender_role: sender?.role || "Captain",
+        };
+      })
+    );
+
+    setMyDecks(
+      membershipRows.map((membership) => ({
+        id: membership.id,
+        yacht_id: membership.yacht_id,
+        yacht_name: yachtMap.get(membership.yacht_id)?.name || "BlueDeck yacht",
+        position: membership.position,
+        department: membership.department,
+      }))
+    );
+  }
 
   async function loadDashboard() {
     const {
@@ -89,6 +216,7 @@ export default function DashboardPage() {
         crewProfile?.profile_photo_url ||
         (typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : ""),
     });
+    await hydrateDeckAccess(crewProfile, profileData?.email || crewProfile?.email || user.email);
     setLoading(false);
   }
 
@@ -189,6 +317,72 @@ export default function DashboardPage() {
     }
 
     setProfile((current) => ({ ...(current || {}), profile_photo_url: "" }));
+  }
+
+  async function acceptDashboardInvite(invite: DashboardYachtInvite) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user?.email) {
+      window.location.href = "/login";
+      return;
+    }
+
+    setAcceptingInviteId(invite.id);
+    let crewProfileId = profile?.crew_profile_id || invite.crew_profile_id;
+
+    if (!crewProfileId) {
+      const { data: crewProfile, error } = await saveCrewProfileByUserId<{ id?: string }>(
+        supabase,
+        user.id,
+        {
+          email: profile?.email || user.email,
+          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+          phone: profile?.phone || user.user_metadata?.phone || "",
+          public_crew_id: user.id.slice(0, 8).toUpperCase(),
+        },
+        "id"
+      );
+
+      if (error) {
+        alert(error.message);
+        setAcceptingInviteId("");
+        return;
+      }
+
+      crewProfileId = crewProfile?.id;
+    }
+
+    const { error: memberError } = await saveYachtMembership(supabase, {
+      yacht_id: invite.yacht_id,
+      crew_profile_id: crewProfileId,
+      invited_email: profile?.email || user.email,
+      position: invite.position,
+      department: invite.department,
+      status: "active",
+    });
+
+    if (memberError) {
+      alert(memberError.message);
+      setAcceptingInviteId("");
+      return;
+    }
+
+    const { error: inviteError } = await markInvitationAccepted(
+      supabase,
+      invite.id,
+      crewProfileId
+    );
+
+    if (inviteError) {
+      alert(inviteError.message);
+      setAcceptingInviteId("");
+      return;
+    }
+
+    await loadDashboard();
+    setAcceptingInviteId("");
   }
 
   useEffect(() => {
@@ -295,6 +489,56 @@ export default function DashboardPage() {
               Manage your crew ID, documents, expiry dates, photo gallery and CV.
             </p>
           </Link>
+
+          {deckInvites.length > 0 ? (
+            <div className="bd-glass-card-strong rounded-[28px] p-8 shadow-2xl shadow-cyan-950/8">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-lg shadow-cyan-950/15">
+                  <UserPlus className="h-6 w-6" />
+                </div>
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-800">
+                  Invite
+                </span>
+              </div>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Yacht Invite</h2>
+              <div className="mt-4 rounded-2xl border border-cyan-100 bg-white/72 p-4">
+                <p className="text-sm font-semibold leading-6 text-slate-600">
+                  You are invited by <span className="font-black text-slate-950">{deckInvites[0].yacht_name}</span> for{" "}
+                  <span className="font-black text-cyan-800">{deckInvites[0].position || "crew duty"}</span>.
+                </p>
+                <div className="mt-3 space-y-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
+                  <p>Sent: {deckInvites[0].created_at ? new Date(deckInvites[0].created_at).toLocaleDateString() : "-"}</p>
+                  <p>From: {deckInvites[0].sender_role || "Captain"} · {deckInvites[0].sender_name || "BlueDeck captain"}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => acceptDashboardInvite(deckInvites[0])}
+                disabled={acceptingInviteId === deckInvites[0].id}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:opacity-60"
+              >
+                <CheckCircle2 className="h-5 w-5" />
+                {acceptingInviteId === deckInvites[0].id ? "Accepting..." : "Accept Yacht Invite"}
+              </button>
+            </div>
+          ) : myDecks.length > 0 ? (
+            <Link
+              href="/crew/tasks"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <Ship className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Deck</h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {myDecks[0].yacht_name}
+                {myDecks[0].position ? ` · ${myDecks[0].position}` : ""}
+              </p>
+              {myDecks.length > 1 && (
+                <p className="mt-3 inline-flex rounded-full bg-cyan-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                  +{myDecks.length - 1} deck
+                </p>
+              )}
+            </Link>
+          ) : null}
 
           {isCaptain ? (
             <>
