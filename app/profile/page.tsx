@@ -1505,37 +1505,24 @@ export default function ProfilePage() {
 
             {activeStudioTab === "preview" && (
               <div className="space-y-5">
-                <Panel title="Preview / Download" icon={<Download className="h-5 w-5" />}>
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8e2e6] bg-[#f8fbfc] p-4">
-                    <div>
-                      <p className="text-sm font-black text-[#06111f]">Final BlueDeck CV</p>
-                      <p className="mt-1 text-sm leading-6 text-[#5a6870]">
-                        Review the generated CV below. Use Print / Save PDF to open the browser print dialog and save the CV.
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-[#173f4a] px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-white">
-                      {cvDocuments.length} CV docs
-                    </span>
-                  </div>
-                </Panel>
-                  <SeazoneStyleCvPreview
-                    profile={profile}
-                    documents={cvDocuments}
-                    experiences={experiences}
-                    references={cvReferences}
-                    totalExperienceYears={totalExperienceYears}
-                    downloading={pdfDownloading}
-                    onDownload={async (payload) => {
-                      setPdfDownloading(true);
-                      try {
-                        await downloadCvPdf(payload);
-                      } catch (error) {
-                        alert(error instanceof Error ? error.message : "CV print dialog could not be opened.");
-                      } finally {
-                        setPdfDownloading(false);
-                      }
-                    }}
-                  />
+                <SeazoneStyleCvPreview
+                  profile={profile}
+                  documents={cvDocuments}
+                  experiences={experiences}
+                  references={cvReferences}
+                  totalExperienceYears={totalExperienceYears}
+                  downloading={pdfDownloading}
+                  onDownload={async (payload) => {
+                    setPdfDownloading(true);
+                    try {
+                      await downloadCvPdf(payload);
+                    } catch (error) {
+                      alert(error instanceof Error ? error.message : "CV print dialog could not be opened.");
+                    } finally {
+                      setPdfDownloading(false);
+                    }
+                  }}
+                />
               </div>
             )}
           </div>
