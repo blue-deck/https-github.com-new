@@ -66,7 +66,6 @@ export default function CrewPage({
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [crewPublicId, setCrewPublicId] = useState("");
-  const [fullName, setFullName] = useState("");
   const [position, setPosition] = useState("Deckhand");
   const [department, setDepartment] = useState("Deck");
   const [frequency, setFrequency] = useState("Template default");
@@ -89,7 +88,7 @@ export default function CrewPage({
   const [templateFrequencyFilter, setTemplateFrequencyFilter] = useState("All");
   const [templateSearch, setTemplateSearch] = useState("");
   const [activeChecklistPack, setActiveChecklistPack] = useState("departure-ready");
-  const [checklistSection, setChecklistSection] = useState<"invite" | "builder" | "monitor" | "archive">("invite");
+  const [checklistSection, setChecklistSection] = useState<"builder" | "monitor" | "archive">("builder");
   const [archiveRetention, setArchiveRetention] = useState<{ months: number; cutoff: string; purged: number } | null>(null);
   const [manualTitle, setManualTitle] = useState("");
   const [manualDepartment, setManualDepartment] = useState("Deck");
@@ -589,19 +588,18 @@ export default function CrewPage({
       } else if (existingProfile.data?.[0]) {
         profile = existingProfile.data[0];
 
-        if ((fullName && !profile.full_name) || !profile.current_position) {
+        if (!profile.current_position) {
           await supabase
             .from("crew_profiles")
             .update({
-              ...(fullName && !profile.full_name ? { full_name: fullName } : {}),
-              ...(!profile.current_position ? { current_position: position } : {}),
+              current_position: position,
             })
             .eq("id", profile.id);
         }
       } else {
         const response = await insertCrewProfile({
           email: normalizedInviteEmail,
-          full_name: fullName,
+          full_name: normalizedInviteEmail.split("@")[0],
           current_position: position,
           public_crew_id: crypto.randomUUID().slice(0, 8).toUpperCase(),
         });
@@ -665,7 +663,6 @@ export default function CrewPage({
 
     setInviteEmail("");
     setCrewPublicId("");
-    setFullName("");
     setInviteNotice("Invitation is now waiting inside the crew member's My YachtOS portal.");
     setLoading(false);
     loadData();
@@ -1121,44 +1118,7 @@ export default function CrewPage({
           <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
         </div>
 
-        {isChecklistSystem && (
-          <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-2 sm:rounded-[36px] sm:p-4 xl:grid-cols-4">
-            <ChecklistSectionButton
-              active={checklistSection === "invite"}
-              icon={<UserPlus className="h-5 w-5" />}
-              title="Invite Crew"
-              text="Send a private yacht invitation with Crew ID and position."
-              meta={`${crew.filter((member) => member.status === "invited").length} invited`}
-              onClick={() => setChecklistSection("invite")}
-            />
-            <ChecklistSectionButton
-              active={checklistSection === "builder"}
-              icon={<Send className="h-5 w-5" />}
-              title="Checklist Builder"
-              text="Select crew, category, recurrence and unlimited tasks."
-              meta={`${selectedTemplates.length} selected`}
-              onClick={() => setChecklistSection("builder")}
-            />
-            <ChecklistSectionButton
-              active={checklistSection === "monitor"}
-              icon={<ActivityIcon />}
-              title="Sent Status"
-              text="Track what crew completed, missed or attached proof to."
-              meta={`${checklistInsights.openChecklists} open`}
-              onClick={() => setChecklistSection("monitor")}
-            />
-            <ChecklistSectionButton
-              active={checklistSection === "archive"}
-              icon={<Archive className="h-5 w-5" />}
-              title="6-Month Archive"
-              text="Keep recent records and export a clean PDF archive."
-              meta={`${archiveStats.records} records`}
-              onClick={() => setChecklistSection("archive")}
-            />
-          </section>
-        )}
-
-        {isChecklistSystem && checklistSection === "invite" && (
+        {!isChecklistSystem && (
           <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
             <div className="grid gap-0 xl:grid-cols-[0.48fr_0.52fr]">
               <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_54%,#176678_100%)] p-6 text-white sm:p-8">
@@ -1290,6 +1250,35 @@ export default function CrewPage({
           </section>
         )}
 
+        {isChecklistSystem && (
+          <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-2 sm:rounded-[36px] sm:p-4 xl:grid-cols-3">
+            <ChecklistSectionButton
+              active={checklistSection === "builder"}
+              icon={<Send className="h-5 w-5" />}
+              title="Checklist Builder"
+              text="Select crew, category, recurrence and unlimited tasks."
+              meta={`${selectedTemplates.length} selected`}
+              onClick={() => setChecklistSection("builder")}
+            />
+            <ChecklistSectionButton
+              active={checklistSection === "monitor"}
+              icon={<ActivityIcon />}
+              title="Sent Status"
+              text="Track what crew completed, missed or attached proof to."
+              meta={`${checklistInsights.openChecklists} open`}
+              onClick={() => setChecklistSection("monitor")}
+            />
+            <ChecklistSectionButton
+              active={checklistSection === "archive"}
+              icon={<Archive className="h-5 w-5" />}
+              title="6-Month Archive"
+              text="Keep recent records and export a clean PDF archive."
+              meta={`${archiveStats.records} records`}
+              onClick={() => setChecklistSection("archive")}
+            />
+          </section>
+        )}
+
         {isChecklistSystem && checklistSection === "builder" && (
           <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
             <div className="grid gap-0 lg:grid-cols-[0.42fr_0.58fr]">
@@ -1372,90 +1361,6 @@ export default function CrewPage({
         {(!isChecklistSystem || checklistSection === "builder") && (
         <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
           <div className="space-y-6 xl:space-y-8">
-            {!isChecklistSystem && (
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
-              <div className="flex items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-600 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
-                  <Plus />
-                </div>
-                <div>
-                  <p className="text-cyan-700">Captain Action</p>
-                  <h2 className="text-3xl font-black sm:text-4xl">Invite Crew</h2>
-                </div>
-              </div>
-
-              <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
-                <input
-                  placeholder="Full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                />
-
-                <input
-                  placeholder="Crew ID"
-                  value={crewPublicId}
-                  onChange={(e) => setCrewPublicId(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                />
-
-                <input
-                  placeholder="Crew email, if Crew ID is not known"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                />
-
-                <select
-                  value={position}
-                  onChange={(e) => {
-                    const nextPosition = e.target.value;
-                    setPosition(nextPosition);
-                    setDepartment(getDepartmentByPosition(nextPosition));
-                  }}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
-                >
-                  {positionSelectGroups.map((group) => (
-                    <optgroup key={group.department} label={group.department}>
-                      {group.positions.map((item) => (
-                        <option key={item} value={item}>
-                          {item}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-
-                <select
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
-                >
-                  {yachtDepartments.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  onClick={addCrew}
-                  disabled={loading}
-                  className="w-full rounded-2xl bg-cyan-600 py-4 text-xl font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700 disabled:opacity-60"
-                >
-                  {loading ? "Saving..." : "Create Invitation"}
-                </button>
-
-                {inviteNotice && (
-                  <div className="rounded-2xl border border-cyan-400/25 bg-cyan-50 p-4 text-sm text-slate-700">
-                    <p className="font-bold">Invitation sent</p>
-                    <p className="mt-2 leading-6">{inviteNotice}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            )}
-
             {isChecklistSystem && (
             <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
               <div className="bg-[linear-gradient(135deg,#071827_0%,#0d3143_100%)] p-5 text-white sm:p-7">
