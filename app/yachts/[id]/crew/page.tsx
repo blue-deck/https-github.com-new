@@ -1119,29 +1119,8 @@ export default function CrewPage({
         </div>
 
         {!isChecklistSystem && (
-          <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
-            <div className="grid gap-0 xl:grid-cols-[0.48fr_0.52fr]">
-              <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_54%,#176678_100%)] p-6 text-white sm:p-8">
-                <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-cyan-300/14 blur-3xl" />
-                <p className="relative text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
-                  Private Crew Link
-                </p>
-                <h2 className="relative mt-3 max-w-xl text-4xl font-black leading-tight sm:text-5xl">
-                  Invite crew into this yacht portal.
-                </h2>
-                <p className="relative mt-4 max-w-2xl text-sm leading-7 text-cyan-50/82 sm:text-base">
-                  Enter the crew member&apos;s BlueDeck Crew ID, choose the role and send a controlled yacht invitation.
-                  Once accepted, the connection becomes the crew member&apos;s My Deck access.
-                </p>
-                <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
-                  <LibraryMetric label="Crew" value={crew.length} />
-                  <LibraryMetric label="Invited" value={crew.filter((member) => member.status === "invited").length} />
-                  <LibraryMetric label="Active" value={crew.filter((member) => member.status === "active").length} />
-                </div>
-              </div>
-
-              <div className="bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_54%,#eefcff_100%)] p-5 sm:p-7">
-                <div className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+          <section className="mb-8 rounded-[32px] border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_54%,#eefcff_100%)] p-5 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px] sm:p-7">
+            <div className="grid gap-5 lg:grid-cols-[minmax(320px,0.95fr)_minmax(360px,1.05fr)]">
                   <div className="rounded-[28px] border border-white bg-white/88 p-5 shadow-xl shadow-cyan-950/6">
                     <div className="flex items-center gap-4">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
@@ -1244,9 +1223,7 @@ export default function CrewPage({
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                  </div>
           </section>
         )}
 
