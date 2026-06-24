@@ -448,9 +448,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "BlueDeck Analytics": {
     "tr": "BlueDeck Analizi",
   },
-  "BlueDeck BridgeOS": {
-    "tr": "BlueDeck BridgeOS",
-  },
   "BlueDeck ChecklistOS": {
     "tr": "BlueDeck Kontrol ListesiOS",
   },
@@ -523,9 +520,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "BlueDeck Profile": {
     "tr": "BlueDeck Profili",
   },
-  "BlueDeck Real Bridge": {
-    "tr": "BlueDeck Gerçek Köprü",
-  },
   "BlueDeck Real Navigation": {
     "tr": "BlueDeck Gerçek Navigasyon",
   },
@@ -570,27 +564,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Bosun": {
     "tr": "Bozun",
-  },
-  "Bridge": {
-    "tr": "Köprüüstü",
-  },
-  "Bridge arrival routine for port entry, anchorage or marina approach.": {
-    "tr": "Limana giriş, demirleme veya marinaya yaklaşma için köprüye varış rutini.",
-  },
-  "Bridge systems are online and ready for navigation.": {
-    "tr": "Köprü sistemleri çevrimiçi ve navigasyona hazır.",
-  },
-  "Bridge team briefing completed": {
-    "tr": "Köprüüstü ekibi brifingi tamamlandı",
-  },
-  "Bridge team verifies the route, hazards, weather and port requirements before departure.": {
-    "tr": "Köprü ekibi kalkıştan önce rotayı, tehlikeleri, hava durumunu ve liman gerekliliklerini doğrular.",
-  },
-  "Bridge Watch Handover": {
-    "tr": "Köprü Nöbeti Devri",
-  },
-  "BridgeOS": {
-    "tr": "BridgeOS",
   },
   "Browser Active": {
     "tr": "Tarayıcı Etkin",
@@ -645,9 +618,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Captain arrival briefing completed": {
     "tr": "Kaptanın varış brifingi tamamlandı",
-  },
-  "Captain Bridge": {
-    "tr": "Kaptan Köprüsü",
   },
   "Captain Command Center": {
     "tr": "Kaptan Komuta Merkezi",
@@ -1216,9 +1186,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Deck & Captain": {
     "tr": "Güverte ve Kaptan",
   },
-  "Deck and bridge coordination for anchoring and anchor recovery.": {
-    "tr": "Demirleme ve çapa kurtarma için güverte ve köprü koordinasyonu.",
-  },
   "Deck crew positioned and briefed": {
     "tr": "Güverte mürettebatı konumlandırıldı ve bilgilendirildi",
   },
@@ -1635,9 +1602,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Filters and belts status checked": {
     "tr": "Filtrelerin ve kayışların durumu kontrol edildi",
-  },
-  "Final bridge checks before lines are let go.": {
-    "tr": "Hatlar serbest bırakılmadan önce son köprü kontrolleri.",
   },
   "Final chief stew inspection completed": {
     "tr": "Son şef güveç denetimi tamamlandı",
@@ -2362,12 +2326,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Live GPS Weather": {
     "tr": "Canlı GPS Hava Durumu",
   },
-  "Live Operations Center": {
-    "tr": "Canlı Operasyon Merkezi",
-  },
-  "Live operations, status checks and onboard activity control.": {
-    "tr": "Canlı operasyonlar, durum kontrolleri ve yerleşik aktivite kontrolü.",
-  },
   "Live Status": {
     "tr": "Canlı Durum",
   },
@@ -2703,9 +2661,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Navigation Radar": {
     "tr": "Navigasyon Radarı",
-  },
-  "Navigation view, GPS readiness and captain bridge awareness.": {
-    "tr": "Navigasyon görünümü, GPS hazırlığı ve kaptan köprüsü farkındalığı.",
   },
   "New email will require inbox confirmation.": {
     "tr": "Yeni e-posta, gelen kutusunun onaylanmasını gerektirecektir.",
@@ -3283,9 +3238,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Post-dive equipment rinsed and logged": {
     "tr": "Dalış sonrası ekipman durulandı ve kaydedildi",
   },
-  "Pre-Departure Bridge Setup": {
-    "tr": "Kalkış Öncesi Köprü Kurulumu",
-  },
   "Pre-filters checked": {
     "tr": "Ön filtreler kontrol edildi",
   },
@@ -3366,9 +3318,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Production website": {
     "tr": "Üretim web sitesi",
-  },
-  "Professional bridge interface for GPS, AIS readiness, navigation awareness and captain operations.": {
-    "tr": "GPS, AIS hazırlığı, navigasyon farkındalığı ve kaptan operasyonları için profesyonel köprü arayüzü.",
   },
   "Professional Crew Profile": {
     "tr": "Profesyonel Mürettebat Profili",

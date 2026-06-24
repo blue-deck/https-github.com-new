@@ -56,9 +56,9 @@ const en = {
   "home.pillar3.title": "Owner Experience",
   "home.pillar3.text":
     "A calm owner view focused on privacy, guest comfort, readiness, location and high-level confidence.",
-  "home.pillar4.title": "Bridge Readiness",
+  "home.pillar4.title": "Operational Readiness",
   "home.pillar4.text":
-    "Navigation, watch, passage, arrival and departure workflows structured for captain-grade oversight.",
+    "Departure, arrival, daily readiness and onboard workflow records structured for captain-grade oversight.",
   "home.deepEyebrow": "Private YachtOS",
   "home.deepTitle": "Built for traceable operations without losing the luxury feeling.",
   "home.section1": "Private account and role-based access",
@@ -106,9 +106,9 @@ const en = {
   "services.item4.title": "Contracts & Crew Lists",
   "services.item4.text":
     "Assign yacht contracts, collect acceptance and generate operational crew information from saved profile data.",
-  "services.item5.title": "Bridge & Operations",
+  "services.item5.title": "Yacht Operations",
   "services.item5.text":
-    "Organize bridge, departure, arrival, watchkeeping and daily operational readiness in a dedicated workspace.",
+    "Organize departure, arrival, daily readiness and yacht operational records in a dedicated workspace.",
   "services.item6.title": "Compliance Alerts",
   "services.item6.text":
     "Track document expiry windows and keep personal and yacht records visible before they become critical.",
@@ -531,8 +531,6 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 
 const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>> = {
   "Overview": { tr: "Genel Bakış" },
-  "Bridge": { tr: "Köprüüstü" },
-  "Ops": { tr: "Operasyon" },
   "Checklist": { tr: "Kontrol Listesi" },
   "Checklists": { tr: "Kontrol Listeleri" },
   "Crew": { tr: "Mürettebat" },
@@ -694,11 +692,6 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Operations": { tr: "Operasyonlar" },
   "Owner View": { tr: "Sahip Görünümü" },
   "Open module": { tr: "Modülü aç" },
-  "BlueDeck BridgeOS": { tr: "BlueDeck BridgeOS" },
-  "Captain Bridge": { tr: "Kaptan Köprüüstü" },
-  "Professional bridge interface for GPS, AIS readiness, navigation awareness and captain operations.": {
-    tr: "GPS, AIS hazırlığı, navigasyon farkındalığı ve kaptan operasyonları için profesyonel köprüüstü arayüzü.",
-  },
   "Course": { tr: "Rota" },
   "Speed": { tr: "Hız" },
   "Provider Required": { tr: "Sağlayıcı Gerekli" },

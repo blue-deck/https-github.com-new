@@ -20,7 +20,6 @@ import {
   RefreshCcw,
   ShieldCheck,
   Ship,
-  ShipWheel,
   Users,
   Wrench,
   type LucideIcon,
@@ -298,14 +297,6 @@ export default function YachtDashboard() {
       meta: `${stats.criticalDocuments} critical`,
     },
     {
-      title: "Bridge",
-      text: "Navigation view, GPS readiness and captain bridge awareness.",
-      href: `/yachts/${yachtId}/bridge`,
-      icon: ShipWheel,
-      tone: "cyan",
-      meta: "BridgeOS",
-    },
-    {
       title: "Voyage Sync",
       text: "Maritime MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.",
       href: `/yachts/${yachtId}/voyage`,
@@ -328,14 +319,6 @@ export default function YachtDashboard() {
       icon: LifeBuoy,
       tone: "rose",
       meta: "Safety",
-    },
-    {
-      title: "Operations",
-      text: "Live operations, status checks and onboard activity control.",
-      href: `/yachts/${yachtId}/live-operations`,
-      icon: Gauge,
-      tone: "emerald",
-      meta: "Live",
     },
     {
       title: "Owner View",

@@ -5,10 +5,8 @@ import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
   Crown,
-  Gauge,
   Home,
   ClipboardList,
-  Radio,
   Users,
 } from "lucide-react";
 import { useLanguage } from "../../components/LanguageProvider";
@@ -53,8 +51,6 @@ export default function YachtAppLayout({
 
   const nav = [
     { label: translatePhrase("Overview", language), href: `/yachts/${yachtId}`, icon: Home },
-    { label: translatePhrase("Bridge", language), href: `/yachts/${yachtId}/bridge`, icon: Radio },
-    { label: translatePhrase("Ops", language), href: `/yachts/${yachtId}/live-operations`, icon: Gauge },
     { label: translatePhrase("Checklist", language), href: `/yachts/${yachtId}/checklists`, icon: ClipboardList },
     { label: translatePhrase("Crew", language), href: `/yachts/${yachtId}/crew`, icon: Users },
     { label: translatePhrase("Owner", language), href: `/yachts/${yachtId}/owner`, icon: Crown },
@@ -78,10 +74,7 @@ export default function YachtAppLayout({
           <div className="flex min-w-0 flex-1 items-center gap-6 overflow-x-auto">
             {nav.map((item) => {
               const Icon = item.icon;
-              const active =
-                pathname === item.href ||
-                (item.href.endsWith("/live-operations") &&
-                  pathname.includes("/live-operations"));
+              const active = pathname === item.href;
 
               return (
                 <Link

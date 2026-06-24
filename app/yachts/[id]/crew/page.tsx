@@ -1164,7 +1164,7 @@ export default function CrewPage({
               <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_54%,#176678_100%)] p-6 text-white sm:p-8">
                 <div className="absolute -right-10 -top-10 h-44 w-44 rounded-full bg-cyan-300/14 blur-3xl" />
                 <p className="relative text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
-                  Private Crew Bridge
+                  Private Crew Link
                 </p>
                 <h2 className="relative mt-3 max-w-xl text-4xl font-black leading-tight sm:text-5xl">
                   Invite crew into this yacht portal.
@@ -1253,7 +1253,7 @@ export default function CrewPage({
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
                       Invite Status
                     </p>
-                    <h3 className="mt-2 text-2xl font-black text-slate-950">Recent crew bridge</h3>
+                    <h3 className="mt-2 text-2xl font-black text-slate-950">Recent crew access</h3>
                     <div className="mt-5 space-y-3">
                       {crew.slice(0, 6).map((member) => (
                         <div key={member.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
@@ -1279,7 +1279,7 @@ export default function CrewPage({
 
                       {crew.length === 0 && (
                         <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
-                          Invite your first crew member to open this yacht&apos;s operational bridge.
+                          Invite your first crew member to open this yacht&apos;s controlled crew access.
                         </p>
                       )}
                     </div>
