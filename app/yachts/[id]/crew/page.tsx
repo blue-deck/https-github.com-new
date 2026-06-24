@@ -51,6 +51,163 @@ import {
   yachtDepartments,
 } from "../../../lib/yachtOperations";
 
+type ContractStudioStep =
+  | "parties"
+  | "terms"
+  | "clauses"
+  | "duties"
+  | "signature"
+  | "preview";
+
+type ContractDraft = {
+  ownerName: string;
+  ownerAddress: string;
+  ownerId: string;
+  employeeName: string;
+  employeeNationality: string;
+  employeeDob: string;
+  employeePassportNo: string;
+  employeeSeamanBookNo: string;
+  employeePosition: string;
+  vesselName: string;
+  startDate: string;
+  endDate: string;
+  salary: string;
+  currency: string;
+  leaveTerms: string;
+  travelTerms: string;
+  accommodationTerms: string;
+  terminationNotice: string;
+  clauses: string;
+  duties: string;
+  discipline: string;
+  signerName: string;
+  signerTitle: string;
+  signatureDate: string;
+  signatureLocation: string;
+};
+
+const contractStepCards: Array<{
+  id: ContractStudioStep;
+  title: string;
+  meta: string;
+}> = [
+  { id: "parties", title: "Parties", meta: "Owner & crew" },
+  { id: "terms", title: "Terms", meta: "Dates & salary" },
+  { id: "clauses", title: "Clauses", meta: "Legal text" },
+  { id: "duties", title: "Duties", meta: "Role rules" },
+  { id: "signature", title: "Signature", meta: "Mobile sign" },
+  { id: "preview", title: "Preview", meta: "PDF & send" },
+];
+
+function createEmptyContractDraft(): ContractDraft {
+  return {
+    ownerName: "",
+    ownerAddress: "",
+    ownerId: "",
+    employeeName: "",
+    employeeNationality: "",
+    employeeDob: "",
+    employeePassportNo: "",
+    employeeSeamanBookNo: "",
+    employeePosition: "",
+    vesselName: "",
+    startDate: "",
+    endDate: "",
+    salary: "",
+    currency: "EUR",
+    leaveTerms: "",
+    travelTerms: "",
+    accommodationTerms: "",
+    terminationNotice: "",
+    clauses:
+      "The employee shall perform duties in a professional, safe and seamanlike manner in accordance with yacht rules, flag requirements and lawful instructions from the Captain or yacht representative.",
+    duties:
+      "The employee shall maintain assigned areas, support yacht operations, follow safety procedures, protect guest privacy and report defects or incidents without delay.",
+    discipline:
+      "The employee shall observe confidentiality, alcohol and drug policies, uniform standards, watchkeeping rules, rest hours and respectful onboard conduct at all times.",
+    signerName: "",
+    signerTitle: "Captain / Yacht Representative",
+    signatureDate: "",
+    signatureLocation: "",
+  };
+}
+
+function getCrewDisplayName(member?: any) {
+  return (
+    member?.crew_profiles?.full_name ||
+    member?.invited_email ||
+    member?.crew_profiles?.email ||
+    ""
+  );
+}
+
+function getCrewPosition(member?: any) {
+  return member?.position || member?.crew_profiles?.current_position || "";
+}
+
+function contractValue(value: string | undefined, fallback: string) {
+  return value?.trim() || fallback;
+}
+
+function buildContractPreviewText(draft: ContractDraft, member?: any) {
+  const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
+  const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
+
+  return [
+    "BLUEDECK YACHT EMPLOYMENT AGREEMENT",
+    "",
+    "1. PARTIES",
+    "Owner / Employer / Yacht Representative:",
+    `Name: ${contractValue(draft.ownerName, "[OWNER / COMPANY NAME]")}`,
+    `Address: ${contractValue(draft.ownerAddress, "[ADDRESS]")}`,
+    `Passport / Company No: ${contractValue(draft.ownerId, "[DETAILS]")}`,
+    "",
+    "Employee / Seafarer:",
+    `Name Surname: ${employeeName}`,
+    `Nationality: ${contractValue(draft.employeeNationality, "[NATIONALITY]")}`,
+    `Date of Birth: ${contractValue(draft.employeeDob, "[DATE OF BIRTH]")}`,
+    `Passport No: ${contractValue(draft.employeePassportNo, "[PASSPORT NO]")}`,
+    `Seaman Book No: ${contractValue(draft.employeeSeamanBookNo, "[SEAMAN BOOK NO, IF ANY]")}`,
+    `Position: ${employeePosition}`,
+    "",
+    "2. CONTRACT TERMS",
+    `Yacht / Vessel: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
+    `Start Date: ${contractValue(draft.startDate, "[START DATE]")}`,
+    `End Date: ${contractValue(draft.endDate, "[END DATE / ROTATION]")}`,
+    `Salary: ${contractValue(draft.salary, "[SALARY]")} ${contractValue(draft.currency, "EUR")}`,
+    `Leave / Rotation: ${contractValue(draft.leaveTerms, "[LEAVE OR ROTATION TERMS]")}`,
+    `Travel: ${contractValue(draft.travelTerms, "[TRAVEL ARRANGEMENTS]")}`,
+    `Accommodation / Meals: ${contractValue(draft.accommodationTerms, "[ACCOMMODATION AND MEALS]")}`,
+    `Termination Notice: ${contractValue(draft.terminationNotice, "[NOTICE PERIOD]")}`,
+    "",
+    "3. CONTRACT CLAUSES",
+    contractValue(draft.clauses, "[CONTRACT CLAUSES]"),
+    "",
+    "4. DUTIES AND DISCIPLINE",
+    contractValue(draft.duties, "[DUTIES]"),
+    "",
+    "Discipline:",
+    contractValue(draft.discipline, "[BASIC DISCIPLINE RULES]"),
+    "",
+    "5. SIGNATURES",
+    `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
+    `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
+    `Date: ${contractValue(draft.signatureDate, "[SIGNATURE DATE]")}`,
+    `Location: ${contractValue(draft.signatureLocation, "[SIGNATURE LOCATION]")}`,
+    "",
+    "Employee signature will be collected through BlueDeck mobile signing flow.",
+  ].join("\n");
+}
+
+function buildContractFileName(draft: ContractDraft, member?: any) {
+  const name = contractValue(draft.employeeName, getCrewDisplayName(member) || "Crew")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+  return `BlueDeck-contract-${name || "crew"}.pdf`;
+}
+
 export default function CrewPage({
   view = "command",
 }: {
@@ -71,7 +228,9 @@ export default function CrewPage({
   const [frequency, setFrequency] = useState("Template default");
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
-  const [contractText, setContractText] = useState("");
+  const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
+  const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
+  const [contractSignatureReady, setContractSignatureReady] = useState(false);
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -200,6 +359,42 @@ export default function CrewPage({
     [selectedTemplates]
   );
 
+  const selectedContractMember = useMemo(
+    () => crew.find((item) => item.id === selectedCrew),
+    [crew, selectedCrew]
+  );
+
+  const contractPreviewText = useMemo(
+    () => buildContractPreviewText(contractDraft, selectedContractMember),
+    [contractDraft, selectedContractMember]
+  );
+
+  const contractCompletion = useMemo(() => {
+    const fields = [
+      selectedCrew,
+      contractDraft.ownerName,
+      contractDraft.employeeName || getCrewDisplayName(selectedContractMember),
+      contractDraft.employeePosition || getCrewPosition(selectedContractMember),
+      contractDraft.vesselName,
+      contractDraft.startDate,
+      contractDraft.salary,
+      contractDraft.clauses,
+      contractDraft.duties,
+      contractDraft.discipline,
+      contractDraft.signerName,
+    ];
+    const completed = fields.filter((field) => String(field || "").trim()).length;
+    return Math.round((completed / fields.length) * 100);
+  }, [contractDraft, selectedContractMember, selectedCrew]);
+
+  const contractStepIndex = Math.max(
+    contractStepCards.findIndex((step) => step.id === contractStep),
+    0
+  );
+  const previousContractStep = contractStepCards[Math.max(contractStepIndex - 1, 0)]?.id || "parties";
+  const nextContractStep =
+    contractStepCards[Math.min(contractStepIndex + 1, contractStepCards.length - 1)]?.id || "preview";
+
   const checklistInsights = useMemo(() => {
     const allTasks = checklists.flatMap((checklist) => checklist.yacht_checklist_items || []);
     const completedTasks = allTasks.filter((task: any) => task.completed).length;
@@ -259,6 +454,74 @@ export default function CrewPage({
       proofItems,
     };
   }, [checklistRecords]);
+
+  function updateContractDraft(field: keyof ContractDraft, value: string) {
+    setContractDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleContractCrewSelect(memberId: string) {
+    setSelectedCrew(memberId);
+    const member = crew.find((item) => item.id === memberId);
+
+    if (!member) return;
+
+    setContractDraft((current) => ({
+      ...current,
+      employeeName: current.employeeName || getCrewDisplayName(member),
+      employeeNationality: current.employeeNationality || member.crew_profiles?.nationality || "",
+      employeeDob:
+        current.employeeDob ||
+        member.crew_profiles?.date_of_birth ||
+        member.crew_profiles?.birth_date ||
+        "",
+      employeePosition: current.employeePosition || getCrewPosition(member),
+    }));
+  }
+
+  async function downloadContractDraftPdf() {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 46;
+    const contentWidth = pageWidth - margin * 2;
+    let y = 50;
+
+    function ensureSpace(height: number) {
+      if (y + height <= pageHeight - 54) return;
+      doc.setDrawColor(24, 93, 109);
+      doc.line(margin, pageHeight - 42, pageWidth - margin, pageHeight - 42);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text("BlueDeck contract draft prepared for mobile signature.", margin, pageHeight - 26);
+      doc.addPage();
+      y = 50;
+    }
+
+    doc.setFillColor(7, 17, 31);
+    doc.roundedRect(margin, y, contentWidth, 66, 16, 16, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(17);
+    doc.setTextColor(255, 255, 255);
+    doc.text("BlueDeck Yacht Employment Agreement", margin + 18, y + 28);
+    doc.setFontSize(9);
+    doc.setTextColor(177, 244, 250);
+    doc.text("Draft preview for crew mobile signature", margin + 18, y + 48);
+    y += 92;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(32, 48, 64);
+    const lines = doc.splitTextToSize(contractPreviewText, contentWidth);
+    lines.forEach((line: string) => {
+      ensureSpace(15);
+      doc.text(line, margin, y);
+      y += 14;
+    });
+
+    doc.save(buildContractFileName(contractDraft, selectedContractMember));
+  }
 
   function toggleProgressCard(id: string) {
     setExpandedProgress((current) =>
@@ -1021,8 +1284,8 @@ export default function CrewPage({
       return;
     }
 
-    if (!contractText.trim()) {
-      alert("Contract text required");
+    if (!contractPreviewText.trim()) {
+      alert("Contract details required");
       return;
     }
 
@@ -1032,7 +1295,7 @@ export default function CrewPage({
       yacht_id: yachtId,
       crew_profile_id: member?.crew_profile_id,
       membership_id: selectedCrew,
-      contract_text: contractText,
+      contract_text: contractPreviewText,
       status: "sent_for_signature",
       sent_at: new Date().toISOString(),
     });
@@ -1042,7 +1305,8 @@ export default function CrewPage({
       return;
     }
 
-    setContractText("");
+    setContractStep("preview");
+    setContractSignatureReady(true);
     alert("Contract sent for mobile signature.");
   }
 
@@ -1227,6 +1491,465 @@ export default function CrewPage({
           </section>
         )}
 
+        {!isChecklistSystem && (
+          <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
+            <div className="bg-[linear-gradient(135deg,#071827_0%,#0b2838_48%,#185d6b_100%)] p-5 text-white sm:p-8">
+              <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+                    BlueDeck Contract Studio
+                  </p>
+                  <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
+                    Build, preview and send yacht contracts.
+                  </h2>
+                  <p className="mt-3 max-w-4xl text-sm leading-6 text-cyan-50/82 sm:text-base">
+                    Prepare parties, clauses, duties and mobile signature details in one clean contract workflow.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[360px]">
+                  <div className="rounded-3xl border border-white/14 bg-white/10 p-4 shadow-inner shadow-cyan-950/20">
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-100/80">
+                      Contract Ready
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/18">
+                        <div
+                          className="h-full rounded-full bg-cyan-200 transition-all"
+                          style={{ width: `${contractCompletion}%` }}
+                        />
+                      </div>
+                      <span className="text-xl font-black text-white">{contractCompletion}%</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/14 bg-white/10 p-4 shadow-inner shadow-cyan-950/20">
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-100/80">
+                      Signature Flow
+                    </p>
+                    <p className="mt-3 text-lg font-black text-white">
+                      {contractSignatureReady ? "Ready to sign" : "Draft mode"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-b border-cyan-100 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-3 sm:p-4">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {contractStepCards.map((step, index) => {
+                  const active = contractStep === step.id;
+                  return (
+                    <button
+                      key={step.id}
+                      type="button"
+                      onClick={() => setContractStep(step.id)}
+                      className={`bd-focus flex min-h-[92px] items-center gap-3 rounded-[24px] border p-4 text-left transition ${
+                        active
+                          ? "border-cyan-300 bg-white text-slate-950 shadow-xl shadow-cyan-950/10"
+                          : "border-white/80 bg-white/58 text-slate-500 hover:border-cyan-200 hover:bg-white"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
+                          active ? "bg-slate-950 text-cyan-100" : "bg-cyan-50 text-cyan-800"
+                        }`}
+                      >
+                        <ContractStepIcon step={step.id} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-cyan-800">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <span className="block truncate text-base font-black">{step.title}</span>
+                        <span className="block truncate text-xs font-semibold">{step.meta}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-5 sm:p-8">
+              {contractStep === "parties" && (
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfd_100%)] p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Party A"
+                      title="Owner / Employer / Yacht Representative"
+                      text="Who prepares and sends this contract."
+                    />
+                    <div className="mt-5 grid gap-4">
+                      <ContractField
+                        label="Name / company name"
+                        value={contractDraft.ownerName}
+                        onChange={(value) => updateContractDraft("ownerName", value)}
+                        placeholder="OWNER / COMPANY NAME"
+                      />
+                      <ContractField
+                        label="Address"
+                        value={contractDraft.ownerAddress}
+                        onChange={(value) => updateContractDraft("ownerAddress", value)}
+                        placeholder="Company or representative address"
+                      />
+                      <ContractField
+                        label="Passport / company no"
+                        value={contractDraft.ownerId}
+                        onChange={(value) => updateContractDraft("ownerId", value)}
+                        placeholder="Registration, passport or company details"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#f2fcfd_0%,#ffffff_100%)] p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Party B"
+                      title="Employee / Seafarer"
+                      text="Select onboard crew or enter missing details manually."
+                    />
+                    <div className="mt-5 grid gap-4">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                          Crew member
+                        </span>
+                        <select
+                          value={selectedCrew}
+                          onChange={(e) => handleContractCrewSelect(e.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+                        >
+                          <option value="">Select crew for contract</option>
+                          {assignableCrew.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {getCrewDisplayName(member) || "Crew member"} - {getCrewPosition(member) || "Crew"}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <ContractField
+                          label="Name surname"
+                          value={contractDraft.employeeName}
+                          onChange={(value) => updateContractDraft("employeeName", value)}
+                          placeholder="DECKHAND NAME SURNAME"
+                        />
+                        <ContractField
+                          label="Position"
+                          value={contractDraft.employeePosition}
+                          onChange={(value) => updateContractDraft("employeePosition", value)}
+                          placeholder="Deckhand"
+                        />
+                        <ContractField
+                          label="Nationality"
+                          value={contractDraft.employeeNationality}
+                          onChange={(value) => updateContractDraft("employeeNationality", value)}
+                          placeholder="NATIONALITY"
+                        />
+                        <ContractField
+                          label="Date of birth"
+                          value={contractDraft.employeeDob}
+                          onChange={(value) => updateContractDraft("employeeDob", value)}
+                          placeholder="DD/MM/YYYY"
+                        />
+                        <ContractField
+                          label="Passport no"
+                          value={contractDraft.employeePassportNo}
+                          onChange={(value) => updateContractDraft("employeePassportNo", value)}
+                          placeholder="PASSPORT NO"
+                        />
+                        <ContractField
+                          label="Seaman book no"
+                          value={contractDraft.employeeSeamanBookNo}
+                          onChange={(value) => updateContractDraft("employeeSeamanBookNo", value)}
+                          placeholder="Optional"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {contractStep === "terms" && (
+                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <ContractPanelTitle
+                    eyebrow="Contract terms"
+                    title="Vessel, salary, dates and onboard terms"
+                    text="Keep operational terms structured so the final agreement reads cleanly."
+                  />
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <ContractField
+                      label="Yacht / vessel name"
+                      value={contractDraft.vesselName}
+                      onChange={(value) => updateContractDraft("vesselName", value)}
+                      placeholder="Yacht name"
+                    />
+                    <ContractField
+                      label="Start date"
+                      value={contractDraft.startDate}
+                      onChange={(value) => updateContractDraft("startDate", value)}
+                      placeholder="DD/MM/YYYY"
+                    />
+                    <ContractField
+                      label="End date / rotation"
+                      value={contractDraft.endDate}
+                      onChange={(value) => updateContractDraft("endDate", value)}
+                      placeholder="End date, seasonal or rotation"
+                    />
+                    <ContractField
+                      label="Salary"
+                      value={contractDraft.salary}
+                      onChange={(value) => updateContractDraft("salary", value)}
+                      placeholder="Salary amount"
+                    />
+                    <label className="block">
+                      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        Currency
+                      </span>
+                      <select
+                        value={contractDraft.currency}
+                        onChange={(event) => updateContractDraft("currency", event.target.value)}
+                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+                      >
+                        {["EUR", "USD", "GBP", "TRY"].map((item) => (
+                          <option key={item}>{item}</option>
+                        ))}
+                      </select>
+                    </label>
+                    <ContractField
+                      label="Termination notice"
+                      value={contractDraft.terminationNotice}
+                      onChange={(value) => updateContractDraft("terminationNotice", value)}
+                      placeholder="Example: 7 days written notice"
+                    />
+                  </div>
+                  <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                    <ContractField
+                      label="Leave / rotation"
+                      value={contractDraft.leaveTerms}
+                      onChange={(value) => updateContractDraft("leaveTerms", value)}
+                      placeholder="Example: MLC / seasonal agreement"
+                    />
+                    <ContractField
+                      label="Travel terms"
+                      value={contractDraft.travelTerms}
+                      onChange={(value) => updateContractDraft("travelTerms", value)}
+                      placeholder="Flights, transfers or joining port"
+                    />
+                    <ContractField
+                      label="Accommodation / meals"
+                      value={contractDraft.accommodationTerms}
+                      onChange={(value) => updateContractDraft("accommodationTerms", value)}
+                      placeholder="Provided onboard / ashore"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {contractStep === "clauses" && (
+                <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Contract clauses"
+                      title="Main agreement text"
+                      text="Add the clauses you want the crew member to review before signing."
+                    />
+                    <ContractArea
+                      className="mt-5"
+                      label="Clauses"
+                      value={contractDraft.clauses}
+                      onChange={(value) => updateContractDraft("clauses", value)}
+                      rows={12}
+                      placeholder="Write contract clauses here..."
+                    />
+                  </div>
+
+                  <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
+                      Clause checklist
+                    </p>
+                    <div className="mt-4 space-y-3 text-sm font-semibold leading-6 text-slate-600">
+                      {[
+                        "Salary and payment timing",
+                        "Leave, rotation and travel",
+                        "Confidentiality and guest privacy",
+                        "Rest hours and safety compliance",
+                        "Termination and handover terms",
+                      ].map((item) => (
+                        <div key={item} className="flex items-center gap-3 rounded-2xl border border-white bg-white/80 px-4 py-3">
+                          <CheckCircle className="h-4 w-4 shrink-0 text-cyan-700" />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {contractStep === "duties" && (
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Duties"
+                      title="Job description"
+                      text="Define the crew member's work scope and operational expectations."
+                    />
+                    <ContractArea
+                      className="mt-5"
+                      label="Duties"
+                      value={contractDraft.duties}
+                      onChange={(value) => updateContractDraft("duties", value)}
+                      rows={10}
+                      placeholder="Daily duties, watchkeeping, maintenance, service standards..."
+                    />
+                  </div>
+
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Discipline"
+                      title="Basic yacht rules"
+                      text="Set the professional conduct expected onboard."
+                    />
+                    <ContractArea
+                      className="mt-5"
+                      label="Discipline rules"
+                      value={contractDraft.discipline}
+                      onChange={(value) => updateContractDraft("discipline", value)}
+                      rows={10}
+                      placeholder="Uniform, safety, confidentiality, alcohol policy, rest hours..."
+                    />
+                  </div>
+                </div>
+              )}
+
+              {contractStep === "signature" && (
+                <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Signature"
+                      title="Prepare mobile signing details"
+                      text="The crew member signs from their BlueDeck portal after the contract is sent."
+                    />
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <ContractField
+                        label="Prepared by"
+                        value={contractDraft.signerName}
+                        onChange={(value) => updateContractDraft("signerName", value)}
+                        placeholder="Captain / representative name"
+                      />
+                      <ContractField
+                        label="Title"
+                        value={contractDraft.signerTitle}
+                        onChange={(value) => updateContractDraft("signerTitle", value)}
+                        placeholder="Captain / Yacht Representative"
+                      />
+                      <ContractField
+                        label="Signature date"
+                        value={contractDraft.signatureDate}
+                        onChange={(value) => updateContractDraft("signatureDate", value)}
+                        placeholder="DD/MM/YYYY"
+                      />
+                      <ContractField
+                        label="Signature location"
+                        value={contractDraft.signatureLocation}
+                        onChange={(value) => updateContractDraft("signatureLocation", value)}
+                        placeholder="Port / city"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#071827_0%,#113849_100%)] p-5 text-white shadow-xl shadow-cyan-950/12">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
+                      Mobile Signature
+                    </p>
+                    <h3 className="mt-3 text-2xl font-black">Crew signing flow</h3>
+                    <p className="mt-3 text-sm leading-6 text-cyan-50/78">
+                      After sending, the selected crew member receives the contract in their portal for review and signature.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setContractSignatureReady((current) => !current)}
+                      className={`mt-6 flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-black uppercase tracking-[0.12em] transition ${
+                        contractSignatureReady
+                          ? "bg-cyan-200 text-slate-950"
+                          : "border border-white/18 bg-white/10 text-white hover:bg-white/16"
+                      }`}
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                      {contractSignatureReady ? "Signature ready" : "Mark ready"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {contractStep === "preview" && (
+                <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                    <ContractPanelTitle
+                      eyebrow="Preview contract"
+                      title="Final contract draft"
+                      text="Review the generated text before sending it for mobile signature."
+                    />
+                    <pre className="mt-5 max-h-[620px] overflow-auto whitespace-pre-wrap rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
+                      {contractPreviewText}
+                    </pre>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
+                        Send to crew
+                      </p>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">
+                        This will create a BlueDeck contract record and place it in the crew signature workflow.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={assignContract}
+                        disabled={loading || !selectedCrew}
+                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:opacity-50"
+                      >
+                        <Send className="h-5 w-5" />
+                        Send for Signature
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={downloadContractDraftPdf}
+                      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-600 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700"
+                    >
+                      <Download className="h-5 w-5" />
+                      Download Draft PDF
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <button
+                  type="button"
+                  onClick={() => setContractStep(previousContractStep)}
+                  disabled={contractStepIndex === 0}
+                  className="bd-focus rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:border-cyan-300 hover:text-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <div className="text-center text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                  Step {contractStepIndex + 1} of {contractStepCards.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setContractStep(nextContractStep)}
+                  disabled={contractStepIndex === contractStepCards.length - 1}
+                  className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {isChecklistSystem && (
           <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-2 sm:rounded-[36px] sm:p-4 xl:grid-cols-3">
             <ChecklistSectionButton
@@ -1336,8 +2059,8 @@ export default function CrewPage({
         )}
 
         {(!isChecklistSystem || checklistSection === "builder") && (
-        <div className="grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8">
-          <div className="space-y-6 xl:space-y-8">
+        <div className={isChecklistSystem ? "grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8" : "space-y-6 xl:space-y-8"}>
+          <div className={isChecklistSystem ? "space-y-6 xl:space-y-8" : "hidden"}>
             {isChecklistSystem && (
             <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
               <div className="bg-[linear-gradient(135deg,#071827_0%,#0d3143_100%)] p-5 text-white sm:p-7">
@@ -1622,41 +2345,6 @@ export default function CrewPage({
                   {loading ? "Creating..." : "Create Manual Checklist"}
                 </button>
               </div>
-            </div>
-            )}
-
-            {!isChecklistSystem && (
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
-              <p className="text-cyan-700">Contract</p>
-              <h2 className="mt-2 text-3xl font-black sm:text-4xl">Assign Yacht Contract</h2>
-              <p className="mt-3 text-slate-500">
-                Select a crew member above, paste the contract text, and send it
-                for mobile signature.
-              </p>
-              <select
-                value={selectedCrew}
-                onChange={(e) => setSelectedCrew(e.target.value)}
-                className="mt-6 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg text-slate-950 outline-none focus:border-cyan-300"
-              >
-                <option value="">Select crew for contract</option>
-                {assignableCrew.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.crew_profiles?.full_name || member.invited_email} — {member.position}
-                  </option>
-                ))}
-              </select>
-              <textarea
-                value={contractText}
-                onChange={(e) => setContractText(e.target.value)}
-                placeholder="Contract terms, dates, salary, position, vessel name..."
-                className="mt-6 h-40 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-              />
-              <button
-                onClick={assignContract}
-                className="mt-5 w-full rounded-2xl bg-cyan-600 py-4 text-xl font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700"
-              >
-                Send Contract for Signature
-              </button>
             </div>
             )}
 
@@ -2624,6 +3312,96 @@ function MonitorMetric({
         {title}
       </p>
     </div>
+  );
+}
+
+function ContractStepIcon({ step }: { step: ContractStudioStep }) {
+  if (step === "parties") return <UserRound className="h-5 w-5" />;
+  if (step === "terms") return <CalendarClock className="h-5 w-5" />;
+  if (step === "clauses") return <FileText className="h-5 w-5" />;
+  if (step === "duties") return <CheckSquare className="h-5 w-5" />;
+  if (step === "signature") return <FileCheck2 className="h-5 w-5" />;
+  return <Download className="h-5 w-5" />;
+}
+
+function ContractPanelTitle({
+  eyebrow,
+  title,
+  text,
+}: {
+  eyebrow: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
+        {eyebrow}
+      </p>
+      <h3 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+        {title}
+      </h3>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{text}</p>
+    </div>
+  );
+}
+
+function ContractField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+      />
+    </label>
+  );
+}
+
+function ContractArea({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 6,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  rows?: number;
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      <textarea
+        value={value}
+        rows={rows}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold leading-7 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+      />
+    </label>
   );
 }
 
