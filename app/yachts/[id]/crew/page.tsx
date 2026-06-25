@@ -1876,11 +1876,14 @@ export default function CrewPage({
                   </div>
 
                   <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
-                    <ContractPanelTitle
-                      eyebrow="Discipline"
-                      title="Basic yacht rules"
-                      text="These rules stay in the contract by default. Remove what you do not need or add yacht-specific rules."
-                    />
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
+                        Discipline
+                      </p>
+                      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
+                        These rules stay in the contract by default. Remove what you do not need or add yacht-specific rules.
+                      </p>
+                    </div>
 
                     <div className="mt-5 rounded-[24px] border border-[#2fb6c7]/20 bg-[#f8fbfc] p-4 shadow-inner shadow-cyan-950/5">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
