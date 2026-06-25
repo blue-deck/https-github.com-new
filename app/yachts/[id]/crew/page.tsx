@@ -81,11 +81,31 @@ type ContractDraft = {
   clauses: string;
   duties: string;
   discipline: string;
+  disciplineRules: string[];
   signerName: string;
   signerTitle: string;
   signatureDate: string;
   signatureLocation: string;
 };
+
+const defaultYachtDisciplineRules = [
+  "Captain's orders must be followed.",
+  "Safety comes before comfort, speed or convenience.",
+  "No drugs.",
+  "No alcohol while on duty.",
+  "No smoking except permitted areas.",
+  "No unauthorized guests on board.",
+  "No social media sharing without approval.",
+  "No photos of owner, guests or private areas.",
+  "Crew cabin must be kept clean.",
+  "Uniform must be worn when required.",
+  "Watch duties must be taken seriously.",
+  "Any damage must be reported immediately.",
+  "Any injury must be reported immediately.",
+  "Crew must respect each other.",
+  "Arguments must not happen in front of guests.",
+  "Confidentiality continues after leaving the yacht.",
+];
 
 const contractStepCards: Array<{
   id: ContractStudioStep;
@@ -125,7 +145,8 @@ function createEmptyContractDraft(): ContractDraft {
     duties:
       "The employee shall maintain assigned areas, support yacht operations, follow safety procedures, protect guest privacy and report defects or incidents without delay.",
     discipline:
-      "The employee shall observe confidentiality, alcohol and drug policies, uniform standards, watchkeeping rules, rest hours and respectful onboard conduct at all times.",
+      "Yacht Rules\nThe Employee agrees to follow the yacht rules below:",
+    disciplineRules: defaultYachtDisciplineRules,
     signerName: "",
     signerTitle: "Captain / Yacht Representative",
     signatureDate: "",
@@ -148,6 +169,18 @@ function getCrewPosition(member?: any) {
 
 function contractValue(value: string | undefined, fallback: string) {
   return value?.trim() || fallback;
+}
+
+function formatContractDisciplineSection(draft: ContractDraft) {
+  const rules = draft.disciplineRules
+    .map((rule) => rule.trim())
+    .filter(Boolean)
+    .map((rule, index) => `${index + 1}. ${rule}`);
+
+  return [
+    contractValue(draft.discipline, "Yacht Rules\nThe Employee agrees to follow the yacht rules below:"),
+    ...(rules.length ? rules : ["[BASIC DISCIPLINE RULES]"]),
+  ].join("\n");
 }
 
 function buildContractPreviewText(draft: ContractDraft, member?: any) {
@@ -188,7 +221,7 @@ function buildContractPreviewText(draft: ContractDraft, member?: any) {
     contractValue(draft.duties, "[DUTIES]"),
     "",
     "Discipline:",
-    contractValue(draft.discipline, "[BASIC DISCIPLINE RULES]"),
+    formatContractDisciplineSection(draft),
     "",
     "5. SIGNATURES",
     `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
@@ -231,6 +264,7 @@ export default function CrewPage({
   const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [contractSignatureReady, setContractSignatureReady] = useState(false);
+  const [contractRuleDraft, setContractRuleDraft] = useState("");
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -381,6 +415,7 @@ export default function CrewPage({
       contractDraft.clauses,
       contractDraft.duties,
       contractDraft.discipline,
+      contractDraft.disciplineRules.length ? "rules" : "",
       contractDraft.signerName,
     ];
     const completed = fields.filter((field) => String(field || "").trim()).length;
@@ -457,6 +492,42 @@ export default function CrewPage({
 
   function updateContractDraft(field: keyof ContractDraft, value: string) {
     setContractDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateContractRule(index: number, value: string) {
+    setContractDraft((current) => {
+      const nextRules = [...current.disciplineRules];
+      nextRules[index] = value;
+      return { ...current, disciplineRules: nextRules };
+    });
+  }
+
+  function removeContractRule(index: number) {
+    setContractDraft((current) => ({
+      ...current,
+      disciplineRules: current.disciplineRules.filter((_, ruleIndex) => ruleIndex !== index),
+    }));
+  }
+
+  function addContractRule() {
+    const rule = contractRuleDraft.trim();
+    if (!rule) return;
+
+    setContractDraft((current) => ({
+      ...current,
+      disciplineRules: [...current.disciplineRules, rule],
+    }));
+    setContractRuleDraft("");
+  }
+
+  function resetContractRules() {
+    setContractDraft((current) => ({
+      ...current,
+      discipline:
+        "Yacht Rules\nThe Employee agrees to follow the yacht rules below:",
+      disciplineRules: defaultYachtDisciplineRules,
+    }));
+    setContractRuleDraft("");
   }
 
   function handleContractCrewSelect(memberId: string) {
@@ -1492,11 +1563,12 @@ export default function CrewPage({
         )}
 
         {!isChecklistSystem && (
-          <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
-            <div className="bg-[linear-gradient(135deg,#071827_0%,#0b2838_48%,#185d6b_100%)] p-5 text-white sm:p-8">
+          <section className="mb-8 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:mb-10">
+            <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
+            <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] p-5 text-white sm:p-8">
               <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-[#8ed8e6]">
                     BlueDeck Contract Studio
                   </p>
                   <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
@@ -1508,14 +1580,14 @@ export default function CrewPage({
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[360px]">
-                  <div className="rounded-3xl border border-white/14 bg-white/10 p-4 shadow-inner shadow-cyan-950/20">
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-100/80">
+                  <div className="rounded-3xl border border-[#8ed8e6]/25 bg-white/10 p-4 shadow-inner shadow-black/10">
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/72">
                       Contract Ready
                     </p>
                     <div className="mt-3 flex items-center gap-3">
                       <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/18">
                         <div
-                          className="h-full rounded-full bg-cyan-200 transition-all"
+                          className="h-full rounded-full bg-[#8ed8e6] transition-all"
                           style={{ width: `${contractCompletion}%` }}
                         />
                       </div>
@@ -1523,8 +1595,8 @@ export default function CrewPage({
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-white/14 bg-white/10 p-4 shadow-inner shadow-cyan-950/20">
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-100/80">
+                  <div className="rounded-3xl border border-[#8ed8e6]/25 bg-white/10 p-4 shadow-inner shadow-black/10">
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/72">
                       Signature Flow
                     </p>
                     <p className="mt-3 text-lg font-black text-white">
@@ -1535,8 +1607,8 @@ export default function CrewPage({
               </div>
             </div>
 
-            <div className="border-b border-cyan-100 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-3 sm:p-4">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] p-3 sm:px-5 sm:py-4">
+              <div className="grid gap-2 rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {contractStepCards.map((step, index) => {
                   const active = contractStep === step.id;
                   return (
@@ -1544,21 +1616,21 @@ export default function CrewPage({
                       key={step.id}
                       type="button"
                       onClick={() => setContractStep(step.id)}
-                      className={`bd-focus flex min-h-[92px] items-center gap-3 rounded-[24px] border p-4 text-left transition ${
+                      className={`bd-focus group flex min-h-[92px] items-center gap-3 rounded-[18px] border p-4 text-left transition ${
                         active
-                          ? "border-cyan-300 bg-white text-slate-950 shadow-xl shadow-cyan-950/10"
-                          : "border-white/80 bg-white/58 text-slate-500 hover:border-cyan-200 hover:bg-white"
+                          ? "border-[#c9f7ff] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-[#062c35]/20"
+                          : "border-white/18 bg-white/10 text-white/86 hover:border-[#c9f7ff]/70 hover:bg-white/16 hover:text-white"
                       }`}
                     >
                       <span
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                          active ? "bg-slate-950 text-cyan-100" : "bg-cyan-50 text-cyan-800"
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
+                          active ? "border-[#08313b] bg-[#08313b] text-[#8ed8e6]" : "border-white/18 bg-white/10 text-[#d4fbff] group-hover:bg-white/16"
                         }`}
                       >
                         <ContractStepIcon step={step.id} />
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-cyan-800">
+                        <span className={`block text-[10px] font-black uppercase tracking-[0.16em] ${active ? "text-[#2d7482]" : "text-[#d4fbff]/78"}`}>
                           {String(index + 1).padStart(2, "0")}
                         </span>
                         <span className="block truncate text-base font-black">{step.title}</span>
@@ -1570,7 +1642,7 @@ export default function CrewPage({
               </div>
             </div>
 
-            <div className="p-5 sm:p-8">
+            <div className="bg-[#f6f9fa] p-5 sm:p-8">
               {contractStep === "parties" && (
                 <div className="grid gap-5 xl:grid-cols-2">
                   <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfd_100%)] p-5 shadow-sm">
@@ -1763,7 +1835,7 @@ export default function CrewPage({
                     />
                   </div>
 
-                  <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
+                  <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
                       Clause checklist
                     </p>
@@ -1787,7 +1859,7 @@ export default function CrewPage({
 
               {contractStep === "duties" && (
                 <div className="grid gap-5 xl:grid-cols-2">
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
                     <ContractPanelTitle
                       eyebrow="Duties"
                       title="Job description"
@@ -1803,20 +1875,87 @@ export default function CrewPage({
                     />
                   </div>
 
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
                     <ContractPanelTitle
                       eyebrow="Discipline"
                       title="Basic yacht rules"
-                      text="Set the professional conduct expected onboard."
+                      text="These rules stay in the contract by default. Remove what you do not need or add yacht-specific rules."
                     />
-                    <ContractArea
-                      className="mt-5"
-                      label="Discipline rules"
-                      value={contractDraft.discipline}
-                      onChange={(value) => updateContractDraft("discipline", value)}
-                      rows={10}
-                      placeholder="Uniform, safety, confidentiality, alcohol policy, rest hours..."
-                    />
+
+                    <div className="mt-5 rounded-[24px] border border-[#2fb6c7]/20 bg-[#f8fbfc] p-4 shadow-inner shadow-cyan-950/5">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#0b6b7b]">
+                            Yacht Rules
+                          </p>
+                          <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
+                            The Employee agrees to follow the yacht rules below.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={resetContractRules}
+                          className="bd-focus rounded-2xl border border-[#2fb6c7]/25 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#0b6b7b] transition hover:border-[#8ed8e6] hover:bg-[#e9f8fb]"
+                        >
+                          Reset rules
+                        </button>
+                      </div>
+
+                      <div className="mt-5 max-h-[520px] space-y-2 overflow-y-auto pr-1">
+                        {contractDraft.disciplineRules.map((rule, index) => (
+                          <div
+                            key={`contract-rule-${index}`}
+                            className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-[42px_1fr_44px] sm:items-center"
+                          >
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#08313b] text-sm font-black text-[#8ed8e6]">
+                              {index + 1}
+                            </span>
+                            <input
+                              value={rule}
+                              onChange={(event) => updateContractRule(index, event.target.value)}
+                              className="min-w-0 rounded-xl border border-transparent bg-[#f6f9fa] px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#8ed8e6] focus:bg-white focus:ring-4 focus:ring-[#8ed8e6]/20"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeContractRule(index)}
+                              className="bd-focus flex h-10 w-10 items-center justify-center rounded-xl border border-rose-100 bg-white text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-50"
+                              title="Remove rule"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {contractDraft.disciplineRules.length === 0 && (
+                          <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
+                            Add at least one yacht rule for the discipline section.
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <input
+                          value={contractRuleDraft}
+                          onChange={(event) => setContractRuleDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              addContractRule();
+                            }
+                          }}
+                          placeholder="Add another yacht rule"
+                          className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8ed8e6] focus:ring-4 focus:ring-[#8ed8e6]/20"
+                        />
+                        <button
+                          type="button"
+                          onClick={addContractRule}
+                          className="bd-focus inline-flex items-center justify-center gap-2 rounded-2xl bg-[#5fd3e5] px-5 py-4 text-sm font-black uppercase tracking-[0.1em] text-[#031923] shadow-lg shadow-cyan-700/15 transition hover:bg-[#84e6f3]"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add rule
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1857,7 +1996,7 @@ export default function CrewPage({
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#071827_0%,#113849_100%)] p-5 text-white shadow-xl shadow-cyan-950/12">
+                  <div className="rounded-[28px] border border-[#8ed8e6]/25 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_56%,#106f7f_100%)] p-5 text-white shadow-xl shadow-cyan-950/12">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
                       Mobile Signature
                     </p>
@@ -1870,7 +2009,7 @@ export default function CrewPage({
                       onClick={() => setContractSignatureReady((current) => !current)}
                       className={`mt-6 flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-black uppercase tracking-[0.12em] transition ${
                         contractSignatureReady
-                          ? "bg-cyan-200 text-slate-950"
+                          ? "bg-[#8ed8e6] text-[#031923]"
                           : "border border-white/18 bg-white/10 text-white hover:bg-white/16"
                       }`}
                     >
@@ -1895,7 +2034,7 @@ export default function CrewPage({
                   </div>
 
                   <div className="space-y-4">
-                    <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
+                    <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
                       <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
                         Send to crew
                       </p>
@@ -1906,7 +2045,7 @@ export default function CrewPage({
                         type="button"
                         onClick={assignContract}
                         disabled={loading || !selectedCrew}
-                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:opacity-50"
+                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#08313b] py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-[#0e4f5d] disabled:opacity-50"
                       >
                         <Send className="h-5 w-5" />
                         Send for Signature
@@ -1916,7 +2055,7 @@ export default function CrewPage({
                     <button
                       type="button"
                       onClick={downloadContractDraftPdf}
-                      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-600 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700"
+                      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#5fd3e5] py-4 text-base font-black text-[#031923] shadow-lg shadow-cyan-700/20 transition hover:bg-[#84e6f3]"
                     >
                       <Download className="h-5 w-5" />
                       Download Draft PDF
