@@ -1565,41 +1565,41 @@ export default function CrewPage({
         {!isChecklistSystem && (
           <section className="mb-8 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:mb-10">
             <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
-            <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] p-5 text-white sm:p-8">
-              <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+            <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-5 py-4 text-white sm:px-6 sm:py-5">
+              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-[#8ed8e6]">
                     BlueDeck Contract Studio
                   </p>
-                  <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
-                    Build, preview and send yacht contracts.
+                  <h2 className="mt-2 text-2xl font-black leading-tight text-white sm:text-3xl lg:text-4xl">
+                    Create professional crew contracts.
                   </h2>
-                  <p className="mt-3 max-w-4xl text-sm leading-6 text-cyan-50/82 sm:text-base">
+                  <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-white/72">
                     Prepare parties, clauses, duties and mobile signature details in one clean contract workflow.
                   </p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[360px]">
-                  <div className="rounded-3xl border border-[#8ed8e6]/25 bg-white/10 p-4 shadow-inner shadow-black/10">
+                <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[320px]">
+                  <div className="rounded-[22px] border border-[#8ed8e6]/25 bg-white/10 p-3 shadow-inner shadow-black/10">
                     <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/72">
                       Contract Ready
                     </p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="h-3 flex-1 overflow-hidden rounded-full bg-white/18">
+                    <div className="mt-2 flex items-center gap-3">
+                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/18">
                         <div
                           className="h-full rounded-full bg-[#8ed8e6] transition-all"
                           style={{ width: `${contractCompletion}%` }}
                         />
                       </div>
-                      <span className="text-xl font-black text-white">{contractCompletion}%</span>
+                      <span className="text-lg font-black text-white">{contractCompletion}%</span>
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-[#8ed8e6]/25 bg-white/10 p-4 shadow-inner shadow-black/10">
+                  <div className="rounded-[22px] border border-[#8ed8e6]/25 bg-white/10 p-3 shadow-inner shadow-black/10">
                     <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/72">
                       Signature Flow
                     </p>
-                    <p className="mt-3 text-lg font-black text-white">
+                    <p className="mt-2 text-base font-black text-white">
                       {contractSignatureReady ? "Ready to sign" : "Draft mode"}
                     </p>
                   </div>
@@ -1607,8 +1607,8 @@ export default function CrewPage({
               </div>
             </div>
 
-            <div className="border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] p-3 sm:px-5 sm:py-4">
-              <div className="grid gap-2 rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            <div className="border-b border-[#2fb6c7]/20 bg-[#eef7f8] px-4 py-3 sm:px-5">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {contractStepCards.map((step, index) => {
                   const active = contractStep === step.id;
                   return (
@@ -1616,25 +1616,25 @@ export default function CrewPage({
                       key={step.id}
                       type="button"
                       onClick={() => setContractStep(step.id)}
-                      className={`bd-focus group flex min-h-[92px] items-center gap-3 rounded-[18px] border p-4 text-left transition ${
+                      className={`bd-focus group flex min-h-[72px] items-center gap-3 rounded-[16px] border p-3 text-left transition ${
                         active
-                          ? "border-[#c9f7ff] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-[#062c35]/20"
-                          : "border-white/18 bg-white/10 text-white/86 hover:border-[#c9f7ff]/70 hover:bg-white/16 hover:text-white"
+                          ? "border-[#0b6b7b] bg-[#08313b] text-white shadow-lg shadow-[#062c35]/18"
+                          : "border-[#cde7ec] bg-white text-[#0b2330] shadow-sm shadow-slate-950/5 hover:border-[#5fd3e5] hover:bg-[#f8fcfd]"
                       }`}
                     >
                       <span
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border ${
-                          active ? "border-[#08313b] bg-[#08313b] text-[#8ed8e6]" : "border-white/18 bg-white/10 text-[#d4fbff] group-hover:bg-white/16"
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${
+                          active ? "border-[#8ed8e6] bg-[#8ed8e6] text-[#031923]" : "border-[#d7eaf0] bg-[#eef7f8] text-[#0b6b7b] group-hover:border-[#5fd3e5]"
                         }`}
                       >
                         <ContractStepIcon step={step.id} />
                       </span>
                       <span className="min-w-0">
-                        <span className={`block text-[10px] font-black uppercase tracking-[0.16em] ${active ? "text-[#2d7482]" : "text-[#d4fbff]/78"}`}>
+                        <span className={`block text-[10px] font-black uppercase tracking-[0.16em] ${active ? "text-[#8ed8e6]" : "text-[#2d7482]"}`}>
                           {String(index + 1).padStart(2, "0")}
                         </span>
-                        <span className="block truncate text-base font-black">{step.title}</span>
-                        <span className="block truncate text-xs font-semibold">{step.meta}</span>
+                        <span className="block truncate text-sm font-black">{step.title}</span>
+                        <span className={`block truncate text-[11px] font-semibold ${active ? "text-white/75" : "text-slate-500"}`}>{step.meta}</span>
                       </span>
                     </button>
                   );
