@@ -60,9 +60,11 @@ type ContractStudioStep =
   | "preview";
 
 type ContractDraft = {
+  agreementDate: string;
   ownerName: string;
   ownerAddress: string;
   ownerId: string;
+  ownerRepresentative: string;
   employeeName: string;
   employeeNationality: string;
   employeeDob: string;
@@ -115,16 +117,18 @@ const contractStepCards: Array<{
   { id: "parties", title: "Parties", meta: "Owner & crew" },
   { id: "terms", title: "Terms", meta: "Dates & salary" },
   { id: "clauses", title: "Clauses", meta: "Legal text" },
-  { id: "duties", title: "Duties", meta: "Role rules" },
+  { id: "duties", title: "Duties & Rules", meta: "Role rules" },
   { id: "signature", title: "Signature", meta: "Mobile sign" },
   { id: "preview", title: "Preview", meta: "PDF & send" },
 ];
 
 function createEmptyContractDraft(): ContractDraft {
   return {
+    agreementDate: "",
     ownerName: "",
     ownerAddress: "",
     ownerId: "",
+    ownerRepresentative: "",
     employeeName: "",
     employeeNationality: "",
     employeeDob: "",
@@ -188,21 +192,26 @@ function buildContractPreviewText(draft: ContractDraft, member?: any) {
   const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
 
   return [
-    "BLUEDECK YACHT EMPLOYMENT AGREEMENT",
+    "GENERAL YACHT CREW EMPLOYMENT AGREEMENT",
+    "Seafarer / Yacht Crew Employment Contract",
+    `This General Yacht Crew Employment Agreement is made on ${contractValue(draft.agreementDate, "[DATE]")} between:`,
     "",
-    "1. PARTIES",
-    "Owner / Employer / Yacht Representative:",
+    "Employer / Owner / Yacht Representative:",
     `Name: ${contractValue(draft.ownerName, "[OWNER / COMPANY NAME]")}`,
     `Address: ${contractValue(draft.ownerAddress, "[ADDRESS]")}`,
+    `Representative: ${contractValue(draft.ownerRepresentative, "[NAME / POSITION]")}`,
     `Passport / Company No: ${contractValue(draft.ownerId, "[DETAILS]")}`,
     "",
-    "Employee / Seafarer:",
+    "and",
+    "",
+    "Employee / Crew Member:",
     `Name Surname: ${employeeName}`,
     `Nationality: ${contractValue(draft.employeeNationality, "[NATIONALITY]")}`,
-    `Date of Birth: ${contractValue(draft.employeeDob, "[DATE OF BIRTH]")}`,
     `Passport No: ${contractValue(draft.employeePassportNo, "[PASSPORT NO]")}`,
     `Seaman Book No: ${contractValue(draft.employeeSeamanBookNo, "[SEAMAN BOOK NO, IF ANY]")}`,
-    `Position: ${employeePosition}`,
+    `Position : ${employeePosition}`,
+    "",
+    'Together referred to as the "Parties."',
     "",
     "2. CONTRACT TERMS",
     `Yacht / Vessel: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
@@ -265,6 +274,7 @@ export default function CrewPage({
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [contractSignatureReady, setContractSignatureReady] = useState(false);
   const [contractRuleDraft, setContractRuleDraft] = useState("");
+  const [savedContractSections, setSavedContractSections] = useState<Partial<Record<ContractStudioStep, string>>>({});
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -406,7 +416,9 @@ export default function CrewPage({
   const contractCompletion = useMemo(() => {
     const fields = [
       selectedCrew,
+      contractDraft.agreementDate,
       contractDraft.ownerName,
+      contractDraft.ownerRepresentative,
       contractDraft.employeeName || getCrewDisplayName(selectedContractMember),
       contractDraft.employeePosition || getCrewPosition(selectedContractMember),
       contractDraft.vesselName,
@@ -421,6 +433,38 @@ export default function CrewPage({
     const completed = fields.filter((field) => String(field || "").trim()).length;
     return Math.round((completed / fields.length) * 100);
   }, [contractDraft, selectedContractMember, selectedCrew]);
+
+  const contractPartiesSaveKey = useMemo(
+    () =>
+      [
+        contractDraft.agreementDate,
+        contractDraft.ownerName,
+        contractDraft.ownerAddress,
+        contractDraft.ownerRepresentative,
+        contractDraft.ownerId,
+        selectedCrew,
+        contractDraft.employeeName,
+        contractDraft.employeeNationality,
+        contractDraft.employeePassportNo,
+        contractDraft.employeeSeamanBookNo,
+        contractDraft.employeePosition,
+      ].join("|"),
+    [
+      contractDraft.agreementDate,
+      contractDraft.employeeName,
+      contractDraft.employeeNationality,
+      contractDraft.employeePassportNo,
+      contractDraft.employeePosition,
+      contractDraft.employeeSeamanBookNo,
+      contractDraft.ownerAddress,
+      contractDraft.ownerId,
+      contractDraft.ownerName,
+      contractDraft.ownerRepresentative,
+      selectedCrew,
+    ]
+  );
+
+  const contractPartiesSaved = savedContractSections.parties === contractPartiesSaveKey;
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -1644,99 +1688,155 @@ export default function CrewPage({
 
             <div className="bg-[#f6f9fa] p-5 sm:p-8">
               {contractStep === "parties" && (
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfd_100%)] p-5 shadow-sm">
-                    <ContractPanelTitle
-                      eyebrow="Party A"
-                      title="Owner / Employer / Yacht Representative"
-                      text="Who prepares and sends this contract."
-                    />
-                    <div className="mt-5 grid gap-4">
-                      <ContractField
-                        label="Name / company name"
-                        value={contractDraft.ownerName}
-                        onChange={(value) => updateContractDraft("ownerName", value)}
-                        placeholder="OWNER / COMPANY NAME"
-                      />
-                      <ContractField
-                        label="Address"
-                        value={contractDraft.ownerAddress}
-                        onChange={(value) => updateContractDraft("ownerAddress", value)}
-                        placeholder="Company or representative address"
-                      />
-                      <ContractField
-                        label="Passport / company no"
-                        value={contractDraft.ownerId}
-                        onChange={(value) => updateContractDraft("ownerId", value)}
-                        placeholder="Registration, passport or company details"
-                      />
+                <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-800">
+                        Parties
+                      </p>
+                      <h3 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+                        General Yacht Crew Employment Agreement
+                      </h3>
+                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+                        Seafarer / Yacht Crew Employment Contract
+                      </p>
                     </div>
+                    <span className="w-fit rounded-full border border-[#2fb6c7]/25 bg-[#eef9fb] px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#0b6b7b]">
+                      First contract page
+                    </span>
                   </div>
 
-                  <div className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#f2fcfd_0%,#ffffff_100%)] p-5 shadow-sm">
-                    <ContractPanelTitle
-                      eyebrow="Party B"
-                      title="Employee / Seafarer"
-                      text="Select onboard crew or enter missing details manually."
+                  <div className="mt-5 rounded-[24px] border border-[#2fb6c7]/18 bg-[linear-gradient(135deg,#f3fcfd_0%,#ffffff_100%)] p-4">
+                    <p className="text-sm font-semibold leading-6 text-slate-600">
+                      This General Yacht Crew Employment Agreement is made on:
+                    </p>
+                    <ContractField
+                      className="mt-3"
+                      label="Agreement date"
+                      value={contractDraft.agreementDate}
+                      onChange={(value) => updateContractDraft("agreementDate", value)}
+                      placeholder="DD/MM/YYYY"
                     />
-                    <div className="mt-5 grid gap-4">
-                      <label className="block">
-                        <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                          Crew member
-                        </span>
-                        <select
-                          value={selectedCrew}
-                          onChange={(e) => handleContractCrewSelect(e.target.value)}
-                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
-                        >
-                          <option value="">Select crew for contract</option>
-                          {assignableCrew.map((member) => (
-                            <option key={member.id} value={member.id}>
-                              {getCrewDisplayName(member) || "Crew member"} - {getCrewPosition(member) || "Crew"}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                  </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                  <div className="mt-5 grid gap-5 xl:grid-cols-2">
+                    <div className="rounded-[26px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfd_100%)] p-5 shadow-sm">
+                      <ContractPanelTitle
+                        eyebrow="Employer / Owner / Yacht Representative"
+                        title="Owner details"
+                        text="The person or company preparing this agreement."
+                      />
+                      <div className="mt-5 grid gap-4">
                         <ContractField
-                          label="Name surname"
-                          value={contractDraft.employeeName}
-                          onChange={(value) => updateContractDraft("employeeName", value)}
-                          placeholder="DECKHAND NAME SURNAME"
+                          label="Name"
+                          value={contractDraft.ownerName}
+                          onChange={(value) => updateContractDraft("ownerName", value)}
+                          placeholder="OWNER / COMPANY NAME"
                         />
                         <ContractField
-                          label="Position"
-                          value={contractDraft.employeePosition}
-                          onChange={(value) => updateContractDraft("employeePosition", value)}
-                          placeholder="Deckhand"
+                          label="Address"
+                          value={contractDraft.ownerAddress}
+                          onChange={(value) => updateContractDraft("ownerAddress", value)}
+                          placeholder="ADDRESS"
                         />
                         <ContractField
-                          label="Nationality"
-                          value={contractDraft.employeeNationality}
-                          onChange={(value) => updateContractDraft("employeeNationality", value)}
-                          placeholder="NATIONALITY"
+                          label="Representative"
+                          value={contractDraft.ownerRepresentative}
+                          onChange={(value) => updateContractDraft("ownerRepresentative", value)}
+                          placeholder="NAME / POSITION"
                         />
                         <ContractField
-                          label="Date of birth"
-                          value={contractDraft.employeeDob}
-                          onChange={(value) => updateContractDraft("employeeDob", value)}
-                          placeholder="DD/MM/YYYY"
-                        />
-                        <ContractField
-                          label="Passport no"
-                          value={contractDraft.employeePassportNo}
-                          onChange={(value) => updateContractDraft("employeePassportNo", value)}
-                          placeholder="PASSPORT NO"
-                        />
-                        <ContractField
-                          label="Seaman book no"
-                          value={contractDraft.employeeSeamanBookNo}
-                          onChange={(value) => updateContractDraft("employeeSeamanBookNo", value)}
-                          placeholder="Optional"
+                          label="Passport / company no"
+                          value={contractDraft.ownerId}
+                          onChange={(value) => updateContractDraft("ownerId", value)}
+                          placeholder="DETAILS"
                         />
                       </div>
                     </div>
+
+                    <div className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#f2fcfd_0%,#ffffff_100%)] p-5 shadow-sm">
+                      <ContractPanelTitle
+                        eyebrow="Employee / Crew Member"
+                        title="Crew details"
+                        text="Select onboard crew or enter missing details manually."
+                      />
+                      <div className="mt-5 grid gap-4">
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                            Crew member
+                          </span>
+                          <select
+                            value={selectedCrew}
+                            onChange={(e) => handleContractCrewSelect(e.target.value)}
+                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+                          >
+                            <option value="">Select crew for contract</option>
+                            {assignableCrew.map((member) => (
+                              <option key={member.id} value={member.id}>
+                                {getCrewDisplayName(member) || "Crew member"} - {getCrewPosition(member) || "Crew"}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <ContractField
+                            label="Name surname"
+                            value={contractDraft.employeeName}
+                            onChange={(value) => updateContractDraft("employeeName", value)}
+                            placeholder="CREW NAME SURNAME"
+                          />
+                          <ContractField
+                            label="Nationality"
+                            value={contractDraft.employeeNationality}
+                            onChange={(value) => updateContractDraft("employeeNationality", value)}
+                            placeholder="NATIONALITY"
+                          />
+                          <ContractField
+                            label="Passport no"
+                            value={contractDraft.employeePassportNo}
+                            onChange={(value) => updateContractDraft("employeePassportNo", value)}
+                            placeholder="PASSPORT NO"
+                          />
+                          <ContractField
+                            label="Seaman book no"
+                            value={contractDraft.employeeSeamanBookNo}
+                            onChange={(value) => updateContractDraft("employeeSeamanBookNo", value)}
+                            placeholder="SEAMAN BOOK NO, IF ANY"
+                          />
+                          <ContractField
+                            className="md:col-span-2"
+                            label="Position"
+                            value={contractDraft.employeePosition}
+                            onChange={(value) => updateContractDraft("employeePosition", value)}
+                            placeholder="POSITION"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-3 rounded-[24px] border border-[#2fb6c7]/18 bg-[#f8fbfc] p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm font-semibold leading-6 text-slate-600">
+                      This section will appear first on the generated contract.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSavedContractSections((current) => ({
+                          ...current,
+                          parties: contractPartiesSaveKey,
+                        }))
+                      }
+                      className={`bd-focus inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-[0.12em] shadow-lg transition ${
+                        contractPartiesSaved
+                          ? "bg-[#08313b] text-white shadow-slate-950/14"
+                          : "bg-[#5fd3e5] text-[#031923] shadow-cyan-700/18 hover:bg-[#84e6f3]"
+                      }`}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      {contractPartiesSaved ? "Parties Saved" : "Save Parties"}
+                    </button>
                   </div>
                 </div>
               )}
