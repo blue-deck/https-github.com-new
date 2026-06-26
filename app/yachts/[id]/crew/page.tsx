@@ -1828,14 +1828,13 @@ export default function CrewPage({
                           parties: contractPartiesSaveKey,
                         }))
                       }
-                      className={`bd-focus inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-[0.12em] shadow-lg transition ${
+                      className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
                         contractPartiesSaved
-                          ? "bg-[#08313b] text-white shadow-slate-950/14"
-                          : "bg-[#5fd3e5] text-[#031923] shadow-cyan-700/18 hover:bg-[#84e6f3]"
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                          : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
                       }`}
                     >
-                      <CheckCircle className="h-4 w-4" />
-                      {contractPartiesSaved ? "Parties Saved" : "Save Parties"}
+                      {contractPartiesSaved ? "Saved" : "Save"}
                     </button>
                   </div>
                 </div>
