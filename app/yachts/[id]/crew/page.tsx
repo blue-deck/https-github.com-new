@@ -274,7 +274,7 @@ export default function CrewPage({
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [contractSignatureReady, setContractSignatureReady] = useState(false);
   const [contractRuleDraft, setContractRuleDraft] = useState("");
-  const [savedContractSections, setSavedContractSections] = useState<Partial<Record<ContractStudioStep, string>>>({});
+  const [savedContractSections, setSavedContractSections] = useState<Record<string, string>>({});
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -434,7 +434,7 @@ export default function CrewPage({
     return Math.round((completed / fields.length) * 100);
   }, [contractDraft, selectedContractMember, selectedCrew]);
 
-  const contractPartiesSaveKey = useMemo(
+  const contractOwnerSaveKey = useMemo(
     () =>
       [
         contractDraft.agreementDate,
@@ -442,6 +442,19 @@ export default function CrewPage({
         contractDraft.ownerAddress,
         contractDraft.ownerRepresentative,
         contractDraft.ownerId,
+      ].join("|"),
+    [
+      contractDraft.agreementDate,
+      contractDraft.ownerAddress,
+      contractDraft.ownerId,
+      contractDraft.ownerName,
+      contractDraft.ownerRepresentative,
+    ]
+  );
+
+  const contractCrewSaveKey = useMemo(
+    () =>
+      [
         selectedCrew,
         contractDraft.employeeName,
         contractDraft.employeeNationality,
@@ -450,21 +463,17 @@ export default function CrewPage({
         contractDraft.employeePosition,
       ].join("|"),
     [
-      contractDraft.agreementDate,
       contractDraft.employeeName,
       contractDraft.employeeNationality,
       contractDraft.employeePassportNo,
       contractDraft.employeePosition,
       contractDraft.employeeSeamanBookNo,
-      contractDraft.ownerAddress,
-      contractDraft.ownerId,
-      contractDraft.ownerName,
-      contractDraft.ownerRepresentative,
       selectedCrew,
     ]
   );
 
-  const contractPartiesSaved = savedContractSections.parties === contractPartiesSaveKey;
+  const contractOwnerSaved = savedContractSections.ownerDetails === contractOwnerSaveKey;
+  const contractCrewSaved = savedContractSections.crewDetails === contractCrewSaveKey;
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -1752,6 +1761,24 @@ export default function CrewPage({
                           placeholder="DETAILS"
                         />
                       </div>
+                      <div className="mt-5 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSavedContractSections((current) => ({
+                              ...current,
+                              ownerDetails: contractOwnerSaveKey,
+                            }))
+                          }
+                          className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
+                            contractOwnerSaved
+                              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
+                          }`}
+                        >
+                          {contractOwnerSaved ? "Saved" : "Save"}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#f2fcfd_0%,#ffffff_100%)] p-5 shadow-sm">
@@ -1813,29 +1840,25 @@ export default function CrewPage({
                           />
                         </div>
                       </div>
+                      <div className="mt-5 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSavedContractSections((current) => ({
+                              ...current,
+                              crewDetails: contractCrewSaveKey,
+                            }))
+                          }
+                          className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
+                            contractCrewSaved
+                              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
+                          }`}
+                        >
+                          {contractCrewSaved ? "Saved" : "Save"}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-col gap-3 rounded-[24px] border border-[#2fb6c7]/18 bg-[#f8fbfc] p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm font-semibold leading-6 text-slate-600">
-                      This section will appear first on the generated contract.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSavedContractSections((current) => ({
-                          ...current,
-                          parties: contractPartiesSaveKey,
-                        }))
-                      }
-                      className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
-                        contractPartiesSaved
-                          ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
-                      }`}
-                    >
-                      {contractPartiesSaved ? "Saved" : "Save"}
-                    </button>
                   </div>
                 </div>
               )}
