@@ -114,7 +114,7 @@ const contractStepCards: Array<{
   title: string;
   meta: string;
 }> = [
-  { id: "parties", title: "Parties", meta: "Owner & crew" },
+  { id: "parties", title: "Parties", meta: "Owner side" },
   { id: "terms", title: "Terms", meta: "Dates & salary" },
   { id: "clauses", title: "Clauses", meta: "Legal text" },
   { id: "duties", title: "Duties & Rules", meta: "Role rules" },
@@ -415,12 +415,9 @@ export default function CrewPage({
 
   const contractCompletion = useMemo(() => {
     const fields = [
-      selectedCrew,
       contractDraft.agreementDate,
       contractDraft.ownerName,
       contractDraft.ownerRepresentative,
-      contractDraft.employeeName || getCrewDisplayName(selectedContractMember),
-      contractDraft.employeePosition || getCrewPosition(selectedContractMember),
       contractDraft.vesselName,
       contractDraft.startDate,
       contractDraft.salary,
@@ -432,7 +429,7 @@ export default function CrewPage({
     ];
     const completed = fields.filter((field) => String(field || "").trim()).length;
     return Math.round((completed / fields.length) * 100);
-  }, [contractDraft, selectedContractMember, selectedCrew]);
+  }, [contractDraft]);
 
   const contractOwnerSaveKey = useMemo(
     () =>
@@ -452,28 +449,7 @@ export default function CrewPage({
     ]
   );
 
-  const contractCrewSaveKey = useMemo(
-    () =>
-      [
-        selectedCrew,
-        contractDraft.employeeName,
-        contractDraft.employeeNationality,
-        contractDraft.employeePassportNo,
-        contractDraft.employeeSeamanBookNo,
-        contractDraft.employeePosition,
-      ].join("|"),
-    [
-      contractDraft.employeeName,
-      contractDraft.employeeNationality,
-      contractDraft.employeePassportNo,
-      contractDraft.employeePosition,
-      contractDraft.employeeSeamanBookNo,
-      selectedCrew,
-    ]
-  );
-
   const contractOwnerSaved = savedContractSections.ownerDetails === contractOwnerSaveKey;
-  const contractCrewSaved = savedContractSections.crewDetails === contractCrewSaveKey;
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -581,25 +557,6 @@ export default function CrewPage({
       disciplineRules: defaultYachtDisciplineRules,
     }));
     setContractRuleDraft("");
-  }
-
-  function handleContractCrewSelect(memberId: string) {
-    setSelectedCrew(memberId);
-    const member = crew.find((item) => item.id === memberId);
-
-    if (!member) return;
-
-    setContractDraft((current) => ({
-      ...current,
-      employeeName: current.employeeName || getCrewDisplayName(member),
-      employeeNationality: current.employeeNationality || member.crew_profiles?.nationality || "",
-      employeeDob:
-        current.employeeDob ||
-        member.crew_profiles?.date_of_birth ||
-        member.crew_profiles?.birth_date ||
-        "",
-      employeePosition: current.employeePosition || getCrewPosition(member),
-    }));
   }
 
   async function downloadContractDraftPdf() {
@@ -1728,14 +1685,14 @@ export default function CrewPage({
                     />
                   </div>
 
-                  <div className="mt-5 grid gap-5 xl:grid-cols-2">
+                  <div className="mt-5">
                     <div className="rounded-[26px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfd_100%)] p-5 shadow-sm">
                       <ContractPanelTitle
                         eyebrow="Employer / Owner / Yacht Representative"
                         title="Owner details"
                         text="The person or company preparing this agreement."
                       />
-                      <div className="mt-5 grid gap-4">
+                      <div className="mt-5 grid gap-4 lg:grid-cols-2">
                         <ContractField
                           label="Name"
                           value={contractDraft.ownerName}
@@ -1743,6 +1700,7 @@ export default function CrewPage({
                           placeholder="OWNER / COMPANY NAME"
                         />
                         <ContractField
+                          className="lg:col-span-2"
                           label="Address"
                           value={contractDraft.ownerAddress}
                           onChange={(value) => updateContractDraft("ownerAddress", value)}
@@ -1777,85 +1735,6 @@ export default function CrewPage({
                           }`}
                         >
                           {contractOwnerSaved ? "Saved" : "Save"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#f2fcfd_0%,#ffffff_100%)] p-5 shadow-sm">
-                      <ContractPanelTitle
-                        eyebrow="Employee / Crew Member"
-                        title="Crew details"
-                        text="Select onboard crew or enter missing details manually."
-                      />
-                      <div className="mt-5 grid gap-4">
-                        <label className="block">
-                          <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                            Crew member
-                          </span>
-                          <select
-                            value={selectedCrew}
-                            onChange={(e) => handleContractCrewSelect(e.target.value)}
-                            className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
-                          >
-                            <option value="">Select crew for contract</option>
-                            {assignableCrew.map((member) => (
-                              <option key={member.id} value={member.id}>
-                                {getCrewDisplayName(member) || "Crew member"} - {getCrewPosition(member) || "Crew"}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <ContractField
-                            label="Name surname"
-                            value={contractDraft.employeeName}
-                            onChange={(value) => updateContractDraft("employeeName", value)}
-                            placeholder="CREW NAME SURNAME"
-                          />
-                          <ContractField
-                            label="Nationality"
-                            value={contractDraft.employeeNationality}
-                            onChange={(value) => updateContractDraft("employeeNationality", value)}
-                            placeholder="NATIONALITY"
-                          />
-                          <ContractField
-                            label="Passport no"
-                            value={contractDraft.employeePassportNo}
-                            onChange={(value) => updateContractDraft("employeePassportNo", value)}
-                            placeholder="PASSPORT NO"
-                          />
-                          <ContractField
-                            label="Seaman book no"
-                            value={contractDraft.employeeSeamanBookNo}
-                            onChange={(value) => updateContractDraft("employeeSeamanBookNo", value)}
-                            placeholder="SEAMAN BOOK NO, IF ANY"
-                          />
-                          <ContractField
-                            className="md:col-span-2"
-                            label="Position"
-                            value={contractDraft.employeePosition}
-                            onChange={(value) => updateContractDraft("employeePosition", value)}
-                            placeholder="POSITION"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-5 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSavedContractSections((current) => ({
-                              ...current,
-                              crewDetails: contractCrewSaveKey,
-                            }))
-                          }
-                          className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
-                            contractCrewSaved
-                              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                              : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
-                          }`}
-                        >
-                          {contractCrewSaved ? "Saved" : "Save"}
                         </button>
                       </div>
                     </div>
