@@ -71,6 +71,12 @@ type ContractDraft = {
   grossTonnage: string;
   portOfRegistry: string;
   enginePower: string;
+  ownerCompanyName: string;
+  ownerRegisteredAddress: string;
+  ownerRepresentative: string;
+  ownerRepresentativeDetails: string;
+  ownerEmail: string;
+  ownerTelephone: string;
   employeeName: string;
   employeeNationality: string;
   employeeDob: string;
@@ -119,7 +125,7 @@ const contractStepCards: Array<{
   title: string;
   meta: string;
 }> = [
-  { id: "parties", title: "Parties", meta: "Yacht details" },
+  { id: "parties", title: "Parties", meta: "Yacht / Owner / Crew" },
   { id: "terms", title: "Terms", meta: "Dates & salary" },
   { id: "clauses", title: "Clauses", meta: "Legal text" },
   { id: "duties", title: "Duties & Rules", meta: "Role rules" },
@@ -140,6 +146,12 @@ function createEmptyContractDraft(): ContractDraft {
     grossTonnage: "",
     portOfRegistry: "",
     enginePower: "",
+    ownerCompanyName: "",
+    ownerRegisteredAddress: "",
+    ownerRepresentative: "",
+    ownerRepresentativeDetails: "",
+    ownerEmail: "",
+    ownerTelephone: "",
     employeeName: "",
     employeeNationality: "",
     employeeDob: "",
@@ -185,6 +197,10 @@ function contractValue(value: string | undefined, fallback: string) {
   return value?.trim() || fallback;
 }
 
+function contractSheetValue(value: string | undefined | null) {
+  return String(value || "").trim() || "-";
+}
+
 function formatContractDisciplineSection(draft: ContractDraft) {
   const rules = draft.disciplineRules
     .map((rule) => rule.trim())
@@ -200,8 +216,57 @@ function formatContractDisciplineSection(draft: ContractDraft) {
 function buildContractPreviewText(draft: ContractDraft, member?: any) {
   const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
   const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
+  const crewProfile = member?.crew_profiles || {};
+  const crewSheetName = contractSheetValue(draft.employeeName || getCrewDisplayName(member));
+  const crewSheetNationality = contractSheetValue(draft.employeeNationality || crewProfile.nationality);
+  const crewSheetDateOfBirth = contractSheetValue(
+    draft.employeeDob || crewProfile.date_of_birth || crewProfile.birth_date
+  );
+  const crewSheetPassport = contractSheetValue(draft.employeePassportNo || crewProfile.passport_no);
+  const crewSheetSeamanBook = contractSheetValue(draft.employeeSeamanBookNo || crewProfile.seaman_book_no);
+  const crewSheetPosition = contractSheetValue(draft.employeePosition || getCrewPosition(member));
+  const crewSheetEmail = contractSheetValue(crewProfile.email || member?.invited_email);
+  const crewSheetTelephone = contractSheetValue(crewProfile.phone || crewProfile.mobile_number || crewProfile.mobile);
 
   return [
+    "SEAFARER EMPLOYMENT AGREEMENT",
+    "COVER SHEET",
+    "",
+    "1. YACHT DETAILS",
+    `Yacht Name: ${contractSheetValue(draft.vesselName)}`,
+    `Flag State: ${contractSheetValue(draft.flagState)}`,
+    `Official / Registration Number: ${contractSheetValue(draft.officialNumber)}`,
+    `IMO Number: ${contractSheetValue(draft.imoNumber)}`,
+    `Call Sign: ${contractSheetValue(draft.callSign)}`,
+    `Vessel Type: ${contractSheetValue(draft.vesselType)}`,
+    `Length Overall - LOA: ${contractSheetValue(draft.lengthOverall)}`,
+    `Gross Tonnage: ${contractSheetValue(draft.grossTonnage)}`,
+    `Port of Registry: ${contractSheetValue(draft.portOfRegistry)}`,
+    `Engine Power: ${contractSheetValue(draft.enginePower)}`,
+    "",
+    "2. OWNER / COMPANY DETAILS",
+    `Owner / Company Legal Name: ${contractSheetValue(draft.ownerCompanyName)}`,
+    `Registered Address: ${contractSheetValue(draft.ownerRegisteredAddress)}`,
+    `Authorized Representative: ${contractSheetValue(draft.ownerRepresentative)}`,
+    `Authorized Representative Address / Passport Number: ${contractSheetValue(draft.ownerRepresentativeDetails)}`,
+    `Email: ${contractSheetValue(draft.ownerEmail)}`,
+    `Telephone: ${contractSheetValue(draft.ownerTelephone)}`,
+    "",
+    "3. CREW MEMBER DETAILS",
+    "Crew details will be completed by the invited crew member after the final contract is sent through BlueDeck.",
+    `Crew Member Full Name: ${crewSheetName}`,
+    `Nationality: ${crewSheetNationality}`,
+    `Date of Birth: ${crewSheetDateOfBirth}`,
+    `Passport Number: ${crewSheetPassport}`,
+    `Seaman Book No: ${crewSheetSeamanBook}`,
+    `Position: ${crewSheetPosition}`,
+    `Email: ${crewSheetEmail}`,
+    `Telephone: ${crewSheetTelephone}`,
+    "",
+    "This cover sheet forms an integral part of the Seafarer Employment Agreement.",
+    "",
+    "---",
+    "",
     "GENERAL YACHT CREW EMPLOYMENT AGREEMENT",
     "Seafarer / Yacht Crew Employment Contract",
     "This General Yacht Crew Employment Agreement is prepared for the yacht described below:",
@@ -435,6 +500,8 @@ export default function CrewPage({
       contractDraft.officialNumber,
       contractDraft.vesselType,
       contractDraft.lengthOverall,
+      contractDraft.ownerCompanyName,
+      contractDraft.ownerRepresentative,
       contractDraft.startDate,
       contractDraft.salary,
       contractDraft.clauses,
@@ -460,6 +527,12 @@ export default function CrewPage({
         contractDraft.grossTonnage,
         contractDraft.portOfRegistry,
         contractDraft.enginePower,
+        contractDraft.ownerCompanyName,
+        contractDraft.ownerRegisteredAddress,
+        contractDraft.ownerRepresentative,
+        contractDraft.ownerRepresentativeDetails,
+        contractDraft.ownerEmail,
+        contractDraft.ownerTelephone,
       ].join("|"),
     [
       contractDraft.callSign,
@@ -469,6 +542,12 @@ export default function CrewPage({
       contractDraft.imoNumber,
       contractDraft.lengthOverall,
       contractDraft.officialNumber,
+      contractDraft.ownerCompanyName,
+      contractDraft.ownerEmail,
+      contractDraft.ownerRegisteredAddress,
+      contractDraft.ownerRepresentative,
+      contractDraft.ownerRepresentativeDetails,
+      contractDraft.ownerTelephone,
       contractDraft.portOfRegistry,
       contractDraft.vesselName,
       contractDraft.vesselType,
@@ -1645,7 +1724,7 @@ export default function CrewPage({
 
             <div className="border-b border-[#2fb6c7]/20 bg-[#eef7f8] px-4 py-3 sm:px-5">
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {contractStepCards.map((step, index) => {
+                {contractStepCards.map((step) => {
                   const active = contractStep === step.id;
                   return (
                     <button
@@ -1666,9 +1745,6 @@ export default function CrewPage({
                         <ContractStepIcon step={step.id} />
                       </span>
                       <span className="min-w-0">
-                        <span className={`block text-[10px] font-black uppercase tracking-[0.16em] ${active ? "text-[#8ed8e6]" : "text-[#2d7482]"}`}>
-                          {String(index + 1).padStart(2, "0")}
-                        </span>
                         <span className="block truncate text-sm font-black">{step.title}</span>
                         <span className={`block truncate text-[11px] font-semibold ${active ? "text-white/75" : "text-slate-500"}`}>{step.meta}</span>
                       </span>
@@ -1680,89 +1756,165 @@ export default function CrewPage({
 
             <div className="bg-[#f6f9fa] p-5 sm:p-8">
               {contractStep === "parties" && (
-                <div>
-                  <div className="overflow-hidden rounded-[26px] border border-[#2fb6c7]/20 bg-white shadow-sm">
-                      <div className="flex flex-col gap-4 border-b border-[#2fb6c7]/15 bg-[linear-gradient(135deg,#061423_0%,#123748_58%,#286f7b_100%)] p-5 text-white lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
-                            Yacht registry profile
-                          </p>
-                          <h4 className="mt-2 text-2xl font-black sm:text-3xl">
-                            Yacht / Vessel details
-                          </h4>
-                          <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-cyan-50/80">
-                            Add the official yacht identifiers that will appear at the beginning of the crew agreement.
-                          </p>
-                        </div>
-                        <span className="w-fit rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-cyan-50">
-                          Contract identity
+                <div className="space-y-5">
+                  <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
+                    <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
+                      <div className="flex items-center gap-4">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#062f65] text-lg font-black text-white shadow-lg shadow-blue-950/18">
+                          1.
                         </span>
+                        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
+                          Yacht details
+                        </h3>
                       </div>
-                      <div className="p-5">
-                      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                      <span className="hidden text-xs font-bold text-[#0d58ae] sm:block">
+                        To be completed by the Owner / Company
+                      </span>
+                    </div>
+                    <div className="grid gap-4 p-5 lg:grid-cols-2">
                         <ContractField
                           label="Yacht name"
                           value={contractDraft.vesselName}
                           onChange={(value) => updateContractDraft("vesselName", value)}
-                          placeholder="YACHT NAME"
+                          placeholder=""
                         />
                         <ContractField
                           label="Flag state"
                           value={contractDraft.flagState}
                           onChange={(value) => updateContractDraft("flagState", value)}
-                          placeholder="Example: Malta"
+                          placeholder=""
                         />
                         <ContractField
                           label="Official / registration number"
                           value={contractDraft.officialNumber}
                           onChange={(value) => updateContractDraft("officialNumber", value)}
-                          placeholder="Official number"
+                          placeholder=""
                         />
                         <ContractField
                           label="IMO number"
                           value={contractDraft.imoNumber}
                           onChange={(value) => updateContractDraft("imoNumber", value)}
-                          placeholder="IMO number"
+                          placeholder=""
                         />
                         <ContractField
                           label="Call sign"
                           value={contractDraft.callSign}
                           onChange={(value) => updateContractDraft("callSign", value)}
-                          placeholder="Call sign"
+                          placeholder=""
                         />
                         <ContractField
                           label="Vessel type"
                           value={contractDraft.vesselType}
                           onChange={(value) => updateContractDraft("vesselType", value)}
-                          placeholder="Motor yacht, sailing yacht..."
+                          placeholder=""
                         />
                         <ContractField
                           label="Length overall - LOA"
                           value={contractDraft.lengthOverall}
                           onChange={(value) => updateContractDraft("lengthOverall", value)}
-                          placeholder="Example: 42 m / 138 ft"
+                          placeholder=""
                         />
                         <ContractField
                           label="Gross tonnage"
                           value={contractDraft.grossTonnage}
                           onChange={(value) => updateContractDraft("grossTonnage", value)}
-                          placeholder="GT"
+                          placeholder=""
                         />
                         <ContractField
                           label="Port of registry"
                           value={contractDraft.portOfRegistry}
                           onChange={(value) => updateContractDraft("portOfRegistry", value)}
-                          placeholder="Port of registry"
+                          placeholder=""
                         />
                         <ContractField
-                          className="xl:col-span-3"
                           label="Engine power"
                           value={contractDraft.enginePower}
                           onChange={(value) => updateContractDraft("enginePower", value)}
-                          placeholder="Example: 2 x 1,200 HP / 1,790 kW"
+                          placeholder=""
                         />
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
+                    <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
+                      <div className="flex items-center gap-4">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#062f65] text-lg font-black text-white shadow-lg shadow-blue-950/18">
+                          2.
+                        </span>
+                        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
+                          Owner / Company details
+                        </h3>
                       </div>
-                      <div className="mt-5 flex justify-end">
+                      <span className="hidden text-xs font-bold text-[#0d58ae] sm:block">
+                        Legal contracting party
+                      </span>
+                    </div>
+                    <div className="grid gap-4 p-5 lg:grid-cols-2">
+                        <ContractField
+                          className="lg:col-span-2"
+                          label="Owner / company legal name"
+                          value={contractDraft.ownerCompanyName}
+                          onChange={(value) => updateContractDraft("ownerCompanyName", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          className="lg:col-span-2"
+                          label="Registered address"
+                          value={contractDraft.ownerRegisteredAddress}
+                          onChange={(value) => updateContractDraft("ownerRegisteredAddress", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Authorized representative"
+                          value={contractDraft.ownerRepresentative}
+                          onChange={(value) => updateContractDraft("ownerRepresentative", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Representative address / passport no"
+                          value={contractDraft.ownerRepresentativeDetails}
+                          onChange={(value) => updateContractDraft("ownerRepresentativeDetails", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Email"
+                          value={contractDraft.ownerEmail}
+                          onChange={(value) => updateContractDraft("ownerEmail", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Telephone"
+                          value={contractDraft.ownerTelephone}
+                          onChange={(value) => updateContractDraft("ownerTelephone", value)}
+                          placeholder=""
+                        />
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
+                    <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
+                      <div className="flex items-center gap-4">
+                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#062f65] text-lg font-black text-white shadow-lg shadow-blue-950/18">
+                          3.
+                        </span>
+                        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
+                          Crew member details
+                        </h3>
+                      </div>
+                      <span className="hidden text-xs font-bold text-[#0d58ae] sm:block">
+                        Employee / Seafarer information
+                      </span>
+                    </div>
+                    <div className="p-5">
+                      <div className="rounded-[22px] border border-dashed border-[#9fc6e7] bg-[#f7fbff] p-5">
+                        <p className="text-sm font-semibold leading-7 text-slate-600">
+                          The final contract will be sent to the selected crew member through BlueDeck. The crew member will accept the contract and complete their own crew details; after completion, those details will appear on the final contract.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
                         <button
                           type="button"
                           onClick={() =>
@@ -1779,8 +1931,6 @@ export default function CrewPage({
                         >
                           {contractVesselSaved ? "Saved" : "Save"}
                         </button>
-                      </div>
-                      </div>
                   </div>
                 </div>
               )}
@@ -2069,6 +2219,7 @@ export default function CrewPage({
                       title="Final contract draft"
                       text="Review the generated text before sending it for mobile signature."
                     />
+                    <ContractCoverSheetPreview draft={contractDraft} member={selectedContractMember} />
                     <pre className="mt-5 max-h-[620px] overflow-auto whitespace-pre-wrap rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
                       {contractPreviewText}
                     </pre>
@@ -3492,6 +3643,121 @@ function MonitorMetric({
         {title}
       </p>
     </div>
+  );
+}
+
+function ContractCoverSheetPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
+  const crewProfile = member?.crew_profiles || {};
+  const yachtRows: Array<[string, string | undefined | null]> = [
+    ["Yacht name", draft.vesselName],
+    ["Flag state", draft.flagState],
+    ["Official / registration number", draft.officialNumber],
+    ["IMO number", draft.imoNumber],
+    ["Call sign", draft.callSign],
+    ["Vessel type", draft.vesselType],
+    ["Length overall - LOA", draft.lengthOverall],
+    ["Gross tonnage", draft.grossTonnage],
+    ["Port of registry", draft.portOfRegistry],
+    ["Engine power", draft.enginePower],
+  ];
+  const ownerRows: Array<[string, string | undefined | null]> = [
+    ["Owner / company legal name", draft.ownerCompanyName],
+    ["Registered address", draft.ownerRegisteredAddress],
+    ["Authorized representative", draft.ownerRepresentative],
+    ["Representative address / passport no", draft.ownerRepresentativeDetails],
+    ["Email", draft.ownerEmail],
+    ["Telephone", draft.ownerTelephone],
+  ];
+  const crewRows: Array<[string, string | undefined | null]> = [
+    ["Crew member full name", draft.employeeName || getCrewDisplayName(member)],
+    ["Nationality", draft.employeeNationality || crewProfile.nationality],
+    ["Date of birth", draft.employeeDob || crewProfile.date_of_birth || crewProfile.birth_date],
+    ["Passport number", draft.employeePassportNo || crewProfile.passport_no],
+    ["Seaman book no", draft.employeeSeamanBookNo || crewProfile.seaman_book_no],
+    ["Position", draft.employeePosition || getCrewPosition(member)],
+    ["Email", crewProfile.email || member?.invited_email],
+    ["Telephone", crewProfile.phone || crewProfile.mobile_number || crewProfile.mobile],
+  ];
+
+  return (
+    <div className="mt-5 overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm">
+      <div className="bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_58%,#edf7ff_100%)] px-5 py-6 text-center">
+        <p className="font-serif text-2xl font-black uppercase tracking-[0.06em] text-[#082759] sm:text-3xl">
+          Seafarer Employment Agreement
+        </p>
+        <p className="mt-2 text-xs font-black uppercase tracking-[0.45em] text-[#0d58ae]">
+          Cover Sheet
+        </p>
+      </div>
+      <div className="space-y-4 p-5">
+        <ContractCoverSection
+          number="1."
+          title="Yacht details"
+          note="To be completed by the Owner / Company"
+          rows={yachtRows}
+        />
+        <ContractCoverSection
+          number="2."
+          title="Owner / Company details"
+          note="Legal contracting party"
+          rows={ownerRows}
+        />
+        <ContractCoverSection
+          number="3."
+          title="Crew member details"
+          note="Employee / Seafarer information"
+          rows={crewRows}
+          footer="Crew details are completed by the invited crew member before the final contract is confirmed."
+        />
+      </div>
+    </div>
+  );
+}
+
+function ContractCoverSection({
+  number,
+  title,
+  note,
+  rows,
+  footer,
+}: {
+  number: string;
+  title: string;
+  note: string;
+  rows: Array<[string, string | undefined | null]>;
+  footer?: string;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[20px] border border-[#bfd8ea] bg-white">
+      <div className="flex flex-col gap-3 border-b border-[#d9e8f3] bg-[#fbfdff] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#062f65] text-sm font-black text-white">
+            {number}
+          </span>
+          <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
+            {title}
+          </h4>
+        </div>
+        <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
+      </div>
+      <div className="grid gap-3 p-4 sm:grid-cols-2">
+        {rows.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-[#cfe3f4] bg-white px-3 py-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
+              {label}
+            </p>
+            <p className="mt-1 min-h-[20px] text-sm font-bold text-slate-800">
+              {contractSheetValue(value)}
+            </p>
+          </div>
+        ))}
+      </div>
+      {footer && (
+        <p className="border-t border-[#e1edf7] px-4 py-3 text-xs font-semibold leading-5 text-slate-500">
+          {footer}
+        </p>
+      )}
+    </section>
   );
 }
 
