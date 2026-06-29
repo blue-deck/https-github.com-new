@@ -204,7 +204,7 @@ function buildContractPreviewText(draft: ContractDraft, member?: any) {
   return [
     "GENERAL YACHT CREW EMPLOYMENT AGREEMENT",
     "Seafarer / Yacht Crew Employment Contract",
-    `This General Yacht Crew Employment Agreement is made on ${contractValue(draft.agreementDate, "[DATE]")} for the yacht described below:`,
+    "This General Yacht Crew Employment Agreement is prepared for the yacht described below:",
     "",
     "Yacht / Vessel Details:",
     `Yacht Name: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
@@ -430,7 +430,6 @@ export default function CrewPage({
 
   const contractCompletion = useMemo(() => {
     const fields = [
-      contractDraft.agreementDate,
       contractDraft.vesselName,
       contractDraft.flagState,
       contractDraft.officialNumber,
@@ -451,7 +450,6 @@ export default function CrewPage({
   const contractVesselSaveKey = useMemo(
     () =>
       [
-        contractDraft.agreementDate,
         contractDraft.vesselName,
         contractDraft.flagState,
         contractDraft.officialNumber,
@@ -464,7 +462,6 @@ export default function CrewPage({
         contractDraft.enginePower,
       ].join("|"),
     [
-      contractDraft.agreementDate,
       contractDraft.callSign,
       contractDraft.enginePower,
       contractDraft.flagState,
@@ -1683,39 +1680,8 @@ export default function CrewPage({
 
             <div className="bg-[#f6f9fa] p-5 sm:p-8">
               {contractStep === "parties" && (
-                <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan-800">
-                        Parties
-                      </p>
-                      <h3 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
-                        General Yacht Crew Employment Agreement
-                      </h3>
-                      <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
-                        Seafarer / Yacht Crew Employment Contract
-                      </p>
-                    </div>
-                    <span className="w-fit rounded-full border border-[#2fb6c7]/25 bg-[#eef9fb] px-4 py-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#0b6b7b]">
-                      First contract page
-                    </span>
-                  </div>
-
-                  <div className="mt-5 rounded-[24px] border border-[#2fb6c7]/18 bg-[linear-gradient(135deg,#f3fcfd_0%,#ffffff_100%)] p-4">
-                    <p className="text-sm font-semibold leading-6 text-slate-600">
-                      This General Yacht Crew Employment Agreement is made on:
-                    </p>
-                    <ContractField
-                      className="mt-3"
-                      label="Agreement date"
-                      value={contractDraft.agreementDate}
-                      onChange={(value) => updateContractDraft("agreementDate", value)}
-                      placeholder="DD/MM/YYYY"
-                    />
-                  </div>
-
-                  <div className="mt-5">
-                    <div className="overflow-hidden rounded-[26px] border border-[#2fb6c7]/20 bg-white shadow-sm">
+                <div>
+                  <div className="overflow-hidden rounded-[26px] border border-[#2fb6c7]/20 bg-white shadow-sm">
                       <div className="flex flex-col gap-4 border-b border-[#2fb6c7]/15 bg-[linear-gradient(135deg,#061423_0%,#123748_58%,#286f7b_100%)] p-5 text-white lg:flex-row lg:items-end lg:justify-between">
                         <div>
                           <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
@@ -1733,12 +1699,7 @@ export default function CrewPage({
                         </span>
                       </div>
                       <div className="p-5">
-                      <ContractPanelTitle
-                        eyebrow="Official vessel particulars"
-                        title="Registration and technical profile"
-                        text="Keep each field clean and exact so the agreement reads like a real yacht employment document."
-                      />
-                      <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+                      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
                         <ContractField
                           label="Yacht name"
                           value={contractDraft.vesselName}
@@ -1820,7 +1781,6 @@ export default function CrewPage({
                         </button>
                       </div>
                       </div>
-                    </div>
                   </div>
                 </div>
               )}
