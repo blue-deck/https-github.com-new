@@ -61,17 +61,22 @@ type ContractStudioStep =
 
 type ContractDraft = {
   agreementDate: string;
-  ownerName: string;
-  ownerAddress: string;
-  ownerId: string;
-  ownerRepresentative: string;
+  vesselName: string;
+  flagState: string;
+  officialNumber: string;
+  imoNumber: string;
+  callSign: string;
+  vesselType: string;
+  lengthOverall: string;
+  grossTonnage: string;
+  portOfRegistry: string;
+  enginePower: string;
   employeeName: string;
   employeeNationality: string;
   employeeDob: string;
   employeePassportNo: string;
   employeeSeamanBookNo: string;
   employeePosition: string;
-  vesselName: string;
   startDate: string;
   endDate: string;
   salary: string;
@@ -114,7 +119,7 @@ const contractStepCards: Array<{
   title: string;
   meta: string;
 }> = [
-  { id: "parties", title: "Parties", meta: "Owner side" },
+  { id: "parties", title: "Parties", meta: "Yacht details" },
   { id: "terms", title: "Terms", meta: "Dates & salary" },
   { id: "clauses", title: "Clauses", meta: "Legal text" },
   { id: "duties", title: "Duties & Rules", meta: "Role rules" },
@@ -125,17 +130,22 @@ const contractStepCards: Array<{
 function createEmptyContractDraft(): ContractDraft {
   return {
     agreementDate: "",
-    ownerName: "",
-    ownerAddress: "",
-    ownerId: "",
-    ownerRepresentative: "",
+    vesselName: "",
+    flagState: "",
+    officialNumber: "",
+    imoNumber: "",
+    callSign: "",
+    vesselType: "",
+    lengthOverall: "",
+    grossTonnage: "",
+    portOfRegistry: "",
+    enginePower: "",
     employeeName: "",
     employeeNationality: "",
     employeeDob: "",
     employeePassportNo: "",
     employeeSeamanBookNo: "",
     employeePosition: "",
-    vesselName: "",
     startDate: "",
     endDate: "",
     salary: "",
@@ -194,13 +204,19 @@ function buildContractPreviewText(draft: ContractDraft, member?: any) {
   return [
     "GENERAL YACHT CREW EMPLOYMENT AGREEMENT",
     "Seafarer / Yacht Crew Employment Contract",
-    `This General Yacht Crew Employment Agreement is made on ${contractValue(draft.agreementDate, "[DATE]")} between:`,
+    `This General Yacht Crew Employment Agreement is made on ${contractValue(draft.agreementDate, "[DATE]")} for the yacht described below:`,
     "",
-    "Employer / Owner / Yacht Representative:",
-    `Name: ${contractValue(draft.ownerName, "[OWNER / COMPANY NAME]")}`,
-    `Address: ${contractValue(draft.ownerAddress, "[ADDRESS]")}`,
-    `Representative: ${contractValue(draft.ownerRepresentative, "[NAME / POSITION]")}`,
-    `Passport / Company No: ${contractValue(draft.ownerId, "[DETAILS]")}`,
+    "Yacht / Vessel Details:",
+    `Yacht Name: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
+    `Flag State: ${contractValue(draft.flagState, "[FLAG STATE]")}`,
+    `Official Number / Registration Number: ${contractValue(draft.officialNumber, "[OFFICIAL / REGISTRATION NUMBER]")}`,
+    `IMO Number: ${contractValue(draft.imoNumber, "[IMO NUMBER]")}`,
+    `Call Sign: ${contractValue(draft.callSign, "[CALL SIGN]")}`,
+    `Vessel Type: ${contractValue(draft.vesselType, "[VESSEL TYPE]")}`,
+    `Length Overall - LOA: ${contractValue(draft.lengthOverall, "[LOA]")}`,
+    `Gross Tonnage: ${contractValue(draft.grossTonnage, "[GROSS TONNAGE]")}`,
+    `Port of Registry: ${contractValue(draft.portOfRegistry, "[PORT OF REGISTRY]")}`,
+    `Engine Power: ${contractValue(draft.enginePower, "[ENGINE POWER]")}`,
     "",
     "and",
     "",
@@ -214,7 +230,6 @@ function buildContractPreviewText(draft: ContractDraft, member?: any) {
     'Together referred to as the "Parties."',
     "",
     "2. CONTRACT TERMS",
-    `Yacht / Vessel: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
     `Start Date: ${contractValue(draft.startDate, "[START DATE]")}`,
     `End Date: ${contractValue(draft.endDate, "[END DATE / ROTATION]")}`,
     `Salary: ${contractValue(draft.salary, "[SALARY]")} ${contractValue(draft.currency, "EUR")}`,
@@ -416,9 +431,11 @@ export default function CrewPage({
   const contractCompletion = useMemo(() => {
     const fields = [
       contractDraft.agreementDate,
-      contractDraft.ownerName,
-      contractDraft.ownerRepresentative,
       contractDraft.vesselName,
+      contractDraft.flagState,
+      contractDraft.officialNumber,
+      contractDraft.vesselType,
+      contractDraft.lengthOverall,
       contractDraft.startDate,
       contractDraft.salary,
       contractDraft.clauses,
@@ -431,25 +448,37 @@ export default function CrewPage({
     return Math.round((completed / fields.length) * 100);
   }, [contractDraft]);
 
-  const contractOwnerSaveKey = useMemo(
+  const contractVesselSaveKey = useMemo(
     () =>
       [
         contractDraft.agreementDate,
-        contractDraft.ownerName,
-        contractDraft.ownerAddress,
-        contractDraft.ownerRepresentative,
-        contractDraft.ownerId,
+        contractDraft.vesselName,
+        contractDraft.flagState,
+        contractDraft.officialNumber,
+        contractDraft.imoNumber,
+        contractDraft.callSign,
+        contractDraft.vesselType,
+        contractDraft.lengthOverall,
+        contractDraft.grossTonnage,
+        contractDraft.portOfRegistry,
+        contractDraft.enginePower,
       ].join("|"),
     [
       contractDraft.agreementDate,
-      contractDraft.ownerAddress,
-      contractDraft.ownerId,
-      contractDraft.ownerName,
-      contractDraft.ownerRepresentative,
+      contractDraft.callSign,
+      contractDraft.enginePower,
+      contractDraft.flagState,
+      contractDraft.grossTonnage,
+      contractDraft.imoNumber,
+      contractDraft.lengthOverall,
+      contractDraft.officialNumber,
+      contractDraft.portOfRegistry,
+      contractDraft.vesselName,
+      contractDraft.vesselType,
     ]
   );
 
-  const contractOwnerSaved = savedContractSections.ownerDetails === contractOwnerSaveKey;
+  const contractVesselSaved = savedContractSections.vesselDetails === contractVesselSaveKey;
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -1686,37 +1715,90 @@ export default function CrewPage({
                   </div>
 
                   <div className="mt-5">
-                    <div className="rounded-[26px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fcfd_100%)] p-5 shadow-sm">
+                    <div className="overflow-hidden rounded-[26px] border border-[#2fb6c7]/20 bg-white shadow-sm">
+                      <div className="flex flex-col gap-4 border-b border-[#2fb6c7]/15 bg-[linear-gradient(135deg,#061423_0%,#123748_58%,#286f7b_100%)] p-5 text-white lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-100">
+                            Yacht registry profile
+                          </p>
+                          <h4 className="mt-2 text-2xl font-black sm:text-3xl">
+                            Yacht / Vessel details
+                          </h4>
+                          <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-cyan-50/80">
+                            Add the official yacht identifiers that will appear at the beginning of the crew agreement.
+                          </p>
+                        </div>
+                        <span className="w-fit rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-cyan-50">
+                          Contract identity
+                        </span>
+                      </div>
+                      <div className="p-5">
                       <ContractPanelTitle
-                        eyebrow="Employer / Owner / Yacht Representative"
-                        title="Owner details"
-                        text="The person or company preparing this agreement."
+                        eyebrow="Official vessel particulars"
+                        title="Registration and technical profile"
+                        text="Keep each field clean and exact so the agreement reads like a real yacht employment document."
                       />
-                      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                      <div className="mt-5 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
                         <ContractField
-                          label="Name"
-                          value={contractDraft.ownerName}
-                          onChange={(value) => updateContractDraft("ownerName", value)}
-                          placeholder="OWNER / COMPANY NAME"
+                          label="Yacht name"
+                          value={contractDraft.vesselName}
+                          onChange={(value) => updateContractDraft("vesselName", value)}
+                          placeholder="YACHT NAME"
                         />
                         <ContractField
-                          className="lg:col-span-2"
-                          label="Address"
-                          value={contractDraft.ownerAddress}
-                          onChange={(value) => updateContractDraft("ownerAddress", value)}
-                          placeholder="ADDRESS"
+                          label="Flag state"
+                          value={contractDraft.flagState}
+                          onChange={(value) => updateContractDraft("flagState", value)}
+                          placeholder="Example: Malta"
                         />
                         <ContractField
-                          label="Representative"
-                          value={contractDraft.ownerRepresentative}
-                          onChange={(value) => updateContractDraft("ownerRepresentative", value)}
-                          placeholder="NAME / POSITION"
+                          label="Official / registration number"
+                          value={contractDraft.officialNumber}
+                          onChange={(value) => updateContractDraft("officialNumber", value)}
+                          placeholder="Official number"
                         />
                         <ContractField
-                          label="Passport / company no"
-                          value={contractDraft.ownerId}
-                          onChange={(value) => updateContractDraft("ownerId", value)}
-                          placeholder="DETAILS"
+                          label="IMO number"
+                          value={contractDraft.imoNumber}
+                          onChange={(value) => updateContractDraft("imoNumber", value)}
+                          placeholder="IMO number"
+                        />
+                        <ContractField
+                          label="Call sign"
+                          value={contractDraft.callSign}
+                          onChange={(value) => updateContractDraft("callSign", value)}
+                          placeholder="Call sign"
+                        />
+                        <ContractField
+                          label="Vessel type"
+                          value={contractDraft.vesselType}
+                          onChange={(value) => updateContractDraft("vesselType", value)}
+                          placeholder="Motor yacht, sailing yacht..."
+                        />
+                        <ContractField
+                          label="Length overall - LOA"
+                          value={contractDraft.lengthOverall}
+                          onChange={(value) => updateContractDraft("lengthOverall", value)}
+                          placeholder="Example: 42 m / 138 ft"
+                        />
+                        <ContractField
+                          label="Gross tonnage"
+                          value={contractDraft.grossTonnage}
+                          onChange={(value) => updateContractDraft("grossTonnage", value)}
+                          placeholder="GT"
+                        />
+                        <ContractField
+                          label="Port of registry"
+                          value={contractDraft.portOfRegistry}
+                          onChange={(value) => updateContractDraft("portOfRegistry", value)}
+                          placeholder="Port of registry"
+                        />
+                        <ContractField
+                          className="xl:col-span-3"
+                          label="Engine power"
+                          value={contractDraft.enginePower}
+                          onChange={(value) => updateContractDraft("enginePower", value)}
+                          placeholder="Example: 2 x 1,200 HP / 1,790 kW"
                         />
                       </div>
                       <div className="mt-5 flex justify-end">
@@ -1725,17 +1807,18 @@ export default function CrewPage({
                           onClick={() =>
                             setSavedContractSections((current) => ({
                               ...current,
-                              ownerDetails: contractOwnerSaveKey,
+                              vesselDetails: contractVesselSaveKey,
                             }))
                           }
                           className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
-                            contractOwnerSaved
+                            contractVesselSaved
                               ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
                               : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
                           }`}
                         >
-                          {contractOwnerSaved ? "Saved" : "Save"}
+                          {contractVesselSaved ? "Saved" : "Save"}
                         </button>
+                      </div>
                       </div>
                     </div>
                   </div>
@@ -1746,16 +1829,10 @@ export default function CrewPage({
                 <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
                   <ContractPanelTitle
                     eyebrow="Contract terms"
-                    title="Vessel, salary, dates and onboard terms"
+                    title="Dates, salary and onboard terms"
                     text="Keep operational terms structured so the final agreement reads cleanly."
                   />
                   <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <ContractField
-                      label="Yacht / vessel name"
-                      value={contractDraft.vesselName}
-                      onChange={(value) => updateContractDraft("vesselName", value)}
-                      placeholder="Yacht name"
-                    />
                     <ContractField
                       label="Start date"
                       value={contractDraft.startDate}
