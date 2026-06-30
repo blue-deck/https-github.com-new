@@ -418,7 +418,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: any): Contra
 
 function buildContractPreviewText(draft: ContractDraft, member?: any) {
   const coverLines = getContractCoverSections(draft, member).flatMap((section) => [
-    `${section.number} ${section.title.toUpperCase()}`,
+    section.title.toUpperCase(),
     ...section.rows.map(([label, value]) => `${label}: ${contractSheetValue(value)}`),
     ...(section.footer ? [section.footer] : []),
     "",
@@ -898,16 +898,10 @@ export default function CrewPage({
       doc.rect(x + 0.6, y + 0.6, width - 1.2, 34, "F");
       setStroke("#d8e7f5");
       doc.line(x, y + 34, x + width, y + 34);
-      setFill("#063574");
-      doc.roundedRect(x + 16, y + 8, 30, 26, 5, 5, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(15);
-      setText("#ffffff");
-      doc.text(section.number, x + 31, y + 25.5, { align: "center" });
       doc.setFont("times", "bold");
       doc.setFontSize(16);
       setText("#082759");
-      doc.text(section.title.toUpperCase(), x + 62, y + 25.5);
+      doc.text(section.title.toUpperCase(), x + 18, y + 25.5);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.6);
       setText("#1e67bc");
@@ -2064,9 +2058,6 @@ export default function CrewPage({
                   <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
                     <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
                       <div className="flex items-center gap-4">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#062f65] text-lg font-black text-white shadow-lg shadow-blue-950/18">
-                          1.
-                        </span>
                         <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
                           Yacht details
                         </h3>
@@ -2142,9 +2133,6 @@ export default function CrewPage({
                   <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
                     <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
                       <div className="flex items-center gap-4">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#062f65] text-lg font-black text-white shadow-lg shadow-blue-950/18">
-                          2.
-                        </span>
                         <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
                           Owner / Company details
                         </h3>
@@ -2198,9 +2186,6 @@ export default function CrewPage({
                   <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
                     <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
                       <div className="flex items-center gap-4">
-                        <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#062f65] text-lg font-black text-white shadow-lg shadow-blue-950/18">
-                          3.
-                        </span>
                         <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
                           Crew member details
                         </h3>
@@ -2240,23 +2225,7 @@ export default function CrewPage({
               )}
 
               {contractStep === "terms" && (
-                <div className="relative overflow-hidden rounded-[30px] border border-[#b8d2ee] bg-white px-5 py-7 shadow-sm shadow-blue-950/8 sm:px-7">
-                  <ContractPaperDecorations />
-                  <div className="relative text-center">
-                    <h3 className="font-serif text-[24px] font-black uppercase tracking-[0.03em] text-[#082759] sm:text-[36px]">
-                      Seafarer Employment Agreement
-                    </h3>
-                    <div className="mt-3 flex items-center justify-center gap-5">
-                      <span className="h-px w-24 bg-[#7aa9de]" />
-                      <span className="text-sm font-medium uppercase tracking-[0.46em] text-[#1e67bc]">
-                        Employment Terms
-                      </span>
-                      <span className="h-px w-24 bg-[#7aa9de]" />
-                    </div>
-                    <span className="mx-auto mt-3 block h-1 w-1 rounded-full bg-[#1e67bc]" />
-                  </div>
-
-                  <div className="relative mt-8 space-y-5">
+                <div className="space-y-5">
                     <ContractTermsBlock
                       title="Agreement details"
                       note="Complete all applicable fields"
@@ -2399,7 +2368,6 @@ export default function CrewPage({
                         </div>
                       </ContractTermsBlock>
                     </div>
-                  </div>
                 </div>
               )}
 
@@ -4063,7 +4031,7 @@ function ContractCoverSheetPreview({ draft, member }: { draft: ContractDraft; me
       </div>
       <div className="relative mt-8 space-y-4">
         {sections.map((section) => (
-          <ContractCoverSection key={section.number} {...section} />
+          <ContractCoverSection key={section.title} {...section} />
         ))}
       </div>
       <p className="relative mt-5 text-center text-xs font-medium text-[#1e67bc]">
@@ -4099,7 +4067,6 @@ function ContractPaperDecorations() {
 }
 
 function ContractCoverSection({
-  number,
   title,
   note,
   rows,
@@ -4115,9 +4082,6 @@ function ContractCoverSection({
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
       <div className="flex flex-col gap-3 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#063574] text-base font-black text-white shadow-sm shadow-blue-950/20">
-            {number}
-          </span>
           <h4 className="font-serif text-xl font-black uppercase tracking-[0.02em] text-[#082759]">
             {title}
           </h4>
