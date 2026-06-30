@@ -161,7 +161,7 @@ const contractStepCards: Array<{
   { id: "parties", title: "Annex A", meta: "Yacht / Owner / Crew" },
   { id: "terms", title: "Annex B", meta: "Employment Terms" },
   { id: "clauses", title: "Annex C", meta: "General Terms" },
-  { id: "duties", title: "Annex D", meta: "Duties & Rules" },
+  { id: "duties", title: "Annex D", meta: "Job description and yacht rules" },
   { id: "signature", title: "Annex E", meta: "Signature" },
   { id: "preview", title: "Preview", meta: "PDF & send" },
 ];
