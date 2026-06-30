@@ -91,6 +91,24 @@ type ContractDraft = {
   travelTerms: string;
   accommodationTerms: string;
   terminationNotice: string;
+  agreementStartDate: string;
+  agreementEndDate: string;
+  agreementType: string;
+  trialPeriod: string;
+  placeOfEngagement: string;
+  trialPeriodEndDate: string;
+  trialSalary: string;
+  trialSalaryAccrual: string;
+  trialNoticePeriod: string;
+  trialAnnualLeave: string;
+  trialPlaceOfRepatriation: string;
+  trialTravelAllowance: string;
+  standardSalary: string;
+  standardSalaryAccrual: string;
+  standardNoticePeriod: string;
+  standardAnnualLeave: string;
+  standardPlaceOfRepatriation: string;
+  standardTravelAllowance: string;
   clauses: string;
   duties: string;
   discipline: string;
@@ -140,11 +158,11 @@ const contractStepCards: Array<{
   title: string;
   meta: string;
 }> = [
-  { id: "parties", title: "Parties", meta: "Yacht / Owner / Crew" },
-  { id: "terms", title: "Terms", meta: "Dates & salary" },
-  { id: "clauses", title: "Clauses", meta: "Legal text" },
-  { id: "duties", title: "Duties & Rules", meta: "Role rules" },
-  { id: "signature", title: "Signature", meta: "Mobile sign" },
+  { id: "parties", title: "Annex A", meta: "Yacht / Owner / Crew" },
+  { id: "terms", title: "Annex B", meta: "Employment Terms" },
+  { id: "clauses", title: "Annex C", meta: "Legal Text" },
+  { id: "duties", title: "Annex D", meta: "Duties & Rules" },
+  { id: "signature", title: "Annex E", meta: "Signature" },
   { id: "preview", title: "Preview", meta: "PDF & send" },
 ];
 
@@ -181,6 +199,24 @@ function createEmptyContractDraft(): ContractDraft {
     travelTerms: "",
     accommodationTerms: "",
     terminationNotice: "",
+    agreementStartDate: "",
+    agreementEndDate: "",
+    agreementType: "",
+    trialPeriod: "",
+    placeOfEngagement: "",
+    trialPeriodEndDate: "",
+    trialSalary: "",
+    trialSalaryAccrual: "",
+    trialNoticePeriod: "",
+    trialAnnualLeave: "",
+    trialPlaceOfRepatriation: "",
+    trialTravelAllowance: "",
+    standardSalary: "",
+    standardSalaryAccrual: "",
+    standardNoticePeriod: "",
+    standardAnnualLeave: "",
+    standardPlaceOfRepatriation: "",
+    standardTravelAllowance: "",
     clauses:
       "The employee shall perform duties in a professional, safe and seamanlike manner in accordance with yacht rules, flag requirements and lawful instructions from the Captain or yacht representative.",
     duties:
@@ -325,23 +361,41 @@ function getContractDocumentSections(draft: ContractDraft, member?: any): Contra
       ],
     },
     {
-      title: "Contract Terms",
+      title: "Annex B - Employment Terms",
       lines: [
-        `Start Date: ${contractValue(draft.startDate, "[START DATE]")}`,
-        `End Date: ${contractValue(draft.endDate, "[END DATE / ROTATION]")}`,
-        `Salary: ${contractValue(draft.salary, "[SALARY]")} ${contractValue(draft.currency, "EUR")}`,
-        `Leave / Rotation: ${contractValue(draft.leaveTerms, "[LEAVE OR ROTATION TERMS]")}`,
-        `Travel: ${contractValue(draft.travelTerms, "[TRAVEL ARRANGEMENTS]")}`,
-        `Accommodation / Meals: ${contractValue(draft.accommodationTerms, "[ACCOMMODATION AND MEALS]")}`,
-        `Termination Notice: ${contractValue(draft.terminationNotice, "[NOTICE PERIOD]")}`,
+        "Agreement Details",
+        `Crewmember Name: ${employeeName}`,
+        `Position: ${employeePosition}`,
+        `Agreement Start Date: ${contractValue(draft.agreementStartDate || draft.startDate, "-")}`,
+        `Agreement End Date: ${contractValue(draft.agreementEndDate || draft.endDate, "-")}`,
+        `Agreement Type: ${contractValue(draft.agreementType, "-")}`,
+        `Trial Period: ${contractValue(draft.trialPeriod, "-")}`,
+        `Place of Engagement: ${contractValue(draft.placeOfEngagement, "-")}`,
+        `Trial Period End Date: ${contractValue(draft.trialPeriodEndDate, "-")}`,
+        "",
+        "Terms Within Trial Period (if applicable)",
+        `Salary: ${contractValue(draft.trialSalary, "-")}`,
+        `Salary Accrual: ${contractValue(draft.trialSalaryAccrual, "-")}`,
+        `Notice Period: ${contractValue(draft.trialNoticePeriod, "-")}`,
+        `Annual Leave: ${contractValue(draft.trialAnnualLeave, "-")}`,
+        `Place of Repatriation: ${contractValue(draft.trialPlaceOfRepatriation, "-")}`,
+        `Travel Allowance: ${contractValue(draft.trialTravelAllowance, "-")}`,
+        "",
+        "Standard Terms",
+        `Salary: ${contractValue(draft.standardSalary || draft.salary, "-")}`,
+        `Salary Accrual: ${contractValue(draft.standardSalaryAccrual, "-")}`,
+        `Notice Period: ${contractValue(draft.standardNoticePeriod || draft.terminationNotice, "-")}`,
+        `Annual Leave: ${contractValue(draft.standardAnnualLeave || draft.leaveTerms, "-")}`,
+        `Place of Repatriation: ${contractValue(draft.standardPlaceOfRepatriation, "-")}`,
+        `Travel Allowance: ${contractValue(draft.standardTravelAllowance || draft.travelTerms, "-")}`,
       ],
     },
     {
-      title: "Contract Clauses",
+      title: "Annex C - Contract Clauses",
       lines: [contractValue(draft.clauses, "[CONTRACT CLAUSES]")],
     },
     {
-      title: "Duties and Discipline",
+      title: "Annex D - Duties and Rules",
       lines: [
         contractValue(draft.duties, "[DUTIES]"),
         "",
@@ -350,7 +404,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: any): Contra
       ],
     },
     {
-      title: "Signatures",
+      title: "Annex E - Signatures",
       lines: [
         `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
         `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
@@ -569,8 +623,14 @@ export default function CrewPage({
       contractDraft.lengthOverall,
       contractDraft.ownerCompanyName,
       contractDraft.ownerRepresentative,
-      contractDraft.startDate,
-      contractDraft.salary,
+      contractDraft.employeeName,
+      contractDraft.employeePosition,
+      contractDraft.agreementStartDate || contractDraft.startDate,
+      contractDraft.agreementEndDate || contractDraft.endDate,
+      contractDraft.agreementType,
+      contractDraft.placeOfEngagement,
+      contractDraft.standardSalary || contractDraft.salary,
+      contractDraft.standardNoticePeriod || contractDraft.terminationNotice,
       contractDraft.clauses,
       contractDraft.duties,
       contractDraft.discipline,
@@ -2180,71 +2240,165 @@ export default function CrewPage({
               )}
 
               {contractStep === "terms" && (
-                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                  <ContractPanelTitle
-                    eyebrow="Contract terms"
-                    title="Dates, salary and onboard terms"
-                    text="Keep operational terms structured so the final agreement reads cleanly."
-                  />
-                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <ContractField
-                      label="Start date"
-                      value={contractDraft.startDate}
-                      onChange={(value) => updateContractDraft("startDate", value)}
-                      placeholder="DD/MM/YYYY"
-                    />
-                    <ContractField
-                      label="End date / rotation"
-                      value={contractDraft.endDate}
-                      onChange={(value) => updateContractDraft("endDate", value)}
-                      placeholder="End date, seasonal or rotation"
-                    />
-                    <ContractField
-                      label="Salary"
-                      value={contractDraft.salary}
-                      onChange={(value) => updateContractDraft("salary", value)}
-                      placeholder="Salary amount"
-                    />
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                        Currency
+                <div className="relative overflow-hidden rounded-[30px] border border-[#b8d2ee] bg-white px-5 py-7 shadow-sm shadow-blue-950/8 sm:px-7">
+                  <ContractPaperDecorations />
+                  <div className="relative text-center">
+                    <h3 className="font-serif text-[24px] font-black uppercase tracking-[0.03em] text-[#082759] sm:text-[36px]">
+                      Seafarer Employment Agreement
+                    </h3>
+                    <div className="mt-3 flex items-center justify-center gap-5">
+                      <span className="h-px w-24 bg-[#7aa9de]" />
+                      <span className="text-sm font-medium uppercase tracking-[0.46em] text-[#1e67bc]">
+                        Employment Terms
                       </span>
-                      <select
-                        value={contractDraft.currency}
-                        onChange={(event) => updateContractDraft("currency", event.target.value)}
-                        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
-                      >
-                        {["EUR", "USD", "GBP", "TRY"].map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <ContractField
-                      label="Termination notice"
-                      value={contractDraft.terminationNotice}
-                      onChange={(value) => updateContractDraft("terminationNotice", value)}
-                      placeholder="Example: 7 days written notice"
-                    />
+                      <span className="h-px w-24 bg-[#7aa9de]" />
+                    </div>
+                    <span className="mx-auto mt-3 block h-1 w-1 rounded-full bg-[#1e67bc]" />
                   </div>
-                  <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                    <ContractField
-                      label="Leave / rotation"
-                      value={contractDraft.leaveTerms}
-                      onChange={(value) => updateContractDraft("leaveTerms", value)}
-                      placeholder="Example: MLC / seasonal agreement"
-                    />
-                    <ContractField
-                      label="Travel terms"
-                      value={contractDraft.travelTerms}
-                      onChange={(value) => updateContractDraft("travelTerms", value)}
-                      placeholder="Flights, transfers or joining port"
-                    />
-                    <ContractField
-                      label="Accommodation / meals"
-                      value={contractDraft.accommodationTerms}
-                      onChange={(value) => updateContractDraft("accommodationTerms", value)}
-                      placeholder="Provided onboard / ashore"
-                    />
+
+                  <div className="relative mt-8 space-y-5">
+                    <ContractTermsBlock
+                      title="Agreement details"
+                      note="Complete all applicable fields"
+                    >
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <ContractField
+                          label="Crewmember name"
+                          value={contractDraft.employeeName}
+                          onChange={(value) => updateContractDraft("employeeName", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Position"
+                          value={contractDraft.employeePosition}
+                          onChange={(value) => updateContractDraft("employeePosition", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Agreement start date"
+                          value={contractDraft.agreementStartDate}
+                          onChange={(value) => updateContractDraft("agreementStartDate", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Agreement end date"
+                          value={contractDraft.agreementEndDate}
+                          onChange={(value) => updateContractDraft("agreementEndDate", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Agreement type"
+                          value={contractDraft.agreementType}
+                          onChange={(value) => updateContractDraft("agreementType", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Trial period"
+                          value={contractDraft.trialPeriod}
+                          onChange={(value) => updateContractDraft("trialPeriod", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Place of engagement"
+                          value={contractDraft.placeOfEngagement}
+                          onChange={(value) => updateContractDraft("placeOfEngagement", value)}
+                          placeholder=""
+                        />
+                        <ContractField
+                          label="Trial period end date"
+                          value={contractDraft.trialPeriodEndDate}
+                          onChange={(value) => updateContractDraft("trialPeriodEndDate", value)}
+                          placeholder=""
+                        />
+                      </div>
+                    </ContractTermsBlock>
+
+                    <div className="grid gap-5 xl:grid-cols-2">
+                      <ContractTermsBlock
+                        title="Terms within trial period"
+                        note="if applicable"
+                      >
+                        <div className="grid gap-4">
+                          <ContractField
+                            label="Salary"
+                            value={contractDraft.trialSalary}
+                            onChange={(value) => updateContractDraft("trialSalary", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Salary accrual"
+                            value={contractDraft.trialSalaryAccrual}
+                            onChange={(value) => updateContractDraft("trialSalaryAccrual", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Notice period"
+                            value={contractDraft.trialNoticePeriod}
+                            onChange={(value) => updateContractDraft("trialNoticePeriod", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Annual leave"
+                            value={contractDraft.trialAnnualLeave}
+                            onChange={(value) => updateContractDraft("trialAnnualLeave", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Place of repatriation"
+                            value={contractDraft.trialPlaceOfRepatriation}
+                            onChange={(value) => updateContractDraft("trialPlaceOfRepatriation", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Travel allowance"
+                            value={contractDraft.trialTravelAllowance}
+                            onChange={(value) => updateContractDraft("trialTravelAllowance", value)}
+                            placeholder=""
+                          />
+                        </div>
+                      </ContractTermsBlock>
+
+                      <ContractTermsBlock title="Standard terms">
+                        <div className="grid gap-4">
+                          <ContractField
+                            label="Salary"
+                            value={contractDraft.standardSalary}
+                            onChange={(value) => updateContractDraft("standardSalary", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Salary accrual"
+                            value={contractDraft.standardSalaryAccrual}
+                            onChange={(value) => updateContractDraft("standardSalaryAccrual", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Notice period"
+                            value={contractDraft.standardNoticePeriod}
+                            onChange={(value) => updateContractDraft("standardNoticePeriod", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Annual leave"
+                            value={contractDraft.standardAnnualLeave}
+                            onChange={(value) => updateContractDraft("standardAnnualLeave", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Place of repatriation"
+                            value={contractDraft.standardPlaceOfRepatriation}
+                            onChange={(value) => updateContractDraft("standardPlaceOfRepatriation", value)}
+                            placeholder=""
+                          />
+                          <ContractField
+                            label="Travel allowance"
+                            value={contractDraft.standardTravelAllowance}
+                            onChange={(value) => updateContractDraft("standardTravelAllowance", value)}
+                            placeholder=""
+                          />
+                        </div>
+                      </ContractTermsBlock>
+                    </div>
                   </div>
                 </div>
               )}
@@ -4060,6 +4214,30 @@ function ContractPanelTitle({
       </h3>
       <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{text}</p>
     </div>
+  );
+}
+
+function ContractTermsBlock({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[22px] border border-[#bfd8ea] bg-white/96 shadow-sm shadow-blue-950/5">
+      <div className="flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#f8fbff]/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <h4 className="font-serif text-xl font-black uppercase tracking-[0.02em] text-[#082759]">
+          {title}
+        </h4>
+        {note ? (
+          <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
+        ) : null}
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
   );
 }
 
