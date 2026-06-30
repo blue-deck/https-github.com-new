@@ -101,6 +101,21 @@ type ContractDraft = {
   signatureLocation: string;
 };
 
+type ContractSheetRow = [string, string | undefined | null];
+
+type ContractSheetSection = {
+  number: string;
+  title: string;
+  note: string;
+  rows: ContractSheetRow[];
+  footer?: string;
+};
+
+type ContractDocumentSection = {
+  title: string;
+  lines: string[];
+};
+
 const defaultYachtDisciplineRules = [
   "Captain's orders must be followed.",
   "Safety comes before comfort, speed or convenience.",
@@ -201,6 +216,64 @@ function contractSheetValue(value: string | undefined | null) {
   return String(value || "").trim() || "-";
 }
 
+function contractDisplayLines(lines: string[]) {
+  return lines.flatMap((line) => (line ? line.split("\n") : [""]));
+}
+
+function getContractCoverSections(draft: ContractDraft, member?: any): ContractSheetSection[] {
+  const crewProfile = member?.crew_profiles || {};
+
+  return [
+    {
+      number: "1.",
+      title: "Yacht details",
+      note: "To be completed by the Owner / Company",
+      rows: [
+        ["Yacht name", draft.vesselName],
+        ["Flag state", draft.flagState],
+        ["Official / registration number", draft.officialNumber],
+        ["IMO number", draft.imoNumber],
+        ["Call sign", draft.callSign],
+        ["Vessel type", draft.vesselType],
+        ["Length overall - LOA", draft.lengthOverall],
+        ["Gross tonnage", draft.grossTonnage],
+        ["Port of registry", draft.portOfRegistry],
+        ["Engine power", draft.enginePower],
+      ],
+    },
+    {
+      number: "2.",
+      title: "Owner / Company details",
+      note: "Legal contracting party",
+      rows: [
+        ["Owner / company legal name", draft.ownerCompanyName],
+        ["Registered address", draft.ownerRegisteredAddress],
+        ["Authorized representative", draft.ownerRepresentative],
+        ["Representative address / passport no", draft.ownerRepresentativeDetails],
+        ["Email", draft.ownerEmail],
+        ["Telephone", draft.ownerTelephone],
+      ],
+    },
+    {
+      number: "3.",
+      title: "Crew member details",
+      note: "Employee / Seafarer information",
+      rows: [
+        ["Crew member full name", draft.employeeName || getCrewDisplayName(member)],
+        ["Nationality", draft.employeeNationality || crewProfile.nationality],
+        ["Date of birth", draft.employeeDob || crewProfile.date_of_birth || crewProfile.birth_date],
+        ["Passport number", draft.employeePassportNo || crewProfile.passport_no],
+        ["Seaman book no", draft.employeeSeamanBookNo || crewProfile.seaman_book_no],
+        ["Position", draft.employeePosition || getCrewPosition(member)],
+        ["Email", crewProfile.email || member?.invited_email],
+        ["Telephone", crewProfile.phone || crewProfile.mobile_number || crewProfile.mobile],
+      ],
+      footer:
+        "Crew details are completed by the invited crew member before the final contract is confirmed.",
+    },
+  ];
+}
+
 function formatContractDisciplineSection(draft: ContractDraft) {
   const rules = draft.disciplineRules
     .map((rule) => rule.trim())
@@ -213,112 +286,106 @@ function formatContractDisciplineSection(draft: ContractDraft) {
   ].join("\n");
 }
 
-function buildContractPreviewText(draft: ContractDraft, member?: any) {
+function getContractDocumentSections(draft: ContractDraft, member?: any): ContractDocumentSection[] {
   const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
   const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
-  const crewProfile = member?.crew_profiles || {};
-  const crewSheetName = contractSheetValue(draft.employeeName || getCrewDisplayName(member));
-  const crewSheetNationality = contractSheetValue(draft.employeeNationality || crewProfile.nationality);
-  const crewSheetDateOfBirth = contractSheetValue(
-    draft.employeeDob || crewProfile.date_of_birth || crewProfile.birth_date
-  );
-  const crewSheetPassport = contractSheetValue(draft.employeePassportNo || crewProfile.passport_no);
-  const crewSheetSeamanBook = contractSheetValue(draft.employeeSeamanBookNo || crewProfile.seaman_book_no);
-  const crewSheetPosition = contractSheetValue(draft.employeePosition || getCrewPosition(member));
-  const crewSheetEmail = contractSheetValue(crewProfile.email || member?.invited_email);
-  const crewSheetTelephone = contractSheetValue(crewProfile.phone || crewProfile.mobile_number || crewProfile.mobile);
+
+  return [
+    {
+      title: "General Yacht Crew Employment Agreement",
+      lines: [
+        "Seafarer / Yacht Crew Employment Contract",
+        "This General Yacht Crew Employment Agreement is prepared for the yacht described in the cover sheet.",
+        'Together referred to as the "Parties."',
+      ],
+    },
+    {
+      title: "Yacht / Vessel Details",
+      lines: [
+        `Yacht Name: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
+        `Flag State: ${contractValue(draft.flagState, "[FLAG STATE]")}`,
+        `Official Number / Registration Number: ${contractValue(draft.officialNumber, "[OFFICIAL / REGISTRATION NUMBER]")}`,
+        `IMO Number: ${contractValue(draft.imoNumber, "[IMO NUMBER]")}`,
+        `Call Sign: ${contractValue(draft.callSign, "[CALL SIGN]")}`,
+        `Vessel Type: ${contractValue(draft.vesselType, "[VESSEL TYPE]")}`,
+        `Length Overall - LOA: ${contractValue(draft.lengthOverall, "[LOA]")}`,
+        `Gross Tonnage: ${contractValue(draft.grossTonnage, "[GROSS TONNAGE]")}`,
+        `Port of Registry: ${contractValue(draft.portOfRegistry, "[PORT OF REGISTRY]")}`,
+        `Engine Power: ${contractValue(draft.enginePower, "[ENGINE POWER]")}`,
+      ],
+    },
+    {
+      title: "Employee / Crew Member",
+      lines: [
+        `Name Surname: ${employeeName}`,
+        `Nationality: ${contractValue(draft.employeeNationality, "[NATIONALITY]")}`,
+        `Passport No: ${contractValue(draft.employeePassportNo, "[PASSPORT NO]")}`,
+        `Seaman Book No: ${contractValue(draft.employeeSeamanBookNo, "[SEAMAN BOOK NO, IF ANY]")}`,
+        `Position: ${employeePosition}`,
+      ],
+    },
+    {
+      title: "Contract Terms",
+      lines: [
+        `Start Date: ${contractValue(draft.startDate, "[START DATE]")}`,
+        `End Date: ${contractValue(draft.endDate, "[END DATE / ROTATION]")}`,
+        `Salary: ${contractValue(draft.salary, "[SALARY]")} ${contractValue(draft.currency, "EUR")}`,
+        `Leave / Rotation: ${contractValue(draft.leaveTerms, "[LEAVE OR ROTATION TERMS]")}`,
+        `Travel: ${contractValue(draft.travelTerms, "[TRAVEL ARRANGEMENTS]")}`,
+        `Accommodation / Meals: ${contractValue(draft.accommodationTerms, "[ACCOMMODATION AND MEALS]")}`,
+        `Termination Notice: ${contractValue(draft.terminationNotice, "[NOTICE PERIOD]")}`,
+      ],
+    },
+    {
+      title: "Contract Clauses",
+      lines: [contractValue(draft.clauses, "[CONTRACT CLAUSES]")],
+    },
+    {
+      title: "Duties and Discipline",
+      lines: [
+        contractValue(draft.duties, "[DUTIES]"),
+        "",
+        "Discipline:",
+        formatContractDisciplineSection(draft),
+      ],
+    },
+    {
+      title: "Signatures",
+      lines: [
+        `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
+        `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
+        `Date: ${contractValue(draft.signatureDate, "[SIGNATURE DATE]")}`,
+        `Location: ${contractValue(draft.signatureLocation, "[SIGNATURE LOCATION]")}`,
+        "Employee signature will be collected through BlueDeck mobile signing flow.",
+      ],
+    },
+  ];
+}
+
+function buildContractPreviewText(draft: ContractDraft, member?: any) {
+  const coverLines = getContractCoverSections(draft, member).flatMap((section) => [
+    `${section.number} ${section.title.toUpperCase()}`,
+    ...section.rows.map(([label, value]) => `${label}: ${contractSheetValue(value)}`),
+    ...(section.footer ? [section.footer] : []),
+    "",
+  ]);
+
+  const bodyLines = getContractDocumentSections(draft, member).flatMap((section, index) => [
+    `${index + 1}. ${section.title.toUpperCase()}`,
+    ...section.lines,
+    "",
+  ]);
 
   return [
     "SEAFARER EMPLOYMENT AGREEMENT",
     "COVER SHEET",
     "",
-    "1. YACHT DETAILS",
-    `Yacht Name: ${contractSheetValue(draft.vesselName)}`,
-    `Flag State: ${contractSheetValue(draft.flagState)}`,
-    `Official / Registration Number: ${contractSheetValue(draft.officialNumber)}`,
-    `IMO Number: ${contractSheetValue(draft.imoNumber)}`,
-    `Call Sign: ${contractSheetValue(draft.callSign)}`,
-    `Vessel Type: ${contractSheetValue(draft.vesselType)}`,
-    `Length Overall - LOA: ${contractSheetValue(draft.lengthOverall)}`,
-    `Gross Tonnage: ${contractSheetValue(draft.grossTonnage)}`,
-    `Port of Registry: ${contractSheetValue(draft.portOfRegistry)}`,
-    `Engine Power: ${contractSheetValue(draft.enginePower)}`,
-    "",
-    "2. OWNER / COMPANY DETAILS",
-    `Owner / Company Legal Name: ${contractSheetValue(draft.ownerCompanyName)}`,
-    `Registered Address: ${contractSheetValue(draft.ownerRegisteredAddress)}`,
-    `Authorized Representative: ${contractSheetValue(draft.ownerRepresentative)}`,
-    `Authorized Representative Address / Passport Number: ${contractSheetValue(draft.ownerRepresentativeDetails)}`,
-    `Email: ${contractSheetValue(draft.ownerEmail)}`,
-    `Telephone: ${contractSheetValue(draft.ownerTelephone)}`,
-    "",
-    "3. CREW MEMBER DETAILS",
-    "Crew details will be completed by the invited crew member after the final contract is sent through BlueDeck.",
-    `Crew Member Full Name: ${crewSheetName}`,
-    `Nationality: ${crewSheetNationality}`,
-    `Date of Birth: ${crewSheetDateOfBirth}`,
-    `Passport Number: ${crewSheetPassport}`,
-    `Seaman Book No: ${crewSheetSeamanBook}`,
-    `Position: ${crewSheetPosition}`,
-    `Email: ${crewSheetEmail}`,
-    `Telephone: ${crewSheetTelephone}`,
-    "",
+    ...coverLines,
     "This cover sheet forms an integral part of the Seafarer Employment Agreement.",
     "",
     "---",
     "",
-    "GENERAL YACHT CREW EMPLOYMENT AGREEMENT",
-    "Seafarer / Yacht Crew Employment Contract",
-    "This General Yacht Crew Employment Agreement is prepared for the yacht described below:",
-    "",
-    "Yacht / Vessel Details:",
-    `Yacht Name: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
-    `Flag State: ${contractValue(draft.flagState, "[FLAG STATE]")}`,
-    `Official Number / Registration Number: ${contractValue(draft.officialNumber, "[OFFICIAL / REGISTRATION NUMBER]")}`,
-    `IMO Number: ${contractValue(draft.imoNumber, "[IMO NUMBER]")}`,
-    `Call Sign: ${contractValue(draft.callSign, "[CALL SIGN]")}`,
-    `Vessel Type: ${contractValue(draft.vesselType, "[VESSEL TYPE]")}`,
-    `Length Overall - LOA: ${contractValue(draft.lengthOverall, "[LOA]")}`,
-    `Gross Tonnage: ${contractValue(draft.grossTonnage, "[GROSS TONNAGE]")}`,
-    `Port of Registry: ${contractValue(draft.portOfRegistry, "[PORT OF REGISTRY]")}`,
-    `Engine Power: ${contractValue(draft.enginePower, "[ENGINE POWER]")}`,
-    "",
-    "and",
-    "",
-    "Employee / Crew Member:",
-    `Name Surname: ${employeeName}`,
-    `Nationality: ${contractValue(draft.employeeNationality, "[NATIONALITY]")}`,
-    `Passport No: ${contractValue(draft.employeePassportNo, "[PASSPORT NO]")}`,
-    `Seaman Book No: ${contractValue(draft.employeeSeamanBookNo, "[SEAMAN BOOK NO, IF ANY]")}`,
-    `Position : ${employeePosition}`,
-    "",
-    'Together referred to as the "Parties."',
-    "",
-    "2. CONTRACT TERMS",
-    `Start Date: ${contractValue(draft.startDate, "[START DATE]")}`,
-    `End Date: ${contractValue(draft.endDate, "[END DATE / ROTATION]")}`,
-    `Salary: ${contractValue(draft.salary, "[SALARY]")} ${contractValue(draft.currency, "EUR")}`,
-    `Leave / Rotation: ${contractValue(draft.leaveTerms, "[LEAVE OR ROTATION TERMS]")}`,
-    `Travel: ${contractValue(draft.travelTerms, "[TRAVEL ARRANGEMENTS]")}`,
-    `Accommodation / Meals: ${contractValue(draft.accommodationTerms, "[ACCOMMODATION AND MEALS]")}`,
-    `Termination Notice: ${contractValue(draft.terminationNotice, "[NOTICE PERIOD]")}`,
-    "",
-    "3. CONTRACT CLAUSES",
-    contractValue(draft.clauses, "[CONTRACT CLAUSES]"),
-    "",
-    "4. DUTIES AND DISCIPLINE",
-    contractValue(draft.duties, "[DUTIES]"),
-    "",
-    "Discipline:",
-    formatContractDisciplineSection(draft),
-    "",
-    "5. SIGNATURES",
-    `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
-    `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
-    `Date: ${contractValue(draft.signatureDate, "[SIGNATURE DATE]")}`,
-    `Location: ${contractValue(draft.signatureLocation, "[SIGNATURE LOCATION]")}`,
-    "",
-    "Employee signature will be collected through BlueDeck mobile signing flow.",
+    ...bodyLines,
   ].join("\n");
 }
 
@@ -669,42 +736,219 @@ export default function CrewPage({
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 46;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 50;
 
-    function ensureSpace(height: number) {
-      if (y + height <= pageHeight - 54) return;
-      doc.setDrawColor(24, 93, 109);
-      doc.line(margin, pageHeight - 42, pageWidth - margin, pageHeight - 42);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
-      doc.text("BlueDeck contract draft prepared for mobile signature.", margin, pageHeight - 26);
-      doc.addPage();
-      y = 50;
+    function hexToRgb(hex: string) {
+      const clean = hex.replace("#", "");
+      return {
+        r: parseInt(clean.slice(0, 2), 16),
+        g: parseInt(clean.slice(2, 4), 16),
+        b: parseInt(clean.slice(4, 6), 16),
+      };
     }
 
-    doc.setFillColor(7, 17, 31);
-    doc.roundedRect(margin, y, contentWidth, 66, 16, 16, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(17);
-    doc.setTextColor(255, 255, 255);
-    doc.text("BlueDeck Yacht Employment Agreement", margin + 18, y + 28);
-    doc.setFontSize(9);
-    doc.setTextColor(177, 244, 250);
-    doc.text("Draft preview for crew mobile signature", margin + 18, y + 48);
-    y += 92;
+    function setFill(hex: string) {
+      const { r, g, b } = hexToRgb(hex);
+      doc.setFillColor(r, g, b);
+    }
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(32, 48, 64);
-    const lines = doc.splitTextToSize(contractPreviewText, contentWidth);
-    lines.forEach((line: string) => {
-      ensureSpace(15);
-      doc.text(line, margin, y);
-      y += 14;
-    });
+    function setStroke(hex: string) {
+      const { r, g, b } = hexToRgb(hex);
+      doc.setDrawColor(r, g, b);
+    }
+
+    function setText(hex: string) {
+      const { r, g, b } = hexToRgb(hex);
+      doc.setTextColor(r, g, b);
+    }
+
+    function drawWave(startX: number, startY: number, width: number, amplitude: number, color: string, offset = 0) {
+      setStroke(color);
+      doc.setLineWidth(0.48);
+      for (let lineIndex = 0; lineIndex < 7; lineIndex += 1) {
+        const yBase = startY + lineIndex * 3.1 + offset;
+        let previousX = startX;
+        let previousY = yBase;
+        for (let step = 1; step <= 58; step += 1) {
+          const progress = step / 58;
+          const x = startX + width * progress;
+          const y = yBase + Math.sin(progress * Math.PI * 2.18 + lineIndex * 0.34) * amplitude;
+          doc.line(previousX, previousY, x, y);
+          previousX = x;
+          previousY = y;
+        }
+      }
+    }
+
+    function drawContractPageBase(pageNo: number) {
+      setFill("#ffffff");
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+      setStroke("#b8d2ee");
+      doc.setLineWidth(0.9);
+      doc.roundedRect(18, 18, pageWidth - 36, pageHeight - 36, 10, 10, "S");
+      drawWave(136, 56, 330, 9, "#2c77c5");
+      drawWave(406, 25, 220, 7, "#b7d5f4", 1.2);
+      drawWave(-42, pageHeight - 84, 226, 8, "#2c77c5");
+      drawWave(438, pageHeight - 62, 190, 6, "#d2e5f8", 1.2);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.4);
+      setText("#2a63a3");
+      doc.text("BlueDeck YachtOS Contract Studio", pageWidth / 2, pageHeight - 24, { align: "center" });
+      doc.setFontSize(8);
+      setText("#082759");
+      doc.text(`Page ${pageNo}`, pageWidth - 48, pageHeight - 24, { align: "right" });
+    }
+
+    function drawCenteredTitle(title: string, subtitle: string) {
+      doc.setFont("times", "bold");
+      doc.setFontSize(25);
+      setText("#082759");
+      doc.text(title, pageWidth / 2, 116, { align: "center" });
+      setStroke("#7aa9de");
+      doc.setLineWidth(0.7);
+      doc.line(142, 143, 243, 143);
+      doc.line(352, 143, 453, 143);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(13);
+      setText("#1e67bc");
+      doc.text(subtitle.split("").join("  "), pageWidth / 2, 147, { align: "center" });
+      setFill("#1e67bc");
+      doc.circle(pageWidth / 2, 160, 1.6, "F");
+    }
+
+    function drawCoverField(label: string, value: string | undefined | null, x: number, y: number, width: number) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.8);
+      setText("#082759");
+      doc.text(label.toUpperCase(), x, y);
+      setStroke("#9ec4ed");
+      setFill("#ffffff");
+      doc.roundedRect(x, y + 6, width, 18, 4, 4, "FD");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.6);
+      setText("#17233a");
+      const text = doc.splitTextToSize(contractSheetValue(value), width - 10);
+      doc.text(text.slice(0, 1), x + 7, y + 19);
+    }
+
+    function drawCoverSection(section: ContractSheetSection, x: number, y: number, width: number, height: number) {
+      setStroke("#c4d9ee");
+      setFill("#ffffff");
+      doc.roundedRect(x, y, width, height, 9, 9, "FD");
+      setFill("#fbfdff");
+      doc.rect(x + 0.6, y + 0.6, width - 1.2, 34, "F");
+      setStroke("#d8e7f5");
+      doc.line(x, y + 34, x + width, y + 34);
+      setFill("#063574");
+      doc.roundedRect(x + 16, y + 8, 30, 26, 5, 5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      setText("#ffffff");
+      doc.text(section.number, x + 31, y + 25.5, { align: "center" });
+      doc.setFont("times", "bold");
+      doc.setFontSize(16);
+      setText("#082759");
+      doc.text(section.title.toUpperCase(), x + 62, y + 25.5);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.6);
+      setText("#1e67bc");
+      doc.text(section.note, x + width - 18, y + 25, { align: "right" });
+
+      const gap = 18;
+      const colWidth = (width - 52 - gap) / 2;
+      let fieldY = y + 48;
+      section.rows.forEach(([label, value], index) => {
+        const fullWidth = section.rows.length === 6 && index < 2;
+        const isLeft = index % 2 === 0;
+        const fieldX = fullWidth ? x + 26 : x + 26 + (isLeft ? 0 : colWidth + gap);
+        drawCoverField(label, value, fieldX, fieldY, fullWidth ? width - 52 : colWidth);
+        if (fullWidth || !isLeft) fieldY += 32;
+      });
+
+      if (section.footer) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.3);
+        setText("#4f6680");
+        doc.text(doc.splitTextToSize(section.footer, width - 52), x + 26, y + height - 17);
+      }
+    }
+
+    function drawContractCoverPage() {
+      drawContractPageBase(1);
+      drawCenteredTitle("SEAFARER EMPLOYMENT AGREEMENT", "COVER SHEET");
+      const sections = getContractCoverSections(contractDraft, selectedContractMember);
+      drawCoverSection(sections[0], 42, 182, pageWidth - 84, 220);
+      drawCoverSection(sections[1], 42, 416, pageWidth - 84, 172);
+      drawCoverSection(sections[2], 42, 602, pageWidth - 84, 166);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.5);
+      setText("#1e67bc");
+      doc.text(
+        "This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.",
+        pageWidth / 2,
+        pageHeight - 43,
+        { align: "center" }
+      );
+    }
+
+    function drawBodyPageHeader(title: string, pageNo: number) {
+      drawContractPageBase(pageNo);
+      doc.setFont("times", "bold");
+      doc.setFontSize(18);
+      setText("#082759");
+      doc.text(title.toUpperCase(), 48, 74);
+      setStroke("#8fb9e8");
+      doc.setLineWidth(0.75);
+      doc.line(48, 88, pageWidth - 48, 88);
+    }
+
+    function drawBodyPages() {
+      const sections = getContractDocumentSections(contractDraft, selectedContractMember);
+      const left = 54;
+      const right = pageWidth - 54;
+      const width = right - left;
+      const bottom = pageHeight - 70;
+      let pageNo = 2;
+      let y = 112;
+
+      doc.addPage();
+      drawBodyPageHeader("Seafarer Employment Agreement", pageNo);
+
+      function ensureSpace(height: number) {
+        if (y + height <= bottom) return;
+        pageNo += 1;
+        doc.addPage();
+        y = 112;
+        drawBodyPageHeader("Seafarer Employment Agreement", pageNo);
+      }
+
+      sections.forEach((section) => {
+        ensureSpace(30);
+        doc.setFont("times", "bold");
+        doc.setFontSize(14);
+        setText("#082759");
+        doc.text(section.title.toUpperCase(), left, y);
+        setStroke("#b8d2ee");
+        doc.line(left, y + 8, right, y + 8);
+        y += 26;
+
+        contractDisplayLines(section.lines).forEach((line) => {
+          const pieces = line ? doc.splitTextToSize(line, width - 8) : [""];
+          pieces.forEach((piece: string) => {
+            ensureSpace(13);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9.2);
+            setText("#17233a");
+            if (piece) doc.text(piece, left + 4, y);
+            y += 12;
+          });
+          y += 4;
+        });
+        y += 10;
+      });
+    }
+
+    drawContractCoverPage();
+    drawBodyPages();
 
     doc.save(buildContractFileName(contractDraft, selectedContractMember));
   }
@@ -2220,9 +2464,7 @@ export default function CrewPage({
                       text="Review the generated text before sending it for mobile signature."
                     />
                     <ContractCoverSheetPreview draft={contractDraft} member={selectedContractMember} />
-                    <pre className="mt-5 max-h-[620px] overflow-auto whitespace-pre-wrap rounded-[24px] border border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-700">
-                      {contractPreviewText}
-                    </pre>
+                    <ContractDocumentPreview draft={contractDraft} member={selectedContractMember} />
                   </div>
 
                   <div className="space-y-4">
@@ -3647,69 +3889,57 @@ function MonitorMetric({
 }
 
 function ContractCoverSheetPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
-  const crewProfile = member?.crew_profiles || {};
-  const yachtRows: Array<[string, string | undefined | null]> = [
-    ["Yacht name", draft.vesselName],
-    ["Flag state", draft.flagState],
-    ["Official / registration number", draft.officialNumber],
-    ["IMO number", draft.imoNumber],
-    ["Call sign", draft.callSign],
-    ["Vessel type", draft.vesselType],
-    ["Length overall - LOA", draft.lengthOverall],
-    ["Gross tonnage", draft.grossTonnage],
-    ["Port of registry", draft.portOfRegistry],
-    ["Engine power", draft.enginePower],
-  ];
-  const ownerRows: Array<[string, string | undefined | null]> = [
-    ["Owner / company legal name", draft.ownerCompanyName],
-    ["Registered address", draft.ownerRegisteredAddress],
-    ["Authorized representative", draft.ownerRepresentative],
-    ["Representative address / passport no", draft.ownerRepresentativeDetails],
-    ["Email", draft.ownerEmail],
-    ["Telephone", draft.ownerTelephone],
-  ];
-  const crewRows: Array<[string, string | undefined | null]> = [
-    ["Crew member full name", draft.employeeName || getCrewDisplayName(member)],
-    ["Nationality", draft.employeeNationality || crewProfile.nationality],
-    ["Date of birth", draft.employeeDob || crewProfile.date_of_birth || crewProfile.birth_date],
-    ["Passport number", draft.employeePassportNo || crewProfile.passport_no],
-    ["Seaman book no", draft.employeeSeamanBookNo || crewProfile.seaman_book_no],
-    ["Position", draft.employeePosition || getCrewPosition(member)],
-    ["Email", crewProfile.email || member?.invited_email],
-    ["Telephone", crewProfile.phone || crewProfile.mobile_number || crewProfile.mobile],
-  ];
+  const sections = getContractCoverSections(draft, member);
 
   return (
-    <div className="mt-5 overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm">
-      <div className="bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_58%,#edf7ff_100%)] px-5 py-6 text-center">
-        <p className="font-serif text-2xl font-black uppercase tracking-[0.06em] text-[#082759] sm:text-3xl">
+    <div className="relative mx-auto mt-5 max-w-[920px] overflow-hidden rounded-[28px] border border-[#b8d2ee] bg-white px-5 py-8 shadow-sm shadow-blue-950/8 sm:px-8">
+      <ContractPaperDecorations />
+      <div className="relative text-center">
+        <h3 className="font-serif text-[26px] font-black uppercase tracking-[0.03em] text-[#082759] sm:text-[38px]">
           Seafarer Employment Agreement
-        </p>
-        <p className="mt-2 text-xs font-black uppercase tracking-[0.45em] text-[#0d58ae]">
-          Cover Sheet
-        </p>
+        </h3>
+        <div className="mt-3 flex items-center justify-center gap-5">
+          <span className="h-px w-28 bg-[#7aa9de]" />
+          <span className="text-sm font-medium uppercase tracking-[0.56em] text-[#1e67bc]">
+            Cover Sheet
+          </span>
+          <span className="h-px w-28 bg-[#7aa9de]" />
+        </div>
+        <span className="mx-auto mt-3 block h-1 w-1 rounded-full bg-[#1e67bc]" />
       </div>
-      <div className="space-y-4 p-5">
-        <ContractCoverSection
-          number="1."
-          title="Yacht details"
-          note="To be completed by the Owner / Company"
-          rows={yachtRows}
-        />
-        <ContractCoverSection
-          number="2."
-          title="Owner / Company details"
-          note="Legal contracting party"
-          rows={ownerRows}
-        />
-        <ContractCoverSection
-          number="3."
-          title="Crew member details"
-          note="Employee / Seafarer information"
-          rows={crewRows}
-          footer="Crew details are completed by the invited crew member before the final contract is confirmed."
-        />
+      <div className="relative mt-8 space-y-4">
+        {sections.map((section) => (
+          <ContractCoverSection key={section.number} {...section} />
+        ))}
       </div>
+      <p className="relative mt-5 text-center text-xs font-medium text-[#1e67bc]">
+        This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.
+      </p>
+    </div>
+  );
+}
+
+function ContractPaperDecorations() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="absolute left-[20%] top-10 h-10 w-[44%] opacity-45">
+        {Array.from({ length: 7 }).map((_, index) => (
+          <span
+            key={index}
+            className="absolute block h-px rounded-full bg-[#2c77c5]"
+            style={{
+              left: `${index * 4}px`,
+              right: `${index * 2}px`,
+              top: `${index * 4}px`,
+              transform: `rotate(${index % 2 === 0 ? -4 : 3}deg)`,
+              opacity: 0.5 - index * 0.045,
+            }}
+          />
+        ))}
+      </div>
+      <div className="absolute -right-12 top-3 h-28 w-72 rotate-[-11deg] rounded-full border-t border-[#b7d5f4]/70" />
+      <div className="absolute -bottom-6 -left-12 h-28 w-72 rotate-[-9deg] rounded-full border-t border-[#2c77c5]/55" />
+      <div className="absolute bottom-3 right-10 h-20 w-60 rotate-[7deg] rounded-full border-t border-[#d2e5f8]/80" />
     </div>
   );
 }
@@ -3728,13 +3958,13 @@ function ContractCoverSection({
   footer?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-[20px] border border-[#bfd8ea] bg-white">
-      <div className="flex flex-col gap-3 border-b border-[#d9e8f3] bg-[#fbfdff] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
+      <div className="flex flex-col gap-3 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#062f65] text-sm font-black text-white">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#063574] text-base font-black text-white shadow-sm shadow-blue-950/20">
             {number}
           </span>
-          <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
+          <h4 className="font-serif text-xl font-black uppercase tracking-[0.02em] text-[#082759]">
             {title}
           </h4>
         </div>
@@ -3742,11 +3972,11 @@ function ContractCoverSection({
       </div>
       <div className="grid gap-3 p-4 sm:grid-cols-2">
         {rows.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-[#cfe3f4] bg-white px-3 py-2">
+          <div key={label} className="rounded-xl border border-[#b9d5f0] bg-white px-3 py-2">
             <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
               {label}
             </p>
-            <p className="mt-1 min-h-[20px] text-sm font-bold text-slate-800">
+            <p className="mt-1 min-h-[20px] text-sm font-semibold text-[#17233a]">
               {contractSheetValue(value)}
             </p>
           </div>
@@ -3758,6 +3988,47 @@ function ContractCoverSection({
         </p>
       )}
     </section>
+  );
+}
+
+function ContractDocumentPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
+  const sections = getContractDocumentSections(draft, member);
+
+  return (
+    <div className="relative mx-auto mt-5 max-w-[920px] overflow-hidden rounded-[28px] border border-[#b8d2ee] bg-white px-6 py-8 shadow-sm shadow-blue-950/8 sm:px-9">
+      <ContractPaperDecorations />
+      <div className="relative">
+        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.03em] text-[#082759]">
+          Seafarer Employment Agreement
+        </h3>
+        <div className="mt-3 h-px bg-[#8fb9e8]" />
+        <div className="mt-6 space-y-6">
+          {sections.map((section, index) => (
+            <section key={section.title}>
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#063574] text-xs font-black text-white">
+                  {index + 1}
+                </span>
+                <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
+                  {section.title}
+                </h4>
+              </div>
+              <div className="mt-3 rounded-2xl border border-[#d8e7f5] bg-white/92 p-4">
+                {contractDisplayLines(section.lines).map((line, lineIndex) =>
+                  line ? (
+                    <p key={`${section.title}-${lineIndex}`} className="text-sm font-medium leading-7 text-[#17233a]">
+                      {line}
+                    </p>
+                  ) : (
+                    <div key={`${section.title}-${lineIndex}`} className="h-3" />
+                  )
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
