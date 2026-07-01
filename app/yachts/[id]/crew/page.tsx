@@ -839,7 +839,7 @@ export default function CrewPage({
       }
     }
 
-    function drawContractPageBase(pageNo: number) {
+    function drawContractPageBase() {
       setFill("#ffffff");
       doc.rect(0, 0, pageWidth, pageHeight, "F");
       setStroke("#b8d2ee");
@@ -849,30 +849,19 @@ export default function CrewPage({
       drawWave(406, 25, 220, 7, "#b7d5f4", 1.2);
       drawWave(-42, pageHeight - 84, 226, 8, "#2c77c5");
       drawWave(438, pageHeight - 62, 190, 6, "#d2e5f8", 1.2);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.4);
-      setText("#2a63a3");
-      doc.text("BlueDeck YachtOS Contract Studio", pageWidth / 2, pageHeight - 24, { align: "center" });
-      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
       setText("#082759");
-      doc.text(`Page ${pageNo}`, pageWidth - 48, pageHeight - 24, { align: "right" });
+      doc.text("S E A F A R E R   E M P L O Y M E N T   A G R E E M E N T", pageWidth / 2, 125, {
+        align: "center",
+      });
     }
 
-    function drawCenteredTitle(title: string, subtitle: string) {
-      doc.setFont("times", "bold");
-      doc.setFontSize(25);
+    function drawContractPageFooter(pageNo: number, totalPages: number) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.4);
       setText("#082759");
-      doc.text(title, pageWidth / 2, 116, { align: "center" });
-      setStroke("#7aa9de");
-      doc.setLineWidth(0.7);
-      doc.line(142, 143, 243, 143);
-      doc.line(352, 143, 453, 143);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(13);
-      setText("#1e67bc");
-      doc.text(subtitle.split("").join("  "), pageWidth / 2, 147, { align: "center" });
-      setFill("#1e67bc");
-      doc.circle(pageWidth / 2, 160, 1.6, "F");
+      doc.text(`Page ${pageNo} of ${totalPages}`, pageWidth - 48, pageHeight - 28, { align: "right" });
     }
 
     function drawCoverField(label: string, value: string | undefined | null, x: number, y: number, width: number) {
@@ -927,12 +916,11 @@ export default function CrewPage({
     }
 
     function drawContractCoverPage() {
-      drawContractPageBase(1);
-      drawCenteredTitle("SEAFARER EMPLOYMENT AGREEMENT", "COVER SHEET");
+      drawContractPageBase();
       const sections = getContractCoverSections(contractDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 182, pageWidth - 84, 220);
-      drawCoverSection(sections[1], 42, 416, pageWidth - 84, 172);
-      drawCoverSection(sections[2], 42, 602, pageWidth - 84, 166);
+      drawCoverSection(sections[0], 42, 174, pageWidth - 84, 220);
+      drawCoverSection(sections[1], 42, 408, pageWidth - 84, 172);
+      drawCoverSection(sections[2], 42, 594, pageWidth - 84, 166);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       setText("#1e67bc");
@@ -944,15 +932,8 @@ export default function CrewPage({
       );
     }
 
-    function drawBodyPageHeader(title: string, pageNo: number) {
-      drawContractPageBase(pageNo);
-      doc.setFont("times", "bold");
-      doc.setFontSize(18);
-      setText("#082759");
-      doc.text(title.toUpperCase(), 48, 74);
-      setStroke("#8fb9e8");
-      doc.setLineWidth(0.75);
-      doc.line(48, 88, pageWidth - 48, 88);
+    function drawBodyPageHeader() {
+      drawContractPageBase();
     }
 
     function drawBodyPages() {
@@ -961,18 +942,16 @@ export default function CrewPage({
       const right = pageWidth - 54;
       const width = right - left;
       const bottom = pageHeight - 70;
-      let pageNo = 2;
-      let y = 112;
+      let y = 174;
 
       doc.addPage();
-      drawBodyPageHeader("Seafarer Employment Agreement", pageNo);
+      drawBodyPageHeader();
 
       function ensureSpace(height: number) {
         if (y + height <= bottom) return;
-        pageNo += 1;
         doc.addPage();
-        y = 112;
-        drawBodyPageHeader("Seafarer Employment Agreement", pageNo);
+        y = 174;
+        drawBodyPageHeader();
       }
 
       sections.forEach((section) => {
@@ -1003,6 +982,11 @@ export default function CrewPage({
 
     drawContractCoverPage();
     drawBodyPages();
+    const totalPages = doc.getNumberOfPages();
+    for (let pageNo = 1; pageNo <= totalPages; pageNo += 1) {
+      doc.setPage(pageNo);
+      drawContractPageFooter(pageNo, totalPages);
+    }
 
     doc.save(buildContractFileName(contractDraft, selectedContractMember));
   }
@@ -2585,8 +2569,7 @@ export default function CrewPage({
                       title="Final contract draft"
                       text="Review the generated text before sending it for mobile signature."
                     />
-                    <ContractCoverSheetPreview draft={contractDraft} member={selectedContractMember} />
-                    <ContractDocumentPreview draft={contractDraft} member={selectedContractMember} />
+                    <ContractGeneratedPreview draft={contractDraft} member={selectedContractMember} />
                   </div>
 
                   <div className="space-y-4">
@@ -4010,32 +3993,117 @@ function MonitorMetric({
   );
 }
 
-function ContractCoverSheetPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
+type ContractPreviewBlock = {
+  title: string;
+  lines: string[];
+};
+
+function getContractPreviewLineUnits(line: string) {
+  return line ? Math.max(1, Math.ceil(line.length / 96)) : 1;
+}
+
+function getContractBodyPreviewPages(sections: ContractDocumentSection[]): Array<ContractPreviewBlock[]> {
+  const maxUnits = 32;
+  const pages: Array<ContractPreviewBlock[]> = [];
+  let currentPage: ContractPreviewBlock[] = [];
+  let currentUnits = 0;
+
+  function pushPage() {
+    if (!currentPage.length) return;
+    pages.push(currentPage);
+    currentPage = [];
+    currentUnits = 0;
+  }
+
+  sections.forEach((section) => {
+    const lines = contractDisplayLines(section.lines);
+    let index = 0;
+    let firstChunk = true;
+
+    while (index < lines.length) {
+      const title = firstChunk ? section.title : `${section.title} continued`;
+      const titleUnits = 4;
+      if (currentUnits + titleUnits > maxUnits && currentPage.length) pushPage();
+
+      const availableUnits = Math.max(8, maxUnits - currentUnits - titleUnits);
+      const chunk: string[] = [];
+      let chunkUnits = 0;
+
+      while (index < lines.length) {
+        const lineUnits = getContractPreviewLineUnits(lines[index]);
+        if (chunk.length && chunkUnits + lineUnits > availableUnits) break;
+        chunk.push(lines[index]);
+        chunkUnits += lineUnits;
+        index += 1;
+      }
+
+      currentPage.push({ title, lines: chunk });
+      currentUnits += titleUnits + chunkUnits;
+      firstChunk = false;
+
+      if (currentUnits >= maxUnits - 3) pushPage();
+    }
+  });
+
+  pushPage();
+  return pages.length ? pages : [[]];
+}
+
+function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
   const sections = getContractCoverSections(draft, member);
+  const bodyPages = getContractBodyPreviewPages(getContractDocumentSections(draft, member));
+  const totalPages = 1 + bodyPages.length;
 
   return (
-    <div className="relative mx-auto mt-5 max-w-[920px] overflow-hidden rounded-[28px] border border-[#b8d2ee] bg-white px-5 py-8 shadow-sm shadow-blue-950/8 sm:px-8">
+    <div className="mt-5 space-y-6">
+      <ContractPreviewPage pageNo={1} totalPages={totalPages}>
+        <div className="space-y-4">
+          {sections.map((section) => (
+            <ContractCoverSection key={section.title} {...section} />
+          ))}
+        </div>
+        <p className="mt-5 text-center text-xs font-medium text-[#1e67bc]">
+          This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.
+        </p>
+      </ContractPreviewPage>
+
+      {bodyPages.map((blocks, index) => (
+        <ContractPreviewPage
+          key={`contract-body-page-${index}`}
+          pageNo={index + 2}
+          totalPages={totalPages}
+        >
+          <div className="space-y-6">
+            {blocks.map((block) => (
+              <ContractPreviewBlock key={`${block.title}-${block.lines.join("|")}`} block={block} />
+            ))}
+          </div>
+        </ContractPreviewPage>
+      ))}
+    </div>
+  );
+}
+
+function ContractPreviewPage({
+  pageNo,
+  totalPages,
+  children,
+}: {
+  pageNo: number;
+  totalPages: number;
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative mx-auto max-w-[920px] overflow-hidden rounded-[28px] border border-[#b8d2ee] bg-white px-5 pb-12 pt-28 shadow-sm shadow-blue-950/8 sm:px-9 sm:pt-32">
       <ContractPaperDecorations />
-      <div className="relative text-center">
-        <h3 className="font-serif text-[26px] font-black uppercase tracking-[0.03em] text-[#082759] sm:text-[38px]">
+      <div className="relative">
+        <h3 className="text-center text-lg font-black uppercase tracking-[0.34em] text-[#082759] sm:text-xl">
           Seafarer Employment Agreement
         </h3>
-        <div className="mt-3 flex items-center justify-center gap-5">
-          <span className="h-px w-28 bg-[#7aa9de]" />
-          <span className="text-sm font-medium uppercase tracking-[0.56em] text-[#1e67bc]">
-            Cover Sheet
-          </span>
-          <span className="h-px w-28 bg-[#7aa9de]" />
-        </div>
-        <span className="mx-auto mt-3 block h-1 w-1 rounded-full bg-[#1e67bc]" />
+        <div className="mt-10 min-h-[820px]">{children}</div>
       </div>
-      <div className="relative mt-8 space-y-4">
-        {sections.map((section) => (
-          <ContractCoverSection key={section.title} {...section} />
-        ))}
-      </div>
-      <p className="relative mt-5 text-center text-xs font-medium text-[#1e67bc]">
-        This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.
+      <p className="absolute bottom-7 right-9 text-xs font-black text-[#082759]">
+        Page {pageNo} of {totalPages}
       </p>
     </div>
   );
@@ -4109,44 +4177,24 @@ function ContractCoverSection({
   );
 }
 
-function ContractDocumentPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
-  const sections = getContractDocumentSections(draft, member);
-
+function ContractPreviewBlock({ block }: { block: ContractPreviewBlock }) {
   return (
-    <div className="relative mx-auto mt-5 max-w-[920px] overflow-hidden rounded-[28px] border border-[#b8d2ee] bg-white px-6 py-8 shadow-sm shadow-blue-950/8 sm:px-9">
-      <ContractPaperDecorations />
-      <div className="relative">
-        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.03em] text-[#082759]">
-          Seafarer Employment Agreement
-        </h3>
-        <div className="mt-3 h-px bg-[#8fb9e8]" />
-        <div className="mt-6 space-y-6">
-          {sections.map((section, index) => (
-            <section key={section.title}>
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#063574] text-xs font-black text-white">
-                  {index + 1}
-                </span>
-                <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
-                  {section.title}
-                </h4>
-              </div>
-              <div className="mt-3 rounded-2xl border border-[#d8e7f5] bg-white/92 p-4">
-                {contractDisplayLines(section.lines).map((line, lineIndex) =>
-                  line ? (
-                    <p key={`${section.title}-${lineIndex}`} className="text-sm font-medium leading-7 text-[#17233a]">
-                      {line}
-                    </p>
-                  ) : (
-                    <div key={`${section.title}-${lineIndex}`} className="h-3" />
-                  )
-                )}
-              </div>
-            </section>
-          ))}
-        </div>
+    <section>
+      <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
+        {block.title}
+      </h4>
+      <div className="mt-3 rounded-2xl border border-[#d8e7f5] bg-white/92 p-4">
+        {block.lines.map((line, lineIndex) =>
+          line ? (
+            <p key={`${block.title}-${lineIndex}`} className="text-sm font-medium leading-7 text-[#17233a]">
+              {line}
+            </p>
+          ) : (
+            <div key={`${block.title}-${lineIndex}`} className="h-3" />
+          )
+        )}
       </div>
-    </div>
+    </section>
   );
 }
 
