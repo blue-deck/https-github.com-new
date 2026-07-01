@@ -98,12 +98,14 @@ type ContractDraft = {
   placeOfEngagement: string;
   trialPeriodEndDate: string;
   trialSalary: string;
+  trialSalaryCurrency: string;
   trialSalaryAccrual: string;
   trialNoticePeriod: string;
   trialAnnualLeave: string;
   trialPlaceOfRepatriation: string;
   trialTravelAllowance: string;
   standardSalary: string;
+  standardSalaryCurrency: string;
   standardSalaryAccrual: string;
   standardNoticePeriod: string;
   standardAnnualLeave: string;
@@ -206,6 +208,7 @@ const contractAnnexBAgreementFields: ContractDraftField[] = [
 
 const contractAnnexBTrialFields: ContractDraftField[] = [
   "trialSalary",
+  "trialSalaryCurrency",
   "trialSalaryAccrual",
   "trialNoticePeriod",
   "trialAnnualLeave",
@@ -215,6 +218,7 @@ const contractAnnexBTrialFields: ContractDraftField[] = [
 
 const contractAnnexBStandardFields: ContractDraftField[] = [
   "standardSalary",
+  "standardSalaryCurrency",
   "standardSalaryAccrual",
   "standardNoticePeriod",
   "standardAnnualLeave",
@@ -265,6 +269,17 @@ const contractStepCards: Array<{
   { id: "preview", title: "Preview", meta: "PDF & send" },
 ];
 
+const contractCurrencyOptions = ["EUR", "USD", "TRY", "GBP"];
+const contractAgreementTypeOptions = [
+  "Permanent",
+  "Seasonal",
+  "Temporary",
+  "Rotational",
+  "Transfer",
+  "Daywork",
+];
+const contractSalaryAccrualOptions = ["Monthly", "Daily", "Weekly", "Year"];
+
 function createEmptyContractDraft(): ContractDraft {
   return {
     agreementDate: "",
@@ -305,12 +320,14 @@ function createEmptyContractDraft(): ContractDraft {
     placeOfEngagement: "",
     trialPeriodEndDate: "",
     trialSalary: "",
+    trialSalaryCurrency: "EUR",
     trialSalaryAccrual: "",
     trialNoticePeriod: "",
     trialAnnualLeave: "",
     trialPlaceOfRepatriation: "",
     trialTravelAllowance: "",
     standardSalary: "",
+    standardSalaryCurrency: "EUR",
     standardSalaryAccrual: "",
     standardNoticePeriod: "",
     standardAnnualLeave: "",
@@ -367,6 +384,24 @@ function normalizeInitialContractInput(value: string, previousValue = "") {
     value[firstLetterIndex].toUpperCase(),
     value.slice(firstLetterIndex + 1).toLowerCase(),
   ].join("");
+}
+
+function formatContractDateInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function formatContractMoneyInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 9);
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function formatContractSalary(amount: string | undefined, currency: string | undefined) {
+  const cleanAmount = formatContractMoneyInput(amount || "");
+  if (!cleanAmount) return "";
+  return `${cleanAmount} ${currency || "EUR"}`;
 }
 
 function buildContractSectionSaveKey(draft: ContractDraft, fields: ContractDraftField[]) {
@@ -440,8 +475,8 @@ function getContractCoverSections(draft: ContractDraft, member?: ContractCrewMem
 }
 
 function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMember): ContractSheetSection[] {
-  const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
-  const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
+  const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "-");
+  const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "-");
 
   return [
     {
@@ -464,7 +499,7 @@ function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMem
       title: "Terms within trial period",
       note: "If applicable",
       rows: [
-        ["Salary", draft.trialSalary],
+        ["Salary", formatContractSalary(draft.trialSalary, draft.trialSalaryCurrency)],
         ["Salary accrual", draft.trialSalaryAccrual],
         ["Notice period", draft.trialNoticePeriod],
         ["Annual leave", draft.trialAnnualLeave],
@@ -477,7 +512,7 @@ function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMem
       title: "Standard terms",
       note: "Employment terms",
       rows: [
-        ["Salary", draft.standardSalary || draft.salary],
+        ["Salary", formatContractSalary(draft.standardSalary || draft.salary, draft.standardSalaryCurrency || draft.currency)],
         ["Salary accrual", draft.standardSalaryAccrual],
         ["Notice period", draft.standardNoticePeriod || draft.terminationNotice],
         ["Annual leave", draft.standardAnnualLeave || draft.leaveTerms],
@@ -508,8 +543,8 @@ function formatContractDisciplineSection(draft: ContractDraft) {
 }
 
 function getContractDocumentSections(draft: ContractDraft, member?: ContractCrewMember): ContractDocumentSection[] {
-  const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
-  const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
+  const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "-");
+  const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "-");
 
   return [
     {
@@ -526,7 +561,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
         `Trial Period End Date: ${contractValue(draft.trialPeriodEndDate, "-")}`,
         "",
         "Terms Within Trial Period (if applicable)",
-        `Salary: ${contractValue(draft.trialSalary, "-")}`,
+        `Salary: ${contractValue(formatContractSalary(draft.trialSalary, draft.trialSalaryCurrency), "-")}`,
         `Salary Accrual: ${contractValue(draft.trialSalaryAccrual, "-")}`,
         `Notice Period: ${contractValue(draft.trialNoticePeriod, "-")}`,
         `Annual Leave: ${contractValue(draft.trialAnnualLeave, "-")}`,
@@ -534,7 +569,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
         `Travel Allowance: ${contractValue(draft.trialTravelAllowance, "-")}`,
         "",
         "Standard Terms",
-        `Salary: ${contractValue(draft.standardSalary || draft.salary, "-")}`,
+        `Salary: ${contractValue(formatContractSalary(draft.standardSalary || draft.salary, draft.standardSalaryCurrency || draft.currency), "-")}`,
         `Salary Accrual: ${contractValue(draft.standardSalaryAccrual, "-")}`,
         `Notice Period: ${contractValue(draft.standardNoticePeriod || draft.terminationNotice, "-")}`,
         `Annual Leave: ${contractValue(draft.standardAnnualLeave || draft.leaveTerms, "-")}`,
@@ -1010,7 +1045,7 @@ export default function CrewPage({
 
     function drawContractPageBase() {
       if (contractPaperTemplate) {
-        doc.addImage(contractPaperTemplate, "PNG", 0, -16, pageWidth, pageHeight - 4);
+        doc.addImage(contractPaperTemplate, "PNG", 0, -42, pageWidth, pageHeight + 68);
         return;
       }
 
@@ -1060,6 +1095,7 @@ export default function CrewPage({
     }
 
     function drawCoverSection(section: ContractSheetSection, x: number, y: number, width: number, height: number) {
+      const isSpecialConditions = section.title.toLowerCase().includes("special conditions");
       setStroke("#c4d9ee");
       setFill("#ffffff");
       doc.roundedRect(x, y, width, height, 9, 9, "FD");
@@ -1076,12 +1112,21 @@ export default function CrewPage({
       setText("#1e67bc");
       doc.text(section.note, x + width - 18, y + 25, { align: "right" });
 
+      if (isSpecialConditions) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.4);
+        setText("#17233a");
+        const text = doc.splitTextToSize(contractSheetValue(section.rows[0]?.[1]), width - 52);
+        doc.text(text.slice(0, 4), x + 26, y + 53);
+        return;
+      }
+
       const gap = 18;
       const colWidth = (width - 52 - gap) / 2;
       let fieldY = y + 48;
       section.rows.forEach(([label, value], index) => {
         const fullWidth = index < (section.wideFirstRows || 0);
-        const multiline = section.title.toLowerCase().includes("special conditions");
+        const multiline = false;
         const isLeft = index % 2 === 0;
         const fieldX = fullWidth ? x + 26 : x + 26 + (isLeft ? 0 : colWidth + gap);
         drawCoverField(label, value, fieldX, fieldY, fullWidth ? width - 52 : colWidth, {
@@ -1099,19 +1144,24 @@ export default function CrewPage({
       }
     }
 
+    function drawContractIntroPage() {
+      drawContractPageBase();
+    }
+
     function drawContractCoverPage() {
+      doc.addPage();
       drawContractPageBase();
       const sections = getContractCoverSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 150, pageWidth - 84, 206);
-      drawCoverSection(sections[1], 42, 366, pageWidth - 84, 176);
-      drawCoverSection(sections[2], 42, 552, pageWidth - 84, 194);
+      drawCoverSection(sections[0], 42, 126, pageWidth - 84, 206);
+      drawCoverSection(sections[1], 42, 342, pageWidth - 84, 174);
+      drawCoverSection(sections[2], 42, 526, pageWidth - 84, 190);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       setText("#1e67bc");
       doc.text(
         "This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.",
         42,
-        762
+        730
       );
     }
 
@@ -1119,10 +1169,10 @@ export default function CrewPage({
       doc.addPage();
       drawBodyPageHeader();
       const sections = getContractTermsSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 150, pageWidth - 84, 178);
-      drawCoverSection(sections[1], 42, 340, pageWidth - 84, 148);
-      drawCoverSection(sections[2], 42, 500, pageWidth - 84, 148);
-      drawCoverSection(sections[3], 42, 660, pageWidth - 84, 92);
+      drawCoverSection(sections[0], 42, 126, pageWidth - 84, 176);
+      drawCoverSection(sections[1], 42, 314, pageWidth - 84, 146);
+      drawCoverSection(sections[2], 42, 472, pageWidth - 84, 146);
+      drawCoverSection(sections[3], 42, 630, pageWidth - 84, 82);
     }
 
     function drawBodyPageHeader() {
@@ -1134,7 +1184,7 @@ export default function CrewPage({
       const left = 54;
       const right = pageWidth - 54;
       const width = right - left;
-      const top = 150;
+      const top = 126;
       const bottom = pageHeight - 58;
 
       function drawSectionTitle(section: ContractDocumentSection, y: number) {
@@ -1222,6 +1272,7 @@ export default function CrewPage({
       });
     }
 
+    drawContractIntroPage();
     drawContractCoverPage();
     drawBodyPages();
     const totalPages = doc.getNumberOfPages();
@@ -2462,23 +2513,21 @@ export default function CrewPage({
                           onChange={(value) => updateContractDraft("employeePosition", value)}
                           placeholder=""
                         />
-                        <ContractField
+                        <ContractDateField
                           label="Agreement start date"
                           value={contractDraft.agreementStartDate}
                           onChange={(value) => updateContractDraft("agreementStartDate", value)}
-                          placeholder=""
                         />
-                        <ContractField
+                        <ContractDateField
                           label="Agreement end date"
                           value={contractDraft.agreementEndDate}
                           onChange={(value) => updateContractDraft("agreementEndDate", value)}
-                          placeholder=""
                         />
-                        <ContractField
+                        <ContractSelectField
                           label="Agreement type"
                           value={contractDraft.agreementType}
                           onChange={(value) => updateContractDraft("agreementType", value)}
-                          placeholder=""
+                          options={contractAgreementTypeOptions}
                         />
                         <ContractField
                           label="Trial period"
@@ -2492,11 +2541,10 @@ export default function CrewPage({
                           onChange={(value) => updateContractDraft("placeOfEngagement", value)}
                           placeholder=""
                         />
-                        <ContractField
+                        <ContractDateField
                           label="Trial period end date"
                           value={contractDraft.trialPeriodEndDate}
                           onChange={(value) => updateContractDraft("trialPeriodEndDate", value)}
-                          placeholder=""
                         />
                       </div>
                       <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
@@ -2513,17 +2561,18 @@ export default function CrewPage({
                         note="if applicable"
                       >
                         <div className="grid gap-4">
-                          <ContractField
+                          <ContractMoneyField
                             label="Salary"
-                            value={contractDraft.trialSalary}
-                            onChange={(value) => updateContractDraft("trialSalary", value)}
-                            placeholder=""
+                            amount={contractDraft.trialSalary}
+                            currency={contractDraft.trialSalaryCurrency}
+                            onAmountChange={(value) => updateContractDraft("trialSalary", value)}
+                            onCurrencyChange={(value) => updateContractDraft("trialSalaryCurrency", value)}
                           />
-                          <ContractField
+                          <ContractSelectField
                             label="Salary accrual"
                             value={contractDraft.trialSalaryAccrual}
                             onChange={(value) => updateContractDraft("trialSalaryAccrual", value)}
-                            placeholder=""
+                            options={contractSalaryAccrualOptions}
                           />
                           <ContractField
                             label="Notice period"
@@ -2560,17 +2609,18 @@ export default function CrewPage({
 
                       <ContractTermsBlock title="Standard terms">
                         <div className="grid gap-4">
-                          <ContractField
+                          <ContractMoneyField
                             label="Salary"
-                            value={contractDraft.standardSalary}
-                            onChange={(value) => updateContractDraft("standardSalary", value)}
-                            placeholder=""
+                            amount={contractDraft.standardSalary}
+                            currency={contractDraft.standardSalaryCurrency}
+                            onAmountChange={(value) => updateContractDraft("standardSalary", value)}
+                            onCurrencyChange={(value) => updateContractDraft("standardSalaryCurrency", value)}
                           />
-                          <ContractField
+                          <ContractSelectField
                             label="Salary accrual"
                             value={contractDraft.standardSalaryAccrual}
                             onChange={(value) => updateContractDraft("standardSalaryAccrual", value)}
-                            placeholder=""
+                            options={contractSalaryAccrualOptions}
                           />
                           <ContractField
                             label="Notice period"
@@ -2805,11 +2855,10 @@ export default function CrewPage({
                         onChange={(value) => updateContractDraft("signerTitle", value)}
                         placeholder="Captain / Yacht Representative"
                       />
-                      <ContractField
+                      <ContractDateField
                         label="Signature date"
                         value={contractDraft.signatureDate}
                         onChange={(value) => updateContractDraft("signatureDate", value)}
-                        placeholder="DD/MM/YYYY"
                       />
                       <ContractField
                         label="Signature location"
@@ -4352,11 +4401,15 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
     ...(annexD ? [[{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }]] : []),
     ...(annexE ? [[{ title: annexE.title, lines: getContractPreviewLines(annexE.lines) }]] : []),
   ];
-  const totalPages = 1 + (annexB ? 1 : 0) + previewPages.length;
+  const totalPages = 2 + (annexB ? 1 : 0) + previewPages.length;
 
   return (
     <div className="mt-5 space-y-6">
       <ContractPreviewPage pageNo={1} totalPages={totalPages}>
+        <div className="h-full" />
+      </ContractPreviewPage>
+
+      <ContractPreviewPage pageNo={2} totalPages={totalPages}>
         <div className="space-y-3">
           {sections.map((section) => (
             <ContractCoverSection key={section.title} {...section} />
@@ -4368,7 +4421,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       </ContractPreviewPage>
 
       {annexB ? (
-        <ContractPreviewPage pageNo={2} totalPages={totalPages}>
+        <ContractPreviewPage pageNo={3} totalPages={totalPages}>
           <div className="space-y-3">
             {termsSections.map((section) => (
               <ContractCoverSection key={section.title} {...section} compact />
@@ -4380,7 +4433,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       {previewPages.map((blocks, index) => (
         <ContractPreviewPage
           key={`contract-body-page-${index}`}
-          pageNo={index + (annexB ? 3 : 2)}
+          pageNo={index + (annexB ? 4 : 3)}
           totalPages={totalPages}
         >
           <div className="space-y-6">
@@ -4405,12 +4458,12 @@ function ContractPreviewPage({
 }) {
   return (
     <div
-      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] pt-[23.8%] shadow-sm shadow-blue-950/8"
+      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] pt-[20.8%] shadow-sm shadow-blue-950/8"
       style={{
         backgroundImage: `url(${contractAgreementTemplateSrc})`,
-        backgroundPosition: "center -1.9%",
+        backgroundPosition: "center -6.5%",
         backgroundRepeat: "no-repeat",
-        backgroundSize: "100% 98%",
+        backgroundSize: "100% 103%",
       }}
     >
       <div className="relative z-10 flex h-full flex-col">
@@ -4439,6 +4492,8 @@ function ContractCoverSection({
   wideFirstRows?: number;
   compact?: boolean;
 }) {
+  const isSpecialConditions = title.toLowerCase().includes("special conditions");
+
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
       <div className={`flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 sm:flex-row sm:items-center sm:justify-between ${compact ? "py-2" : "py-2.5"}`}>
@@ -4449,23 +4504,31 @@ function ContractCoverSection({
         </div>
         <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
       </div>
-      <div className={`grid sm:grid-cols-2 ${compact ? "gap-2 p-3" : "gap-2.5 p-3.5"}`}>
-        {rows.map(([label, value], index) => (
-          <div
-            key={label}
-            className={`rounded-xl border border-[#b9d5f0] bg-white px-3 ${compact ? "py-1" : "py-1.5"} ${
-              index < wideFirstRows ? "sm:col-span-2" : ""
-            }`}
-          >
-            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
-              {label}
-            </p>
-            <p className={`mt-0.5 min-h-[18px] whitespace-pre-line font-semibold text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
-              {contractSheetValue(value)}
-            </p>
-          </div>
-        ))}
-      </div>
+      {isSpecialConditions ? (
+        <div className={compact ? "px-4 py-3" : "px-4 py-3.5"}>
+          <p className={`min-h-[28px] whitespace-pre-line font-semibold leading-5 text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
+            {contractSheetValue(rows[0]?.[1])}
+          </p>
+        </div>
+      ) : (
+        <div className={`grid sm:grid-cols-2 ${compact ? "gap-2 p-3" : "gap-2.5 p-3.5"}`}>
+          {rows.map(([label, value], index) => (
+            <div
+              key={label}
+              className={`rounded-xl border border-[#b9d5f0] bg-white px-3 ${compact ? "py-1" : "py-1.5"} ${
+                index < wideFirstRows ? "sm:col-span-2" : ""
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
+                {label}
+              </p>
+              <p className={`mt-0.5 min-h-[18px] whitespace-pre-line font-semibold text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
+                {contractSheetValue(value)}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
       {footer && (
         <p className="border-t border-[#e1edf7] px-4 py-2.5 text-xs font-semibold leading-5 text-slate-500">
           {footer}
@@ -4572,6 +4635,110 @@ function ContractSectionSaveButton({
       {saved ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
       {saved ? "Saved" : "Save"}
     </button>
+  );
+}
+
+function ContractSelectField({
+  label,
+  value,
+  onChange,
+  options,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+      >
+        <option value="">-</option>
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function ContractDateField({
+  label,
+  value,
+  onChange,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      <input
+        value={value}
+        inputMode="numeric"
+        maxLength={10}
+        onChange={(event) => onChange(formatContractDateInput(event.target.value))}
+        placeholder="DD/MM/YYYY"
+        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+      />
+    </label>
+  );
+}
+
+function ContractMoneyField({
+  label,
+  amount,
+  currency,
+  onAmountChange,
+  onCurrencyChange,
+}: {
+  label: string;
+  amount: string;
+  currency: string;
+  onAmountChange: (value: string) => void;
+  onCurrencyChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      <div className="mt-2 grid grid-cols-[1fr_104px] overflow-hidden rounded-2xl border border-slate-200 bg-white transition focus-within:border-cyan-300 focus-within:ring-4 focus-within:ring-cyan-500/10">
+        <input
+          value={amount}
+          inputMode="numeric"
+          onChange={(event) => onAmountChange(formatContractMoneyInput(event.target.value))}
+          placeholder="0"
+          className="min-w-0 border-0 bg-transparent px-5 py-4 text-base font-semibold text-slate-950 outline-none placeholder:text-slate-400"
+        />
+        <select
+          value={currency || "EUR"}
+          onChange={(event) => onCurrencyChange(event.target.value)}
+          className="border-l border-slate-200 bg-[#f8fbff] px-3 py-4 text-sm font-black text-[#082759] outline-none"
+        >
+          {contractCurrencyOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+    </label>
   );
 }
 
