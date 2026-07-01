@@ -1043,14 +1043,17 @@ export default function CrewPage({
       }
     }
 
-    function drawContractPageBase() {
-      if (contractPaperTemplate) {
+    function drawContractPageBase(useTemplate = false) {
+      setFill("#ffffff");
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+
+      if (useTemplate && contractPaperTemplate) {
         doc.addImage(contractPaperTemplate, "PNG", 0, -42, pageWidth, pageHeight + 68);
         return;
       }
 
-      setFill("#ffffff");
-      doc.rect(0, 0, pageWidth, pageHeight, "F");
+      if (!useTemplate) return;
+
       drawWave(136, 56, 330, 9, "#2c77c5");
       drawWave(406, 25, 220, 7, "#b7d5f4", 1.2);
       drawWave(-42, pageHeight - 84, 226, 8, "#2c77c5");
@@ -1145,23 +1148,23 @@ export default function CrewPage({
     }
 
     function drawContractIntroPage() {
-      drawContractPageBase();
+      drawContractPageBase(true);
     }
 
     function drawContractCoverPage() {
       doc.addPage();
       drawContractPageBase();
       const sections = getContractCoverSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 126, pageWidth - 84, 206);
-      drawCoverSection(sections[1], 42, 342, pageWidth - 84, 174);
-      drawCoverSection(sections[2], 42, 526, pageWidth - 84, 190);
+      drawCoverSection(sections[0], 42, 54, pageWidth - 84, 206);
+      drawCoverSection(sections[1], 42, 270, pageWidth - 84, 174);
+      drawCoverSection(sections[2], 42, 454, pageWidth - 84, 190);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       setText("#1e67bc");
       doc.text(
         "This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.",
         42,
-        730
+        666
       );
     }
 
@@ -1169,10 +1172,10 @@ export default function CrewPage({
       doc.addPage();
       drawBodyPageHeader();
       const sections = getContractTermsSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 126, pageWidth - 84, 176);
-      drawCoverSection(sections[1], 42, 314, pageWidth - 84, 146);
-      drawCoverSection(sections[2], 42, 472, pageWidth - 84, 146);
-      drawCoverSection(sections[3], 42, 630, pageWidth - 84, 82);
+      drawCoverSection(sections[0], 42, 54, pageWidth - 84, 176);
+      drawCoverSection(sections[1], 42, 242, pageWidth - 84, 146);
+      drawCoverSection(sections[2], 42, 400, pageWidth - 84, 146);
+      drawCoverSection(sections[3], 42, 558, pageWidth - 84, 82);
     }
 
     function drawBodyPageHeader() {
@@ -1184,7 +1187,7 @@ export default function CrewPage({
       const left = 54;
       const right = pageWidth - 54;
       const width = right - left;
-      const top = 126;
+      const top = 58;
       const bottom = pageHeight - 58;
 
       function drawSectionTitle(section: ContractDocumentSection, y: number) {
@@ -4405,7 +4408,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
 
   return (
     <div className="mt-5 space-y-6">
-      <ContractPreviewPage pageNo={1} totalPages={totalPages}>
+      <ContractPreviewPage pageNo={1} totalPages={totalPages} useTemplate>
         <div className="h-full" />
       </ContractPreviewPage>
 
@@ -4450,21 +4453,29 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
 function ContractPreviewPage({
   pageNo,
   totalPages,
+  useTemplate = false,
   children,
 }: {
   pageNo: number;
   totalPages: number;
+  useTemplate?: boolean;
   children: ReactNode;
 }) {
   return (
     <div
-      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] pt-[20.8%] shadow-sm shadow-blue-950/8"
-      style={{
-        backgroundImage: `url(${contractAgreementTemplateSrc})`,
-        backgroundPosition: "center -6.5%",
-        backgroundRepeat: "no-repeat",
-        backgroundSize: "100% 103%",
-      }}
+      className={`relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
+        useTemplate ? "pt-[20.8%]" : "pt-[5.6%]"
+      }`}
+      style={
+        useTemplate
+          ? {
+              backgroundImage: `url(${contractAgreementTemplateSrc})`,
+              backgroundPosition: "center -6.5%",
+              backgroundRepeat: "no-repeat",
+              backgroundSize: "100% 103%",
+            }
+          : undefined
+      }
     >
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex-1">{children}</div>
