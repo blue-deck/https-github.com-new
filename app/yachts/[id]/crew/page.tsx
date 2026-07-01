@@ -109,6 +109,7 @@ type ContractDraft = {
   standardAnnualLeave: string;
   standardPlaceOfRepatriation: string;
   standardTravelAllowance: string;
+  specialConditions: string;
   clauses: string;
   duties: string;
   discipline: string;
@@ -238,6 +239,7 @@ function createEmptyContractDraft(): ContractDraft {
     standardAnnualLeave: "",
     standardPlaceOfRepatriation: "",
     standardTravelAllowance: "",
+    specialConditions: "",
     clauses:
       "The employee shall perform duties in a professional, safe and seamanlike manner in accordance with yacht rules, flag requirements and lawful instructions from the Captain or yacht representative.",
     duties:
@@ -389,6 +391,13 @@ function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMem
         ["Travel allowance", draft.standardTravelAllowance || draft.travelTerms],
       ],
     },
+    {
+      number: "4.",
+      title: "Special conditions",
+      note: "Additional agreed terms",
+      wideFirstRows: 1,
+      rows: [["Special conditions", draft.specialConditions]],
+    },
   ];
 }
 
@@ -437,6 +446,9 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
         `Annual Leave: ${contractValue(draft.standardAnnualLeave || draft.leaveTerms, "-")}`,
         `Place of Repatriation: ${contractValue(draft.standardPlaceOfRepatriation, "-")}`,
         `Travel Allowance: ${contractValue(draft.standardTravelAllowance || draft.travelTerms, "-")}`,
+        "",
+        "Special Conditions",
+        contractValue(draft.specialConditions, "-"),
       ],
     },
     {
@@ -932,19 +944,28 @@ export default function CrewPage({
       doc.text(`Page ${pageNo} of ${totalPages}`, pageWidth - 48, pageHeight - 28, { align: "right" });
     }
 
-    function drawCoverField(label: string, value: string | undefined | null, x: number, y: number, width: number) {
+    function drawCoverField(
+      label: string,
+      value: string | undefined | null,
+      x: number,
+      y: number,
+      width: number,
+      options: { fieldHeight?: number; maxLines?: number } = {}
+    ) {
+      const fieldHeight = options.fieldHeight || 18;
+      const maxLines = options.maxLines || 1;
       doc.setFont("helvetica", "bold");
       doc.setFontSize(6.8);
       setText("#082759");
       doc.text(label.toUpperCase(), x, y);
       setStroke("#9ec4ed");
       setFill("#ffffff");
-      doc.roundedRect(x, y + 6, width, 18, 4, 4, "FD");
+      doc.roundedRect(x, y + 6, width, fieldHeight, 4, 4, "FD");
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.6);
       setText("#17233a");
       const text = doc.splitTextToSize(contractSheetValue(value), width - 10);
-      doc.text(text.slice(0, 1), x + 7, y + 19);
+      doc.text(text.slice(0, maxLines), x + 7, y + 19);
     }
 
     function drawCoverSection(section: ContractSheetSection, x: number, y: number, width: number, height: number) {
@@ -969,10 +990,14 @@ export default function CrewPage({
       let fieldY = y + 48;
       section.rows.forEach(([label, value], index) => {
         const fullWidth = index < (section.wideFirstRows || 0);
+        const multiline = section.title.toLowerCase().includes("special conditions");
         const isLeft = index % 2 === 0;
         const fieldX = fullWidth ? x + 26 : x + 26 + (isLeft ? 0 : colWidth + gap);
-        drawCoverField(label, value, fieldX, fieldY, fullWidth ? width - 52 : colWidth);
-        if (fullWidth || !isLeft) fieldY += 32;
+        drawCoverField(label, value, fieldX, fieldY, fullWidth ? width - 52 : colWidth, {
+          fieldHeight: multiline ? 34 : 18,
+          maxLines: multiline ? 2 : 1,
+        });
+        if (fullWidth || !isLeft) fieldY += multiline ? 48 : 32;
       });
 
       if (section.footer) {
@@ -1006,6 +1031,7 @@ export default function CrewPage({
       drawCoverSection(sections[0], 42, 150, pageWidth - 84, 178);
       drawCoverSection(sections[1], 42, 340, pageWidth - 84, 148);
       drawCoverSection(sections[2], 42, 500, pageWidth - 84, 148);
+      drawCoverSection(sections[3], 42, 660, pageWidth - 84, 92);
     }
 
     function drawBodyPageHeader() {
@@ -2477,6 +2503,19 @@ export default function CrewPage({
                         </div>
                       </ContractTermsBlock>
                     </div>
+
+                    <ContractTermsBlock
+                      title="Special conditions"
+                      note="Additional agreed terms"
+                    >
+                      <ContractArea
+                        label="Special conditions"
+                        value={contractDraft.specialConditions}
+                        onChange={(value) => updateContractDraft("specialConditions", value)}
+                        rows={4}
+                        placeholder="Any additional agreed terms may be written here and shall take priority over Annex B."
+                      />
+                    </ContractTermsBlock>
                 </div>
               )}
 
@@ -4313,7 +4352,7 @@ function ContractCoverSection({
             <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
               {label}
             </p>
-            <p className={`mt-0.5 min-h-[18px] font-semibold text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
+            <p className={`mt-0.5 min-h-[18px] whitespace-pre-line font-semibold text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
               {contractSheetValue(value)}
             </p>
           </div>
@@ -4456,8 +4495,9 @@ function ContractArea({
       <textarea
         value={value}
         rows={rows}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(normalizeInitialContractInput(event.target.value, value))}
         placeholder={placeholder}
+        autoCapitalize="sentences"
         className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold leading-7 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
       />
     </label>
