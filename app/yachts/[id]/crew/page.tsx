@@ -127,11 +127,30 @@ type ContractSheetSection = {
   note: string;
   rows: ContractSheetRow[];
   footer?: string;
+  wideFirstRows?: number;
 };
 
 type ContractDocumentSection = {
   title: string;
   lines: string[];
+};
+
+type ContractCrewMember = {
+  position?: string | null;
+  invited_email?: string | null;
+  crew_profiles?: {
+    full_name?: string | null;
+    email?: string | null;
+    current_position?: string | null;
+    nationality?: string | null;
+    date_of_birth?: string | null;
+    birth_date?: string | null;
+    passport_no?: string | null;
+    seaman_book_no?: string | null;
+    phone?: string | null;
+    mobile_number?: string | null;
+    mobile?: string | null;
+  } | null;
 };
 
 const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
@@ -233,7 +252,7 @@ function createEmptyContractDraft(): ContractDraft {
   };
 }
 
-function getCrewDisplayName(member?: any) {
+function getCrewDisplayName(member?: ContractCrewMember) {
   return (
     member?.crew_profiles?.full_name ||
     member?.invited_email ||
@@ -242,7 +261,7 @@ function getCrewDisplayName(member?: any) {
   );
 }
 
-function getCrewPosition(member?: any) {
+function getCrewPosition(member?: ContractCrewMember) {
   return member?.position || member?.crew_profiles?.current_position || "";
 }
 
@@ -258,7 +277,20 @@ function contractDisplayLines(lines: string[]) {
   return lines.flatMap((line) => (line ? line.split("\n") : [""]));
 }
 
-function getContractCoverSections(draft: ContractDraft, member?: any): ContractSheetSection[] {
+function normalizeInitialContractInput(value: string, previousValue = "") {
+  if (!value || previousValue.trim()) return value;
+
+  const firstLetterIndex = value.search(/[A-Za-zÀ-ÖØ-öø-ÿ]/);
+  if (firstLetterIndex < 0) return value;
+
+  return [
+    value.slice(0, firstLetterIndex),
+    value[firstLetterIndex].toUpperCase(),
+    value.slice(firstLetterIndex + 1).toLowerCase(),
+  ].join("");
+}
+
+function getContractCoverSections(draft: ContractDraft, member?: ContractCrewMember): ContractSheetSection[] {
   const crewProfile = member?.crew_profiles || {};
 
   return [
@@ -283,6 +315,7 @@ function getContractCoverSections(draft: ContractDraft, member?: any): ContractS
       number: "2.",
       title: "Owner / Company details",
       note: "Legal contracting party",
+      wideFirstRows: 2,
       rows: [
         ["Owner / company legal name", draft.ownerCompanyName],
         ["Registered address", draft.ownerRegisteredAddress],
@@ -310,6 +343,55 @@ function getContractCoverSections(draft: ContractDraft, member?: any): ContractS
   ];
 }
 
+function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMember): ContractSheetSection[] {
+  const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
+  const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
+
+  return [
+    {
+      number: "1.",
+      title: "Agreement details",
+      note: "Complete all applicable fields",
+      rows: [
+        ["Crewmember name", employeeName],
+        ["Position", employeePosition],
+        ["Agreement start date", draft.agreementStartDate || draft.startDate],
+        ["Agreement end date", draft.agreementEndDate || draft.endDate],
+        ["Agreement type", draft.agreementType],
+        ["Trial period", draft.trialPeriod],
+        ["Place of engagement", draft.placeOfEngagement],
+        ["Trial period end date", draft.trialPeriodEndDate],
+      ],
+    },
+    {
+      number: "2.",
+      title: "Terms within trial period",
+      note: "If applicable",
+      rows: [
+        ["Salary", draft.trialSalary],
+        ["Salary accrual", draft.trialSalaryAccrual],
+        ["Notice period", draft.trialNoticePeriod],
+        ["Annual leave", draft.trialAnnualLeave],
+        ["Place of repatriation", draft.trialPlaceOfRepatriation],
+        ["Travel allowance", draft.trialTravelAllowance],
+      ],
+    },
+    {
+      number: "3.",
+      title: "Standard terms",
+      note: "Employment terms",
+      rows: [
+        ["Salary", draft.standardSalary || draft.salary],
+        ["Salary accrual", draft.standardSalaryAccrual],
+        ["Notice period", draft.standardNoticePeriod || draft.terminationNotice],
+        ["Annual leave", draft.standardAnnualLeave || draft.leaveTerms],
+        ["Place of repatriation", draft.standardPlaceOfRepatriation],
+        ["Travel allowance", draft.standardTravelAllowance || draft.travelTerms],
+      ],
+    },
+  ];
+}
+
 function formatContractDisciplineSection(draft: ContractDraft) {
   const rules = draft.disciplineRules
     .map((rule) => rule.trim())
@@ -322,7 +404,7 @@ function formatContractDisciplineSection(draft: ContractDraft) {
   ].join("\n");
 }
 
-function getContractDocumentSections(draft: ContractDraft, member?: any): ContractDocumentSection[] {
+function getContractDocumentSections(draft: ContractDraft, member?: ContractCrewMember): ContractDocumentSection[] {
   const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "[CREW NAME SURNAME]");
   const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "[POSITION]");
 
@@ -383,7 +465,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: any): Contra
   ];
 }
 
-function buildContractPreviewText(draft: ContractDraft, member?: any) {
+function buildContractPreviewText(draft: ContractDraft, member?: ContractCrewMember) {
   const coverLines = getContractCoverSections(draft, member).flatMap((section) => [
     section.title.toUpperCase(),
     ...section.rows.map(([label, value]) => `${label}: ${contractSheetValue(value)}`),
@@ -410,7 +492,7 @@ function buildContractPreviewText(draft: ContractDraft, member?: any) {
   ].join("\n");
 }
 
-function buildContractFileName(draft: ContractDraft, member?: any) {
+function buildContractFileName(draft: ContractDraft, member?: ContractCrewMember) {
   const name = contractValue(draft.employeeName, getCrewDisplayName(member) || "Crew")
     .replace(/[^\w\s-]/g, "")
     .trim()
@@ -886,7 +968,7 @@ export default function CrewPage({
       const colWidth = (width - 52 - gap) / 2;
       let fieldY = y + 48;
       section.rows.forEach(([label, value], index) => {
-        const fullWidth = section.rows.length === 6 && index < 2;
+        const fullWidth = index < (section.wideFirstRows || 0);
         const isLeft = index % 2 === 0;
         const fieldX = fullWidth ? x + 26 : x + 26 + (isLeft ? 0 : colWidth + gap);
         drawCoverField(label, value, fieldX, fieldY, fullWidth ? width - 52 : colWidth);
@@ -915,6 +997,15 @@ export default function CrewPage({
         42,
         762
       );
+    }
+
+    function drawContractTermsPage() {
+      doc.addPage();
+      drawBodyPageHeader();
+      const sections = getContractTermsSections(contractDraft, selectedContractMember);
+      drawCoverSection(sections[0], 42, 150, pageWidth - 84, 178);
+      drawCoverSection(sections[1], 42, 340, pageWidth - 84, 148);
+      drawCoverSection(sections[2], 42, 500, pageWidth - 84, 148);
     }
 
     function drawBodyPageHeader() {
@@ -1000,6 +1091,11 @@ export default function CrewPage({
       }
 
       sections.forEach((section) => {
+        if (section.title.startsWith("Annex B")) {
+          drawContractTermsPage();
+          return;
+        }
+
         if (section.title.startsWith("Annex C")) {
           drawFlowingSection(section);
           return;
@@ -2482,7 +2578,13 @@ export default function CrewPage({
                             </span>
                             <input
                               value={rule}
-                              onChange={(event) => updateContractRule(index, event.target.value)}
+                              onChange={(event) =>
+                                updateContractRule(
+                                  index,
+                                  normalizeInitialContractInput(event.target.value, rule)
+                                )
+                              }
+                              autoCapitalize="sentences"
                               className="min-w-0 rounded-xl border border-transparent bg-[#f6f9fa] px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#8ed8e6] focus:bg-white focus:ring-4 focus:ring-[#8ed8e6]/20"
                             />
                             <button
@@ -2506,7 +2608,11 @@ export default function CrewPage({
                       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                         <input
                           value={contractRuleDraft}
-                          onChange={(event) => setContractRuleDraft(event.target.value)}
+                          onChange={(event) =>
+                            setContractRuleDraft(
+                              normalizeInitialContractInput(event.target.value, contractRuleDraft)
+                            )
+                          }
                           onKeyDown={(event) => {
                             if (event.key === "Enter") {
                               event.preventDefault();
@@ -2514,6 +2620,7 @@ export default function CrewPage({
                             }
                           }}
                           placeholder="Add another yacht rule"
+                          autoCapitalize="sentences"
                           className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8ed8e6] focus:ring-4 focus:ring-[#8ed8e6]/20"
                         />
                         <button
@@ -4088,17 +4195,17 @@ function getContractBodyPreviewPages(
   return pages.length ? pages : [[]];
 }
 
-function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
+function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
   const sections = getContractCoverSections(draft, member);
+  const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD, annexE] = getContractDocumentSections(draft, member);
   const annexCPages = annexC ? getContractBodyPreviewPages([annexC], 34) : [];
   const previewPages: Array<ContractPreviewBlockData[]> = [
-    ...(annexB ? [[{ title: annexB.title, lines: getContractPreviewLines(annexB.lines) }]] : []),
     ...annexCPages,
     ...(annexD ? [[{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }]] : []),
     ...(annexE ? [[{ title: annexE.title, lines: getContractPreviewLines(annexE.lines) }]] : []),
   ];
-  const totalPages = 1 + previewPages.length;
+  const totalPages = 1 + (annexB ? 1 : 0) + previewPages.length;
 
   return (
     <div className="mt-5 space-y-6">
@@ -4113,10 +4220,20 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         </p>
       </ContractPreviewPage>
 
+      {annexB ? (
+        <ContractPreviewPage pageNo={2} totalPages={totalPages}>
+          <div className="space-y-3">
+            {termsSections.map((section) => (
+              <ContractCoverSection key={section.title} {...section} compact />
+            ))}
+          </div>
+        </ContractPreviewPage>
+      ) : null}
+
       {previewPages.map((blocks, index) => (
         <ContractPreviewPage
           key={`contract-body-page-${index}`}
-          pageNo={index + 2}
+          pageNo={index + (annexB ? 3 : 2)}
           totalPages={totalPages}
         >
           <div className="space-y-6">
@@ -4164,30 +4281,39 @@ function ContractCoverSection({
   note,
   rows,
   footer,
+  wideFirstRows = 0,
+  compact = false,
 }: {
   number: string;
   title: string;
   note: string;
   rows: Array<[string, string | undefined | null]>;
   footer?: string;
+  wideFirstRows?: number;
+  compact?: boolean;
 }) {
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
-      <div className="flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className={`flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 sm:flex-row sm:items-center sm:justify-between ${compact ? "py-2" : "py-2.5"}`}>
         <div className="flex items-center gap-3">
-          <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759] sm:text-xl">
+          <h4 className={`font-serif font-black uppercase tracking-[0.02em] text-[#082759] ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>
             {title}
           </h4>
         </div>
         <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
       </div>
-      <div className="grid gap-2.5 p-3.5 sm:grid-cols-2">
-        {rows.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-[#b9d5f0] bg-white px-3 py-1.5">
+      <div className={`grid sm:grid-cols-2 ${compact ? "gap-2 p-3" : "gap-2.5 p-3.5"}`}>
+        {rows.map(([label, value], index) => (
+          <div
+            key={label}
+            className={`rounded-xl border border-[#b9d5f0] bg-white px-3 ${compact ? "py-1" : "py-1.5"} ${
+              index < wideFirstRows ? "sm:col-span-2" : ""
+            }`}
+          >
             <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
               {label}
             </p>
-            <p className="mt-0.5 min-h-[18px] text-[13px] font-semibold text-[#17233a]">
+            <p className={`mt-0.5 min-h-[18px] font-semibold text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
               {contractSheetValue(value)}
             </p>
           </div>
@@ -4298,8 +4424,9 @@ function ContractField({
       </span>
       <input
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(normalizeInitialContractInput(event.target.value, value))}
         placeholder={placeholder}
+        autoCapitalize="sentences"
         className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
       />
     </label>
