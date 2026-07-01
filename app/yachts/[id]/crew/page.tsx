@@ -136,6 +136,8 @@ type ContractDocumentSection = {
   lines: string[];
 };
 
+type ContractDraftField = keyof ContractDraft;
+
 type ContractCrewMember = {
   position?: string | null;
   invited_email?: string | null;
@@ -155,6 +157,49 @@ type ContractCrewMember = {
 };
 
 const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
+
+const contractAnnexAFields: ContractDraftField[] = [
+  "vesselName",
+  "flagState",
+  "officialNumber",
+  "imoNumber",
+  "callSign",
+  "vesselType",
+  "lengthOverall",
+  "grossTonnage",
+  "portOfRegistry",
+  "enginePower",
+  "ownerCompanyName",
+  "ownerRegisteredAddress",
+  "ownerRepresentative",
+  "ownerRepresentativeDetails",
+  "ownerEmail",
+  "ownerTelephone",
+];
+
+const contractAnnexBFields: ContractDraftField[] = [
+  "employeeName",
+  "employeePosition",
+  "agreementStartDate",
+  "agreementEndDate",
+  "agreementType",
+  "trialPeriod",
+  "placeOfEngagement",
+  "trialPeriodEndDate",
+  "trialSalary",
+  "trialSalaryAccrual",
+  "trialNoticePeriod",
+  "trialAnnualLeave",
+  "trialPlaceOfRepatriation",
+  "trialTravelAllowance",
+  "standardSalary",
+  "standardSalaryAccrual",
+  "standardNoticePeriod",
+  "standardAnnualLeave",
+  "standardPlaceOfRepatriation",
+  "standardTravelAllowance",
+  "specialConditions",
+];
 
 const defaultYachtDisciplineRules = [
   "Captain's orders must be followed.",
@@ -290,6 +335,23 @@ function normalizeInitialContractInput(value: string, previousValue = "") {
     value[firstLetterIndex].toUpperCase(),
     value.slice(firstLetterIndex + 1).toLowerCase(),
   ].join("");
+}
+
+function buildContractSectionSaveKey(draft: ContractDraft, fields: ContractDraftField[]) {
+  return JSON.stringify(fields.map((field) => [field, draft[field]]));
+}
+
+function copyContractFields(target: ContractDraft, source: ContractDraft, fields: ContractDraftField[]) {
+  const next = { ...target };
+  fields.forEach((field) => {
+    (next as Record<string, ContractDraft[ContractDraftField]>)[field] = source[field];
+  });
+  return next;
+}
+
+function mergeSavedContractAnnexes(draft: ContractDraft, savedDraft: ContractDraft) {
+  const withAnnexA = copyContractFields(draft, savedDraft, contractAnnexAFields);
+  return copyContractFields(withAnnexA, savedDraft, contractAnnexBFields);
 }
 
 function getContractCoverSections(draft: ContractDraft, member?: ContractCrewMember): ContractSheetSection[] {
@@ -534,9 +596,9 @@ export default function CrewPage({
   const [captainNote, setCaptainNote] = useState("");
   const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
+  const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [contractSignatureReady, setContractSignatureReady] = useState(false);
   const [contractRuleDraft, setContractRuleDraft] = useState("");
-  const [savedContractSections, setSavedContractSections] = useState<Record<string, string>>({});
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -670,79 +732,61 @@ export default function CrewPage({
     [crew, selectedCrew]
   );
 
+  const contractPreviewDraft = useMemo(
+    () => mergeSavedContractAnnexes(contractDraft, savedContractDraft),
+    [contractDraft, savedContractDraft]
+  );
+
   const contractPreviewText = useMemo(
-    () => buildContractPreviewText(contractDraft, selectedContractMember),
-    [contractDraft, selectedContractMember]
+    () => buildContractPreviewText(contractPreviewDraft, selectedContractMember),
+    [contractPreviewDraft, selectedContractMember]
   );
 
   const contractCompletion = useMemo(() => {
     const fields = [
-      contractDraft.vesselName,
-      contractDraft.flagState,
-      contractDraft.officialNumber,
-      contractDraft.vesselType,
-      contractDraft.lengthOverall,
-      contractDraft.ownerCompanyName,
-      contractDraft.ownerRepresentative,
-      contractDraft.employeeName,
-      contractDraft.employeePosition,
-      contractDraft.agreementStartDate || contractDraft.startDate,
-      contractDraft.agreementEndDate || contractDraft.endDate,
-      contractDraft.agreementType,
-      contractDraft.placeOfEngagement,
-      contractDraft.standardSalary || contractDraft.salary,
-      contractDraft.standardNoticePeriod || contractDraft.terminationNotice,
-      contractDraft.clauses,
-      contractDraft.duties,
-      contractDraft.discipline,
-      contractDraft.disciplineRules.length ? "rules" : "",
-      contractDraft.signerName,
+      contractPreviewDraft.vesselName,
+      contractPreviewDraft.flagState,
+      contractPreviewDraft.officialNumber,
+      contractPreviewDraft.vesselType,
+      contractPreviewDraft.lengthOverall,
+      contractPreviewDraft.ownerCompanyName,
+      contractPreviewDraft.ownerRepresentative,
+      contractPreviewDraft.employeeName,
+      contractPreviewDraft.employeePosition,
+      contractPreviewDraft.agreementStartDate || contractPreviewDraft.startDate,
+      contractPreviewDraft.agreementEndDate || contractPreviewDraft.endDate,
+      contractPreviewDraft.agreementType,
+      contractPreviewDraft.placeOfEngagement,
+      contractPreviewDraft.standardSalary || contractPreviewDraft.salary,
+      contractPreviewDraft.standardNoticePeriod || contractPreviewDraft.terminationNotice,
+      contractPreviewDraft.clauses,
+      contractPreviewDraft.duties,
+      contractPreviewDraft.discipline,
+      contractPreviewDraft.disciplineRules.length ? "rules" : "",
+      contractPreviewDraft.signerName,
     ];
     const completed = fields.filter((field) => String(field || "").trim()).length;
     return Math.round((completed / fields.length) * 100);
-  }, [contractDraft]);
+  }, [contractPreviewDraft]);
 
-  const contractVesselSaveKey = useMemo(
-    () =>
-      [
-        contractDraft.vesselName,
-        contractDraft.flagState,
-        contractDraft.officialNumber,
-        contractDraft.imoNumber,
-        contractDraft.callSign,
-        contractDraft.vesselType,
-        contractDraft.lengthOverall,
-        contractDraft.grossTonnage,
-        contractDraft.portOfRegistry,
-        contractDraft.enginePower,
-        contractDraft.ownerCompanyName,
-        contractDraft.ownerRegisteredAddress,
-        contractDraft.ownerRepresentative,
-        contractDraft.ownerRepresentativeDetails,
-        contractDraft.ownerEmail,
-        contractDraft.ownerTelephone,
-      ].join("|"),
-    [
-      contractDraft.callSign,
-      contractDraft.enginePower,
-      contractDraft.flagState,
-      contractDraft.grossTonnage,
-      contractDraft.imoNumber,
-      contractDraft.lengthOverall,
-      contractDraft.officialNumber,
-      contractDraft.ownerCompanyName,
-      contractDraft.ownerEmail,
-      contractDraft.ownerRegisteredAddress,
-      contractDraft.ownerRepresentative,
-      contractDraft.ownerRepresentativeDetails,
-      contractDraft.ownerTelephone,
-      contractDraft.portOfRegistry,
-      contractDraft.vesselName,
-      contractDraft.vesselType,
-    ]
+  const contractAnnexASaveKey = useMemo(
+    () => buildContractSectionSaveKey(contractDraft, contractAnnexAFields),
+    [contractDraft]
   );
-
-  const contractVesselSaved = savedContractSections.vesselDetails === contractVesselSaveKey;
+  const savedContractAnnexASaveKey = useMemo(
+    () => buildContractSectionSaveKey(savedContractDraft, contractAnnexAFields),
+    [savedContractDraft]
+  );
+  const contractAnnexBSaveKey = useMemo(
+    () => buildContractSectionSaveKey(contractDraft, contractAnnexBFields),
+    [contractDraft]
+  );
+  const savedContractAnnexBSaveKey = useMemo(
+    () => buildContractSectionSaveKey(savedContractDraft, contractAnnexBFields),
+    [savedContractDraft]
+  );
+  const contractAnnexASaved = contractAnnexASaveKey === savedContractAnnexASaveKey;
+  const contractAnnexBSaved = contractAnnexBSaveKey === savedContractAnnexBSaveKey;
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -814,6 +858,10 @@ export default function CrewPage({
 
   function updateContractDraft(field: keyof ContractDraft, value: string) {
     setContractDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function saveContractSection(fields: ContractDraftField[]) {
+    setSavedContractDraft((current) => copyContractFields(current, contractDraft, fields));
   }
 
   function updateContractRule(index: number, value: string) {
@@ -1010,7 +1058,7 @@ export default function CrewPage({
 
     function drawContractCoverPage() {
       drawContractPageBase();
-      const sections = getContractCoverSections(contractDraft, selectedContractMember);
+      const sections = getContractCoverSections(contractPreviewDraft, selectedContractMember);
       drawCoverSection(sections[0], 42, 150, pageWidth - 84, 206);
       drawCoverSection(sections[1], 42, 366, pageWidth - 84, 176);
       drawCoverSection(sections[2], 42, 552, pageWidth - 84, 194);
@@ -1027,7 +1075,7 @@ export default function CrewPage({
     function drawContractTermsPage() {
       doc.addPage();
       drawBodyPageHeader();
-      const sections = getContractTermsSections(contractDraft, selectedContractMember);
+      const sections = getContractTermsSections(contractPreviewDraft, selectedContractMember);
       drawCoverSection(sections[0], 42, 150, pageWidth - 84, 178);
       drawCoverSection(sections[1], 42, 340, pageWidth - 84, 148);
       drawCoverSection(sections[2], 42, 500, pageWidth - 84, 148);
@@ -1039,7 +1087,7 @@ export default function CrewPage({
     }
 
     function drawBodyPages() {
-      const sections = getContractDocumentSections(contractDraft, selectedContractMember);
+      const sections = getContractDocumentSections(contractPreviewDraft, selectedContractMember);
       const left = 54;
       const right = pageWidth - 54;
       const width = right - left;
@@ -1139,7 +1187,7 @@ export default function CrewPage({
       drawContractPageFooter(pageNo, totalPages);
     }
 
-    doc.save(buildContractFileName(contractDraft, selectedContractMember));
+    doc.save(buildContractFileName(contractPreviewDraft, selectedContractMember));
   }
 
   function toggleProgressCard(id: string) {
@@ -2339,22 +2387,10 @@ export default function CrewPage({
                   </div>
 
                   <div className="flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSavedContractSections((current) => ({
-                              ...current,
-                              vesselDetails: contractVesselSaveKey,
-                            }))
-                          }
-                          className={`bd-focus inline-flex min-w-[92px] items-center justify-center rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition ${
-                            contractVesselSaved
-                              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                              : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
-                          }`}
-                        >
-                          {contractVesselSaved ? "Saved" : "Save"}
-                        </button>
+                    <ContractSectionSaveButton
+                      saved={contractAnnexASaved}
+                      onSave={() => saveContractSection(contractAnnexAFields)}
+                    />
                   </div>
                 </div>
               )}
@@ -2516,6 +2552,13 @@ export default function CrewPage({
                         placeholder="Any additional agreed terms may be written here and shall take priority over Annex B."
                       />
                     </ContractTermsBlock>
+
+                    <div className="flex justify-end">
+                      <ContractSectionSaveButton
+                        saved={contractAnnexBSaved}
+                        onSave={() => saveContractSection(contractAnnexBFields)}
+                      />
+                    </div>
                 </div>
               )}
 
@@ -2744,7 +2787,7 @@ export default function CrewPage({
                       title="Final contract draft"
                       text="Review the generated text before sending it for mobile signature."
                     />
-                    <ContractGeneratedPreview draft={contractDraft} member={selectedContractMember} />
+                    <ContractGeneratedPreview draft={contractPreviewDraft} member={selectedContractMember} />
                   </div>
 
                   <div className="space-y-4">
@@ -4440,6 +4483,30 @@ function ContractTermsBlock({
       </div>
       <div className="p-4">{children}</div>
     </section>
+  );
+}
+
+function ContractSectionSaveButton({
+  saved,
+  onSave,
+}: {
+  saved: boolean;
+  onSave: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={saved}
+      onClick={onSave}
+      className={`bd-focus inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
+        saved
+          ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
+      }`}
+    >
+      {saved ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      {saved ? "Saved" : "Save"}
+    </button>
   );
 }
 
