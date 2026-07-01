@@ -168,6 +168,40 @@ type ContractCrewMember = {
 
 const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
 
+const contractIntroParagraph =
+  'This Seafarer Employment Agreement (the "Agreement") consists of five (5) Annexes. Together, these Annexes form the complete terms and conditions agreed between the Seafarer and the Employer in relation to employment aboard the Yacht.';
+
+const contractIntroAnnexes = [
+  {
+    title: "ANNEX A - PARTIES & YACHT DETAILS",
+    text: "Contains the identification and contact details of the Yacht, Employer, Owner or Management Company, and Seafarer.",
+  },
+  {
+    title: "ANNEX B - EMPLOYMENT TERMS",
+    text: "Contains the specific terms of employment, including position, commencement date, contract duration, salary, leave entitlement, working arrangements, repatriation and any Special Conditions agreed between the parties.",
+  },
+  {
+    title: "ANNEX C - GENERAL TERMS & CONDITIONS",
+    text: "Contains the general provisions governing the Seafarer's employment, including duties, conduct, working and rest hours, termination, medical care, insurance, confidentiality, dispute resolution and other applicable employment conditions.",
+  },
+  {
+    title: "ANNEX D - JOB DESCRIPTION & YACHT RULES",
+    text: "Contains the duties and responsibilities applicable to the Seafarer's position, together with the operational, safety, conduct and onboard rules of the Yacht.",
+  },
+  {
+    title: "ANNEX E - DECLARATIONS & SIGNATURES",
+    text: "Contains the declarations, acknowledgements and signatures of the Seafarer, Employer and any authorised representative.",
+  },
+];
+
+const contractIntroClosingParagraphs = [
+  "All Annexes shall be read together as one Agreement. Any Special Conditions expressly agreed and recorded in Annex B shall prevail over conflicting provisions elsewhere in the Agreement, subject always to applicable mandatory laws, flag-state requirements and any applicable collective bargaining agreement.",
+  "By signing Annex E, the parties confirm that they have reviewed, understood and accepted the complete Agreement and have received or been given access to a copy.",
+];
+
+const contractIntroPlatformNotice =
+  "BlueDeck.app provides digital document preparation and contract-generation tools only. BlueDeck.app is not a party to this Agreement and does not act as an employer, recruitment agency, legal adviser, yacht manager or representative of either party. The Employer and the Seafarer remain solely responsible for verifying that the Agreement complies with all applicable laws, regulations, flag-state requirements and employment obligations.";
+
 const contractAnnexAYachtFields: ContractDraftField[] = [
   "vesselName",
   "flagState",
@@ -1151,6 +1185,79 @@ export default function CrewPage({
 
     function drawContractIntroPage() {
       drawContractPageBase(true);
+      const x = 56;
+      const width = pageWidth - 112;
+      let y = 190;
+
+      setFill("#ffffff");
+      setStroke("#c4d9ee");
+      doc.roundedRect(x, y, width, 515, 10, 10, "FD");
+      setFill("#f7fbff");
+      doc.rect(x + 0.6, y + 0.6, width - 1.2, 34, "F");
+      setStroke("#d8e7f5");
+      doc.line(x, y + 34, x + width, y + 34);
+      doc.setFont("times", "bold");
+      doc.setFontSize(16);
+      setText("#082759");
+      doc.text("INTRODUCTORY NOTE", x + 20, y + 24);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.4);
+      setText("#0d58ae");
+      doc.text("Agreement structure and platform notice", x + width - 20, y + 23.5, { align: "right" });
+
+      y += 52;
+
+      function drawIntroText(text: string, fontSize = 7.4, lineHeight = 9.2, indent = 0) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(fontSize);
+        setText("#17233a");
+        const lines = doc.splitTextToSize(text, width - 44 - indent);
+        doc.text(lines, x + 22 + indent, y);
+        y += lines.length * lineHeight;
+      }
+
+      drawIntroText(contractIntroParagraph, 7.2, 8.8);
+      y += 9;
+
+      contractIntroAnnexes.forEach((annex) => {
+        setStroke("#8ed8e6");
+        setFill("#eef9fb");
+        doc.circle(x + 28, y + 5.5, 4.4, "FD");
+        setStroke("#0d58ae");
+        doc.setLineWidth(0.7);
+        doc.line(x + 25.7, y + 5.5, x + 27.3, y + 7.2);
+        doc.line(x + 27.3, y + 7.2, x + 31.0, y + 3.2);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7.6);
+        setText("#082759");
+        doc.text(annex.title, x + 38, y + 5.7);
+        y += 13;
+        drawIntroText(annex.text, 6.9, 8.2, 16);
+        y += 5;
+      });
+
+      setStroke("#d8e7f5");
+      doc.line(x + 22, y + 2, x + width - 22, y + 2);
+      y += 14;
+      contractIntroClosingParagraphs.forEach((paragraph) => {
+        drawIntroText(paragraph, 7.0, 8.5);
+        y += 7;
+      });
+
+      y += 2;
+      setFill("#f7fbff");
+      setStroke("#c4d9ee");
+      doc.roundedRect(x + 18, y, width - 36, 76, 8, 8, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.4);
+      setText("#082759");
+      doc.text("BLUEDECK PLATFORM NOTICE", x + 32, y + 18);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.8);
+      setText("#17233a");
+      const noticeLines = doc.splitTextToSize(contractIntroPlatformNotice, width - 78);
+      doc.text(noticeLines, x + 32, y + 33);
     }
 
     function drawContractCoverPage() {
@@ -4402,7 +4509,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
   return (
     <div className="mt-5 space-y-6">
       <ContractPreviewPage pageNo={1} totalPages={totalPages} useTemplate>
-        <div className="h-full" />
+        <ContractIntroNote />
       </ContractPreviewPage>
 
       <ContractPreviewPage pageNo={2} totalPages={totalPages} subtitle="ANNEX A - PARTIES">
@@ -4497,6 +4604,55 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
       </span>
       <span className="h-px flex-1 bg-[linear-gradient(90deg,#1e67bc_0%,#9ec4ed_48%,transparent_100%)]" />
     </div>
+  );
+}
+
+function ContractIntroNote() {
+  return (
+    <section className="mx-auto mt-[1.8%] w-[88%] overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96 shadow-sm shadow-blue-950/8">
+      <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[#fbfdff]/94 px-4 py-3">
+        <h3 className="font-serif text-[clamp(12px,1.9vw,22px)] font-black uppercase tracking-[0.02em] text-[#082759]">
+          Introductory Note
+        </h3>
+        <span className="hidden text-[clamp(6px,0.8vw,10px)] font-bold text-[#0d58ae] sm:block">
+          Agreement structure and platform notice
+        </span>
+      </div>
+      <div className="space-y-[clamp(5px,0.8vw,9px)] px-4 py-3 text-[clamp(6.2px,0.86vw,10px)] font-semibold leading-[1.42] text-[#17233a]">
+        <p>{contractIntroParagraph}</p>
+
+        <div className="space-y-[clamp(3px,0.55vw,7px)]">
+          {contractIntroAnnexes.map((annex) => (
+            <div key={annex.title} className="grid grid-cols-[18px_1fr] gap-2">
+              <span className="mt-0.5 flex h-[14px] w-[14px] items-center justify-center rounded-full border border-[#8ed8e6] bg-[#eef9fb] text-[#0d58ae]">
+                <CheckCircle className="h-2.5 w-2.5" />
+              </span>
+              <span>
+                <span className="block text-[clamp(6.5px,0.92vw,10.5px)] font-black uppercase tracking-[0.08em] text-[#082759]">
+                  {annex.title}
+                </span>
+                <span className="block text-[#4f6680]">{annex.text}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="h-px bg-[#d8e7f5]" />
+
+        {contractIntroClosingParagraphs.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+
+        <div className="rounded-[14px] border border-[#bfd8ea] bg-[#f7fbff] px-3 py-2">
+          <p className="text-[clamp(6.5px,0.9vw,10.5px)] font-black uppercase tracking-[0.12em] text-[#082759]">
+            BlueDeck Platform Notice
+          </p>
+          <p className="mt-1 text-[clamp(5.9px,0.8vw,9.5px)] leading-[1.36] text-[#17233a]">
+            {contractIntroPlatformNotice}
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 
