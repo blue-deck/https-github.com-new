@@ -138,6 +138,14 @@ type ContractDocumentSection = {
 
 type ContractDraftField = keyof ContractDraft;
 
+type ContractSaveSectionKey =
+  | "annexAYacht"
+  | "annexAOwner"
+  | "annexBAgreement"
+  | "annexBTrial"
+  | "annexBStandard"
+  | "annexBSpecial";
+
 type ContractCrewMember = {
   position?: string | null;
   invited_email?: string | null;
@@ -158,7 +166,7 @@ type ContractCrewMember = {
 
 const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
 
-const contractAnnexAFields: ContractDraftField[] = [
+const contractAnnexAYachtFields: ContractDraftField[] = [
   "vesselName",
   "flagState",
   "officialNumber",
@@ -169,6 +177,9 @@ const contractAnnexAFields: ContractDraftField[] = [
   "grossTonnage",
   "portOfRegistry",
   "enginePower",
+];
+
+const contractAnnexAOwnerFields: ContractDraftField[] = [
   "ownerCompanyName",
   "ownerRegisteredAddress",
   "ownerRepresentative",
@@ -177,7 +188,12 @@ const contractAnnexAFields: ContractDraftField[] = [
   "ownerTelephone",
 ];
 
-const contractAnnexBFields: ContractDraftField[] = [
+const contractAnnexAFields: ContractDraftField[] = [
+  ...contractAnnexAYachtFields,
+  ...contractAnnexAOwnerFields,
+];
+
+const contractAnnexBAgreementFields: ContractDraftField[] = [
   "employeeName",
   "employeePosition",
   "agreementStartDate",
@@ -186,19 +202,35 @@ const contractAnnexBFields: ContractDraftField[] = [
   "trialPeriod",
   "placeOfEngagement",
   "trialPeriodEndDate",
+];
+
+const contractAnnexBTrialFields: ContractDraftField[] = [
   "trialSalary",
   "trialSalaryAccrual",
   "trialNoticePeriod",
   "trialAnnualLeave",
   "trialPlaceOfRepatriation",
   "trialTravelAllowance",
+];
+
+const contractAnnexBStandardFields: ContractDraftField[] = [
   "standardSalary",
   "standardSalaryAccrual",
   "standardNoticePeriod",
   "standardAnnualLeave",
   "standardPlaceOfRepatriation",
   "standardTravelAllowance",
+];
+
+const contractAnnexBSpecialFields: ContractDraftField[] = [
   "specialConditions",
+];
+
+const contractAnnexBFields: ContractDraftField[] = [
+  ...contractAnnexBAgreementFields,
+  ...contractAnnexBTrialFields,
+  ...contractAnnexBStandardFields,
+  ...contractAnnexBSpecialFields,
 ];
 
 const defaultYachtDisciplineRules = [
@@ -597,6 +629,7 @@ export default function CrewPage({
   const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
+  const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
   const [contractSignatureReady, setContractSignatureReady] = useState(false);
   const [contractRuleDraft, setContractRuleDraft] = useState("");
   const [inviteNotice, setInviteNotice] = useState("");
@@ -769,24 +802,29 @@ export default function CrewPage({
     return Math.round((completed / fields.length) * 100);
   }, [contractPreviewDraft]);
 
-  const contractAnnexASaveKey = useMemo(
-    () => buildContractSectionSaveKey(contractDraft, contractAnnexAFields),
+  const contractSectionSaveKeys = useMemo<Record<ContractSaveSectionKey, string>>(
+    () => ({
+      annexAYacht: buildContractSectionSaveKey(contractDraft, contractAnnexAYachtFields),
+      annexAOwner: buildContractSectionSaveKey(contractDraft, contractAnnexAOwnerFields),
+      annexBAgreement: buildContractSectionSaveKey(contractDraft, contractAnnexBAgreementFields),
+      annexBTrial: buildContractSectionSaveKey(contractDraft, contractAnnexBTrialFields),
+      annexBStandard: buildContractSectionSaveKey(contractDraft, contractAnnexBStandardFields),
+      annexBSpecial: buildContractSectionSaveKey(contractDraft, contractAnnexBSpecialFields),
+    }),
     [contractDraft]
   );
-  const savedContractAnnexASaveKey = useMemo(
-    () => buildContractSectionSaveKey(savedContractDraft, contractAnnexAFields),
-    [savedContractDraft]
+
+  const contractSectionSaved = useMemo<Record<ContractSaveSectionKey, boolean>>(
+    () => ({
+      annexAYacht: savedContractSectionKeys.annexAYacht === contractSectionSaveKeys.annexAYacht,
+      annexAOwner: savedContractSectionKeys.annexAOwner === contractSectionSaveKeys.annexAOwner,
+      annexBAgreement: savedContractSectionKeys.annexBAgreement === contractSectionSaveKeys.annexBAgreement,
+      annexBTrial: savedContractSectionKeys.annexBTrial === contractSectionSaveKeys.annexBTrial,
+      annexBStandard: savedContractSectionKeys.annexBStandard === contractSectionSaveKeys.annexBStandard,
+      annexBSpecial: savedContractSectionKeys.annexBSpecial === contractSectionSaveKeys.annexBSpecial,
+    }),
+    [contractSectionSaveKeys, savedContractSectionKeys]
   );
-  const contractAnnexBSaveKey = useMemo(
-    () => buildContractSectionSaveKey(contractDraft, contractAnnexBFields),
-    [contractDraft]
-  );
-  const savedContractAnnexBSaveKey = useMemo(
-    () => buildContractSectionSaveKey(savedContractDraft, contractAnnexBFields),
-    [savedContractDraft]
-  );
-  const contractAnnexASaved = contractAnnexASaveKey === savedContractAnnexASaveKey;
-  const contractAnnexBSaved = contractAnnexBSaveKey === savedContractAnnexBSaveKey;
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -860,8 +898,13 @@ export default function CrewPage({
     setContractDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function saveContractSection(fields: ContractDraftField[]) {
+  function saveContractSection(sectionKey: ContractSaveSectionKey, fields: ContractDraftField[]) {
+    const currentSectionSaveKey = contractSectionSaveKeys[sectionKey];
     setSavedContractDraft((current) => copyContractFields(current, contractDraft, fields));
+    setSavedContractSectionKeys((current) => ({
+      ...current,
+      [sectionKey]: currentSectionSaveKey,
+    }));
   }
 
   function updateContractRule(index: number, value: string) {
@@ -2311,6 +2354,12 @@ export default function CrewPage({
                           placeholder=""
                         />
                     </div>
+                    <div className="flex justify-end border-t border-[#d9e8f3] px-5 py-4">
+                      <ContractSectionSaveButton
+                        saved={contractSectionSaved.annexAYacht}
+                        onSave={() => saveContractSection("annexAYacht", contractAnnexAYachtFields)}
+                      />
+                    </div>
                   </div>
 
                   <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
@@ -2364,6 +2413,12 @@ export default function CrewPage({
                           placeholder=""
                         />
                     </div>
+                    <div className="flex justify-end border-t border-[#d9e8f3] px-5 py-4">
+                      <ContractSectionSaveButton
+                        saved={contractSectionSaved.annexAOwner}
+                        onSave={() => saveContractSection("annexAOwner", contractAnnexAOwnerFields)}
+                      />
+                    </div>
                   </div>
 
                   <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
@@ -2384,13 +2439,6 @@ export default function CrewPage({
                         </p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <ContractSectionSaveButton
-                      saved={contractAnnexASaved}
-                      onSave={() => saveContractSection(contractAnnexAFields)}
-                    />
                   </div>
                 </div>
               )}
@@ -2451,6 +2499,12 @@ export default function CrewPage({
                           placeholder=""
                         />
                       </div>
+                      <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                        <ContractSectionSaveButton
+                          saved={contractSectionSaved.annexBAgreement}
+                          onSave={() => saveContractSection("annexBAgreement", contractAnnexBAgreementFields)}
+                        />
+                      </div>
                     </ContractTermsBlock>
 
                     <div className="grid gap-5 xl:grid-cols-2">
@@ -2496,6 +2550,12 @@ export default function CrewPage({
                             placeholder=""
                           />
                         </div>
+                        <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                          <ContractSectionSaveButton
+                            saved={contractSectionSaved.annexBTrial}
+                            onSave={() => saveContractSection("annexBTrial", contractAnnexBTrialFields)}
+                          />
+                        </div>
                       </ContractTermsBlock>
 
                       <ContractTermsBlock title="Standard terms">
@@ -2537,6 +2597,12 @@ export default function CrewPage({
                             placeholder=""
                           />
                         </div>
+                        <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                          <ContractSectionSaveButton
+                            saved={contractSectionSaved.annexBStandard}
+                            onSave={() => saveContractSection("annexBStandard", contractAnnexBStandardFields)}
+                          />
+                        </div>
                       </ContractTermsBlock>
                     </div>
 
@@ -2551,14 +2617,13 @@ export default function CrewPage({
                         rows={4}
                         placeholder="Any additional agreed terms may be written here and shall take priority over Annex B."
                       />
+                      <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                        <ContractSectionSaveButton
+                          saved={contractSectionSaved.annexBSpecial}
+                          onSave={() => saveContractSection("annexBSpecial", contractAnnexBSpecialFields)}
+                        />
+                      </div>
                     </ContractTermsBlock>
-
-                    <div className="flex justify-end">
-                      <ContractSectionSaveButton
-                        saved={contractAnnexBSaved}
-                        onSave={() => saveContractSection(contractAnnexBFields)}
-                      />
-                    </div>
                 </div>
               )}
 
