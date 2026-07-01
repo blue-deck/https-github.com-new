@@ -306,8 +306,6 @@ function getContractCoverSections(draft: ContractDraft, member?: any): ContractS
         ["Email", crewProfile.email || member?.invited_email],
         ["Telephone", crewProfile.phone || crewProfile.mobile_number || crewProfile.mobile],
       ],
-      footer:
-        "Crew details are completed by the invited crew member before the final contract is confirmed.",
     },
   ];
 }
@@ -827,7 +825,7 @@ export default function CrewPage({
 
     function drawContractPageBase() {
       if (contractPaperTemplate) {
-        doc.addImage(contractPaperTemplate, "PNG", 0, 0, pageWidth, pageHeight);
+        doc.addImage(contractPaperTemplate, "PNG", 0, -16, pageWidth, pageHeight - 4);
         return;
       }
 
@@ -914,9 +912,8 @@ export default function CrewPage({
       setText("#1e67bc");
       doc.text(
         "This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.",
-        pageWidth / 2,
-        pageHeight - 43,
-        { align: "center" }
+        42,
+        762
       );
     }
 
@@ -4111,7 +4108,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
             <ContractCoverSection key={section.title} {...section} />
           ))}
         </div>
-        <p className="mt-5 text-center text-xs font-medium text-[#1e67bc]">
+        <p className="mt-2 text-left text-xs font-medium text-[#1e67bc]">
           This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.
         </p>
       </ContractPreviewPage>
@@ -4144,12 +4141,12 @@ function ContractPreviewPage({
 }) {
   return (
     <div
-      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.6%] pt-[21.6%] shadow-sm shadow-blue-950/8"
+      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] pt-[23.8%] shadow-sm shadow-blue-950/8"
       style={{
         backgroundImage: `url(${contractAgreementTemplateSrc})`,
-        backgroundPosition: "center",
+        backgroundPosition: "center -1.9%",
         backgroundRepeat: "no-repeat",
-        backgroundSize: "100% 100%",
+        backgroundSize: "100% 98%",
       }}
     >
       <div className="relative z-10 flex h-full flex-col">
