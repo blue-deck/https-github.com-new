@@ -264,8 +264,8 @@ const contractStepCards: Array<{
   { id: "parties", title: "Annex A", meta: "Yacht / Owner / Crew" },
   { id: "terms", title: "Annex B", meta: "Employment Terms" },
   { id: "clauses", title: "Annex C", meta: "General Terms" },
-  { id: "duties", title: "Annex D", meta: "Job description and yacht rules" },
-  { id: "signature", title: "Annex E", meta: "Signature" },
+  { id: "duties", title: "Annex D", meta: "Job description & yacht rules" },
+  { id: "signature", title: "Annex E", meta: "Declaration & signatures" },
   { id: "preview", title: "Preview", meta: "PDF & send" },
 ];
 
@@ -594,7 +594,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
       ],
     },
     {
-      title: "Annex E - Signatures",
+      title: "Annex E - Declaration and Signatures",
       lines: [
         `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
         `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
@@ -809,33 +809,6 @@ export default function CrewPage({
     () => buildContractPreviewText(contractPreviewDraft, selectedContractMember),
     [contractPreviewDraft, selectedContractMember]
   );
-
-  const contractCompletion = useMemo(() => {
-    const fields = [
-      contractPreviewDraft.vesselName,
-      contractPreviewDraft.flagState,
-      contractPreviewDraft.officialNumber,
-      contractPreviewDraft.vesselType,
-      contractPreviewDraft.lengthOverall,
-      contractPreviewDraft.ownerCompanyName,
-      contractPreviewDraft.ownerRepresentative,
-      contractPreviewDraft.employeeName,
-      contractPreviewDraft.employeePosition,
-      contractPreviewDraft.agreementStartDate || contractPreviewDraft.startDate,
-      contractPreviewDraft.agreementEndDate || contractPreviewDraft.endDate,
-      contractPreviewDraft.agreementType,
-      contractPreviewDraft.placeOfEngagement,
-      contractPreviewDraft.standardSalary || contractPreviewDraft.salary,
-      contractPreviewDraft.standardNoticePeriod || contractPreviewDraft.terminationNotice,
-      contractPreviewDraft.clauses,
-      contractPreviewDraft.duties,
-      contractPreviewDraft.discipline,
-      contractPreviewDraft.disciplineRules.length ? "rules" : "",
-      contractPreviewDraft.signerName,
-    ];
-    const completed = fields.filter((field) => String(field || "").trim()).length;
-    return Math.round((completed / fields.length) * 100);
-  }, [contractPreviewDraft]);
 
   const contractSectionSaveKeys = useMemo<Record<ContractSaveSectionKey, string>>(
     () => ({
@@ -1073,6 +1046,35 @@ export default function CrewPage({
       doc.text(`Page ${pageNo} of ${totalPages}`, pageWidth - 48, pageHeight - 28, { align: "right" });
     }
 
+    function drawContractAnnexDivider(text: string, y: number) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.4);
+      setText("#0d58ae");
+      const label = text.toUpperCase();
+      const labelWidth = doc.getTextWidth(label);
+      const gap = 9;
+      const center = pageWidth / 2;
+      const leftEnd = center - labelWidth / 2 - gap;
+      const rightStart = center + labelWidth / 2 + gap;
+
+      doc.text(label, center, y + 2.5, { align: "center" });
+      doc.setLineWidth(0.35);
+      setStroke("#d8e7f5");
+      doc.line(112, y, leftEnd - 38, y);
+      doc.line(rightStart + 38, y, pageWidth - 112, y);
+      setStroke("#88b9e6");
+      doc.line(leftEnd - 38, y, leftEnd, y);
+      doc.line(rightStart, y, rightStart + 38, y);
+    }
+
+    function drawContractDocumentHeader(subtitle?: string) {
+      doc.setFont("times", "bold");
+      doc.setFontSize(17);
+      setText("#082759");
+      doc.text("SEAFARER EMPLOYMENT AGREEMENT", pageWidth / 2, 38, { align: "center" });
+      if (subtitle) drawContractAnnexDivider(subtitle, 60);
+    }
+
     function drawCoverField(
       label: string,
       value: string | undefined | null,
@@ -1153,25 +1155,26 @@ export default function CrewPage({
 
     function drawContractCoverPage() {
       doc.addPage();
-      drawContractPageBase();
+      drawBodyPageHeader("ANNEX A - PARTIES");
       const sections = getContractCoverSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 54, pageWidth - 84, 206);
-      drawCoverSection(sections[1], 42, 270, pageWidth - 84, 174);
-      drawCoverSection(sections[2], 42, 454, pageWidth - 84, 190);
+      drawCoverSection(sections[0], 42, 82, pageWidth - 84, 198);
+      drawCoverSection(sections[1], 42, 290, pageWidth - 84, 166);
+      drawCoverSection(sections[2], 42, 466, pageWidth - 84, 180);
     }
 
     function drawContractTermsPage() {
       doc.addPage();
-      drawBodyPageHeader();
+      drawBodyPageHeader("ANNEX B - EMPLOYMENT TERMS");
       const sections = getContractTermsSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 54, pageWidth - 84, 176);
-      drawCoverSection(sections[1], 42, 242, pageWidth - 84, 146);
-      drawCoverSection(sections[2], 42, 400, pageWidth - 84, 146);
-      drawCoverSection(sections[3], 42, 558, pageWidth - 84, 82);
+      drawCoverSection(sections[0], 42, 82, pageWidth - 84, 164);
+      drawCoverSection(sections[1], 42, 258, pageWidth - 84, 136);
+      drawCoverSection(sections[2], 42, 406, pageWidth - 84, 136);
+      drawCoverSection(sections[3], 42, 554, pageWidth - 84, 82);
     }
 
-    function drawBodyPageHeader() {
+    function drawBodyPageHeader(subtitle?: string) {
       drawContractPageBase();
+      drawContractDocumentHeader(subtitle);
     }
 
     function drawBodyPages() {
@@ -1179,7 +1182,7 @@ export default function CrewPage({
       const left = 54;
       const right = pageWidth - 54;
       const width = right - left;
-      const top = 58;
+      const top = 92;
       const bottom = pageHeight - 58;
 
       function drawSectionTitle(section: ContractDocumentSection, y: number) {
@@ -1201,9 +1204,9 @@ export default function CrewPage({
         return rows;
       }
 
-      function drawSinglePageSection(section: ContractDocumentSection) {
+      function drawSinglePageSection(section: ContractDocumentSection, subtitle: string) {
         doc.addPage();
-        drawBodyPageHeader();
+        drawBodyPageHeader(subtitle);
         drawSectionTitle(section, top);
         let y = top + 26;
         const rows = getWrappedRows(section);
@@ -1224,9 +1227,9 @@ export default function CrewPage({
         });
       }
 
-      function drawFlowingSection(section: ContractDocumentSection) {
+      function drawFlowingSection(section: ContractDocumentSection, firstPageSubtitle: string) {
         doc.addPage();
-        drawBodyPageHeader();
+        drawBodyPageHeader(firstPageSubtitle);
         drawSectionTitle(section, top);
         let y = top + 26;
 
@@ -1259,11 +1262,21 @@ export default function CrewPage({
         }
 
         if (section.title.startsWith("Annex C")) {
-          drawFlowingSection(section);
+          drawFlowingSection(section, "ANNEX C - GENERAL TERMS");
           return;
         }
 
-        drawSinglePageSection(section);
+        if (section.title.startsWith("Annex D")) {
+          drawSinglePageSection(section, "ANNEX D - JOB DESCRIPTION AND YACHT RULES");
+          return;
+        }
+
+        if (section.title.startsWith("Annex E")) {
+          drawSinglePageSection(section, "ANNEX E - DECLARATION AND SIGNATURES");
+          return;
+        }
+
+        drawSinglePageSection(section, section.title.toUpperCase());
       });
     }
 
@@ -2256,38 +2269,9 @@ export default function CrewPage({
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-[#8ed8e6]">
                     BlueDeck Contract Studio
                   </p>
-                  <h2 className="mt-2 text-2xl font-black leading-tight text-white sm:text-3xl lg:text-4xl">
-                    Create professional crew contracts.
+                  <h2 className="mt-2 text-2xl font-black leading-tight text-white drop-shadow-sm sm:text-3xl lg:text-4xl">
+                    Create professional seafarer contract
                   </h2>
-                  <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-white/72">
-                    Prepare parties, clauses, duties and mobile signature details in one clean contract workflow.
-                  </p>
-                </div>
-
-                <div className="grid gap-2 sm:grid-cols-2 xl:min-w-[320px]">
-                  <div className="rounded-[22px] border border-[#8ed8e6]/25 bg-white/10 p-3 shadow-inner shadow-black/10">
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/72">
-                      Contract Ready
-                    </p>
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/18">
-                        <div
-                          className="h-full rounded-full bg-[#8ed8e6] transition-all"
-                          style={{ width: `${contractCompletion}%` }}
-                        />
-                      </div>
-                      <span className="text-lg font-black text-white">{contractCompletion}%</span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[22px] border border-[#8ed8e6]/25 bg-white/10 p-3 shadow-inner shadow-black/10">
-                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-white/72">
-                      Signature Flow
-                    </p>
-                    <p className="mt-2 text-base font-black text-white">
-                      {contractSignatureReady ? "Ready to sign" : "Draft mode"}
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -2303,20 +2287,20 @@ export default function CrewPage({
                       onClick={() => setContractStep(step.id)}
                       className={`bd-focus group flex min-h-[72px] items-center gap-3 rounded-[16px] border p-3 text-left transition ${
                         active
-                          ? "border-[#0b6b7b] bg-[#08313b] text-white shadow-lg shadow-[#062c35]/18"
+                          ? "border-[#21aebf] bg-white text-[#0b2330] shadow-lg shadow-[#21aebf]/16 ring-2 ring-[#21aebf]/24"
                           : "border-[#cde7ec] bg-white text-[#0b2330] shadow-sm shadow-slate-950/5 hover:border-[#5fd3e5] hover:bg-[#f8fcfd]"
                       }`}
                     >
                       <span
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${
-                          active ? "border-[#8ed8e6] bg-[#8ed8e6] text-[#031923]" : "border-[#d7eaf0] bg-[#eef7f8] text-[#0b6b7b] group-hover:border-[#5fd3e5]"
+                          active ? "border-[#21aebf] bg-[#eef7f8] text-[#0b6b7b]" : "border-[#d7eaf0] bg-[#eef7f8] text-[#0b6b7b] group-hover:border-[#5fd3e5]"
                         }`}
                       >
                         <ContractStepIcon step={step.id} />
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-black">{step.title}</span>
-                        <span className={`block truncate text-[11px] font-semibold ${active ? "text-white/75" : "text-slate-500"}`}>{step.meta}</span>
+                        <span className="block truncate text-[11px] font-semibold text-slate-500">{step.meta}</span>
                       </span>
                     </button>
                   );
@@ -2833,8 +2817,8 @@ export default function CrewPage({
                 <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
                   <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
                     <ContractPanelTitle
-                      eyebrow="Signature"
-                      title="Prepare mobile signing details"
+                      eyebrow="Annex E"
+                      title="Declaration and signatures"
                       text="The crew member signs from their BlueDeck portal after the contract is sent."
                     />
                     <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -2866,7 +2850,7 @@ export default function CrewPage({
 
                   <div className="rounded-[28px] border border-[#8ed8e6]/25 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_56%,#106f7f_100%)] p-5 text-white shadow-xl shadow-cyan-950/12">
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
-                      Mobile Signature
+                      Declaration flow
                     </p>
                     <h3 className="mt-3 text-2xl font-black">Crew signing flow</h3>
                     <p className="mt-3 text-sm leading-6 text-cyan-50/78">
@@ -4391,10 +4375,27 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD, annexE] = getContractDocumentSections(draft, member);
   const annexCPages = annexC ? getContractBodyPreviewPages([annexC], 34) : [];
-  const previewPages: Array<ContractPreviewBlockData[]> = [
-    ...annexCPages,
-    ...(annexD ? [[{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }]] : []),
-    ...(annexE ? [[{ title: annexE.title, lines: getContractPreviewLines(annexE.lines) }]] : []),
+  const previewPages: Array<{ blocks: ContractPreviewBlockData[]; subtitle?: string }> = [
+    ...annexCPages.map((blocks, index) => ({
+      blocks,
+      subtitle: index === 0 ? "ANNEX C - GENERAL TERMS" : undefined,
+    })),
+    ...(annexD
+      ? [
+          {
+            blocks: [{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }],
+            subtitle: "ANNEX D - JOB DESCRIPTION AND YACHT RULES",
+          },
+        ]
+      : []),
+    ...(annexE
+      ? [
+          {
+            blocks: [{ title: annexE.title, lines: getContractPreviewLines(annexE.lines) }],
+            subtitle: "ANNEX E - DECLARATION AND SIGNATURES",
+          },
+        ]
+      : []),
   ];
   const totalPages = 2 + (annexB ? 1 : 0) + previewPages.length;
 
@@ -4404,7 +4405,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         <div className="h-full" />
       </ContractPreviewPage>
 
-      <ContractPreviewPage pageNo={2} totalPages={totalPages}>
+      <ContractPreviewPage pageNo={2} totalPages={totalPages} subtitle="ANNEX A - PARTIES">
         <div className="space-y-3">
           {sections.map((section) => (
             <ContractCoverSection key={section.title} {...section} />
@@ -4413,7 +4414,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       </ContractPreviewPage>
 
       {annexB ? (
-        <ContractPreviewPage pageNo={3} totalPages={totalPages}>
+        <ContractPreviewPage pageNo={3} totalPages={totalPages} subtitle="ANNEX B - EMPLOYMENT TERMS">
           <div className="space-y-3">
             {termsSections.map((section) => (
               <ContractCoverSection key={section.title} {...section} compact />
@@ -4422,14 +4423,15 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         </ContractPreviewPage>
       ) : null}
 
-      {previewPages.map((blocks, index) => (
+      {previewPages.map((page, index) => (
         <ContractPreviewPage
           key={`contract-body-page-${index}`}
           pageNo={index + (annexB ? 4 : 3)}
           totalPages={totalPages}
+          subtitle={page.subtitle}
         >
           <div className="space-y-6">
-            {blocks.map((block) => (
+            {page.blocks.map((block) => (
               <ContractPreviewBlockCard key={`${block.title}-${block.lines.join("|")}`} block={block} />
             ))}
           </div>
@@ -4442,18 +4444,20 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
 function ContractPreviewPage({
   pageNo,
   totalPages,
+  subtitle,
   useTemplate = false,
   children,
 }: {
   pageNo: number;
   totalPages: number;
+  subtitle?: string;
   useTemplate?: boolean;
   children: ReactNode;
 }) {
   return (
     <div
       className={`relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
-        useTemplate ? "pt-[20.8%]" : "pt-[5.6%]"
+        useTemplate ? "pt-[20.8%]" : subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
       }`}
       style={
         useTemplate
@@ -4466,12 +4470,32 @@ function ContractPreviewPage({
           : undefined
       }
     >
+      {!useTemplate && (
+        <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
+          <p className="font-serif text-[clamp(12px,2.1vw,24px)] font-black uppercase tracking-[0.12em] text-[#082759]">
+            Seafarer Employment Agreement
+          </p>
+          {subtitle ? <ContractAnnexSubtitle text={subtitle} /> : null}
+        </div>
+      )}
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex-1">{children}</div>
       </div>
       <p className="absolute bottom-[4.2%] right-[6.2%] z-10 text-xs font-black text-[#082759]">
         Page {pageNo} of {totalPages}
       </p>
+    </div>
+  );
+}
+
+function ContractAnnexSubtitle({ text }: { text: string }) {
+  return (
+    <div className="mx-auto mt-2 flex max-w-[78%] items-center justify-center gap-3">
+      <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent_0%,#9ec4ed_52%,#1e67bc_100%)]" />
+      <span className="shrink-0 whitespace-nowrap text-[clamp(6px,1.05vw,12px)] font-black uppercase tracking-[0.24em] text-[#0d58ae]">
+        {text}
+      </span>
+      <span className="h-px flex-1 bg-[linear-gradient(90deg,#1e67bc_0%,#9ec4ed_48%,transparent_100%)]" />
     </div>
   );
 }
