@@ -1158,14 +1158,6 @@ export default function CrewPage({
       drawCoverSection(sections[0], 42, 54, pageWidth - 84, 206);
       drawCoverSection(sections[1], 42, 270, pageWidth - 84, 174);
       drawCoverSection(sections[2], 42, 454, pageWidth - 84, 190);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.5);
-      setText("#1e67bc");
-      doc.text(
-        "This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.",
-        42,
-        666
-      );
     }
 
     function drawContractTermsPage() {
@@ -4418,9 +4410,6 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
             <ContractCoverSection key={section.title} {...section} />
           ))}
         </div>
-        <p className="mt-2 text-left text-xs font-medium text-[#1e67bc]">
-          This page forms an integral part of the Seafarer Employment Agreement. Complete all applicable fields before signature.
-        </p>
       </ContractPreviewPage>
 
       {annexB ? (
