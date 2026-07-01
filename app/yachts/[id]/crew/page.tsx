@@ -134,6 +134,8 @@ type ContractDocumentSection = {
   lines: string[];
 };
 
+const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
+
 const defaultYachtDisciplineRules = [
   "Captain's orders must be followed.",
   "Safety comes before comfort, speed or convenience.",
@@ -796,6 +798,23 @@ export default function CrewPage({
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const contractPaperTemplate = await loadImageDataUrl(contractAgreementTemplateSrc);
+
+    async function loadImageDataUrl(src: string) {
+      try {
+        const response = await fetch(src);
+        if (!response.ok) return "";
+        const blob = await response.blob();
+        return await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : "");
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return "";
+      }
+    }
 
     function hexToRgb(hex: string) {
       const clean = hex.replace("#", "");
@@ -840,11 +859,13 @@ export default function CrewPage({
     }
 
     function drawContractPageBase() {
+      if (contractPaperTemplate) {
+        doc.addImage(contractPaperTemplate, "PNG", 0, 0, pageWidth, pageHeight);
+        return;
+      }
+
       setFill("#ffffff");
       doc.rect(0, 0, pageWidth, pageHeight, "F");
-      setStroke("#b8d2ee");
-      doc.setLineWidth(0.9);
-      doc.roundedRect(18, 18, pageWidth - 36, pageHeight - 36, 10, 10, "S");
       drawWave(136, 56, 330, 9, "#2c77c5");
       drawWave(406, 25, 220, 7, "#b7d5f4", 1.2);
       drawWave(-42, pageHeight - 84, 226, 8, "#2c77c5");
@@ -4094,42 +4115,21 @@ function ContractPreviewPage({
   children: ReactNode;
 }) {
   return (
-    <div className="relative mx-auto max-w-[920px] overflow-hidden rounded-[28px] border border-[#b8d2ee] bg-white px-5 pb-12 pt-28 shadow-sm shadow-blue-950/8 sm:px-9 sm:pt-32">
-      <ContractPaperDecorations />
-      <div className="relative">
-        <h3 className="text-center text-lg font-black uppercase tracking-[0.34em] text-[#082759] sm:text-xl">
-          Seafarer Employment Agreement
-        </h3>
-        <div className="mt-10 min-h-[820px]">{children}</div>
+    <div
+      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[5.8%] pt-[28%] shadow-sm shadow-blue-950/8"
+      style={{
+        backgroundImage: `url(${contractAgreementTemplateSrc})`,
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "100% 100%",
+      }}
+    >
+      <div className="relative z-10 flex h-full flex-col">
+        <div className="flex-1">{children}</div>
       </div>
-      <p className="absolute bottom-7 right-9 text-xs font-black text-[#082759]">
+      <p className="absolute bottom-[4.2%] right-[6.2%] z-10 text-xs font-black text-[#082759]">
         Page {pageNo} of {totalPages}
       </p>
-    </div>
-  );
-}
-
-function ContractPaperDecorations() {
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div className="absolute left-[20%] top-10 h-10 w-[44%] opacity-45">
-        {Array.from({ length: 7 }).map((_, index) => (
-          <span
-            key={index}
-            className="absolute block h-px rounded-full bg-[#2c77c5]"
-            style={{
-              left: `${index * 4}px`,
-              right: `${index * 2}px`,
-              top: `${index * 4}px`,
-              transform: `rotate(${index % 2 === 0 ? -4 : 3}deg)`,
-              opacity: 0.5 - index * 0.045,
-            }}
-          />
-        ))}
-      </div>
-      <div className="absolute -right-12 top-3 h-28 w-72 rotate-[-11deg] rounded-full border-t border-[#b7d5f4]/70" />
-      <div className="absolute -bottom-6 -left-12 h-28 w-72 rotate-[-9deg] rounded-full border-t border-[#2c77c5]/55" />
-      <div className="absolute bottom-3 right-10 h-20 w-60 rotate-[7deg] rounded-full border-t border-[#d2e5f8]/80" />
     </div>
   );
 }
