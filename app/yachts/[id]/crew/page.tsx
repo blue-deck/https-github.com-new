@@ -330,39 +330,6 @@ function getContractDocumentSections(draft: ContractDraft, member?: any): Contra
 
   return [
     {
-      title: "General Yacht Crew Employment Agreement",
-      lines: [
-        "Seafarer / Yacht Crew Employment Contract",
-        "This General Yacht Crew Employment Agreement is prepared for the yacht described in the cover sheet.",
-        'Together referred to as the "Parties."',
-      ],
-    },
-    {
-      title: "Yacht / Vessel Details",
-      lines: [
-        `Yacht Name: ${contractValue(draft.vesselName, "[YACHT NAME]")}`,
-        `Flag State: ${contractValue(draft.flagState, "[FLAG STATE]")}`,
-        `Official Number / Registration Number: ${contractValue(draft.officialNumber, "[OFFICIAL / REGISTRATION NUMBER]")}`,
-        `IMO Number: ${contractValue(draft.imoNumber, "[IMO NUMBER]")}`,
-        `Call Sign: ${contractValue(draft.callSign, "[CALL SIGN]")}`,
-        `Vessel Type: ${contractValue(draft.vesselType, "[VESSEL TYPE]")}`,
-        `Length Overall - LOA: ${contractValue(draft.lengthOverall, "[LOA]")}`,
-        `Gross Tonnage: ${contractValue(draft.grossTonnage, "[GROSS TONNAGE]")}`,
-        `Port of Registry: ${contractValue(draft.portOfRegistry, "[PORT OF REGISTRY]")}`,
-        `Engine Power: ${contractValue(draft.enginePower, "[ENGINE POWER]")}`,
-      ],
-    },
-    {
-      title: "Employee / Crew Member",
-      lines: [
-        `Name Surname: ${employeeName}`,
-        `Nationality: ${contractValue(draft.employeeNationality, "[NATIONALITY]")}`,
-        `Passport No: ${contractValue(draft.employeePassportNo, "[PASSPORT NO]")}`,
-        `Seaman Book No: ${contractValue(draft.employeeSeamanBookNo, "[SEAMAN BOOK NO, IF ANY]")}`,
-        `Position: ${employeePosition}`,
-      ],
-    },
-    {
       title: "Annex B - Employment Terms",
       lines: [
         "Agreement Details",
@@ -393,11 +360,11 @@ function getContractDocumentSections(draft: ContractDraft, member?: any): Contra
       ],
     },
     {
-      title: "Annex C - Contract Clauses",
+      title: "Annex C - General Terms",
       lines: [contractValue(draft.clauses, "[CONTRACT CLAUSES]")],
     },
     {
-      title: "Annex D - Duties and Rules",
+      title: "Annex D - Job Description and Yacht Rules",
       lines: [
         contractValue(draft.duties, "[DUTIES]"),
         "",
@@ -939,9 +906,9 @@ export default function CrewPage({
     function drawContractCoverPage() {
       drawContractPageBase();
       const sections = getContractCoverSections(contractDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 174, pageWidth - 84, 220);
-      drawCoverSection(sections[1], 42, 408, pageWidth - 84, 172);
-      drawCoverSection(sections[2], 42, 594, pageWidth - 84, 166);
+      drawCoverSection(sections[0], 42, 150, pageWidth - 84, 206);
+      drawCoverSection(sections[1], 42, 366, pageWidth - 84, 176);
+      drawCoverSection(sections[2], 42, 552, pageWidth - 84, 194);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(7.5);
       setText("#1e67bc");
@@ -962,42 +929,86 @@ export default function CrewPage({
       const left = 54;
       const right = pageWidth - 54;
       const width = right - left;
-      const bottom = pageHeight - 70;
-      let y = 174;
+      const top = 150;
+      const bottom = pageHeight - 58;
 
-      doc.addPage();
-      drawBodyPageHeader();
-
-      function ensureSpace(height: number) {
-        if (y + height <= bottom) return;
-        doc.addPage();
-        y = 174;
-        drawBodyPageHeader();
-      }
-
-      sections.forEach((section) => {
-        ensureSpace(30);
+      function drawSectionTitle(section: ContractDocumentSection, y: number) {
         doc.setFont("times", "bold");
         doc.setFontSize(14);
         setText("#082759");
         doc.text(section.title.toUpperCase(), left, y);
         setStroke("#b8d2ee");
         doc.line(left, y + 8, right, y + 8);
-        y += 26;
+      }
 
+      function getWrappedRows(section: ContractDocumentSection) {
+        const rows: string[] = [];
         contractDisplayLines(section.lines).forEach((line) => {
           const pieces = line ? doc.splitTextToSize(line, width - 8) : [""];
-          pieces.forEach((piece: string) => {
-            ensureSpace(13);
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9.2);
-            setText("#17233a");
-            if (piece) doc.text(piece, left + 4, y);
-            y += 12;
-          });
-          y += 4;
+          pieces.forEach((piece: string) => rows.push(piece));
+          rows.push("");
         });
-        y += 10;
+        return rows;
+      }
+
+      function drawSinglePageSection(section: ContractDocumentSection) {
+        doc.addPage();
+        drawBodyPageHeader();
+        drawSectionTitle(section, top);
+        let y = top + 26;
+        const rows = getWrappedRows(section);
+        const usableHeight = bottom - y;
+        const lineHeight = Math.min(12, Math.max(8.1, usableHeight / Math.max(rows.length, 1)));
+        const fontSize = Math.min(9.2, Math.max(6.5, lineHeight * 0.78));
+
+        rows.forEach((row) => {
+          if (row) {
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(fontSize);
+            setText("#17233a");
+            doc.text(row, left + 4, y);
+            y += lineHeight;
+          } else {
+            y += lineHeight * 0.48;
+          }
+        });
+      }
+
+      function drawFlowingSection(section: ContractDocumentSection) {
+        doc.addPage();
+        drawBodyPageHeader();
+        drawSectionTitle(section, top);
+        let y = top + 26;
+
+        function ensureSpace(height: number) {
+          if (y + height <= bottom) return;
+          doc.addPage();
+          drawBodyPageHeader();
+          drawSectionTitle(section, top);
+          y = top + 26;
+        }
+
+        getWrappedRows(section).forEach((row) => {
+          if (row) {
+            ensureSpace(12);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9.1);
+            setText("#17233a");
+            doc.text(row, left + 4, y);
+            y += 11.5;
+          } else {
+            y += 5;
+          }
+        });
+      }
+
+      sections.forEach((section) => {
+        if (section.title.startsWith("Annex C")) {
+          drawFlowingSection(section);
+          return;
+        }
+
+        drawSinglePageSection(section);
       });
     }
 
@@ -4014,7 +4025,7 @@ function MonitorMetric({
   );
 }
 
-type ContractPreviewBlock = {
+type ContractPreviewBlockData = {
   title: string;
   lines: string[];
 };
@@ -4023,10 +4034,20 @@ function getContractPreviewLineUnits(line: string) {
   return line ? Math.max(1, Math.ceil(line.length / 96)) : 1;
 }
 
-function getContractBodyPreviewPages(sections: ContractDocumentSection[]): Array<ContractPreviewBlock[]> {
-  const maxUnits = 32;
-  const pages: Array<ContractPreviewBlock[]> = [];
-  let currentPage: ContractPreviewBlock[] = [];
+function getContractPreviewLines(lines: string[]) {
+  return contractDisplayLines(lines).flatMap((line) => {
+    if (!line) return [""];
+    const chunks = line.match(/.{1,112}(?:\s|$)/g);
+    return chunks?.map((chunk) => chunk.trim()).filter(Boolean) || [line];
+  });
+}
+
+function getContractBodyPreviewPages(
+  sections: ContractDocumentSection[],
+  maxUnits = 36
+): Array<ContractPreviewBlockData[]> {
+  const pages: Array<ContractPreviewBlockData[]> = [];
+  let currentPage: ContractPreviewBlockData[] = [];
   let currentUnits = 0;
 
   function pushPage() {
@@ -4037,7 +4058,7 @@ function getContractBodyPreviewPages(sections: ContractDocumentSection[]): Array
   }
 
   sections.forEach((section) => {
-    const lines = contractDisplayLines(section.lines);
+    const lines = getContractPreviewLines(section.lines);
     let index = 0;
     let firstChunk = true;
 
@@ -4072,13 +4093,20 @@ function getContractBodyPreviewPages(sections: ContractDocumentSection[]): Array
 
 function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: any }) {
   const sections = getContractCoverSections(draft, member);
-  const bodyPages = getContractBodyPreviewPages(getContractDocumentSections(draft, member));
-  const totalPages = 1 + bodyPages.length;
+  const [annexB, annexC, annexD, annexE] = getContractDocumentSections(draft, member);
+  const annexCPages = annexC ? getContractBodyPreviewPages([annexC], 34) : [];
+  const previewPages: Array<ContractPreviewBlockData[]> = [
+    ...(annexB ? [[{ title: annexB.title, lines: getContractPreviewLines(annexB.lines) }]] : []),
+    ...annexCPages,
+    ...(annexD ? [[{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }]] : []),
+    ...(annexE ? [[{ title: annexE.title, lines: getContractPreviewLines(annexE.lines) }]] : []),
+  ];
+  const totalPages = 1 + previewPages.length;
 
   return (
     <div className="mt-5 space-y-6">
       <ContractPreviewPage pageNo={1} totalPages={totalPages}>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {sections.map((section) => (
             <ContractCoverSection key={section.title} {...section} />
           ))}
@@ -4088,7 +4116,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         </p>
       </ContractPreviewPage>
 
-      {bodyPages.map((blocks, index) => (
+      {previewPages.map((blocks, index) => (
         <ContractPreviewPage
           key={`contract-body-page-${index}`}
           pageNo={index + 2}
@@ -4096,7 +4124,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         >
           <div className="space-y-6">
             {blocks.map((block) => (
-              <ContractPreviewBlock key={`${block.title}-${block.lines.join("|")}`} block={block} />
+              <ContractPreviewBlockCard key={`${block.title}-${block.lines.join("|")}`} block={block} />
             ))}
           </div>
         </ContractPreviewPage>
@@ -4116,7 +4144,7 @@ function ContractPreviewPage({
 }) {
   return (
     <div
-      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[5.8%] pt-[28%] shadow-sm shadow-blue-950/8"
+      className="relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.6%] pt-[21.6%] shadow-sm shadow-blue-950/8"
       style={{
         backgroundImage: `url(${contractAgreementTemplateSrc})`,
         backgroundPosition: "center",
@@ -4148,28 +4176,28 @@ function ContractCoverSection({
 }) {
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
-      <div className="flex flex-col gap-3 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h4 className="font-serif text-xl font-black uppercase tracking-[0.02em] text-[#082759]">
+          <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759] sm:text-xl">
             {title}
           </h4>
         </div>
         <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
       </div>
-      <div className="grid gap-3 p-4 sm:grid-cols-2">
+      <div className="grid gap-2.5 p-3.5 sm:grid-cols-2">
         {rows.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-[#b9d5f0] bg-white px-3 py-2">
+          <div key={label} className="rounded-xl border border-[#b9d5f0] bg-white px-3 py-1.5">
             <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
               {label}
             </p>
-            <p className="mt-1 min-h-[20px] text-sm font-semibold text-[#17233a]">
+            <p className="mt-0.5 min-h-[18px] text-[13px] font-semibold text-[#17233a]">
               {contractSheetValue(value)}
             </p>
           </div>
         ))}
       </div>
       {footer && (
-        <p className="border-t border-[#e1edf7] px-4 py-3 text-xs font-semibold leading-5 text-slate-500">
+        <p className="border-t border-[#e1edf7] px-4 py-2.5 text-xs font-semibold leading-5 text-slate-500">
           {footer}
         </p>
       )}
@@ -4177,7 +4205,7 @@ function ContractCoverSection({
   );
 }
 
-function ContractPreviewBlock({ block }: { block: ContractPreviewBlock }) {
+function ContractPreviewBlockCard({ block }: { block: ContractPreviewBlockData }) {
   return (
     <section>
       <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
@@ -4186,7 +4214,7 @@ function ContractPreviewBlock({ block }: { block: ContractPreviewBlock }) {
       <div className="mt-3 rounded-2xl border border-[#d8e7f5] bg-white/92 p-4">
         {block.lines.map((line, lineIndex) =>
           line ? (
-            <p key={`${block.title}-${lineIndex}`} className="text-sm font-medium leading-7 text-[#17233a]">
+            <p key={`${block.title}-${lineIndex}`} className="text-[13px] font-medium leading-6 text-[#17233a]">
               {line}
             </p>
           ) : (
