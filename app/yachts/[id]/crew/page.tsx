@@ -2755,42 +2755,20 @@ export default function CrewPage({
               )}
 
               {contractStep === "clauses" && (
-                <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                    <ContractPanelTitle
-                      eyebrow="Contract clauses"
-                      title="Main agreement text"
-                      text="Add the clauses you want the crew member to review before signing."
-                    />
-                    <ContractArea
-                      className="mt-5"
-                      label="Clauses"
-                      value={contractDraft.clauses}
-                      onChange={(value) => updateContractDraft("clauses", value)}
-                      rows={12}
-                      placeholder="Write contract clauses here..."
-                    />
-                  </div>
-
-                  <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
-                      Clause checklist
-                    </p>
-                    <div className="mt-4 space-y-3 text-sm font-semibold leading-6 text-slate-600">
-                      {[
-                        "Salary and payment timing",
-                        "Leave, rotation and travel",
-                        "Confidentiality and guest privacy",
-                        "Rest hours and safety compliance",
-                        "Termination and handover terms",
-                      ].map((item) => (
-                        <div key={item} className="flex items-center gap-3 rounded-2xl border border-white bg-white/80 px-4 py-3">
-                          <CheckCircle className="h-4 w-4 shrink-0 text-cyan-700" />
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <ContractPanelTitle
+                    eyebrow="Contract clauses"
+                    title="Main agreement text"
+                    text="Add the clauses you want the crew member to review before signing."
+                  />
+                  <ContractArea
+                    className="mt-5"
+                    label="Clauses"
+                    value={contractDraft.clauses}
+                    onChange={(value) => updateContractDraft("clauses", value)}
+                    rows={12}
+                    placeholder="Write contract clauses here..."
+                  />
                 </div>
               )}
 
