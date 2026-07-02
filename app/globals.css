@@ -468,6 +468,11 @@ textarea:-webkit-autofill:focus {
   color: #13795b !important;
 }
 
+.bd-yacht-portal main .bd-contract-studio-current {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 .bd-yacht-portal main [class*="bg-cyan-400"],
 .bd-yacht-portal main [class*="bg-blue-400"],
 .bd-yacht-portal main [class*="bg-green-400"] {

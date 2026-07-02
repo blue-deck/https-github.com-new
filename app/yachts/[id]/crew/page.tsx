@@ -2364,10 +2364,10 @@ export default function CrewPage({
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-[#8ed8e6]">
                     BlueDeck Contract Studio
                   </p>
-                  <h2 className="mt-2 text-2xl font-black leading-tight text-white drop-shadow-sm sm:text-3xl lg:text-4xl" style={{ color: "#ffffff" }}>
+                  <h2 className="bd-contract-studio-current mt-2 text-2xl font-black leading-tight drop-shadow-sm sm:text-3xl lg:text-4xl">
                     {activeContractStepInfo.title}
                   </h2>
-                  <p className="mt-1 text-sm font-semibold text-white sm:text-base" style={{ color: "#ffffff" }}>
+                  <p className="bd-contract-studio-current mt-1 text-sm font-semibold sm:text-base">
                     {activeContractStepInfo.meta}
                   </p>
                 </div>
