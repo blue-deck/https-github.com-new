@@ -1185,60 +1185,48 @@ export default function CrewPage({
 
     function drawContractIntroPage() {
       drawContractPageBase(true);
-      const x = 56;
-      const width = pageWidth - 112;
-      let y = 190;
+      const x = 78;
+      const width = pageWidth - 156;
+      let y = 208;
 
-      setFill("#ffffff");
-      setStroke("#c4d9ee");
-      doc.roundedRect(x, y, width, 515, 10, 10, "FD");
-      setFill("#f7fbff");
-      doc.rect(x + 0.6, y + 0.6, width - 1.2, 34, "F");
-      setStroke("#d8e7f5");
-      doc.line(x, y + 34, x + width, y + 34);
       doc.setFont("times", "bold");
       doc.setFontSize(16);
       setText("#082759");
-      doc.text("INTRODUCTORY NOTE", x + 20, y + 24);
+      doc.text("INTRODUCTORY NOTE", x, y);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.4);
       setText("#0d58ae");
-      doc.text("Agreement structure and platform notice", x + width - 20, y + 23.5, { align: "right" });
+      doc.text("Agreement structure and platform notice", x + width, y - 0.5, { align: "right" });
+      setStroke("#d8e7f5");
+      doc.line(x, y + 10, x + width, y + 10);
 
-      y += 52;
+      y += 28;
 
       function drawIntroText(text: string, fontSize = 7.4, lineHeight = 9.2, indent = 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(fontSize);
         setText("#17233a");
-        const lines = doc.splitTextToSize(text, width - 44 - indent);
-        doc.text(lines, x + 22 + indent, y);
+        const lines = doc.splitTextToSize(text, width - indent);
+        doc.text(lines, x + indent, y);
         y += lines.length * lineHeight;
       }
 
       drawIntroText(contractIntroParagraph, 7.2, 8.8);
       y += 9;
 
-      contractIntroAnnexes.forEach((annex) => {
-        setStroke("#8ed8e6");
-        setFill("#eef9fb");
-        doc.circle(x + 28, y + 5.5, 4.4, "FD");
-        setStroke("#0d58ae");
-        doc.setLineWidth(0.7);
-        doc.line(x + 25.7, y + 5.5, x + 27.3, y + 7.2);
-        doc.line(x + 27.3, y + 7.2, x + 31.0, y + 3.2);
-
+      contractIntroAnnexes.forEach((annex, index) => {
         doc.setFont("helvetica", "bold");
         doc.setFontSize(7.6);
         setText("#082759");
-        doc.text(annex.title, x + 38, y + 5.7);
-        y += 13;
-        drawIntroText(annex.text, 6.9, 8.2, 16);
+        doc.text(`${index + 1}.`, x, y);
+        doc.text(annex.title, x + 18, y);
+        y += 9.8;
+        drawIntroText(annex.text, 6.9, 8.2, 18);
         y += 5;
       });
 
       setStroke("#d8e7f5");
-      doc.line(x + 22, y + 2, x + width - 22, y + 2);
+      doc.line(x, y + 2, x + width, y + 2);
       y += 14;
       contractIntroClosingParagraphs.forEach((paragraph) => {
         drawIntroText(paragraph, 7.0, 8.5);
@@ -1246,18 +1234,17 @@ export default function CrewPage({
       });
 
       y += 2;
-      setFill("#f7fbff");
-      setStroke("#c4d9ee");
-      doc.roundedRect(x + 18, y, width - 36, 76, 8, 8, "FD");
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.4);
       setText("#082759");
-      doc.text("BLUEDECK PLATFORM NOTICE", x + 32, y + 18);
+      doc.text("BLUEDECK PLATFORM NOTICE", x, y);
+      setStroke("#d8e7f5");
+      doc.line(x, y + 8, x + width, y + 8);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6.8);
       setText("#17233a");
-      const noticeLines = doc.splitTextToSize(contractIntroPlatformNotice, width - 78);
-      doc.text(noticeLines, x + 32, y + 33);
+      const noticeLines = doc.splitTextToSize(contractIntroPlatformNotice, width);
+      doc.text(noticeLines, x, y + 22);
     }
 
     function drawContractCoverPage() {
@@ -4564,7 +4551,7 @@ function ContractPreviewPage({
   return (
     <div
       className={`relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
-        useTemplate ? "pt-[20.8%]" : subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
+        useTemplate ? "pt-[25.4%]" : subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
       }`}
       style={
         useTemplate
@@ -4609,26 +4596,26 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
 
 function ContractIntroNote() {
   return (
-    <section className="mx-auto mt-[1.8%] w-[88%] overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96 shadow-sm shadow-blue-950/8">
-      <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[#fbfdff]/94 px-4 py-3">
-        <h3 className="font-serif text-[clamp(12px,1.9vw,22px)] font-black uppercase tracking-[0.02em] text-[#082759]">
+    <section className="mx-auto w-[78%] text-[#17233a]">
+      <div className="flex items-end justify-between gap-4 border-b border-[#d9e8f3] pb-2">
+        <h3 className="font-serif text-[clamp(12px,1.8vw,21px)] font-black uppercase tracking-[0.02em] text-[#082759]">
           Introductory Note
         </h3>
         <span className="hidden text-[clamp(6px,0.8vw,10px)] font-bold text-[#0d58ae] sm:block">
           Agreement structure and platform notice
         </span>
       </div>
-      <div className="space-y-[clamp(5px,0.8vw,9px)] px-4 py-3 text-[clamp(6.2px,0.86vw,10px)] font-semibold leading-[1.42] text-[#17233a]">
+      <div className="mt-3 space-y-[clamp(5px,0.72vw,8px)] text-[clamp(6px,0.78vw,9.2px)] font-semibold leading-[1.38]">
         <p>{contractIntroParagraph}</p>
 
-        <div className="space-y-[clamp(3px,0.55vw,7px)]">
-          {contractIntroAnnexes.map((annex) => (
-            <div key={annex.title} className="grid grid-cols-[18px_1fr] gap-2">
-              <span className="mt-0.5 flex h-[14px] w-[14px] items-center justify-center rounded-full border border-[#8ed8e6] bg-[#eef9fb] text-[#0d58ae]">
-                <CheckCircle className="h-2.5 w-2.5" />
+        <div className="space-y-[clamp(3px,0.48vw,6px)]">
+          {contractIntroAnnexes.map((annex, index) => (
+            <div key={annex.title} className="grid grid-cols-[20px_1fr] gap-2">
+              <span className="font-black text-[#0d58ae]">
+                {index + 1}.
               </span>
               <span>
-                <span className="block text-[clamp(6.5px,0.92vw,10.5px)] font-black uppercase tracking-[0.08em] text-[#082759]">
+                <span className="block text-[clamp(6.4px,0.84vw,10px)] font-black uppercase tracking-[0.08em] text-[#082759]">
                   {annex.title}
                 </span>
                 <span className="block text-[#4f6680]">{annex.text}</span>
@@ -4643,11 +4630,11 @@ function ContractIntroNote() {
           <p key={paragraph}>{paragraph}</p>
         ))}
 
-        <div className="rounded-[14px] border border-[#bfd8ea] bg-[#f7fbff] px-3 py-2">
-          <p className="text-[clamp(6.5px,0.9vw,10.5px)] font-black uppercase tracking-[0.12em] text-[#082759]">
+        <div className="border-t border-[#d8e7f5] pt-2">
+          <p className="text-[clamp(6.4px,0.84vw,10px)] font-black uppercase tracking-[0.12em] text-[#082759]">
             BlueDeck Platform Notice
           </p>
-          <p className="mt-1 text-[clamp(5.9px,0.8vw,9.5px)] leading-[1.36] text-[#17233a]">
+          <p className="mt-1 text-[clamp(5.7px,0.74vw,8.8px)] leading-[1.34] text-[#17233a]">
             {contractIntroPlatformNotice}
           </p>
         </div>
