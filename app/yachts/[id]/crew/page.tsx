@@ -872,6 +872,7 @@ export default function CrewPage({
     contractStepCards.findIndex((step) => step.id === contractStep),
     0
   );
+  const activeContractStepInfo = contractStepCards[contractStepIndex] || contractStepCards[0];
   const previousContractStep = contractStepCards[Math.max(contractStepIndex - 1, 0)]?.id || "parties";
   const nextContractStep =
     contractStepCards[Math.min(contractStepIndex + 1, contractStepCards.length - 1)]?.id || "preview";
@@ -2364,8 +2365,11 @@ export default function CrewPage({
                     BlueDeck Contract Studio
                   </p>
                   <h2 className="mt-2 text-2xl font-black leading-tight text-white drop-shadow-sm sm:text-3xl lg:text-4xl">
-                    Create professional seafarer contract
+                    {activeContractStepInfo.title}
                   </h2>
+                  <p className="mt-1 text-sm font-semibold text-white/76 sm:text-base">
+                    {activeContractStepInfo.meta}
+                  </p>
                 </div>
               </div>
             </div>
