@@ -285,6 +285,8 @@ const contractAgreementTypeOptions = [
   "Daywork",
 ];
 const contractSalaryAccrualOptions = ["Monthly", "Daily", "Weekly", "Year"];
+const contractJurisdictionForum =
+  "Any competent court, tribunal or authority having jurisdiction under applicable law";
 
 function createEmptyContractDraft(): ContractDraft {
   return {
@@ -368,6 +370,11 @@ function contractValue(value: string | undefined, fallback: string) {
 
 function contractSheetValue(value: string | undefined | null) {
   return String(value || "").trim() || "-";
+}
+
+function getContractGoverningLaw(draft: Pick<ContractDraft, "flagState">) {
+  const flagState = draft.flagState.trim();
+  return `Laws and regulations of ${flagState || "the Yacht's Flag State"}`;
 }
 
 function contractDisplayLines(lines: string[]) {
@@ -523,10 +530,13 @@ function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMem
     },
     {
       number: "4.",
-      title: "Special conditions",
-      note: "Additional agreed terms",
-      wideFirstRows: 1,
-      rows: [["Special conditions", draft.specialConditions]],
+      title: "Governing law & jurisdiction",
+      note: "Applicable law",
+      wideFirstRows: 2,
+      rows: [
+        ["Governing Law", getContractGoverningLaw(draft)],
+        ["Jurisdiction / Dispute Forum", contractJurisdictionForum],
+      ],
     },
   ];
 }
@@ -564,6 +574,10 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
         `Annual Leave: ${contractValue(draft.standardAnnualLeave || draft.leaveTerms, "-")}`,
         `Place of Repatriation: ${contractValue(draft.standardPlaceOfRepatriation, "-")}`,
         `Travel Allowance: ${contractValue(draft.standardTravelAllowance || draft.travelTerms, "-")}`,
+        "",
+        "Governing Law and Jurisdiction",
+        `Governing Law: ${getContractGoverningLaw(draft)}`,
+        `Jurisdiction / Dispute Forum: ${contractJurisdictionForum}`,
         "",
         "Special Conditions",
         contractValue(draft.specialConditions, "-"),
@@ -1094,22 +1108,12 @@ export default function CrewPage({
 
     function drawContractIntroPage() {
       drawContractPageBase(true);
+      setFill("#ffffff");
+      doc.rect(86, 72, pageWidth - 172, 70, "F");
+      drawContractDocumentHeader("INTRODUCTORY NOTE");
       const x = 78;
       const width = pageWidth - 156;
-      let y = 208;
-
-      doc.setFont("times", "bold");
-      doc.setFontSize(16);
-      setText("#082759");
-      doc.text("INTRODUCTORY NOTE", x, y);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(7.4);
-      setText("#0d58ae");
-      doc.text("Agreement structure and platform notice", x + width, y - 0.5, { align: "right" });
-      setStroke("#d8e7f5");
-      doc.line(x, y + 10, x + width, y + 10);
-
-      y += 28;
+      let y = 126;
 
       function drawIntroText(text: string, fontSize = 7.4, lineHeight = 9.2, indent = 0) {
         doc.setFont("helvetica", "normal");
@@ -1170,9 +1174,46 @@ export default function CrewPage({
       drawBodyPageHeader("ANNEX B - EMPLOYMENT TERMS");
       const sections = getContractTermsSections(contractPreviewDraft, selectedContractMember);
       drawCoverSection(sections[0], 42, 82, pageWidth - 84, 164);
-      drawCoverSection(sections[1], 42, 258, pageWidth - 84, 136);
-      drawCoverSection(sections[2], 42, 406, pageWidth - 84, 136);
-      drawCoverSection(sections[3], 42, 554, pageWidth - 84, 82);
+      drawCoverSection(sections[1], 42, 254, pageWidth - 84, 136);
+      drawCoverSection(sections[2], 42, 398, pageWidth - 84, 136);
+      drawCoverSection(sections[3], 42, 542, pageWidth - 84, 106);
+
+      const left = 54;
+      const right = pageWidth - 54;
+      const width = right - left;
+      const bottom = pageHeight - 58;
+      let y = 674;
+      const sourceLines = contractDisplayLines([contractSheetValue(contractPreviewDraft.specialConditions)]);
+      const wrappedLines = sourceLines.flatMap((line) => {
+        if (!line) return [""];
+        return doc.splitTextToSize(line, width) as string[];
+      });
+
+      doc.setFont("times", "bold");
+      doc.setFontSize(14);
+      setText("#082759");
+      doc.text("SPECIAL CONDITIONS", left, y);
+      setStroke("#b8d2ee");
+      doc.line(left, y + 8, right, y + 8);
+      y += 26;
+
+      function addAnnexBContinuationPage() {
+        doc.addPage();
+        drawBodyPageHeader("ANNEX B - EMPLOYMENT TERMS");
+        y = 92;
+      }
+
+      wrappedLines.forEach((line) => {
+        const lineHeight = line ? 10.8 : 5.4;
+        if (y + lineHeight > bottom) addAnnexBContinuationPage();
+        if (line) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(8.7);
+          setText("#17233a");
+          doc.text(line, left + 4, y);
+        }
+        y += lineHeight;
+      });
     }
 
     function drawBodyPageHeader(subtitle?: string) {
@@ -2634,6 +2675,22 @@ export default function CrewPage({
                         </div>
                       </ContractTermsBlock>
                     </div>
+
+                    <ContractTermsBlock
+                      title="Governing law & jurisdiction"
+                      note="Auto-applied from yacht flag"
+                    >
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <ContractReadOnlyField
+                          label="Governing Law"
+                          value={getContractGoverningLaw(contractDraft)}
+                        />
+                        <ContractReadOnlyField
+                          label="Jurisdiction / Dispute Forum"
+                          value={contractJurisdictionForum}
+                        />
+                      </div>
+                    </ContractTermsBlock>
 
                     <ContractTermsBlock
                       title="Special conditions"
@@ -4207,10 +4264,37 @@ function getContractBodyPreviewPages(
   return pages.length ? pages : [[]];
 }
 
+function getContractSpecialConditionPreviewPages(value: string) {
+  const lines = getContractPreviewLines([contractSheetValue(value)]);
+  const pages: string[][] = [];
+  let currentPage: string[] = [];
+  let currentUnits = 0;
+
+  function pushPage() {
+    if (!currentPage.length) return;
+    pages.push(currentPage);
+    currentPage = [];
+    currentUnits = 0;
+  }
+
+  lines.forEach((line) => {
+    const limit = pages.length === 0 ? 12 : 38;
+    const units = getContractPreviewLineUnits(line);
+    if (currentPage.length && currentUnits + units > limit) pushPage();
+    currentPage.push(line);
+    currentUnits += units;
+  });
+
+  pushPage();
+  return pages.length ? pages : [["-"]];
+}
+
 function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
+  const specialConditionPages = annexB ? getContractSpecialConditionPreviewPages(draft.specialConditions) : [];
+  const annexBPageCount = annexB ? specialConditionPages.length : 0;
   const annexCPages = annexC ? getContractBodyPreviewPages([annexC], 34) : [];
   const previewPages: Array<{ blocks: ContractPreviewBlockData[]; subtitle?: string }> = [
     ...annexCPages.map((blocks, index) => ({
@@ -4226,11 +4310,11 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         ]
       : []),
   ];
-  const totalPages = 2 + (annexB ? 1 : 0) + previewPages.length;
+  const totalPages = 2 + annexBPageCount + previewPages.length;
 
   return (
     <div className="mt-5 space-y-6">
-      <ContractPreviewPage pageNo={1} totalPages={totalPages} useTemplate>
+      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" useTemplate>
         <ContractIntroNote />
       </ContractPreviewPage>
 
@@ -4242,20 +4326,34 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
         </div>
       </ContractPreviewPage>
 
-      {annexB ? (
-        <ContractPreviewPage pageNo={3} totalPages={totalPages} subtitle="ANNEX B - EMPLOYMENT TERMS">
-          <div className="space-y-3">
-            {termsSections.map((section) => (
-              <ContractCoverSection key={section.title} {...section} compact />
-            ))}
-          </div>
-        </ContractPreviewPage>
-      ) : null}
+      {annexB
+        ? specialConditionPages.map((specialLines, index) => (
+            <ContractPreviewPage
+              key={`annex-b-preview-page-${index}`}
+              pageNo={3 + index}
+              totalPages={totalPages}
+              subtitle="ANNEX B - EMPLOYMENT TERMS"
+            >
+              <div className="space-y-3">
+                {index === 0 ? (
+                  <>
+                    {termsSections.map((section) => (
+                      <ContractCoverSection key={section.title} {...section} compact />
+                    ))}
+                    <ContractSpecialConditionsPreview lines={specialLines} showTitle />
+                  </>
+                ) : (
+                  <ContractSpecialConditionsPreview lines={specialLines} />
+                )}
+              </div>
+            </ContractPreviewPage>
+          ))
+        : null}
 
       {previewPages.map((page, index) => (
         <ContractPreviewPage
           key={`contract-body-page-${index}`}
-          pageNo={index + (annexB ? 4 : 3)}
+          pageNo={index + 3 + annexBPageCount}
           totalPages={totalPages}
           subtitle={page.subtitle}
         >
@@ -4286,7 +4384,7 @@ function ContractPreviewPage({
   return (
     <div
       className={`relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
-        useTemplate ? "pt-[25.4%]" : subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
+        useTemplate ? "pt-[16.4%]" : subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
       }`}
       style={
         useTemplate
@@ -4299,14 +4397,15 @@ function ContractPreviewPage({
           : undefined
       }
     >
-      {!useTemplate && (
-        <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
-          <p className="font-serif text-[clamp(12px,2.1vw,24px)] font-black uppercase tracking-[0.12em] text-[#082759]">
-            Seafarer Employment Agreement
-          </p>
-          {subtitle ? <ContractAnnexSubtitle text={subtitle} /> : null}
-        </div>
-      )}
+      {useTemplate ? (
+        <div className="absolute left-[16%] right-[16%] top-[8.6%] z-[1] h-[6.7%] bg-white" />
+      ) : null}
+      <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
+        <p className="font-serif text-[clamp(12px,2.1vw,24px)] font-black uppercase tracking-[0.12em] text-[#082759]">
+          Seafarer Employment Agreement
+        </p>
+        {subtitle ? <ContractAnnexSubtitle text={subtitle} /> : null}
+      </div>
       <div className="relative z-10 flex h-full flex-col">
         <div className="flex-1">{children}</div>
       </div>
@@ -4314,6 +4413,35 @@ function ContractPreviewPage({
         Page {pageNo} of {totalPages}
       </p>
     </div>
+  );
+}
+
+function ContractSpecialConditionsPreview({
+  lines,
+  showTitle = false,
+}: {
+  lines: string[];
+  showTitle?: boolean;
+}) {
+  return (
+    <section className="pt-1">
+      {showTitle ? (
+        <div className="mb-2 border-b border-[#b8d2ee] pb-2">
+          <h4 className="font-serif text-base font-black uppercase tracking-[0.02em] text-[#082759] sm:text-lg">
+            Special Conditions
+          </h4>
+        </div>
+      ) : null}
+      <div className="space-y-1.5 px-1 text-[12px] font-semibold leading-5 text-[#17233a]">
+        {lines.map((line, index) =>
+          line ? (
+            <p key={`special-condition-${index}`}>{line}</p>
+          ) : (
+            <div key={`special-condition-${index}`} className="h-2" />
+          )
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -4332,15 +4460,7 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
 function ContractIntroNote() {
   return (
     <section className="mx-auto w-[78%] text-[#17233a]">
-      <div className="flex items-end justify-between gap-4 border-b border-[#d9e8f3] pb-2">
-        <h3 className="font-serif text-[clamp(12px,1.8vw,21px)] font-black uppercase tracking-[0.02em] text-[#082759]">
-          Introductory Note
-        </h3>
-        <span className="hidden text-[clamp(6px,0.8vw,10px)] font-bold text-[#0d58ae] sm:block">
-          Agreement structure and platform notice
-        </span>
-      </div>
-      <div className="mt-3 space-y-[clamp(5px,0.72vw,8px)] text-[clamp(6px,0.78vw,9.2px)] font-semibold leading-[1.38]">
+      <div className="space-y-[clamp(5px,0.72vw,8px)] text-[clamp(6px,0.78vw,9.2px)] font-semibold leading-[1.38]">
         <p>{contractIntroParagraph}</p>
 
         <div className="space-y-[clamp(3px,0.48vw,6px)]">
@@ -4570,6 +4690,27 @@ function ContractSelectField({
         ))}
       </select>
     </label>
+  );
+}
+
+function ContractReadOnlyField({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className={`block ${className}`}>
+      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </span>
+      <div className="mt-2 min-h-[58px] rounded-2xl border border-slate-200 bg-[#f8fbff] px-5 py-4 text-base font-semibold leading-6 text-slate-700">
+        {value}
+      </div>
+    </div>
   );
 }
 
