@@ -645,7 +645,6 @@ export default function CrewPage({
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
-  const [contractSignatureReady, setContractSignatureReady] = useState(false);
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -2074,7 +2073,6 @@ export default function CrewPage({
     }
 
     setContractStep("preview");
-    setContractSignatureReady(true);
     alert("Contract sent for mobile signature.");
   }
 
@@ -2677,60 +2675,36 @@ export default function CrewPage({
               )}
 
               {contractStep === "signature" && (
-                <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                    <ContractPanelTitle
-                      eyebrow="Annex D"
-                      title="Declaration and signatures"
-                      text="The crew member signs from their BlueDeck portal after the contract is sent."
+                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                  <ContractPanelTitle
+                    eyebrow="Annex D"
+                    title="Declaration and signatures"
+                    text="The crew member signs from their BlueDeck portal after the contract is sent."
+                  />
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <ContractField
+                      label="Prepared by"
+                      value={contractDraft.signerName}
+                      onChange={(value) => updateContractDraft("signerName", value)}
+                      placeholder="Captain / representative name"
                     />
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      <ContractField
-                        label="Prepared by"
-                        value={contractDraft.signerName}
-                        onChange={(value) => updateContractDraft("signerName", value)}
-                        placeholder="Captain / representative name"
-                      />
-                      <ContractField
-                        label="Title"
-                        value={contractDraft.signerTitle}
-                        onChange={(value) => updateContractDraft("signerTitle", value)}
-                        placeholder="Captain / Yacht Representative"
-                      />
-                      <ContractDateField
-                        label="Signature date"
-                        value={contractDraft.signatureDate}
-                        onChange={(value) => updateContractDraft("signatureDate", value)}
-                      />
-                      <ContractField
-                        label="Signature location"
-                        value={contractDraft.signatureLocation}
-                        onChange={(value) => updateContractDraft("signatureLocation", value)}
-                        placeholder="Port / city"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="rounded-[28px] border border-[#8ed8e6]/25 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_56%,#106f7f_100%)] p-5 text-white shadow-xl shadow-cyan-950/12">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-200">
-                      Declaration flow
-                    </p>
-                    <h3 className="mt-3 text-2xl font-black">Crew signing flow</h3>
-                    <p className="mt-3 text-sm leading-6 text-cyan-50/78">
-                      After sending, the selected crew member receives the contract in their portal for review and signature.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setContractSignatureReady((current) => !current)}
-                      className={`mt-6 flex w-full items-center justify-center gap-3 rounded-2xl py-4 text-sm font-black uppercase tracking-[0.12em] transition ${
-                        contractSignatureReady
-                          ? "bg-[#8ed8e6] text-[#031923]"
-                          : "border border-white/18 bg-white/10 text-white hover:bg-white/16"
-                      }`}
-                    >
-                      <CheckCircle className="h-5 w-5" />
-                      {contractSignatureReady ? "Signature ready" : "Mark ready"}
-                    </button>
+                    <ContractField
+                      label="Title"
+                      value={contractDraft.signerTitle}
+                      onChange={(value) => updateContractDraft("signerTitle", value)}
+                      placeholder="Captain / Yacht Representative"
+                    />
+                    <ContractDateField
+                      label="Signature date"
+                      value={contractDraft.signatureDate}
+                      onChange={(value) => updateContractDraft("signatureDate", value)}
+                    />
+                    <ContractField
+                      label="Signature location"
+                      value={contractDraft.signatureLocation}
+                      onChange={(value) => updateContractDraft("signatureLocation", value)}
+                      placeholder="Port / city"
+                    />
                   </div>
                 </div>
               )}
