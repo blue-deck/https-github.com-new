@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import {
@@ -10,6 +10,7 @@ import {
   Bell,
   CalendarClock,
   Camera,
+  Check,
   CheckCircle,
   CheckSquare,
   ChevronDown,
@@ -261,6 +262,15 @@ const contractAnnexBFields: ContractDraftField[] = [
   ...contractAnnexBSpecialFields,
 ];
 
+const contractSaveSectionIds: ContractSaveSectionKey[] = [
+  "annexAYacht",
+  "annexAOwner",
+  "annexBAgreement",
+  "annexBTrial",
+  "annexBStandard",
+  "annexBSpecial",
+];
+
 const contractStepCards: Array<{
   id: ContractStudioStep;
   title: string;
@@ -420,6 +430,57 @@ function copyContractFields(target: ContractDraft, source: ContractDraft, fields
     (next as Record<string, ContractDraft[ContractDraftField]>)[field] = source[field];
   });
   return next;
+}
+
+function normalizeContractDraft(value: unknown): ContractDraft {
+  const empty = createEmptyContractDraft();
+  if (!value || typeof value !== "object") return empty;
+  const source = value as Record<string, unknown>;
+  const normalized = { ...empty };
+
+  (Object.keys(empty) as ContractDraftField[]).forEach((field) => {
+    const fieldValue = source[field];
+    if (typeof fieldValue === "string") normalized[field] = fieldValue;
+  });
+
+  return normalized;
+}
+
+function normalizeContractSavedSectionKeys(value: unknown): Partial<Record<ContractSaveSectionKey, string>> {
+  if (!value || typeof value !== "object") return {};
+  const source = value as Record<string, unknown>;
+  return contractSaveSectionIds.reduce<Partial<Record<ContractSaveSectionKey, string>>>((keys, sectionKey) => {
+    if (typeof source[sectionKey] === "string") keys[sectionKey] = source[sectionKey];
+    return keys;
+  }, {});
+}
+
+function parseStoredContractDraftPayload(value?: string | null) {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as Record<string, unknown>;
+    const savedDraft = normalizeContractDraft(parsed.savedDraft || parsed.savedContractDraft || parsed.draft);
+    const savedSectionKeys = normalizeContractSavedSectionKeys(
+      parsed.savedSectionKeys || parsed.savedContractSectionKeys
+    );
+    const savedAt = typeof parsed.savedAt === "string" ? parsed.savedAt : "";
+    return { savedDraft, savedSectionKeys, savedAt };
+  } catch {
+    return null;
+  }
+}
+
+function serializeContractDraftPayload(
+  savedDraft: ContractDraft,
+  savedSectionKeys: Partial<Record<ContractSaveSectionKey, string>>
+) {
+  return JSON.stringify({
+    version: 1,
+    savedAt: new Date().toISOString(),
+    savedDraft,
+    savedSectionKeys,
+  });
 }
 
 function mergeSavedContractAnnexes(draft: ContractDraft, savedDraft: ContractDraft) {
@@ -657,6 +718,8 @@ export default function CrewPage({
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
+  const [contractDraftRecordId, setContractDraftRecordId] = useState("");
+  const [savingContractSections, setSavingContractSections] = useState<Partial<Record<ContractSaveSectionKey, boolean>>>({});
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -751,6 +814,11 @@ export default function CrewPage({
   const manualTaskSuggestions = useMemo(
     () => getChecklistTaskSuggestions(manualTaskDraft, activeManualCategory?.id, 8),
     [activeManualCategory?.id, manualTaskDraft]
+  );
+
+  const contractDraftStorageKey = useMemo(
+    () => (yachtId ? `bluedeck:contract-studio-draft:${yachtId}` : ""),
+    [yachtId]
   );
 
   const visibleTemplates = useMemo(() => {
@@ -897,13 +965,173 @@ export default function CrewPage({
     setContractDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function saveContractSection(sectionKey: ContractSaveSectionKey, fields: ContractDraftField[]) {
+  const applySavedContractDraft = useCallback((
+    savedDraft: ContractDraft,
+    savedSectionKeys: Partial<Record<ContractSaveSectionKey, string>>,
+    recordId = ""
+  ) => {
+    setContractDraft(savedDraft);
+    setSavedContractDraft(savedDraft);
+    setSavedContractSectionKeys(savedSectionKeys);
+    if (recordId) setContractDraftRecordId(recordId);
+  }, []);
+
+  const loadSavedContractDraft = useCallback(async () => {
+    if (!yachtId) return;
+
+    let localDraft = null as ReturnType<typeof parseStoredContractDraftPayload>;
+
+    if (contractDraftStorageKey) {
+      try {
+        localDraft = parseStoredContractDraftPayload(window.localStorage.getItem(contractDraftStorageKey));
+      } catch (error) {
+        console.warn("Contract draft local load failed", error);
+      }
+
+      if (localDraft) {
+        applySavedContractDraft(localDraft.savedDraft, localDraft.savedSectionKeys);
+      }
+    }
+
+    const response = await supabase
+      .from("yacht_contracts")
+      .select("id, contract_text")
+      .eq("yacht_id", yachtId)
+      .eq("status", "studio_draft")
+      .order("sent_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (response.error) {
+      if (!isSchemaCacheError(response.error)) {
+        console.warn("Contract draft could not be loaded", response.error.message);
+      }
+      return;
+    }
+
+    if (response.data?.id) {
+      setContractDraftRecordId(response.data.id);
+    }
+
+    const storedDraft = parseStoredContractDraftPayload(response.data?.contract_text);
+    if (storedDraft) {
+      const localSavedTime = Date.parse(localDraft?.savedAt || "");
+      const remoteSavedTime = Date.parse(storedDraft.savedAt || "");
+      const shouldUseRemoteDraft =
+        !localDraft || !localSavedTime || (remoteSavedTime > 0 && remoteSavedTime >= localSavedTime);
+
+      if (!shouldUseRemoteDraft) return;
+
+      applySavedContractDraft(storedDraft.savedDraft, storedDraft.savedSectionKeys, response.data?.id || "");
+      if (contractDraftStorageKey) {
+        try {
+          window.localStorage.setItem(
+            contractDraftStorageKey,
+            serializeContractDraftPayload(storedDraft.savedDraft, storedDraft.savedSectionKeys)
+          );
+        } catch (error) {
+          console.warn("Contract draft local sync failed", error);
+        }
+      }
+    }
+  }, [applySavedContractDraft, contractDraftStorageKey, yachtId]);
+
+  async function persistSavedContractDraft(
+    nextSavedDraft: ContractDraft,
+    nextSavedSectionKeys: Partial<Record<ContractSaveSectionKey, string>>
+  ) {
+    const contractText = serializeContractDraftPayload(nextSavedDraft, nextSavedSectionKeys);
+    let localSaved = false;
+
+    if (contractDraftStorageKey) {
+      try {
+        window.localStorage.setItem(contractDraftStorageKey, contractText);
+        localSaved = true;
+      } catch (error) {
+        console.warn("Contract draft local save failed", error);
+      }
+    }
+
+    if (!yachtId) return localSaved;
+
+    let recordId = contractDraftRecordId;
+
+    if (!recordId) {
+      const existing = await supabase
+        .from("yacht_contracts")
+        .select("id")
+        .eq("yacht_id", yachtId)
+        .eq("status", "studio_draft")
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing.data?.id) {
+        recordId = existing.data.id;
+        setContractDraftRecordId(recordId);
+      }
+    }
+
+    const savedAt = new Date().toISOString();
+
+    if (recordId) {
+      const { error } = await supabase
+        .from("yacht_contracts")
+        .update({
+          contract_text: contractText,
+          sent_at: savedAt,
+          status: "studio_draft",
+        })
+        .eq("id", recordId);
+
+      if (!error) return true;
+      console.warn("Contract draft update failed", error.message);
+      return localSaved;
+    }
+
+    const { data, error } = await supabase
+      .from("yacht_contracts")
+      .insert({
+        yacht_id: yachtId,
+        contract_text: contractText,
+        status: "studio_draft",
+        sent_at: savedAt,
+      })
+      .select("id")
+      .single();
+
+    if (!error) {
+      setContractDraftRecordId(data?.id || "");
+      return true;
+    }
+
+    console.warn("Contract draft insert failed", error.message);
+    return localSaved;
+  }
+
+  async function saveContractSection(sectionKey: ContractSaveSectionKey, fields: ContractDraftField[]) {
+    if (savingContractSections[sectionKey]) return;
+
     const currentSectionSaveKey = contractSectionSaveKeys[sectionKey];
-    setSavedContractDraft((current) => copyContractFields(current, contractDraft, fields));
-    setSavedContractSectionKeys((current) => ({
-      ...current,
+    const nextSavedDraft = copyContractFields(savedContractDraft, contractDraft, fields);
+    const nextSavedSectionKeys = {
+      ...savedContractSectionKeys,
       [sectionKey]: currentSectionSaveKey,
-    }));
+    };
+
+    setSavingContractSections((current) => ({ ...current, [sectionKey]: true }));
+
+    try {
+      const persisted = await persistSavedContractDraft(nextSavedDraft, nextSavedSectionKeys);
+      if (persisted) {
+        setSavedContractDraft(nextSavedDraft);
+        setSavedContractSectionKeys(nextSavedSectionKeys);
+      } else {
+        alert("Contract draft could not be saved. Please try again.");
+      }
+    } finally {
+      setSavingContractSections((current) => ({ ...current, [sectionKey]: false }));
+    }
   }
 
   async function downloadContractDraftPdf() {
@@ -1523,6 +1751,14 @@ export default function CrewPage({
     const interval = window.setInterval(() => loadData(true), 10000);
     return () => window.clearInterval(interval);
   }, [yachtId]);
+
+  useEffect(() => {
+    if (!yachtId) return;
+    const restoreTimer = window.setTimeout(() => {
+      void loadSavedContractDraft();
+    }, 0);
+    return () => window.clearTimeout(restoreTimer);
+  }, [loadSavedContractDraft, yachtId]);
 
   useEffect(() => {
     if (!photoPreview) return;
@@ -2367,6 +2603,7 @@ export default function CrewPage({
                     <div className="flex justify-end border-t border-[#d9e8f3] px-5 py-4">
                       <ContractSectionSaveButton
                         saved={contractSectionSaved.annexAYacht}
+                        saving={Boolean(savingContractSections.annexAYacht)}
                         onSave={() => saveContractSection("annexAYacht", contractAnnexAYachtFields)}
                       />
                     </div>
@@ -2426,6 +2663,7 @@ export default function CrewPage({
                     <div className="flex justify-end border-t border-[#d9e8f3] px-5 py-4">
                       <ContractSectionSaveButton
                         saved={contractSectionSaved.annexAOwner}
+                        saving={Boolean(savingContractSections.annexAOwner)}
                         onSave={() => saveContractSection("annexAOwner", contractAnnexAOwnerFields)}
                       />
                     </div>
@@ -2509,6 +2747,7 @@ export default function CrewPage({
                       <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
                         <ContractSectionSaveButton
                           saved={contractSectionSaved.annexBAgreement}
+                          saving={Boolean(savingContractSections.annexBAgreement)}
                           onSave={() => saveContractSection("annexBAgreement", contractAnnexBAgreementFields)}
                         />
                       </div>
@@ -2561,6 +2800,7 @@ export default function CrewPage({
                         <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
                           <ContractSectionSaveButton
                             saved={contractSectionSaved.annexBTrial}
+                            saving={Boolean(savingContractSections.annexBTrial)}
                             onSave={() => saveContractSection("annexBTrial", contractAnnexBTrialFields)}
                           />
                         </div>
@@ -2609,6 +2849,7 @@ export default function CrewPage({
                         <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
                           <ContractSectionSaveButton
                             saved={contractSectionSaved.annexBStandard}
+                            saving={Boolean(savingContractSections.annexBStandard)}
                             onSave={() => saveContractSection("annexBStandard", contractAnnexBStandardFields)}
                           />
                         </div>
@@ -2645,6 +2886,7 @@ export default function CrewPage({
                       <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
                         <ContractSectionSaveButton
                           saved={contractSectionSaved.annexBSpecial}
+                          saving={Boolean(savingContractSections.annexBSpecial)}
                           onSave={() => saveContractSection("annexBSpecial", contractAnnexBSpecialFields)}
                         />
                       </div>
@@ -4559,24 +4801,26 @@ function ContractTermsBlock({
 
 function ContractSectionSaveButton({
   saved,
+  saving,
   onSave,
 }: {
   saved: boolean;
-  onSave: () => void;
+  saving: boolean;
+  onSave: () => void | Promise<void>;
 }) {
   return (
     <button
       type="button"
-      disabled={saved}
+      disabled={saved || saving}
       onClick={onSave}
       className={`bd-focus inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
         saved
           ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3]"
+          : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3] disabled:opacity-70"
       }`}
     >
-      {saved ? <CheckCircle className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-      {saved ? "Saved" : "Save"}
+      {saving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+      {saving ? "Saving..." : saved ? "Saved" : "Save"}
     </button>
   );
 }
