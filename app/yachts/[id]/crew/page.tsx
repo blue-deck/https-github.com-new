@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import {
@@ -295,6 +295,8 @@ const contractAgreementTypeOptions = [
 const contractSalaryAccrualOptions = ["Monthly", "Daily", "Weekly", "Year"];
 const contractJurisdictionForum =
   "Any competent court, tribunal or authority having jurisdiction under applicable law";
+const CONTRACT_PREVIEW_PAGE_WIDTH = 920;
+const CONTRACT_PREVIEW_PAGE_HEIGHT = Math.round((CONTRACT_PREVIEW_PAGE_WIDTH * 1536) / 1057);
 
 function createEmptyContractDraft(): ContractDraft {
   return {
@@ -4471,6 +4473,8 @@ function getContractSpecialConditionPreviewPages(value: string) {
 }
 
 function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
+  const previewFrameRef = useRef<HTMLDivElement | null>(null);
+  const [pageScale, setPageScale] = useState(1);
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
@@ -4493,13 +4497,42 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
   ];
   const totalPages = 2 + annexBPageCount + previewPages.length;
 
+  useEffect(() => {
+    const node = previewFrameRef.current;
+    if (!node) return;
+
+    let animationFrame = 0;
+    const updateScale = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => {
+        const availableWidth = node.clientWidth;
+        const nextScale = Math.min(
+          1,
+          Math.max(0.28, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
+        );
+        setPageScale((current) => (Math.abs(current - nextScale) < 0.005 ? current : nextScale));
+      });
+    };
+
+    updateScale();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateScale);
+    observer?.observe(node);
+    window.addEventListener("resize", updateScale);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      observer?.disconnect();
+      window.removeEventListener("resize", updateScale);
+    };
+  }, []);
+
   return (
-    <div className="mt-5 space-y-6">
-      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE">
+    <div ref={previewFrameRef} className="mt-5 space-y-5 overflow-hidden">
+      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" scale={pageScale}>
         <ContractIntroNote />
       </ContractPreviewPage>
 
-      <ContractPreviewPage pageNo={2} totalPages={totalPages} subtitle="ANNEX A - PARTIES">
+      <ContractPreviewPage pageNo={2} totalPages={totalPages} subtitle="ANNEX A - PARTIES" scale={pageScale}>
         <div className="space-y-3">
           {sections.map((section) => (
             <ContractCoverSection key={section.title} {...section} />
@@ -4514,6 +4547,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
               pageNo={3 + index}
               totalPages={totalPages}
               subtitle="ANNEX B - EMPLOYMENT TERMS"
+              scale={pageScale}
             >
               <div className="space-y-3">
                 {index === 0 ? (
@@ -4537,6 +4571,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
           pageNo={index + 3 + annexBPageCount}
           totalPages={totalPages}
           subtitle={page.subtitle}
+          scale={pageScale}
         >
           <div className="space-y-6">
             {page.blocks.map((block) => (
@@ -4553,31 +4588,47 @@ function ContractPreviewPage({
   pageNo,
   totalPages,
   subtitle,
+  scale,
   children,
 }: {
   pageNo: number;
   totalPages: number;
   subtitle?: string;
+  scale: number;
   children: ReactNode;
 }) {
   return (
     <div
-      className={`relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
-        subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
-      }`}
+      className="mx-auto"
+      style={{
+        width: CONTRACT_PREVIEW_PAGE_WIDTH * scale,
+        height: CONTRACT_PREVIEW_PAGE_HEIGHT * scale,
+      }}
     >
-      <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
-        <p className="font-serif text-[clamp(12px,2.1vw,24px)] font-black uppercase tracking-[0.12em] text-[#082759]">
-          Seafarer Employment Agreement
+      <div
+        className={`relative overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
+          subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
+        }`}
+        style={{
+          width: CONTRACT_PREVIEW_PAGE_WIDTH,
+          height: CONTRACT_PREVIEW_PAGE_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      >
+        <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
+          <p className="font-serif text-[24px] font-black uppercase tracking-[0.12em] text-[#082759]">
+            Seafarer Employment Agreement
+          </p>
+          {subtitle ? <ContractAnnexSubtitle text={subtitle} /> : null}
+        </div>
+        <div className="relative z-10 flex h-full flex-col">
+          <div className="flex-1">{children}</div>
+        </div>
+        <p className="absolute bottom-[4.2%] right-[6.2%] z-10 text-xs font-black text-[#082759]">
+          Page {pageNo} of {totalPages}
         </p>
-        {subtitle ? <ContractAnnexSubtitle text={subtitle} /> : null}
       </div>
-      <div className="relative z-10 flex h-full flex-col">
-        <div className="flex-1">{children}</div>
-      </div>
-      <p className="absolute bottom-[4.2%] right-[6.2%] z-10 text-xs font-black text-[#082759]">
-        Page {pageNo} of {totalPages}
-      </p>
     </div>
   );
 }
@@ -4593,7 +4644,7 @@ function ContractSpecialConditionsPreview({
     <section className="pt-1">
       {showTitle ? (
         <div className="mb-2 border-b border-[#b8d2ee] pb-2">
-          <h4 className="font-serif text-base font-black uppercase tracking-[0.02em] text-[#082759] sm:text-lg">
+          <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
             Special Conditions
           </h4>
         </div>
@@ -4615,7 +4666,7 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
   return (
     <div className="mx-auto mt-2 flex max-w-[78%] items-center justify-center gap-3">
       <span className="h-px flex-1 bg-[linear-gradient(90deg,transparent_0%,#9ec4ed_52%,#1e67bc_100%)]" />
-      <span className="shrink-0 whitespace-nowrap text-[clamp(6px,1.05vw,12px)] font-black uppercase tracking-[0.24em] text-[#0d58ae]">
+      <span className="shrink-0 whitespace-nowrap text-[12px] font-black uppercase tracking-[0.24em] text-[#0d58ae]">
         {text}
       </span>
       <span className="h-px flex-1 bg-[linear-gradient(90deg,#1e67bc_0%,#9ec4ed_48%,transparent_100%)]" />
@@ -4626,17 +4677,17 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
 function ContractIntroNote() {
   return (
     <section className="mx-auto w-[78%] text-[#17233a]">
-      <div className="space-y-[clamp(5px,0.72vw,8px)] text-[clamp(6px,0.78vw,9.2px)] font-semibold leading-[1.38]">
+      <div className="space-y-2 text-[9px] font-semibold leading-[1.38]">
         <p>{contractIntroParagraph}</p>
 
-        <div className="space-y-[clamp(3px,0.48vw,6px)]">
+        <div className="space-y-1.5">
           {contractIntroAnnexes.map((annex, index) => (
             <div key={annex.title} className="grid grid-cols-[20px_1fr] gap-2">
               <span className="font-black text-[#0d58ae]">
                 {index + 1}.
               </span>
               <span>
-                <span className="block text-[clamp(6.4px,0.84vw,10px)] font-black uppercase tracking-[0.08em] text-[#082759]">
+                <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-[#082759]">
                   {annex.title}
                 </span>
                 <span className="block text-[#4f6680]">{annex.text}</span>
@@ -4652,10 +4703,10 @@ function ContractIntroNote() {
         ))}
 
         <div className="border-t border-[#d8e7f5] pt-2">
-          <p className="text-[clamp(6.4px,0.84vw,10px)] font-black uppercase tracking-[0.12em] text-[#082759]">
+          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#082759]">
             BlueDeck Platform Notice
           </p>
-          <p className="mt-1 text-[clamp(5.7px,0.74vw,8.8px)] leading-[1.34] text-[#17233a]">
+          <p className="mt-1 text-[8.8px] leading-[1.34] text-[#17233a]">
             {contractIntroPlatformNotice}
           </p>
         </div>
@@ -4683,9 +4734,9 @@ function ContractCoverSection({
 
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
-      <div className={`flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 sm:flex-row sm:items-center sm:justify-between ${compact ? "py-2" : "py-2.5"}`}>
+      <div className={`flex flex-row items-center justify-between gap-2 border-b border-[#d9e8f3] bg-[#fbfdff]/92 px-4 ${compact ? "py-2" : "py-2.5"}`}>
         <div className="flex items-center gap-3">
-          <h4 className={`font-serif font-black uppercase tracking-[0.02em] text-[#082759] ${compact ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}>
+          <h4 className={`font-serif font-black uppercase tracking-[0.02em] text-[#082759] ${compact ? "text-lg" : "text-xl"}`}>
             {title}
           </h4>
         </div>
@@ -4697,12 +4748,12 @@ function ContractCoverSection({
           </p>
         </div>
       ) : (
-        <div className={`grid sm:grid-cols-2 ${compact ? "gap-2 p-3" : "gap-2.5 p-3.5"}`}>
+        <div className={`grid grid-cols-2 ${compact ? "gap-2 p-3" : "gap-2.5 p-3.5"}`}>
           {rows.map(([label, value], index) => (
             <div
               key={label}
               className={`rounded-xl border border-[#b9d5f0] bg-white px-3 ${compact ? "py-1" : "py-1.5"} ${
-                index < wideFirstRows ? "sm:col-span-2" : ""
+                index < wideFirstRows ? "col-span-2" : ""
               }`}
             >
               <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#0b3c77]">
