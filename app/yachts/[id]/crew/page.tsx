@@ -55,7 +55,6 @@ type ContractStudioStep =
   | "parties"
   | "terms"
   | "clauses"
-  | "duties"
   | "signature"
   | "preview";
 
@@ -113,9 +112,6 @@ type ContractDraft = {
   standardTravelAllowance: string;
   specialConditions: string;
   clauses: string;
-  duties: string;
-  discipline: string;
-  disciplineRules: string[];
   signerName: string;
   signerTitle: string;
   signatureDate: string;
@@ -169,7 +165,7 @@ type ContractCrewMember = {
 const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
 
 const contractIntroParagraph =
-  'This Seafarer Employment Agreement (the "Agreement") consists of five (5) Annexes. Together, these Annexes form the complete terms and conditions agreed between the Seafarer and the Employer in relation to employment aboard the Yacht.';
+  'This Seafarer Employment Agreement (the "Agreement") consists of four (4) Annexes. Together, these Annexes form the complete terms and conditions agreed between the Seafarer and the Employer in relation to employment aboard the Yacht.';
 
 const contractIntroAnnexes = [
   {
@@ -185,18 +181,14 @@ const contractIntroAnnexes = [
     text: "Contains the general provisions governing the Seafarer's employment, including duties, conduct, working and rest hours, termination, medical care, insurance, confidentiality, dispute resolution and other applicable employment conditions.",
   },
   {
-    title: "ANNEX D - JOB DESCRIPTION & YACHT RULES",
-    text: "Contains the duties and responsibilities applicable to the Seafarer's position, together with the operational, safety, conduct and onboard rules of the Yacht.",
-  },
-  {
-    title: "ANNEX E - DECLARATIONS & SIGNATURES",
+    title: "ANNEX D - DECLARATIONS & SIGNATURES",
     text: "Contains the declarations, acknowledgements and signatures of the Seafarer, Employer and any authorised representative.",
   },
 ];
 
 const contractIntroClosingParagraphs = [
   "All Annexes shall be read together as one Agreement. Any Special Conditions expressly agreed and recorded in Annex B shall prevail over conflicting provisions elsewhere in the Agreement, subject always to applicable mandatory laws, flag-state requirements and any applicable collective bargaining agreement.",
-  "By signing Annex E, the parties confirm that they have reviewed, understood and accepted the complete Agreement and have received or been given access to a copy.",
+  "By signing Annex D, the parties confirm that they have reviewed, understood and accepted the complete Agreement and have received or been given access to a copy.",
 ];
 
 const contractIntroPlatformNotice =
@@ -271,25 +263,6 @@ const contractAnnexBFields: ContractDraftField[] = [
   ...contractAnnexBSpecialFields,
 ];
 
-const defaultYachtDisciplineRules = [
-  "Captain's orders must be followed.",
-  "Safety comes before comfort, speed or convenience.",
-  "No drugs.",
-  "No alcohol while on duty.",
-  "No smoking except permitted areas.",
-  "No unauthorized guests on board.",
-  "No social media sharing without approval.",
-  "No photos of owner, guests or private areas.",
-  "Crew cabin must be kept clean.",
-  "Uniform must be worn when required.",
-  "Watch duties must be taken seriously.",
-  "Any damage must be reported immediately.",
-  "Any injury must be reported immediately.",
-  "Crew must respect each other.",
-  "Arguments must not happen in front of guests.",
-  "Confidentiality continues after leaving the yacht.",
-];
-
 const contractStepCards: Array<{
   id: ContractStudioStep;
   title: string;
@@ -298,8 +271,7 @@ const contractStepCards: Array<{
   { id: "parties", title: "Annex A", meta: "Yacht / Owner / Crew" },
   { id: "terms", title: "Annex B", meta: "Employment Terms" },
   { id: "clauses", title: "Annex C", meta: "General Terms" },
-  { id: "duties", title: "Annex D", meta: "Job description & yacht rules" },
-  { id: "signature", title: "Annex E", meta: "Declaration & signatures" },
+  { id: "signature", title: "Annex D", meta: "Declaration & signatures" },
   { id: "preview", title: "Preview", meta: "PDF & send" },
 ];
 
@@ -370,11 +342,6 @@ function createEmptyContractDraft(): ContractDraft {
     specialConditions: "",
     clauses:
       "The employee shall perform duties in a professional, safe and seamanlike manner in accordance with yacht rules, flag requirements and lawful instructions from the Captain or yacht representative.",
-    duties:
-      "The employee shall maintain assigned areas, support yacht operations, follow safety procedures, protect guest privacy and report defects or incidents without delay.",
-    discipline:
-      "Yacht Rules\nThe Employee agrees to follow the yacht rules below:",
-    disciplineRules: defaultYachtDisciplineRules,
     signerName: "",
     signerTitle: "Captain / Yacht Representative",
     signatureDate: "",
@@ -564,18 +531,6 @@ function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMem
   ];
 }
 
-function formatContractDisciplineSection(draft: ContractDraft) {
-  const rules = draft.disciplineRules
-    .map((rule) => rule.trim())
-    .filter(Boolean)
-    .map((rule, index) => `${index + 1}. ${rule}`);
-
-  return [
-    contractValue(draft.discipline, "Yacht Rules\nThe Employee agrees to follow the yacht rules below:"),
-    ...(rules.length ? rules : ["[BASIC DISCIPLINE RULES]"]),
-  ].join("\n");
-}
-
 function getContractDocumentSections(draft: ContractDraft, member?: ContractCrewMember): ContractDocumentSection[] {
   const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "-");
   const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "-");
@@ -619,16 +574,7 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
       lines: [contractValue(draft.clauses, "[CONTRACT CLAUSES]")],
     },
     {
-      title: "Annex D - Job Description and Yacht Rules",
-      lines: [
-        contractValue(draft.duties, "[DUTIES]"),
-        "",
-        "Discipline:",
-        formatContractDisciplineSection(draft),
-      ],
-    },
-    {
-      title: "Annex E - Declaration and Signatures",
+      title: "Annex D - Declaration and Signatures",
       lines: [
         `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
         `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
@@ -700,7 +646,6 @@ export default function CrewPage({
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
   const [contractSignatureReady, setContractSignatureReady] = useState(false);
-  const [contractRuleDraft, setContractRuleDraft] = useState("");
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -948,42 +893,6 @@ export default function CrewPage({
       ...current,
       [sectionKey]: currentSectionSaveKey,
     }));
-  }
-
-  function updateContractRule(index: number, value: string) {
-    setContractDraft((current) => {
-      const nextRules = [...current.disciplineRules];
-      nextRules[index] = value;
-      return { ...current, disciplineRules: nextRules };
-    });
-  }
-
-  function removeContractRule(index: number) {
-    setContractDraft((current) => ({
-      ...current,
-      disciplineRules: current.disciplineRules.filter((_, ruleIndex) => ruleIndex !== index),
-    }));
-  }
-
-  function addContractRule() {
-    const rule = contractRuleDraft.trim();
-    if (!rule) return;
-
-    setContractDraft((current) => ({
-      ...current,
-      disciplineRules: [...current.disciplineRules, rule],
-    }));
-    setContractRuleDraft("");
-  }
-
-  function resetContractRules() {
-    setContractDraft((current) => ({
-      ...current,
-      discipline:
-        "Yacht Rules\nThe Employee agrees to follow the yacht rules below:",
-      disciplineRules: defaultYachtDisciplineRules,
-    }));
-    setContractRuleDraft("");
   }
 
   async function downloadContractDraftPdf() {
@@ -1362,12 +1271,7 @@ export default function CrewPage({
         }
 
         if (section.title.startsWith("Annex D")) {
-          drawSinglePageSection(section, "ANNEX D - JOB DESCRIPTION AND YACHT RULES");
-          return;
-        }
-
-        if (section.title.startsWith("Annex E")) {
-          drawSinglePageSection(section, "ANNEX E - DECLARATION AND SIGNATURES");
+          drawSinglePageSection(section, "ANNEX D - DECLARATION AND SIGNATURES");
           return;
         }
 
@@ -2772,128 +2676,11 @@ export default function CrewPage({
                 </div>
               )}
 
-              {contractStep === "duties" && (
-                <div className="grid gap-5 xl:grid-cols-2">
-                  <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
-                    <ContractPanelTitle
-                      eyebrow="Duties"
-                      title="Job description"
-                      text="Define the crew member's work scope and operational expectations."
-                    />
-                    <ContractArea
-                      className="mt-5"
-                      label="Duties"
-                      value={contractDraft.duties}
-                      onChange={(value) => updateContractDraft("duties", value)}
-                      rows={10}
-                      placeholder="Daily duties, watchkeeping, maintenance, service standards..."
-                    />
-                  </div>
-
-                  <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-white p-5 shadow-sm">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
-                        Discipline
-                      </p>
-                      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                        These rules stay in the contract by default. Remove what you do not need or add yacht-specific rules.
-                      </p>
-                    </div>
-
-                    <div className="mt-5 rounded-[24px] border border-[#2fb6c7]/20 bg-[#f8fbfc] p-4 shadow-inner shadow-cyan-950/5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="text-sm font-black uppercase tracking-[0.18em] text-[#0b6b7b]">
-                            Yacht Rules
-                          </p>
-                          <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">
-                            The Employee agrees to follow the yacht rules below.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={resetContractRules}
-                          className="bd-focus rounded-2xl border border-[#2fb6c7]/25 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-[#0b6b7b] transition hover:border-[#8ed8e6] hover:bg-[#e9f8fb]"
-                        >
-                          Reset rules
-                        </button>
-                      </div>
-
-                      <div className="mt-5 max-h-[520px] space-y-2 overflow-y-auto pr-1">
-                        {contractDraft.disciplineRules.map((rule, index) => (
-                          <div
-                            key={`contract-rule-${index}`}
-                            className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:grid-cols-[42px_1fr_44px] sm:items-center"
-                          >
-                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#08313b] text-sm font-black text-[#8ed8e6]">
-                              {index + 1}
-                            </span>
-                            <input
-                              value={rule}
-                              onChange={(event) =>
-                                updateContractRule(
-                                  index,
-                                  normalizeInitialContractInput(event.target.value, rule)
-                                )
-                              }
-                              autoCapitalize="sentences"
-                              className="min-w-0 rounded-xl border border-transparent bg-[#f6f9fa] px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-[#8ed8e6] focus:bg-white focus:ring-4 focus:ring-[#8ed8e6]/20"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeContractRule(index)}
-                              className="bd-focus flex h-10 w-10 items-center justify-center rounded-xl border border-rose-100 bg-white text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-50"
-                              title="Remove rule"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ))}
-
-                        {contractDraft.disciplineRules.length === 0 && (
-                          <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
-                            Add at least one yacht rule for the discipline section.
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                        <input
-                          value={contractRuleDraft}
-                          onChange={(event) =>
-                            setContractRuleDraft(
-                              normalizeInitialContractInput(event.target.value, contractRuleDraft)
-                            )
-                          }
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter") {
-                              event.preventDefault();
-                              addContractRule();
-                            }
-                          }}
-                          placeholder="Add another yacht rule"
-                          autoCapitalize="sentences"
-                          className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-[#8ed8e6] focus:ring-4 focus:ring-[#8ed8e6]/20"
-                        />
-                        <button
-                          type="button"
-                          onClick={addContractRule}
-                          className="bd-focus inline-flex items-center justify-center gap-2 rounded-2xl bg-[#5fd3e5] px-5 py-4 text-sm font-black uppercase tracking-[0.1em] text-[#031923] shadow-lg shadow-cyan-700/15 transition hover:bg-[#84e6f3]"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add rule
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {contractStep === "signature" && (
                 <div className="grid gap-5 xl:grid-cols-[1fr_380px]">
                   <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
                     <ContractPanelTitle
-                      eyebrow="Annex E"
+                      eyebrow="Annex D"
                       title="Declaration and signatures"
                       text="The crew member signs from their BlueDeck portal after the contract is sent."
                     />
@@ -4449,7 +4236,7 @@ function getContractBodyPreviewPages(
 function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
-  const [annexB, annexC, annexD, annexE] = getContractDocumentSections(draft, member);
+  const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
   const annexCPages = annexC ? getContractBodyPreviewPages([annexC], 34) : [];
   const previewPages: Array<{ blocks: ContractPreviewBlockData[]; subtitle?: string }> = [
     ...annexCPages.map((blocks, index) => ({
@@ -4460,15 +4247,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       ? [
           {
             blocks: [{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }],
-            subtitle: "ANNEX D - JOB DESCRIPTION AND YACHT RULES",
-          },
-        ]
-      : []),
-    ...(annexE
-      ? [
-          {
-            blocks: [{ title: annexE.title, lines: getContractPreviewLines(annexE.lines) }],
-            subtitle: "ANNEX E - DECLARATION AND SIGNATURES",
+            subtitle: "ANNEX D - DECLARATION AND SIGNATURES",
           },
         ]
       : []),
@@ -4712,7 +4491,6 @@ function ContractStepIcon({ step }: { step: ContractStudioStep }) {
   if (step === "parties") return <UserRound className="h-5 w-5" />;
   if (step === "terms") return <CalendarClock className="h-5 w-5" />;
   if (step === "clauses") return <FileText className="h-5 w-5" />;
-  if (step === "duties") return <CheckSquare className="h-5 w-5" />;
   if (step === "signature") return <FileCheck2 className="h-5 w-5" />;
   return <Download className="h-5 w-5" />;
 }
