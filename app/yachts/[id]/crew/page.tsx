@@ -162,8 +162,6 @@ type ContractCrewMember = {
   } | null;
 };
 
-const contractAgreementTemplateSrc = "/contract-seafarer-agreement-template.png";
-
 const contractIntroParagraph =
   'This Seafarer Employment Agreement (the "Agreement") consists of four (4) Annexes. Together, these Annexes form the complete terms and conditions agreed between the Seafarer and the Employer in relation to employment aboard the Yacht.';
 
@@ -913,23 +911,6 @@ export default function CrewPage({
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const contractPaperTemplate = await loadImageDataUrl(contractAgreementTemplateSrc);
-
-    async function loadImageDataUrl(src: string) {
-      try {
-        const response = await fetch(src);
-        if (!response.ok) return "";
-        const blob = await response.blob();
-        return await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(typeof reader.result === "string" ? reader.result : "");
-          reader.onerror = () => reject(reader.error);
-          reader.readAsDataURL(blob);
-        });
-      } catch {
-        return "";
-      }
-    }
 
     function hexToRgb(hex: string) {
       const clean = hex.replace("#", "");
@@ -955,45 +936,9 @@ export default function CrewPage({
       doc.setTextColor(r, g, b);
     }
 
-    function drawWave(startX: number, startY: number, width: number, amplitude: number, color: string, offset = 0) {
-      setStroke(color);
-      doc.setLineWidth(0.48);
-      for (let lineIndex = 0; lineIndex < 7; lineIndex += 1) {
-        const yBase = startY + lineIndex * 3.1 + offset;
-        let previousX = startX;
-        let previousY = yBase;
-        for (let step = 1; step <= 58; step += 1) {
-          const progress = step / 58;
-          const x = startX + width * progress;
-          const y = yBase + Math.sin(progress * Math.PI * 2.18 + lineIndex * 0.34) * amplitude;
-          doc.line(previousX, previousY, x, y);
-          previousX = x;
-          previousY = y;
-        }
-      }
-    }
-
-    function drawContractPageBase(useTemplate = false) {
+    function drawContractPageBase() {
       setFill("#ffffff");
       doc.rect(0, 0, pageWidth, pageHeight, "F");
-
-      if (useTemplate && contractPaperTemplate) {
-        doc.addImage(contractPaperTemplate, "PNG", 0, -42, pageWidth, pageHeight + 68);
-        return;
-      }
-
-      if (!useTemplate) return;
-
-      drawWave(136, 56, 330, 9, "#2c77c5");
-      drawWave(406, 25, 220, 7, "#b7d5f4", 1.2);
-      drawWave(-42, pageHeight - 84, 226, 8, "#2c77c5");
-      drawWave(438, pageHeight - 62, 190, 6, "#d2e5f8", 1.2);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(15);
-      setText("#082759");
-      doc.text("S E A F A R E R   E M P L O Y M E N T   A G R E E M E N T", pageWidth / 2, 125, {
-        align: "center",
-      });
     }
 
     function drawContractPageFooter(pageNo: number, totalPages: number) {
@@ -1069,10 +1014,6 @@ export default function CrewPage({
       doc.setFontSize(16);
       setText("#082759");
       doc.text(section.title.toUpperCase(), x + 18, y + 25.5);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.6);
-      setText("#1e67bc");
-      doc.text(section.note, x + width - 18, y + 25, { align: "right" });
 
       if (isSpecialConditions) {
         doc.setFont("helvetica", "normal");
@@ -1107,9 +1048,7 @@ export default function CrewPage({
     }
 
     function drawContractIntroPage() {
-      drawContractPageBase(true);
-      setFill("#ffffff");
-      doc.rect(86, 72, pageWidth - 172, 70, "F");
+      drawContractPageBase();
       drawContractDocumentHeader("INTRODUCTORY NOTE");
       const x = 78;
       const width = pageWidth - 156;
@@ -4314,7 +4253,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
 
   return (
     <div className="mt-5 space-y-6">
-      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" useTemplate>
+      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE">
         <ContractIntroNote />
       </ContractPreviewPage>
 
@@ -4372,34 +4311,19 @@ function ContractPreviewPage({
   pageNo,
   totalPages,
   subtitle,
-  useTemplate = false,
   children,
 }: {
   pageNo: number;
   totalPages: number;
   subtitle?: string;
-  useTemplate?: boolean;
   children: ReactNode;
 }) {
   return (
     <div
       className={`relative mx-auto aspect-[1057/1536] w-full max-w-[920px] overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
-        useTemplate ? "pt-[16.4%]" : subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
+        subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
       }`}
-      style={
-        useTemplate
-          ? {
-              backgroundImage: `url(${contractAgreementTemplateSrc})`,
-              backgroundPosition: "center -6.5%",
-              backgroundRepeat: "no-repeat",
-              backgroundSize: "100% 103%",
-            }
-          : undefined
-      }
     >
-      {useTemplate ? (
-        <div className="absolute left-[16%] right-[16%] top-[8.6%] z-[1] h-[6.7%] bg-white" />
-      ) : null}
       <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
         <p className="font-serif text-[clamp(12px,2.1vw,24px)] font-black uppercase tracking-[0.12em] text-[#082759]">
           Seafarer Employment Agreement
@@ -4500,7 +4424,6 @@ function ContractIntroNote() {
 
 function ContractCoverSection({
   title,
-  note,
   rows,
   footer,
   wideFirstRows = 0,
@@ -4524,7 +4447,6 @@ function ContractCoverSection({
             {title}
           </h4>
         </div>
-        <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
       </div>
       {isSpecialConditions ? (
         <div className={compact ? "px-4 py-3" : "px-4 py-3.5"}>
