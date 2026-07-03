@@ -11,7 +11,6 @@ export default function CommandCenterPage() {
 
   const [status, setStatus] = useState<any>(null);
   const [position, setPosition] = useState<any>(null);
-  const [voyage, setVoyage] = useState<any>(null);
   const [engineering, setEngineering] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -30,14 +29,6 @@ export default function CommandCenterPage() {
 
     const { data: positionData } = await supabase
       .from("yacht_positions")
-      .select("*")
-      .eq("yacht_id", yachtId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    const { data: voyageData } = await supabase
-      .from("voyages")
       .select("*")
       .eq("yacht_id", yachtId)
       .order("created_at", { ascending: false })
@@ -79,44 +70,8 @@ export default function CommandCenterPage() {
       .select("*")
       .eq("yacht_id", yachtId);
 
-    let livePosition = positionData || null;
-    let liveVoyage = voyageData || null;
-
-    try {
-      const response = await fetch(`/api/marinetraffic/voyage?yachtId=${encodeURIComponent(yachtId)}`, {
-        cache: "no-store",
-      });
-      const marineTraffic = await response.json();
-
-      if (marineTraffic?.ok) {
-        livePosition = {
-          ...livePosition,
-          latitude: marineTraffic.vessel?.latitude ?? livePosition?.latitude,
-          longitude: marineTraffic.vessel?.longitude ?? livePosition?.longitude,
-          speed: marineTraffic.vessel?.speedKnots ?? livePosition?.speed,
-          heading: marineTraffic.vessel?.heading ?? marineTraffic.vessel?.course ?? livePosition?.heading,
-          location_name:
-            marineTraffic.vessel?.currentPort ||
-            marineTraffic.vessel?.destination ||
-            livePosition?.location_name ||
-            "Maritime AIS",
-        };
-        liveVoyage = {
-          ...liveVoyage,
-          title: marineTraffic.voyage?.title,
-          departure_port: marineTraffic.voyage?.departurePort,
-          arrival_port: marineTraffic.voyage?.arrivalPort,
-          fuel_estimate: liveVoyage?.fuel_estimate || 0,
-          fuel_remaining: liveVoyage?.fuel_remaining || 0,
-        };
-      }
-    } catch {
-      // Command center keeps the saved yacht record if the live provider is temporarily unavailable.
-    }
-
     setStatus(statusData || null);
-    setPosition(livePosition);
-    setVoyage(liveVoyage);
+    setPosition(positionData || null);
     setEngineering(engData || []);
     setTasks(
       (checklistData || []).flatMap((checklist: any) =>
@@ -196,7 +151,7 @@ export default function CommandCenterPage() {
           <p className="text-cyan-300">BlueDeck Command System</p>
           <h1 className="mt-4 text-6xl font-black">Captain Command Center</h1>
           <p className="mt-4 max-w-3xl text-xl text-gray-300">
-            One-screen captain overview for yacht status, voyage, engineering, finance, crew and risks.
+            One-screen captain overview for yacht status, engineering, finance, crew and risks.
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -216,7 +171,7 @@ export default function CommandCenterPage() {
           <Stat title="Cost" value={`€${(finance.fuel + finance.expenses).toFixed(0)}`} />
         </div>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-3">
+        <div className="mt-8 grid gap-8 lg:grid-cols-2">
           <Panel title="Live Vessel">
             <BigText>{position?.location_name || status?.location || "No position"}</BigText>
             <p className="mt-3 text-gray-400">
@@ -224,16 +179,6 @@ export default function CommandCenterPage() {
             </p>
             <p className="mt-2 text-gray-400">
               {position?.speed || 0} kn · {position?.heading || 0}°
-            </p>
-          </Panel>
-
-          <Panel title="Active Voyage">
-            <BigText>{voyage?.title || "No voyage"}</BigText>
-            <p className="mt-3 text-gray-400">
-              {voyage?.departure_port || "-"} → {voyage?.arrival_port || "-"}
-            </p>
-            <p className="mt-2 text-gray-400">
-              Fuel: {voyage?.fuel_estimate || 0}L / Remaining: {voyage?.fuel_remaining || 0}L
             </p>
           </Panel>
 

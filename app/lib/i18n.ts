@@ -765,56 +765,11 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "MMSI must be 9 digits.": {
     tr: "MMSI 9 haneli olmalıdır.",
   },
-  "MarineTraffic Voyage Sync": {
-    tr: "MarineTraffic Seyir Eşitleme",
-  },
-  "Enter a yacht MMSI once and BlueDeck pulls the live AIS record into voyage, position and captain command screens automatically.": {
-    tr: "Yat MMSI numarasını bir kez girin; BlueDeck canlı AIS kaydını otomatik olarak seyir, konum ve kaptan komuta ekranlarına çeker.",
-  },
-  "Refresh MarineTraffic": {
-    tr: "MarineTraffic'i Yenile",
-  },
-  "Syncing MarineTraffic voyage...": {
-    tr: "MarineTraffic seyri eşitleniyor...",
-  },
-  "MarineTraffic voyage is waiting": {
-    tr: "MarineTraffic seyri bekliyor",
-  },
-  "Add a 9-digit MMSI number to this yacht and configure the MarineTraffic API key to activate automatic voyage sync.": {
-    tr: "Otomatik seyir eşitlemesini etkinleştirmek için bu yata 9 haneli MMSI numarası ekleyin ve MarineTraffic API anahtarını yapılandırın.",
-  },
-  "No demo route is shown here.": {
-    tr: "Burada demo rota gösterilmez.",
-  },
-  "Active AIS Voyage": {
-    tr: "Aktif AIS Seyri",
-  },
-  "MarineTraffic MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.": {
-    tr: "MarineTraffic MMSI eşitlemesi AIS varış noktası, ETA ve canlı seyri BlueDeck'e çeker.",
-  },
-  "Voyage Sync": {
-    tr: "Seyir Eşitleme",
-  },
   "Save MMSI": {
     tr: "MMSI Kaydet",
   },
-  "Maritime Voyage Sync": {
-    tr: "Denizcilik Seyir Eşitleme",
-  },
   "Refresh AIS Provider": {
     tr: "AIS Sağlayıcısını Yenile",
-  },
-  "Syncing maritime voyage...": {
-    tr: "Denizcilik seyri eşitleniyor...",
-  },
-  "Maritime voyage is waiting": {
-    tr: "Denizcilik seyri bekliyor",
-  },
-  "Add a 9-digit MMSI number to this yacht and configure a maritime AIS API key to activate automatic voyage sync.": {
-    tr: "Otomatik seyir eşitlemesini etkinleştirmek için bu yata 9 haneli MMSI numarası ekleyin ve bir denizcilik AIS API anahtarı yapılandırın.",
-  },
-  "Maritime MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.": {
-    tr: "Denizcilik MMSI eşitlemesi AIS varış noktası, ETA ve canlı seyri BlueDeck'e çeker.",
   },
 };
 

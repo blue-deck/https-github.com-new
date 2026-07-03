@@ -11,13 +11,10 @@ import {
   FileText,
   Gauge,
   MapPin,
-  Martini,
   Printer,
   RefreshCcw,
   ShieldCheck,
   Ship,
-  Utensils,
-  Waves,
   type LucideIcon,
 } from "lucide-react";
 import { BLUEDECK } from "../../../config";
@@ -30,7 +27,6 @@ type OwnerStats = {
   documentCount: number;
   criticalDocuments: number;
   expiringDocuments: number;
-  openGuestRequests: number;
   status: any;
   updatedAt: string;
 };
@@ -42,7 +38,6 @@ const emptyStats: OwnerStats = {
   documentCount: 0,
   criticalDocuments: 0,
   expiringDocuments: 0,
-  openGuestRequests: 0,
   status: null,
   updatedAt: "",
 };
@@ -58,7 +53,7 @@ export default function OwnerPage() {
     if (!silent) setLoading(true);
     setLoadError("");
 
-    const [statusResponse, crewResponse, checklistResponse, documentResponse, guestResponse] =
+    const [statusResponse, crewResponse, checklistResponse, documentResponse] =
       await Promise.all([
         supabase
           .from("yacht_status")
@@ -88,10 +83,6 @@ export default function OwnerPage() {
           .from("yacht_documents")
           .select("id,expiry_date")
           .eq("yacht_id", yachtId),
-        supabase
-          .from("guest_requests")
-          .select("id,status,priority")
-          .eq("yacht_id", yachtId),
       ]);
 
     const readableErrors = [statusResponse, crewResponse, checklistResponse, documentResponse]
@@ -105,7 +96,6 @@ export default function OwnerPage() {
     const crew = crewResponse.error ? [] : crewResponse.data || [];
     const checklists = checklistResponse.error ? [] : checklistResponse.data || [];
     const documents = documentResponse.error ? [] : documentResponse.data || [];
-    const guestRequests = guestResponse.error ? [] : guestResponse.data || [];
     const tasks = checklists.flatMap((item: any) => item.yacht_checklist_items || []);
     const completedTasks = tasks.filter((task: any) => task.completed).length;
     const expiringDocuments = documents.filter((item: any) => {
@@ -116,7 +106,6 @@ export default function OwnerPage() {
       const days = daysUntil(item.expiry_date);
       return days !== null && days <= 30;
     }).length;
-    const openGuestRequests = guestRequests.filter((item: any) => item.status !== "resolved").length;
 
     setStats({
       crewCount: crew.length,
@@ -125,7 +114,6 @@ export default function OwnerPage() {
       documentCount: documents.length,
       criticalDocuments,
       expiringDocuments,
-      openGuestRequests,
       status: statusResponse.error ? null : statusResponse.data,
       updatedAt: new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
     });
@@ -147,8 +135,8 @@ export default function OwnerPage() {
     const crewScore = stats.crewCount ? 24 : 12;
     const taskScore = Math.round(taskProgress * 0.35);
     const documentScore = stats.criticalDocuments ? 10 : 24;
-    const guestScore = stats.openGuestRequests ? 14 : 22;
-    return Math.max(0, Math.min(99, crewScore + taskScore + documentScore + guestScore));
+    const statusScore = stats.status ? 22 : 14;
+    return Math.max(0, Math.min(99, crewScore + taskScore + documentScore + statusScore));
   }, [stats, taskProgress]);
 
   const ownerLines = [
@@ -161,11 +149,6 @@ export default function OwnerPage() {
       icon: MapPin,
       label: "Location",
       value: stats.status?.location || "Location not set",
-    },
-    {
-      icon: Martini,
-      label: "Hospitality",
-      value: stats.openGuestRequests ? `${stats.openGuestRequests} open request` : "Guest profile ready",
     },
     {
       icon: ShieldCheck,
@@ -190,22 +173,6 @@ export default function OwnerPage() {
       detail: stats.status?.weather || "Weather not set",
       href: `/yachts/${yachtId}/live-map`,
       tone: "emerald",
-    },
-    {
-      icon: Utensils,
-      title: "Guest Service",
-      text: stats.openGuestRequests ? `${stats.openGuestRequests} open request` : "Ready",
-      detail: "Hospitality and owner requests",
-      href: `/yachts/${yachtId}/guest-center`,
-      tone: "gold",
-    },
-    {
-      icon: Waves,
-      title: "Water Experience",
-      text: taskProgress >= 80 ? "Prepared" : `${taskProgress}% prepared`,
-      detail: `${stats.completedTasks}/${stats.totalTasks} checklist tasks`,
-      href: `/yachts/${yachtId}/crew`,
-      tone: "cyan",
     },
     {
       icon: Bell,
@@ -238,7 +205,7 @@ export default function OwnerPage() {
                 Private Owner View
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                {BLUEDECK.yachtName} owner readiness, privacy, guest comfort and
+                {BLUEDECK.yachtName} owner readiness, privacy, alerts and
                 daily yacht status in one calm control view.
               </p>
 
@@ -249,7 +216,6 @@ export default function OwnerPage() {
                   </p>
                   <p className="mt-1 text-3xl font-black text-slate-950">{ownerReadiness}%</p>
                 </div>
-                <OwnerButton href={`/yachts/${yachtId}/guest-center`} icon={Martini} label="Guest Center" />
                 <OwnerButton href={`/yachts/${yachtId}/status`} icon={Gauge} label="Live Status" />
                 <button
                   type="button"
@@ -295,7 +261,7 @@ export default function OwnerPage() {
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Stat title="Yacht" value={BLUEDECK.yachtName} />
           <Stat title="Mode" value={stats.status?.guest_mode ? "Guest Cruise" : "Private"} />
-          <Stat title="Comfort" value={stats.openGuestRequests ? "Attention" : "Ready"} />
+          <Stat title="Documents" value={`${stats.documentCount} Saved`} />
           <Stat title="Alerts" value={stats.criticalDocuments ? `${stats.criticalDocuments} Critical` : "Clear"} />
         </section>
 

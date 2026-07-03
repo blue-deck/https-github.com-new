@@ -10,7 +10,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   ClipboardList,
-  Compass,
   Crown,
   FileSignature,
   FileText,
@@ -297,14 +296,6 @@ export default function YachtDashboard() {
       meta: `${stats.criticalDocuments} critical`,
     },
     {
-      title: "Voyage Sync",
-      text: "Maritime MMSI sync pulls AIS destination, ETA and live voyage into BlueDeck.",
-      href: `/yachts/${yachtId}/voyage`,
-      icon: Compass,
-      tone: "cyan",
-      meta: yacht?.mmsi ? `MMSI ${yacht.mmsi}` : "MMSI ready",
-    },
-    {
       title: "Engineering",
       text: "Technical systems, maintenance planning and onboard machinery readiness.",
       href: `/yachts/${yachtId}/engineering`,
@@ -371,7 +362,6 @@ export default function YachtDashboard() {
             <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <HeroMetric icon={Ship} label="Mode" value={BLUEDECK.mode} />
               <HeroMetric icon={Map} label="Flag" value={yacht?.flag || BLUEDECK.flag} />
-              <HeroMetric icon={Compass} label="Voyage" value={yacht?.mmsi ? "AIS sync" : "MMSI ready"} />
               <HeroMetric icon={ShieldCheck} label="Privacy" value="Active" />
             </div>
 

@@ -1283,12 +1283,12 @@ export default function CrewPage({
 
     function drawContractIntroPage() {
       drawContractPageBase();
-      drawContractDocumentHeader("AGREEMENT STRUCTURE");
-      const x = 78;
-      const width = pageWidth - 156;
-      let y = 122;
+      drawContractDocumentHeader("INTRODUCTORY NOTE");
+      const x = 68;
+      const width = pageWidth - 136;
+      let y = 120;
 
-      function drawIntroText(text: string, fontSize = 6.8, lineHeight = 8.1, indent = 0) {
+      function drawIntroText(text: string, fontSize = 7.8, lineHeight = 9.6, indent = 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(fontSize);
         setText("#17233a");
@@ -1298,33 +1298,33 @@ export default function CrewPage({
       }
 
       contractIntroParagraphs.forEach((paragraph) => {
-        drawIntroText(paragraph, 6.9, 8.2);
-        y += 6;
+        drawIntroText(paragraph, 7.8, 9.4);
+        y += 7;
       });
 
       contractIntroAnnexes.forEach((annex, index) => {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.2);
+        doc.setFontSize(8.2);
         setText("#082759");
         doc.text(`${index + 1}.`, x, y);
         doc.text(annex.title, x + 18, y);
-        y += 9.2;
-        drawIntroText(annex.text, 6.45, 7.6, 18);
-        y += 4.5;
+        y += 10.2;
+        drawIntroText(annex.text, 7.2, 8.8, 18);
+        y += 5.4;
       });
 
       setStroke("#d8e7f5");
       doc.line(x, y + 2, x + width, y + 2);
-      y += 13;
+      y += 14;
       contractIntroClosingParagraphs.forEach((paragraph) => {
-        drawIntroText(paragraph, 6.55, 7.85);
-        y += 5.5;
+        drawIntroText(paragraph, 7.2, 8.9);
+        y += 6;
       });
 
       setStroke("#d8e7f5");
       doc.line(x, pageHeight - 58, x + width, pageHeight - 58);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(6.8);
+      doc.setFontSize(7.2);
       setText("#4f6680");
       doc.text(contractIntroFooterNotice, x, pageHeight - 43);
     }
@@ -4528,7 +4528,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
 
   return (
     <div ref={previewFrameRef} className="mt-5 space-y-5 overflow-hidden">
-      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="AGREEMENT STRUCTURE" scale={pageScale}>
+      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" scale={pageScale}>
         <ContractIntroNote />
       </ContractPreviewPage>
 
@@ -4676,8 +4676,8 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
 
 function ContractIntroNote() {
   return (
-    <section className="mx-auto flex h-full w-[78%] flex-col text-[#17233a]">
-      <div className="space-y-2 text-[9px] font-semibold leading-[1.36]">
+    <section className="mx-auto flex h-full w-[82%] flex-col text-[#17233a]">
+      <div className="space-y-2.5 text-[11px] font-semibold leading-[1.42]">
         {contractIntroParagraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
@@ -4689,7 +4689,7 @@ function ContractIntroNote() {
                 {index + 1}.
               </span>
               <span>
-                <span className="block text-[10px] font-black uppercase tracking-[0.08em] text-[#082759]">
+                <span className="block text-[11.5px] font-black uppercase tracking-[0.08em] text-[#082759]">
                   {annex.title}
                 </span>
                 <span className="block text-[#4f6680]">{annex.text}</span>
@@ -4704,7 +4704,7 @@ function ContractIntroNote() {
           <p key={paragraph}>{paragraph}</p>
         ))}
       </div>
-      <p className="mt-auto border-t border-[#d8e7f5] pt-3 text-[8.2px] font-semibold leading-snug text-[#4f6680]">
+      <p className="mt-auto border-t border-[#d8e7f5] pt-3 text-[9px] font-semibold leading-snug text-[#4f6680]">
         {contractIntroFooterNotice}
       </p>
     </section>
