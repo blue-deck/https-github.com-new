@@ -163,21 +163,23 @@ type ContractCrewMember = {
   } | null;
 };
 
-const contractIntroParagraph =
-  'This Seafarer Employment Agreement (the "Agreement") consists of four (4) Annexes. Together, these Annexes form the complete terms and conditions agreed between the Seafarer and the Employer in relation to employment aboard the Yacht.';
+const contractIntroParagraphs = [
+  'This Seafarer Employment Agreement (the "Agreement") consists of this Introductory Note and four (4) Annexes. Together, the Introductory Note and Annexes A, B, C and D constitute the written agreement between the Seafarer and the Employer in relation to the Seafarer’s employment aboard the Yacht.',
+  "The Agreement may be supplemented, in accordance with Annex C, by any Job Description, Yacht Rules, safety procedure, operational policy or other document validly communicated to the Seafarer.",
+];
 
 const contractIntroAnnexes = [
   {
     title: "ANNEX A - PARTIES & YACHT DETAILS",
-    text: "Contains the identification and contact details of the Yacht, Employer, Owner or Management Company, and Seafarer.",
+    text: "Contains the identification and contact details of the Yacht, Seafarer, Employer, Shipowner, Owner and Management Company, as applicable.",
   },
   {
-    title: "ANNEX B - EMPLOYMENT TERMS",
-    text: "Contains the specific terms of employment, including position, commencement date, contract duration, salary, leave entitlement, working arrangements, repatriation and any Special Conditions agreed between the parties.",
+    title: "ANNEX B - EMPLOYMENT TERMS & SPECIAL CONDITIONS",
+    text: "Contains the specific terms of employment, including the Seafarer’s position, commencement date, contract duration, trial period where applicable, salary, leave entitlement, rotation, working arrangements, notice period, repatriation destination, governing law, jurisdiction and any Special Conditions agreed between the parties.",
   },
   {
     title: "ANNEX C - GENERAL TERMS & CONDITIONS",
-    text: "Contains the general provisions governing the Seafarer's employment, including duties, conduct, working and rest hours, termination, medical care, insurance, confidentiality, dispute resolution and other applicable employment conditions.",
+    text: "Contains the general provisions governing the Seafarer’s employment, including duties and Job Description arrangements, Yacht Rules, professional conduct, working and rest hours, wages, leave, medical care, insurance, travel, repatriation, accommodation, confidentiality, safety, complaints, disciplinary matters, termination, governing law and dispute resolution.",
   },
   {
     title: "ANNEX D - DECLARATIONS & SIGNATURES",
@@ -186,12 +188,14 @@ const contractIntroAnnexes = [
 ];
 
 const contractIntroClosingParagraphs = [
-  "All Annexes shall be read together as one Agreement. Any Special Conditions expressly agreed and recorded in Annex B shall prevail over conflicting provisions elsewhere in the Agreement, subject always to applicable mandatory laws, flag-state requirements and any applicable collective bargaining agreement.",
-  "By signing Annex D, the parties confirm that they have reviewed, understood and accepted the complete Agreement and have received or been given access to a copy.",
+  "The Introductory Note and all Annexes shall be read together as one Agreement. Unless expressly supplemented, varied or replaced by a written Special Condition stated in Annex B, all provisions of Annex C shall apply in full.",
+  "Where a Special Condition in Annex B conflicts with a provision of Annex C, the Special Condition shall prevail only to the extent of that specific conflict, subject always to applicable mandatory law, the Yacht’s flag-State requirements and any applicable collective bargaining agreement.",
+  "The Seafarer’s applicable Job Description and the Yacht Rules may be communicated separately in accordance with Annex C.",
+  "By signing Annex D, the parties confirm their acceptance of the Agreement.",
 ];
 
-const contractIntroPlatformNotice =
-  "BlueDeck.app provides digital document preparation and contract-generation tools only. BlueDeck.app is not a party to this Agreement and does not act as an employer, recruitment agency, legal adviser, yacht manager or representative of either party. The Employer and the Seafarer remain solely responsible for verifying that the Agreement complies with all applicable laws, regulations, flag-state requirements and employment obligations.";
+const contractIntroFooterNotice =
+  "Generated using BlueDeck.app. BlueDeck.app is not a party to this Agreement and does not provide legal advice.";
 
 const contractAnnexAYachtFields: ContractDraftField[] = [
   "vesselName",
@@ -1279,12 +1283,12 @@ export default function CrewPage({
 
     function drawContractIntroPage() {
       drawContractPageBase();
-      drawContractDocumentHeader("INTRODUCTORY NOTE");
+      drawContractDocumentHeader("AGREEMENT STRUCTURE");
       const x = 78;
       const width = pageWidth - 156;
-      let y = 126;
+      let y = 122;
 
-      function drawIntroText(text: string, fontSize = 7.4, lineHeight = 9.2, indent = 0) {
+      function drawIntroText(text: string, fontSize = 6.8, lineHeight = 8.1, indent = 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(fontSize);
         setText("#17233a");
@@ -1293,40 +1297,36 @@ export default function CrewPage({
         y += lines.length * lineHeight;
       }
 
-      drawIntroText(contractIntroParagraph, 7.2, 8.8);
-      y += 9;
+      contractIntroParagraphs.forEach((paragraph) => {
+        drawIntroText(paragraph, 6.9, 8.2);
+        y += 6;
+      });
 
       contractIntroAnnexes.forEach((annex, index) => {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(7.6);
+        doc.setFontSize(7.2);
         setText("#082759");
         doc.text(`${index + 1}.`, x, y);
         doc.text(annex.title, x + 18, y);
-        y += 9.8;
-        drawIntroText(annex.text, 6.9, 8.2, 18);
-        y += 5;
+        y += 9.2;
+        drawIntroText(annex.text, 6.45, 7.6, 18);
+        y += 4.5;
       });
 
       setStroke("#d8e7f5");
       doc.line(x, y + 2, x + width, y + 2);
-      y += 14;
+      y += 13;
       contractIntroClosingParagraphs.forEach((paragraph) => {
-        drawIntroText(paragraph, 7.0, 8.5);
-        y += 7;
+        drawIntroText(paragraph, 6.55, 7.85);
+        y += 5.5;
       });
 
-      y += 2;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8.4);
-      setText("#082759");
-      doc.text("BLUEDECK PLATFORM NOTICE", x, y);
       setStroke("#d8e7f5");
-      doc.line(x, y + 8, x + width, y + 8);
+      doc.line(x, pageHeight - 58, x + width, pageHeight - 58);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(6.8);
-      setText("#17233a");
-      const noticeLines = doc.splitTextToSize(contractIntroPlatformNotice, width);
-      doc.text(noticeLines, x, y + 22);
+      setText("#4f6680");
+      doc.text(contractIntroFooterNotice, x, pageHeight - 43);
     }
 
     function drawContractCoverPage() {
@@ -4528,7 +4528,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
 
   return (
     <div ref={previewFrameRef} className="mt-5 space-y-5 overflow-hidden">
-      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" scale={pageScale}>
+      <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="AGREEMENT STRUCTURE" scale={pageScale}>
         <ContractIntroNote />
       </ContractPreviewPage>
 
@@ -4676,9 +4676,11 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
 
 function ContractIntroNote() {
   return (
-    <section className="mx-auto w-[78%] text-[#17233a]">
-      <div className="space-y-2 text-[9px] font-semibold leading-[1.38]">
-        <p>{contractIntroParagraph}</p>
+    <section className="mx-auto flex h-full w-[78%] flex-col text-[#17233a]">
+      <div className="space-y-2 text-[9px] font-semibold leading-[1.36]">
+        {contractIntroParagraphs.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
 
         <div className="space-y-1.5">
           {contractIntroAnnexes.map((annex, index) => (
@@ -4701,16 +4703,10 @@ function ContractIntroNote() {
         {contractIntroClosingParagraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
-
-        <div className="border-t border-[#d8e7f5] pt-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#082759]">
-            BlueDeck Platform Notice
-          </p>
-          <p className="mt-1 text-[8.8px] leading-[1.34] text-[#17233a]">
-            {contractIntroPlatformNotice}
-          </p>
-        </div>
       </div>
+      <p className="mt-auto border-t border-[#d8e7f5] pt-3 text-[8.2px] font-semibold leading-snug text-[#4f6680]">
+        {contractIntroFooterNotice}
+      </p>
     </section>
   );
 }
