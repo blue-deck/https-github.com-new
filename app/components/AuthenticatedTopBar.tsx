@@ -69,10 +69,5 @@ export function AuthenticatedTopBar() {
 
   if (!checked || !hasSession || shouldHideForRoute) return null;
 
-  return (
-    <>
-      <BlueDeckTopBar />
-      <div aria-hidden="true" className="h-[92px]" />
-    </>
-  );
+  return <BlueDeckTopBar />;
 }

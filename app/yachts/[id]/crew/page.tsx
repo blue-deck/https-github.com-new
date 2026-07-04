@@ -4474,7 +4474,7 @@ function getContractSpecialConditionPreviewPages(value: string) {
 
 function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
   const previewFrameRef = useRef<HTMLDivElement | null>(null);
-  const [pageScale, setPageScale] = useState(0.42);
+  const [pageScale, setPageScale] = useState(0.32);
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
@@ -4506,13 +4506,18 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       window.cancelAnimationFrame(animationFrame);
       animationFrame = window.requestAnimationFrame(() => {
         const measuredWidth = node.getBoundingClientRect().width || node.clientWidth;
-        const viewportWidth = window.innerWidth || measuredWidth;
+        const parentWidth = node.parentElement?.clientWidth || measuredWidth;
+        const viewportWidth =
+          window.visualViewport?.width || window.innerWidth || measuredWidth;
         const viewportSafeWidth =
-          viewportWidth < 768 ? Math.max(260, viewportWidth - 40) : measuredWidth;
-        const availableWidth = Math.max(240, Math.min(measuredWidth, viewportSafeWidth) - 2);
+          viewportWidth < 768 ? Math.max(240, viewportWidth - 40) : measuredWidth;
+        const availableWidth = Math.max(
+          220,
+          Math.min(measuredWidth, parentWidth, viewportSafeWidth) - 2,
+        );
         const nextScale = Math.min(
           1,
-          Math.max(0.24, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
+          Math.max(0.2, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
         );
         setPageScale((current) => (Math.abs(current - nextScale) < 0.005 ? current : nextScale));
       });

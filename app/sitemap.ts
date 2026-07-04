@@ -4,7 +4,6 @@ import { BLUEDECK_SITE_URL } from "./lib/site";
 const publicRoutes = [
   "",
   "/services",
-  "/management",
   "/trust",
   "/about",
   "/contact",

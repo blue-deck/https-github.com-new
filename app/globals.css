@@ -33,6 +33,12 @@ body {
   text-rendering: geometricPrecision;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -302,11 +308,10 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-app-topbar {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
   z-index: 60;
+  width: 100%;
 }
 
 .bd-glass-card {
@@ -581,7 +586,13 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-contract-preview-frame {
+  display: grid;
+  justify-items: center;
   width: 100%;
+  overflow: hidden;
+}
+
+.bd-contract-preview-page-shell {
   overflow: hidden;
 }
 
@@ -629,10 +640,6 @@ textarea:-webkit-autofill:focus {
     padding-right: 0.9rem !important;
   }
 
-  .bd-app-topbar + div[aria-hidden="true"] {
-    height: 76px !important;
-  }
-
   .bd-app-topbar a[aria-label="BlueDeck home"],
   .bd-app-topbar a[aria-label="BlueDeck home"] img {
     max-width: 132px !important;
@@ -669,7 +676,14 @@ textarea:-webkit-autofill:focus {
     padding: 1rem !important;
   }
 
+  .bd-contract-preview-frame {
+    width: 100% !important;
+    max-width: calc(100dvw - 2rem) !important;
+    justify-items: center !important;
+  }
+
   .bd-contract-preview-page-shell {
+    max-width: 100% !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
