@@ -344,6 +344,7 @@ textarea:-webkit-autofill:focus {
     linear-gradient(135deg, #fbfdff 0%, #eef8ff 52%, #f8fbfc 100%),
     #f7fbff;
   color: var(--ocean-ink);
+  overflow-x: hidden;
 }
 
 .bd-yacht-portal main {
@@ -571,6 +572,19 @@ textarea:-webkit-autofill:focus {
   display: none;
 }
 
+.bd-contract-preview-grid,
+.bd-contract-preview-card,
+.bd-contract-preview-frame,
+.bd-contract-preview-page-shell {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bd-contract-preview-frame {
+  width: 100%;
+  overflow: hidden;
+}
+
 @media (max-width: 640px) {
   .bd-public-header > div {
     height: 76px !important;
@@ -648,6 +662,16 @@ textarea:-webkit-autofill:focus {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
     padding-bottom: 2.5rem !important;
+  }
+
+  .bd-contract-preview-card {
+    border-radius: 1.25rem !important;
+    padding: 1rem !important;
+  }
+
+  .bd-contract-preview-page-shell {
+    margin-left: auto !important;
+    margin-right: auto !important;
   }
 
   .bd-yacht-portal [class*="text-7xl"],

@@ -2950,8 +2950,8 @@ export default function CrewPage({
               )}
 
               {contractStep === "preview" && (
-                <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
-                  <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="bd-contract-preview-grid grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="bd-contract-preview-card min-w-0 overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                     <ContractPanelTitle
                       eyebrow="Preview contract"
                       title="Final contract draft"
@@ -4474,7 +4474,7 @@ function getContractSpecialConditionPreviewPages(value: string) {
 
 function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
   const previewFrameRef = useRef<HTMLDivElement | null>(null);
-  const [pageScale, setPageScale] = useState(1);
+  const [pageScale, setPageScale] = useState(0.42);
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
@@ -4505,10 +4505,14 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
     const updateScale = () => {
       window.cancelAnimationFrame(animationFrame);
       animationFrame = window.requestAnimationFrame(() => {
-        const availableWidth = node.clientWidth;
+        const measuredWidth = node.getBoundingClientRect().width || node.clientWidth;
+        const viewportWidth = window.innerWidth || measuredWidth;
+        const viewportSafeWidth =
+          viewportWidth < 768 ? Math.max(260, viewportWidth - 40) : measuredWidth;
+        const availableWidth = Math.max(240, Math.min(measuredWidth, viewportSafeWidth) - 2);
         const nextScale = Math.min(
           1,
-          Math.max(0.28, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
+          Math.max(0.24, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
         );
         setPageScale((current) => (Math.abs(current - nextScale) < 0.005 ? current : nextScale));
       });
@@ -4527,7 +4531,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
   }, []);
 
   return (
-    <div ref={previewFrameRef} className="mt-5 space-y-5 overflow-hidden">
+    <div ref={previewFrameRef} className="bd-contract-preview-frame mt-5 w-full max-w-full min-w-0 space-y-5 overflow-hidden">
       <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" scale={pageScale}>
         <ContractIntroNote />
       </ContractPreviewPage>
@@ -4599,7 +4603,7 @@ function ContractPreviewPage({
 }) {
   return (
     <div
-      className="mx-auto"
+      className="bd-contract-preview-page-shell mx-auto max-w-full"
       style={{
         width: CONTRACT_PREVIEW_PAGE_WIDTH * scale,
         height: CONTRACT_PREVIEW_PAGE_HEIGHT * scale,
