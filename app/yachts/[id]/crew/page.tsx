@@ -1286,9 +1286,9 @@ export default function CrewPage({
       drawContractDocumentHeader("INTRODUCTORY NOTE");
       const x = 68;
       const width = pageWidth - 136;
-      let y = 120;
+      let y = 118;
 
-      function drawIntroText(text: string, fontSize = 7.8, lineHeight = 9.6, indent = 0) {
+      function drawIntroText(text: string, fontSize = 9.2, lineHeight = 11.7, indent = 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(fontSize);
         setText("#17233a");
@@ -1298,33 +1298,33 @@ export default function CrewPage({
       }
 
       contractIntroParagraphs.forEach((paragraph) => {
-        drawIntroText(paragraph, 7.8, 9.4);
-        y += 7;
+        drawIntroText(paragraph, 9.2, 11.7);
+        y += 11;
       });
 
       contractIntroAnnexes.forEach((annex, index) => {
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(8.2);
+        doc.setFontSize(9.1);
         setText("#082759");
         doc.text(`${index + 1}.`, x, y);
         doc.text(annex.title, x + 18, y);
-        y += 10.2;
-        drawIntroText(annex.text, 7.2, 8.8, 18);
-        y += 5.4;
+        y += 12.3;
+        drawIntroText(annex.text, 8.6, 10.8, 18);
+        y += 8.5;
       });
 
       setStroke("#d8e7f5");
       doc.line(x, y + 2, x + width, y + 2);
-      y += 14;
+      y += 18;
       contractIntroClosingParagraphs.forEach((paragraph) => {
-        drawIntroText(paragraph, 7.2, 8.9);
-        y += 6;
+        drawIntroText(paragraph, 8.6, 10.8);
+        y += 8.5;
       });
 
       setStroke("#d8e7f5");
       doc.line(x, pageHeight - 58, x + width, pageHeight - 58);
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(7.2);
+      doc.setFontSize(7.6);
       setText("#4f6680");
       doc.text(contractIntroFooterNotice, x, pageHeight - 43);
     }
@@ -4676,20 +4676,20 @@ function ContractAnnexSubtitle({ text }: { text: string }) {
 
 function ContractIntroNote() {
   return (
-    <section className="mx-auto flex h-full w-[82%] flex-col text-[#17233a]">
-      <div className="space-y-2.5 text-[11px] font-semibold leading-[1.42]">
+    <section className="mx-auto flex h-full w-[84%] flex-col text-[#17233a]">
+      <div className="space-y-3.5 text-[12.4px] font-semibold leading-[1.58]">
         {contractIntroParagraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
 
-        <div className="space-y-1.5">
+        <div className="space-y-2.5">
           {contractIntroAnnexes.map((annex, index) => (
             <div key={annex.title} className="grid grid-cols-[20px_1fr] gap-2">
               <span className="font-black text-[#0d58ae]">
                 {index + 1}.
               </span>
               <span>
-                <span className="block text-[11.5px] font-black uppercase tracking-[0.08em] text-[#082759]">
+                <span className="block text-[12.6px] font-black uppercase tracking-[0.08em] text-[#082759]">
                   {annex.title}
                 </span>
                 <span className="block text-[#4f6680]">{annex.text}</span>
