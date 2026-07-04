@@ -9,6 +9,8 @@ import {
   ClipboardList,
   Users,
 } from "lucide-react";
+import { BlueDeckLogoLink } from "../../components/BlueDeckLogo";
+import { BlueDeckTopBar } from "../../components/BlueDeckTopBar";
 import { useLanguage } from "../../components/LanguageProvider";
 import { translatePhrase } from "../../lib/i18n";
 import { supabase } from "../../lib/supabase";
@@ -55,6 +57,10 @@ export default function YachtAppLayout({
     { label: translatePhrase("Crew", language), href: `/yachts/${yachtId}/crew`, icon: Users },
     { label: translatePhrase("Owner", language), href: `/yachts/${yachtId}/owner`, icon: Crown },
   ];
+  const isActive = (href: string) =>
+    href === `/yachts/${yachtId}`
+      ? pathname === href
+      : pathname === href || Boolean(pathname?.startsWith(`${href}/`));
 
   if (!sessionChecked) {
     return (
@@ -68,22 +74,31 @@ export default function YachtAppLayout({
   }
 
   return (
-    <div className="bd-yacht-portal min-h-screen text-slate-900">
-      <nav className="bd-yacht-section-nav sticky top-[92px] z-40 border-b border-[#071f3c]/10 bg-white/92 shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 sm:px-8 lg:px-12">
-          <div className="flex min-w-0 flex-1 items-center gap-6 overflow-x-auto">
+    <div className="bd-yacht-portal bd-app-shell min-h-screen text-slate-900">
+      <aside className="bd-app-sidebar bd-yacht-sidebar">
+        <div className="flex h-full flex-col gap-8 p-5">
+          <BlueDeckLogoLink
+            href="https://www.bluedeck.app"
+            label="BlueDeck home"
+            className="h-24 w-full rounded-none border-0 bg-transparent shadow-none"
+            imageClassName="object-contain object-left p-0"
+            priority
+          />
+
+          <nav className="flex flex-col gap-2" aria-label="Yacht workspace navigation">
             {nav.map((item) => {
               const Icon = item.icon;
-              const active = pathname === item.href;
+              const active = isActive(item.href);
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`bd-focus inline-flex min-w-fit items-center gap-2 border-b-2 px-1 py-2 text-sm font-black uppercase tracking-[0.12em] transition ${
+                  aria-current={active ? "page" : undefined}
+                  className={`bd-focus inline-flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-[0.12em] transition ${
                     active
-                      ? "border-cyan-700 text-[#071f3c]"
-                      : "border-transparent text-[#5b7088] hover:border-cyan-300 hover:text-[#071f3c]"
+                      ? "border border-cyan-200/40 bg-cyan-300/12 text-white shadow-lg shadow-cyan-950/20"
+                      : "border border-transparent text-white/70 hover:border-cyan-200/25 hover:bg-white/8 hover:text-white"
                   }`}
                 >
                   <Icon className="h-4 w-4" />
@@ -91,11 +106,42 @@ export default function YachtAppLayout({
                 </Link>
               );
             })}
-          </div>
+          </nav>
         </div>
-      </nav>
+      </aside>
 
-      <div>{children}</div>
+      <div className="bd-main-column">
+        <BlueDeckTopBar className="bd-yacht-topbar" />
+
+        <nav className="bd-yacht-section-nav sticky top-[88px] z-40 border-b border-[#071f3c]/10 bg-white/92 shadow-sm backdrop-blur-xl">
+          <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 sm:px-8 lg:px-12">
+            <div className="flex min-w-0 flex-1 items-center gap-6 overflow-x-auto">
+              {nav.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`bd-focus inline-flex min-w-fit items-center gap-2 border-b-2 px-1 py-2 text-sm font-black uppercase tracking-[0.12em] transition ${
+                      active
+                        ? "border-cyan-700 text-[#071f3c]"
+                        : "border-transparent text-[#5b7088] hover:border-cyan-300 hover:text-[#071f3c]"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
+
+        <div className="bd-yacht-page-content">{children}</div>
+      </div>
     </div>
   );
 }

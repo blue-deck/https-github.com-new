@@ -26,6 +26,7 @@ const publicPaths = [
 function isPublicPath(pathname: string) {
   if (publicPaths.includes(pathname)) return true;
   if (pathname.startsWith("/auth/")) return true;
+  if (pathname.startsWith("/yachts/")) return true;
   return false;
 }
 

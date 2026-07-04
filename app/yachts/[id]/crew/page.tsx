@@ -4507,14 +4507,18 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       animationFrame = window.requestAnimationFrame(() => {
         const measuredWidth = node.getBoundingClientRect().width || node.clientWidth;
         const parentWidth = node.parentElement?.clientWidth || measuredWidth;
-        const viewportWidth =
-          window.visualViewport?.width || window.innerWidth || measuredWidth;
-        const viewportSafeWidth =
-          viewportWidth < 768 ? Math.max(240, viewportWidth - 40) : measuredWidth;
-        const availableWidth = Math.max(
-          220,
-          Math.min(measuredWidth, parentWidth, viewportSafeWidth) - 2,
+        const viewportWidth = Math.min(
+          window.visualViewport?.width || Number.POSITIVE_INFINITY,
+          window.innerWidth || Number.POSITIVE_INFINITY,
+          document.documentElement.clientWidth || Number.POSITIVE_INFINITY,
         );
+        const safeViewportWidth = Number.isFinite(viewportWidth)
+          ? viewportWidth
+          : measuredWidth;
+        const availableWidth =
+          safeViewportWidth < 768
+            ? Math.max(220, safeViewportWidth - 32)
+            : Math.max(220, Math.min(measuredWidth, parentWidth) - 2);
         const nextScale = Math.min(
           1,
           Math.max(0.2, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
@@ -4615,7 +4619,7 @@ function ContractPreviewPage({
       }}
     >
       <div
-        className={`relative overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
+        className={`bd-contract-preview-page relative overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
           subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
         }`}
         style={{
