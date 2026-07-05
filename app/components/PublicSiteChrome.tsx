@@ -59,7 +59,7 @@ export function PublicHeader() {
         <BlueDeckLogoLink
           href="/"
           priority
-          className="h-12 w-36 shrink-0 rounded-none border-0 bg-transparent shadow-none sm:h-[74px] sm:w-64"
+          className="h-14 w-44 shrink-0 sm:h-[76px] sm:w-72 lg:w-80"
           imageClassName="object-contain p-0"
         />
 
@@ -131,7 +131,7 @@ export function PublicFooter() {
         <div>
           <BlueDeckLogoLink
             href="/"
-            className="h-16 w-56 rounded-none border-0 bg-transparent shadow-none"
+            className="h-16 w-56"
             imageClassName="object-contain p-0"
           />
           <p className="mt-5 max-w-sm text-sm leading-7 text-white/62">

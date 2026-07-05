@@ -17,6 +17,11 @@
   --ocean-line: rgba(7, 33, 61, 0.13);
   --ocean-card: rgba(255, 255, 255, 0.78);
   --ocean-card-strong: rgba(255, 255, 255, 0.9);
+  --bluedeck-header-edge: #041024;
+  --bluedeck-header-base: #071631;
+  --bluedeck-header-center: #0d254f;
+  --bluedeck-header-surface:
+    radial-gradient(circle at 50% 18%, var(--bluedeck-header-center) 0%, var(--bluedeck-header-base) 46%, var(--bluedeck-header-edge) 100%);
   --sidebar-width: 260px;
   --topbar-height: 88px;
   --topbar-height-mobile: 76px;
@@ -123,8 +128,7 @@ textarea:-webkit-autofill:focus {
   inset: 0 0 auto 0;
   z-index: 70;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background:
-    linear-gradient(90deg, #020817 0%, #06172b 52%, #0b2842 100%);
+  background: var(--bluedeck-header-surface);
   box-shadow: 0 18px 56px rgba(2, 8, 23, 0.22);
 }
 
@@ -315,6 +319,7 @@ textarea:-webkit-autofill:focus {
   top: 0;
   z-index: 60;
   width: 100%;
+  background: var(--bluedeck-header-surface);
 }
 
 .bd-app-topbar-inner,
@@ -350,8 +355,7 @@ textarea:-webkit-autofill:focus {
 
 .bd-yacht-sidebar {
   background:
-    radial-gradient(circle at 60% 8%, rgba(34, 211, 238, 0.16), transparent 34%),
-    linear-gradient(180deg, #020817 0%, #06172b 54%, #041024 100%);
+    radial-gradient(circle at 50% 12%, rgba(13, 37, 79, 0.92) 0%, rgba(7, 22, 49, 0.96) 42%, rgba(4, 16, 36, 1) 100%);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 18px 0 48px rgba(2, 8, 23, 0.22);
 }
@@ -750,7 +754,7 @@ textarea:-webkit-autofill:focus {
   }
 
   .bd-public-header a[aria-label="BlueDeck home"] {
-    width: 138px !important;
+    width: 148px !important;
     height: 48px !important;
   }
 
@@ -787,7 +791,7 @@ textarea:-webkit-autofill:focus {
 
   .bd-app-topbar a[aria-label="BlueDeck home"],
   .bd-app-topbar a[aria-label="BlueDeck home"] img {
-    max-width: 132px !important;
+    max-width: 148px !important;
   }
 
   .bd-app-topbar a[href="/dashboard"],

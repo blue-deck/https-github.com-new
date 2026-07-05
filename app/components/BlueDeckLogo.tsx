@@ -28,13 +28,13 @@ export function BlueDeckLogoLink({
     <Link
       href={href}
       aria-label={label}
-      className={`bd-focus inline-flex items-center overflow-hidden rounded-2xl border border-cyan-300/25 bg-[#020817] shadow-xl shadow-cyan-950/20 transition hover:border-cyan-200/55 ${className}`}
+      className={`bd-focus inline-flex items-center overflow-hidden bg-transparent ${className}`}
     >
       <Image
         src="/bluedeck-logo-wide.png"
         alt="BlueDeck"
-        width={220}
-        height={124}
+        width={1672}
+        height={941}
         priority={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />
@@ -49,13 +49,13 @@ export function BlueDeckMark({
 }: BlueDeckMarkProps) {
   return (
     <span
-      className={`inline-flex items-center justify-center overflow-hidden rounded-2xl border border-cyan-300/25 bg-[#020817] shadow-xl shadow-cyan-950/20 ${className}`}
+      className={`inline-flex items-center justify-center overflow-hidden bg-transparent ${className}`}
     >
       <Image
         src="/bluedeck-logo-mark.png"
         alt="BlueDeck"
-        width={156}
-        height={84}
+        width={1672}
+        height={941}
         priority={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />

@@ -26,13 +26,13 @@ export function BlueDeckTopBar({
   }
 
   return (
-    <header className={`bd-app-topbar border-b border-white/10 bg-[linear-gradient(90deg,#020817_0%,#06172b_52%,#0b2842_100%)] shadow-2xl shadow-slate-950/22 ${className}`}>
+    <header className={`bd-app-topbar border-b border-white/10 shadow-2xl shadow-slate-950/22 ${className}`}>
       <div className="bd-app-topbar-inner mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         <div className="bd-topbar-logo-area flex min-w-0 items-center gap-4">
           <BlueDeckLogoLink
             href="https://www.bluedeck.app"
             label="BlueDeck home"
-            className="bd-topbar-logo h-12 w-40 shrink-0 rounded-none border-0 bg-transparent shadow-none sm:w-48"
+            className="bd-topbar-logo h-12 w-48 shrink-0 sm:w-60"
             imageClassName="object-contain p-0"
           />
 
