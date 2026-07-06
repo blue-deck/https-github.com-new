@@ -35,8 +35,8 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #ffffff;
+  color: var(--ocean-ink);
   font-family: "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
   text-rendering: geometricPrecision;
 }
@@ -117,9 +117,7 @@ textarea:-webkit-autofill:focus {
 .bd-site-shell {
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.97) 0%, rgba(239, 249, 255, 0.86) 44%, rgba(210, 235, 249, 0.58) 100%),
-    #f7fbff;
+  background: #ffffff;
   color: var(--ocean-ink);
 }
 
@@ -337,6 +335,7 @@ textarea:-webkit-autofill:focus {
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   min-height: 100dvh;
   width: 100%;
+  background: #ffffff;
 }
 
 .bd-app-sidebar {
@@ -351,6 +350,13 @@ textarea:-webkit-autofill:focus {
 .bd-main-column {
   min-width: 0;
   min-height: 100dvh;
+  background: #ffffff;
+}
+
+.bd-public-header + *,
+.bd-app-topbar + *,
+.bd-yacht-topbar + * {
+  background-color: #ffffff;
 }
 
 .bd-yacht-portal .bd-main-column,
