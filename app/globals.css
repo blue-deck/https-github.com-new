@@ -353,6 +353,11 @@ textarea:-webkit-autofill:focus {
   min-height: 100dvh;
 }
 
+.bd-yacht-portal .bd-main-column,
+.bd-yacht-portal .bd-yacht-page-content {
+  background: #ffffff;
+}
+
 .bd-yacht-sidebar {
   background:
     radial-gradient(circle at 50% 12%, rgba(13, 37, 79, 0.92) 0%, rgba(7, 22, 49, 0.96) 42%, rgba(4, 16, 36, 1) 100%);
@@ -398,6 +403,14 @@ textarea:-webkit-autofill:focus {
 
 .bd-yacht-section-nav {
   display: none;
+  background: #ffffff !important;
+  box-shadow: 0 1px 0 rgba(7, 31, 60, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.bd-yacht-section-nav > div {
+  background: #ffffff;
 }
 
 .bd-glass-card {
@@ -430,10 +443,7 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-yacht-portal {
-  background:
-    radial-gradient(circle at 84% 8%, rgba(125, 211, 252, 0.22), transparent 28%),
-    linear-gradient(135deg, #fbfdff 0%, #eef8ff 52%, #f8fbfc 100%),
-    #f7fbff;
+  background: #ffffff;
   color: var(--ocean-ink);
   overflow-x: hidden;
 }
