@@ -1,5 +1,9 @@
+const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+
 export const BLUEDECK_SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://www.bluedeck.app";
+  configuredSiteUrl === "https://bluedeck.app" || configuredSiteUrl === "http://bluedeck.app"
+    ? "https://www.bluedeck.app"
+    : configuredSiteUrl || "https://www.bluedeck.app";
 
 export function absoluteSiteUrl(path = "/") {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

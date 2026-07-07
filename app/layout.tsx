@@ -4,8 +4,9 @@ import { LanguageProvider } from "./components/LanguageProvider";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
-const faviconVersion = "20260706-1";
+const faviconVersion = "20260707-1";
 const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-favicon.png`;
+const bluedeckSearchIconUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(BLUEDECK_SITE_URL),
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
+      { url: `/bluedeck-search-icon.png?v=${faviconVersion}`, sizes: "96x96", type: "image/png" },
       { url: `/favicon.ico?v=${faviconVersion}`, sizes: "any" },
       { url: `/favicon-16x16.png?v=${faviconVersion}`, sizes: "16x16", type: "image/png" },
       { url: `/favicon-32x32.png?v=${faviconVersion}`, sizes: "32x32", type: "image/png" },
@@ -23,7 +25,7 @@ export const metadata: Metadata = {
       { url: `/bluedeck-favicon.png?v=${faviconVersion}`, sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: `/apple-touch-icon.png?v=${faviconVersion}`, sizes: "180x180", type: "image/png" }],
-    shortcut: [`/favicon.ico?v=${faviconVersion}`],
+    shortcut: [`/bluedeck-search-icon.png?v=${faviconVersion}`],
   },
   openGraph: {
     title: "BlueDeck Yacht Management",
@@ -40,6 +42,7 @@ const organizationJsonLd = {
   name: "BlueDeck",
   url: BLUEDECK_SITE_URL,
   logo: bluedeckLogoUrl,
+  image: bluedeckSearchIconUrl,
 };
 
 export const viewport: Viewport = {
