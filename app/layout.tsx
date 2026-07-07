@@ -4,7 +4,7 @@ import { LanguageProvider } from "./components/LanguageProvider";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
-const faviconVersion = "20260707-1";
+const faviconVersion = "20260707-2";
 const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-favicon.png`;
 const bluedeckSearchIconUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
 

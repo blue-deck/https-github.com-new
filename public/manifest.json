@@ -8,25 +8,25 @@
   "theme_color": "#06b6d4",
   "icons": [
     {
-      "src": "/bluedeck-search-icon.png?v=20260707-1",
+      "src": "/bluedeck-search-icon.png?v=20260707-2",
       "sizes": "96x96",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon-192x192.png?v=20260707-1",
+      "src": "/favicon-192x192.png?v=20260707-2",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/favicon-512x512.png?v=20260707-1",
+      "src": "/favicon-512x512.png?v=20260707-2",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/apple-touch-icon.png?v=20260707-1",
+      "src": "/apple-touch-icon.png?v=20260707-2",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
