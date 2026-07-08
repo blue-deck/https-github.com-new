@@ -1447,6 +1447,7 @@ export default function CrewPage({
         drawBodyPageHeader(firstPageSubtitle);
         drawSectionTitle(section, top);
         let y = top + 26;
+        const isAnnexC = section.title.startsWith("Annex C");
 
         function ensureSpace(height: number) {
           if (y + height <= bottom) return;
@@ -1458,12 +1459,15 @@ export default function CrewPage({
 
         getWrappedRows(section).forEach((row) => {
           if (row) {
-            ensureSpace(12);
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(9.1);
-            setText("#17233a");
+            const isHeading = isAnnexC && isContractAnnexCHeading(row);
+            const headingOffset = isHeading && y > top + 28 ? 3 : 0;
+            ensureSpace((isHeading ? 15 : 12) + headingOffset);
+            if (headingOffset) y += headingOffset;
+            doc.setFont("helvetica", isHeading ? "bold" : "normal");
+            doc.setFontSize(isHeading ? 9.7 : 9.1);
+            setText(isHeading ? "#082759" : "#17233a");
             doc.text(row, left + 4, y);
-            y += 11.5;
+            y += isHeading ? 13.2 : 11.5;
           } else {
             y += 5;
           }
@@ -2924,8 +2928,8 @@ export default function CrewPage({
                             onClick={() => setOpenAnnexCClause(isOpen ? null : clause.number)}
                             aria-expanded={isOpen}
                           >
-                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071631] text-sm font-black tracking-[0.08em] text-white">
-                              {clause.number.padStart(2, "0")}
+                            <span className="w-12 shrink-0 text-center text-xl font-black text-[#071631]">
+                              {clause.number}.
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#1f8397]">
@@ -4430,6 +4434,20 @@ type ContractPreviewBlockData = {
   lines: string[];
 };
 
+type ContractPreviewLineData = {
+  kind: "heading" | "body" | "space";
+  text: string;
+};
+
+const contractAnnexCHeadingSet = new Set(
+  contractAnnexCClauses.map((clause) => `${clause.number}. ${clause.title}`)
+);
+
+function isContractAnnexCHeading(line: string) {
+  const value = line.trim();
+  return contractAnnexCHeadingSet.has(value) || /^\d+\.\s+[A-Z][A-Z\s,/'&()-]+$/.test(value);
+}
+
 function getContractPreviewLineUnits(line: string) {
   return line ? Math.max(1, Math.ceil(line.length / 96)) : 1;
 }
@@ -4442,12 +4460,9 @@ function getContractPreviewLines(lines: string[]) {
   });
 }
 
-function getContractBodyPreviewPages(
-  sections: ContractDocumentSection[],
-  maxUnits = 36
-): Array<ContractPreviewBlockData[]> {
-  const pages: Array<ContractPreviewBlockData[]> = [];
-  let currentPage: ContractPreviewBlockData[] = [];
+function getContractAnnexCPreviewPages(maxUnits = 47) {
+  const pages: ContractPreviewLineData[][] = [];
+  let currentPage: ContractPreviewLineData[] = [];
   let currentUnits = 0;
 
   function pushPage() {
@@ -4457,33 +4472,28 @@ function getContractBodyPreviewPages(
     currentUnits = 0;
   }
 
-  sections.forEach((section) => {
-    const lines = getContractPreviewLines(section.lines);
-    let index = 0;
-    let firstChunk = true;
+  function addLine(line: ContractPreviewLineData, units: number) {
+    if (currentPage.length && currentUnits + units > maxUnits) pushPage();
+    currentPage.push(line);
+    currentUnits += units;
+  }
 
-    while (index < lines.length) {
-      const title = firstChunk ? section.title : `${section.title} continued`;
-      const titleUnits = 4;
-      if (currentUnits + titleUnits > maxUnits && currentPage.length) pushPage();
+  contractAnnexCClauses.forEach((clause, clauseIndex) => {
+    getContractPreviewLines([`${clause.number}. ${clause.title}`]).forEach((line, lineIndex) => {
+      addLine({ kind: "heading", text: line }, lineIndex === 0 ? 2.2 : 1.6);
+    });
 
-      const availableUnits = Math.max(8, maxUnits - currentUnits - titleUnits);
-      const chunk: string[] = [];
-      let chunkUnits = 0;
+    clause.body.forEach((paragraph) => {
+      getContractPreviewLines([paragraph]).forEach((line) => {
+        addLine(
+          { kind: "body", text: line },
+          Math.max(1, getContractPreviewLineUnits(line) * 0.9)
+        );
+      });
+    });
 
-      while (index < lines.length) {
-        const lineUnits = getContractPreviewLineUnits(lines[index]);
-        if (chunk.length && chunkUnits + lineUnits > availableUnits) break;
-        chunk.push(lines[index]);
-        chunkUnits += lineUnits;
-        index += 1;
-      }
-
-      currentPage.push({ title, lines: chunk });
-      currentUnits += titleUnits + chunkUnits;
-      firstChunk = false;
-
-      if (currentUnits >= maxUnits - 3) pushPage();
+    if (clauseIndex < contractAnnexCClauses.length - 1) {
+      addLine({ kind: "space", text: "" }, 0.9);
     }
   });
 
@@ -4524,10 +4534,14 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
   const specialConditionPages = annexB ? getContractSpecialConditionPreviewPages(draft.specialConditions) : [];
   const annexBPageCount = annexB ? specialConditionPages.length : 0;
-  const annexCPages = annexC ? getContractBodyPreviewPages([annexC], 34) : [];
-  const previewPages: Array<{ blocks: ContractPreviewBlockData[]; subtitle?: string }> = [
-    ...annexCPages.map((blocks, index) => ({
-      blocks,
+  const annexCPages = annexC ? getContractAnnexCPreviewPages() : [];
+  const previewPages: Array<{
+    blocks?: ContractPreviewBlockData[];
+    annexCLines?: ContractPreviewLineData[];
+    subtitle?: string;
+  }> = [
+    ...annexCPages.map((lines, index) => ({
+      annexCLines: lines,
       subtitle: index === 0 ? "ANNEX C - GENERAL TERMS & CONDITIONS" : undefined,
     })),
     ...(annexD
@@ -4630,11 +4644,15 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
           subtitle={page.subtitle}
           scale={pageScale}
         >
-          <div className="space-y-6">
-            {page.blocks.map((block) => (
-              <ContractPreviewBlockCard key={`${block.title}-${block.lines.join("|")}`} block={block} />
-            ))}
-          </div>
+          {page.annexCLines ? (
+            <ContractAnnexCPreviewText lines={page.annexCLines} />
+          ) : (
+            <div className="space-y-6">
+              {(page.blocks || []).map((block) => (
+                <ContractPreviewBlockCard key={`${block.title}-${block.lines.join("|")}`} block={block} />
+              ))}
+            </div>
+          )}
         </ContractPreviewPage>
       ))}
     </div>
@@ -4845,6 +4863,40 @@ function ContractPreviewBlockCard({ block }: { block: ContractPreviewBlockData }
           )
         )}
       </div>
+    </section>
+  );
+}
+
+function ContractAnnexCPreviewText({ lines }: { lines: ContractPreviewLineData[] }) {
+  return (
+    <section className="px-1 text-[#17233a]">
+      {lines.map((line, index) => {
+        if (line.kind === "space") {
+          return <div key={`annex-c-space-${index}`} className="h-2" />;
+        }
+
+        if (line.kind === "heading") {
+          return (
+            <p
+              key={`annex-c-heading-${index}`}
+              className={`font-serif text-[12px] font-black uppercase leading-snug tracking-[0.035em] text-[#082759] ${
+                index ? "mt-2.5" : ""
+              }`}
+            >
+              {line.text}
+            </p>
+          );
+        }
+
+        return (
+          <p
+            key={`annex-c-body-${index}`}
+            className="mt-1 text-[10.7px] font-semibold leading-[1.52] text-[#28384a]"
+          >
+            {line.text}
+          </p>
+        );
+      })}
     </section>
   );
 }
