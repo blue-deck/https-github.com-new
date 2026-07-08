@@ -3,6 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { contractAnnexCClauses, getContractAnnexCLines } from "../../../lib/contractAnnexC";
 import {
   Anchor,
   Archive,
@@ -649,8 +650,8 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
       ],
     },
     {
-      title: "Annex C - General Terms",
-      lines: [contractValue(draft.clauses, "[CONTRACT CLAUSES]")],
+      title: "Annex C - General Terms & Conditions",
+      lines: getContractAnnexCLines(),
     },
     {
       title: "Annex D - Declaration and Signatures",
@@ -721,6 +722,7 @@ export default function CrewPage({
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
   const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
+  const [openAnnexCClause, setOpenAnnexCClause] = useState<string | null>(contractAnnexCClauses[0]?.number || null);
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
@@ -1475,7 +1477,7 @@ export default function CrewPage({
         }
 
         if (section.title.startsWith("Annex C")) {
-          drawFlowingSection(section, "ANNEX C - GENERAL TERMS");
+          drawFlowingSection(section, "ANNEX C - GENERAL TERMS & CONDITIONS");
           return;
         }
 
@@ -2899,18 +2901,60 @@ export default function CrewPage({
               {contractStep === "clauses" && (
                 <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
                   <ContractPanelTitle
-                    eyebrow="Contract clauses"
-                    title="Main agreement text"
-                    text="Add the clauses you want the crew member to review before signing."
+                    eyebrow="Annex C"
+                    title="General terms and conditions"
+                    text="Fixed agreement clauses are grouped below. Open a clause to review the complete legal text."
                   />
-                  <ContractArea
-                    className="mt-5"
-                    label="Clauses"
-                    value={contractDraft.clauses}
-                    onChange={(value) => updateContractDraft("clauses", value)}
-                    rows={12}
-                    placeholder="Write contract clauses here..."
-                  />
+                  <div className="mt-5 space-y-3">
+                    {contractAnnexCClauses.map((clause) => {
+                      const isOpen = openAnnexCClause === clause.number;
+
+                      return (
+                        <div
+                          key={clause.number}
+                          className={`overflow-hidden rounded-[24px] border shadow-sm transition ${
+                            isOpen
+                              ? "border-[#6ed7e8] bg-[#f6fcff]"
+                              : "border-[#d9e8f3] bg-white hover:border-[#9bdce9]"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            className="flex w-full items-center gap-4 px-4 py-4 text-left"
+                            onClick={() => setOpenAnnexCClause(isOpen ? null : clause.number)}
+                            aria-expanded={isOpen}
+                          >
+                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071631] text-sm font-black tracking-[0.08em] text-white">
+                              {clause.number.padStart(2, "0")}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#1f8397]">
+                                General term
+                              </span>
+                              <span className="mt-1 block text-base font-black uppercase tracking-[0.04em] text-[#071631]">
+                                {clause.title}
+                              </span>
+                            </span>
+                            <ChevronDown
+                              className={`h-5 w-5 shrink-0 text-[#1f8397] transition ${isOpen ? "rotate-180" : ""}`}
+                            />
+                          </button>
+
+                          {isOpen && (
+                            <div className="border-t border-[#d9e8f3] bg-white px-4 py-4">
+                              <div className="rounded-[20px] border border-[#d9e8f3] bg-[#f8fbff] p-4 text-sm leading-7 text-[#314357]">
+                                {clause.body.map((paragraph, paragraphIndex) => (
+                                  <p key={`${clause.number}-${paragraphIndex}`} className={paragraphIndex ? "mt-3" : ""}>
+                                    {paragraph}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -4484,7 +4528,7 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
   const previewPages: Array<{ blocks: ContractPreviewBlockData[]; subtitle?: string }> = [
     ...annexCPages.map((blocks, index) => ({
       blocks,
-      subtitle: index === 0 ? "ANNEX C - GENERAL TERMS" : undefined,
+      subtitle: index === 0 ? "ANNEX C - GENERAL TERMS & CONDITIONS" : undefined,
     })),
     ...(annexD
       ? [
