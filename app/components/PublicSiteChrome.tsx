@@ -59,7 +59,7 @@ export function PublicHeader() {
         <BlueDeckLogoLink
           href="/"
           priority
-          className="h-14 w-44 shrink-0 sm:h-[76px] sm:w-72 lg:w-80"
+          className="h-12 w-52 shrink-0 sm:h-14 sm:w-64 lg:w-72"
           imageClassName="object-contain p-0"
         />
 

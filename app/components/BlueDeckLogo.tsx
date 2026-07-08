@@ -33,8 +33,8 @@ export function BlueDeckLogoLink({
       <Image
         src="/bluedeck-logo-wide.png"
         alt="BlueDeck"
-        width={1672}
-        height={941}
+        width={980}
+        height={551}
         priority={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />
@@ -54,8 +54,8 @@ export function BlueDeckMark({
       <Image
         src="/bluedeck-logo-mark.png"
         alt="BlueDeck"
-        width={1672}
-        height={941}
+        width={1024}
+        height={1024}
         priority={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />

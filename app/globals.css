@@ -364,23 +364,6 @@ textarea:-webkit-autofill:focus {
   background: #ffffff;
 }
 
-.bd-yacht-sidebar {
-  background:
-    radial-gradient(circle at 50% 12%, rgba(13, 37, 79, 0.92) 0%, rgba(7, 22, 49, 0.96) 42%, rgba(4, 16, 36, 1) 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 18px 0 48px rgba(2, 8, 23, 0.22);
-}
-
-.bd-yacht-portal .bd-yacht-sidebar,
-.bd-yacht-portal .bd-yacht-sidebar :is(a, span, p, svg) {
-  color: rgba(255, 255, 255, 0.76) !important;
-}
-
-.bd-yacht-portal .bd-yacht-sidebar a[aria-current="page"],
-.bd-yacht-portal .bd-yacht-sidebar a[aria-current="page"] :is(span, svg) {
-  color: #ffffff !important;
-}
-
 .bd-yacht-portal .bd-yacht-topbar {
   position: sticky;
   top: 0;
@@ -408,7 +391,7 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-yacht-section-nav {
-  display: none;
+  display: block;
   background: #ffffff !important;
   box-shadow: 0 1px 0 rgba(7, 31, 60, 0.08) !important;
   backdrop-filter: none !important;
@@ -692,6 +675,10 @@ textarea:-webkit-autofill:focus {
   width: 100%;
 }
 
+.bd-contract-preview-card {
+  overflow: hidden;
+}
+
 .bd-contract-preview-frame {
   display: grid;
   justify-items: center;
@@ -701,6 +688,7 @@ textarea:-webkit-autofill:focus {
 
 .bd-contract-preview-page-shell {
   overflow: hidden;
+  flex: 0 0 auto;
 }
 
 .bd-contract-preview-page {

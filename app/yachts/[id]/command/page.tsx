@@ -256,9 +256,8 @@ export default function CommandCenterPage() {
           </Panel>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-4">
+        <div className="mt-8 grid gap-6 md:grid-cols-3">
           <Quick href={`/yachts/${yachtId}/map`} title="Map" />
-          <Quick href={`/yachts/${yachtId}/ai`} title="AI Brain" />
           <Quick href={`/yachts/${yachtId}/engineering`} title="Engineering" />
           <Quick href={`/yachts/${yachtId}/finance`} title="Finance" />
         </div>

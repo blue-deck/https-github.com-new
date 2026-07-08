@@ -1398,7 +1398,8 @@ export default function CrewPage({
       const right = pageWidth - 54;
       const width = right - left;
       const top = 92;
-      const bottom = pageHeight - 58;
+      const bottom = pageHeight - 52;
+      const annexCContentTop = 138;
 
       function drawSectionTitle(section: ContractDocumentSection, y: number) {
         doc.setFont("times", "bold");
@@ -1411,8 +1412,10 @@ export default function CrewPage({
 
       function getWrappedRows(section: ContractDocumentSection) {
         const rows: string[] = [];
+        const isAnnexC = section.title.startsWith("Annex C");
+        const lineWidth = isAnnexC ? pageWidth - 96 : width - 8;
         contractDisplayLines(section.lines).forEach((line) => {
-          const pieces = line ? doc.splitTextToSize(line, width - 8) : [""];
+          const pieces = line ? doc.splitTextToSize(line, lineWidth) : [""];
           pieces.forEach((piece: string) => rows.push(piece));
           rows.push("");
         });
@@ -1445,31 +1448,36 @@ export default function CrewPage({
       function drawFlowingSection(section: ContractDocumentSection, firstPageSubtitle: string) {
         doc.addPage();
         drawBodyPageHeader(firstPageSubtitle);
-        drawSectionTitle(section, top);
-        let y = top + 26;
         const isAnnexC = section.title.startsWith("Annex C");
+        if (!isAnnexC) {
+          drawSectionTitle(section, top);
+        }
+        let y = isAnnexC ? annexCContentTop : top + 26;
+        const textX = isAnnexC ? 48 : left + 4;
 
         function ensureSpace(height: number) {
           if (y + height <= bottom) return;
           doc.addPage();
-          drawBodyPageHeader();
-          drawSectionTitle(section, top);
-          y = top + 26;
+          drawBodyPageHeader(isAnnexC ? firstPageSubtitle : undefined);
+          if (!isAnnexC) {
+            drawSectionTitle(section, top);
+          }
+          y = isAnnexC ? annexCContentTop : top + 26;
         }
 
         getWrappedRows(section).forEach((row) => {
           if (row) {
             const isHeading = isAnnexC && isContractAnnexCHeading(row);
-            const headingOffset = isHeading && y > top + 28 ? 3 : 0;
-            ensureSpace((isHeading ? 15 : 12) + headingOffset);
+            const headingOffset = isHeading && y > (isAnnexC ? annexCContentTop : top + 28) ? 6 : 0;
+            ensureSpace((isHeading ? 20 : 14.5) + headingOffset);
             if (headingOffset) y += headingOffset;
             doc.setFont("helvetica", isHeading ? "bold" : "normal");
-            doc.setFontSize(isHeading ? 9.7 : 9.1);
+            doc.setFontSize(isHeading ? 11.4 : 10.2);
             setText(isHeading ? "#082759" : "#17233a");
-            doc.text(row, left + 4, y);
-            y += isHeading ? 13.2 : 11.5;
+            doc.text(row, textX, y);
+            y += isHeading ? 17.2 : 13.6;
           } else {
-            y += 5;
+            y += isAnnexC ? 7.2 : 5;
           }
         });
       }
@@ -2928,8 +2936,8 @@ export default function CrewPage({
                             onClick={() => setOpenAnnexCClause(isOpen ? null : clause.number)}
                             aria-expanded={isOpen}
                           >
-                            <span className="w-12 shrink-0 text-center text-xl font-black text-[#071631]">
-                              {clause.number}.
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#cfe2f4] bg-white text-lg font-black text-[#071631]">
+                              {clause.number}
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#1f8397]">
@@ -4449,18 +4457,18 @@ function isContractAnnexCHeading(line: string) {
 }
 
 function getContractPreviewLineUnits(line: string) {
-  return line ? Math.max(1, Math.ceil(line.length / 96)) : 1;
+  return line ? Math.max(1, Math.ceil(line.length / 82)) : 1;
 }
 
 function getContractPreviewLines(lines: string[]) {
   return contractDisplayLines(lines).flatMap((line) => {
     if (!line) return [""];
-    const chunks = line.match(/.{1,112}(?:\s|$)/g);
+    const chunks = line.match(/.{1,96}(?:\s|$)/g);
     return chunks?.map((chunk) => chunk.trim()).filter(Boolean) || [line];
   });
 }
 
-function getContractAnnexCPreviewPages(maxUnits = 47) {
+function getContractAnnexCPreviewPages(maxUnits = 31) {
   const pages: ContractPreviewLineData[][] = [];
   let currentPage: ContractPreviewLineData[] = [];
   let currentUnits = 0;
@@ -4480,20 +4488,20 @@ function getContractAnnexCPreviewPages(maxUnits = 47) {
 
   contractAnnexCClauses.forEach((clause, clauseIndex) => {
     getContractPreviewLines([`${clause.number}. ${clause.title}`]).forEach((line, lineIndex) => {
-      addLine({ kind: "heading", text: line }, lineIndex === 0 ? 2.2 : 1.6);
+      addLine({ kind: "heading", text: line }, lineIndex === 0 ? 2.8 : 2);
     });
 
     clause.body.forEach((paragraph) => {
       getContractPreviewLines([paragraph]).forEach((line) => {
         addLine(
           { kind: "body", text: line },
-          Math.max(1, getContractPreviewLineUnits(line) * 0.9)
+          Math.max(1.1, getContractPreviewLineUnits(line) * 1.05)
         );
       });
     });
 
     if (clauseIndex < contractAnnexCClauses.length - 1) {
-      addLine({ kind: "space", text: "" }, 0.9);
+      addLine({ kind: "space", text: "" }, 1.05);
     }
   });
 
@@ -4540,9 +4548,9 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
     annexCLines?: ContractPreviewLineData[];
     subtitle?: string;
   }> = [
-    ...annexCPages.map((lines, index) => ({
+    ...annexCPages.map((lines) => ({
       annexCLines: lines,
-      subtitle: index === 0 ? "ANNEX C - GENERAL TERMS & CONDITIONS" : undefined,
+      subtitle: "ANNEX C - GENERAL TERMS & CONDITIONS",
     })),
     ...(annexD
       ? [
@@ -4672,6 +4680,9 @@ function ContractPreviewPage({
   scale: number;
   children: ReactNode;
 }) {
+  const isAnnexCPage = subtitle === "ANNEX C - GENERAL TERMS & CONDITIONS";
+  const topPadding = isAnnexCPage ? "21.8%" : subtitle ? "13.8%" : "10.2%";
+
   return (
     <div
       className="bd-contract-preview-page-shell mx-auto max-w-full"
@@ -4681,12 +4692,11 @@ function ContractPreviewPage({
       }}
     >
       <div
-        className={`bd-contract-preview-page relative overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8 ${
-          subtitle ? "pt-[13.8%]" : "pt-[10.2%]"
-        }`}
+        className="bd-contract-preview-page relative overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8"
         style={{
           width: CONTRACT_PREVIEW_PAGE_WIDTH,
           height: CONTRACT_PREVIEW_PAGE_HEIGHT,
+          paddingTop: topPadding,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
         }}
@@ -4872,15 +4882,15 @@ function ContractAnnexCPreviewText({ lines }: { lines: ContractPreviewLineData[]
     <section className="px-1 text-[#17233a]">
       {lines.map((line, index) => {
         if (line.kind === "space") {
-          return <div key={`annex-c-space-${index}`} className="h-2" />;
+          return <div key={`annex-c-space-${index}`} className="h-3" />;
         }
 
         if (line.kind === "heading") {
           return (
             <p
               key={`annex-c-heading-${index}`}
-              className={`font-serif text-[12px] font-black uppercase leading-snug tracking-[0.035em] text-[#082759] ${
-                index ? "mt-2.5" : ""
+              className={`font-serif text-[15.5px] font-black uppercase leading-[1.32] tracking-[0.035em] text-[#082759] ${
+                index ? "mt-3" : ""
               }`}
             >
               {line.text}
@@ -4891,7 +4901,7 @@ function ContractAnnexCPreviewText({ lines }: { lines: ContractPreviewLineData[]
         return (
           <p
             key={`annex-c-body-${index}`}
-            className="mt-1 text-[10.7px] font-semibold leading-[1.52] text-[#28384a]"
+            className="mt-1.5 text-[13px] font-semibold leading-[1.62] text-[#1f2f43]"
           >
             {line.text}
           </p>

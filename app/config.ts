@@ -18,7 +18,6 @@ export const BLUEDECK = {
     gps: "Browser GPS active",
     ais: "AIS provider ready",
     weather: "Open-Meteo ready",
-    notifications: "Supabase realtime ready",
     starlink: "Future integration",
     nmea: "Future integration",
   },

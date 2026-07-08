@@ -4,9 +4,9 @@ import { LanguageProvider } from "./components/LanguageProvider";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
-const faviconVersion = "20260707-3";
-const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-favicon.png`;
-const bluedeckSearchIconUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
+const faviconVersion = "20260708-10";
+const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png?v=${faviconVersion}`;
+const bluedeckSearchIconUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png?v=${faviconVersion}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(BLUEDECK_SITE_URL),
@@ -15,14 +15,17 @@ export const metadata: Metadata = {
   description:
     "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",
   manifest: `/manifest.json?v=${faviconVersion}`,
+  alternates: {
+    canonical: "/",
+  },
   icons: {
     icon: [
-      { url: `/bluedeck-search-icon.png?v=${faviconVersion}`, sizes: "96x96", type: "image/png" },
       { url: `/favicon.ico?v=${faviconVersion}`, sizes: "any" },
       { url: `/favicon-16x16.png?v=${faviconVersion}`, sizes: "16x16", type: "image/png" },
       { url: `/favicon-32x32.png?v=${faviconVersion}`, sizes: "32x32", type: "image/png" },
       { url: `/favicon-48x48.png?v=${faviconVersion}`, sizes: "48x48", type: "image/png" },
       { url: `/favicon-96x96.png?v=${faviconVersion}`, sizes: "96x96", type: "image/png" },
+      { url: `/bluedeck-search-icon.png?v=${faviconVersion}`, sizes: "512x512", type: "image/png" },
       { url: `/favicon-192x192.png?v=${faviconVersion}`, sizes: "192x192", type: "image/png" },
       { url: `/android-chrome-192x192.png?v=${faviconVersion}`, sizes: "192x192", type: "image/png" },
       { url: `/bluedeck-favicon.png?v=${faviconVersion}`, sizes: "512x512", type: "image/png" },
@@ -53,8 +56,23 @@ export const metadata: Metadata = {
     title: "BlueDeck Yacht Management",
     description:
       "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
+    url: BLUEDECK_SITE_URL,
     siteName: "BlueDeck",
-    images: ["/bluedeck-ocean-hero.png"],
+    images: [
+      {
+        url: bluedeckSearchIconUrl,
+        width: 512,
+        height: 512,
+        alt: "BlueDeck",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "BlueDeck Yacht Management",
+    description:
+      "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
+    images: [bluedeckSearchIconUrl],
   },
   other: {
     "mobile-web-app-capable": "yes",

@@ -496,9 +496,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "BlueDeck Navigation": {
     "tr": "BlueDeck Navigasyonu",
   },
-  "BlueDeck Notifications": {
-    "tr": "BlueDeck Bildirimleri",
-  },
   "BlueDeck Official Records": {
     "tr": "BlueDeck Resmi Kayıtları",
   },
@@ -1252,9 +1249,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Delete logbook entry?": {
     "tr": "Kayıt defteri girişi silinsin mi?",
   },
-  "Delete notification?": {
-    "tr": "Bildirim silinsin mi?",
-  },
   "Delete this document?": {
     "tr": "Bu doküman silinsin mi?",
   },
@@ -1803,9 +1797,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Generate operational alerts from pending tasks and expiry warnings.": {
     "tr": "Bekleyen görevlerden ve sona erme uyarılarından operasyonel uyarılar oluşturun.",
-  },
-  "Generate Smart Notifications": {
-    "tr": "Akıllı Bildirimler Oluşturun",
   },
   "Generated:": {
     "tr": "Oluşturuldu:",
@@ -2815,12 +2806,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "No major operational warnings detected.": {
     "tr": "Önemli bir operasyonel uyarı algılanmadı.",
   },
-  "No notifications yet.": {
-    "tr": "Henüz bildirim yok.",
-  },
-  "No notifications yet. Click Generate Smart Notifications.": {
-    "tr": "Henüz bildirim yok. Akıllı Bildirimler Oluştur'a tıklayın.",
-  },
   "No owner-level alert": {
     "tr": "Sahip düzeyinde uyarı yok",
   },
@@ -2871,15 +2856,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Notice board or duty list updated": {
     "tr": "Duyuru panosu veya görev listesi güncellendi",
-  },
-  "Notification Center": {
-    "tr": "Bildirim Merkezi",
-  },
-  "Notifications": {
-    "tr": "Bildirimler",
-  },
-  "Notifications Center": {
-    "tr": "Bildirim Merkezi",
   },
   "Now": {
     "tr": "Şimdi",
@@ -2979,9 +2955,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Operational": {
     "tr": "Operasyonel",
-  },
-  "Operational notifications, alerts and yacht system messages.": {
-    "tr": "Operasyonel bildirimler, uyarılar ve yat sistemi mesajları.",
   },
   "Operational Responsibility": {
     "tr": "Operasyonel Sorumluluk",
@@ -3433,9 +3406,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Realtime": {
     "tr": "Gerçek zamanlı",
   },
-  "Realtime operational notifications from crew tasks, engineering, expiry alerts, voyage risk and yacht events.": {
-    "tr": "Mürettebat görevleri, mühendislik, süre sonu uyarıları, yolculuk riski ve yat olaylarından gerçek zamanlı operasyonel bildirimler.",
-  },
   "Receipts matched to expenses": {
     "tr": "Giderlerle eşleşen makbuzlar",
   },
@@ -3856,9 +3826,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Skills & characteristics": {
     "tr": "Beceriler ve özellikler",
   },
-  "Smart Notifications": {
-    "tr": "Akıllı Bildirimler",
-  },
   "Smoker": {
     "tr": "Sigara içen",
   },
@@ -4167,9 +4134,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "This page is not available.": {
     "tr": "Bu sayfa mevcut değil.",
-  },
-  "This page listens for new notifications and updates automatically.": {
-    "tr": "Bu sayfa yeni bildirimleri ve güncellemeleri otomatik olarak dinler.",
   },
   "This screen shows only verified browser GPS data from the active device.": {
     "tr": "Bu ekran yalnızca etkin cihazdaki doğrulanmış tarayıcı GPS verilerini gösterir.",

@@ -675,7 +675,6 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "No active expiry pressure": { tr: "Aktif bitiş tarihi baskısı yok" },
   "Captain, crew and owner modules are connected": { tr: "Kaptan, mürettebat ve sahip modülleri bağlı" },
   "Connected Workspaces": { tr: "Bağlı Çalışma Alanları" },
-  "Notification Center": { tr: "Bildirim Merkezi" },
   "Recent Activity": { tr: "Son Aktivite" },
   "Yacht Log": { tr: "Yat Günlüğü" },
   "No activity yet. Start by inviting crew or assigning a checklist.": {
@@ -740,25 +739,14 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Selected file": { tr: "Seçilen dosya" },
   "Open": { tr: "Aç" },
   "Delete": { tr: "Sil" },
-  "BlueDeck Realtime System": { tr: "BlueDeck Gerçek Zamanlı Sistem" },
-  "Realtime operational notifications from crew tasks, engineering, expiry alerts, voyage risk and yacht events.": {
-    tr: "Mürettebat görevleri, mühendislik, bitiş uyarıları, seyir riski ve yat olaylarından gerçek zamanlı operasyon bildirimleri.",
-  },
-  "Generate Smart Notifications": { tr: "Akıllı Bildirim Oluştur" },
   "Generating...": { tr: "Oluşturuluyor..." },
   "Total": { tr: "Toplam" },
   "Unread": { tr: "Okunmamış" },
   "Live Feed": { tr: "Canlı Akış" },
   "Realtime": { tr: "Gerçek Zamanlı" },
   "Connected": { tr: "Bağlı" },
-  "This page listens for new notifications and updates automatically.": {
-    tr: "Bu sayfa yeni bildirimleri dinler ve otomatik güncellenir.",
-  },
   "Mark Read": { tr: "Okundu Yap" },
   "Resolve": { tr: "Çöz" },
-  "No notifications yet. Click Generate Smart Notifications.": {
-    tr: "Henüz bildirim yok. Akıllı Bildirim Oluştur'a tıklayın.",
-  },
   "MMSI number (9 digits)": {
     tr: "MMSI numarası (9 hane)",
   },

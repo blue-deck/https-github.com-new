@@ -426,16 +426,7 @@ export default function YachtDashboard() {
         </section>
 
         <section className="mt-10">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <p className="bd-kicker">Connected Workspaces</p>
-            <Link
-              href={`/yachts/${yachtId}/notification-center`}
-              className="bd-focus inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-800 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
-            >
-              Notification Center
-              <ChevronRight className="h-4 w-4" />
-            </Link>
-          </div>
+          <p className="bd-kicker">Connected Workspaces</p>
 
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {modules.map((module) => (
