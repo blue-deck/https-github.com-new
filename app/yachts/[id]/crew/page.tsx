@@ -396,6 +396,16 @@ function contractDisplayLines(lines: string[]) {
   return lines.flatMap((line) => (line ? line.split("\n") : [""]));
 }
 
+function splitContractSubclausePrefix(text: string) {
+  const match = text.match(/^(\d+(?:\.\d+)+)(?=\s)/);
+  if (!match) return null;
+
+  return {
+    prefix: match[1],
+    remainder: text.slice(match[1].length),
+  };
+}
+
 function normalizeInitialContractInput(value: string, previousValue = "") {
   if (!value || previousValue.trim()) return value;
 
@@ -1399,7 +1409,7 @@ export default function CrewPage({
       const width = right - left;
       const top = 92;
       const bottom = pageHeight - 52;
-      const annexCContentTop = 88;
+      const annexCContentTop = 96;
 
       function drawSectionTitle(section: ContractDocumentSection, y: number) {
         doc.setFont("times", "bold");
@@ -1501,7 +1511,16 @@ export default function CrewPage({
             doc.setFont(isAnnexC ? "times" : "helvetica", isHeading ? "bold" : "normal");
             doc.setFontSize(isAnnexC ? (isHeading ? 11.2 : 9.9) : 9.2);
             setText(isHeading ? "#082759" : "#17233a");
-            doc.text(row.text, textX, y);
+            const subclause = isAnnexC && !isHeading ? splitContractSubclausePrefix(row.text) : null;
+            if (subclause) {
+              doc.setFont("times", "bold");
+              doc.text(subclause.prefix, textX, y);
+              const prefixWidth = doc.getTextWidth(subclause.prefix);
+              doc.setFont("times", "normal");
+              doc.text(subclause.remainder, textX + prefixWidth, y);
+            } else {
+              doc.text(row.text, textX, y);
+            }
             y += isAnnexC ? (isHeading ? 14.6 : 11.6) : 12;
           } else {
             y += isAnnexC ? 3.3 : 5;
@@ -4475,18 +4494,18 @@ type ContractPreviewLineData = {
 };
 
 function getContractPreviewLineUnits(line: string) {
-  return line ? Math.max(1, Math.ceil(line.length / 118)) : 1;
+  return line ? Math.max(1, Math.ceil(line.length / 82)) : 1;
 }
 
 function getContractPreviewLines(lines: string[]) {
   return contractDisplayLines(lines).flatMap((line) => {
     if (!line) return [""];
-    const chunks = line.match(/.{1,116}(?:\s|$)/g);
+    const chunks = line.match(/.{1,82}(?:\s|$)/g);
     return chunks?.map((chunk) => chunk.trim()).filter(Boolean) || [line];
   });
 }
 
-function getContractAnnexCPreviewPages(maxUnits = 43) {
+function getContractAnnexCPreviewPages(maxUnits = 42) {
   const pages: ContractPreviewLineData[][] = [];
   let currentPage: ContractPreviewLineData[] = [];
   let currentUnits = 0;
@@ -4699,7 +4718,7 @@ function ContractPreviewPage({
   children: ReactNode;
 }) {
   const isAnnexCPage = subtitle === "ANNEX C - GENERAL TERMS & CONDITIONS";
-  const topPadding = isAnnexCPage ? "9.2%" : subtitle ? "13.8%" : "10.2%";
+  const contentTop = isAnnexCPage ? "12.4%" : subtitle ? "13.8%" : "10.2%";
 
   return (
     <div
@@ -4710,22 +4729,21 @@ function ContractPreviewPage({
       }}
     >
       <div
-        className="bd-contract-preview-page relative overflow-hidden bg-white px-[5.2%] pb-[4.4%] shadow-sm shadow-blue-950/8"
+        className="bd-contract-preview-page relative overflow-hidden bg-white px-[5.2%] pb-[7.4%] shadow-sm shadow-blue-950/8"
         style={{
           width: CONTRACT_PREVIEW_PAGE_WIDTH,
           height: CONTRACT_PREVIEW_PAGE_HEIGHT,
-          paddingTop: topPadding,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
         }}
       >
-        <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-10 text-center">
+        <div className="absolute left-[5.2%] right-[5.2%] top-[3.2%] z-20 text-center">
           <p className="font-serif text-[24px] font-black uppercase tracking-[0.12em] text-[#082759]">
             Seafarer Employment Agreement
           </p>
           {subtitle ? <ContractAnnexSubtitle text={subtitle} /> : null}
         </div>
-        <div className="relative z-10 flex h-full flex-col">
+        <div className="relative z-10 flex h-full flex-col" style={{ paddingTop: contentTop }}>
           <div className="flex-1">{children}</div>
         </div>
         <p className="absolute bottom-[4.2%] right-[6.2%] z-10 text-xs font-black text-[#082759]">
@@ -4916,12 +4934,21 @@ function ContractAnnexCPreviewText({ lines }: { lines: ContractPreviewLineData[]
           );
         }
 
+        const subclause = splitContractSubclausePrefix(line.text);
+
         return (
           <p
             key={`annex-c-body-${index}`}
             className="mt-[3px] text-[14.2px] font-medium leading-[1.47] text-[#17233a]"
           >
-            {line.text}
+            {subclause ? (
+              <>
+                <span className="font-extrabold text-[#082759]">{subclause.prefix}</span>
+                {subclause.remainder}
+              </>
+            ) : (
+              line.text
+            )}
           </p>
         );
       })}
