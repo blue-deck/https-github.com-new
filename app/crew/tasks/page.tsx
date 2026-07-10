@@ -480,9 +480,9 @@ export default function CrewTasksPage() {
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen text-slate-900">
-      <div className="bd-ocean-content mx-auto grid max-w-7xl gap-6 px-6 py-8 lg:grid-cols-[390px_1fr]">
-        <aside className="space-y-6">
+    <main className="bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
+      <div className="bd-ocean-content bd-crew-task-content mx-auto grid w-full min-w-0 max-w-7xl gap-6 px-4 py-5 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-6">
           <div className="bd-glass-card-strong rounded-[34px] p-6">
             <div className="flex items-center gap-3">
               <Mail className="h-6 w-6 text-cyan-700" />
@@ -513,20 +513,20 @@ export default function CrewTasksPage() {
 
           {profile && (
             <div className="bd-glass-card rounded-[34px] p-6">
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
                   <UserRound className="h-8 w-8 text-cyan-700" />
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-2xl font-black">
                     {profile.full_name || "Crew Member"}
                   </h2>
-                  <p className="text-sm text-slate-500">{profile.email}</p>
+                  <p className="break-all text-sm text-slate-500">{profile.email}</p>
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <MiniStat label="Checklists" value={stats.totalLists} />
                 <MiniStat label="Progress" value={`${stats.progress}%`} />
                 <MiniStat label="Invites" value={stats.pendingInvitations} />
@@ -535,7 +535,7 @@ export default function CrewTasksPage() {
               </div>
 
               <div className="mt-6">
-                <div className="mb-2 flex justify-between text-sm text-slate-500">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
                   <span>Overall Completion</span>
                   <span>{stats.progress}%</span>
                 </div>
@@ -572,15 +572,15 @@ export default function CrewTasksPage() {
                           : "border-slate-200 bg-white/70 hover:border-white/20"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h3 className="font-black">{list.title}</h3>
+                      <div className="flex min-w-0 items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="break-words font-black">{list.title}</h3>
                           <p className="mt-1 text-xs text-slate-500">
                             {list.department} · {list.checklist_type}
                           </p>
                         </div>
 
-                        <ChevronRight className="h-5 w-5 text-slate-500" />
+                        <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
                       </div>
 
                       <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
@@ -597,16 +597,16 @@ export default function CrewTasksPage() {
           )}
         </aside>
 
-        <section className="space-y-6">
-          <div className="bd-glass-card-strong rounded-[40px] p-8">
+        <section className="min-w-0 space-y-6">
+          <div className="bd-glass-card-strong rounded-[40px] p-5 sm:p-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-              <div>
+              <div className="min-w-0">
                 <p className="flex items-center gap-2 text-cyan-700">
                   <Sparkles className="h-5 w-5" />
                   Crew Work Center
                 </p>
 
-                <h2 className="bd-serif mt-3 text-5xl font-normal tracking-tight text-[#071f3c]">
+                <h2 className="bd-serif mt-3 break-words text-4xl font-normal tracking-tight text-[#071f3c] sm:text-5xl">
                   My YachtOS Work Center
                 </h2>
 
@@ -617,7 +617,7 @@ export default function CrewTasksPage() {
                 </p>
               </div>
 
-              <div className="rounded-[30px] border border-slate-200 bg-white/70 p-5 text-center">
+              <div className="w-full rounded-[30px] border border-slate-200 bg-white/70 p-5 text-center sm:w-auto">
                 <p className="text-sm text-slate-500">Overall Progress</p>
                 <h3 className="mt-2 text-5xl font-black text-cyan-700">
                   {stats.progress}%
@@ -716,13 +716,13 @@ export default function CrewTasksPage() {
           )}
 
           {activeChecklist && (
-            <div className="bd-glass-card-strong rounded-[40px] p-8">
+            <div className="bd-glass-card-strong min-w-0 rounded-[40px] p-5 sm:p-8">
               <div className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 md:flex-row md:items-center">
-                <div>
+                <div className="min-w-0">
                   <p className="text-cyan-700">
                     {activeChecklist.department} · {activeChecklist.checklist_type}
                   </p>
-                  <h2 className="mt-2 text-4xl font-black">
+                  <h2 className="mt-2 break-words text-3xl font-black sm:text-4xl">
                     {activeChecklist.title}
                   </h2>
                   {getCaptainNote(activeChecklist) && (

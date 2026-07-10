@@ -126,7 +126,7 @@ export default function YachtsPage() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-[390px_1fr]">
+        <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)]">
           <div className="bd-glass-card rounded-[28px] p-6">
             <h2 className="text-2xl font-semibold text-slate-950">Add Yacht</h2>
 

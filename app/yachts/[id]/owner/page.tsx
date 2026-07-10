@@ -198,7 +198,7 @@ export default function OwnerPage() {
         <section className="relative overflow-hidden rounded-[38px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8 lg:p-10">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#d6a84f,#ef776f)]" />
 
-          <div className="grid gap-8 xl:grid-cols-[1fr_0.82fr]">
+          <div className="grid min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.82fr)]">
             <div>
               <p className="bd-kicker">Owner Experience</p>
               <h1 className="mt-4 max-w-3xl text-5xl font-black leading-[0.95] text-slate-950 sm:text-7xl">
@@ -271,7 +271,7 @@ export default function OwnerPage() {
           ))}
         </section>
 
-        <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+        <section className="mt-8 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)]">
           <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
             <div className="flex items-center justify-between gap-4">
               <div>

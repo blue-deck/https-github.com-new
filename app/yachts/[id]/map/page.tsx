@@ -114,7 +114,7 @@ export default function YachtMapPage() {
           <Stat title="Mode" value={latest?.operational_mode || "-"} />
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-[420px_1fr]">
+        <div className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
             <h2 className="text-3xl font-bold">Update Position</h2>
 

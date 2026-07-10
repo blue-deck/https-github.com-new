@@ -161,7 +161,7 @@ export default function BlueDeckOSV2Page() {
           <Stat title="Recorded Cost" value={`€${stats.cost.toFixed(0)}`} />
         </div>
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-[430px_1fr]">
+        <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,430px)_minmax(0,1fr)]">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Create OS Item</h2>
 

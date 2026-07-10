@@ -192,7 +192,7 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        <div className="mt-8 grid gap-8 md:grid-cols-[420px_1fr]">
+        <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           <div className="rounded-3xl bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Upload Document</h2>
 

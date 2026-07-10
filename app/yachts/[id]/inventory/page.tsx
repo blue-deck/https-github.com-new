@@ -95,7 +95,7 @@ export default function InventoryPage() {
         </div>
 
         <div className="mb-8 rounded-[32px] border border-white/10 bg-white/5 p-6">
-          <div className="grid gap-4 md:grid-cols-[1.2fr_0.5fr_1fr_auto]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.5fr)_minmax(0,1fr)_auto]">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="rounded-2xl bg-white/10 p-4 text-white outline-none placeholder:text-white/45" />
             <input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" inputMode="numeric" className="rounded-2xl bg-white/10 p-4 text-white outline-none placeholder:text-white/45" />
             <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Location" className="rounded-2xl bg-white/10 p-4 text-white outline-none placeholder:text-white/45" />

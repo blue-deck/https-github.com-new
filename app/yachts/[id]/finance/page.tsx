@@ -140,7 +140,7 @@ export default function FinancePage() {
           <Stat title="Fuel Loaded" value={`${stats.liters.toFixed(0)} L`} />
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr_390px]">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,390px)]">
           <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
             <div className="flex items-center justify-between gap-4">
               <div>

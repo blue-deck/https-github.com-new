@@ -2268,12 +2268,12 @@ export default function CrewPage({
   }
 
   return (
-    <main className="bd-crew-command-page min-h-screen bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
-      <div className="mx-auto max-w-[1700px]">
+    <main className="bd-crew-command-page min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
+      <div className="mx-auto w-full min-w-0 max-w-[1700px]">
         <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
-          <div className={isChecklistSystem ? "grid gap-6 p-5 sm:p-8 xl:grid-cols-[1.15fr_0.85fr]" : "p-5 sm:p-10"}>
-            <div>
+          <div className={isChecklistSystem ? "grid min-w-0 gap-6 p-5 sm:p-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]" : "p-5 sm:p-10"}>
+            <div className="min-w-0">
               <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
                 {isChecklistSystem ? "BlueDeck ChecklistOS" : "BlueDeck CrewOS"}
               </p>
@@ -2320,7 +2320,7 @@ export default function CrewPage({
 
         {!isChecklistSystem && (
           <section className="mb-8 rounded-[32px] border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_54%,#eefcff_100%)] p-5 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px] sm:p-7">
-            <div className="grid gap-5 lg:grid-cols-[minmax(320px,0.95fr)_minmax(360px,1.05fr)]">
+            <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
                   <div className="rounded-[28px] border border-white bg-white/88 p-5 shadow-xl shadow-cyan-950/6">
                     <div className="flex items-center gap-4">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
@@ -3011,7 +3011,7 @@ export default function CrewPage({
         )}
 
         {isChecklistSystem && (
-          <section className="mb-6 grid gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-2 sm:rounded-[36px] sm:p-4 xl:grid-cols-3">
+          <section className="mb-6 grid min-w-0 gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:grid-cols-2 sm:rounded-[36px] sm:p-4 xl:grid-cols-3">
             <ChecklistSectionButton
               active={checklistSection === "builder"}
               icon={<Send className="h-5 w-5" />}
@@ -3040,9 +3040,9 @@ export default function CrewPage({
         )}
 
         {isChecklistSystem && checklistSection === "builder" && (
-          <section className="mb-8 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
-            <div className="grid gap-0 lg:grid-cols-[0.42fr_0.58fr]">
-              <div className="relative overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_62%,#0f5663_100%)] p-6 text-white sm:p-8">
+          <section className="mb-8 min-w-0 overflow-hidden rounded-[32px] border border-cyan-100 bg-white/92 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px]">
+            <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
+              <div className="relative min-w-0 overflow-hidden bg-[linear-gradient(135deg,#071827_0%,#0d3143_62%,#0f5663_100%)] p-6 text-white sm:p-8">
                 <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-cyan-300/12 blur-3xl" />
                 <p className="relative text-xs font-black uppercase tracking-[0.22em] text-cyan-200">
                   Ready Checklist Library
@@ -3062,7 +3062,7 @@ export default function CrewPage({
                 </div>
               </div>
 
-              <div className="grid gap-3 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_52%,#fff8ea_100%)] p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+              <div className="grid min-w-0 gap-3 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_52%,#fff8ea_100%)] p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
                 {checklistLibraryPacks.map((pack, index) => {
                   const active = activeChecklistPack === pack.id;
                   const authorizedCount = pack.templateIds.filter((id) => authorizedTemplateIds.has(id)).length;
@@ -3119,8 +3119,8 @@ export default function CrewPage({
         )}
 
         {(!isChecklistSystem || checklistSection === "builder") && (
-        <div className={isChecklistSystem ? "grid gap-6 xl:grid-cols-[420px_1fr] xl:gap-8" : "space-y-6 xl:space-y-8"}>
-          <div className={isChecklistSystem ? "space-y-6 xl:space-y-8" : "hidden"}>
+        <div className={isChecklistSystem ? "grid min-w-0 gap-6 xl:grid-cols-[minmax(0,390px)_minmax(0,1fr)] xl:gap-8" : "space-y-6 xl:space-y-8"}>
+          <div className={isChecklistSystem ? "min-w-0 space-y-6 xl:space-y-8" : "hidden"}>
             {isChecklistSystem && (
             <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
               <div className="bg-[linear-gradient(135deg,#071827_0%,#0d3143_100%)] p-5 text-white sm:p-7">
@@ -3599,7 +3599,7 @@ export default function CrewPage({
             )}
           </div>
 
-          <div className="space-y-6 xl:space-y-8">
+          <div className="min-w-0 space-y-6 xl:space-y-8">
             {!isChecklistSystem && (
               <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
                 <div className="flex items-start justify-between gap-4">
@@ -3644,11 +3644,11 @@ export default function CrewPage({
             )}
 
             {isChecklistSystem && (
-            <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
+            <div className="min-w-0 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
               <div className="flex flex-wrap items-start justify-between gap-5">
-                <div className="flex items-start gap-4">
+                <div className="flex min-w-0 items-start gap-4">
                   <DepartmentIcon department="Command" />
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
                       Professional Yacht Library
                     </p>
@@ -3672,20 +3672,20 @@ export default function CrewPage({
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-2 overflow-x-auto rounded-[28px] border border-slate-200 bg-slate-50/80 p-2">
+              <div className="mt-6 grid min-w-0 grid-cols-1 gap-2 rounded-[28px] border border-slate-200 bg-slate-50/80 p-2 min-[480px]:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4">
                 {checklistLibraryPacks.map((pack) => (
                   <button
                     key={pack.id}
                     type="button"
                     onClick={() => openChecklistPack(pack.id)}
-                    className={`bd-focus flex shrink-0 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-black transition ${
+                    className={`bd-focus flex min-w-0 items-center gap-2 rounded-2xl px-4 py-3 text-left text-sm font-black transition ${
                       activeChecklistPack === pack.id
                         ? "bg-slate-950 text-white shadow-lg shadow-slate-950/12"
                         : "bg-white text-slate-600 hover:bg-cyan-50 hover:text-cyan-900"
                     }`}
                   >
-                    <PackIcon packId={pack.id} />
-                    {pack.title}
+                    <span className="shrink-0"><PackIcon packId={pack.id} /></span>
+                    <span className="min-w-0 truncate">{pack.title}</span>
                   </button>
                 ))}
               </div>
@@ -3711,20 +3711,20 @@ export default function CrewPage({
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:mt-6 lg:grid-cols-[1.2fr_0.9fr_0.9fr] lg:gap-4">
-                <label className="relative block">
+              <div className="mt-5 grid min-w-0 gap-3 sm:mt-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] lg:gap-4">
+                <label className="relative block min-w-0">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-700" />
                   <input
                     value={templateSearch}
                     onChange={(event) => setTemplateSearch(event.target.value)}
                     placeholder="Search checklist, task or department"
-                    className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-5 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                    className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-5 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                   />
                 </label>
                 <select
                   value={templateDepartmentFilter}
                   onChange={(event) => setTemplateDepartmentFilter(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                  className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
                 >
                   <option value="All">All departments</option>
                   {yachtDepartments.map((item) => (
@@ -3736,7 +3736,7 @@ export default function CrewPage({
                 <select
                   value={templateFrequencyFilter}
                   onChange={(event) => setTemplateFrequencyFilter(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                  className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
                 >
                   <option value="All">All frequencies</option>
                   {checklistFrequencies
@@ -3779,7 +3779,7 @@ export default function CrewPage({
                 </span>
               </div>
 
-              <div className="mt-6 grid gap-4 sm:mt-8 md:grid-cols-2 2xl:grid-cols-3">
+              <div className="mt-6 grid min-w-0 gap-4 sm:mt-8 md:grid-cols-2 2xl:grid-cols-3">
                 {visibleTemplates.map((template) => {
                   const selected = selectedTemplates.includes(template.id);
                   const authorized = authorizedTemplateIds.has(template.id);
@@ -3790,7 +3790,7 @@ export default function CrewPage({
                   return (
                     <article
                       key={template.id}
-                      className={`bd-checklist-template-card rounded-[24px] border p-4 text-left transition sm:rounded-[28px] sm:p-5 ${
+                      className={`bd-checklist-template-card min-w-0 rounded-[24px] border p-4 text-left transition sm:rounded-[28px] sm:p-5 ${
                         selected
                           ? "border-cyan-400 bg-cyan-50 shadow-[0_18px_50px_rgba(8,145,178,0.12)]"
                           : "border-slate-200 bg-white hover:border-cyan-300 hover:shadow-xl hover:shadow-cyan-950/10"
@@ -4002,7 +4002,7 @@ export default function CrewPage({
                       className="bd-focus block w-full p-5 text-left sm:p-6"
                       aria-expanded={expanded}
                     >
-                      <div className="grid gap-5 xl:grid-cols-[1fr_220px] xl:items-center">
+                      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_220px] xl:items-center">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${getStatusBadgeClass(item.status)}`}>
@@ -4116,8 +4116,8 @@ export default function CrewPage({
         )}
 
         {isChecklistSystem && checklistSection === "archive" && (
-          <section className="overflow-hidden rounded-[34px] border border-slate-200 bg-white/90 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px]">
-            <div className="grid gap-0 xl:grid-cols-[0.38fr_0.62fr]">
+          <section className="min-w-0 overflow-hidden rounded-[34px] border border-slate-200 bg-white/90 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px]">
+            <div className="grid min-w-0 gap-0 xl:grid-cols-[minmax(0,0.38fr)_minmax(0,0.62fr)]">
               <div className="bg-[linear-gradient(135deg,#071827_0%,#0c3040_70%,#135e68_100%)] p-6 text-white sm:p-8">
                 <p className="font-black uppercase tracking-[0.2em] text-cyan-200">
                   6-Month Record Vault

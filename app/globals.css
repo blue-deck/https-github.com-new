@@ -414,6 +414,27 @@ textarea:-webkit-autofill:focus {
 .bd-ocean-content {
   position: relative;
   z-index: 1;
+  min-width: 0;
+}
+
+.bd-ocean-shell,
+.bd-crew-command-page,
+.bd-crew-command-page > div,
+.bd-crew-command-page section,
+.bd-crew-command-page article,
+.bd-crew-command-page form,
+.bd-crew-command-page label {
+  min-width: 0;
+}
+
+.bd-crew-command-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.bd-crew-command-page :is(h1, h2, h3, h4, p) {
+  overflow-wrap: anywhere;
 }
 
 .bd-home-header {
@@ -974,6 +995,24 @@ textarea:-webkit-autofill:focus {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
     padding-bottom: 2.5rem !important;
+  }
+
+  .bd-crew-task-content {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 1rem !important;
+  }
+
+  .bd-crew-task-content > :is(aside, section),
+  .bd-crew-command-page :is(.grid, .flex) > * {
+    min-width: 0;
+  }
+
+  .bd-crew-command-page {
+    padding: 1rem !important;
+  }
+
+  .bd-crew-command-page .bd-checklist-template-card {
+    padding: 1rem !important;
   }
 
   .bd-contract-preview-card {

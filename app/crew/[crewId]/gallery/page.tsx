@@ -90,7 +90,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
           </div>
         </header>
 
-        <div className="grid gap-0 lg:grid-cols-[300px_1fr]">
+        <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
           <aside className="border-b border-[#d8e5e9] bg-[#e8eff1] p-6 lg:border-b-0 lg:border-r">
             <div className="space-y-5">
               <div>
