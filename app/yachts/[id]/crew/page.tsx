@@ -1152,7 +1152,7 @@ export default function CrewPage({
     }
   }
 
-  async function downloadContractDraftPdf() {
+  async function downloadContractDraftPdf(mode: "download" | "preview" = "download") {
     const { jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -1557,7 +1557,12 @@ export default function CrewPage({
       drawContractPageFooter(pageNo, totalPages);
     }
 
-    doc.save(buildContractFileName(contractPreviewDraft, selectedContractMember));
+    const pdfBlob = doc.output("blob");
+    if (mode === "download") {
+      doc.save(buildContractFileName(contractPreviewDraft, selectedContractMember));
+    }
+
+    return pdfBlob;
   }
 
   function toggleProgressCard(id: string) {
@@ -3059,7 +3064,11 @@ export default function CrewPage({
                       title="Final contract draft"
                       text="Review the generated text before sending it for mobile signature."
                     />
-                    <ContractGeneratedPreview draft={contractPreviewDraft} member={selectedContractMember} />
+                    <ContractGeneratedPreview
+                      draft={contractPreviewDraft}
+                      member={selectedContractMember}
+                      createPdfBlob={() => downloadContractDraftPdf("preview")}
+                    />
                   </div>
 
                   <div className="space-y-4">
@@ -3083,7 +3092,7 @@ export default function CrewPage({
 
                     <button
                       type="button"
-                      onClick={downloadContractDraftPdf}
+                      onClick={() => void downloadContractDraftPdf()}
                       className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#5fd3e5] py-4 text-base font-black text-[#031923] shadow-lg shadow-cyan-700/20 transition hover:bg-[#84e6f3]"
                     >
                       <Download className="h-5 w-5" />
@@ -4592,9 +4601,23 @@ function getContractSpecialConditionPreviewPages(value: string) {
   return pages.length ? pages : [["-"]];
 }
 
-function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; member?: ContractCrewMember }) {
+function ContractGeneratedPreview({
+  draft,
+  member,
+  createPdfBlob,
+}: {
+  draft: ContractDraft;
+  member?: ContractCrewMember;
+  createPdfBlob: () => Promise<Blob>;
+}) {
   const previewFrameRef = useRef<HTMLDivElement | null>(null);
   const [pageScale, setPageScale] = useState(0.32);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewError, setPdfPreviewError] = useState("");
+  const [isPdfPreviewLoading, setIsPdfPreviewLoading] = useState(true);
+  const pdfGeneratorRef = useRef(createPdfBlob);
+  const activePdfPreviewUrlRef = useRef<string | null>(null);
+  const previewSourceKey = useMemo(() => JSON.stringify({ draft, member: member || null }), [draft, member]);
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
@@ -4620,6 +4643,54 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
       : []),
   ];
   const totalPages = 2 + annexBPageCount + previewPages.length;
+
+  useEffect(() => {
+    pdfGeneratorRef.current = createPdfBlob;
+  }, [createPdfBlob]);
+
+  useEffect(() => {
+    let disposed = false;
+    let generatedUrl = "";
+
+    setPdfPreviewError("");
+    setIsPdfPreviewLoading(true);
+
+    void (async () => {
+      try {
+        const pdfBlob = await pdfGeneratorRef.current();
+        generatedUrl = URL.createObjectURL(pdfBlob);
+        if (disposed) {
+          URL.revokeObjectURL(generatedUrl);
+          return;
+        }
+
+        const previousUrl = activePdfPreviewUrlRef.current;
+        activePdfPreviewUrlRef.current = generatedUrl;
+        setPdfPreviewUrl(generatedUrl);
+        generatedUrl = "";
+        if (previousUrl) URL.revokeObjectURL(previousUrl);
+      } catch (error) {
+        if (!disposed) {
+          setPdfPreviewError(error instanceof Error ? error.message : "PDF preview could not be prepared.");
+        }
+      } finally {
+        if (!disposed) setIsPdfPreviewLoading(false);
+      }
+    })();
+
+    return () => {
+      disposed = true;
+      if (generatedUrl) URL.revokeObjectURL(generatedUrl);
+    };
+  }, [previewSourceKey]);
+
+  useEffect(() => {
+    return () => {
+      if (activePdfPreviewUrlRef.current) {
+        URL.revokeObjectURL(activePdfPreviewUrlRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const node = previewFrameRef.current;
@@ -4663,8 +4734,8 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
     };
   }, []);
 
-  return (
-    <div ref={previewFrameRef} className="bd-contract-preview-frame mt-5 w-full max-w-full min-w-0 space-y-5 overflow-hidden">
+  const htmlPreviewFallback = (
+    <>
       <ContractPreviewPage pageNo={1} totalPages={totalPages} subtitle="INTRODUCTORY NOTE" scale={pageScale}>
         <ContractIntroNote />
       </ContractPreviewPage>
@@ -4721,6 +4792,34 @@ function ContractGeneratedPreview({ draft, member }: { draft: ContractDraft; mem
           )}
         </ContractPreviewPage>
       ))}
+    </>
+  );
+
+  return (
+    <div ref={previewFrameRef} className="bd-contract-preview-frame mt-5 w-full max-w-full min-w-0 space-y-5 overflow-hidden">
+      {pdfPreviewUrl && !pdfPreviewError ? (
+        <div className="w-full overflow-hidden rounded-[20px] border border-[#c4d9ee] bg-[#f4f8fc] shadow-sm shadow-blue-950/10">
+          <iframe
+            title="Exact contract PDF preview"
+            src={`${pdfPreviewUrl}#view=FitH&toolbar=0&navpanes=0`}
+            className="block h-[min(82dvh,1080px)] min-h-[620px] w-full border-0 bg-white"
+          />
+        </div>
+      ) : isPdfPreviewLoading ? (
+        <div className="flex min-h-[620px] w-full items-center justify-center rounded-[20px] border border-[#c4d9ee] bg-[#f8fbfe] p-8 text-center">
+          <div>
+            <RefreshCcw className="mx-auto h-7 w-7 animate-spin text-cyan-700" />
+            <p className="mt-3 text-sm font-black text-[#082759]">Preparing the exact PDF preview</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+            {pdfPreviewError || "The PDF preview could not be prepared."}
+          </p>
+          {htmlPreviewFallback}
+        </>
+      )}
     </div>
   );
 }
