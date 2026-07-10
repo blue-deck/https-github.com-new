@@ -4505,6 +4505,29 @@ function getContractPreviewLines(lines: string[]) {
   });
 }
 
+function getContractAnnexCPreviewLines(text: string, maxCharacters = 106) {
+  return text.split("\n").flatMap((paragraph) => {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return [""];
+
+    const lines: string[] = [];
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const nextLine = currentLine ? `${currentLine} ${word}` : word;
+      if (currentLine && nextLine.length > maxCharacters) {
+        lines.push(currentLine);
+        currentLine = word;
+        return;
+      }
+      currentLine = nextLine;
+    });
+
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  });
+}
+
 function getContractAnnexCPreviewPages(maxUnits = 42) {
   const pages: ContractPreviewLineData[][] = [];
   let currentPage: ContractPreviewLineData[] = [];
@@ -4525,17 +4548,13 @@ function getContractAnnexCPreviewPages(maxUnits = 42) {
 
   contractAnnexCClauses.forEach((clause, clauseIndex) => {
     const heading = `${clause.number}. ${clause.title}`;
-    addLine(
-      { kind: "heading", text: heading },
-      Math.max(1.5, Math.ceil(heading.length / 72) * 1.35)
-    );
+    getContractAnnexCPreviewLines(heading, 78).forEach((line, index) => {
+      addLine({ kind: "heading", text: line }, index === 0 ? 1.45 : 1.18);
+    });
 
     clause.body.forEach((paragraph) => {
-      contractDisplayLines([paragraph]).forEach((line) => {
-        addLine(
-          { kind: "body", text: line },
-          Math.max(0.92, Math.ceil(line.length / 82) * 0.94)
-        );
+      getContractAnnexCPreviewLines(paragraph).forEach((line) => {
+        addLine({ kind: "body", text: line }, 1);
       });
     });
 
@@ -4720,7 +4739,7 @@ function ContractPreviewPage({
   children: ReactNode;
 }) {
   const isAnnexCPage = subtitle === "ANNEX C - GENERAL TERMS & CONDITIONS";
-  const contentTop = isAnnexCPage ? "12.4%" : subtitle ? "13.8%" : "10.2%";
+  const contentTop = isAnnexCPage ? "11.4%" : subtitle ? "13.8%" : "10.2%";
 
   return (
     <div
