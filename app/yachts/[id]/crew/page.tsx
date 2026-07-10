@@ -4524,15 +4524,17 @@ function getContractAnnexCPreviewPages(maxUnits = 42) {
   }
 
   contractAnnexCClauses.forEach((clause, clauseIndex) => {
-    getContractPreviewLines([`${clause.number}. ${clause.title}`]).forEach((line, lineIndex) => {
-      addLine({ kind: "heading", text: line }, lineIndex === 0 ? 1.7 : 1.25);
-    });
+    const heading = `${clause.number}. ${clause.title}`;
+    addLine(
+      { kind: "heading", text: heading },
+      Math.max(1.5, Math.ceil(heading.length / 72) * 1.35)
+    );
 
     clause.body.forEach((paragraph) => {
-      getContractPreviewLines([paragraph]).forEach((line) => {
+      contractDisplayLines([paragraph]).forEach((line) => {
         addLine(
           { kind: "body", text: line },
-          Math.max(0.86, getContractPreviewLineUnits(line) * 0.92)
+          Math.max(0.92, Math.ceil(line.length / 82) * 0.94)
         );
       });
     });
