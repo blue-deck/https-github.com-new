@@ -123,10 +123,10 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="bd-site-shell min-h-screen overflow-hidden pt-[92px] text-[#071f3c]">
+    <main className="bd-site-shell min-h-screen overflow-hidden text-[#071f3c]">
       <PublicHeader />
 
-      <section className="bd-ocean-content mx-auto grid min-h-[calc(100vh-92px)] max-w-[1280px] items-center gap-10 px-5 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-12">
+      <section className="bd-ocean-content mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-[1280px] items-center gap-10 px-5 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-12">
         <div className="hidden lg:block">
           <p className="bd-kicker">{t("reset.privateAccess")}</p>
           <h1 className="bd-serif mt-5 max-w-2xl text-6xl leading-[1.02] text-[#071f3c]">

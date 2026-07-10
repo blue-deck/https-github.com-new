@@ -4,9 +4,9 @@ import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 
 export default function NotFound() {
   return (
-    <main className="bd-site-shell min-h-screen pt-[92px] text-[#071f3c]">
+    <main className="bd-site-shell min-h-screen text-[#071f3c]">
       <PublicHeader />
-      <section className="mx-auto flex min-h-[calc(100vh-92px)] max-w-3xl items-center px-5 py-16 text-center sm:px-8">
+      <section className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-3xl items-center px-5 py-16 text-center sm:px-8">
         <div className="bd-editorial-card w-full p-8 sm:p-12">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#07182d] text-cyan-200">
             <Compass className="h-8 w-8" />

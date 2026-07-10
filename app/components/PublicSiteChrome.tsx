@@ -55,15 +55,15 @@ export function PublicHeader() {
 
   return (
     <header className="bd-public-header">
-      <div className="mx-auto flex h-[92px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
+      <div className="bd-public-header-inner">
         <BlueDeckLogoLink
           href="/"
           priority
-          className="h-12 w-52 shrink-0 sm:h-14 sm:w-64 lg:w-72"
-          imageClassName="object-contain p-0"
+          className="bd-public-brand"
+          imageClassName="object-contain object-left p-0"
         />
 
-        <nav className="hidden items-center gap-7 text-xs font-bold uppercase tracking-[0.18em] text-white/72 xl:flex">
+        <nav className="bd-public-shortcuts" aria-label="BlueDeck public navigation">
           {publicNavigation.map((item) => (
             <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
               {t(item.labelKey)}
@@ -71,51 +71,51 @@ export function PublicHeader() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="bd-public-actions">
           {sessionEmail ? (
             <>
               <Link
                 href="/dashboard"
-                className="bd-focus inline-flex items-center gap-2 rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-4 sm:py-3 sm:text-sm"
+                className="bd-focus bd-public-action bd-public-action-outline bd-public-session-action"
                 title={sessionEmail}
               >
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden md:inline">{t("topbar.dashboard")}</span>
+                <span>{t("topbar.dashboard")}</span>
               </Link>
               <Link
                 href="/profile"
-                className="bd-focus inline-flex items-center gap-2 rounded-full bg-white px-3 py-2.5 text-xs font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100 sm:px-4 sm:py-3 sm:text-sm"
+                className="bd-focus bd-public-action bd-public-action-solid bd-public-session-action"
                 title={sessionEmail}
               >
                 <UserRound className="h-4 w-4" />
-                <span className="hidden sm:inline">{t("topbar.profile")}</span>
+                <span>{t("topbar.profile")}</span>
               </Link>
               <button
                 type="button"
                 onClick={logout}
-                className="bd-focus inline-flex items-center gap-2 rounded-full border border-rose-200/30 bg-rose-50/10 px-3 py-2.5 text-xs font-black text-white/88 shadow-lg shadow-cyan-950/10 transition hover:border-rose-100 hover:bg-rose-100 hover:text-[#07182d] sm:px-4 sm:py-3 sm:text-sm"
+                className="bd-focus bd-public-action bd-public-action-outline bd-public-session-action"
               >
                 <LogOut className="h-4 w-4" />
-                <span className="hidden lg:inline">{t("topbar.logout")}</span>
+                <span>{t("topbar.logout")}</span>
               </button>
             </>
           ) : (
             <>
               <Link
                 href="/login"
-                className="bd-focus rounded-full border border-white/15 px-3 py-2.5 text-xs font-bold text-white/82 transition hover:border-cyan-200 hover:text-white sm:px-5 sm:py-3 sm:text-sm"
+                className="bd-focus bd-public-action bd-public-action-outline"
               >
                 {t("auth.login")}
               </Link>
               <Link
                 href="/login?mode=signup"
-                className="bd-focus rounded-full bg-white px-3 py-2.5 text-xs font-black text-[#07182d] shadow-xl shadow-cyan-950/20 transition hover:bg-cyan-100 sm:px-5 sm:py-3 sm:text-sm"
+                className="bd-focus bd-public-action bd-public-action-primary"
               >
                 {t("auth.signUp")}
               </Link>
             </>
           )}
-          <LanguageSwitcher size="compact" />
+          <LanguageSwitcher size="compact" className="bd-public-language" />
         </div>
       </div>
     </header>
@@ -218,7 +218,7 @@ export function PublicPageShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="bd-site-shell min-h-screen pt-[92px] text-[#071f3c]">
+    <main className="bd-site-shell min-h-screen text-[#071f3c]">
       <PublicHeader />
       <section className="mx-auto max-w-[1500px] px-5 pb-14 pt-16 sm:px-8 lg:px-12 lg:pt-24">
         <p className="bd-kicker">{eyebrow}</p>

@@ -31,10 +31,10 @@ export function BlueDeckLogoLink({
       className={`bd-focus inline-flex items-center overflow-hidden bg-transparent ${className}`}
     >
       <Image
-        src="/bluedeck-logo-wide.png"
+        src="/bluedeck-logo-wide-header.png"
         alt="BlueDeck"
-        width={980}
-        height={551}
+        width={816}
+        height={192}
         priority={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />

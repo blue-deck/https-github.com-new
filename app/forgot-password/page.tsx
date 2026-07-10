@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="bd-site-shell min-h-screen pt-[92px] text-[#071f3c]">
+    <main className="bd-site-shell min-h-screen text-[#071f3c]">
       <PublicHeader />
 
       <section className="border-b border-[#071f3c]/10 bg-white/64">

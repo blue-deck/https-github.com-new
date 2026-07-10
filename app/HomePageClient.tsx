@@ -52,11 +52,11 @@ export default function HomePageClient() {
   const { t } = useLanguage();
 
   return (
-    <main className="bd-site-shell min-h-screen overflow-hidden pt-[92px] text-[#071f3c]">
+    <main className="bd-site-shell min-h-screen overflow-hidden text-[#071f3c]">
       <PublicHeader />
 
       <section className="bd-home-hero">
-        <div className="mx-auto flex min-h-[calc(100vh-92px)] max-w-[1500px] items-center px-5 py-16 sm:px-8 lg:px-12">
+        <div className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-[1500px] items-center px-5 py-16 sm:px-8 lg:px-12">
           <div className="max-w-4xl">
             <p className="text-xs font-black uppercase tracking-[0.42em] text-[#58718c]">
               {t("home.eyebrow")}
