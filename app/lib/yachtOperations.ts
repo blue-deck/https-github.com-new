@@ -251,9 +251,10 @@ export function getDepartmentByPosition(title?: string | null): YachtDepartmentI
 }
 
 export function getDefaultPositionForAccountType(role?: string) {
-  if (role === "captain") return "Captain";
-  if (role === "owner") return "Owner";
-  if (role === "management") return "Yacht Manager";
+  const normalizedRole = (role || "").trim().toLowerCase();
+  if (normalizedRole === "captain") return "Captain";
+  if (normalizedRole === "owner") return "Owner";
+  if (normalizedRole === "management") return "Yacht Manager";
   return "";
 }
 
@@ -281,6 +282,40 @@ export function canAssignToCrew(
   const allowedDepartments = getAssignableDepartments(assigner.title, assignerDepartment);
   const targetDept = (targetDepartment as YachtDepartmentId) || target.department;
   return allowedDepartments.includes(targetDept);
+}
+
+export function canInviteCrew(
+  assignerPosition?: string | null,
+  assignerDepartment?: string | null,
+  targetPosition?: string | null,
+  targetDepartment?: string | null,
+  accountRole?: string | null
+) {
+  const target = getPosition(targetPosition);
+  if (!target) return false;
+
+  const role = (accountRole || "").trim().toLowerCase();
+  if (role === "owner" || role === "management") return true;
+
+  const assignerTitle = normalizePosition(assignerPosition);
+  const captainAuthority =
+    role === "captain" ||
+    ["master", "captain", "fleet captain", "relief captain", "staff captain", "build captain"].includes(
+      assignerTitle
+    );
+
+  if (captainAuthority) {
+    const protectedPositions = ["owner", "yacht manager"];
+    return target.rank < 100 && !protectedPositions.includes(normalizePosition(target.title));
+  }
+
+  return canAssignToCrew(
+    assignerPosition,
+    assignerDepartment,
+    targetPosition,
+    targetDepartment,
+    accountRole
+  );
 }
 
 export function canAssignChecklistDepartment(

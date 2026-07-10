@@ -37,7 +37,6 @@ import {
   Waves,
   X,
 } from "lucide-react";
-import { saveYachtMembership } from "../../../lib/yachtMemberships";
 import {
   canAssignChecklistDepartment,
   canAssignToCrew,
@@ -727,7 +726,6 @@ export default function CrewPage({
   const [inviteEmail, setInviteEmail] = useState("");
   const [crewPublicId, setCrewPublicId] = useState("");
   const [position, setPosition] = useState("Deckhand");
-  const [department, setDepartment] = useState("Deck");
   const [frequency, setFrequency] = useState("Template default");
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
@@ -1777,14 +1775,14 @@ export default function CrewPage({
     setCrew(crewData);
     setChecklists(checklistData);
     setArchiveRetention(payload.checklist_retention || null);
-    loadCurrentOperator(crewData, user);
+    loadCurrentOperator(crewData, user, payload.operator);
   }
 
-  function loadCurrentOperator(crewData: any[], user: any) {
-    const role =
-      typeof user?.user_metadata?.role === "string"
-        ? user.user_metadata.role
-        : "";
+  function loadCurrentOperator(crewData: any[], user: any, resolvedOperator?: any) {
+    const role = normalizeAccountRole(
+      resolvedOperator?.role ||
+        (typeof user?.user_metadata?.role === "string" ? user.user_metadata.role : "")
+    );
 
     const normalizedUserEmail = normalizeEmail(user.email);
     const membership = crewData.find((member) => {
@@ -1795,19 +1793,23 @@ export default function CrewPage({
       );
     });
 
-    if (!membership && role !== "captain" && role !== "management" && role !== "owner") {
+    if (!membership && !resolvedOperator && role !== "captain" && role !== "management" && role !== "owner") {
       setOperator({ position: "", department: "", role });
       return;
     }
 
     const operatorPosition =
+      resolvedOperator?.position ||
       membership?.position ||
       membership?.crew_profiles?.current_position ||
       getDefaultPositionForAccountType(role);
 
     setOperator({
       position: operatorPosition || "",
-      department: membership?.department || getDepartmentByPosition(operatorPosition),
+      department:
+        resolvedOperator?.department ||
+        membership?.department ||
+        getDepartmentByPosition(operatorPosition),
       role,
     });
   }
@@ -1867,161 +1869,46 @@ export default function CrewPage({
       return;
     }
 
-    if (!canAssignToCrew(operator.position, operator.department, position, department, operator.role)) {
-      alert("You can only invite crew within your BlueDeck hierarchy.");
-      return;
-    }
-
     setLoading(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    const lookup = crewPublicId.trim().toUpperCase();
-    let profile = null;
-    let profileError = null;
+      const response = await fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-invitations`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(session?.access_token
+            ? {
+                authorization: `Bearer ${session.access_token}`,
+              }
+            : {}),
+        },
+        body: JSON.stringify({
+          crewId: crewPublicId.trim() || undefined,
+          email: inviteEmail.trim() || undefined,
+          position,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
 
-    if (lookup) {
-      const response = await supabase
-        .from("crew_profiles")
-        .select("*")
-        .eq("public_crew_id", lookup)
-        .maybeSingle();
-      profile = response.data;
-      profileError = response.error;
-    }
-
-    if (!profile && inviteEmail) {
-      const normalizedInviteEmail = inviteEmail.trim().toLowerCase();
-      const existingProfile = await supabase
-        .from("crew_profiles")
-        .select("*")
-        .eq("email", normalizedInviteEmail)
-        .limit(1);
-
-      if (existingProfile.error) {
-        profileError = existingProfile.error;
-      } else if (existingProfile.data?.[0]) {
-        profile = existingProfile.data[0];
-
-        if (!profile.current_position) {
-          await supabase
-            .from("crew_profiles")
-            .update({
-              current_position: position,
-            })
-            .eq("id", profile.id);
-        }
-      } else {
-        const response = await insertCrewProfile({
-          email: normalizedInviteEmail,
-          full_name: normalizedInviteEmail.split("@")[0],
-          current_position: position,
-          public_crew_id: crypto.randomUUID().slice(0, 8).toUpperCase(),
-        });
-
-        profile = response.data;
-        profileError = response.error;
+      if (!response.ok || !payload?.ok) {
+        alert(payload?.error || "Crew invitation could not be created.");
+        return;
       }
-    }
 
-    if (profileError) {
-      alert(profileError.message);
+      setInviteEmail("");
+      setCrewPublicId("");
+      setInviteNotice("Invitation is now waiting inside the crew member's My YachtOS portal.");
+      void loadData();
+
+      alert("Crew invitation created. The crew member will see it inside My YachtOS.");
+    } catch {
+      alert("Crew invitation could not be created. Check your connection and try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (!profile?.id) {
-      alert("Crew profile could not be created. Please check the Crew ID or email.");
-      setLoading(false);
-      return;
-    }
-
-    const token = crypto.randomUUID();
-    const inviteOrigin =
-      window.location.hostname === "localhost"
-        ? "https://bluedeck.app"
-        : window.location.origin;
-    const inviteLink = `${inviteOrigin}/invitations/${token}`;
-
-    const { error: inviteError } = await insertCrewInvitation({
-      yacht_id: yachtId,
-      crew_profile_id: profile.id,
-      invited_email: inviteEmail || profile.email,
-      public_crew_id: profile.public_crew_id,
-      position,
-      department,
-      status: "pending",
-      token,
-      invite_link: inviteLink,
-    });
-
-    if (inviteError) {
-      alert(inviteError.message);
-      setLoading(false);
-      return;
-    }
-
-    const { error: memberError } = await saveYachtMembership(supabase, {
-      yacht_id: yachtId,
-      crew_profile_id: profile.id,
-      invited_email: inviteEmail || profile.email,
-      position,
-      department,
-      status: "invited",
-    });
-
-    if (memberError) {
-      alert(memberError.message);
-      setLoading(false);
-      return;
-    }
-
-    setInviteEmail("");
-    setCrewPublicId("");
-    setInviteNotice("Invitation is now waiting inside the crew member's My YachtOS portal.");
-    setLoading(false);
-    loadData();
-
-    alert("Crew invitation created. The crew member will see it inside My YachtOS.");
-  }
-
-  async function insertCrewProfile(payload: Record<string, any>) {
-    const variants = [payload, omitKeys(payload, ["public_crew_id"])];
-    let lastResponse: any = null;
-
-    for (const variant of variants) {
-      const response = await supabase
-        .from("crew_profiles")
-        .insert(variant)
-        .select()
-        .single();
-
-      if (!response.error) return response;
-      lastResponse = response;
-
-      if (!isSchemaCacheError(response.error)) return response;
-    }
-
-    return lastResponse;
-  }
-
-  async function insertCrewInvitation(payload: Record<string, any>) {
-    const variants = [
-      payload,
-      omitKeys(payload, ["invite_link"]),
-      omitKeys(payload, ["public_crew_id"]),
-      omitKeys(payload, ["invite_link", "public_crew_id"]),
-    ];
-    let lastResponse: any = null;
-
-    for (const variant of variants) {
-      const response = await supabase.from("crew_invitations").insert(variant);
-
-      if (!response.error) return response;
-      lastResponse = response;
-
-      if (!isSchemaCacheError(response.error)) return response;
-    }
-
-    return lastResponse;
   }
 
   function toggleTemplate(key: string) {
@@ -2457,11 +2344,7 @@ export default function CrewPage({
 
                       <select
                         value={position}
-                        onChange={(e) => {
-                          const nextPosition = e.target.value;
-                          setPosition(nextPosition);
-                          setDepartment(getDepartmentByPosition(nextPosition));
-                        }}
+                        onChange={(e) => setPosition(e.target.value)}
                         className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-950 outline-none focus:border-cyan-300"
                       >
                         {positionSelectGroups.map((group) => (
@@ -5358,6 +5241,11 @@ function DepartmentIcon({ department }: any) {
 
 function normalizeEmail(value?: string | null) {
   return (value || "").trim().toLowerCase();
+}
+
+function normalizeAccountRole(value?: unknown) {
+  const role = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return ["crew", "captain", "owner", "management"].includes(role) ? role : "";
 }
 
 function omitKeys<T extends Record<string, any>>(value: T, keys: string[]) {
