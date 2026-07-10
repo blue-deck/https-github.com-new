@@ -1399,7 +1399,7 @@ export default function CrewPage({
       const width = right - left;
       const top = 92;
       const bottom = pageHeight - 52;
-      const annexCContentTop = 138;
+      const annexCContentTop = 88;
 
       function drawSectionTitle(section: ContractDocumentSection, y: number) {
         doc.setFont("times", "bold");
@@ -1419,6 +1419,30 @@ export default function CrewPage({
           pieces.forEach((piece: string) => rows.push(piece));
           rows.push("");
         });
+        return rows;
+      }
+
+      function getAnnexCPdfRows() {
+        const rows: Array<{ kind: "heading" | "body" | "space"; text: string }> = [];
+        const lineWidth = pageWidth - 88;
+
+        contractAnnexCClauses.forEach((clause, clauseIndex) => {
+          (doc.splitTextToSize(`${clause.number}. ${clause.title}`, lineWidth) as string[]).forEach((text) => {
+            rows.push({ kind: "heading", text });
+          });
+
+          clause.body.forEach((paragraph) => {
+            (doc.splitTextToSize(paragraph, lineWidth) as string[]).forEach((text) => {
+              rows.push({ kind: "body", text });
+            });
+            rows.push({ kind: "space", text: "" });
+          });
+
+          if (clauseIndex < contractAnnexCClauses.length - 1) {
+            rows.push({ kind: "space", text: "" });
+          }
+        });
+
         return rows;
       }
 
@@ -1453,7 +1477,10 @@ export default function CrewPage({
           drawSectionTitle(section, top);
         }
         let y = isAnnexC ? annexCContentTop : top + 26;
-        const textX = isAnnexC ? 48 : left + 4;
+        const textX = isAnnexC ? 44 : left + 4;
+        const rows = isAnnexC
+          ? getAnnexCPdfRows()
+          : getWrappedRows(section).map((text) => ({ kind: text ? "body" : "space", text }));
 
         function ensureSpace(height: number) {
           if (y + height <= bottom) return;
@@ -1465,19 +1492,19 @@ export default function CrewPage({
           y = isAnnexC ? annexCContentTop : top + 26;
         }
 
-        getWrappedRows(section).forEach((row) => {
-          if (row) {
-            const isHeading = isAnnexC && isContractAnnexCHeading(row);
-            const headingOffset = isHeading && y > (isAnnexC ? annexCContentTop : top + 28) ? 6 : 0;
-            ensureSpace((isHeading ? 20 : 14.5) + headingOffset);
+        rows.forEach((row) => {
+          if (row.text) {
+            const isHeading = isAnnexC && row.kind === "heading";
+            const headingOffset = isHeading && y > annexCContentTop + 2 ? 6 : 0;
+            ensureSpace((isHeading ? 17 : 12.5) + headingOffset);
             if (headingOffset) y += headingOffset;
-            doc.setFont("helvetica", isHeading ? "bold" : "normal");
-            doc.setFontSize(isHeading ? 11.4 : 10.2);
+            doc.setFont(isAnnexC ? "times" : "helvetica", isHeading ? "bold" : "normal");
+            doc.setFontSize(isAnnexC ? (isHeading ? 11.2 : 9.9) : 9.2);
             setText(isHeading ? "#082759" : "#17233a");
-            doc.text(row, textX, y);
-            y += isHeading ? 17.2 : 13.6;
+            doc.text(row.text, textX, y);
+            y += isAnnexC ? (isHeading ? 14.6 : 11.6) : 12;
           } else {
-            y += isAnnexC ? 7.2 : 5;
+            y += isAnnexC ? 3.3 : 5;
           }
         });
       }
@@ -4447,28 +4474,19 @@ type ContractPreviewLineData = {
   text: string;
 };
 
-const contractAnnexCHeadingSet = new Set(
-  contractAnnexCClauses.map((clause) => `${clause.number}. ${clause.title}`)
-);
-
-function isContractAnnexCHeading(line: string) {
-  const value = line.trim();
-  return contractAnnexCHeadingSet.has(value) || /^\d+\.\s+[A-Z][A-Z\s,/'&()-]+$/.test(value);
-}
-
 function getContractPreviewLineUnits(line: string) {
-  return line ? Math.max(1, Math.ceil(line.length / 82)) : 1;
+  return line ? Math.max(1, Math.ceil(line.length / 118)) : 1;
 }
 
 function getContractPreviewLines(lines: string[]) {
   return contractDisplayLines(lines).flatMap((line) => {
     if (!line) return [""];
-    const chunks = line.match(/.{1,96}(?:\s|$)/g);
+    const chunks = line.match(/.{1,116}(?:\s|$)/g);
     return chunks?.map((chunk) => chunk.trim()).filter(Boolean) || [line];
   });
 }
 
-function getContractAnnexCPreviewPages(maxUnits = 31) {
+function getContractAnnexCPreviewPages(maxUnits = 43) {
   const pages: ContractPreviewLineData[][] = [];
   let currentPage: ContractPreviewLineData[] = [];
   let currentUnits = 0;
@@ -4488,20 +4506,20 @@ function getContractAnnexCPreviewPages(maxUnits = 31) {
 
   contractAnnexCClauses.forEach((clause, clauseIndex) => {
     getContractPreviewLines([`${clause.number}. ${clause.title}`]).forEach((line, lineIndex) => {
-      addLine({ kind: "heading", text: line }, lineIndex === 0 ? 2.8 : 2);
+      addLine({ kind: "heading", text: line }, lineIndex === 0 ? 1.7 : 1.25);
     });
 
     clause.body.forEach((paragraph) => {
       getContractPreviewLines([paragraph]).forEach((line) => {
         addLine(
           { kind: "body", text: line },
-          Math.max(1.1, getContractPreviewLineUnits(line) * 1.05)
+          Math.max(0.86, getContractPreviewLineUnits(line) * 0.92)
         );
       });
     });
 
     if (clauseIndex < contractAnnexCClauses.length - 1) {
-      addLine({ kind: "space", text: "" }, 1.05);
+      addLine({ kind: "space", text: "" }, 0.7);
     }
   });
 
@@ -4681,7 +4699,7 @@ function ContractPreviewPage({
   children: ReactNode;
 }) {
   const isAnnexCPage = subtitle === "ANNEX C - GENERAL TERMS & CONDITIONS";
-  const topPadding = isAnnexCPage ? "21.8%" : subtitle ? "13.8%" : "10.2%";
+  const topPadding = isAnnexCPage ? "9.2%" : subtitle ? "13.8%" : "10.2%";
 
   return (
     <div
@@ -4879,18 +4897,18 @@ function ContractPreviewBlockCard({ block }: { block: ContractPreviewBlockData }
 
 function ContractAnnexCPreviewText({ lines }: { lines: ContractPreviewLineData[] }) {
   return (
-    <section className="px-1 text-[#17233a]">
+    <section className="px-0 text-[#17233a]">
       {lines.map((line, index) => {
         if (line.kind === "space") {
-          return <div key={`annex-c-space-${index}`} className="h-3" />;
+          return <div key={`annex-c-space-${index}`} className="h-2" />;
         }
 
         if (line.kind === "heading") {
           return (
             <p
               key={`annex-c-heading-${index}`}
-              className={`font-serif text-[15.5px] font-black uppercase leading-[1.32] tracking-[0.035em] text-[#082759] ${
-                index ? "mt-3" : ""
+              className={`font-serif text-[17px] font-black uppercase leading-[1.24] tracking-[0.025em] text-[#082759] ${
+                index ? "mt-3.5" : ""
               }`}
             >
               {line.text}
@@ -4901,7 +4919,7 @@ function ContractAnnexCPreviewText({ lines }: { lines: ContractPreviewLineData[]
         return (
           <p
             key={`annex-c-body-${index}`}
-            className="mt-1.5 text-[13px] font-semibold leading-[1.62] text-[#1f2f43]"
+            className="mt-[3px] text-[14.2px] font-medium leading-[1.47] text-[#17233a]"
           >
             {line.text}
           </p>
