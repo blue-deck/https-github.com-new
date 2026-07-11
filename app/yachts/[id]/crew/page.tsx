@@ -1854,6 +1854,123 @@ export default function CrewPage({
       });
     }
 
+    function blobToDataUrl(blob: Blob) {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = () => resolve("");
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    function getImageDimensions(dataUrl: string) {
+      return new Promise<{ width: number; height: number }>((resolve) => {
+        const image = new Image();
+        image.onload = () => {
+          resolve({ width: image.naturalWidth || 1, height: image.naturalHeight || 1 });
+        };
+        image.onerror = () => resolve({ width: 1, height: 1 });
+        image.src = dataUrl;
+      });
+    }
+
+    async function loadProofImage(source: string) {
+      try {
+        const imageSource = source.startsWith("data:image/")
+          ? source
+          : `/api/cv-image?src=${encodeURIComponent(source)}&max=640&fit=inside`;
+        const response = await fetch(imageSource, { cache: "force-cache" });
+        if (!response.ok) return null;
+
+        const blob = await response.blob();
+        if (!blob.type.startsWith("image/")) return null;
+
+        const dataUrl = await blobToDataUrl(blob);
+        if (!dataUrl) return null;
+
+        const dimensions = await getImageDimensions(dataUrl);
+        return {
+          dataUrl,
+          width: dimensions.width,
+          height: dimensions.height,
+          format: dataUrl.startsWith("data:image/png") ? ("PNG" as const) : ("JPEG" as const),
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    async function addProofPhotos(beforeUrl?: string, afterUrl?: string) {
+      const proofSources = [
+        { label: "Before", url: beforeUrl },
+        { label: "After", url: afterUrl },
+      ].filter((proof): proof is { label: string; url: string } => Boolean(proof.url));
+
+      if (proofSources.length === 0) return;
+
+      const proofImages = [] as Array<{
+        label: string;
+        dataUrl: string;
+        width: number;
+        height: number;
+        format: "PNG" | "JPEG";
+      }>;
+
+      for (const proof of proofSources) {
+        const image = await loadProofImage(proof.url);
+        if (image) proofImages.push({ label: proof.label, ...image });
+      }
+
+      if (proofImages.length === 0) return;
+
+      const cardWidth = 92;
+      const cardHeight = 76;
+      const cardGap = 10;
+      ensureSpace(cardHeight + 22);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(21, 94, 117);
+      doc.text("Proof photos", margin + 8, y);
+      y += 8;
+
+      proofImages.forEach((proof, index) => {
+        const x = margin + 8 + index * (cardWidth + cardGap);
+        const imageBoxX = x + 5;
+        const imageBoxY = y + 15;
+        const imageBoxWidth = cardWidth - 10;
+        const imageBoxHeight = cardHeight - 20;
+        const scale = Math.min(imageBoxWidth / proof.width, imageBoxHeight / proof.height);
+        const drawWidth = Math.max(1, proof.width * scale);
+        const drawHeight = Math.max(1, proof.height * scale);
+
+        doc.setDrawColor(210, 226, 232);
+        doc.setFillColor(248, 252, 253);
+        doc.roundedRect(x, y, cardWidth, cardHeight, 7, 7, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(7);
+        doc.setTextColor(71, 85, 105);
+        doc.text(proof.label, x + 6, y + 10);
+
+        try {
+          doc.addImage(
+            proof.dataUrl,
+            proof.format,
+            imageBoxX + (imageBoxWidth - drawWidth) / 2,
+            imageBoxY + (imageBoxHeight - drawHeight) / 2,
+            drawWidth,
+            drawHeight,
+            undefined,
+            "FAST"
+          );
+        } catch {
+          // A proof image should never prevent the rest of the PDF archive from downloading.
+        }
+      });
+
+      y += cardHeight + 8;
+    }
+
     doc.setFillColor(7, 24, 39);
     doc.roundedRect(margin, y, contentWidth, 58, 14, 14, "F");
     doc.setTextColor(255, 255, 255);
@@ -1865,7 +1982,7 @@ export default function CrewPage({
     doc.text(`Last 6 months / ${checklistRecords.length} checklist records`, margin + 18, y + 43);
     y += 82;
 
-    checklistRecords.forEach((checklist, index) => {
+    for (const [index, checklist] of checklistRecords.entries()) {
       const progress = getChecklistProgress(checklist);
       const tasks = checklist.yacht_checklist_items || [];
       const assignedCrew = getAssignedCrewLabel(checklist);
@@ -1899,14 +2016,17 @@ export default function CrewPage({
       doc.text("Tasks", margin, y);
       y += 15;
 
-      tasks.forEach((task: any, taskIndex: number) => {
+      for (const [taskIndex, task] of tasks.entries()) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.6);
         doc.setTextColor(51, 65, 85);
+        const beforePhoto = getTaskPhoto(task, "before");
+        const afterPhoto = getTaskPhoto(task, "after");
         const status = task.completed ? "done" : "open";
-        const proof = getTaskPhoto(task, "before") || getTaskPhoto(task, "after") ? " / proof" : "";
+        const proof = beforePhoto || afterPhoto ? " / proof" : "";
         writeWrapped(`${taskIndex + 1}. [${status}${proof}] ${task.task_text || "-"}`, margin + 8, contentWidth - 16, 12);
-      });
+        await addProofPhotos(beforePhoto, afterPhoto);
+      }
 
       const note = getChecklistNote(checklist);
       if (note) {
@@ -1922,7 +2042,7 @@ export default function CrewPage({
       }
 
       y += 16;
-    });
+    }
 
     doc.setDrawColor(23, 84, 96);
     doc.line(margin, pageHeight - 44, pageWidth - margin, pageHeight - 44);
@@ -1993,12 +2113,14 @@ export default function CrewPage({
           <div className={isChecklistSystem ? "p-5 sm:p-8" : "p-5 sm:p-10"}>
             <div className="min-w-0">
               <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
-                {isChecklistSystem ? "BlueDeck ChecklistOS" : "BlueDeck CrewOS"}
+                {isChecklistSystem ? "BlueDeck Checklist Operation System" : "BlueDeck CrewOS"}
               </p>
-              <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
-                {isChecklistSystem ? "Checklist System" : "Yacht Crew Command"}
-              </h1>
-              <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-500 sm:mt-5 sm:text-xl">
+              {!isChecklistSystem && (
+                <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
+                  Yacht Crew Command
+                </h1>
+              )}
+              <p className={`${isChecklistSystem ? "mt-3" : "mt-4 sm:mt-5"} max-w-4xl text-base leading-relaxed text-slate-500 sm:text-xl`}>
                 {isChecklistSystem
                   ? "Create tailored crew task lists, schedule recurring work and verify completion with proof in one controlled captain workspace."
                   : "Invite crew, manage onboard roles and send yacht contracts from one clean crew command workspace."}
@@ -2880,10 +3002,7 @@ export default function CrewPage({
             {isChecklistSystem && (
             <div className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
               <div className="border-b border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#e9f8fb_100%)] p-5 sm:p-7">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
-                  Manual Checklist Builder
-                </p>
-                <h2 className="mt-2 text-3xl font-black text-slate-950 sm:text-4xl">
+                <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">
                   Create Checklist
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-slate-500">
@@ -3453,10 +3572,7 @@ export default function CrewPage({
                 <p className="font-black uppercase tracking-[0.18em] text-cyan-700">
                   Sent Checklist Status
                 </p>
-                <h2 className="mt-2 text-4xl font-black text-slate-950 sm:text-5xl">
-                  Crew completion board
-                </h2>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
                   Review every checklist sent to crew, completion percentage, due status, proof photos and captain notes.
                 </p>
               </div>
@@ -3582,7 +3698,7 @@ export default function CrewPage({
                                       </p>
                                     )}
                                     {(beforePhoto || afterPhoto) && (
-                                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                      <div className="mt-3 flex flex-wrap gap-2">
                                         <TaskPhotoPreview label="Before" url={beforePhoto} onOpen={setPhotoPreview} />
                                         <TaskPhotoPreview label="After" url={afterPhoto} onOpen={setPhotoPreview} />
                                       </div>
@@ -4790,17 +4906,18 @@ function TaskPhotoPreview({
     <button
       type="button"
       onClick={() => onOpen({ label, url })}
-      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:border-cyan-300 hover:shadow-lg hover:shadow-cyan-950/10"
+      className="group relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-left transition hover:border-cyan-300 hover:shadow-lg hover:shadow-cyan-950/10"
+      title={`Open ${label.toLowerCase()} proof photo`}
     >
-      <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-500">
-        <Camera className="h-3.5 w-3.5 text-cyan-700" />
-        {label}
-      </div>
       <img
         src={url}
         alt={`${label} task photo`}
-        className="h-28 w-full object-cover transition group-hover:scale-[1.02]"
+        className="h-full w-full object-contain p-1 transition group-hover:scale-[1.02]"
       />
+      <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-950/78 text-white shadow-sm">
+        <Camera className="h-3.5 w-3.5" />
+        <span className="sr-only">{label} proof photo</span>
+      </span>
     </button>
   );
 }
