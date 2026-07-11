@@ -729,7 +729,6 @@ export default function CrewPage({
     role: "",
   });
   const [checklistSection, setChecklistSection] = useState<"builder" | "monitor" | "archive">("builder");
-  const [manualTitle, setManualTitle] = useState("");
   const [manualType, setManualType] = useState("Custom Routine");
   const [manualCategoryId, setManualCategoryId] = useState("deck");
   const [manualTaskDraft, setManualTaskDraft] = useState("");
@@ -1506,7 +1505,7 @@ export default function CrewPage({
 
     const category = activeManualCategory || checklistTaskCategories[0];
     const assignmentDepartment = category.department;
-    const title = manualTitle.trim() || `${category.label} Checklist`;
+    const title = `${category.label} Checklist`;
     const type = manualType.trim() || category.type || "Custom Routine";
     const tasks = manualTasks.map((task) => task.trim()).filter(Boolean);
 
@@ -1583,7 +1582,6 @@ export default function CrewPage({
       return;
     }
 
-    setManualTitle("");
     setManualType("Custom Routine");
     setManualTaskDraft("");
     setManualTasks([]);
@@ -3010,9 +3008,9 @@ export default function CrewPage({
                 </p>
               </div>
 
-              <div className="space-y-4 p-5 sm:p-7">
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <label className="block min-w-0 sm:col-span-2">
+              <div className="space-y-5 p-5 sm:p-7">
+                <div className="grid min-w-0 gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-6">
+                  <label className="block min-w-0 sm:col-span-2 xl:col-span-3">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Crew member
                     </span>
@@ -3030,7 +3028,30 @@ export default function CrewPage({
                     </select>
                   </label>
 
-                  <label className="block min-w-0">
+                  <label className="block min-w-0 xl:col-span-1">
+                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Task category
+                    </span>
+                    <select
+                      value={manualCategoryId}
+                      onChange={(event) => {
+                        const nextCategory = checklistTaskCategories.find((category) => category.id === event.target.value);
+                        setManualCategoryId(event.target.value);
+                        if (nextCategory) {
+                          setManualType(nextCategory.type);
+                        }
+                      }}
+                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                    >
+                      {manualCategoryOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block min-w-0 xl:col-span-1">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Frequency
                     </span>
@@ -3047,7 +3068,7 @@ export default function CrewPage({
                     </select>
                   </label>
 
-                  <label className="block min-w-0">
+                  <label className="block min-w-0 xl:col-span-1">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Due date
                     </span>
@@ -3066,52 +3087,26 @@ export default function CrewPage({
                   </p>
                 )}
 
-                <label className="block">
-                  <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                    Captain note
-                  </span>
-                  <textarea
-                    placeholder="Optional note for the assigned crew"
-                    value={captainNote}
-                    onChange={(event) => setCaptainNote(event.target.value)}
-                    className="mt-2 h-24 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                  />
-                </label>
-
-                <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-                  <input
-                    value={manualTitle}
-                    onChange={(event) => setManualTitle(event.target.value)}
-                    placeholder={`${activeManualCategory?.label || "Custom"} checklist title (optional)`}
-                    className="min-w-0 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                  />
-
-                  <select
-                    value={manualCategoryId}
-                    onChange={(event) => {
-                      const nextCategory = checklistTaskCategories.find((category) => category.id === event.target.value);
-                      setManualCategoryId(event.target.value);
-                      if (nextCategory) {
-                        setManualType(nextCategory.type);
-                      }
-                    }}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
-                  >
-                    {manualCategoryOptions.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {activeManualCategory?.hint && (
                   <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm font-semibold leading-6 text-slate-600">
                     {activeManualCategory.hint}
                   </p>
                 )}
 
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 sm:p-4">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                        Checklist tasks
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">
+                        Type a task, select a suggestion or add your own wording.
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-cyan-900">
+                      {manualTasks.length} task{manualTasks.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
                   <div className="relative">
                     <div className="flex gap-2">
                       <input
@@ -3195,15 +3190,28 @@ export default function CrewPage({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={createManualChecklist}
-                  disabled={loading}
-                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 py-4 text-lg font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-slate-950 disabled:opacity-60"
-                >
-                  <ListChecks className="h-5 w-5" />
-                  {loading ? "Creating..." : "Create Manual Checklist"}
-                </button>
+                <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                  <label className="block">
+                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                      Captain note
+                    </span>
+                    <textarea
+                      placeholder="Optional note for the assigned crew"
+                      value={captainNote}
+                      onChange={(event) => setCaptainNote(event.target.value)}
+                      className="mt-2 h-20 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={createManualChecklist}
+                    disabled={loading || manualTasks.length === 0 || !selectedCrew}
+                    className="bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 px-6 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
+                  >
+                    <ListChecks className="h-5 w-5" />
+                    {loading ? "Creating..." : "Create Checklist"}
+                  </button>
+                </div>
               </div>
             </div>
             )}
