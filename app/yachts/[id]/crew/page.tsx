@@ -3816,26 +3816,27 @@ function ChecklistSectionButton({
     <button
       type="button"
       onClick={onClick}
-      className={`bd-focus rounded-[26px] border p-4 text-left transition ${
+      aria-current={active ? "page" : undefined}
+      className={`bd-focus rounded-[26px] p-4 text-left transition ${
         active
-          ? "border-cyan-400 bg-[linear-gradient(135deg,#071827_0%,#0d3143_100%)] text-white shadow-xl shadow-cyan-950/14"
-          : "border-slate-200 bg-white text-slate-800 hover:border-cyan-300 hover:bg-cyan-50"
+          ? "border-2 border-cyan-500 bg-white text-slate-950 shadow-lg shadow-cyan-950/8"
+          : "border border-slate-200 bg-white text-slate-800 hover:border-cyan-300 hover:bg-cyan-50"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
         <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-          active ? "bg-cyan-300 text-slate-950" : "bg-cyan-50 text-cyan-800"
+          active ? "bg-cyan-700 text-white" : "bg-cyan-50 text-cyan-800"
         }`}>
           {icon}
         </span>
         <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
-          active ? "bg-white/12 text-cyan-100" : "bg-slate-100 text-slate-500"
+          active ? "border border-cyan-200 bg-cyan-50 text-cyan-900" : "bg-slate-100 text-slate-500"
         }`}>
           {meta}
         </span>
       </div>
       <h3 className="mt-4 text-xl font-black">{title}</h3>
-      <p className={`mt-2 text-sm leading-6 ${active ? "text-cyan-50/78" : "text-slate-500"}`}>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
         {text}
       </p>
     </button>
