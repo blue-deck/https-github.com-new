@@ -452,12 +452,6 @@ export default function CrewTasksPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      "Mark this checklist as completed and send the final completion record to your captain?"
-    );
-
-    if (!confirmed) return;
-
     setCompletingChecklistId(checklist.id);
 
     const { error } = await updateChecklistWithFallback(checklist.id, {

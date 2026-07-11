@@ -2899,7 +2899,7 @@ export default function CrewPage({
                   </p>
                 )}
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="mt-5 grid gap-3">
                   <label className="block">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Frequency
@@ -2915,17 +2915,6 @@ export default function CrewPage({
                     </select>
                   </label>
 
-                  <label className="block">
-                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                      Due date
-                    </span>
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
-                    />
-                  </label>
                 </div>
 
                 <label className="mt-5 block">
@@ -3009,7 +2998,7 @@ export default function CrewPage({
               </div>
 
               <div className="space-y-5 p-5 sm:p-7">
-                <div className="grid min-w-0 gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-6">
+                <div className="grid min-w-0 gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-5">
                   <label className="block min-w-0 sm:col-span-2 xl:col-span-3">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Crew member
@@ -3068,28 +3057,11 @@ export default function CrewPage({
                     </select>
                   </label>
 
-                  <label className="block min-w-0 xl:col-span-1">
-                    <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                      Due date
-                    </span>
-                    <input
-                      type="date"
-                      value={dueDate}
-                      onChange={(event) => setDueDate(event.target.value)}
-                      className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
-                    />
-                  </label>
                 </div>
 
                 {assignableCrew.length === 0 && (
                   <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-slate-600">
                     No crew below your current hierarchy is available for assignment yet.
-                  </p>
-                )}
-
-                {activeManualCategory?.hint && (
-                  <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 px-4 py-3 text-sm font-semibold leading-6 text-slate-600">
-                    {activeManualCategory.hint}
                   </p>
                 )}
 
