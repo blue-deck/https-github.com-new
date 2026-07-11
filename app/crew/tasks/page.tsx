@@ -9,9 +9,9 @@ import {
   ClipboardCheck,
   Clock3,
   Loader2,
-  Mail,
   ShieldCheck,
   Sparkles,
+  Upload,
   UserPlus,
   UserRound,
 } from "lucide-react";
@@ -31,6 +31,7 @@ export default function CrewTasksPage() {
   const [acceptingInviteId, setAcceptingInviteId] = useState("");
   const [updatingTaskId, setUpdatingTaskId] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState("");
+  const [completingChecklistId, setCompletingChecklistId] = useState("");
 
   const stats = useMemo(() => {
     const allItems = checklists.flatMap((list) => list.yacht_checklist_items || []);
@@ -51,7 +52,7 @@ export default function CrewTasksPage() {
     const targetEmail = (emailOverride || email).trim().toLowerCase();
 
     if (!targetEmail) {
-      alert("Please enter your email.");
+      setLoading(false);
       return;
     }
 
@@ -140,7 +141,9 @@ export default function CrewTasksPage() {
     }
 
     setChecklists(nextLists);
-    setActiveChecklist(nextLists[0] || null);
+    setActiveChecklist((current: any) =>
+      nextLists.find((list) => list.id === current?.id) || nextLists[0] || null
+    );
     setLoading(false);
   }
 
@@ -426,23 +429,36 @@ export default function CrewTasksPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user?.email) {
-        setEmail(user.email);
-        await loadTasks(user.email);
+      if (!user?.email) {
+        window.location.replace("/login");
+        return;
       }
+
+      setEmail(user.email);
+      await loadTasks(user.email);
     }
 
     openLoggedInPortal();
   }, []);
 
   async function completeChecklist(checklist: any) {
+    if (checklist?.status === "completed") return;
+
     const items = checklist.yacht_checklist_items || [];
-    const allCompleted = items.every((item: any) => item.completed);
+    const allCompleted = items.length > 0 && items.every((item: any) => item.completed);
 
     if (!allCompleted) {
       alert("Please complete all tasks first.");
       return;
     }
+
+    const confirmed = window.confirm(
+      "Mark this checklist as completed and send the final completion record to your captain?"
+    );
+
+    if (!confirmed) return;
+
+    setCompletingChecklistId(checklist.id);
 
     const { error } = await updateChecklistWithFallback(checklist.id, {
       status: "completed",
@@ -451,10 +467,12 @@ export default function CrewTasksPage() {
 
     if (error) {
       alert(error.message);
+      setCompletingChecklistId("");
       return;
     }
 
     await loadTasks();
+    setCompletingChecklistId("");
   }
 
   async function updateChecklistWithFallback(
@@ -468,9 +486,20 @@ export default function CrewTasksPage() {
       const response = await supabase
         .from("yacht_checklists")
         .update(variant)
-        .eq("id", checklistId);
+        .eq("id", checklistId)
+        .select("id, status, completed_at")
+        .maybeSingle();
 
-      if (!response.error) return response;
+      if (!response.error && response.data) return response;
+      if (!response.error) {
+        return {
+          ...response,
+          error: new Error(
+            "Checklist could not be updated. Please refresh the page and try again."
+          ),
+        };
+      }
+
       lastResponse = response;
 
       if (!isSchemaCacheError(response.error)) return response;
@@ -483,34 +512,6 @@ export default function CrewTasksPage() {
     <main className="bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
       <div className="bd-ocean-content bd-crew-task-content mx-auto grid w-full min-w-0 max-w-7xl gap-6 px-4 py-5 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-6">
-          <div className="bd-glass-card-strong rounded-[34px] p-6">
-            <div className="flex items-center gap-3">
-              <Mail className="h-6 w-6 text-cyan-700" />
-              <div>
-                <p className="text-sm text-cyan-700">Secure Access</p>
-                <h2 className="text-2xl font-black">Open Crew Portal</h2>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-              />
-
-              <button
-                onClick={() => loadTasks()}
-                disabled={loading}
-                className="flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-600 px-5 py-4 text-lg font-black text-white transition hover:scale-[1.01] disabled:opacity-60"
-              >
-                {loading && <Loader2 className="h-5 w-5 animate-spin" />}
-                {loading ? "Loading Portal" : "Open Portal"}
-              </button>
-            </div>
-          </div>
-
           {profile && (
             <div className="bd-glass-card rounded-[34px] p-6">
               <div className="flex min-w-0 items-center gap-4">
@@ -519,10 +520,10 @@ export default function CrewTasksPage() {
                 </div>
 
                 <div className="min-w-0">
-                  <h2 className="text-2xl font-black">
+                  <h2 data-i18n-ignore className="text-2xl font-black">
                     {profile.full_name || "Crew Member"}
                   </h2>
-                  <p className="break-all text-sm text-slate-500">{profile.email}</p>
+                  <p data-i18n-ignore className="break-all text-sm text-slate-500">{profile.email}</p>
                 </div>
               </div>
 
@@ -574,8 +575,8 @@ export default function CrewTasksPage() {
                     >
                       <div className="flex min-w-0 items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <h3 className="break-words font-black">{list.title}</h3>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <h3 data-i18n-ignore className="break-words font-black">{list.title}</h3>
+                          <p data-i18n-ignore className="mt-1 text-xs text-slate-500">
                             {list.department} · {list.checklist_type}
                           </p>
                         </div>
@@ -626,12 +627,12 @@ export default function CrewTasksPage() {
             </div>
           </div>
 
-          {!profile && (
+          {!profile && !loading && (
             <div className="bd-glass-card rounded-[34px] p-10 text-center">
               <ShieldCheck className="mx-auto h-14 w-14 text-cyan-700" />
-              <h3 className="mt-4 text-3xl font-black">Enter your crew email</h3>
+              <h3 className="mt-4 text-3xl font-black">Crew portal unavailable</h3>
               <p className="mt-3 text-slate-500">
-                Your assigned duties will appear after opening your portal.
+                Your crew profile is not ready for this portal yet. Ask your captain to send your yacht invitation.
               </p>
             </div>
           )}
@@ -683,7 +684,7 @@ export default function CrewTasksPage() {
                             <h4 className="text-xl font-black text-slate-950">
                               YachtOS Invitation
                             </h4>
-                            <p className="mt-1 text-sm text-slate-500">
+                            <p data-i18n-ignore className="mt-1 text-sm text-slate-500">
                               {invitation.position || "Crew"} ·{" "}
                               {invitation.department || "Yacht Operations"}
                             </p>
@@ -719,24 +720,41 @@ export default function CrewTasksPage() {
             <div className="bd-glass-card-strong min-w-0 rounded-[40px] p-5 sm:p-8">
               <div className="flex flex-col justify-between gap-5 border-b border-slate-200 pb-6 md:flex-row md:items-center">
                 <div className="min-w-0">
-                  <p className="text-cyan-700">
+                  <p data-i18n-ignore className="text-cyan-700">
                     {activeChecklist.department} · {activeChecklist.checklist_type}
                   </p>
-                  <h2 className="mt-2 break-words text-3xl font-black sm:text-4xl">
+                  <h2 data-i18n-ignore className="mt-2 break-words text-3xl font-black sm:text-4xl">
                     {activeChecklist.title}
                   </h2>
                   {getCaptainNote(activeChecklist) && (
                     <p className="mt-3 rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-slate-700">
-                      Captain note: {getCaptainNote(activeChecklist)}
+                      Captain note: <span data-i18n-ignore>{getCaptainNote(activeChecklist)}</span>
                     </p>
                   )}
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => completeChecklist(activeChecklist)}
-                  className="rounded-2xl bg-green-400 px-6 py-4 font-black text-white"
+                  disabled={
+                    activeChecklist.status === "completed" ||
+                    completingChecklistId === activeChecklist.id
+                  }
+                  className="flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-500 px-6 py-4 font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600 disabled:cursor-default disabled:bg-emerald-700 disabled:shadow-none"
                 >
-                  Complete Checklist
+                  {completingChecklistId === activeChecklist.id ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Completing...
+                    </>
+                  ) : activeChecklist.status === "completed" ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5" />
+                      Checklist Completed
+                    </>
+                  ) : (
+                    "Complete Checklist"
+                  )}
                 </button>
               </div>
 
@@ -744,14 +762,19 @@ export default function CrewTasksPage() {
                 {(activeChecklist.yacht_checklist_items || []).map((task: any) => (
                   <div
                     key={task.id}
-                    className={`rounded-3xl border p-5 transition ${
+                    className={`min-w-0 overflow-hidden rounded-3xl border p-5 transition ${
                       task.completed
                         ? "border-green-400/30 bg-green-400/10"
                         : "border-slate-200 bg-white/70 hover:border-cyan-300/40"
                     }`}
                   >
                     <button
+                      type="button"
                       onClick={() => toggleTask(task)}
+                      disabled={
+                        activeChecklist.status === "completed" ||
+                        updatingTaskId === task.id
+                      }
                       className="flex w-full items-center gap-4 text-left"
                     >
                       <div
@@ -768,6 +791,7 @@ export default function CrewTasksPage() {
 
                       <div className="flex-1">
                         <p
+                          data-i18n-ignore
                           className={`text-lg font-semibold ${
                             task.completed ? "text-slate-500 line-through" : "text-slate-950"
                           }`}
@@ -784,7 +808,7 @@ export default function CrewTasksPage() {
                       </div>
                     </button>
 
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div className="bd-crew-proof-grid mt-5 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                       <PhotoBox
                         label="Before photo"
                         url={getTaskPhoto(task, "before")}
@@ -821,25 +845,32 @@ function PhotoBox({
   onUpload: (file: File) => void;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
+    <div className="bd-crew-proof-card min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 sm:p-4">
       <p className="font-semibold text-slate-700">{label}</p>
       {url && (
-        <img
-          src={url}
-          alt={label}
-          className="mt-3 h-40 w-full rounded-2xl object-cover"
-        />
+        <div className="mt-3 aspect-[4/3] overflow-hidden rounded-xl bg-slate-100">
+          <img
+            src={url}
+            alt={label}
+            className="h-full w-full object-contain"
+          />
+        </div>
       )}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) onUpload(file);
-        }}
-        className="mt-3 text-sm"
-      />
-      {uploading && <p className="mt-2 text-sm text-cyan-700">Uploading...</p>}
+      <label className="mt-3 flex min-w-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800">
+        {uploading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Upload className="h-4 w-4 shrink-0" />}
+        <span className="truncate">{uploading ? "Uploading..." : url ? "Replace photo" : "Add photo"}</span>
+        <input
+          type="file"
+          accept="image/*"
+          disabled={uploading}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) onUpload(file);
+            event.currentTarget.value = "";
+          }}
+          className="sr-only"
+        />
+      </label>
     </div>
   );
 }

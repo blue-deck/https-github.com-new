@@ -998,13 +998,27 @@ textarea:-webkit-autofill:focus {
   }
 
   .bd-crew-task-content {
+    width: 100%;
+    max-width: 100%;
     grid-template-columns: minmax(0, 1fr) !important;
     padding: 1rem !important;
+    overflow-x: clip;
   }
 
   .bd-crew-task-content > :is(aside, section),
   .bd-crew-command-page :is(.grid, .flex) > * {
     min-width: 0;
+  }
+
+  .bd-crew-task-content .bd-crew-proof-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .bd-crew-task-content .bd-crew-proof-card,
+  .bd-crew-task-content .bd-crew-proof-card label {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
   }
 
   .bd-crew-command-page {

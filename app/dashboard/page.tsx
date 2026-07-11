@@ -409,7 +409,7 @@ export default function DashboardPage() {
               <p className="bd-kicker">{t("dashboard.myDashboard")}</p>
 
               <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">
-                {t("dashboard.welcome")}, {profile?.full_name || profile?.email}
+                {t("dashboard.welcome")}, <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
               </h1>
 
               <p className="mt-4 text-lg text-slate-600">{t("dashboard.role")}: {profile?.role}</p>
@@ -503,12 +503,12 @@ export default function DashboardPage() {
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">Yacht Invite</h2>
               <div className="mt-4 rounded-2xl border border-cyan-100 bg-white/72 p-4">
                 <p className="text-sm font-semibold leading-6 text-slate-600">
-                  You are invited by <span className="font-black text-slate-950">{deckInvites[0].yacht_name}</span> for{" "}
+                  You are invited by <span data-i18n-ignore className="font-black text-slate-950">{deckInvites[0].yacht_name}</span> for{" "}
                   <span className="font-black text-cyan-800">{deckInvites[0].position || "crew duty"}</span>.
                 </p>
                 <div className="mt-3 space-y-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
                   <p>Sent: {deckInvites[0].created_at ? new Date(deckInvites[0].created_at).toLocaleDateString() : "-"}</p>
-                  <p>From: {deckInvites[0].sender_role || "Captain"} · {deckInvites[0].sender_name || "BlueDeck captain"}</p>
+                  <p>From: <span data-i18n-ignore>{deckInvites[0].sender_role || "Captain"} · {deckInvites[0].sender_name || "BlueDeck captain"}</span></p>
                 </div>
               </div>
               <button
@@ -528,7 +528,7 @@ export default function DashboardPage() {
             >
               <Ship className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Deck</h2>
-              <p className="mt-3 leading-7 text-slate-600">
+              <p data-i18n-ignore className="mt-3 leading-7 text-slate-600">
                 {myDecks[0].yacht_name}
                 {myDecks[0].position ? ` · ${myDecks[0].position}` : ""}
               </p>
