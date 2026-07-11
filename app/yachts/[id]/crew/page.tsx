@@ -2018,25 +2018,18 @@ export default function CrewPage({
           </div>
         </div>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 md:mb-10 md:grid-cols-4 md:gap-6">
-          <Stat title="Crew" value={crew.length} icon={<Bell />} />
-          {isChecklistSystem ? (
-            <>
-              <Stat title="Open Checklists" value={checklistInsights.openChecklists} icon={<ClipboardList />} />
-              <Stat title="Open Tasks" value={checklistInsights.openTasks} icon={<ListChecks />} />
-            </>
-          ) : (
-            <>
-              <Stat title="Assignable Crew" value={assignableCrew.length} icon={<UserRound />} />
-              <Stat
-                title="Invited"
-                value={crew.filter((member) => member.status === "invited").length}
-                icon={<Plus />}
-              />
-            </>
-          )}
-          <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
-        </div>
+        {!isChecklistSystem && (
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 md:mb-10 md:grid-cols-4 md:gap-6">
+            <Stat title="Crew" value={crew.length} icon={<Bell />} />
+            <Stat title="Assignable Crew" value={assignableCrew.length} icon={<UserRound />} />
+            <Stat
+              title="Invited"
+              value={crew.filter((member) => member.status === "invited").length}
+              icon={<Plus />}
+            />
+            <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
+          </div>
+        )}
 
         {!isChecklistSystem && (
           <section className="mb-8 rounded-[32px] border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_54%,#eefcff_100%)] p-5 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px] sm:p-7">
