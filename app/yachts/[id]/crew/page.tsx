@@ -2997,8 +2997,8 @@ export default function CrewPage({
                 </p>
               </div>
 
-              <div className="space-y-5 p-5 sm:p-7">
-                <div className="grid min-w-0 gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-5">
+              <div className="m-5 overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:m-7 sm:p-6">
+                <div className="grid min-w-0 gap-4 border-b border-slate-200 pb-6 sm:grid-cols-2 xl:grid-cols-5">
                   <label className="block min-w-0 sm:col-span-2 xl:col-span-3">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Crew member
@@ -3060,12 +3060,12 @@ export default function CrewPage({
                 </div>
 
                 {assignableCrew.length === 0 && (
-                  <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-slate-600">
+                  <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-slate-600">
                     No crew below your current hierarchy is available for assignment yet.
                   </p>
                 )}
 
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+                <div className="border-b border-slate-200 py-6">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
@@ -3162,7 +3162,7 @@ export default function CrewPage({
                   </div>
                 </div>
 
-                <div className="grid gap-4 rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                <div className="grid gap-4 pt-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
                   <label className="block">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
                       Captain note
@@ -3181,7 +3181,7 @@ export default function CrewPage({
                     className="bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 px-6 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
                   >
                     <ListChecks className="h-5 w-5" />
-                    {loading ? "Creating..." : "Create Checklist"}
+                    {loading ? "Sending..." : "Send"}
                   </button>
                 </div>
               </div>
