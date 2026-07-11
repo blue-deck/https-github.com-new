@@ -729,7 +729,6 @@ export default function CrewPage({
     role: "",
   });
   const [checklistSection, setChecklistSection] = useState<"builder" | "monitor" | "archive">("builder");
-  const [archiveRetention, setArchiveRetention] = useState<{ months: number; cutoff: string; purged: number } | null>(null);
   const [manualTitle, setManualTitle] = useState("");
   const [manualType, setManualType] = useState("Custom Routine");
   const [manualCategoryId, setManualCategoryId] = useState("deck");
@@ -1630,7 +1629,6 @@ export default function CrewPage({
 
     setCrew(crewData);
     setChecklists(checklistData);
-    setArchiveRetention(payload.checklist_retention || null);
     loadCurrentOperator(crewData, user, payload.operator);
   }
 
@@ -3622,66 +3620,27 @@ export default function CrewPage({
 
         {isChecklistSystem && checklistSection === "archive" && (
           <section className="min-w-0 overflow-hidden rounded-[34px] border border-slate-200 bg-white/90 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px]">
-            <div className="grid min-w-0 gap-0 xl:grid-cols-[minmax(0,0.38fr)_minmax(0,0.62fr)]">
-              <div className="bg-[linear-gradient(135deg,#071827_0%,#0c3040_70%,#135e68_100%)] p-6 text-white sm:p-8">
-                <p className="font-black uppercase tracking-[0.2em] text-cyan-200">
-                  6-Month Record Vault
+            <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
+                  Archive
                 </p>
-                <h2 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
-                  Checklist archive
+                <h2 className="mt-1 text-3xl font-black text-slate-950">
+                  Checklist records
                 </h2>
-                <p className="mt-4 text-sm leading-7 text-cyan-50/82 sm:text-base">
-                  BlueDeck keeps checklist records for the last 6 months. Older records are cleaned automatically
-                  when the yacht checklist data is loaded.
-                </p>
-
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <LibraryMetric label="Records" value={archiveStats.records} />
-                  <LibraryMetric label="Tasks" value={archiveStats.tasks} />
-                  <LibraryMetric label="Completed" value={archiveStats.completed} />
-                  <LibraryMetric label="Proof" value={archiveStats.proofItems} />
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-white/12 bg-white/10 p-4 text-sm leading-6 text-cyan-50/82">
-                  <p className="font-black text-white">Retention</p>
-                  <p className="mt-1">
-                    {archiveRetention?.cutoff
-                      ? `Records older than ${formatDateTime(archiveRetention.cutoff)} are removed.`
-                      : "Records older than 6 months are removed automatically."}
-                  </p>
-                  {archiveRetention?.purged ? (
-                    <p className="mt-2 font-bold text-cyan-100">
-                      {archiveRetention.purged} old checklist record{archiveRetention.purged === 1 ? "" : "s"} cleaned on this load.
-                    </p>
-                  ) : null}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={downloadChecklistArchivePdf}
-                  className="bd-focus mt-6 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-cyan-300 px-5 py-4 text-lg font-black text-slate-950 shadow-xl shadow-cyan-950/18 transition hover:bg-white"
-                >
-                  <Download className="h-5 w-5" />
-                  Download PDF Archive
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={downloadChecklistArchivePdf}
+                className="bd-focus inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-[#5fd3e5] px-5 py-4 text-base font-black text-[#031923] shadow-lg shadow-cyan-700/16 transition hover:bg-[#84e6f3] sm:w-auto"
+              >
+                <Download className="h-5 w-5" />
+                Download PDF Archive
+              </button>
+            </div>
 
-              <div className="p-5 sm:p-8">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
-                      Recent records
-                    </p>
-                    <h3 className="mt-1 text-3xl font-black text-slate-950">
-                      Last 6 months
-                    </h3>
-                  </div>
-                  <span className="rounded-full border border-cyan-200 bg-cyan-50 px-4 py-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-900">
-                    Auto-clean enabled
-                  </span>
-                </div>
-
-                <div className="mt-6 space-y-3">
+            <div className="p-5 sm:p-8">
+              <div className="space-y-3">
                   {checklistRecords.map((item) => {
                     const progress = getChecklistProgress(item);
                     const proofCount = (item.yacht_checklist_items || []).filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
@@ -3723,7 +3682,6 @@ export default function CrewPage({
                       <p className="mt-2 text-slate-500">Sent checklists will appear here for 6 months.</p>
                     </div>
                   )}
-                </div>
               </div>
             </div>
           </section>
@@ -3767,17 +3725,6 @@ export default function CrewPage({
         </div>
       )}
     </main>
-  );
-}
-
-function LibraryMetric({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-white/12 bg-white/10 px-3 py-4 backdrop-blur">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/80">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-black text-white">{value}</p>
-    </div>
   );
 }
 
