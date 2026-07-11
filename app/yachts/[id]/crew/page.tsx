@@ -1990,7 +1990,7 @@ export default function CrewPage({
       <div className="mx-auto w-full min-w-0 max-w-[1700px]">
         <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
-          <div className={isChecklistSystem ? "grid min-w-0 gap-6 p-5 sm:p-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]" : "p-5 sm:p-10"}>
+          <div className={isChecklistSystem ? "p-5 sm:p-8" : "p-5 sm:p-10"}>
             <div className="min-w-0">
               <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
                 {isChecklistSystem ? "BlueDeck ChecklistOS" : "BlueDeck CrewOS"}
@@ -2004,15 +2004,6 @@ export default function CrewPage({
                   : "Invite crew, manage onboard roles and send yacht contracts from one clean crew command workspace."}
               </p>
             </div>
-
-            {isChecklistSystem && checklistSection === "monitor" && (
-              <div className="grid gap-3 rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#071827_0%,#0d3143_58%,#eafcff_58%,#ffffff_100%)] p-4 shadow-inner shadow-cyan-950/15 sm:grid-cols-2">
-                <InsightCard label="Open tasks" value={checklistInsights.openTasks} tone="dark" icon={<ListChecks />} />
-                <InsightCard label="Progress" value={`${checklistInsights.progress}%`} tone="aqua" icon={<CheckCircle />} />
-                <InsightCard label="Due soon" value={checklistInsights.dueSoon} tone="amber" icon={<CalendarClock />} />
-                <InsightCard label="Proof records" value={checklistInsights.proofItems} tone="white" icon={<FileCheck2 />} />
-              </div>
-            )}
           </div>
         </div>
 
@@ -3478,8 +3469,8 @@ export default function CrewPage({
               </button>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <MonitorMetric title="Open checklists" value={checklistInsights.openChecklists} icon={<ClipboardList />} tone="navy" />
+            <div className="mt-5 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <MonitorMetric title="Open checklists" value={checklistInsights.openChecklists} icon={<ClipboardList />} tone="neutral" />
               <MonitorMetric title="Completed" value={checklistInsights.completedChecklists} icon={<CheckCircle />} tone="green" />
               <MonitorMetric title="Due soon" value={checklistInsights.dueSoon} icon={<AlertTriangle />} tone="amber" />
               <MonitorMetric title="Proof records" value={checklistInsights.proofItems} icon={<Camera />} tone="blue" />
@@ -3792,11 +3783,11 @@ function MonitorMetric({
   title: string;
   value: ReactNode;
   icon: ReactNode;
-  tone: "navy" | "green" | "amber" | "blue";
+  tone: "neutral" | "green" | "amber" | "blue";
 }) {
   const toneClass =
-    tone === "navy"
-      ? "border-slate-900 bg-slate-950 text-white"
+    tone === "neutral"
+      ? "border-slate-200 bg-[#f4f7f8] text-slate-950"
       : tone === "green"
         ? "border-emerald-200 bg-emerald-50 text-slate-950"
         : tone === "amber"
@@ -3804,12 +3795,12 @@ function MonitorMetric({
           : "border-cyan-200 bg-cyan-50 text-slate-950";
 
   return (
-    <div className={`rounded-3xl border p-5 ${toneClass}`}>
+    <div className={`rounded-2xl border p-3.5 shadow-sm ${toneClass}`}>
       <div className="flex items-center justify-between gap-4">
-        <span className={tone === "navy" ? "text-cyan-200" : "text-cyan-800"}>{icon}</span>
-        <span className="text-3xl font-black">{value}</span>
+        <span className="text-cyan-800">{icon}</span>
+        <span className="text-2xl font-black">{value}</span>
       </div>
-      <p className={`mt-3 text-xs font-black uppercase tracking-[0.16em] ${tone === "navy" ? "text-cyan-100/80" : "text-slate-500"}`}>
+      <p className="mt-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
         {title}
       </p>
     </div>
@@ -4811,39 +4802,6 @@ function TaskPhotoPreview({
         className="h-28 w-full object-cover transition group-hover:scale-[1.02]"
       />
     </button>
-  );
-}
-
-function InsightCard({
-  label,
-  value,
-  icon,
-  tone,
-}: {
-  label: string;
-  value: string | number;
-  icon: ReactNode;
-  tone: "dark" | "aqua" | "amber" | "white";
-}) {
-  const toneClass =
-    tone === "dark"
-      ? "border-white/10 bg-white/10 text-white"
-      : tone === "aqua"
-        ? "border-cyan-200 bg-cyan-50 text-slate-950"
-        : tone === "amber"
-          ? "border-amber-200 bg-amber-50 text-slate-950"
-          : "border-slate-200 bg-white text-slate-950";
-
-  return (
-    <div className={`rounded-3xl border p-4 ${toneClass}`}>
-      <div className="flex items-center justify-between gap-3">
-        <span className={tone === "dark" ? "text-cyan-200" : "text-cyan-800"}>{icon}</span>
-        <span className="text-2xl font-black">{value}</span>
-      </div>
-      <p className={`mt-3 text-xs font-black uppercase tracking-[0.15em] ${tone === "dark" ? "text-cyan-50/75" : "text-slate-500"}`}>
-        {label}
-      </p>
-    </div>
   );
 }
 
