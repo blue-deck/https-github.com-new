@@ -16,7 +16,6 @@ import {
   CheckSquare,
   ChevronDown,
   ClipboardList,
-  Clock3,
   Download,
   FileCheck2,
   FileText,
@@ -29,7 +28,6 @@ import {
   ShieldAlert,
   ShipWheel,
   TimerReset,
-  Trash2,
   Utensils,
   UserRound,
   UserPlus,
@@ -2082,13 +2080,6 @@ export default function CrewPage({
     return lastResponse;
   }
 
-  async function deleteChecklist(id: string) {
-    if (!confirm("Delete checklist?")) return;
-
-    await supabase.from("yacht_checklists").delete().eq("id", id);
-    loadData();
-  }
-
   function getAssignedCrewLabel(checklist: any) {
     const assignedCrew = crew.find(
       (member) => member.crew_profile_id === checklist.assigned_to
@@ -3031,7 +3022,7 @@ export default function CrewPage({
             <ChecklistSectionButton
               active={checklistSection === "archive"}
               icon={<Archive className="h-5 w-5" />}
-              title="6-Month Archive"
+              title="Archive"
               text="Keep recent records and export a clean PDF archive."
               meta={`${archiveStats.records} records`}
               onClick={() => setChecklistSection("archive")}
@@ -3329,195 +3320,6 @@ export default function CrewPage({
             </div>
             )}
 
-            {isChecklistSystem && (
-            <div className="rounded-[28px] border border-slate-200 bg-white/85 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-cyan-700">Assigned Work</p>
-                  <h2 className="mt-2 text-3xl font-black sm:text-4xl">Crew Progress</h2>
-                </div>
-                <button
-                  onClick={() => loadData()}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-cyan-700 transition hover:border-cyan-300"
-                  title="Refresh crew progress"
-                >
-                  <RefreshCcw className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <MiniOpsStat label="Open tasks" value={checklistInsights.openTasks} icon={<ListChecks />} />
-                <MiniOpsStat label="Completed" value={checklistInsights.completedTasks} icon={<CheckCircle />} />
-                <MiniOpsStat label="Due soon" value={checklistInsights.dueSoon} icon={<AlertTriangle />} />
-              </div>
-
-              <div className="mt-8 space-y-4">
-                {checklists.map((item) => {
-                  const progress = getChecklistProgress(item);
-                  const assignedCrew = crew.find(
-                    (member) => member.crew_profile_id === item.assigned_to
-                  );
-                  const tasks = item.yacht_checklist_items || [];
-                  const expanded = expandedProgress.includes(item.id);
-                  const crewName =
-                    assignedCrew?.crew_profiles?.full_name ||
-                    assignedCrew?.invited_email ||
-                    "Crew member";
-                  const metaLine = [
-                    item.department,
-                    item.checklist_type,
-                    getChecklistFrequency(item),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ");
-
-                  return (
-                    <article
-                      key={item.id}
-                      className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:border-cyan-200 hover:shadow-xl hover:shadow-cyan-950/10"
-                    >
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => toggleProgressCard(item.id)}
-                        onKeyDown={(event) => {
-                          if (event.currentTarget !== event.target) return;
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            toggleProgressCard(item.id);
-                          }
-                        }}
-                        className="bd-focus block w-full cursor-pointer p-5 text-left"
-                        aria-expanded={expanded}
-                      >
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="min-w-0">
-                            <h3 className="break-words text-xl font-black text-slate-950 sm:truncate">
-                              {item.title || "Checklist"}
-                            </h3>
-                            <p className="mt-1 text-sm font-semibold text-cyan-700">
-                              {metaLine || "Assigned checklist"}
-                            </p>
-                            <p className="mt-3 flex items-center gap-2 text-sm font-medium text-slate-600">
-                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-50 text-cyan-700">
-                                <UserRound className="h-4 w-4" />
-                              </span>
-                              <span className="truncate">{crewName}</span>
-                            </p>
-                          </div>
-
-                          <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-start">
-                            <span className="hidden rounded-full border border-slate-200 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-slate-500 sm:inline-flex">
-                              {expanded ? "Hide details" : "View details"}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                deleteChecklist(item.id);
-                              }}
-                              className="bd-focus flex h-10 w-10 items-center justify-center rounded-full border border-rose-100 bg-rose-50 text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-100"
-                              title="Delete checklist"
-                            >
-                              <Trash2 className="h-5 w-5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 rounded-2xl bg-[linear-gradient(135deg,#0e7490,#22d3ee)] p-4 text-white shadow-lg shadow-cyan-700/20">
-                          <div className="mb-2 flex items-center justify-between text-sm">
-                            <span className="font-black">
-                              {progress.done}/{progress.total} completed
-                            </span>
-                            <span className="font-black">{progress.percent}%</span>
-                          </div>
-                          <div className="h-3 overflow-hidden rounded-full bg-white/28">
-                            <div
-                              className="h-full rounded-full bg-white transition-all"
-                              style={{ width: `${progress.percent}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {expanded && (
-                        <div className="border-t border-slate-100 px-5 pb-5">
-                          {getChecklistNote(item) && (
-                            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-slate-700">
-                              Captain note: {getChecklistNote(item)}
-                            </div>
-                          )}
-
-                          <div className="mt-5 space-y-3">
-                            {tasks.map((task: any) => {
-                              const beforePhoto = getTaskPhoto(task, "before");
-                              const afterPhoto = getTaskPhoto(task, "after");
-
-                              return (
-                                <div
-                                  key={task.id}
-                                  className={`rounded-2xl border p-4 ${
-                                    task.completed
-                                      ? "border-emerald-200 bg-emerald-50"
-                                      : "border-slate-200 bg-slate-50"
-                                  }`}
-                                >
-                                  <div className="flex items-start gap-3">
-                                    <div
-                                      className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
-                                        task.completed
-                                          ? "border-emerald-500 bg-emerald-500 text-white"
-                                          : "border-slate-300 bg-white text-slate-300"
-                                      }`}
-                                    >
-                                      {task.completed && <CheckCircle className="h-5 w-5" />}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                      <p
-                                        className={`font-semibold ${
-                                          task.completed ? "text-slate-700" : "text-slate-500"
-                                        }`}
-                                      >
-                                        {task.task_text}
-                                      </p>
-                                      {task.completed && (
-                                        <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                          <Clock3 className="h-3.5 w-3.5 text-cyan-700" />
-                                          Done by {task.completed_by || assignedCrew?.crew_profiles?.email || "crew"}
-                                          {task.completed_at ? ` · ${formatDateTime(task.completed_at)}` : ""}
-                                        </p>
-                                      )}
-
-                                      {(beforePhoto || afterPhoto) && (
-                                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                          <TaskPhotoPreview label="Before" url={beforePhoto} onOpen={setPhotoPreview} />
-                                          <TaskPhotoPreview label="After" url={afterPhoto} onOpen={setPhotoPreview} />
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-
-                            {tasks.length === 0 && (
-                              <p className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                                This checklist has no task items yet.
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-
-                {checklists.length === 0 && (
-                  <p className="text-slate-500">No assigned checklist yet.</p>
-                )}
-              </div>
-            </div>
-            )}
           </div>
 
           <div className="min-w-0 space-y-6 xl:space-y-8">
@@ -5361,28 +5163,6 @@ function WorkflowCard({
           <p className="mt-1 text-sm leading-5 text-slate-500">{text}</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MiniOpsStat({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string | number;
-  icon: ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-cyan-800">{icon}</span>
-        <span className="text-xl font-black text-slate-950">{value}</span>
-      </div>
-      <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-slate-400">
-        {label}
-      </p>
     </div>
   );
 }
