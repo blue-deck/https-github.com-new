@@ -44,6 +44,8 @@ type ContractStudioStep =
   | "signature"
   | "preview";
 
+const CHECKLIST_SENT_STATUS_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 type ContractDraft = {
   agreementDate: string;
   vesselName: string;
@@ -823,14 +825,41 @@ export default function CrewPage({
   const nextContractStep =
     contractStepCards[Math.min(contractStepIndex + 1, contractStepCards.length - 1)]?.id || "preview";
 
+  const retainedChecklists = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setMonth(cutoff.getMonth() - 6);
+    return checklists.filter((checklist) => {
+      const createdAt = checklist.created_at ? new Date(checklist.created_at) : null;
+      return !createdAt || createdAt >= cutoff;
+    });
+  }, [checklists]);
+
+  const monitorChecklists = useMemo(
+    () =>
+      retainedChecklists
+        .filter((checklist) => !isChecklistReadyForArchive(checklist))
+        .sort((first, second) => {
+          const firstOpen = first.status === "completed" ? 1 : 0;
+          const secondOpen = second.status === "completed" ? 1 : 0;
+          if (firstOpen !== secondOpen) return firstOpen - secondOpen;
+          return new Date(second.created_at || 0).getTime() - new Date(first.created_at || 0).getTime();
+        }),
+    [retainedChecklists]
+  );
+
+  const checklistRecords = useMemo(
+    () => retainedChecklists.filter((checklist) => isChecklistReadyForArchive(checklist)),
+    [retainedChecklists]
+  );
+
   const checklistInsights = useMemo(() => {
-    const allTasks = checklists.flatMap((checklist) => checklist.yacht_checklist_items || []);
+    const allTasks = monitorChecklists.flatMap((checklist) => checklist.yacht_checklist_items || []);
     const completedTasks = allTasks.filter((task: any) => task.completed).length;
     const openTasks = Math.max(allTasks.length - completedTasks, 0);
-    const completedChecklists = checklists.filter((checklist) => checklist.status === "completed").length;
-    const openChecklists = Math.max(checklists.length - completedChecklists, 0);
+    const completedChecklists = monitorChecklists.filter((checklist) => checklist.status === "completed").length;
+    const openChecklists = Math.max(monitorChecklists.length - completedChecklists, 0);
     const proofItems = allTasks.filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
-    const dueSoon = checklists.filter((checklist) => {
+    const dueSoon = monitorChecklists.filter((checklist) => {
       if (!checklist.due_date || checklist.status === "completed") return false;
       const dueTime = new Date(checklist.due_date).getTime();
       const now = Date.now();
@@ -849,27 +878,7 @@ export default function CrewPage({
       dueSoon,
       progress,
     };
-  }, [checklists]);
-
-  const checklistRecords = useMemo(() => {
-    const cutoff = new Date();
-    cutoff.setMonth(cutoff.getMonth() - 6);
-    return checklists.filter((checklist) => {
-      const createdAt = checklist.created_at ? new Date(checklist.created_at) : null;
-      return !createdAt || createdAt >= cutoff;
-    });
-  }, [checklists]);
-
-  const monitorChecklists = useMemo(
-    () =>
-      [...checklists].sort((first, second) => {
-        const firstOpen = first.status === "completed" ? 1 : 0;
-        const secondOpen = second.status === "completed" ? 1 : 0;
-        if (firstOpen !== secondOpen) return firstOpen - secondOpen;
-        return new Date(second.created_at || 0).getTime() - new Date(first.created_at || 0).getTime();
-      }),
-    [checklists]
-  );
+  }, [monitorChecklists]);
 
   const archiveStats = useMemo(() => {
     const archivedTasks = checklistRecords.flatMap((checklist) => checklist.yacht_checklist_items || []);
@@ -3730,34 +3739,102 @@ export default function CrewPage({
               <div className="space-y-3">
                   {checklistRecords.map((item) => {
                     const progress = getChecklistProgress(item);
-                    const proofCount = (item.yacht_checklist_items || []).filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
+                    const tasks = item.yacht_checklist_items || [];
+                    const proofCount = tasks.filter((task: any) => getTaskPhoto(task, "before") || getTaskPhoto(task, "after")).length;
+                    const expanded = expandedProgress.includes(item.id);
+                    const crewName = getAssignedCrewLabel(item);
 
                     return (
                       <article
                         key={item.id}
-                        className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"
+                        className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:border-cyan-200"
                       >
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="min-w-0">
-                            <h4 className="truncate text-xl font-black text-slate-950">
-                              {item.title || "Checklist"}
-                            </h4>
-                            <p className="mt-1 text-sm font-semibold text-cyan-800">
-                              {getAssignedCrewLabel(item)} · {item.department || "Yacht"} · {formatDateTime(item.created_at)}
-                            </p>
+                        <button
+                          type="button"
+                          onClick={() => toggleProgressCard(item.id)}
+                          className="bd-focus block w-full p-4 text-left sm:p-5"
+                          aria-expanded={expanded}
+                        >
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                            <div className="min-w-0">
+                              <h4 className="break-words text-xl font-black text-slate-950">
+                                {item.title || "Checklist"}
+                              </h4>
+                              <p className="mt-1 text-sm font-semibold text-cyan-800">
+                                {crewName} · {item.department || "Yacht"} · {formatDateTime(item.created_at)}
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] ${getStatusBadgeClass(item.status)}`}>
+                                {item.status === "completed" ? "Completed" : "Open"}
+                              </span>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
+                                {progress.percent}% done
+                              </span>
+                              <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-cyan-900">
+                                {proofCount} proof
+                              </span>
+                              <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
+                                {expanded ? "Hide details" : "View details"}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex flex-wrap gap-2">
-                            <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] ${getStatusBadgeClass(item.status)}`}>
-                              {item.status === "completed" ? "Completed" : "Open"}
-                            </span>
-                            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
-                              {progress.percent}% done
-                            </span>
-                            <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-cyan-900">
-                              {proofCount} proof
-                            </span>
+                        </button>
+
+                        {expanded && (
+                          <div className="border-t border-slate-100 bg-slate-50/60 px-4 pb-4 sm:px-5 sm:pb-5">
+                            {getChecklistNote(item) && (
+                              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-700">
+                                Captain note: {getChecklistNote(item)}
+                              </div>
+                            )}
+
+                            <div className="mt-4 grid gap-3">
+                              {tasks.map((task: any) => {
+                                const beforePhoto = getTaskPhoto(task, "before");
+                                const afterPhoto = getTaskPhoto(task, "after");
+
+                                return (
+                                  <div
+                                    key={task.id}
+                                    className={`rounded-2xl border p-4 ${
+                                      task.completed
+                                        ? "border-emerald-200 bg-emerald-50"
+                                        : "border-slate-200 bg-white"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <div
+                                        className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border ${
+                                          task.completed
+                                            ? "border-emerald-500 bg-emerald-500 text-white"
+                                            : "border-slate-300 bg-white text-slate-300"
+                                        }`}
+                                      >
+                                        {task.completed && <CheckCircle className="h-5 w-5" />}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="break-words font-semibold text-slate-700">{task.task_text}</p>
+                                        {task.completed && (
+                                          <p className="mt-1 text-xs font-semibold text-slate-500">
+                                            Done by {task.completed_by || crewName}
+                                            {task.completed_at ? ` · ${formatDateTime(task.completed_at)}` : ""}
+                                          </p>
+                                        )}
+                                        {(beforePhoto || afterPhoto) && (
+                                          <div className="mt-3 flex flex-wrap gap-2">
+                                            <TaskPhotoPreview label="Before" url={beforePhoto} onOpen={setPhotoPreview} />
+                                            <TaskPhotoPreview label="After" url={afterPhoto} onOpen={setPhotoPreview} />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </article>
                     );
                   })}
@@ -4782,6 +4859,31 @@ function getChecklistProgress(checklist: any) {
     done,
     percent: total ? Math.round((done / total) * 100) : 0,
   };
+}
+
+function getChecklistArchiveAnchor(checklist: any) {
+  if (checklist?.status === "completed") {
+    const completedTime = Date.parse(checklist.completed_at || "");
+    if (Number.isFinite(completedTime)) return completedTime;
+
+    const latestTaskCompletion = Math.max(
+      0,
+      ...(checklist.yacht_checklist_items || []).map((task: any) => {
+        const taskTime = Date.parse(task.completed_at || "");
+        return Number.isFinite(taskTime) ? taskTime : 0;
+      })
+    );
+    if (latestTaskCompletion > 0) return latestTaskCompletion;
+  }
+
+  const createdTime = Date.parse(checklist?.created_at || "");
+  return Number.isFinite(createdTime) ? createdTime : 0;
+}
+
+function isChecklistReadyForArchive(checklist: any) {
+  if (checklist?.status !== "completed") return false;
+  const anchor = getChecklistArchiveAnchor(checklist);
+  return anchor > 0 && Date.now() - anchor >= CHECKLIST_SENT_STATUS_WINDOW_MS;
 }
 
 function getStatusBadgeClass(status?: string) {
