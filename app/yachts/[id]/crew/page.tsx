@@ -3863,18 +3863,20 @@ export default function CrewPage({
           >
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700" style={{ color: "#0e7490" }}>
                   Task Photo
                 </p>
-                <h3 className="text-2xl font-black text-slate-950">{photoPreview.label}</h3>
+                <h3 className="text-2xl font-black text-slate-950" style={{ color: "#071631" }}>{photoPreview.label}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setPhotoPreview(null)}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-600 transition hover:border-cyan-300 hover:bg-cyan-50 hover:text-cyan-800"
+                className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-md transition hover:scale-105 hover:bg-cyan-800 active:scale-95"
+                style={{ backgroundColor: "#071631", borderColor: "#164e63", color: "#ffffff" }}
                 aria-label="Close photo preview"
+                title="Close"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" strokeWidth={2.5} />
               </button>
             </div>
 
