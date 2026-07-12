@@ -5,6 +5,10 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { contractAnnexCClauses, getContractAnnexCLines } from "../../../lib/contractAnnexC";
 import {
+  downloadChecklistPdfDocument,
+  type ChecklistPdfRecord,
+} from "../../../lib/operationsPdf";
+import {
   Archive,
   AlertTriangle,
   Bell,
@@ -725,6 +729,7 @@ export default function CrewPage({
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
   const [expandedProgress, setExpandedProgress] = useState<string[]>([]);
+  const [checklistPdfAction, setChecklistPdfAction] = useState("");
   const [operator, setOperator] = useState({
     position: "",
     department: "",
@@ -1907,6 +1912,8 @@ export default function CrewPage({
       }
     }
 
+    const brandLogo = await loadProofImage("/bluedeck-logo-wide-premium-transparent.png");
+
     async function addProofPhotos(beforeUrl?: string, afterUrl?: string) {
       const proofSources = [
         { label: "Before", url: beforeUrl },
@@ -1980,13 +1987,37 @@ export default function CrewPage({
 
     doc.setFillColor(7, 24, 39);
     doc.roundedRect(margin, y, contentWidth, 58, 14, 14, "F");
+    if (brandLogo) {
+      const logoBoxWidth = 126;
+      const logoBoxHeight = 28;
+      const logoScale = Math.min(
+        logoBoxWidth / brandLogo.width,
+        logoBoxHeight / brandLogo.height
+      );
+      const logoWidth = brandLogo.width * logoScale;
+      const logoHeight = brandLogo.height * logoScale;
+      try {
+        doc.addImage(
+          brandLogo.dataUrl,
+          brandLogo.format,
+          margin + 16,
+          y + 15 + (logoBoxHeight - logoHeight) / 2,
+          logoWidth,
+          logoHeight,
+          undefined,
+          "FAST"
+        );
+      } catch {
+        // The archive remains downloadable even when a cached logo cannot be decoded.
+      }
+    }
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("BlueDeck Checklist Archive", margin + 18, y + 25);
+    doc.setFontSize(15);
+    doc.text("Checklist Archive", margin + 162, y + 25);
     doc.setFontSize(9);
     doc.setTextColor(175, 239, 247);
-    doc.text(`Last 6 months / ${checklistRecords.length} checklist records`, margin + 18, y + 43);
+    doc.text(`Last 6 months / ${checklistRecords.length} checklist records`, margin + 162, y + 43);
     y += 82;
 
     for (const [index, checklist] of checklistRecords.entries()) {
@@ -2058,6 +2089,49 @@ export default function CrewPage({
     doc.setTextColor(100, 116, 139);
     doc.text("BlueDeck checklist archive - records are retained for 6 months.", margin, pageHeight - 28);
     doc.save(`BlueDeck-checklist-archive-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  function toCaptainChecklistPdfRecord(checklist: any): ChecklistPdfRecord {
+    return {
+      title: checklist.title || "Checklist",
+      assignedCrew: getAssignedCrewLabel(checklist),
+      department: checklist.department,
+      checklistType: checklist.checklist_type,
+      frequency: getChecklistFrequency(checklist),
+      status: checklist.status === "completed" ? "Completed" : "Open",
+      createdAt: checklist.created_at,
+      completedAt: checklist.completed_at,
+      dueDate: checklist.due_date,
+      captainNote: getChecklistNote(checklist),
+      tasks: (checklist.yacht_checklist_items || []).map((task: any) => ({
+        title: task.task_text || "Task",
+        completed: Boolean(task.completed),
+        completedBy: task.completed_by,
+        completedAt: task.completed_at,
+        beforePhoto: getTaskPhoto(task, "before"),
+        afterPhoto: getTaskPhoto(task, "after"),
+      })),
+    };
+  }
+
+  async function downloadArchivedChecklistPdf(checklist: any) {
+    const action = `archive-${checklist.id}`;
+    setChecklistPdfAction(action);
+    try {
+      const fileName = `${checklist.title || "checklist"}`
+        .normalize("NFKD")
+        .replace(/[^a-zA-Z0-9-_ ]/g, "")
+        .trim()
+        .replace(/\s+/g, "-") || "checklist";
+      await downloadChecklistPdfDocument([toCaptainChecklistPdfRecord(checklist)], {
+        fileName: `${fileName}-BlueDeck.pdf`,
+        title: "BlueDeck Checklist Record",
+        subtitle: "Detailed archived checklist and proof record",
+        retentionNote: "BlueDeck captain archive - checklist records are retained for six months.",
+      });
+    } finally {
+      setChecklistPdfAction("");
+    }
   }
 
   async function assignContract() {
@@ -3736,7 +3810,7 @@ export default function CrewPage({
             </div>
 
             <div className="p-5 sm:p-8">
-              <div className="space-y-3">
+              <div className="max-h-[640px] space-y-3 overflow-y-auto pr-2">
                   {checklistRecords.map((item) => {
                     const progress = getChecklistProgress(item);
                     const tasks = item.yacht_checklist_items || [];
@@ -3783,6 +3857,21 @@ export default function CrewPage({
 
                         {expanded && (
                           <div className="border-t border-slate-100 bg-slate-50/60 px-4 pb-4 sm:px-5 sm:pb-5">
+                            <div className="mt-4 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => downloadArchivedChecklistPdf(item)}
+                                disabled={checklistPdfAction === `archive-${item.id}`}
+                                className="bd-focus inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-3 text-sm font-black text-cyan-900 transition hover:border-cyan-300 hover:bg-cyan-50 disabled:opacity-60"
+                              >
+                                {checklistPdfAction === `archive-${item.id}` ? (
+                                  <RefreshCcw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Download className="h-4 w-4" />
+                                )}
+                                Download PDF
+                              </button>
+                            </div>
                             {getChecklistNote(item) && (
                               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-slate-700">
                                 Captain note: {getChecklistNote(item)}

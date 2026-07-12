@@ -18,9 +18,15 @@ import {
   Sparkles,
   Upload,
   UserPlus,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
+import {
+  downloadChecklistPdfDocument,
+  downloadYachtLogPdfDocument,
+  type ChecklistPdfRecord,
+} from "../../lib/operationsPdf";
 import {
   markInvitationAccepted,
   saveYachtMembership,
@@ -43,6 +49,8 @@ export default function CrewTasksPage() {
   const [updatingTaskId, setUpdatingTaskId] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState("");
   const [completingChecklistId, setCompletingChecklistId] = useState("");
+  const [pdfAction, setPdfAction] = useState("");
+  const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
 
   const stats = useMemo(() => {
     const allItems = checklists.flatMap((list) => list.yacht_checklist_items || []);
@@ -638,73 +646,77 @@ export default function CrewTasksPage() {
     return !Number.isNaN(completedTime) && Date.now() - completedTime < 24 * 60 * 60 * 1000;
   }
 
-  async function downloadChecklistPdf(checklist: any) {
-    const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const width = doc.internal.pageSize.getWidth();
-    const height = doc.internal.pageSize.getHeight();
-    const margin = 48;
-    let y = 56;
+  function toChecklistPdfRecord(checklist: any): ChecklistPdfRecord {
+    return {
+      title: checklist.title || "Checklist",
+      assignedCrew: profile?.full_name || profile?.name || email || "Crew member",
+      sender: getChecklistSender(checklist),
+      department: checklist.department,
+      checklistType: checklist.checklist_type,
+      frequency: getChecklistFrequency(checklist),
+      status: checklist.status === "completed" ? "Completed" : "Open",
+      createdAt: checklist.created_at,
+      completedAt: checklist.completed_at,
+      dueDate: checklist.due_date,
+      captainNote: getCaptainNote(checklist),
+      tasks: (checklist.yacht_checklist_items || []).map((task: any) => ({
+        title: task.task_text || "Task",
+        completed: Boolean(task.completed),
+        completedBy: task.completed_by,
+        completedAt: task.completed_at,
+        beforePhoto: getTaskPhoto(task, "before"),
+        afterPhoto: getTaskPhoto(task, "after"),
+      })),
+    };
+  }
 
-    doc.setFillColor(7, 22, 49);
-    doc.rect(0, 0, width, 104, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(21);
-    doc.text("BLUEDECK CHECKLIST RECORD", margin, y);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text("Verified crew operations record", margin, y + 22);
-
-    y = 142;
-    doc.setTextColor(7, 22, 49);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text(checklist.title || "Checklist", margin, y);
-    y += 24;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(70, 91, 117);
-    doc.text(`${checklist.department || "Yacht Operations"} · ${checklist.checklist_type || "Checklist"}`, margin, y);
-    y += 17;
-    doc.text(`Assigned: ${formatPortalDate(checklist.created_at)} · From: ${getChecklistSender(checklist)}`, margin, y);
-    y += 17;
-    doc.text(`Status: ${checklist.status === "completed" ? "Completed" : "Open"}${checklist.completed_at ? ` · ${formatPortalDate(checklist.completed_at)}` : ""}`, margin, y);
-    y += 30;
-
-    for (const [index, task] of (checklist.yacht_checklist_items || []).entries()) {
-      if (y > height - 92) {
-        doc.addPage();
-        y = 56;
-      }
-      doc.setDrawColor(218, 229, 238);
-      doc.setFillColor(task.completed ? 239 : 249, task.completed ? 252 : 251, task.completed ? 246 : 253);
-      doc.roundedRect(margin, y - 14, width - margin * 2, 48, 6, 6, "FD");
-      doc.setTextColor(7, 22, 49);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      const taskLines = doc.splitTextToSize(`${index + 1}. ${task.task_text}`, width - margin * 2 - 90);
-      doc.text(taskLines, margin + 12, y + 3);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(task.completed ? 5 : 119, task.completed ? 130 : 136, task.completed ? 92 : 153);
-      doc.text(task.completed ? "COMPLETED" : "OPEN", width - margin - 68, y + 3);
-      y += Math.max(58, taskLines.length * 12 + 38);
-
-      const before = getTaskPhoto(task, "before");
-      const after = getTaskPhoto(task, "after");
-      if (before || after) {
-        doc.setTextColor(70, 91, 117);
-        doc.setFontSize(8);
-        doc.text(`Proof: ${[before && "Before photo", after && "After photo"].filter(Boolean).join(" · ")}`, margin + 12, y - 15);
-      }
+  async function downloadArchivedChecklistPdf(checklist: any) {
+    const action = `checklist-${checklist.id}`;
+    setPdfAction(action);
+    try {
+      await downloadChecklistPdfDocument([toChecklistPdfRecord(checklist)], {
+        fileName: `${safeFileName(checklist.title || "checklist")}-BlueDeck.pdf`,
+        title: "BlueDeck Checklist Record",
+        subtitle: "Detailed archived checklist and proof record",
+        retentionNote: "BlueDeck crew checklist record retained in the six-month archive.",
+      });
+    } finally {
+      setPdfAction("");
     }
+  }
 
-    doc.setDrawColor(31, 164, 198);
-    doc.line(margin, height - 42, width - margin, height - 42);
-    doc.setFontSize(8);
-    doc.setTextColor(91, 111, 132);
-    doc.text("Generated from the authenticated BlueDeck crew portal.", margin, height - 26);
-    doc.save(`${safeFileName(checklist.title || "checklist")}-BlueDeck.pdf`);
+  async function downloadCrewArchivePdf() {
+    if (checklistGroups.archive.length === 0) return;
+    setPdfAction("archive");
+    try {
+      await downloadChecklistPdfDocument(
+        checklistGroups.archive.map(toChecklistPdfRecord),
+        {
+          fileName: `BlueDeck-crew-checklist-archive-${new Date().toISOString().slice(0, 10)}.pdf`,
+          title: "BlueDeck Crew Checklist Archive",
+          subtitle: "Complete operational history for the last six months",
+          retentionNote: "BlueDeck checklist archive - records are retained for six months.",
+        }
+      );
+    } finally {
+      setPdfAction("");
+    }
+  }
+
+  async function downloadYachtLogPdf() {
+    if (yachtLog.length === 0) return;
+    setPdfAction("yacht-log");
+    try {
+      await downloadYachtLogPdfDocument(yachtLog, {
+        fileName: `BlueDeck-my-yacht-log-${new Date().toISOString().slice(0, 10)}.pdf`,
+        crewName: profile?.full_name || profile?.name || email || "Crew member",
+        yachtName: memberships.length === 1
+          ? yachts[memberships[0]?.yacht_id]?.name
+          : undefined,
+      });
+    } finally {
+      setPdfAction("");
+    }
   }
 
   return (
@@ -792,11 +804,24 @@ export default function CrewTasksPage() {
 
           {checklists.length > 0 && (
             <div className="bd-glass-card rounded-[34px] p-4">
-              <p className="px-2 pb-3 text-sm font-black uppercase tracking-[0.14em] text-cyan-700">
-                {checklistView === "open" ? "Open Checklists" : checklistView === "completed" ? "Completed Checklists" : "Six-Month Archive"}
-              </p>
+              <div className="flex flex-col gap-3 px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-black uppercase tracking-[0.14em] text-cyan-700">
+                  {checklistView === "open" ? "Open Checklists" : checklistView === "completed" ? "Completed Checklists" : "Archive"}
+                </p>
+                {checklistView === "archive" && checklistGroups.archive.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={downloadCrewArchivePdf}
+                    disabled={pdfAction === "archive"}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
+                  >
+                    {pdfAction === "archive" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    Download Archive PDF
+                  </button>
+                )}
+              </div>
 
-              <div className="space-y-3">
+              <div className={`space-y-3 ${checklistView === "archive" ? "max-h-[640px] overflow-y-auto pr-2" : ""}`}>
                 {checklistGroups[checklistView].map((list) => {
                   const items = list.yacht_checklist_items || [];
                   const done = items.filter((item: any) => item.completed).length;
@@ -859,18 +884,34 @@ export default function CrewTasksPage() {
                                   {updatingTaskId === task.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className={`h-5 w-5 ${task.completed ? "text-emerald-600" : "text-slate-300"}`} />}
                                   <span data-i18n-ignore className={`font-semibold ${task.completed ? "text-slate-500 line-through" : "text-slate-900"}`}>{task.task_text}</span>
                                 </button>
-                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                  <PhotoBox label="Before photo" url={getTaskPhoto(task, "before")} uploading={uploadingPhoto === `before-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "before")} disabled={!canEditChecklist(list)} />
-                                  <PhotoBox label="After photo" url={getTaskPhoto(task, "after")} uploading={uploadingPhoto === `after-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "after")} disabled={!canEditChecklist(list)} />
-                                </div>
+                                {checklistView === "archive" ? (
+                                  (getTaskPhoto(task, "before") || getTaskPhoto(task, "after")) && (
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                      <ProofThumbnail label="Before" url={getTaskPhoto(task, "before")} onOpen={setPhotoPreview} />
+                                      <ProofThumbnail label="After" url={getTaskPhoto(task, "after")} onOpen={setPhotoPreview} />
+                                    </div>
+                                  )
+                                ) : (
+                                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                    <PhotoBox label="Before photo" url={getTaskPhoto(task, "before")} uploading={uploadingPhoto === `before-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "before")} disabled={!canEditChecklist(list)} />
+                                    <PhotoBox label="After photo" url={getTaskPhoto(task, "after")} uploading={uploadingPhoto === `after-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "after")} disabled={!canEditChecklist(list)} />
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
 
                           <div className="mt-5 flex flex-wrap justify-end gap-3">
-                            <button type="button" onClick={() => downloadChecklistPdf(list)} className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-3 text-sm font-black text-cyan-800">
-                              <Download className="h-4 w-4" /> PDF
-                            </button>
+                            {checklistView === "archive" && (
+                              <button
+                                type="button"
+                                onClick={() => downloadArchivedChecklistPdf(list)}
+                                disabled={pdfAction === `checklist-${list.id}`}
+                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-3 text-sm font-black text-cyan-800 disabled:opacity-60"
+                              >
+                                {pdfAction === `checklist-${list.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} PDF
+                              </button>
+                            )}
                             {list.status !== "completed" && (
                               <button type="button" onClick={() => completeChecklist(list)} disabled={completingChecklistId === list.id} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">
                                 {completingChecklistId === list.id ? "Completing..." : "Complete Checklist"}
@@ -922,12 +963,27 @@ export default function CrewTasksPage() {
         {portalView === "log" && (
           <section className="space-y-4">
             <div className="bd-glass-card-strong rounded-[32px] p-6 sm:p-8">
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-700">My Yacht Log</p>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">Crew activity record</h2>
-              <p className="mt-3 text-slate-600">A chronological account of your BlueDeck yacht access and operational activity.</p>
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-700">My Yacht Log</p>
+                  <h2 className="mt-2 text-3xl font-black text-slate-950">Crew activity record</h2>
+                  <p className="mt-3 text-slate-600">A chronological account of your BlueDeck yacht access and operational activity.</p>
+                </div>
+                {yachtLog.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={downloadYachtLogPdf}
+                    disabled={pdfAction === "yacht-log"}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
+                  >
+                    {pdfAction === "yacht-log" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    Download PDF
+                  </button>
+                )}
+              </div>
             </div>
             <div className="bd-glass-card rounded-[30px] p-5 sm:p-7">
-              <div className="space-y-2">
+              <div className="max-h-[560px] space-y-2 overflow-y-auto pr-2">
                 {yachtLog.map((event, index) => (
                   <div key={event.id} className="relative grid grid-cols-[18px_minmax(0,1fr)] gap-4 pb-5 last:pb-0">
                     <div className="relative flex justify-center">
@@ -948,6 +1004,36 @@ export default function CrewTasksPage() {
               </div>
             </div>
           </section>
+        )}
+
+        {photoPreview && (
+          <div
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-[#071631]/80 p-4 backdrop-blur-sm"
+            onClick={() => setPhotoPreview(null)}
+          >
+            <div
+              className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/20 bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">Proof photo</p>
+                  <h3 className="mt-1 text-xl font-black text-[#071631]">{photoPreview.label}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPhotoPreview(null)}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071631] text-white shadow-md transition hover:bg-cyan-800"
+                  aria-label="Close photo preview"
+                >
+                  <X className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+              </div>
+              <div className="bg-[#071631] p-3">
+                <img src={photoPreview.url} alt={`${photoPreview.label} proof`} className="max-h-[76vh] w-full object-contain" />
+              </div>
+            </div>
+          </div>
         )}
 
         <section className="hidden">
@@ -1261,6 +1347,32 @@ function PhotoBox({
         />
       </label>
     </div>
+  );
+}
+
+function ProofThumbnail({
+  label,
+  url,
+  onOpen,
+}: {
+  label: string;
+  url?: string;
+  onOpen: (photo: { label: string; url: string }) => void;
+}) {
+  if (!url) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen({ label, url })}
+      className="group relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-cyan-300 hover:shadow-lg"
+      title={`Open ${label.toLowerCase()} proof photo`}
+    >
+      <img src={url} alt={`${label} proof`} className="h-full w-full object-contain p-1 transition group-hover:scale-[1.02]" />
+      <span className="absolute bottom-1.5 left-1.5 rounded-md bg-[#071631]/90 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white">
+        {label}
+      </span>
+    </button>
   );
 }
 
