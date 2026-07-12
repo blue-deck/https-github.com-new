@@ -13,7 +13,6 @@ import {
   Sparkles,
   Upload,
   UserPlus,
-  UserRound,
 } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import {
@@ -506,44 +505,6 @@ export default function CrewTasksPage() {
     <main className="bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
       <div className="bd-ocean-content bd-crew-task-content mx-auto grid w-full min-w-0 max-w-7xl gap-6 px-4 py-5 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)]">
         <aside className="min-w-0 space-y-6">
-          {profile && (
-            <div className="bd-glass-card rounded-[34px] p-6">
-              <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
-                  <UserRound className="h-8 w-8 text-cyan-700" />
-                </div>
-
-                <div className="min-w-0">
-                  <h2 data-i18n-ignore className="text-2xl font-black">
-                    {profile.full_name || "Crew Member"}
-                  </h2>
-                  <p data-i18n-ignore className="break-all text-sm text-slate-500">{profile.email}</p>
-                </div>
-              </div>
-
-              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <MiniStat label="Checklists" value={stats.totalLists} />
-                <MiniStat label="Progress" value={`${stats.progress}%`} />
-                <MiniStat label="Invites" value={stats.pendingInvitations} />
-                <MiniStat label="Tasks" value={stats.totalTasks} />
-                <MiniStat label="Done" value={stats.completed} />
-              </div>
-
-              <div className="mt-6">
-                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
-                  <span>Overall Completion</span>
-                  <span>{stats.progress}%</span>
-                </div>
-                <div className="h-3 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-cyan-600 transition-all"
-                    style={{ width: `${stats.progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
           {checklists.length > 0 && (
             <div className="bd-glass-card rounded-[34px] p-4">
               <p className="px-2 pb-3 text-sm font-semibold text-cyan-700">
@@ -865,15 +826,6 @@ function PhotoBox({
           className="sr-only"
         />
       </label>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white/70 p-4">
-      <p className="text-xs text-slate-400">{label}</p>
-      <h3 className="mt-1 text-2xl font-black">{value}</h3>
     </div>
   );
 }
