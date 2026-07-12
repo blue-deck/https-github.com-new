@@ -564,18 +564,7 @@ export default function DashboardPage() {
                 </p>
               </Link>
             </>
-          ) : (
-            <Link
-              href="/crew/tasks"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-            >
-              <ClipboardCheck className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My YachtOS</h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                View captain invitations, yacht duties and onboard checklists.
-              </p>
-            </Link>
-          )}
+          ) : null}
 
           <Link
             href="/contracts"

@@ -5,15 +5,21 @@ import { supabase } from "../../lib/supabase";
 import { createSafeStoragePath } from "../../lib/storage";
 import {
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   ClipboardCheck,
   Clock3,
+  Download,
+  FileText,
+  History,
+  ListChecks,
   Loader2,
   ShieldCheck,
   Sparkles,
   Upload,
   UserPlus,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import {
   markInvitationAccepted,
@@ -25,7 +31,13 @@ export default function CrewTasksPage() {
   const [profile, setProfile] = useState<any>(null);
   const [checklists, setChecklists] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
+  const [invitationHistory, setInvitationHistory] = useState<any[]>([]);
+  const [memberships, setMemberships] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [yachts, setYachts] = useState<Record<string, any>>({});
   const [activeChecklist, setActiveChecklist] = useState<any>(null);
+  const [portalView, setPortalView] = useState<"home" | "checklists" | "contracts" | "log">("home");
+  const [checklistView, setChecklistView] = useState<"open" | "completed" | "archive">("open");
   const [loading, setLoading] = useState(false);
   const [acceptingInviteId, setAcceptingInviteId] = useState("");
   const [updatingTaskId, setUpdatingTaskId] = useState("");
@@ -46,6 +58,68 @@ export default function CrewTasksPage() {
       progress,
     };
   }, [checklists, invitations]);
+
+  const checklistGroups = useMemo(() => {
+    const now = Date.now();
+    const archiveCutoff = now - 6 * 30 * 24 * 60 * 60 * 1000;
+    const activeCompletedCutoff = now - 24 * 60 * 60 * 1000;
+    const open: any[] = [];
+    const completed: any[] = [];
+    const archive: any[] = [];
+
+    checklists.forEach((checklist) => {
+      if (checklist.status !== "completed") {
+        open.push(checklist);
+        return;
+      }
+
+      const completedTime = Date.parse(checklist.completed_at || checklist.updated_at || "");
+      if (!Number.isNaN(completedTime) && completedTime >= activeCompletedCutoff) {
+        completed.push(checklist);
+      } else if (Number.isNaN(completedTime) || completedTime >= archiveCutoff) {
+        archive.push(checklist);
+      }
+    });
+
+    return { open, completed, archive };
+  }, [checklists]);
+
+  const yachtLog = useMemo(() => {
+    const events = [
+      ...invitationHistory.map((invite) => ({
+        id: `invite-${invite.id}`,
+        date: invite.accepted_at || invite.created_at,
+        title: invite.status === "accepted" ? "Yacht invitation accepted" : "Yacht invitation received",
+        detail: `${yachts[invite.yacht_id]?.name || "BlueDeck yacht"} · ${invite.position || "Crew"}`,
+        type: "Invitation",
+      })),
+      ...memberships.map((membership) => ({
+        id: `membership-${membership.id}`,
+        date: membership.created_at,
+        title: "Crew access activated",
+        detail: `${yachts[membership.yacht_id]?.name || "BlueDeck yacht"} · ${membership.position || "Crew"}`,
+        type: "My Deck",
+      })),
+      ...contracts.map((contract) => ({
+        id: `contract-${contract.id}`,
+        date: contract.signed_at || contract.sent_at || contract.created_at,
+        title: contract.status === "signed" ? "Contract signed" : "Contract received",
+        detail: yachts[contract.yacht_id]?.name || "Seafarer employment contract",
+        type: "Contract",
+      })),
+      ...checklists.map((checklist) => ({
+        id: `checklist-${checklist.id}`,
+        date: checklist.completed_at || checklist.created_at,
+        title: checklist.status === "completed" ? "Checklist completed" : "Checklist assigned",
+        detail: checklist.title,
+        type: "Checklist",
+      })),
+    ];
+
+    return events
+      .filter((event) => event.date)
+      .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+  }, [checklists, contracts, invitationHistory, memberships, yachts]);
 
   async function loadTasks(emailOverride?: string) {
     const targetEmail = (emailOverride || email).trim().toLowerCase();
@@ -77,7 +151,7 @@ export default function CrewTasksPage() {
 
     setProfile(crewProfile);
 
-    const [emailInvites, profileInvites] = await Promise.all([
+    const [emailInvites, profileInvites, allProfileInvites, membershipResponse, contractResponse] = await Promise.all([
       supabase
         .from("crew_invitations")
         .select("*")
@@ -90,6 +164,21 @@ export default function CrewTasksPage() {
         .eq("status", "pending")
         .eq("crew_profile_id", crewProfile.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("crew_invitations")
+        .select("*")
+        .eq("crew_profile_id", crewProfile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("yacht_crew_memberships")
+        .select("*")
+        .eq("crew_profile_id", crewProfile.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("yacht_contracts")
+        .select("*")
+        .eq("crew_profile_id", crewProfile.id)
+        .order("sent_at", { ascending: false }),
     ]);
 
     if (emailInvites.error || profileInvites.error) {
@@ -107,6 +196,40 @@ export default function CrewTasksPage() {
     );
 
     setInvitations(mergedInvites);
+    setInvitationHistory(allProfileInvites.data || []);
+    setMemberships(membershipResponse.data || []);
+    setContracts(contractResponse.data || []);
+
+    const yachtIds = Array.from(new Set([
+      ...(allProfileInvites.data || []).map((item: any) => item.yacht_id),
+      ...(membershipResponse.data || []).map((item: any) => item.yacht_id),
+      ...(contractResponse.data || []).map((item: any) => item.yacht_id),
+    ].filter(Boolean)));
+
+    let operatorByYacht: Record<string, string> = {};
+    if (yachtIds.length) {
+      const { data: yachtRows } = await supabase
+        .from("yachts")
+        .select("id, name, owner_id")
+        .in("id", yachtIds);
+      setYachts(Object.fromEntries((yachtRows || []).map((yacht: any) => [yacht.id, yacht])));
+
+      const ownerIds = Array.from(new Set((yachtRows || []).map((yacht: any) => yacht.owner_id).filter(Boolean)));
+      if (ownerIds.length) {
+        const { data: operatorRows } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, role")
+          .in("id", ownerIds);
+        const operators = Object.fromEntries((operatorRows || []).map((operator: any) => [operator.id, operator]));
+        operatorByYacht = Object.fromEntries((yachtRows || []).map((yacht: any) => {
+          const operator = operators[yacht.owner_id];
+          const role = operator?.role ? `${operator.role.charAt(0).toUpperCase()}${operator.role.slice(1)}` : "Captain";
+          return [yacht.id, `${role}: ${operator?.full_name || operator?.email || "BlueDeck yacht representative"}`];
+        }));
+      }
+    } else {
+      setYachts({});
+    }
 
     const { data: lists, error: listError } = await supabase
       .from("yacht_checklists")
@@ -123,7 +246,10 @@ export default function CrewTasksPage() {
       return;
     }
 
-    let nextLists = lists || [];
+    let nextLists = (lists || []).map((list: any) => ({
+      ...list,
+      assigned_by_name: operatorByYacht[list.yacht_id] || getChecklistSender(list),
+    }));
     const createdRecurring = await ensureRecurringChecklistInstances(nextLists, crewProfile.id);
 
     if (createdRecurring > 0) {
@@ -136,12 +262,17 @@ export default function CrewTasksPage() {
         .eq("assigned_to", crewProfile.id)
         .order("created_at", { ascending: false });
 
-      if (!refreshError) nextLists = refreshedLists || nextLists;
+      if (!refreshError) {
+        nextLists = (refreshedLists || []).map((list: any) => ({
+          ...list,
+          assigned_by_name: operatorByYacht[list.yacht_id] || getChecklistSender(list),
+        }));
+      }
     }
 
     setChecklists(nextLists);
     setActiveChecklist((current: any) =>
-      nextLists.find((list) => list.id === current?.id) || nextLists[0] || null
+      nextLists.find((list) => list.id === current?.id) || null
     );
     setLoading(false);
   }
@@ -501,42 +632,203 @@ export default function CrewTasksPage() {
     return lastResponse;
   }
 
+  function canEditChecklist(checklist: any) {
+    if (checklist?.status !== "completed") return true;
+    const completedTime = Date.parse(checklist.completed_at || "");
+    return !Number.isNaN(completedTime) && Date.now() - completedTime < 24 * 60 * 60 * 1000;
+  }
+
+  async function downloadChecklistPdf(checklist: any) {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const width = doc.internal.pageSize.getWidth();
+    const height = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    let y = 56;
+
+    doc.setFillColor(7, 22, 49);
+    doc.rect(0, 0, width, 104, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(21);
+    doc.text("BLUEDECK CHECKLIST RECORD", margin, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text("Verified crew operations record", margin, y + 22);
+
+    y = 142;
+    doc.setTextColor(7, 22, 49);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(checklist.title || "Checklist", margin, y);
+    y += 24;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(70, 91, 117);
+    doc.text(`${checklist.department || "Yacht Operations"} · ${checklist.checklist_type || "Checklist"}`, margin, y);
+    y += 17;
+    doc.text(`Assigned: ${formatPortalDate(checklist.created_at)} · From: ${getChecklistSender(checklist)}`, margin, y);
+    y += 17;
+    doc.text(`Status: ${checklist.status === "completed" ? "Completed" : "Open"}${checklist.completed_at ? ` · ${formatPortalDate(checklist.completed_at)}` : ""}`, margin, y);
+    y += 30;
+
+    for (const [index, task] of (checklist.yacht_checklist_items || []).entries()) {
+      if (y > height - 92) {
+        doc.addPage();
+        y = 56;
+      }
+      doc.setDrawColor(218, 229, 238);
+      doc.setFillColor(task.completed ? 239 : 249, task.completed ? 252 : 251, task.completed ? 246 : 253);
+      doc.roundedRect(margin, y - 14, width - margin * 2, 48, 6, 6, "FD");
+      doc.setTextColor(7, 22, 49);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      const taskLines = doc.splitTextToSize(`${index + 1}. ${task.task_text}`, width - margin * 2 - 90);
+      doc.text(taskLines, margin + 12, y + 3);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(task.completed ? 5 : 119, task.completed ? 130 : 136, task.completed ? 92 : 153);
+      doc.text(task.completed ? "COMPLETED" : "OPEN", width - margin - 68, y + 3);
+      y += Math.max(58, taskLines.length * 12 + 38);
+
+      const before = getTaskPhoto(task, "before");
+      const after = getTaskPhoto(task, "after");
+      if (before || after) {
+        doc.setTextColor(70, 91, 117);
+        doc.setFontSize(8);
+        doc.text(`Proof: ${[before && "Before photo", after && "After photo"].filter(Boolean).join(" · ")}`, margin + 12, y - 15);
+      }
+    }
+
+    doc.setDrawColor(31, 164, 198);
+    doc.line(margin, height - 42, width - margin, height - 42);
+    doc.setFontSize(8);
+    doc.setTextColor(91, 111, 132);
+    doc.text("Generated from the authenticated BlueDeck crew portal.", margin, height - 26);
+    doc.save(`${safeFileName(checklist.title || "checklist")}-BlueDeck.pdf`);
+  }
+
   return (
     <main className="bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
-      <div className="bd-ocean-content bd-crew-task-content mx-auto grid w-full min-w-0 max-w-7xl gap-6 px-4 py-5 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)]">
+      <div className="bd-ocean-content bd-crew-task-content mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
+        {portalView === "home" && (
+          <section className="space-y-5">
+          <div className="grid gap-5 md:grid-cols-3">
+            <PortalCard
+              icon={ListChecks}
+              title="Checklists"
+              description="Open duties, completed work and your six-month checklist archive."
+              meta={`${checklistGroups.open.length} open · ${checklistGroups.completed.length} completed`}
+              onClick={() => setPortalView("checklists")}
+            />
+            <PortalCard
+              icon={FileText}
+              title="My Contract"
+              description="Review contracts sent to your crew profile and open mobile signature."
+              meta={`${contracts.length} contract${contracts.length === 1 ? "" : "s"}`}
+              onClick={() => setPortalView("contracts")}
+            />
+            <PortalCard
+              icon={History}
+              title="My Yacht Log"
+              description="A dated record of invitations, access, contracts and checklist activity."
+              meta={`${yachtLog.length} recorded events`}
+              onClick={() => setPortalView("log")}
+            />
+          </div>
+          {invitations.length > 0 && (
+            <div className="bd-glass-card-strong rounded-[30px] p-6">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">Pending invitation</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">Yacht crew access</h2>
+                  <p className="mt-2 text-sm text-slate-600">{invitations[0].position || "Crew"} · Sent {formatPortalDate(invitations[0].created_at)}</p>
+                </div>
+                <button type="button" onClick={() => acceptInvitation(invitations[0])} disabled={acceptingInviteId === invitations[0].id} className="rounded-xl bg-[#071631] px-5 py-3 text-sm font-black text-white disabled:opacity-60">
+                  {acceptingInviteId === invitations[0].id ? "Accepting..." : "Accept Invitation"}
+                </button>
+              </div>
+            </div>
+          )}
+          </section>
+        )}
+
+        {portalView !== "home" && (
+          <button
+            type="button"
+            onClick={() => setPortalView("home")}
+            className="mb-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-black text-slate-700 transition hover:border-cyan-300"
+          >
+            <ChevronRight className="h-4 w-4 rotate-180" />
+            My Deck
+          </button>
+        )}
+
+        {portalView === "checklists" && (
         <aside className="min-w-0 space-y-6">
+          <div className="bd-glass-card-strong rounded-[30px] p-3">
+            <div className="grid gap-2 sm:grid-cols-3">
+              {(["open", "completed", "archive"] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  onClick={() => {
+                    setChecklistView(view);
+                    setActiveChecklist(null);
+                  }}
+                  className={`flex items-center justify-between rounded-2xl border px-5 py-4 text-left transition ${
+                    checklistView === view
+                      ? "border-cyan-500 bg-cyan-50 text-cyan-900"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-cyan-200"
+                  }`}
+                >
+                  <span className="font-black capitalize">{view}</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black">
+                    {checklistGroups[view].length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {checklists.length > 0 && (
             <div className="bd-glass-card rounded-[34px] p-4">
-              <p className="px-2 pb-3 text-sm font-semibold text-cyan-700">
-                Assigned Checklists
+              <p className="px-2 pb-3 text-sm font-black uppercase tracking-[0.14em] text-cyan-700">
+                {checklistView === "open" ? "Open Checklists" : checklistView === "completed" ? "Completed Checklists" : "Six-Month Archive"}
               </p>
 
               <div className="space-y-3">
-                {checklists.map((list) => {
+                {checklistGroups[checklistView].map((list) => {
                   const items = list.yacht_checklist_items || [];
                   const done = items.filter((item: any) => item.completed).length;
                   const percent = items.length ? Math.round((done / items.length) * 100) : 0;
                   const active = activeChecklist?.id === list.id;
 
                   return (
-                    <button
+                    <article
                       key={list.id}
-                      onClick={() => setActiveChecklist(list)}
-                      className={`w-full rounded-2xl border p-4 text-left transition ${
+                      className={`overflow-hidden rounded-2xl border transition ${
                         active
                           ? "border-cyan-300 bg-cyan-600/10"
                           : "border-slate-200 bg-white/70 hover:border-white/20"
                       }`}
                     >
-                      <div className="flex min-w-0 items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveChecklist(active ? null : list)}
+                        className="w-full p-5 text-left"
+                      >
+                      <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="min-w-0">
                           <h3 data-i18n-ignore className="break-words font-black">{list.title}</h3>
                           <p data-i18n-ignore className="mt-1 text-xs text-slate-500">
                             {list.department} · {list.checklist_type}
                           </p>
+                          <p className="mt-2 text-xs font-semibold text-slate-500">
+                            From: <span data-i18n-ignore>{getChecklistSender(list)}</span> · Received {formatPortalDate(list.created_at)}
+                          </p>
                         </div>
 
-                        <ChevronRight className="h-5 w-5 shrink-0 text-slate-500" />
+                        <ChevronDown className={`h-5 w-5 shrink-0 text-slate-500 transition ${active ? "rotate-180" : ""}`} />
                       </div>
 
                       <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
@@ -545,15 +837,120 @@ export default function CrewTasksPage() {
                           style={{ width: `${percent}%` }}
                         />
                       </div>
-                    </button>
+                      </button>
+
+                      {active && (
+                        <div className="border-t border-cyan-200/70 p-5 sm:p-6">
+                          {getCaptainNote(list) && (
+                            <p className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
+                              Captain note: <span data-i18n-ignore>{getCaptainNote(list)}</span>
+                            </p>
+                          )}
+
+                          <div className="space-y-3">
+                            {items.map((task: any) => (
+                              <div key={task.id} className={`rounded-2xl border p-4 ${task.completed ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleTask(task)}
+                                  disabled={!canEditChecklist(list) || updatingTaskId === task.id}
+                                  className="flex w-full items-center gap-3 text-left disabled:cursor-default"
+                                >
+                                  {updatingTaskId === task.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className={`h-5 w-5 ${task.completed ? "text-emerald-600" : "text-slate-300"}`} />}
+                                  <span data-i18n-ignore className={`font-semibold ${task.completed ? "text-slate-500 line-through" : "text-slate-900"}`}>{task.task_text}</span>
+                                </button>
+                                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                                  <PhotoBox label="Before photo" url={getTaskPhoto(task, "before")} uploading={uploadingPhoto === `before-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "before")} disabled={!canEditChecklist(list)} />
+                                  <PhotoBox label="After photo" url={getTaskPhoto(task, "after")} uploading={uploadingPhoto === `after-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "after")} disabled={!canEditChecklist(list)} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="mt-5 flex flex-wrap justify-end gap-3">
+                            <button type="button" onClick={() => downloadChecklistPdf(list)} className="inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-3 text-sm font-black text-cyan-800">
+                              <Download className="h-4 w-4" /> PDF
+                            </button>
+                            {list.status !== "completed" && (
+                              <button type="button" onClick={() => completeChecklist(list)} disabled={completingChecklistId === list.id} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">
+                                {completingChecklistId === list.id ? "Completing..." : "Complete Checklist"}
+                              </button>
+                            )}
+                            {list.status === "completed" && canEditChecklist(list) && (
+                              <span className="rounded-xl bg-emerald-50 px-4 py-3 text-xs font-black text-emerald-800">Editable for 24 hours</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </article>
                   );
                 })}
+                {checklistGroups[checklistView].length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-8 text-center text-slate-500">
+                    No {checklistView} checklist records.
+                  </div>
+                )}
               </div>
             </div>
           )}
         </aside>
+        )}
 
-        <section className="min-w-0 space-y-6">
+        {portalView === "contracts" && (
+          <section className="space-y-4">
+            <div className="bd-glass-card-strong rounded-[32px] p-6 sm:p-8">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-700">My Contract</p>
+              <h2 className="mt-2 text-3xl font-black text-slate-950">Seafarer contracts</h2>
+              <p className="mt-3 text-slate-600">Contracts sent to your authenticated crew profile remain available here.</p>
+            </div>
+            {contracts.map((contract) => (
+              <article key={contract.id} className="bd-glass-card rounded-[26px] p-5 sm:p-6">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-700">{contract.status || "Draft"}</p>
+                    <h3 className="mt-2 text-xl font-black text-slate-950" data-i18n-ignore>{yachts[contract.yacht_id]?.name || "Seafarer Employment Agreement"}</h3>
+                    <p className="mt-2 text-sm text-slate-500">Received {formatPortalDate(contract.sent_at || contract.created_at)}</p>
+                  </div>
+                  <a href="/contracts" className="rounded-xl bg-[#071631] px-5 py-3 text-center text-sm font-black text-white">Open Contract</a>
+                </div>
+              </article>
+            ))}
+            {contracts.length === 0 && <EmptyPortalState icon={FileText} text="No contracts have been sent to your crew profile yet." />}
+          </section>
+        )}
+
+        {portalView === "log" && (
+          <section className="space-y-4">
+            <div className="bd-glass-card-strong rounded-[32px] p-6 sm:p-8">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-700">My Yacht Log</p>
+              <h2 className="mt-2 text-3xl font-black text-slate-950">Crew activity record</h2>
+              <p className="mt-3 text-slate-600">A chronological account of your BlueDeck yacht access and operational activity.</p>
+            </div>
+            <div className="bd-glass-card rounded-[30px] p-5 sm:p-7">
+              <div className="space-y-2">
+                {yachtLog.map((event, index) => (
+                  <div key={event.id} className="relative grid grid-cols-[18px_minmax(0,1fr)] gap-4 pb-5 last:pb-0">
+                    <div className="relative flex justify-center">
+                      <span className="mt-2 h-2.5 w-2.5 rounded-full bg-cyan-600" />
+                      {index < yachtLog.length - 1 && <span className="absolute top-5 h-[calc(100%-8px)] w-px bg-cyan-100" />}
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white/75 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="font-black text-slate-950">{event.title}</h3>
+                        <span className="text-xs font-bold text-slate-400">{formatPortalDate(event.date)}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-600" data-i18n-ignore>{event.detail}</p>
+                      <p className="mt-2 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">{event.type}</p>
+                    </div>
+                  </div>
+                ))}
+                {yachtLog.length === 0 && <EmptyPortalState icon={History} text="Your yacht activity will appear here after the first invitation or assignment." />}
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="hidden">
           <div className="bd-glass-card-strong rounded-[40px] p-5 sm:p-8">
             <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
               <div className="min-w-0">
@@ -788,16 +1185,53 @@ export default function CrewTasksPage() {
   );
 }
 
+function PortalCard({
+  icon: Icon,
+  title,
+  description,
+  meta,
+  onClick,
+}: {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+  meta: string;
+  onClick: () => void;
+}) {
+  return (
+    <button type="button" onClick={onClick} className="bd-glass-card bd-focus group min-h-56 rounded-[30px] p-6 text-left transition hover:-translate-y-1 hover:border-cyan-300 sm:p-7">
+      <div className="flex items-start justify-between gap-4">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[#071631] text-white"><Icon className="h-6 w-6" /></span>
+        <ChevronRight className="h-5 w-5 text-slate-400 transition group-hover:translate-x-1 group-hover:text-cyan-700" />
+      </div>
+      <h2 className="mt-6 text-2xl font-black text-slate-950">{title}</h2>
+      <p className="mt-2 leading-6 text-slate-600">{description}</p>
+      <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-cyan-700">{meta}</p>
+    </button>
+  );
+}
+
+function EmptyPortalState({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 p-8 text-center text-slate-500">
+      <Icon className="mx-auto h-8 w-8 text-cyan-700" />
+      <p className="mt-3">{text}</p>
+    </div>
+  );
+}
+
 function PhotoBox({
   label,
   url,
   uploading,
   onUpload,
+  disabled = false,
 }: {
   label: string;
   url?: string;
   uploading: boolean;
   onUpload: (file: File) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="bd-crew-proof-card min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 sm:p-4">
@@ -811,13 +1245,13 @@ function PhotoBox({
           />
         </div>
       )}
-      <label className="mt-3 flex min-w-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800">
+      <label className={`mt-3 flex min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 transition ${disabled ? "cursor-default opacity-60" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
         {uploading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Upload className="h-4 w-4 shrink-0" />}
         <span className="truncate">{uploading ? "Uploading..." : url ? "Replace photo" : "Add photo"}</span>
         <input
           type="file"
           accept="image/*"
-          disabled={uploading}
+          disabled={uploading || disabled}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) onUpload(file);
@@ -828,6 +1262,38 @@ function PhotoBox({
       </label>
     </div>
   );
+}
+
+function formatPortalDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getChecklistSender(checklist: any) {
+  return (
+    checklist?.assigned_by_name ||
+    checklist?.captain_name ||
+    checklist?.created_by_name ||
+    checklist?.items?.assigned_by_name ||
+    checklist?.items?.captain_name ||
+    "Captain / Yacht Operations"
+  );
+}
+
+function safeFileName(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9-_ ]/g, "")
+    .trim()
+    .replace(/\s+/g, "-") || "checklist";
 }
 
 function getCaptainNote(checklist: any) {
