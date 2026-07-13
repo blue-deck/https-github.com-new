@@ -10,8 +10,8 @@ export const BLUEDECK = {
     deploy: "Vercel",
     database: "Supabase",
     domain: "bluedeck.app",
-    pwa: false,
-    offline: false,
+    pwa: true,
+    offline: true,
   },
 
   integrations: {

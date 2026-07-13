@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AuthenticatedTopBar } from "./components/AuthenticatedTopBar";
 import { LanguageProvider } from "./components/LanguageProvider";
+import { PlatformBridge } from "./components/PlatformBridge";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   title: "BlueDeck | Yacht Management Platform",
   description:
     "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",
-  manifest: `/manifest.json?v=${faviconVersion}`,
+  manifest: "/manifest.webmanifest",
   alternates: {
     canonical: "/",
   },
@@ -95,6 +96,9 @@ const organizationJsonLd = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  colorScheme: "light",
   themeColor: "#071631",
 };
 
@@ -113,6 +117,7 @@ export default function RootLayout({
           }}
         />
         <LanguageProvider>
+          <PlatformBridge />
           <AuthenticatedTopBar />
           {children}
         </LanguageProvider>

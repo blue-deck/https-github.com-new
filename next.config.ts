@@ -4,6 +4,16 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/manifest.json",
+        destination: "/manifest.webmanifest",
+        permanent: true,
+      },
+      {
+        source: "/site.webmanifest",
+        destination: "/manifest.webmanifest",
+        permanent: true,
+      },
+      {
         source: "/:path*",
         has: [{ type: "host", value: "bluedeck.app" }],
         destination: "https://www.bluedeck.app/:path*",
@@ -21,7 +31,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), payment=(), geolocation=(self)",
+            value: "camera=(self), microphone=(self), payment=(), geolocation=(self)",
           },
         ],
       },
@@ -30,6 +40,9 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Content-Type", value: "application/javascript; charset=utf-8" },
           { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+          { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'" },
         ],
       },
       {

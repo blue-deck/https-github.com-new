@@ -186,7 +186,12 @@ export default function ResetPasswordPage() {
                   className="w-full bg-transparent text-[#071f3c] outline-none placeholder:text-slate-400"
                   placeholder={t("login.minimumPassword")}
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-cyan-700"
+                >
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </AuthField>

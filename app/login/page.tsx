@@ -376,7 +376,12 @@ export default function LoginPage() {
                       : t("login.minimumPassword")
                 }
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-400">
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-cyan-700"
+              >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </AuthField>
@@ -443,10 +448,10 @@ export default function LoginPage() {
 
             {mode !== "recovery" && (
               <div className="flex flex-wrap justify-between gap-3 text-sm">
-                <Link href={forgotPasswordHref} className="font-semibold text-cyan-700">
+                <Link href={forgotPasswordHref} className="inline-flex min-h-11 items-center font-semibold text-cyan-700">
                   {t("login.forgot")}
                 </Link>
-                <button type="button" onClick={resendConfirmation} className="font-semibold text-slate-600">
+                <button type="button" onClick={resendConfirmation} className="min-h-11 font-semibold text-slate-600">
                   {t("login.resend")}
                 </button>
               </div>
