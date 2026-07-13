@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -160,12 +161,18 @@ export default function MyBluePage() {
   useEffect(() => {
     if (!preview) return;
 
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === "Escape") setPreview(null);
     }
 
     document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = previousBodyOverflow;
+    };
   }, [preview]);
 
   async function callRelatedApi(input: {
@@ -491,34 +498,37 @@ export default function MyBluePage() {
         </section>
       </div>
 
-      {preview && (
-        <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#06111f]/55 p-4 backdrop-blur-sm"
-          onMouseDown={() => setPreview(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Photo gallery preview"
-        >
+      {preview &&
+        createPortal(
           <div
-            className="relative w-[min(760px,92vw)] rounded-3xl bg-white p-3 shadow-2xl shadow-slate-950/30"
-            onMouseDown={(event) => event.stopPropagation()}
+            className="fixed inset-0 z-[200] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-[#06111f]/80 p-3 backdrop-blur-sm sm:p-6"
+            onClick={() => setPreview(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Photo gallery preview"
           >
-            <button
-              type="button"
-              onClick={() => setPreview(null)}
-              className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-[#06111f] shadow-lg shadow-slate-950/15 transition hover:bg-cyan-50"
-              aria-label="Close photo preview"
+            <div
+              className="relative flex max-h-[calc(100dvh-1.5rem)] w-[min(960px,94vw)] items-center justify-center overflow-hidden rounded-3xl bg-white p-2 shadow-2xl shadow-black/40 sm:max-h-[calc(100dvh-3rem)] sm:p-3"
+              onClick={(event) => event.stopPropagation()}
             >
-              <X className="h-5 w-5" />
-            </button>
-            <img
-              src={preview.image_url}
-              alt="Photo gallery preview"
-              className="max-h-[78vh] w-full rounded-2xl object-contain"
-            />
-          </div>
-        </div>
-      )}
+              <button
+                type="button"
+                autoFocus
+                onClick={() => setPreview(null)}
+                className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#06111f] shadow-lg shadow-slate-950/20 transition hover:bg-cyan-50 sm:right-4 sm:top-4"
+                aria-label="Close photo preview"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <img
+                src={preview.image_url}
+                alt="Photo gallery preview"
+                className="max-h-[calc(100dvh-2.5rem)] w-full rounded-2xl object-contain sm:max-h-[calc(100dvh-4.5rem)]"
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
     </main>
   );
 }
