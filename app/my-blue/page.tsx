@@ -445,19 +445,20 @@ export default function MyBluePage() {
   return (
     <main className="bd-ocean-shell min-h-screen overflow-x-hidden px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1320px]">
+        <Link
+          href="/dashboard"
+          className="bd-focus mb-3 inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-3 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm backdrop-blur transition hover:border-cyan-300 hover:text-cyan-800"
+          aria-label="Back to dashboard"
+          title="Back to dashboard"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Dashboard
+        </Link>
+
         <header className="bd-glass-card-strong overflow-hidden rounded-[24px]">
           <div className="h-1 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_48%,#2d7482_100%)]" />
           <div className="flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div className="flex min-w-0 items-center gap-2.5">
-              <Link
-                href="/dashboard"
-                className="bd-focus inline-flex h-10 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm transition hover:border-cyan-300 hover:text-cyan-800"
-                aria-label="Back to dashboard"
-                title="Back to dashboard"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Link>
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
                 <Camera className="h-5 w-5" />
               </span>
@@ -711,10 +712,9 @@ function GalleryPhotoCard({
         {total > 1 && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute right-2 top-2 z-10 inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-white/70 bg-[#071f3c]/88 px-2 text-[10px] font-black uppercase tracking-[0.08em] text-white shadow-lg backdrop-blur-sm"
+            className="pointer-events-none absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/70 bg-[#071f3c]/88 text-white shadow-lg backdrop-blur-sm"
           >
             <GripVertical className="h-4 w-4" />
-            <span className="hidden sm:inline">Drag</span>
           </span>
         )}
       </div>
