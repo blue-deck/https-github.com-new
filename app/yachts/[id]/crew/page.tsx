@@ -3,6 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
+import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
 import { contractAnnexCClauses, getContractAnnexCLines } from "../../../lib/contractAnnexC";
 import {
   contractEmployerDeclarationParagraphs,
@@ -1435,12 +1436,8 @@ export default function CrewPage({
     }
 
     function drawContractCoverPage() {
-      doc.addPage();
-      drawBodyPageHeader("ANNEX A - PARTIES");
       const sections = getContractCoverSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 82, pageWidth - 84, 198);
-      drawCoverSection(sections[1], 42, 290, pageWidth - 84, 166);
-      drawCoverSection(sections[2], 42, 466, pageWidth - 84, 180);
+      drawContractAnnexAPage(doc, sections, drawBodyPageHeader);
     }
 
     function drawContractTermsPage() {
