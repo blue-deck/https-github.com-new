@@ -884,7 +884,7 @@ export default function CrewTasksPage() {
                                   {updatingTaskId === task.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className={`h-5 w-5 ${task.completed ? "text-emerald-600" : "text-slate-300"}`} />}
                                   <span data-i18n-ignore className={`font-semibold ${task.completed ? "text-slate-500 line-through" : "text-slate-900"}`}>{task.task_text}</span>
                                 </button>
-                                {checklistView === "archive" ? (
+                                {checklistView === "archive" || checklistView === "completed" ? (
                                   (getTaskPhoto(task, "before") || getTaskPhoto(task, "after")) && (
                                     <div className="mt-4 flex flex-wrap gap-2">
                                       <ProofThumbnail label="Before" url={getTaskPhoto(task, "before")} onOpen={setPhotoPreview} />
