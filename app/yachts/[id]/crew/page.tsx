@@ -4,6 +4,11 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { contractAnnexCClauses, getContractAnnexCLines } from "../../../lib/contractAnnexC";
+import {
+  contractEmployerDeclarationParagraphs,
+  contractSeafarerDeclarationParagraphs,
+  drawContractAnnexDPage,
+} from "../../../lib/contractAnnexD";
 import { createSafeStoragePath } from "../../../lib/storage";
 import {
   downloadChecklistPdfDocument,
@@ -129,6 +134,9 @@ type ContractDraft = {
   signerTitle: string;
   signatureDate: string;
   signatureLocation: string;
+  seafarerFullName: string;
+  seafarerPlaceSigned: string;
+  seafarerSignatureDate: string;
 };
 
 type ContractSheetRow = [string, string | undefined | null];
@@ -155,7 +163,9 @@ type ContractSaveSectionKey =
   | "annexBAgreement"
   | "annexBTrial"
   | "annexBStandard"
-  | "annexBSpecial";
+  | "annexBSpecial"
+  | "annexDEmployer"
+  | "annexDSeafarer";
 
 type ContractCrewMember = {
   position?: string | null;
@@ -279,6 +289,19 @@ const contractAnnexBFields: ContractDraftField[] = [
   ...contractAnnexBSpecialFields,
 ];
 
+const contractAnnexDEmployerFields: ContractDraftField[] = [
+  "signerName",
+  "signerTitle",
+  "signatureLocation",
+  "signatureDate",
+];
+
+const contractAnnexDSeafarerFields: ContractDraftField[] = [
+  "seafarerFullName",
+  "seafarerPlaceSigned",
+  "seafarerSignatureDate",
+];
+
 const contractSaveSectionIds: ContractSaveSectionKey[] = [
   "annexAYacht",
   "annexAOwner",
@@ -286,6 +309,8 @@ const contractSaveSectionIds: ContractSaveSectionKey[] = [
   "annexBTrial",
   "annexBStandard",
   "annexBSpecial",
+  "annexDEmployer",
+  "annexDSeafarer",
 ];
 
 const contractStepCards: Array<{
@@ -375,6 +400,9 @@ function createEmptyContractDraft(): ContractDraft {
     signerTitle: "Captain / Yacht Representative",
     signatureDate: "",
     signatureLocation: "",
+    seafarerFullName: "",
+    seafarerPlaceSigned: "",
+    seafarerSignatureDate: "",
   };
 }
 
@@ -402,6 +430,27 @@ function contractSheetValue(value: string | undefined | null) {
 function getContractGoverningLaw(draft: Pick<ContractDraft, "flagState">) {
   const flagState = draft.flagState.trim();
   return `Laws and regulations of ${flagState || "the Yacht's Flag State"}`;
+}
+
+function getContractAnnexDDetails(draft: ContractDraft, member?: ContractCrewMember) {
+  return {
+    employerName: contractValue(
+      draft.signerName,
+      draft.ownerRepresentative || "-"
+    ),
+    employerCapacity: contractValue(
+      draft.signerTitle,
+      "Captain / Yacht Representative"
+    ),
+    employerPlaceSigned: contractValue(draft.signatureLocation, "-"),
+    employerDateSigned: contractValue(draft.signatureDate, "-"),
+    seafarerName: contractValue(
+      draft.seafarerFullName,
+      draft.employeeName || getCrewDisplayName(member) || "-"
+    ),
+    seafarerPlaceSigned: contractValue(draft.seafarerPlaceSigned, "-"),
+    seafarerDateSigned: contractValue(draft.seafarerSignatureDate, "-"),
+  };
 }
 
 function contractDisplayLines(lines: string[]) {
@@ -635,6 +684,7 @@ function getContractTermsSections(draft: ContractDraft, member?: ContractCrewMem
 function getContractDocumentSections(draft: ContractDraft, member?: ContractCrewMember): ContractDocumentSection[] {
   const employeeName = contractValue(draft.employeeName, getCrewDisplayName(member) || "-");
   const employeePosition = contractValue(draft.employeePosition, getCrewPosition(member) || "-");
+  const annexD = getContractAnnexDDetails(draft, member);
 
   return [
     {
@@ -681,11 +731,22 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
     {
       title: "Annex D - Declaration and Signatures",
       lines: [
-        `Prepared by: ${contractValue(draft.signerName, "[CAPTAIN / REPRESENTATIVE NAME]")}`,
-        `Title: ${contractValue(draft.signerTitle, "Captain / Yacht Representative")}`,
-        `Date: ${contractValue(draft.signatureDate, "[SIGNATURE DATE]")}`,
-        `Location: ${contractValue(draft.signatureLocation, "[SIGNATURE LOCATION]")}`,
-        "Employee signature will be collected through BlueDeck mobile signing flow.",
+        "EMPLOYER'S DECLARATION",
+        ...contractEmployerDeclarationParagraphs,
+        "",
+        `Employer / Authorised Signatory: ${annexD.employerName}`,
+        `Capacity: ${annexD.employerCapacity}`,
+        `Place Signed: ${annexD.employerPlaceSigned}`,
+        `Date: ${annexD.employerDateSigned}`,
+        "Signature:",
+        "",
+        "SEAFARER'S DECLARATION",
+        ...contractSeafarerDeclarationParagraphs,
+        "",
+        `Seafarer's Full Name: ${annexD.seafarerName}`,
+        `Place Signed: ${annexD.seafarerPlaceSigned}`,
+        `Date: ${annexD.seafarerDateSigned}`,
+        "Signature:",
       ],
     },
   ];
@@ -754,6 +815,7 @@ export default function CrewPage({
   const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
   const [contractDraftRecordId, setContractDraftRecordId] = useState("");
   const [savingContractSections, setSavingContractSections] = useState<Partial<Record<ContractSaveSectionKey, boolean>>>({});
+  const contractSaveInFlightRef = useRef(false);
   const [inviteNotice, setInviteNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
@@ -872,6 +934,8 @@ export default function CrewPage({
       annexBTrial: buildContractSectionSaveKey(contractDraft, contractAnnexBTrialFields),
       annexBStandard: buildContractSectionSaveKey(contractDraft, contractAnnexBStandardFields),
       annexBSpecial: buildContractSectionSaveKey(contractDraft, contractAnnexBSpecialFields),
+      annexDEmployer: buildContractSectionSaveKey(contractDraft, contractAnnexDEmployerFields),
+      annexDSeafarer: buildContractSectionSaveKey(contractDraft, contractAnnexDSeafarerFields),
     }),
     [contractDraft]
   );
@@ -884,9 +948,13 @@ export default function CrewPage({
       annexBTrial: savedContractSectionKeys.annexBTrial === contractSectionSaveKeys.annexBTrial,
       annexBStandard: savedContractSectionKeys.annexBStandard === contractSectionSaveKeys.annexBStandard,
       annexBSpecial: savedContractSectionKeys.annexBSpecial === contractSectionSaveKeys.annexBSpecial,
+      annexDEmployer: savedContractSectionKeys.annexDEmployer === contractSectionSaveKeys.annexDEmployer,
+      annexDSeafarer: savedContractSectionKeys.annexDSeafarer === contractSectionSaveKeys.annexDSeafarer,
     }),
     [contractSectionSaveKeys, savedContractSectionKeys]
   );
+
+  const contractSaveInFlight = Object.values(savingContractSections).some(Boolean);
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -981,6 +1049,7 @@ export default function CrewPage({
       employeeDob: crewProfile.date_of_birth || crewProfile.birth_date || "",
       employeePassportNo: crewProfile.passport_no || crewProfile.passport_number || "",
       employeeSeamanBookNo: crewProfile.seaman_book_no || "",
+      seafarerFullName: member ? getCrewDisplayName(member) : "",
     }));
   }
 
@@ -1129,7 +1198,8 @@ export default function CrewPage({
   }
 
   async function saveContractSection(sectionKey: ContractSaveSectionKey, fields: ContractDraftField[]) {
-    if (savingContractSections[sectionKey]) return;
+    if (contractSaveInFlightRef.current) return;
+    contractSaveInFlightRef.current = true;
 
     const currentSectionSaveKey = contractSectionSaveKeys[sectionKey];
     const nextSavedDraft = copyContractFields(savedContractDraft, contractDraft, fields);
@@ -1149,6 +1219,7 @@ export default function CrewPage({
         alert("Contract draft could not be saved. Please try again.");
       }
     } finally {
+      contractSaveInFlightRef.current = false;
       setSavingContractSections((current) => ({ ...current, [sectionKey]: false }));
     }
   }
@@ -1541,7 +1612,11 @@ export default function CrewPage({
         }
 
         if (section.title.startsWith("Annex D")) {
-          drawSinglePageSection(section, "ANNEX D - DECLARATION AND SIGNATURES");
+          drawContractAnnexDPage(
+            doc,
+            getContractAnnexDDetails(contractPreviewDraft, selectedContractMember),
+            drawBodyPageHeader
+          );
           return;
         }
 
@@ -3104,6 +3179,7 @@ export default function CrewPage({
                       <ContractSectionSaveButton
                         saved={contractSectionSaved.annexAYacht}
                         saving={Boolean(savingContractSections.annexAYacht)}
+                        disabled={contractSaveInFlight}
                         onSave={() => saveContractSection("annexAYacht", contractAnnexAYachtFields)}
                       />
                     </div>
@@ -3164,6 +3240,7 @@ export default function CrewPage({
                       <ContractSectionSaveButton
                         saved={contractSectionSaved.annexAOwner}
                         saving={Boolean(savingContractSections.annexAOwner)}
+                        disabled={contractSaveInFlight}
                         onSave={() => saveContractSection("annexAOwner", contractAnnexAOwnerFields)}
                       />
                     </div>
@@ -3248,6 +3325,7 @@ export default function CrewPage({
                         <ContractSectionSaveButton
                           saved={contractSectionSaved.annexBAgreement}
                           saving={Boolean(savingContractSections.annexBAgreement)}
+                          disabled={contractSaveInFlight}
                           onSave={() => saveContractSection("annexBAgreement", contractAnnexBAgreementFields)}
                         />
                       </div>
@@ -3301,6 +3379,7 @@ export default function CrewPage({
                           <ContractSectionSaveButton
                             saved={contractSectionSaved.annexBTrial}
                             saving={Boolean(savingContractSections.annexBTrial)}
+                            disabled={contractSaveInFlight}
                             onSave={() => saveContractSection("annexBTrial", contractAnnexBTrialFields)}
                           />
                         </div>
@@ -3350,6 +3429,7 @@ export default function CrewPage({
                           <ContractSectionSaveButton
                             saved={contractSectionSaved.annexBStandard}
                             saving={Boolean(savingContractSections.annexBStandard)}
+                            disabled={contractSaveInFlight}
                             onSave={() => saveContractSection("annexBStandard", contractAnnexBStandardFields)}
                           />
                         </div>
@@ -3387,6 +3467,7 @@ export default function CrewPage({
                         <ContractSectionSaveButton
                           saved={contractSectionSaved.annexBSpecial}
                           saving={Boolean(savingContractSections.annexBSpecial)}
+                          disabled={contractSaveInFlight}
                           onSave={() => saveContractSection("annexBSpecial", contractAnnexBSpecialFields)}
                         />
                       </div>
@@ -3459,32 +3540,101 @@ export default function CrewPage({
                   <ContractPanelTitle
                     eyebrow="Annex D"
                     title="Declaration and signatures"
-                    text="The crew member signs from their BlueDeck portal after the contract is sent."
+                    text="Complete both declaration blocks below. Every detail appears automatically in the Preview PDF; save each block to keep it in the studio draft."
                   />
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    <ContractField
-                      label="Prepared by"
-                      value={contractDraft.signerName}
-                      onChange={(value) => updateContractDraft("signerName", value)}
-                      placeholder="Captain / representative name"
-                    />
-                    <ContractField
-                      label="Title"
-                      value={contractDraft.signerTitle}
-                      onChange={(value) => updateContractDraft("signerTitle", value)}
-                      placeholder="Captain / Yacht Representative"
-                    />
-                    <ContractDateField
-                      label="Signature date"
-                      value={contractDraft.signatureDate}
-                      onChange={(value) => updateContractDraft("signatureDate", value)}
-                    />
-                    <ContractField
-                      label="Signature location"
-                      value={contractDraft.signatureLocation}
-                      onChange={(value) => updateContractDraft("signatureLocation", value)}
-                      placeholder="Port / city"
-                    />
+                  <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+                    <ContractTermsBlock
+                      title="Employer's Declaration"
+                      note="Employer / Authorised Signatory"
+                    >
+                      <div className="space-y-3 rounded-2xl border border-[#d9e8f3] bg-[#f8fbff] p-4 text-sm font-medium leading-6 text-[#314357]">
+                        {contractEmployerDeclarationParagraphs.map((paragraph) => (
+                          <p key={paragraph}>{paragraph}</p>
+                        ))}
+                      </div>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <ContractField
+                          label="Employer / Authorised Signatory"
+                          value={contractDraft.signerName}
+                          onChange={(value) => updateContractDraft("signerName", value)}
+                          placeholder="Full legal name"
+                          className="sm:col-span-2"
+                        />
+                        <ContractField
+                          label="Capacity"
+                          value={contractDraft.signerTitle}
+                          onChange={(value) => updateContractDraft("signerTitle", value)}
+                          placeholder="Captain / Yacht Representative"
+                        />
+                        <ContractField
+                          label="Place Signed"
+                          value={contractDraft.signatureLocation}
+                          onChange={(value) => updateContractDraft("signatureLocation", value)}
+                          placeholder="Port / city"
+                        />
+                        <ContractDateField
+                          label="Date"
+                          value={contractDraft.signatureDate}
+                          onChange={(value) => updateContractDraft("signatureDate", value)}
+                          className="sm:col-span-2"
+                        />
+                      </div>
+                      <ContractSignatureArea party="Employer / Authorised Signatory" />
+                      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs font-semibold leading-5 text-slate-500">
+                          Changes are reflected automatically in Preview PDF.
+                        </p>
+                        <ContractSectionSaveButton
+                          saved={contractSectionSaved.annexDEmployer}
+                          saving={Boolean(savingContractSections.annexDEmployer)}
+                          disabled={contractSaveInFlight}
+                          onSave={() => saveContractSection("annexDEmployer", contractAnnexDEmployerFields)}
+                        />
+                      </div>
+                    </ContractTermsBlock>
+
+                    <ContractTermsBlock
+                      title="Seafarer's Declaration"
+                      note="Seafarer acknowledgement"
+                    >
+                      <div className="space-y-3 rounded-2xl border border-[#d9e8f3] bg-[#f8fbff] p-4 text-sm font-medium leading-6 text-[#314357]">
+                        {contractSeafarerDeclarationParagraphs.map((paragraph) => (
+                          <p key={paragraph}>{paragraph}</p>
+                        ))}
+                      </div>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <ContractField
+                          label="Seafarer's Full Name"
+                          value={contractDraft.seafarerFullName}
+                          onChange={(value) => updateContractDraft("seafarerFullName", value)}
+                          placeholder={contractDraft.employeeName || "Seafarer's full legal name"}
+                          className="sm:col-span-2"
+                        />
+                        <ContractField
+                          label="Place Signed"
+                          value={contractDraft.seafarerPlaceSigned}
+                          onChange={(value) => updateContractDraft("seafarerPlaceSigned", value)}
+                          placeholder="Port / city"
+                        />
+                        <ContractDateField
+                          label="Date"
+                          value={contractDraft.seafarerSignatureDate}
+                          onChange={(value) => updateContractDraft("seafarerSignatureDate", value)}
+                        />
+                      </div>
+                      <ContractSignatureArea party="Seafarer" />
+                      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs font-semibold leading-5 text-slate-500">
+                          The seafarer signs through the BlueDeck signature workflow.
+                        </p>
+                        <ContractSectionSaveButton
+                          saved={contractSectionSaved.annexDSeafarer}
+                          saving={Boolean(savingContractSections.annexDSeafarer)}
+                          disabled={contractSaveInFlight}
+                          onSave={() => saveContractSection("annexDSeafarer", contractAnnexDSeafarerFields)}
+                        />
+                      </div>
+                    </ContractTermsBlock>
                   </div>
                 </div>
               )}
@@ -4808,11 +4958,6 @@ function MonitorMetric({
   );
 }
 
-type ContractPreviewBlockData = {
-  title: string;
-  lines: string[];
-};
-
 type ContractPreviewLineData = {
   kind: "heading" | "body" | "space";
   text: string;
@@ -4941,7 +5086,6 @@ function ContractGeneratedPreview({
   const annexBPageCount = annexB ? specialConditionPages.length : 0;
   const annexCPages = annexC ? getContractAnnexCPreviewPages() : [];
   const previewPages: Array<{
-    blocks?: ContractPreviewBlockData[];
     annexCLines?: ContractPreviewLineData[];
     subtitle?: string;
   }> = [
@@ -4952,8 +5096,7 @@ function ContractGeneratedPreview({
     ...(annexD
       ? [
           {
-            blocks: [{ title: annexD.title, lines: getContractPreviewLines(annexD.lines) }],
-            subtitle: "ANNEX D - DECLARATION AND SIGNATURES",
+            subtitle: "ANNEX D - DECLARATIONS & SIGNATURES",
           },
         ]
       : []),
@@ -5100,11 +5243,7 @@ function ContractGeneratedPreview({
           {page.annexCLines ? (
             <ContractAnnexCPreviewText lines={page.annexCLines} />
           ) : (
-            <div className="space-y-6">
-              {(page.blocks || []).map((block) => (
-                <ContractPreviewBlockCard key={`${block.title}-${block.lines.join("|")}`} block={block} />
-              ))}
-            </div>
+            <ContractAnnexDPreview draft={draft} member={member} />
           )}
         </ContractPreviewPage>
       ))}
@@ -5328,24 +5467,85 @@ function ContractCoverSection({
   );
 }
 
-function ContractPreviewBlockCard({ block }: { block: ContractPreviewBlockData }) {
+function ContractAnnexDDeclarationCard({
+  title,
+  paragraphs,
+  fields,
+}: {
+  title: string;
+  paragraphs: string[];
+  fields: Array<[string, string]>;
+}) {
   return (
-    <section>
-      <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
-        {block.title}
+    <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white">
+      <h4 className="border-b border-[#d9e8f3] bg-[#f4f8fc] px-4 py-2.5 font-serif text-[18px] font-black uppercase tracking-[0.02em] text-[#082759]">
+        {title}
       </h4>
-      <div className="mt-3 rounded-2xl border border-[#d8e7f5] bg-white/92 p-4">
-        {block.lines.map((line, lineIndex) =>
-          line ? (
-            <p key={`${block.title}-${lineIndex}`} className="text-[13px] font-medium leading-6 text-[#17233a]">
-              {line}
-            </p>
-          ) : (
-            <div key={`${block.title}-${lineIndex}`} className="h-3" />
-          )
-        )}
+      <div className="p-4">
+        <div className="space-y-2.5 text-[12px] font-medium leading-[1.48] text-[#314357]">
+          {paragraphs.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {fields.map(([label, value], index) => (
+            <div
+              key={label}
+              className={`rounded-lg border border-[#b9d5f0] bg-white px-3 py-1.5 ${
+                index === 0 ? "col-span-2" : ""
+              }`}
+            >
+              <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[#0b3c77]">
+                {label}
+              </p>
+              <p className="mt-0.5 min-h-[16px] text-[11px] font-semibold text-[#17233a]">
+                {contractSheetValue(value)}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3">
+          <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[#0b3c77]">
+            Signature
+          </p>
+          <div className="mt-1 h-[72px] rounded-lg border-2 border-[#8fb9df] bg-white" />
+        </div>
       </div>
     </section>
+  );
+}
+
+function ContractAnnexDPreview({
+  draft,
+  member,
+}: {
+  draft: ContractDraft;
+  member?: ContractCrewMember;
+}) {
+  const details = getContractAnnexDDetails(draft, member);
+
+  return (
+    <div className="space-y-4">
+      <ContractAnnexDDeclarationCard
+        title="Employer's Declaration"
+        paragraphs={contractEmployerDeclarationParagraphs}
+        fields={[
+          ["Employer / Authorised Signatory", details.employerName],
+          ["Capacity", details.employerCapacity],
+          ["Place Signed", details.employerPlaceSigned],
+          ["Date", details.employerDateSigned],
+        ]}
+      />
+      <ContractAnnexDDeclarationCard
+        title="Seafarer's Declaration"
+        paragraphs={contractSeafarerDeclarationParagraphs}
+        fields={[
+          ["Seafarer's Full Name", details.seafarerName],
+          ["Place Signed", details.seafarerPlaceSigned],
+          ["Date", details.seafarerDateSigned],
+        ]}
+      />
+    </div>
   );
 }
 
@@ -5446,19 +5646,39 @@ function ContractTermsBlock({
   );
 }
 
+function ContractSignatureArea({ party }: { party: string }) {
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+          Signature
+        </p>
+        <span className="text-[11px] font-semibold text-[#0d58ae]">{party}</span>
+      </div>
+      <div className="mt-2 flex min-h-[112px] items-end justify-end rounded-2xl border-2 border-dashed border-[#9ec4ed] bg-white p-3">
+        <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+          Reserved signature area
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function ContractSectionSaveButton({
   saved,
   saving,
+  disabled,
   onSave,
 }: {
   saved: boolean;
   saving: boolean;
+  disabled?: boolean;
   onSave: () => void | Promise<void>;
 }) {
   return (
     <button
       type="button"
-      disabled={saved || saving}
+      disabled={saved || saving || disabled}
       onClick={onSave}
       className={`bd-focus inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
         saved
