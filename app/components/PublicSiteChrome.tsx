@@ -78,6 +78,7 @@ export function PublicHeader() {
                 href="/dashboard"
                 className="bd-focus bd-public-action bd-public-action-outline bd-public-session-action"
                 title={sessionEmail}
+                aria-label={t("topbar.dashboard")}
               >
                 <LayoutDashboard className="h-4 w-4" />
                 <span>{t("topbar.dashboard")}</span>
@@ -86,6 +87,7 @@ export function PublicHeader() {
                 href="/profile"
                 className="bd-focus bd-public-action bd-public-action-solid bd-public-session-action"
                 title={sessionEmail}
+                aria-label={t("topbar.profile")}
               >
                 <UserRound className="h-4 w-4" />
                 <span>{t("topbar.profile")}</span>
@@ -94,6 +96,7 @@ export function PublicHeader() {
                 type="button"
                 onClick={logout}
                 className="bd-focus bd-public-action bd-public-action-outline bd-public-session-action"
+                aria-label={t("topbar.logout")}
               >
                 <LogOut className="h-4 w-4" />
                 <span>{t("topbar.logout")}</span>

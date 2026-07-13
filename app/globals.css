@@ -22,8 +22,8 @@
   --bluedeck-header-center: #0d254f;
   --bluedeck-header-surface:
     radial-gradient(circle at 50% 18%, var(--bluedeck-header-center) 0%, var(--bluedeck-header-base) 46%, var(--bluedeck-header-edge) 100%);
-  --public-header-height: 132px;
-  --public-header-height-mobile: 80px;
+  --public-header-height: 72px;
+  --public-header-height-mobile: 64px;
   --sidebar-width: 260px;
   --topbar-height: 88px;
   --topbar-height-mobile: 76px;
@@ -173,19 +173,19 @@ textarea:-webkit-autofill:focus {
 
 .bd-public-header-inner {
   display: grid;
-  grid-template-columns: minmax(18rem, 1fr) auto minmax(18rem, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 2rem;
-  width: min(100%, 1800px);
+  gap: clamp(1rem, 1.5vw, 1.5rem);
+  width: min(100%, 1500px);
   min-height: var(--public-header-height);
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 clamp(1rem, 2vw, 2rem);
 }
 
 .bd-public-brand {
   display: flex;
-  width: min(23rem, 100%);
-  height: 5.25rem;
+  width: 15rem;
+  height: 2.75rem;
   min-width: 0;
   overflow: hidden;
 }
@@ -195,12 +195,12 @@ textarea:-webkit-autofill:focus {
   grid-column: 2;
   align-items: center;
   justify-content: center;
-  gap: clamp(1.1rem, 2vw, 2.25rem);
+  gap: clamp(0.9rem, 1.3vw, 1.5rem);
   white-space: nowrap;
   color: rgba(255, 255, 255, 0.76);
-  font-size: 0.73rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -209,21 +209,21 @@ textarea:-webkit-autofill:focus {
   grid-column: 3;
   align-items: center;
   justify-self: end;
-  gap: 0.7rem;
-  min-width: 0;
+  gap: 0.5rem;
+  min-width: max-content;
 }
 
 .bd-public-action {
   display: inline-flex;
-  min-height: 3.25rem;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
   gap: 0.55rem;
   border: 1px solid transparent;
-  border-radius: 0.45rem;
-  padding: 0.75rem 1.25rem;
+  border-radius: 0.625rem;
+  padding: 0 0.875rem;
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -273,9 +273,9 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-public-actions .bd-public-language > button {
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 0.45rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.625rem;
   border-color: rgba(255, 255, 255, 0.34);
   background: rgba(255, 255, 255, 0.06);
 }
@@ -908,7 +908,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 @media (max-width: 1279px) {
   .bd-public-header-inner {
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 1.25rem;
+    gap: 1rem;
   }
 
   .bd-public-shortcuts {
@@ -987,36 +987,36 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 
   .bd-public-header-inner {
     min-height: var(--public-header-height);
-    gap: 0.55rem;
-    padding-right: 0.9rem;
-    padding-left: 0.9rem;
+    gap: 0.5rem;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
   }
 
   .bd-public-brand {
-    width: clamp(8.7rem, 39vw, 11rem);
-    height: 3.35rem;
+    width: clamp(7.25rem, 32vw, 9rem);
+    height: 2.25rem;
   }
 
   .bd-public-actions {
-    gap: 0.45rem;
+    gap: 0.375rem;
   }
 
   .bd-public-action {
-    min-height: 2.8rem;
-    border-radius: 0.42rem;
-    padding: 0.68rem 0.82rem;
-    font-size: 0.79rem;
+    min-height: 2.75rem;
+    border-radius: 0.625rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.78rem;
   }
 
   .bd-public-actions .bd-public-language > button {
-    width: 2.8rem;
-    height: 2.8rem;
-    border-radius: 0.42rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.625rem;
     font-size: 1rem;
   }
 
   .bd-public-session-action {
-    width: 2.8rem;
+    width: 2.75rem;
     padding-right: 0;
     padding-left: 0;
   }
@@ -1192,6 +1192,28 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     display: inline-flex;
     min-height: 44px;
     align-items: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .bd-public-header-inner {
+    gap: 0.375rem;
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+
+  .bd-public-brand {
+    width: 6.25rem;
+  }
+
+  .bd-public-actions {
+    gap: 0.25rem;
+  }
+
+  .bd-public-action {
+    padding-right: 0.55rem;
+    padding-left: 0.55rem;
+    font-size: 0.72rem;
   }
 }
 
