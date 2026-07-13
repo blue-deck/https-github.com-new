@@ -3,8 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import {
   AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
   BriefcaseBusiness,
   Camera,
   Check,
@@ -14,7 +12,6 @@ import {
   Languages,
   Mail,
   MapPin,
-  Pencil,
   Phone,
   Plus,
   Star,
@@ -120,9 +117,7 @@ type ReferenceEntry = {
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
-type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "portfolio" | "languages" | "preview";
-
-const dashboardOnlyStudioTabs = new Set<CvStudioTab>(["portfolio"]);
+type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "languages" | "preview";
 
 const workPreferences = [
   "Seasonal",
@@ -475,12 +470,6 @@ const emptyReference: ReferenceEntry = {
   show_on_cv: true,
 };
 
-const emptyPhoto: PortfolioPhoto = {
-  title: "",
-  image_url: "",
-  location: "",
-};
-
 export default function ProfilePage() {
   const [profile, setProfile] = useState<CrewProfile>({});
   const [documents, setDocuments] = useState<CrewDocument[]>([]);
@@ -496,9 +485,6 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
-  const [photoGallerySaving, setPhotoGallerySaving] = useState(false);
-  const [photoGalleryEditing, setPhotoGalleryEditing] = useState(false);
-  const [photoGalleryPreview, setPhotoGalleryPreview] = useState<PortfolioPhoto | null>(null);
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const uploadRunRef = useRef(0);
 
@@ -508,7 +494,6 @@ export default function ProfilePage() {
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
   const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
   const currentPositionValue = getProfileCurrentPosition(profile);
-  const portfolioPhotoCount = portfolio.filter((item) => item.image_url).length;
   const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
   const sortedExperiences = useMemo(
     () =>
@@ -527,12 +512,6 @@ export default function ProfilePage() {
     () => sortedExperiences.filter(isOtherWorkExperience),
     [sortedExperiences],
   );
-  const editablePortfolio = useMemo(
-    () =>
-      sortPortfolioPhotos(portfolio.filter((photo) => photo.image_url)),
-    [portfolio],
-  );
-
   const totalExperienceYears = useMemo(() => {
     const firstYear = editableYachtExperiences
       .map((item) => Number((item.start_date || "").slice(0, 4)))
@@ -593,13 +572,6 @@ export default function ProfilePage() {
       description: "Certificates and CV visibility.",
       status: expiryAlerts.length ? `${expiryAlerts.length} alert` : `${documents.length} docs`,
       icon: <IdCard className="h-4 w-4" />,
-    },
-    {
-      id: "portfolio",
-      label: "Photo Gallery",
-      description: "Yacht and work photos.",
-      status: `${portfolioPhotoCount} photos`,
-      icon: <Camera className="h-4 w-4" />,
     },
     {
       id: "languages",
@@ -895,75 +867,6 @@ export default function ProfilePage() {
     await loadRelated(profile.id);
   }
 
-  async function savePortfolioPhoto(item: PortfolioPhoto) {
-    if (!profile.id) return false;
-    const response = await saveRelatedRecord(
-      "portfolio",
-      { ...item, title: "", location: encodeGalleryLocation(item.location, item.gallery_order) },
-      item.id,
-    );
-    if (!response.ok) {
-      alert(response.error);
-      return false;
-    }
-    await loadRelated(profile.id);
-    return true;
-  }
-
-  async function savePhotoGalleryPhoto(imageUrl: string) {
-    if (!imageUrl) return false;
-    setPhotoGallerySaving(true);
-    const saved = await savePortfolioPhoto({
-      ...emptyPhoto,
-      image_url: imageUrl,
-      location: "",
-      gallery_order: nextPortfolioOrder(editablePortfolio),
-    });
-    setPhotoGallerySaving(false);
-
-    return saved;
-  }
-
-  async function reorderPortfolioPhoto(index: number, direction: -1 | 1) {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= editablePortfolio.length || photoGallerySaving) return;
-
-    const nextOrder = [...editablePortfolio];
-    [nextOrder[index], nextOrder[nextIndex]] = [nextOrder[nextIndex], nextOrder[index]];
-    const orderedPortfolio = nextOrder.map((photo, order) => ({ ...photo, gallery_order: order }));
-    setPortfolio((current) => {
-      const orderedIds = new Set(orderedPortfolio.map((photo) => photo.id || photo.image_url));
-      const untouched = current.filter((photo) => !orderedIds.has(photo.id || photo.image_url));
-      return [...orderedPortfolio, ...untouched];
-    });
-
-    if (!profile.id) return;
-    setPhotoGallerySaving(true);
-    const results = await Promise.all(
-      orderedPortfolio.map((photo) =>
-        saveRelatedRecord(
-          "portfolio",
-          { ...photo, title: "", location: encodeGalleryLocation(photo.location, photo.gallery_order) },
-          photo.id,
-        ),
-      ),
-    );
-    setPhotoGallerySaving(false);
-
-    const failed = results.find((result) => !result.ok);
-    if (failed) {
-      alert(failed.error);
-    }
-    await loadRelated(profile.id);
-  }
-
-  async function deletePortfolioPhoto(id?: string) {
-    if (!profile.id || !id) return;
-    const response = await deleteRelatedRecord("portfolio", id);
-    if (!response.ok) alert(response.error);
-    await loadRelated(profile.id);
-  }
-
   function cancelUpload() {
     uploadRunRef.current += 1;
     setUploading("");
@@ -1044,7 +947,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(window.location.search).get("tab");
-    if (requestedTab === "portfolio") setActiveStudioTab("portfolio");
+    if (requestedTab === "portfolio") window.location.replace("/my-blue");
   }, []);
 
   useEffect(() => {
@@ -1137,7 +1040,7 @@ export default function ProfilePage() {
 
           <div className="border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] px-3 pb-3 sm:px-5">
             <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10">
-              {studioTabs.filter((tab) => !dashboardOnlyStudioTabs.has(tab.id)).map((tab) => {
+              {studioTabs.map((tab) => {
                 const active = activeStudioTab === tab.id;
 
                 return (
@@ -1353,109 +1256,6 @@ export default function ProfilePage() {
                 ))}
               </div>
             </Panel>
-
-            <Panel active={activeStudioTab === "portfolio"} title="Photo Gallery" icon={<Camera className="h-5 w-5" />}>
-              <div className="mb-5 rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex min-w-0 gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
-                      <Camera className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-sm font-black text-[#06111f]">Professional photo gallery</p>
-                      <p className="mt-1 max-w-4xl text-sm leading-6 text-[#5a6870]">
-                        Add professional photos from your yacht work, service moments, onboard projects or maritime experience. They will appear in your public BlueDeck photo gallery.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setPhotoGalleryEditing((current) => !current)}
-                    disabled={editablePortfolio.length < 2 || photoGallerySaving}
-                    className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                      photoGalleryEditing
-                        ? "bg-[#173f4a] text-white"
-                        : "border border-slate-200 bg-white text-[#173f4a] hover:border-cyan-300"
-                    }`}
-                  >
-                    <Pencil className="h-4 w-4" />
-                    {photoGalleryEditing ? "Done" : "Edit order"}
-                  </button>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  <label className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${uploading === "photo-gallery-new" || photoGallerySaving ? "cursor-progress opacity-70" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
-                    <Upload className="h-4 w-4 text-cyan-700" />
-                    {uploading === "photo-gallery-new" ? "Uploading..." : photoGallerySaving ? "Saving..." : "Add photo"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={uploading === "photo-gallery-new" || photoGallerySaving}
-                      className="hidden"
-                      onChange={async (event) => {
-                        const file = event.currentTarget.files?.[0];
-                        event.currentTarget.value = "";
-                        if (!file) return;
-                        const url = await uploadFile(file, "crew-portfolio", "photo-gallery-new");
-                        if (url) await savePhotoGalleryPhoto(url);
-                      }}
-                    />
-                  </label>
-                  {uploading === "photo-gallery-new" && (
-                    <button type="button" onClick={cancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-                      Cancel upload
-                    </button>
-                  )}
-                  {photoGallerySaving && <span className="text-xs font-black uppercase tracking-[0.12em] text-[#2d7482]">Saving order...</span>}
-                </div>
-                <p className="mt-2 text-xs font-semibold text-[#6b7a82]">Photos are saved automatically after upload. Use edit order to arrange the public gallery.</p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-                {editablePortfolio.map((item, index) => (
-                  <PortfolioEditor
-                    key={item.id || item.image_url}
-                    item={item}
-                    editing={photoGalleryEditing}
-                    canMoveLeft={index > 0}
-                    canMoveRight={index < editablePortfolio.length - 1}
-                    onMoveLeft={() => reorderPortfolioPhoto(index, -1)}
-                    onMoveRight={() => reorderPortfolioPhoto(index, 1)}
-                    onDelete={deletePortfolioPhoto}
-                    onPreview={setPhotoGalleryPreview}
-                  />
-                ))}
-                {editablePortfolio.length === 0 && (
-                  <div className="rounded-2xl border border-dashed border-cyan-200 bg-white/70 p-5 text-sm font-semibold text-slate-500">
-                    No gallery photos yet. Add another photo whenever you are ready.
-                  </div>
-                )}
-              </div>
-            </Panel>
-
-            {photoGalleryPreview && (
-              <div
-                className="fixed inset-0 z-[80] flex items-center justify-center bg-[#06111f]/55 p-4 backdrop-blur-sm"
-                onMouseDown={() => setPhotoGalleryPreview(null)}
-              >
-                <div
-                  className="relative w-[min(760px,86vw)] rounded-3xl bg-white p-3 shadow-2xl shadow-slate-950/30"
-                  onMouseDown={(event) => event.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setPhotoGalleryPreview(null)}
-                    className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/92 text-xl font-semibold text-[#06111f] shadow-lg shadow-slate-950/15 transition hover:bg-cyan-50"
-                    aria-label="Close photo preview"
-                  >
-                    ×
-                  </button>
-                  <img
-                    src={photoGalleryPreview.image_url}
-                    alt="Photo gallery preview"
-                    className="max-h-[70vh] w-full rounded-2xl object-contain"
-                  />
-                </div>
-              </div>
-            )}
 
             <Panel active={activeStudioTab === "languages"} title="Languages" icon={<Languages className="h-5 w-5" />}>
               <LanguagePicker
@@ -1822,12 +1622,6 @@ function splitGalleryLocation(value?: string | null) {
   };
 }
 
-function encodeGalleryLocation(location?: string | null, order?: number) {
-  const cleanLocation = cleanSaveText(location);
-  if (typeof order !== "number" || !Number.isFinite(order)) return cleanLocation;
-  return `${galleryOrderPrefix}${order}\n${cleanLocation}`;
-}
-
 function normalizePortfolioRecord(photo: PortfolioPhoto) {
   const parsed = splitGalleryLocation(photo.location);
   return {
@@ -1849,11 +1643,6 @@ function sortPortfolioPhotos(photos: PortfolioPhoto[]) {
     const secondIndex = photos.indexOf(second);
     return portfolioSortValue(first, firstIndex) - portfolioSortValue(second, secondIndex);
   });
-}
-
-function nextPortfolioOrder(photos: PortfolioPhoto[]) {
-  if (photos.length === 0) return 0;
-  return Math.min(...photos.map((photo, index) => portfolioSortValue(photo, index))) - 1;
 }
 
 function cvPdfFileName(profile: CrewProfile) {
@@ -4408,66 +4197,6 @@ function ReferenceMiniPhoneField({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function PortfolioEditor({
-  item,
-  editing,
-  canMoveLeft,
-  canMoveRight,
-  onMoveLeft,
-  onMoveRight,
-  onDelete,
-  onPreview,
-}: {
-  item: PortfolioPhoto;
-  editing: boolean;
-  canMoveLeft: boolean;
-  canMoveRight: boolean;
-  onMoveLeft: () => void;
-  onMoveRight: () => void;
-  onDelete: (id?: string) => void;
-  onPreview: (item: PortfolioPhoto) => void;
-}) {
-  return (
-    <div className="min-w-0">
-      <button
-        type="button"
-        onClick={() => onPreview(item)}
-        className="group block aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-[#eef6f8] shadow-sm shadow-slate-950/8 transition hover:shadow-lg hover:shadow-cyan-950/12"
-      >
-        <img src={item.image_url} alt="Photo gallery" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
-      </button>
-      <div className="mt-2 grid gap-1.5">
-        {editing && (
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={onMoveLeft}
-              disabled={!canMoveLeft}
-              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-cyan-100 bg-white text-[#173f4a] transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Move photo left"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={onMoveRight}
-              disabled={!canMoveRight}
-              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-cyan-100 bg-white text-[#173f4a] transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Move photo right"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-        <button type="button" onClick={() => onDelete(item.id)} className="inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border border-rose-100 bg-white px-2 text-[10px] font-black uppercase tracking-[0.08em] text-rose-700 transition hover:bg-rose-50">
-          <Trash2 className="h-4 w-4" />
-          Delete
-        </button>
-      </div>
     </div>
   );
 }

@@ -491,7 +491,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link
-            href="/profile?tab=portfolio"
+            href="/my-blue"
             className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
           >
             <Camera className="h-8 w-8 text-cyan-700" />
