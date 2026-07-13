@@ -32,6 +32,7 @@ import {
   Plus,
   RefreshCcw,
   Save,
+  Search,
   Send,
   UserRound,
   UserPlus,
@@ -67,6 +68,8 @@ type CrewEditDraft = {
   fullName: string;
   position: string;
 };
+
+type CrewCommandSection = "invite" | "status" | "directory";
 
 const CHECKLIST_SENT_STATUS_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -737,6 +740,8 @@ export default function CrewPage({
   const isContractStudio = view === "contracts";
   const [crew, setCrew] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
+  const [crewCommandSection, setCrewCommandSection] = useState<CrewCommandSection>("invite");
+  const [crewDirectoryQuery, setCrewDirectoryQuery] = useState("");
   const [selectedCrew, setSelectedCrew] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [crewPublicId, setCrewPublicId] = useState("");
@@ -789,6 +794,31 @@ export default function CrewPage({
       )
     );
   }, [crew, operator.department, operator.position, operator.role]);
+
+  const invitedCrewCount = useMemo(
+    () => crew.filter((member) => member.status !== "active").length,
+    [crew]
+  );
+
+  const activeCrewCount = crew.length - invitedCrewCount;
+
+  const filteredCrew = useMemo(() => {
+    const query = crewDirectoryQuery.trim().toLocaleLowerCase("en");
+    if (!query) return crew;
+
+    return crew.filter((member) =>
+      [
+        member.crew_profiles?.full_name,
+        member.crew_profiles?.public_crew_id,
+        member.crew_profiles?.email,
+        member.invited_email,
+        member.crew_profiles?.phone,
+        member.position,
+        member.crew_profiles?.current_position,
+        member.department,
+      ].some((value) => String(value || "").toLocaleLowerCase("en").includes(query))
+    );
+  }, [crew, crewDirectoryQuery]);
 
   const canManageCrewDirectory = isCaptainLevel(operator.position, operator.role);
 
@@ -2004,6 +2034,7 @@ export default function CrewPage({
       void loadData();
 
       alert("Crew invitation created. The crew member will see it inside My YACHT-OS.");
+      setCrewCommandSection("status");
     } catch {
       alert("Crew invitation could not be created. Check your connection and try again.");
     } finally {
@@ -2486,7 +2517,7 @@ export default function CrewPage({
             <Stat title="Assignable Crew" value={assignableCrew.length} icon={<UserRound />} />
             <Stat
               title="Invited"
-              value={crew.filter((member) => member.status === "invited").length}
+              value={invitedCrewCount}
               icon={<Plus />}
             />
             <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
@@ -2494,105 +2525,462 @@ export default function CrewPage({
         )}
 
         {isCrewCommand && (
-          <div className="mb-8 grid min-w-0 gap-5 sm:mb-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-                  <section className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_100%)] p-5 shadow-xl shadow-cyan-950/6 sm:p-6">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
+          <div className="mb-8 min-w-0 space-y-5 sm:mb-10">
+            <section
+              aria-label="Crew Command workspaces"
+              className="grid min-w-0 gap-3 rounded-[30px] border border-white/70 bg-white/86 p-3 shadow-xl shadow-cyan-950/6 backdrop-blur sm:rounded-[36px] sm:p-4 md:grid-cols-3"
+              role="tablist"
+            >
+              <CrewCommandSectionButton
+                id="crew-command-invite-tab"
+                controls="crew-command-invite-panel"
+                active={crewCommandSection === "invite"}
+                icon={<UserPlus className="h-5 w-5" />}
+                title="Crew Invitation"
+                text="Invite a crew member by Crew ID or email."
+                meta="New invitation"
+                onClick={() => setCrewCommandSection("invite")}
+              />
+              <CrewCommandSectionButton
+                id="crew-command-status-tab"
+                controls="crew-command-status-panel"
+                active={crewCommandSection === "status"}
+                icon={<CalendarClock className="h-5 w-5" />}
+                title="Invite Status"
+                text="Track waiting and accepted yacht access."
+                meta={`${invitedCrewCount} waiting`}
+                onClick={() => setCrewCommandSection("status")}
+              />
+              <CrewCommandSectionButton
+                id="crew-command-directory-tab"
+                controls="crew-command-directory-panel"
+                active={crewCommandSection === "directory"}
+                icon={<UserRound className="h-5 w-5" />}
+                title="Crew Directory"
+                text="Open crew details and manage onboard roles."
+                meta={`${crew.length} crew`}
+                onClick={() => setCrewCommandSection("directory")}
+              />
+            </section>
+
+            {crewCommandSection === "invite" && (
+              <section
+                id="crew-command-invite-panel"
+                role="tabpanel"
+                aria-labelledby="crew-command-invite-tab"
+                className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
+              >
+                <div className="h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
+                <div className="p-5 sm:p-8">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
+                      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
                         <UserPlus className="h-7 w-7" />
-                      </div>
-                      <div>
+                      </span>
+                      <div className="min-w-0">
                         <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
                           Crew Invitation
                         </p>
-                        <h3 className="text-2xl font-black text-slate-950">Send invite</h3>
+                        <h2 className="mt-1 text-3xl font-black text-slate-950 sm:text-4xl">Send a yacht invite</h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                          Use the crew member&apos;s Crew ID when available. If they do not know it, enter their email instead.
+                        </p>
                       </div>
                     </div>
+                    <span className="self-start rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-cyan-900">
+                      Step 1 of 1
+                    </span>
+                  </div>
 
-                    <div className="mt-6 space-y-4">
-                      <input
-                        placeholder="Crew ID"
-                        value={crewPublicId}
-                        onChange={(e) => setCrewPublicId(e.target.value.toUpperCase())}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black uppercase tracking-[0.08em] text-slate-950 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:border-cyan-300"
-                      />
+                  <form
+                    className="mt-6 rounded-[26px] border border-slate-200 bg-slate-50/70 p-4 sm:p-6"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void addCrew();
+                    }}
+                  >
+                    <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-end">
+                      <label className="block min-w-0">
+                        <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">Crew ID</span>
+                        <input
+                          placeholder="Example: BD-123456"
+                          value={crewPublicId}
+                          onChange={(event) => setCrewPublicId(event.target.value.toUpperCase())}
+                          autoCapitalize="characters"
+                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black uppercase tracking-[0.08em] text-slate-950 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                        />
+                      </label>
 
-                      <select
-                        value={position}
-                        onChange={(e) => setPosition(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-lg font-black text-slate-950 outline-none focus:border-cyan-300"
-                      >
-                        {positionSelectGroups.map((group) => (
-                          <optgroup key={group.department} label={group.department}>
-                            {group.positions.map((item) => (
-                              <option key={item} value={item}>
-                                {item}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
+                      <span className="flex h-10 items-center justify-center text-xs font-black uppercase tracking-[0.14em] text-slate-400 md:mb-1 md:w-10">
+                        Or
+                      </span>
 
-                      <input
-                        placeholder="Crew email if Crew ID is not known"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
-                      />
+                      <label className="block min-w-0">
+                        <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">Email address</span>
+                        <input
+                          type="email"
+                          autoComplete="email"
+                          placeholder="crew@example.com"
+                          value={inviteEmail}
+                          onChange={(event) => setInviteEmail(event.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="mt-4 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                      <label className="block min-w-0">
+                        <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-600">Yacht position</span>
+                        <select
+                          value={position}
+                          onChange={(event) => setPosition(event.target.value)}
+                          className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-black text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                        >
+                          {positionSelectGroups.map((group) => (
+                            <optgroup key={group.department} label={group.department}>
+                              {group.positions.map((item) => (
+                                <option key={item} value={item}>
+                                  {item}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </label>
 
                       <button
-                        type="button"
-                        onClick={addCrew}
-                        disabled={loading}
-                        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 py-4 text-lg font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:opacity-60"
+                        type="submit"
+                        disabled={loading || (!crewPublicId.trim() && !inviteEmail.trim())}
+                        className="bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-7 py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
                       >
                         <Send className="h-5 w-5" />
                         {loading ? "Sending..." : "Send Yacht Invite"}
                       </button>
-
-                      {inviteNotice && (
-                        <div className="rounded-2xl border border-cyan-400/25 bg-cyan-50 p-4 text-sm text-slate-700">
-                          <p className="font-bold">Invitation sent</p>
-                          <p className="mt-2 leading-6">{inviteNotice}</p>
-                        </div>
-                      )}
                     </div>
-                  </section>
+                  </form>
 
-                  <section className="rounded-[28px] border border-cyan-100 bg-white/90 p-5 shadow-xl shadow-cyan-950/6 sm:p-6">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-                      Invite Status
-                    </p>
-                    <h3 className="mt-2 text-2xl font-black text-slate-950">Recent crew access</h3>
-                    <div className="mt-5 space-y-3">
-                      {crew.slice(0, 6).map((member) => (
-                        <div key={member.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="truncate font-black text-slate-950">
-                                {member.crew_profiles?.full_name || member.invited_email || member.crew_profiles?.email || "Crew member"}
-                              </p>
-                              <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-cyan-800">
-                                {member.position || "Crew"} · {member.department || "Yacht"}
-                              </p>
-                            </div>
-                            <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
-                              member.status === "active"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-amber-100 text-amber-800"
-                            }`}>
-                              {member.status || "invited"}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                  {inviteNotice && (
+                    <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="font-black">Invitation sent</p>
+                        <p className="mt-1 leading-6">{inviteNotice}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setCrewCommandSection("status")}
+                        className="bd-focus shrink-0 rounded-xl bg-emerald-800 px-4 py-2.5 text-sm font-black text-white"
+                      >
+                        View invite status
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
-                      {crew.length === 0 && (
-                        <p className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-5 text-sm font-semibold text-slate-500">
-                          Invite your first crew member to open this yacht&apos;s controlled crew access.
+            {crewCommandSection === "status" && (
+              <section
+                id="crew-command-status-panel"
+                role="tabpanel"
+                aria-labelledby="crew-command-status-tab"
+                className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
+              >
+                <div className="h-1.5 bg-[linear-gradient(90deg,#0f766e,#22d3ee,#f4bf57)]" />
+                <div className="p-5 sm:p-8">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
+                      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-cyan-200">
+                        <CalendarClock className="h-7 w-7" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">Invite Status</p>
+                        <h2 className="mt-1 text-3xl font-black text-slate-950 sm:text-4xl">Crew access status</h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                          See who is waiting to accept and who already has active yacht access.
                         </p>
-                      )}
+                      </div>
                     </div>
-                  </section>
+                    <div className="grid grid-cols-2 gap-2 sm:min-w-[260px]">
+                      <CommandCount label="Waiting" value={invitedCrewCount} tone="amber" />
+                      <CommandCount label="Active" value={activeCrewCount} tone="emerald" />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid max-h-[620px] gap-3 overflow-y-auto pr-1 lg:grid-cols-2">
+                    {crew.map((member) => (
+                      <article key={member.id} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 shadow-sm">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p data-i18n-ignore className="truncate text-base font-black text-slate-950">
+                              {member.crew_profiles?.full_name || member.invited_email || member.crew_profiles?.email || "Crew member"}
+                            </p>
+                            <p data-i18n-ignore className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-cyan-800">
+                              {member.position || "Crew"} · {member.department || "Yacht"}
+                            </p>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
+                            member.status === "active"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}>
+                            {member.status || "invited"}
+                          </span>
+                        </div>
+                        <div className="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3 text-xs font-semibold text-slate-500">
+                          <CalendarClock className="h-4 w-4 text-cyan-700" />
+                          <span>{member.status === "active" ? "Access record" : "Invite sent"}</span>
+                          <span className="text-slate-300">·</span>
+                          <span data-i18n-ignore>{formatDateTime(member.created_at) || "Date unavailable"}</span>
+                        </div>
+                      </article>
+                    ))}
+
+                    {crew.length === 0 && (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center">
+                        <UserPlus className="mx-auto h-8 w-8 text-cyan-700" />
+                        <p className="mt-3 font-black text-slate-950">No invitation records yet</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">Create the first yacht invitation from Crew Invitation.</p>
+                        <button
+                          type="button"
+                          onClick={() => setCrewCommandSection("invite")}
+                          className="bd-focus mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"
+                        >
+                          Open Crew Invitation
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {crewCommandSection === "directory" && (
+              <section
+                id="crew-command-directory-panel"
+                role="tabpanel"
+                aria-labelledby="crew-command-directory-tab"
+                className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
+              >
+                <div className="h-1.5 bg-[linear-gradient(90deg,#082f49,#0891b2,#67e8f9)]" />
+                <div className="p-5 sm:p-8">
+                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
+                      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-cyan-700 text-white">
+                        <UserRound className="h-7 w-7" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">Crew Directory</p>
+                        <h2 className="mt-1 text-3xl font-black text-slate-950 sm:text-4xl">Onboard team</h2>
+                        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
+                          Search the crew, open a card to review contact and yacht registration details, or update the name and onboard position.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="self-start rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-cyan-900">
+                      {filteredCrew.length} of {crew.length}
+                    </span>
+                  </div>
+
+                  <label className="relative mt-6 block">
+                    <span className="sr-only">Search crew directory</span>
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-cyan-700" />
+                    <input
+                      type="search"
+                      value={crewDirectoryQuery}
+                      onChange={(event) => setCrewDirectoryQuery(event.target.value)}
+                      placeholder="Search name, Crew ID, email, phone or position"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-12 text-base font-semibold text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    />
+                    {crewDirectoryQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setCrewDirectoryQuery("")}
+                        aria-label="Clear crew search"
+                        className="bd-focus absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition hover:bg-white hover:text-rose-600"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </label>
+
+                  <div className="mt-5 grid items-start gap-3 md:grid-cols-2">
+                    {filteredCrew.map((member) => {
+                      const expanded = expandedCrewId === member.id;
+                      const editing = editingCrewId === member.id;
+                      const displayName =
+                        member.crew_profiles?.full_name ||
+                        member.invited_email ||
+                        "Crew member";
+                      const memberPosition =
+                        member.position ||
+                        member.crew_profiles?.current_position ||
+                        "Crew";
+                      const memberEmail =
+                        member.crew_profiles?.email ||
+                        member.invited_email ||
+                        "-";
+                      const memberPhone = member.crew_profiles?.phone || "";
+
+                      return (
+                        <article
+                          key={member.id}
+                          className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+                            expanded
+                              ? "border-cyan-300 shadow-lg shadow-cyan-950/8"
+                              : "border-slate-200 hover:border-cyan-200"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => toggleCrewCard(member.id)}
+                            aria-expanded={expanded}
+                            className="bd-focus flex min-h-28 w-full items-start justify-between gap-4 p-4 text-left"
+                          >
+                            <div className="min-w-0">
+                              <p data-i18n-ignore className="truncate text-lg font-black text-slate-950">
+                                {displayName}
+                              </p>
+                              <p data-i18n-ignore className="mt-1 text-sm font-semibold text-cyan-700">
+                                {memberPosition} · {member.department || "Yacht"}
+                              </p>
+                              <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
+                                member.status === "active"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-800"
+                              }`}>
+                                {member.status || "active"}
+                              </span>
+                            </div>
+                            <ChevronDown className={`mt-1 h-5 w-5 shrink-0 text-slate-400 transition ${expanded ? "rotate-180 text-cyan-700" : ""}`} />
+                          </button>
+
+                          {expanded && (
+                            <div className="border-t border-slate-100 bg-slate-50/75 p-4">
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                <CrewDetail
+                                  icon={<Hash className="h-4 w-4" />}
+                                  label="Crew ID"
+                                  value={member.crew_profiles?.public_crew_id || "-"}
+                                />
+                                {memberPhone && (
+                                  <CrewDetail
+                                    icon={<Phone className="h-4 w-4" />}
+                                    label="Phone"
+                                    value={memberPhone}
+                                  />
+                                )}
+                                <CrewDetail
+                                  icon={<Mail className="h-4 w-4" />}
+                                  label="Email"
+                                  value={memberEmail}
+                                />
+                                <CrewDetail
+                                  icon={<CalendarClock className="h-4 w-4" />}
+                                  label="Added to yacht"
+                                  value={formatDateTime(member.created_at) || "-"}
+                                />
+                              </div>
+
+                              {editing ? (
+                                <div className="mt-4 rounded-2xl border border-cyan-200 bg-white p-4">
+                                  <div className="grid gap-4 sm:grid-cols-2">
+                                    <label className="block">
+                                      <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                                        Name and surname
+                                      </span>
+                                      <input
+                                        value={crewEditDraft.fullName}
+                                        maxLength={120}
+                                        onChange={(event) =>
+                                          setCrewEditDraft((current) => ({
+                                            ...current,
+                                            fullName: event.target.value,
+                                          }))
+                                        }
+                                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-950 outline-none focus:border-cyan-400"
+                                      />
+                                    </label>
+                                    <label className="block">
+                                      <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                                        Yacht position
+                                      </span>
+                                      <select
+                                        value={crewEditDraft.position}
+                                        onChange={(event) =>
+                                          setCrewEditDraft((current) => ({
+                                            ...current,
+                                            position: event.target.value,
+                                          }))
+                                        }
+                                        className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-950 outline-none focus:border-cyan-400"
+                                      >
+                                        {positionSelectGroups.map((group) => (
+                                          <optgroup key={group.department} label={group.department}>
+                                            {group.positions.map((item) => (
+                                              <option key={item} value={item}>
+                                                {item}
+                                              </option>
+                                            ))}
+                                          </optgroup>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </div>
+                                  <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingCrewId("")}
+                                      disabled={savingCrewId === member.id}
+                                      className="bd-focus rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-600 disabled:opacity-50"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => void saveCrewEdit(member)}
+                                      disabled={savingCrewId === member.id}
+                                      className="bd-focus inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-50"
+                                    >
+                                      <Save className="h-4 w-4" />
+                                      {savingCrewId === member.id ? "Saving..." : "Save changes"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                canManageCrewDirectory && (
+                                  <button
+                                    type="button"
+                                    onClick={() => startCrewEdit(member)}
+                                    className="bd-focus mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-black text-cyan-800 transition hover:bg-cyan-50 sm:w-auto"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                    Edit name and position
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </article>
+                      );
+                    })}
+
+                    {filteredCrew.length === 0 && (
+                      <div className="col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm font-semibold text-slate-500">
+                        <UserRound className="mx-auto h-8 w-8 text-cyan-700" />
+                        <p className="mt-3 font-black text-slate-950">
+                          {crew.length === 0 ? "No crew has been added yet" : "No crew matches this search"}
+                        </p>
+                        <p className="mt-1">
+                          {crew.length === 0
+                            ? "Send a Crew Invitation to add the first onboard team member."
+                            : "Try a different name, Crew ID, email or position."}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         )}
 
@@ -3229,9 +3617,9 @@ export default function CrewPage({
           </section>
         )}
 
-        {(isCrewCommand || (isChecklistSystem && checklistSection === "builder")) && (
-        <div className={isChecklistSystem ? "min-w-0" : "space-y-6 xl:space-y-8"}>
-          <div className={isChecklistSystem ? "min-w-0 space-y-6 xl:space-y-8" : "hidden"}>
+        {isChecklistSystem && checklistSection === "builder" && (
+        <div className="min-w-0">
+          <div className="min-w-0 space-y-6 xl:space-y-8">
             {/*
             {isChecklistSystem && (
             <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
@@ -3622,192 +4010,6 @@ export default function CrewPage({
           </div>
 
           <div className="min-w-0 space-y-6 xl:space-y-8">
-            {isCrewCommand && (
-              <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
-                      Crew Directory
-                    </p>
-                    <h2 className="mt-2 text-3xl font-black sm:text-5xl">Onboard Team</h2>
-                    <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
-                      Open a crew card to review contact and yacht registration details, or
-                      update the name and onboard position.
-                    </p>
-                  </div>
-                  <UserRound className="h-10 w-10 text-cyan-700" />
-                </div>
-
-                <div className="mt-6 grid items-start gap-3 md:grid-cols-2">
-                  {crew.map((member) => {
-                    const expanded = expandedCrewId === member.id;
-                    const editing = editingCrewId === member.id;
-                    const displayName =
-                      member.crew_profiles?.full_name ||
-                      member.invited_email ||
-                      "Crew member";
-                    const memberPosition =
-                      member.position ||
-                      member.crew_profiles?.current_position ||
-                      "Crew";
-                    const memberEmail =
-                      member.crew_profiles?.email ||
-                      member.invited_email ||
-                      "-";
-                    const memberPhone = member.crew_profiles?.phone || "";
-
-                    return (
-                      <article
-                        key={member.id}
-                        className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
-                          expanded
-                            ? "border-cyan-300 shadow-lg shadow-cyan-950/8"
-                            : "border-slate-200 hover:border-cyan-200"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleCrewCard(member.id)}
-                          aria-expanded={expanded}
-                          className="bd-focus flex w-full items-start justify-between gap-4 p-4 text-left"
-                        >
-                          <div className="min-w-0">
-                            <p data-i18n-ignore className="truncate text-lg font-black text-slate-950">
-                              {displayName}
-                            </p>
-                            <p data-i18n-ignore className="mt-1 text-sm font-semibold text-cyan-700">
-                              {memberPosition} · {member.department || "Yacht"}
-                            </p>
-                            <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
-                              member.status === "active"
-                                ? "bg-emerald-100 text-emerald-800"
-                                : "bg-amber-100 text-amber-800"
-                            }`}>
-                              {member.status || "active"}
-                            </span>
-                          </div>
-                          <ChevronDown className={`mt-1 h-5 w-5 shrink-0 text-slate-400 transition ${expanded ? "rotate-180 text-cyan-700" : ""}`} />
-                        </button>
-
-                        {expanded && (
-                          <div className="border-t border-slate-100 bg-slate-50/75 p-4">
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <CrewDetail
-                                icon={<Hash className="h-4 w-4" />}
-                                label="Crew ID"
-                                value={member.crew_profiles?.public_crew_id || "-"}
-                              />
-                              {memberPhone && (
-                                <CrewDetail
-                                  icon={<Phone className="h-4 w-4" />}
-                                  label="Phone"
-                                  value={memberPhone}
-                                />
-                              )}
-                              <CrewDetail
-                                icon={<Mail className="h-4 w-4" />}
-                                label="Email"
-                                value={memberEmail}
-                              />
-                              <CrewDetail
-                                icon={<CalendarClock className="h-4 w-4" />}
-                                label="Added to yacht"
-                                value={formatDateTime(member.created_at) || "-"}
-                              />
-                            </div>
-
-                            {editing ? (
-                              <div className="mt-4 rounded-2xl border border-cyan-200 bg-white p-4">
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                  <label className="block">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                                      Name and surname
-                                    </span>
-                                    <input
-                                      value={crewEditDraft.fullName}
-                                      maxLength={120}
-                                      onChange={(event) =>
-                                        setCrewEditDraft((current) => ({
-                                          ...current,
-                                          fullName: event.target.value,
-                                        }))
-                                      }
-                                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-950 outline-none focus:border-cyan-400"
-                                    />
-                                  </label>
-                                  <label className="block">
-                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-                                      Yacht position
-                                    </span>
-                                    <select
-                                      value={crewEditDraft.position}
-                                      onChange={(event) =>
-                                        setCrewEditDraft((current) => ({
-                                          ...current,
-                                          position: event.target.value,
-                                        }))
-                                      }
-                                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-950 outline-none focus:border-cyan-400"
-                                    >
-                                      {positionSelectGroups.map((group) => (
-                                        <optgroup key={group.department} label={group.department}>
-                                          {group.positions.map((item) => (
-                                            <option key={item} value={item}>
-                                              {item}
-                                            </option>
-                                          ))}
-                                        </optgroup>
-                                      ))}
-                                    </select>
-                                  </label>
-                                </div>
-                                <div className="mt-4 flex flex-wrap justify-end gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingCrewId("")}
-                                    disabled={savingCrewId === member.id}
-                                    className="bd-focus rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-600 disabled:opacity-50"
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => void saveCrewEdit(member)}
-                                    disabled={savingCrewId === member.id}
-                                    className="bd-focus inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-50"
-                                  >
-                                    <Save className="h-4 w-4" />
-                                    {savingCrewId === member.id ? "Saving..." : "Save changes"}
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              canManageCrewDirectory && (
-                                <button
-                                  type="button"
-                                  onClick={() => startCrewEdit(member)}
-                                  className="bd-focus mt-4 inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-black text-cyan-800 transition hover:bg-cyan-50"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                  Edit name and position
-                                </button>
-                              )
-                            )}
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
-
-                  {crew.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
-                      No crew has been added yet.
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/*
             {isChecklistSystem && (
             <div className="min-w-0 rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
@@ -4480,6 +4682,78 @@ function ActivityIcon() {
       <span className="absolute h-5 w-5 rounded-full border-2 border-current opacity-30" />
       <span className="h-2.5 w-2.5 rounded-full bg-current" />
     </span>
+  );
+}
+
+function CrewCommandSectionButton({
+  id,
+  controls,
+  active,
+  icon,
+  title,
+  text,
+  meta,
+  onClick,
+}: {
+  id: string;
+  controls: string;
+  active: boolean;
+  icon: ReactNode;
+  title: string;
+  text: string;
+  meta: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="tab"
+      aria-selected={active}
+      aria-controls={controls}
+      onClick={onClick}
+      className={`bd-focus min-h-40 rounded-[26px] p-4 text-left transition sm:p-5 ${
+        active
+          ? "border-2 border-cyan-500 bg-white text-slate-950 shadow-lg shadow-cyan-950/10"
+          : "border border-slate-200 bg-white text-slate-800 hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-50"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+          active ? "bg-cyan-700 text-white" : "bg-cyan-50 text-cyan-800"
+        }`}>
+          {icon}
+        </span>
+        <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
+          active ? "border border-cyan-200 bg-cyan-50 text-cyan-900" : "bg-slate-100 text-slate-500"
+        }`}>
+          {meta}
+        </span>
+      </div>
+      <h2 className="mt-4 text-xl font-black">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">{text}</p>
+    </button>
+  );
+}
+
+function CommandCount({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "amber" | "emerald";
+}) {
+  return (
+    <div className={`rounded-2xl border px-4 py-3 ${
+      tone === "emerald"
+        ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+        : "border-amber-200 bg-amber-50 text-amber-950"
+    }`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.12em] opacity-70">{label}</p>
+      <p className="mt-1 text-2xl font-black tabular-nums">{value}</p>
+    </div>
   );
 }
 
