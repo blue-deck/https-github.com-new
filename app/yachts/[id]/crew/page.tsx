@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { contractAnnexCClauses, getContractAnnexCLines } from "../../../lib/contractAnnexC";
+import { createSafeStoragePath } from "../../../lib/storage";
 import {
   downloadChecklistPdfDocument,
   type ChecklistPdfRecord,
@@ -22,9 +23,15 @@ import {
   Download,
   FileCheck2,
   FileText,
+  Hash,
+  ImagePlus,
   ListChecks,
+  Mail,
+  Pencil,
+  Phone,
   Plus,
   RefreshCcw,
+  Save,
   Send,
   UserRound,
   UserPlus,
@@ -38,6 +45,7 @@ import {
   getChecklistTaskSuggestions,
   getDefaultPositionForAccountType,
   getDepartmentByPosition,
+  isCaptainLevel,
   positionSelectGroups,
 } from "../../../lib/yachtOperations";
 
@@ -47,6 +55,18 @@ type ContractStudioStep =
   | "clauses"
   | "signature"
   | "preview";
+
+type ManualChecklistTask = {
+  id: string;
+  text: string;
+  beforePhotoFile?: File;
+  beforePhotoPreview?: string;
+};
+
+type CrewEditDraft = {
+  fullName: string;
+  position: string;
+};
 
 const CHECKLIST_SENT_STATUS_WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -147,6 +167,7 @@ type ContractCrewMember = {
     date_of_birth?: string | null;
     birth_date?: string | null;
     passport_no?: string | null;
+    passport_number?: string | null;
     seaman_book_no?: string | null;
     phone?: string | null;
     mobile_number?: string | null;
@@ -538,7 +559,10 @@ function getContractCoverSections(draft: ContractDraft, member?: ContractCrewMem
         ["Crew member full name", draft.employeeName || getCrewDisplayName(member)],
         ["Nationality", draft.employeeNationality || crewProfile.nationality],
         ["Date of birth", draft.employeeDob || crewProfile.date_of_birth || crewProfile.birth_date],
-        ["Passport number", draft.employeePassportNo || crewProfile.passport_no],
+        [
+          "Passport number",
+          draft.employeePassportNo || crewProfile.passport_number || crewProfile.passport_no,
+        ],
         ["Seaman book no", draft.employeeSeamanBookNo || crewProfile.seaman_book_no],
         ["Position", draft.employeePosition || getCrewPosition(member)],
         ["Email", crewProfile.email || member?.invited_email],
@@ -704,11 +728,13 @@ function buildContractFileName(draft: ContractDraft, member?: ContractCrewMember
 export default function CrewPage({
   view = "command",
 }: {
-  view?: "command" | "checklists";
+  view?: "command" | "checklists" | "contracts";
 }) {
   const params = useParams();
   const yachtId = String(params?.id || "");
   const isChecklistSystem = view === "checklists";
+  const isCrewCommand = view === "command";
+  const isContractStudio = view === "contracts";
   const [crew, setCrew] = useState<any[]>([]);
   const [checklists, setChecklists] = useState<any[]>([]);
   const [selectedCrew, setSelectedCrew] = useState("");
@@ -739,7 +765,18 @@ export default function CrewPage({
   const [manualType, setManualType] = useState("Custom Routine");
   const [manualCategoryId, setManualCategoryId] = useState("deck");
   const [manualTaskDraft, setManualTaskDraft] = useState("");
-  const [manualTasks, setManualTasks] = useState<string[]>([]);
+  const [manualTaskDraftPhoto, setManualTaskDraftPhoto] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  const [manualTasks, setManualTasks] = useState<ManualChecklistTask[]>([]);
+  const [expandedCrewId, setExpandedCrewId] = useState("");
+  const [editingCrewId, setEditingCrewId] = useState("");
+  const [savingCrewId, setSavingCrewId] = useState("");
+  const [crewEditDraft, setCrewEditDraft] = useState<CrewEditDraft>({
+    fullName: "",
+    position: "",
+  });
 
   const assignableCrew = useMemo(() => {
     return crew.filter((member) =>
@@ -752,6 +789,8 @@ export default function CrewPage({
       )
     );
   }, [crew, operator.department, operator.position, operator.role]);
+
+  const canManageCrewDirectory = isCaptainLevel(operator.position, operator.role);
 
   const manualCategoryOptions = useMemo(() => {
     const allowed = checklistTaskCategories.filter((category) =>
@@ -899,6 +938,22 @@ export default function CrewPage({
 
   function updateContractDraft(field: keyof ContractDraft, value: string) {
     setContractDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function selectContractCrew(memberId: string) {
+    setSelectedCrew(memberId);
+    const member = crew.find((item) => item.id === memberId);
+    const crewProfile = member?.crew_profiles || {};
+
+    setContractDraft((current) => ({
+      ...current,
+      employeeName: member ? getCrewDisplayName(member) : "",
+      employeePosition: member ? getCrewPosition(member) : "",
+      employeeNationality: crewProfile.nationality || "",
+      employeeDob: crewProfile.date_of_birth || crewProfile.birth_date || "",
+      employeePassportNo: crewProfile.passport_no || crewProfile.passport_number || "",
+      employeeSeamanBookNo: crewProfile.seaman_book_no || "",
+    }));
   }
 
   const applySavedContractDraft = useCallback((
@@ -1495,20 +1550,92 @@ export default function CrewPage({
     const task = (taskOverride || manualTaskDraft).trim();
     if (!task) return;
 
-    setManualTasks((current) => [...current, task]);
+    setManualTasks((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        text: task,
+        beforePhotoFile: manualTaskDraftPhoto?.file,
+        beforePhotoPreview: manualTaskDraftPhoto?.previewUrl,
+      },
+    ]);
     setManualTaskDraft("");
+    setManualTaskDraftPhoto(null);
   }
 
   function updateManualTask(index: number, value: string) {
     setManualTasks((current) => {
       const next = [...current];
-      next[index] = value;
+      next[index] = { ...next[index], text: value };
       return next;
     });
   }
 
   function removeManualTask(index: number) {
-    setManualTasks((current) => current.filter((_, taskIndex) => taskIndex !== index));
+    setManualTasks((current) => {
+      const removed = current[index];
+      if (removed?.beforePhotoPreview) URL.revokeObjectURL(removed.beforePhotoPreview);
+      return current.filter((_, taskIndex) => taskIndex !== index);
+    });
+  }
+
+  function selectManualTaskPhoto(file?: File) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Select an image file for the task.");
+      return;
+    }
+
+    if (manualTaskDraftPhoto?.previewUrl) {
+      URL.revokeObjectURL(manualTaskDraftPhoto.previewUrl);
+    }
+
+    setManualTaskDraftPhoto({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    });
+  }
+
+  function removeManualTaskDraftPhoto() {
+    if (manualTaskDraftPhoto?.previewUrl) {
+      URL.revokeObjectURL(manualTaskDraftPhoto.previewUrl);
+    }
+    setManualTaskDraftPhoto(null);
+  }
+
+  async function uploadCaptainTaskPhoto(task: ManualChecklistTask) {
+    if (!task.beforePhotoFile) {
+      return { publicUrl: "", bucket: "", path: "", error: "" };
+    }
+
+    const path = createSafeStoragePath(
+      `${yachtId}/manual-checklist/${task.id}`,
+      task.beforePhotoFile,
+      "before",
+    );
+    const buckets = ["task-photos", "crew-portfolio"];
+    let lastError = "";
+
+    for (const bucket of buckets) {
+      const { error } = await supabase.storage.from(bucket).upload(path, task.beforePhotoFile);
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+        return { publicUrl: data.publicUrl, bucket, path, error: "" };
+      }
+
+      lastError = error.message;
+      if (error.message !== "Bucket not found") break;
+    }
+
+    return {
+      publicUrl: "",
+      bucket: "",
+      path: "",
+      error:
+        lastError === "Bucket not found"
+          ? "Photo storage is not ready yet. Please create the task-photos bucket in Supabase Storage."
+          : lastError || "Task photo could not be uploaded.",
+    };
   }
 
   async function createManualChecklist() {
@@ -1521,7 +1648,9 @@ export default function CrewPage({
     const assignmentDepartment = category.department;
     const title = `${category.label} Checklist`;
     const type = manualType.trim() || category.type || "Custom Routine";
-    const tasks = manualTasks.map((task) => task.trim()).filter(Boolean);
+    const tasks = manualTasks
+      .map((task) => ({ ...task, text: task.text.trim() }))
+      .filter((task) => Boolean(task.text));
 
     if (tasks.length === 0) {
       alert("Add at least one checklist task.");
@@ -1557,6 +1686,26 @@ export default function CrewPage({
 
     setLoading(true);
 
+    const uploadedTaskPhotos: Array<{ bucket: string; path: string }> = [];
+    const preparedTasks: Array<ManualChecklistTask & { beforePhotoUrl?: string }> = [];
+
+    for (const task of tasks) {
+      const upload = await uploadCaptainTaskPhoto(task);
+      if (upload.error) {
+        await Promise.all(
+          uploadedTaskPhotos.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path]))
+        );
+        alert(upload.error);
+        setLoading(false);
+        return;
+      }
+
+      if (upload.bucket && upload.path) {
+        uploadedTaskPhotos.push({ bucket: upload.bucket, path: upload.path });
+      }
+      preparedTasks.push({ ...task, beforePhotoUrl: upload.publicUrl || undefined });
+    }
+
     const { data: checklist, error } = await createChecklist({
       yacht_id: yachtId,
       title,
@@ -1570,27 +1719,35 @@ export default function CrewPage({
       items: {
         frequency,
         captain_note: captainNote || null,
-        tasks,
+        tasks: tasks.map((task) => task.text),
         source_template: "manual",
         summary: "Manual BlueDeck checklist created onboard.",
       },
     });
 
     if (error) {
+      await Promise.all(
+        uploadedTaskPhotos.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path]))
+      );
       alert(error.message);
       setLoading(false);
       return;
     }
 
     const { error: itemError } = await insertChecklistItems(
-      tasks.map((task) => ({
+      preparedTasks.map((task) => ({
         checklist_id: checklist.id,
-        task_text: task,
+        task_text: task.text,
         completed: false,
+        beforePhotoUrl: task.beforePhotoUrl,
       }))
     );
 
     if (itemError) {
+      await Promise.all(
+        uploadedTaskPhotos.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path]))
+      );
+      await supabase.from("yacht_checklists").delete().eq("id", checklist.id);
       alert(itemError.message);
       setLoading(false);
       return;
@@ -1598,6 +1755,9 @@ export default function CrewPage({
 
     setManualType("Custom Routine");
     setManualTaskDraft("");
+    tasks.forEach((task) => {
+      if (task.beforePhotoPreview) URL.revokeObjectURL(task.beforePhotoPreview);
+    });
     setManualTasks([]);
     setCaptainNote("");
     setDueDate("");
@@ -1718,6 +1878,91 @@ export default function CrewPage({
     setManualCategoryId(manualCategoryOptions[0]?.id || "deck");
   }, [manualCategoryId, manualCategoryOptions]);
 
+  function toggleCrewCard(memberId: string) {
+    setExpandedCrewId((current) => (current === memberId ? "" : memberId));
+    if (editingCrewId && editingCrewId !== memberId) setEditingCrewId("");
+  }
+
+  function startCrewEdit(member: any) {
+    setExpandedCrewId(member.id);
+    setEditingCrewId(member.id);
+    setCrewEditDraft({
+      fullName:
+        member.crew_profiles?.full_name ||
+        member.invited_email?.split("@")[0] ||
+        "",
+      position:
+        member.position ||
+        member.crew_profiles?.current_position ||
+        "Deckhand",
+    });
+  }
+
+  async function saveCrewEdit(member: any) {
+    const fullName = crewEditDraft.fullName.trim();
+    const nextPosition = crewEditDraft.position.trim();
+
+    if (fullName.length < 2) {
+      alert("Enter the crew member's name and surname.");
+      return;
+    }
+
+    if (!nextPosition) {
+      alert("Select a yacht position.");
+      return;
+    }
+
+    setSavingCrewId(member.id);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+          ...(session?.access_token
+            ? { authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          membershipId: member.id,
+          fullName,
+          position: nextPosition,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.ok) {
+        alert(payload?.error || "Crew details could not be updated.");
+        return;
+      }
+
+      setCrew((current) =>
+        current.map((item) =>
+          item.id === member.id
+            ? {
+                ...item,
+                position: nextPosition,
+                department: getDepartmentByPosition(nextPosition),
+                crew_profiles: {
+                  ...(item.crew_profiles || {}),
+                  full_name: fullName,
+                },
+              }
+            : item
+        )
+      );
+      setEditingCrewId("");
+      void loadData(true);
+    } catch {
+      alert("Crew details could not be updated. Check your connection and try again.");
+    } finally {
+      setSavingCrewId("");
+    }
+  }
+
   async function addCrew() {
     if (!inviteEmail && !crewPublicId) {
       alert("Crew email or Crew ID required");
@@ -1755,10 +2000,10 @@ export default function CrewPage({
 
       setInviteEmail("");
       setCrewPublicId("");
-      setInviteNotice("Invitation is now waiting inside the crew member's My YachtOS portal.");
+      setInviteNotice("Invitation is now waiting inside the crew member's My YACHT-OS portal.");
       void loadData();
 
-      alert("Crew invitation created. The crew member will see it inside My YachtOS.");
+      alert("Crew invitation created. The crew member will see it inside My YACHT-OS.");
     } catch {
       alert("Crew invitation could not be created. Check your connection and try again.");
     } finally {
@@ -1801,10 +2046,29 @@ export default function CrewPage({
   }
 
   async function insertChecklistItems(tasks: any[]) {
-    const variants = [
-      tasks,
-      tasks.map((task) => omitKeys(task, ["completed"])),
-    ];
+    const baseTasks = tasks.map((task) => omitKeys(task, ["beforePhotoUrl"]));
+    const hasCaptainPhotos = tasks.some((task) => Boolean(task.beforePhotoUrl));
+    const noteTasks = tasks.map((task) => ({
+      ...omitKeys(task, ["beforePhotoUrl"]),
+      ...(task.beforePhotoUrl
+        ? { note: JSON.stringify({ before_photo_url: task.beforePhotoUrl }) }
+        : {}),
+    }));
+    const columnTasks = tasks.map((task) => ({
+      ...omitKeys(task, ["beforePhotoUrl"]),
+      ...(task.beforePhotoUrl ? { before_photo_url: task.beforePhotoUrl } : {}),
+    }));
+    const variants = hasCaptainPhotos
+      ? [
+          noteTasks,
+          noteTasks.map((task) => omitKeys(task, ["completed"])),
+          columnTasks,
+          columnTasks.map((task) => omitKeys(task, ["completed"])),
+        ]
+      : [
+          baseTasks,
+          baseTasks.map((task) => omitKeys(task, ["completed"])),
+        ];
 
     let lastResponse: any = null;
 
@@ -2194,23 +2458,29 @@ export default function CrewPage({
           <div className={isChecklistSystem ? "p-5 sm:p-8" : "p-5 sm:p-10"}>
             <div className="min-w-0">
               <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
-                {isChecklistSystem ? "BlueDeck Checklist Operation System" : "BlueDeck CrewOS"}
+                {isChecklistSystem
+                  ? "BlueDeck Checklist Operation System"
+                  : isContractStudio
+                    ? "BlueDeck Contract Studio"
+                    : "BlueDeck CrewOS"}
               </p>
               {!isChecklistSystem && (
                 <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
-                  Yacht Crew Command
+                  {isContractStudio ? "Contract Studio" : "Yacht Crew Command"}
                 </h1>
               )}
               <p className={`${isChecklistSystem ? "mt-3" : "mt-4 sm:mt-5"} max-w-4xl text-base leading-relaxed text-slate-500 sm:text-xl`}>
                 {isChecklistSystem
                   ? "Create tailored crew task lists, schedule recurring work and verify completion with proof in one controlled captain workspace."
-                  : "Invite crew, manage onboard roles and send yacht contracts from one clean crew command workspace."}
+                  : isContractStudio
+                    ? "Create, save, preview and send seafarer employment agreements from one dedicated workspace."
+                    : "Invite crew, manage onboard roles and review access from one clean crew command workspace."}
               </p>
             </div>
           </div>
         </div>
 
-        {!isChecklistSystem && (
+        {isCrewCommand && (
           <div className="mb-6 grid gap-4 sm:grid-cols-2 md:mb-10 md:grid-cols-4 md:gap-6">
             <Stat title="Crew" value={crew.length} icon={<Bell />} />
             <Stat title="Assignable Crew" value={assignableCrew.length} icon={<UserRound />} />
@@ -2223,10 +2493,9 @@ export default function CrewPage({
           </div>
         )}
 
-        {!isChecklistSystem && (
-          <section className="mb-8 rounded-[32px] border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_54%,#eefcff_100%)] p-5 shadow-2xl shadow-cyan-950/8 sm:mb-10 sm:rounded-[42px] sm:p-7">
-            <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-                  <div className="rounded-[28px] border border-white bg-white/88 p-5 shadow-xl shadow-cyan-950/6">
+        {isCrewCommand && (
+          <div className="mb-8 grid min-w-0 gap-5 sm:mb-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                  <section className="rounded-[28px] border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#ffffff_100%)] p-5 shadow-xl shadow-cyan-950/6 sm:p-6">
                     <div className="flex items-center gap-4">
                       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-[0_18px_40px_rgba(8,145,178,0.22)]">
                         <UserPlus className="h-7 w-7" />
@@ -2287,9 +2556,9 @@ export default function CrewPage({
                         </div>
                       )}
                     </div>
-                  </div>
+                  </section>
 
-                  <div className="rounded-[28px] border border-cyan-100 bg-white/78 p-5 shadow-inner shadow-cyan-950/6">
+                  <section className="rounded-[28px] border border-cyan-100 bg-white/90 p-5 shadow-xl shadow-cyan-950/6 sm:p-6">
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
                       Invite Status
                     </p>
@@ -2323,12 +2592,11 @@ export default function CrewPage({
                         </p>
                       )}
                     </div>
-                  </div>
-                  </div>
-          </section>
+                  </section>
+          </div>
         )}
 
-        {!isChecklistSystem && (
+        {isContractStudio && (
           <section className="mb-8 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:mb-10">
             <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
             <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-5 py-4 text-white sm:px-6 sm:py-5">
@@ -2344,6 +2612,23 @@ export default function CrewPage({
                     {activeContractStepInfo.meta}
                   </p>
                 </div>
+                <label className="block w-full xl:max-w-md">
+                  <span className="text-xs font-black uppercase tracking-[0.18em] text-[#8ed8e6]">
+                    Contract crew member
+                  </span>
+                  <select
+                    value={selectedCrew}
+                    onChange={(event) => selectContractCrew(event.target.value)}
+                    className="mt-2 w-full rounded-2xl border border-white/25 bg-white px-4 py-3 font-black text-[#08242e] outline-none focus:border-[#8ed8e6]"
+                  >
+                    <option value="">Select crew</option>
+                    {crew.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.crew_profiles?.full_name || member.invited_email || "Crew member"} — {member.position || member.crew_profiles?.current_position || "Crew"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             </div>
 
@@ -2944,7 +3229,7 @@ export default function CrewPage({
           </section>
         )}
 
-        {(!isChecklistSystem || checklistSection === "builder") && (
+        {(isCrewCommand || (isChecklistSystem && checklistSection === "builder")) && (
         <div className={isChecklistSystem ? "min-w-0" : "space-y-6 xl:space-y-8"}>
           <div className={isChecklistSystem ? "min-w-0 space-y-6 xl:space-y-8" : "hidden"}>
             {/*
@@ -3176,6 +3461,26 @@ export default function CrewPage({
                         placeholder="Start typing a yacht task"
                         className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                       />
+                      <label
+                        className={`bd-focus flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl border transition ${
+                          manualTaskDraftPhoto
+                            ? "border-cyan-400 bg-cyan-50 text-cyan-800"
+                            : "border-slate-200 bg-white text-slate-500 hover:border-cyan-300 hover:text-cyan-800"
+                        }`}
+                        title="Add a before photo to this task"
+                      >
+                        <ImagePlus className="h-5 w-5" />
+                        <span className="sr-only">Add task before photo</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(event) => {
+                            selectManualTaskPhoto(event.target.files?.[0]);
+                            event.currentTarget.value = "";
+                          }}
+                        />
+                      </label>
                       <button
                         type="button"
                         onClick={() => addManualTask()}
@@ -3185,6 +3490,30 @@ export default function CrewPage({
                         <Plus className="h-5 w-5" />
                       </button>
                     </div>
+
+                    {manualTaskDraftPhoto && (
+                      <div className="mt-3 flex items-center gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 p-3">
+                        <img
+                          src={manualTaskDraftPhoto.previewUrl}
+                          alt="Task before preview"
+                          className="h-16 w-20 shrink-0 rounded-xl bg-white object-contain"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-black text-slate-950">Before photo ready</p>
+                          <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                            {manualTaskDraftPhoto.file.name}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeManualTaskDraftPhoto}
+                          className="bd-focus flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600 shadow-sm"
+                          title="Remove task photo"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
 
                     {manualTaskDraft.trim() && (
                       <div className="mt-3 overflow-hidden rounded-2xl border border-cyan-100 bg-white shadow-lg shadow-cyan-950/8">
@@ -3217,15 +3546,34 @@ export default function CrewPage({
 
                   <div className="mt-4 space-y-2">
                     {manualTasks.map((task, index) => (
-                      <div key={`${task}-${index}`} className="flex items-center gap-2">
+                      <div key={task.id} className="flex items-start gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-2">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-900 text-xs font-black text-white">
                           {index + 1}
                         </span>
-                        <input
-                          value={task}
-                          onChange={(event) => updateManualTask(index, event.target.value)}
-                          className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-cyan-300"
-                        />
+                        <div className="min-w-0 flex-1">
+                          <input
+                            value={task.text}
+                            onChange={(event) => updateManualTask(index, event.target.value)}
+                            className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-cyan-300"
+                          />
+                          {task.beforePhotoPreview && (
+                            <div className="mt-2 flex items-center gap-3 rounded-xl border border-cyan-100 bg-white p-2">
+                              <img
+                                src={task.beforePhotoPreview}
+                                alt={`Before photo for task ${index + 1}`}
+                                className="h-12 w-16 rounded-lg bg-slate-100 object-contain"
+                              />
+                              <div>
+                                <p className="text-xs font-black uppercase tracking-[0.12em] text-cyan-800">
+                                  Before photo
+                                </p>
+                                <p className="mt-1 text-xs font-semibold text-slate-500">
+                                  Crew will only need to add the after photo.
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={() => removeManualTask(index)}
@@ -3274,7 +3622,7 @@ export default function CrewPage({
           </div>
 
           <div className="min-w-0 space-y-6 xl:space-y-8">
-            {!isChecklistSystem && (
+            {isCrewCommand && (
               <div className="rounded-[28px] border border-slate-200 bg-white/90 p-5 shadow-xl shadow-cyan-950/5 sm:rounded-[36px] sm:p-8">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -3283,30 +3631,173 @@ export default function CrewPage({
                     </p>
                     <h2 className="mt-2 text-3xl font-black sm:text-5xl">Onboard Team</h2>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 sm:text-base">
-                      Crew profiles, yacht roles, invitations and contract readiness in one
-                      clean captain command view.
+                      Open a crew card to review contact and yacht registration details, or
+                      update the name and onboard position.
                     </p>
                   </div>
                   <UserRound className="h-10 w-10 text-cyan-700" />
                 </div>
 
-                <div className="mt-6 grid gap-3 md:grid-cols-2">
-                  {crew.map((member) => (
-                    <article
-                      key={member.id}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                      <p className="truncate text-lg font-black text-slate-950">
-                        {member.crew_profiles?.full_name || member.invited_email || "Crew member"}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-cyan-700">
-                        {member.position || member.crew_profiles?.current_position || "Crew"} · {member.department || "Yacht"}
-                      </p>
-                      <p className="mt-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">
-                        {member.status || "active"}
-                      </p>
-                    </article>
-                  ))}
+                <div className="mt-6 grid items-start gap-3 md:grid-cols-2">
+                  {crew.map((member) => {
+                    const expanded = expandedCrewId === member.id;
+                    const editing = editingCrewId === member.id;
+                    const displayName =
+                      member.crew_profiles?.full_name ||
+                      member.invited_email ||
+                      "Crew member";
+                    const memberPosition =
+                      member.position ||
+                      member.crew_profiles?.current_position ||
+                      "Crew";
+                    const memberEmail =
+                      member.crew_profiles?.email ||
+                      member.invited_email ||
+                      "-";
+                    const memberPhone = member.crew_profiles?.phone || "";
+
+                    return (
+                      <article
+                        key={member.id}
+                        className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+                          expanded
+                            ? "border-cyan-300 shadow-lg shadow-cyan-950/8"
+                            : "border-slate-200 hover:border-cyan-200"
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleCrewCard(member.id)}
+                          aria-expanded={expanded}
+                          className="bd-focus flex w-full items-start justify-between gap-4 p-4 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p data-i18n-ignore className="truncate text-lg font-black text-slate-950">
+                              {displayName}
+                            </p>
+                            <p data-i18n-ignore className="mt-1 text-sm font-semibold text-cyan-700">
+                              {memberPosition} · {member.department || "Yacht"}
+                            </p>
+                            <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${
+                              member.status === "active"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}>
+                              {member.status || "active"}
+                            </span>
+                          </div>
+                          <ChevronDown className={`mt-1 h-5 w-5 shrink-0 text-slate-400 transition ${expanded ? "rotate-180 text-cyan-700" : ""}`} />
+                        </button>
+
+                        {expanded && (
+                          <div className="border-t border-slate-100 bg-slate-50/75 p-4">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <CrewDetail
+                                icon={<Hash className="h-4 w-4" />}
+                                label="Crew ID"
+                                value={member.crew_profiles?.public_crew_id || "-"}
+                              />
+                              {memberPhone && (
+                                <CrewDetail
+                                  icon={<Phone className="h-4 w-4" />}
+                                  label="Phone"
+                                  value={memberPhone}
+                                />
+                              )}
+                              <CrewDetail
+                                icon={<Mail className="h-4 w-4" />}
+                                label="Email"
+                                value={memberEmail}
+                              />
+                              <CrewDetail
+                                icon={<CalendarClock className="h-4 w-4" />}
+                                label="Added to yacht"
+                                value={formatDateTime(member.created_at) || "-"}
+                              />
+                            </div>
+
+                            {editing ? (
+                              <div className="mt-4 rounded-2xl border border-cyan-200 bg-white p-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                  <label className="block">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                                      Name and surname
+                                    </span>
+                                    <input
+                                      value={crewEditDraft.fullName}
+                                      maxLength={120}
+                                      onChange={(event) =>
+                                        setCrewEditDraft((current) => ({
+                                          ...current,
+                                          fullName: event.target.value,
+                                        }))
+                                      }
+                                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-950 outline-none focus:border-cyan-400"
+                                    />
+                                  </label>
+                                  <label className="block">
+                                    <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                                      Yacht position
+                                    </span>
+                                    <select
+                                      value={crewEditDraft.position}
+                                      onChange={(event) =>
+                                        setCrewEditDraft((current) => ({
+                                          ...current,
+                                          position: event.target.value,
+                                        }))
+                                      }
+                                      className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-950 outline-none focus:border-cyan-400"
+                                    >
+                                      {positionSelectGroups.map((group) => (
+                                        <optgroup key={group.department} label={group.department}>
+                                          {group.positions.map((item) => (
+                                            <option key={item} value={item}>
+                                              {item}
+                                            </option>
+                                          ))}
+                                        </optgroup>
+                                      ))}
+                                    </select>
+                                  </label>
+                                </div>
+                                <div className="mt-4 flex flex-wrap justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingCrewId("")}
+                                    disabled={savingCrewId === member.id}
+                                    className="bd-focus rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-600 disabled:opacity-50"
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => void saveCrewEdit(member)}
+                                    disabled={savingCrewId === member.id}
+                                    className="bd-focus inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-50"
+                                  >
+                                    <Save className="h-4 w-4" />
+                                    {savingCrewId === member.id ? "Saving..." : "Save changes"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              canManageCrewDirectory && (
+                                <button
+                                  type="button"
+                                  onClick={() => startCrewEdit(member)}
+                                  className="bd-focus mt-4 inline-flex items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2.5 text-sm font-black text-cyan-800 transition hover:bg-cyan-50"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                  Edit name and position
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
 
                   {crew.length === 0 && (
                     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
@@ -5092,6 +5583,30 @@ function TaskPhotoPreview({
         <span className="sr-only">{label} proof photo</span>
       </span>
     </button>
+  );
+}
+
+function CrewDetail({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="flex items-center gap-2 text-cyan-700">
+        {icon}
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+          {label}
+        </p>
+      </div>
+      <p data-i18n-ignore className="mt-2 break-words text-sm font-bold text-slate-950">
+        {value}
+      </p>
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -121,6 +121,8 @@ type ReferenceEntry = {
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
 type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "portfolio" | "languages" | "preview";
+
+const dashboardOnlyStudioTabs = new Set<CvStudioTab>(["portfolio"]);
 
 const workPreferences = [
   "Seasonal",
@@ -1041,6 +1043,11 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
+    const requestedTab = new URLSearchParams(window.location.search).get("tab");
+    if (requestedTab === "portfolio") setActiveStudioTab("portfolio");
+  }, []);
+
+  useEffect(() => {
     loadProfile();
   }, []);
 
@@ -1064,7 +1071,7 @@ export default function ProfilePage() {
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
               Build a clean yachting CV from verified profile data, documents,
-              work preferences, skills, references and photo gallery.
+              work preferences, skills and references.
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-4">
               <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
@@ -1130,7 +1137,7 @@ export default function ProfilePage() {
 
           <div className="border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] px-3 pb-3 sm:px-5">
             <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10">
-              {studioTabs.map((tab) => {
+              {studioTabs.filter((tab) => !dashboardOnlyStudioTabs.has(tab.id)).map((tab) => {
                 const active = activeStudioTab === tab.id;
 
                 return (
@@ -1224,8 +1231,24 @@ export default function ProfilePage() {
               <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
               <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Height cm" type="number" value={String(profile.height_cm || "")} onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })} />
-                <Field label="Weight kg" type="number" value={String(profile.weight_kg || "")} onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })} />
+                <Field
+                  label="Height cm"
+                  value={String(profile.height_cm || "")}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={3}
+                  normalizeValue={normalizeThreeDigitNumber}
+                  onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })}
+                />
+                <Field
+                  label="Weight kg"
+                  value={String(profile.weight_kg || "")}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={3}
+                  normalizeValue={normalizeThreeDigitNumber}
+                  onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })}
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
@@ -2847,7 +2870,7 @@ function PrintablePrimarySidebar({
         <img className="bd-print-brand-logo" src="/bluedeck-logo-mark.png" alt="BlueDeck" loading="eager" decoding="sync" />
         <div>
           <p>BlueDeck.app</p>
-          <span>Yachtos</span>
+          <span>YACHT-OS</span>
         </div>
       </div>
 
@@ -3076,7 +3099,7 @@ function CvSidebarSignature() {
       <BlueDeckMark className="h-10 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
       <div className="min-w-0">
         <p className="text-[9px] font-black uppercase leading-3 tracking-[0.22em] text-[#2d7482]">BlueDeck.app</p>
-        <p className="mt-0.5 text-[10px] font-bold uppercase leading-3 tracking-[0.16em] text-[#59666d]">Yachtos</p>
+        <p className="mt-0.5 text-[10px] font-bold uppercase leading-3 tracking-[0.16em] text-[#59666d]">YACHT-OS</p>
       </div>
     </div>
   );
@@ -4497,6 +4520,10 @@ function EditorButtons({
   );
 }
 
+function normalizeThreeDigitNumber(value: string) {
+  return value.replace(/\D/g, "").slice(0, 3);
+}
+
 function Field({
   label,
   value,
@@ -4505,6 +4532,10 @@ function Field({
   disabled = false,
   listId,
   placeholder,
+  inputMode,
+  pattern,
+  maxLength,
+  normalizeValue,
 }: {
   label: string;
   value?: string;
@@ -4513,11 +4544,38 @@ function Field({
   disabled?: boolean;
   listId?: string;
   placeholder?: string;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  pattern?: string;
+  maxLength?: number;
+  normalizeValue?: (value: string) => string;
 }) {
   return (
     <div className="block">
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
-      <input type={type} value={value || ""} list={listId} disabled={disabled} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40" />
+      <input
+        type={type}
+        value={value || ""}
+        list={listId}
+        disabled={disabled}
+        placeholder={placeholder}
+        inputMode={inputMode}
+        pattern={pattern}
+        maxLength={maxLength}
+        onChange={(event) => onChange(normalizeValue ? normalizeValue(event.target.value) : event.target.value)}
+        onPaste={
+          normalizeValue
+            ? (event) => {
+                event.preventDefault();
+                const input = event.currentTarget;
+                const selectionStart = input.selectionStart ?? input.value.length;
+                const selectionEnd = input.selectionEnd ?? selectionStart;
+                const pastedValue = event.clipboardData.getData("text");
+                onChange(normalizeValue(`${input.value.slice(0, selectionStart)}${pastedValue}${input.value.slice(selectionEnd)}`));
+              }
+            : undefined
+        }
+        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"
+      />
     </div>
   );
 }
@@ -4625,11 +4683,11 @@ function CountrySearch({
         }}
         className={`flex w-full items-center justify-between gap-2 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-950 transition hover:text-cyan-800 ${fullWidth ? "rounded-xl border-0 shadow-none" : phoneMode ? "rounded-l-xl" : "rounded-xl border border-slate-200 shadow-sm"}`}
       >
-        <span className="truncate">{buttonLabel}</span>
-        <span className="text-cyan-700">⌄</span>
+        <span className="min-w-0 flex-1 truncate">{buttonLabel}</span>
+        <span className="shrink-0 text-cyan-700">⌄</span>
       </button>
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-[min(420px,92vw)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
           <input
             autoFocus
             value={query}
@@ -4652,7 +4710,7 @@ function CountrySearch({
                 }}
                 className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-cyan-50"
               >
-                <span className="truncate">
+                <span className="min-w-0 flex-1 truncate">
                   {country.flag} {country.country} · {country.nationality}
                 </span>
                 {"dial" in country && <span className="shrink-0 font-semibold text-cyan-700">{country.dial}</span>}

@@ -101,7 +101,7 @@ export function PhoneInput({
         </div>
 
         {open && (
-          <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-[min(430px,92vw)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/18">
+          <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-full max-w-[430px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/18">
             <input
               autoFocus
               value={query}
@@ -123,7 +123,7 @@ export function PhoneInput({
                   }}
                   className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-cyan-50"
                 >
-                  <span className="min-w-0 truncate">
+                  <span className="min-w-0 flex-1 truncate">
                     {item.flag} {item.country}
                   </span>
                   <span className="shrink-0 font-black text-cyan-700">{item.dial}</span>

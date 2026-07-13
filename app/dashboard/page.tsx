@@ -486,7 +486,18 @@ export default function DashboardPage() {
             <UserRound className="h-8 w-8 text-cyan-700" />
             <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
             <p className="mt-3 leading-7 text-slate-600">
-              Manage your crew ID, documents, expiry dates, photo gallery and CV.
+              Manage your crew ID, documents, expiry dates and CV.
+            </p>
+          </Link>
+
+          <Link
+            href="/profile?tab=portfolio"
+            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+          >
+            <Camera className="h-8 w-8 text-cyan-700" />
+            <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Blue</h2>
+            <p className="mt-3 leading-7 text-slate-600">
+              Open and manage your professional Photo Gallery.
             </p>
           </Link>
 

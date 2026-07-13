@@ -276,7 +276,7 @@ export default function BlueDeckOSV2Page() {
 
                 <Insight
                   title="Offline Mode"
-                  text="YachtOS keeps a structured operations log ready for onboard continuity."
+                  text="YACHT-OS keeps a structured operations log ready for onboard continuity."
                 />
               </div>
             </div>

@@ -164,7 +164,7 @@ export default function YachtDashboard() {
     const recent: ActivityItem[] = [
       ...crew.slice(0, 3).map((member: any) => ({
         title: member.crew_profiles?.full_name || member.invited_email || "Crew member",
-        text: `${member.position || "Crew"} ${member.status === "invited" ? "invited" : "added"} to YachtOS`,
+        text: `${member.position || "Crew"} ${member.status === "invited" ? "invited" : "added"} to YACHT-OS`,
         date: member.created_at,
         tone: "cyan" as const,
       })),
@@ -239,7 +239,7 @@ export default function YachtDashboard() {
       tone: stats.criticalDocuments ? "rose" : "cyan",
     },
     {
-      label: "YachtOS",
+      label: "YACHT-OS",
       value: "Live",
       detail: "Captain, crew and owner modules are connected",
       tone: "emerald",
@@ -249,11 +249,19 @@ export default function YachtDashboard() {
   const modules = [
     {
       title: "Crew Command",
-      text: "Invite crew, manage onboard roles and send yacht contracts.",
+      text: "Invite crew, review access and manage onboard roles.",
       href: `/yachts/${yachtId}/crew`,
       icon: Users,
       tone: "cyan",
       meta: `${stats.crewCount} crew`,
+    },
+    {
+      title: "Contract Studio",
+      text: "Create, save, preview and send seafarer employment agreements.",
+      href: `/yachts/${yachtId}/contract-studio`,
+      icon: FileSignature,
+      tone: "gold",
+      meta: "Annex A-D",
     },
     {
       title: "Checklist System",
@@ -264,7 +272,7 @@ export default function YachtDashboard() {
       meta: `${stats.openChecklists} open`,
     },
     {
-      title: "Crew My YachtOS",
+      title: "Crew My YACHT-OS",
       text: "Crew accepts invitations and completes assigned checklist tasks here.",
       href: "/crew/tasks",
       icon: ClipboardCheck,

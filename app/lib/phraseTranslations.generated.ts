@@ -994,8 +994,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Crew ID / email": {
     "tr": "Mürettebat kimliği / e-postası",
   },
-  "Crew invitation created. The crew member will see it inside My YachtOS.": {
-    "tr": "Mürettebat daveti oluşturuldu. Mürettebat üyesi bunu My YachtOS'ta görecektir.",
+  "Crew invitation created. The crew member will see it inside My YACHT-OS.": {
+    "tr": "Mürettebat daveti oluşturuldu. Mürettebat üyesi bunu My YACHT-OS'ta görecektir.",
   },
   "Crew laundry schedule followed": {
     "tr": "Mürettebat çamaşır yıkama programı takip edildi",
@@ -1030,8 +1030,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Crew muster list checked": {
     "tr": "Mürettebat toplanma listesi kontrol edildi",
   },
-  "Crew My YachtOS": {
-    "tr": "My YachtOS'u Mürettebatla Oluşturun",
+  "Crew My YACHT-OS": {
+    "tr": "My YACHT-OS'u Mürettebatla Oluşturun",
   },
   "Crew Network": {
     "tr": "Mürettebat Ağı",
@@ -1508,7 +1508,7 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
     "tr": "Mürettebat e-postanızı girin",
   },
   "Enterprise Yacht Operating System": {
-    "tr": "Kurumsal YachtOS",
+    "tr": "Kurumsal YACHT-OS",
   },
   "Environment Variables": {
     "tr": "Ortam Değişkenleri",
@@ -2116,8 +2116,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Invitation accepted": {
     "tr": "Davet kabul edildi",
   },
-  "Invitation is now waiting inside the crew member's My YachtOS portal.": {
-    "tr": "Davet şu anda mürettebat üyesinin My YachtOS portalında bekliyor.",
+  "Invitation is now waiting inside the crew member's My YACHT-OS portal.": {
+    "tr": "Davet şu anda mürettebat üyesinin My YACHT-OS portalında bekliyor.",
   },
   "Invitation not found": {
     "tr": "Davetiye bulunamadı",
@@ -2605,11 +2605,11 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "My Profile": {
     "tr": "Profilim",
   },
-  "My YachtOS": {
-    "tr": "YachtOS'um",
+  "My YACHT-OS": {
+    "tr": "YACHT-OS'um",
   },
-  "My YachtOS Work Center": {
-    "tr": "YachtOS Çalışma Merkezim",
+  "My YACHT-OS Work Center": {
+    "tr": "YACHT-OS Çalışma Merkezim",
   },
   "Name": {
     "tr": "İsim",
@@ -3163,8 +3163,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Please enter your email.": {
     "tr": "Lütfen e-postanızı girin.",
   },
-  "Please login first, then open My YachtOS again.": {
-    "tr": "Lütfen önce oturum açın, ardından My YachtOS'u tekrar açın.",
+  "Please login first, then open My YACHT-OS again.": {
+    "tr": "Lütfen önce oturum açın, ardından My YACHT-OS'u tekrar açın.",
   },
   "Please select a country code and enter a valid mobile number.": {
     "tr": "Lütfen bir ülke kodu seçin ve geçerli bir cep telefonu numarası girin.",
@@ -4552,14 +4552,14 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Yacht status updated": {
     "tr": "Yat durumu güncellendi",
   },
-  "YachtOS": {
-    "tr": "YachtOS",
+  "YACHT-OS": {
+    "tr": "YACHT-OS",
   },
-  "YachtOS Invitation": {
-    "tr": "YachtOS Davetiyesi",
+  "YACHT-OS Invitation": {
+    "tr": "YACHT-OS Davetiyesi",
   },
-  "YachtOS keeps a structured operations log ready for onboard continuity.": {
-    "tr": "YachtOS, yerleşik süreklilik için yapılandırılmış bir operasyon günlüğünü hazır tutar.",
+  "YACHT-OS keeps a structured operations log ready for onboard continuity.": {
+    "tr": "YACHT-OS, yerleşik süreklilik için yapılandırılmış bir operasyon günlüğünü hazır tutar.",
   },
   "Yachts": {
     "tr": "Yatlar",

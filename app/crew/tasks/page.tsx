@@ -395,7 +395,7 @@ export default function CrewTasksPage() {
     } = await supabase.auth.getUser();
 
     if (!user?.email) {
-      alert("Please login first, then open My YachtOS again.");
+      alert("Please login first, then open My YACHT-OS again.");
       window.location.href = "/login";
       return;
     }
@@ -893,7 +893,7 @@ export default function CrewTasksPage() {
                                   )
                                 ) : (
                                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                                    <PhotoBox label="Before photo" url={getTaskPhoto(task, "before")} uploading={uploadingPhoto === `before-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "before")} disabled={!canEditChecklist(list)} />
+                                    <PhotoBox label="Before photo" url={getTaskPhoto(task, "before")} uploading={uploadingPhoto === `before-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "before")} disabled={!canEditChecklist(list)} readOnly={Boolean(getTaskPhoto(task, "before"))} />
                                     <PhotoBox label="After photo" url={getTaskPhoto(task, "after")} uploading={uploadingPhoto === `after-${task.id}`} onUpload={(file) => uploadTaskPhoto(task, file, "after")} disabled={!canEditChecklist(list)} />
                                   </div>
                                 )}
@@ -1046,7 +1046,7 @@ export default function CrewTasksPage() {
                 </p>
 
                 <h2 className="bd-serif mt-3 break-words text-4xl font-normal tracking-tight text-[#071f3c] sm:text-5xl">
-                  My YachtOS Work Center
+                  My YACHT-OS Work Center
                 </h2>
 
                 <p className="mt-4 max-w-2xl text-lg text-slate-500">
@@ -1120,7 +1120,7 @@ export default function CrewTasksPage() {
                           <BlueDeckMark className="h-12 w-16 shrink-0 rounded-none border-0 bg-transparent shadow-none" imageClassName="object-contain p-0" />
                           <div>
                             <h4 className="text-xl font-black text-slate-950">
-                              YachtOS Invitation
+                              YACHT-OS Invitation
                             </h4>
                             <p data-i18n-ignore className="mt-1 text-sm text-slate-500">
                               {invitation.position || "Crew"} ·{" "}
@@ -1252,6 +1252,7 @@ export default function CrewTasksPage() {
                         url={getTaskPhoto(task, "before")}
                         uploading={uploadingPhoto === `before-${task.id}`}
                         onUpload={(file) => uploadTaskPhoto(task, file, "before")}
+                        readOnly={Boolean(getTaskPhoto(task, "before"))}
                       />
                       <PhotoBox
                         label="After photo"
@@ -1312,12 +1313,14 @@ function PhotoBox({
   uploading,
   onUpload,
   disabled = false,
+  readOnly = false,
 }: {
   label: string;
   url?: string;
   uploading: boolean;
   onUpload: (file: File) => void;
   disabled?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <div className="bd-crew-proof-card min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 sm:p-4">
@@ -1331,21 +1334,27 @@ function PhotoBox({
           />
         </div>
       )}
-      <label className={`mt-3 flex min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 transition ${disabled ? "cursor-default opacity-60" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
-        {uploading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Upload className="h-4 w-4 shrink-0" />}
-        <span className="truncate">{uploading ? "Uploading..." : url ? "Replace photo" : "Add photo"}</span>
-        <input
-          type="file"
-          accept="image/*"
-          disabled={uploading || disabled}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) onUpload(file);
-            event.currentTarget.value = "";
-          }}
-          className="sr-only"
-        />
-      </label>
+      {readOnly ? (
+        <div className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-3 text-sm font-bold text-cyan-900">
+          Before photo provided with this task
+        </div>
+      ) : (
+        <label className={`mt-3 flex min-w-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 transition ${disabled ? "cursor-default opacity-60" : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"}`}>
+          {uploading ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Upload className="h-4 w-4 shrink-0" />}
+          <span className="truncate">{uploading ? "Uploading..." : url ? "Replace photo" : "Add photo"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading || disabled}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onUpload(file);
+              event.currentTarget.value = "";
+            }}
+            className="sr-only"
+          />
+        </label>
+      )}
     </div>
   );
 }

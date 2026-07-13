@@ -15,7 +15,7 @@ type BlueDeckTopBarProps = {
 
 export function BlueDeckTopBar({
   title = "BlueDeck",
-  subtitle = "YachtOS",
+  subtitle = "YACHT-OS",
   className = "",
 }: BlueDeckTopBarProps) {
   const { t } = useLanguage();
