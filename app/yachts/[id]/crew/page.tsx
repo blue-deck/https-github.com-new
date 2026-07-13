@@ -4,6 +4,10 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
+import {
+  drawContractAnnexBSpecialConditionsPages,
+  drawContractAnnexBTermsPage,
+} from "../../../lib/contractAnnexB";
 import { contractAnnexCClauses, getContractAnnexCLines } from "../../../lib/contractAnnexC";
 import {
   contractEmployerDeclarationParagraphs,
@@ -1305,88 +1309,6 @@ export default function CrewPage({
       if (subtitle) drawContractAnnexDivider(subtitle, 60);
     }
 
-    function drawCoverField(
-      label: string,
-      value: string | undefined | null,
-      x: number,
-      y: number,
-      width: number,
-      options: { fieldHeight?: number; maxLines?: number; emptyWhenMissing?: boolean } = {}
-    ) {
-      const fieldHeight = options.fieldHeight || 18;
-      const maxLines = options.maxLines || 1;
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(6.8);
-      setText("#082759");
-      doc.text(label.toUpperCase(), x, y);
-      setStroke("#9ec4ed");
-      setFill("#ffffff");
-      doc.roundedRect(x, y + 6, width, fieldHeight, 4, 4, "FD");
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8.6);
-      setText("#17233a");
-      const displayValue = options.emptyWhenMissing
-        ? contractOptionalSheetValue(value)
-        : contractSheetValue(value);
-      const text = doc.splitTextToSize(displayValue, width - 10);
-      doc.text(text.slice(0, maxLines), x + 7, y + 19);
-    }
-
-    function drawCoverSection(section: ContractSheetSection, x: number, y: number, width: number, height: number) {
-      const isSpecialConditions = section.title.toLowerCase().includes("special conditions");
-      const isCrewMemberDetails = section.title.toLowerCase() === "crew member details";
-      setStroke("#c4d9ee");
-      setFill("#ffffff");
-      doc.roundedRect(x, y, width, height, 9, 9, "FD");
-      setFill("#fbfdff");
-      doc.rect(x + 0.6, y + 0.6, width - 1.2, 34, "F");
-      setStroke("#d8e7f5");
-      doc.line(x, y + 34, x + width, y + 34);
-      doc.setFont("times", "bold");
-      doc.setFontSize(16);
-      setText("#082759");
-      doc.text(section.title.toUpperCase(), x + 18, y + 25.5);
-
-      if (isSpecialConditions) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(8.4);
-        setText("#17233a");
-        const text = doc.splitTextToSize(contractSheetValue(section.rows[0]?.[1]), width - 52);
-        doc.text(text.slice(0, 4), x + 26, y + 53);
-        return;
-      }
-
-      const gap = 18;
-      const colWidth = (width - 52 - gap) / 2;
-      let fieldY = y + 48;
-      section.rows.forEach(([label, value], index) => {
-        const fullWidth = index < (section.wideFirstRows || 0);
-        const multiline = false;
-        const isLeft = index % 2 === 0;
-        const fieldX = fullWidth ? x + 26 : x + 26 + (isLeft ? 0 : colWidth + gap);
-        drawCoverField(
-          label,
-          value,
-          fieldX,
-          fieldY,
-          fullWidth ? width - 52 : colWidth,
-          {
-            fieldHeight: multiline ? 34 : 18,
-            maxLines: multiline ? 2 : 1,
-            emptyWhenMissing: isCrewMemberDetails,
-          }
-        );
-        if (fullWidth || !isLeft) fieldY += multiline ? 48 : 32;
-      });
-
-      if (section.footer) {
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(7.3);
-        setText("#4f6680");
-        doc.text(doc.splitTextToSize(section.footer, width - 52), x + 26, y + height - 17);
-      }
-    }
-
     function drawContractIntroPage() {
       drawContractPageBase();
       drawContractDocumentHeader("INTRODUCTORY NOTE");
@@ -1441,50 +1363,13 @@ export default function CrewPage({
     }
 
     function drawContractTermsPage() {
-      doc.addPage();
-      drawBodyPageHeader("ANNEX B - EMPLOYMENT TERMS");
       const sections = getContractTermsSections(contractPreviewDraft, selectedContractMember);
-      drawCoverSection(sections[0], 42, 82, pageWidth - 84, 164);
-      drawCoverSection(sections[1], 42, 254, pageWidth - 84, 136);
-      drawCoverSection(sections[2], 42, 398, pageWidth - 84, 136);
-      drawCoverSection(sections[3], 42, 542, pageWidth - 84, 106);
-
-      const left = 54;
-      const right = pageWidth - 54;
-      const width = right - left;
-      const bottom = pageHeight - 58;
-      let y = 674;
-      const sourceLines = contractDisplayLines([contractSheetValue(contractPreviewDraft.specialConditions)]);
-      const wrappedLines = sourceLines.flatMap((line) => {
-        if (!line) return [""];
-        return doc.splitTextToSize(line, width) as string[];
-      });
-
-      doc.setFont("times", "bold");
-      doc.setFontSize(14);
-      setText("#082759");
-      doc.text("SPECIAL CONDITIONS", left, y);
-      setStroke("#b8d2ee");
-      doc.line(left, y + 8, right, y + 8);
-      y += 26;
-
-      function addAnnexBContinuationPage() {
-        doc.addPage();
-        drawBodyPageHeader("ANNEX B - EMPLOYMENT TERMS");
-        y = 92;
-      }
-
-      wrappedLines.forEach((line) => {
-        const lineHeight = line ? 10.8 : 5.4;
-        if (y + lineHeight > bottom) addAnnexBContinuationPage();
-        if (line) {
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(8.7);
-          setText("#17233a");
-          doc.text(line, left + 4, y);
-        }
-        y += lineHeight;
-      });
+      drawContractAnnexBTermsPage(doc, sections, drawBodyPageHeader);
+      drawContractAnnexBSpecialConditionsPages(
+        doc,
+        contractPreviewDraft.specialConditions,
+        drawBodyPageHeader
+      );
     }
 
     function drawBodyPageHeader(subtitle?: string) {
@@ -5069,7 +4954,7 @@ function getContractSpecialConditionPreviewPages(value: string) {
   }
 
   lines.forEach((line) => {
-    const limit = pages.length === 0 ? 12 : 38;
+    const limit = 38;
     const units = getContractPreviewLineUnits(line);
     if (currentPage.length && currentUnits + units > limit) pushPage();
     currentPage.push(line);
@@ -5101,7 +4986,7 @@ function ContractGeneratedPreview({
   const termsSections = getContractTermsSections(draft, member);
   const [annexB, annexC, annexD] = getContractDocumentSections(draft, member);
   const specialConditionPages = annexB ? getContractSpecialConditionPreviewPages(draft.specialConditions) : [];
-  const annexBPageCount = annexB ? specialConditionPages.length : 0;
+  const annexBPageCount = annexB ? 1 + specialConditionPages.length : 0;
   const annexCPages = annexC ? getContractAnnexCPreviewPages() : [];
   const previewPages: Array<{
     annexCLines?: ContractPreviewLineData[];
@@ -5225,27 +5110,34 @@ function ContractGeneratedPreview({
         </div>
       </ContractPreviewPage>
 
+      {annexB ? (
+        <ContractPreviewPage
+          pageNo={3}
+          totalPages={totalPages}
+          subtitle="ANNEX B - EMPLOYMENT TERMS"
+          scale={pageScale}
+        >
+          <div className="space-y-3">
+            {termsSections.map((section) => (
+              <ContractCoverSection key={section.title} {...section} compact />
+            ))}
+          </div>
+        </ContractPreviewPage>
+      ) : null}
+
       {annexB
         ? specialConditionPages.map((specialLines, index) => (
             <ContractPreviewPage
-              key={`annex-b-preview-page-${index}`}
-              pageNo={3 + index}
+              key={`annex-b-special-preview-page-${index}`}
+              pageNo={4 + index}
               totalPages={totalPages}
               subtitle="ANNEX B - EMPLOYMENT TERMS"
               scale={pageScale}
             >
-              <div className="space-y-3">
-                {index === 0 ? (
-                  <>
-                    {termsSections.map((section) => (
-                      <ContractCoverSection key={section.title} {...section} compact />
-                    ))}
-                    <ContractSpecialConditionsPreview lines={specialLines} showTitle />
-                  </>
-                ) : (
-                  <ContractSpecialConditionsPreview lines={specialLines} />
-                )}
-              </div>
+              <ContractSpecialConditionsPreview
+                lines={specialLines}
+                continued={index > 0}
+              />
             </ContractPreviewPage>
           ))
         : null}
@@ -5349,21 +5241,19 @@ function ContractPreviewPage({
 
 function ContractSpecialConditionsPreview({
   lines,
-  showTitle = false,
+  continued = false,
 }: {
   lines: string[];
-  showTitle?: boolean;
+  continued?: boolean;
 }) {
   return (
-    <section className="pt-1">
-      {showTitle ? (
-        <div className="mb-2 border-b border-[#b8d2ee] pb-2">
-          <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
-            Special Conditions
-          </h4>
-        </div>
-      ) : null}
-      <div className="space-y-1.5 px-1 text-[12px] font-semibold leading-5 text-[#17233a]">
+    <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white">
+      <div className="border-b border-[#d9e8f3] bg-[#fbfdff] px-4 py-3">
+        <h4 className="font-serif text-lg font-black uppercase tracking-[0.02em] text-[#082759]">
+          {continued ? "Special Conditions - Continued" : "Special Conditions"}
+        </h4>
+      </div>
+      <div className="space-y-1.5 px-4 py-4 text-[12px] font-semibold leading-5 text-[#17233a]">
         {lines.map((line, index) =>
           line ? (
             <p key={`special-condition-${index}`}>{line}</p>
