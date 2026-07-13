@@ -12,12 +12,10 @@ import {
 import {
   Archive,
   AlertTriangle,
-  Bell,
   CalendarClock,
   Camera,
   Check,
   CheckCircle,
-  CheckSquare,
   ChevronDown,
   ClipboardList,
   Download,
@@ -2484,43 +2482,28 @@ export default function CrewPage({
   return (
     <main className="bd-crew-command-page min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
       <div className="mx-auto w-full min-w-0 max-w-[1700px]">
-        <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
-          <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
-          <div className={isChecklistSystem ? "p-5 sm:p-8" : "p-5 sm:p-10"}>
-            <div className="min-w-0">
-              <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
-                {isChecklistSystem
-                  ? "BlueDeck Checklist Operation System"
-                  : isContractStudio
-                    ? "BlueDeck Contract Studio"
-                    : "BlueDeck CrewOS"}
-              </p>
-              {!isChecklistSystem && (
-                <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
-                  {isContractStudio ? "Contract Studio" : "Yacht Crew Command"}
-                </h1>
-              )}
-              <p className={`${isChecklistSystem ? "mt-3" : "mt-4 sm:mt-5"} max-w-4xl text-base leading-relaxed text-slate-500 sm:text-xl`}>
-                {isChecklistSystem
-                  ? "Create tailored crew task lists, schedule recurring work and verify completion with proof in one controlled captain workspace."
-                  : isContractStudio
-                    ? "Create, save, preview and send seafarer employment agreements from one dedicated workspace."
-                    : "Invite crew, manage onboard roles and review access from one clean crew command workspace."}
-              </p>
+        {!isCrewCommand && (
+          <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
+            <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
+            <div className={isChecklistSystem ? "p-5 sm:p-8" : "p-5 sm:p-10"}>
+              <div className="min-w-0">
+                <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
+                  {isChecklistSystem
+                    ? "BlueDeck Checklist Operation System"
+                    : "BlueDeck Contract Studio"}
+                </p>
+                {!isChecklistSystem && (
+                  <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
+                    Contract Studio
+                  </h1>
+                )}
+                <p className={`${isChecklistSystem ? "mt-3" : "mt-4 sm:mt-5"} max-w-4xl text-base leading-relaxed text-slate-500 sm:text-xl`}>
+                  {isChecklistSystem
+                    ? "Create tailored crew task lists, schedule recurring work and verify completion with proof in one controlled captain workspace."
+                    : "Create, save, preview and send seafarer employment agreements from one dedicated workspace."}
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {isCrewCommand && (
-          <div className="mb-6 grid gap-4 sm:grid-cols-2 md:mb-10 md:grid-cols-4 md:gap-6">
-            <Stat title="Crew" value={crew.length} icon={<Bell />} />
-            <Stat title="Assignable Crew" value={assignableCrew.length} icon={<UserRound />} />
-            <Stat
-              title="Invited"
-              value={invitedCrewCount}
-              icon={<Plus />}
-            />
-            <Stat title="Authority" value={operator.position} icon={<CheckSquare />} />
           </div>
         )}
 
@@ -5880,20 +5863,6 @@ function CrewDetail({
       <p data-i18n-ignore className="mt-2 break-words text-sm font-bold text-slate-950">
         {value}
       </p>
-    </div>
-  );
-}
-
-function Stat({ title, value, icon }: any) {
-  return (
-    <div className="rounded-[30px] border border-slate-200 bg-white/85 p-6 shadow-xl shadow-cyan-950/5">
-      <div className="flex items-center justify-between">
-        <div className="text-cyan-700">{icon}</div>
-        <div className="text-right">
-          <p className="text-slate-500">{title}</p>
-          <h2 className="mt-2 text-3xl font-black">{value}</h2>
-        </div>
-      </div>
     </div>
   );
 }
