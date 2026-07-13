@@ -1,15 +1,34 @@
 "use client";
 
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type Announcements,
+  type DragEndEvent,
+  type DragStartEvent,
+  type ScreenReaderInstructions,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
   Camera,
   ChevronLeft,
-  Pencil,
+  GripVertical,
   Trash2,
   Upload,
   X,
@@ -52,15 +71,66 @@ export default function MyBluePage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [editingOrder, setEditingOrder] = useState(false);
+  const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [preview, setPreview] = useState<PortfolioPhoto | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const uploadRunRef = useRef(0);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const suppressPreviewUntilRef = useRef(0);
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: {
+        start: ["Space"],
+        cancel: ["Escape"],
+        end: ["Space", "Tab"],
+      },
+    }),
+  );
 
   const editablePortfolio = useMemo(
     () => sortPortfolioPhotos(portfolio.filter((photo) => photo.image_url)),
     [portfolio],
   );
+  const sortablePhotoIds = useMemo(
+    () => editablePortfolio.map(portfolioPhotoKey),
+    [editablePortfolio],
+  );
+  const dndAccessibility = useMemo<{
+    announcements: Announcements;
+    screenReaderInstructions: ScreenReaderInstructions;
+  }>(() => {
+    const positionOf = (id: string | number) => sortablePhotoIds.indexOf(String(id)) + 1;
+    const total = sortablePhotoIds.length;
+
+    return {
+      screenReaderInstructions: {
+        draggable:
+          "Press Enter to preview the photo. To reorder it, press Space, use the arrow keys to move it, then press Space again to drop. Press Tab to drop and continue, or Escape to cancel.",
+      },
+      announcements: {
+        onDragStart({ active }) {
+          return `Photo ${positionOf(active.id)} of ${total} picked up.`;
+        },
+        onDragOver({ over }) {
+          return over ? `Photo is over position ${positionOf(over.id)} of ${total}.` : undefined;
+        },
+        onDragEnd({ over }) {
+          return over ? `Photo dropped at position ${positionOf(over.id)} of ${total}.` : "Photo returned to its original position.";
+        },
+        onDragCancel() {
+          return "Photo movement cancelled.";
+        },
+      },
+    };
+  }, [sortablePhotoIds]);
 
   const loadRelated = useCallback(async (profileId: string) => {
     const {
@@ -176,9 +246,10 @@ export default function MyBluePage() {
   }, [preview]);
 
   async function callRelatedApi(input: {
-    action: "save" | "delete";
+    action: "save" | "delete" | "reorder";
     payload?: Record<string, unknown>;
     id?: string;
+    items?: Array<{ id: string; location: string }>;
   }) {
     if (!profile?.id) return { ok: false, error: "Crew profile is not loaded." };
 
@@ -244,42 +315,67 @@ export default function MyBluePage() {
     }
   }
 
-  async function reorderPhoto(index: number, direction: -1 | 1) {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= editablePortfolio.length || saving) return;
-
-    const reordered = [...editablePortfolio];
-    [reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]];
-    const orderedPortfolio = reordered.map((photo, order) => ({ ...photo, gallery_order: order }));
-
+  function applyPortfolioOrder(orderedPortfolio: PortfolioPhoto[]) {
     setPortfolio((current) => {
       const orderedIds = new Set(orderedPortfolio.map((photo) => photo.id || photo.image_url));
       const untouched = current.filter((photo) => !orderedIds.has(photo.id || photo.image_url));
       return [...orderedPortfolio, ...untouched];
     });
+  }
+
+  async function persistPortfolioOrder(
+    orderedPortfolio: PortfolioPhoto[],
+    previousPortfolio: PortfolioPhoto[],
+  ) {
     setSaving(true);
     setErrorMessage("");
 
     try {
-      const results = await Promise.all(
-        orderedPortfolio.map((photo) =>
-          callRelatedApi({
-            action: "save",
-            payload: {
-              ...photo,
-              title: "",
-              location: encodeGalleryLocation(photo.location, photo.gallery_order),
-            },
-            id: photo.id,
-          }),
-        ),
+      const items = orderedPortfolio.map((photo) => ({
+        id: photo.id || "",
+        location: encodeGalleryLocation(photo.location, photo.gallery_order),
+      }));
+      if (items.some((item) => !item.id)) {
+        throw new Error("The new gallery order could not be saved.");
+      }
+
+      const result = await callRelatedApi({ action: "reorder", items });
+      if (!result.ok) throw new Error(result.error || "The new gallery order could not be saved.");
+    } catch (error) {
+      applyPortfolioOrder(previousPortfolio);
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "The new gallery order could not be saved. Please try again.",
       );
-      const failed = results.find((result) => !result.ok);
-      if (failed) setErrorMessage(failed.error);
-      if (profile?.id) await loadRelated(profile.id);
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    const photoId = String(event.active.id);
+    suppressPreviewUntilRef.current = Number.POSITIVE_INFINITY;
+    setActivePhotoId(photoId);
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setActivePhotoId(null);
+    suppressPreviewUntilRef.current = Date.now() + 350;
+    const { active, over } = event;
+    if (!over || active.id === over.id || saving || uploading) return;
+
+    const oldIndex = sortablePhotoIds.indexOf(String(active.id));
+    const newIndex = sortablePhotoIds.indexOf(String(over.id));
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const orderedPortfolio = arrayMove(editablePortfolio, oldIndex, newIndex).map((photo, order) => ({
+      ...photo,
+      gallery_order: order,
+    }));
+
+    applyPortfolioOrder(orderedPortfolio);
+    await persistPortfolioOrder(orderedPortfolio, editablePortfolio);
   }
 
   async function deletePhoto(id?: string) {
@@ -349,31 +445,91 @@ export default function MyBluePage() {
   return (
     <main className="bd-ocean-shell min-h-screen overflow-x-hidden px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1320px]">
-        <Link
-          href="/dashboard"
-          className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-2 text-xs font-black uppercase tracking-[0.1em] text-[#173f4a] shadow-sm transition hover:border-cyan-300 hover:text-cyan-800"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Dashboard
-        </Link>
-
-        <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
-          <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_45%,#2d7482_100%)]" />
-          <div className="flex flex-col gap-5 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
-            <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-700">My Blue</p>
-              <h1 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c] sm:text-5xl">Photo Gallery</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-                Add and arrange photos from your yacht work, onboard projects and maritime experience.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/80 px-4 py-3 text-[#173f4a]">
-              <Camera className="h-5 w-5 text-cyan-700" />
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-800">Gallery</p>
-                <p className="text-lg font-black tabular-nums">{editablePortfolio.length} photos</p>
+        <header className="bd-glass-card-strong overflow-hidden rounded-[24px]">
+          <div className="h-1 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_48%,#2d7482_100%)]" />
+          <div className="flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Link
+                href="/dashboard"
+                className="bd-focus inline-flex h-10 shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm transition hover:border-cyan-300 hover:text-cyan-800"
+                aria-label="Back to dashboard"
+                title="Back to dashboard"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Link>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
+                <Camera className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-700">My Blue</p>
+                <h1 className="truncate text-xl font-black tracking-[-0.02em] text-[#071f3c] sm:text-2xl">
+                  Photo Gallery
+                </h1>
               </div>
             </div>
+
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <span className="inline-flex h-10 shrink-0 items-center rounded-xl border border-cyan-100 bg-cyan-50/80 px-3 text-xs font-black tabular-nums text-[#173f4a]">
+                {editablePortfolio.length} {editablePortfolio.length === 1 ? "photo" : "photos"}
+              </span>
+              <button
+                type="button"
+                disabled={uploading || saving}
+                onClick={() => photoInputRef.current?.click()}
+                className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[#173f4a] px-3 text-sm font-bold text-white shadow-sm transition sm:flex-none ${
+                  uploading || saving
+                    ? "cursor-progress opacity-70"
+                    : "cursor-pointer hover:bg-[#0d5968]"
+                }`}
+              >
+                <Upload className="h-4 w-4" />
+                {uploading ? "Uploading..." : "Add photo"}
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                disabled={uploading || saving}
+                className="hidden"
+                tabIndex={-1}
+                onChange={async (event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (!file) return;
+                  const url = await uploadPhoto(file);
+                  if (url) await saveNewPhoto(url);
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex min-h-8 flex-wrap items-center justify-between gap-2 border-t border-cyan-100/80 bg-cyan-50/55 px-4 py-1.5 sm:px-5">
+            <p
+              id="gallery-reorder-instructions"
+              className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold leading-4 text-[#5b6f78]"
+            >
+              <GripVertical className="h-4 w-4 shrink-0 text-cyan-700" />
+              {editablePortfolio.length > 1
+                ? "Hold and drag a photo to reorder. Changes save automatically."
+                : editablePortfolio.length === 1
+                  ? "Add another photo to enable drag reordering."
+                  : "Add photos to build your gallery."}
+            </p>
+            {uploading && (
+              <button
+                type="button"
+                onClick={cancelUpload}
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700"
+              >
+                Cancel upload
+              </button>
+            )}
+            {saving && (
+              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2d7482]">
+                Saving gallery...
+              </span>
+            )}
           </div>
         </header>
 
@@ -398,103 +554,51 @@ export default function MyBluePage() {
           </section>
         )}
 
-        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14">
-          <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
-          <div className="p-4 sm:p-6">
-            <div className="rounded-2xl border border-cyan-100 bg-[linear-gradient(135deg,#f7fdff_0%,#eef9fb_100%)] p-4 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex min-w-0 gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
-                    <Camera className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm font-black text-[#06111f]">Professional photo gallery</p>
-                    <p className="mt-1 max-w-4xl text-sm leading-6 text-[#5a6870]">
-                      Your photos are saved automatically and appear in your public BlueDeck gallery.
+        <section className="mt-4 rounded-[24px] border border-[#2fb6c7]/20 bg-white/95 p-3 shadow-xl shadow-slate-950/10 sm:p-4">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            accessibility={dndAccessibility}
+            onDragStart={handleDragStart}
+            onDragCancel={() => {
+              setActivePhotoId(null);
+              suppressPreviewUntilRef.current = Date.now() + 350;
+            }}
+            onDragEnd={(event) => void handleDragEnd(event)}
+          >
+            <SortableContext items={sortablePhotoIds} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+                {editablePortfolio.map((item, index) => {
+                  const photoId = portfolioPhotoKey(item);
+                  return (
+                    <GalleryPhotoCard
+                      key={photoId}
+                      id={photoId}
+                      item={item}
+                      position={index + 1}
+                      total={editablePortfolio.length}
+                      active={activePhotoId === photoId}
+                      disabled={saving || uploading}
+                      onDelete={() => deletePhoto(item.id)}
+                      onPreview={() => {
+                        if (Date.now() < suppressPreviewUntilRef.current) return;
+                        setPreview(item);
+                      }}
+                    />
+                  );
+                })}
+                {editablePortfolio.length === 0 && (
+                  <div className="col-span-full rounded-2xl border border-dashed border-cyan-200 bg-cyan-50/30 px-5 py-12 text-center">
+                    <Camera className="mx-auto h-8 w-8 text-cyan-700" />
+                    <p className="mt-3 text-sm font-black text-[#173f4a]">No gallery photos yet</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      Use Add photo to start your My Blue gallery.
                     </p>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingOrder((current) => !current)}
-                  disabled={editablePortfolio.length < 2 || saving || uploading}
-                  className={`inline-flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-3 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto ${
-                    editingOrder
-                      ? "bg-[#173f4a] text-white"
-                      : "border border-slate-200 bg-white text-[#173f4a] hover:border-cyan-300"
-                  }`}
-                >
-                  <Pencil className="h-4 w-4" />
-                  {editingOrder ? "Done" : "Edit order"}
-                </button>
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <label
-                  className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-[#173f4a] shadow-sm transition ${
-                    uploading || saving
-                      ? "cursor-progress opacity-70"
-                      : "cursor-pointer hover:border-cyan-300 hover:text-cyan-800"
-                  }`}
-                >
-                  <Upload className="h-4 w-4 text-cyan-700" />
-                  {uploading ? "Uploading..." : saving ? "Saving..." : "Add photo"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading || saving}
-                    className="hidden"
-                    onChange={async (event) => {
-                      const file = event.currentTarget.files?.[0];
-                      event.currentTarget.value = "";
-                      if (!file) return;
-                      const url = await uploadPhoto(file);
-                      if (url) await saveNewPhoto(url);
-                    }}
-                  />
-                </label>
-                {uploading && (
-                  <button
-                    type="button"
-                    onClick={cancelUpload}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700"
-                  >
-                    Cancel upload
-                  </button>
-                )}
-                {saving && (
-                  <span className="text-xs font-black uppercase tracking-[0.12em] text-[#2d7482]">Saving gallery...</span>
                 )}
               </div>
-              <p className="mt-2 text-xs font-semibold text-[#6b7a82]">
-                New photos appear first. Use edit order to arrange the public gallery.
-              </p>
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-              {editablePortfolio.map((item, index) => (
-                <GalleryPhotoCard
-                  key={item.id || item.image_url}
-                  item={item}
-                  editing={editingOrder}
-                  disabled={saving || uploading}
-                  canMoveLeft={index > 0}
-                  canMoveRight={index < editablePortfolio.length - 1}
-                  onMoveLeft={() => reorderPhoto(index, -1)}
-                  onMoveRight={() => reorderPhoto(index, 1)}
-                  onDelete={() => deletePhoto(item.id)}
-                  onPreview={() => setPreview(item)}
-                />
-              ))}
-              {editablePortfolio.length === 0 && (
-                <div className="col-span-full rounded-2xl border border-dashed border-cyan-200 bg-cyan-50/30 px-5 py-12 text-center">
-                  <Camera className="mx-auto h-8 w-8 text-cyan-700" />
-                  <p className="mt-3 text-sm font-black text-[#173f4a]">No gallery photos yet</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-500">Use Add photo to start your My Blue gallery.</p>
-                </div>
-              )}
-            </div>
-          </div>
+            </SortableContext>
+          </DndContext>
         </section>
       </div>
 
@@ -534,62 +638,87 @@ export default function MyBluePage() {
 }
 
 function GalleryPhotoCard({
+  id,
   item,
-  editing,
+  position,
+  total,
+  active,
   disabled,
-  canMoveLeft,
-  canMoveRight,
-  onMoveLeft,
-  onMoveRight,
   onDelete,
   onPreview,
 }: {
+  id: string;
   item: PortfolioPhoto;
-  editing: boolean;
+  position: number;
+  total: number;
+  active: boolean;
   disabled: boolean;
-  canMoveLeft: boolean;
-  canMoveRight: boolean;
-  onMoveLeft: () => void;
-  onMoveRight: () => void;
   onDelete: () => void;
   onPreview: () => void;
 }) {
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id, disabled: disabled || total < 2 });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  const sortableEnabled = !disabled && total > 1;
+  const sortableAttributes = sortableEnabled ? attributes : {};
+  const sortableListeners = sortableEnabled ? listeners : {};
+  const describedBy = sortableEnabled
+    ? [attributes["aria-describedby"], "gallery-reorder-instructions"].filter(Boolean).join(" ")
+    : undefined;
+
   return (
-    <div className="min-w-0">
-      <button
-        type="button"
-        onClick={onPreview}
-        className="group block aspect-square w-full cursor-pointer overflow-hidden rounded-xl bg-[#eef6f8] shadow-sm shadow-slate-950/8 transition hover:shadow-lg hover:shadow-cyan-950/12"
-      >
-        <img
-          src={item.image_url}
-          alt="Photo gallery"
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
-        />
-      </button>
-      <div className="mt-2 grid gap-1.5">
-        {editing && (
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={onMoveLeft}
-              disabled={!canMoveLeft || disabled}
-              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-cyan-100 bg-white text-[#173f4a] transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Move photo left"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={onMoveRight}
-              disabled={!canMoveRight || disabled}
-              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-cyan-100 bg-white text-[#173f4a] transition hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Move photo right"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
+    <article
+      ref={setNodeRef}
+      style={style}
+      className={`min-w-0 rounded-xl transition-[opacity,filter,box-shadow] ${
+        isDragging || active
+          ? "z-20 opacity-75 shadow-2xl shadow-cyan-950/25 ring-2 ring-cyan-500"
+          : "opacity-100"
+      }`}
+    >
+      <div className="relative aspect-square">
+        <button
+          ref={setActivatorNodeRef}
+          type="button"
+          {...sortableAttributes}
+          {...sortableListeners}
+          onClick={onPreview}
+          className={`group bd-focus block h-full w-full touch-manipulation overflow-hidden rounded-xl bg-[#eef6f8] shadow-sm shadow-slate-950/8 transition hover:shadow-lg hover:shadow-cyan-950/12 ${
+            sortableEnabled ? "cursor-grab active:cursor-grabbing" : "cursor-zoom-in"
+          }`}
+          aria-label={`Photo ${position} of ${total}. Press Enter to preview${sortableEnabled ? "; press Space or hold and drag to reorder" : ""}.`}
+          aria-describedby={describedBy}
+          title={sortableEnabled ? "Click to preview. Hold and drag to reorder." : "Click to preview."}
+        >
+          <img
+            src={item.image_url}
+            alt="Photo gallery"
+            draggable={false}
+            className="h-full w-full select-none object-cover transition duration-300 group-hover:scale-[1.025]"
+          />
+        </button>
+        {total > 1 && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-2 top-2 z-10 inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-white/70 bg-[#071f3c]/88 px-2 text-[10px] font-black uppercase tracking-[0.08em] text-white shadow-lg backdrop-blur-sm"
+          >
+            <GripVertical className="h-4 w-4" />
+            <span className="hidden sm:inline">Drag</span>
+          </span>
         )}
+      </div>
+      <div className="mt-2 grid gap-1.5">
         <button
           type="button"
           onClick={onDelete}
@@ -600,8 +729,12 @@ function GalleryPhotoCard({
           Delete
         </button>
       </div>
-    </div>
+    </article>
   );
+}
+
+function portfolioPhotoKey(photo: PortfolioPhoto) {
+  return photo.id || photo.image_url;
 }
 
 function splitGalleryLocation(value?: string | null) {

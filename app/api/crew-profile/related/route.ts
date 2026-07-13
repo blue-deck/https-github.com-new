@@ -7,7 +7,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
-type RelatedAction = "save" | "delete";
+type RelatedAction = "save" | "delete" | "reorder";
+const relatedActions: RelatedAction[] = ["save", "delete", "reorder"];
 
 const relatedTables: Record<RelatedKind, { table: string; columns: string[] }> = {
   document: {
@@ -114,9 +115,16 @@ export async function POST(request: NextRequest) {
     profileId?: string;
     id?: string;
     payload?: Record<string, unknown>;
+    items?: Array<{ id?: string; location?: string }>;
   } | null;
 
-  if (!body?.kind || !body.action || !body.profileId || !relatedTables[body.kind]) {
+  if (
+    !body?.kind ||
+    !body.action ||
+    !relatedActions.includes(body.action) ||
+    !body.profileId ||
+    !relatedTables[body.kind]
+  ) {
     return NextResponse.json({ ok: false, error: "Invalid crew profile request." }, { status: 400 });
   }
 
@@ -127,6 +135,49 @@ export async function POST(request: NextRequest) {
 
   const { serviceClient } = clients;
   const config = relatedTables[body.kind];
+
+  if (body.action === "reorder") {
+    if (body.kind !== "portfolio" || !Array.isArray(body.items) || body.items.length > 200) {
+      return NextResponse.json({ ok: false, error: "Invalid gallery order request." }, { status: 400 });
+    }
+
+    const items = body.items.map((item) => ({
+      id: typeof item.id === "string" ? item.id.trim() : "",
+      location: typeof item.location === "string" ? item.location : "",
+    }));
+    const ids = items.map((item) => item.id);
+    if (ids.some((id) => !id) || new Set(ids).size !== ids.length) {
+      return NextResponse.json({ ok: false, error: "Invalid gallery order request." }, { status: 400 });
+    }
+    if (items.length === 0) return NextResponse.json({ ok: true, data: [] });
+
+    const { data: ownedPhotos, error: ownedPhotosError } = await serviceClient
+      .from("crew_portfolio_photos")
+      .select("id,title,image_url,location")
+      .eq("crew_profile_id", body.profileId)
+      .in("id", ids);
+
+    if (ownedPhotosError) {
+      return NextResponse.json({ ok: false, error: ownedPhotosError.message }, { status: 500 });
+    }
+    if (!ownedPhotos || ownedPhotos.length !== ids.length) {
+      return NextResponse.json({ ok: false, error: "Gallery photo access denied." }, { status: 403 });
+    }
+
+    const locationById = new Map(items.map((item) => [item.id, item.location]));
+    const rows = ownedPhotos.map((photo) => ({
+      ...photo,
+      crew_profile_id: body.profileId,
+      location: locationById.get(photo.id) || "",
+    }));
+    const { data, error } = await serviceClient
+      .from("crew_portfolio_photos")
+      .upsert(rows, { onConflict: "id" })
+      .select("*");
+
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, data: data || [] });
+  }
 
   if (body.action === "delete") {
     if (!body.id) {
