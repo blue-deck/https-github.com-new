@@ -2480,25 +2480,16 @@ export default function CrewPage({
   return (
     <main className="bd-crew-command-page min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
       <div className="mx-auto w-full min-w-0 max-w-[1700px]">
-        {!isCrewCommand && (
+        {isChecklistSystem && (
           <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
             <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
-            <div className={isChecklistSystem ? "p-5 sm:p-8" : "p-5 sm:p-10"}>
+            <div className="p-5 sm:p-8">
               <div className="min-w-0">
                 <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">
-                  {isChecklistSystem
-                    ? "BlueDeck Checklist Operation System"
-                    : "BlueDeck Contract Studio"}
+                  BlueDeck Checklist Operation System
                 </p>
-                {!isChecklistSystem && (
-                  <h1 className="mt-3 text-4xl font-black leading-tight sm:text-6xl">
-                    Contract Studio
-                  </h1>
-                )}
-                <p className={`${isChecklistSystem ? "mt-3" : "mt-4 sm:mt-5"} max-w-4xl text-base leading-relaxed text-slate-500 sm:text-xl`}>
-                  {isChecklistSystem
-                    ? "Create tailored crew task lists, schedule recurring work and verify completion with proof in one controlled captain workspace."
-                    : "Create, save, preview and send seafarer employment agreements from one dedicated workspace."}
+                <p className="mt-3 max-w-4xl text-base leading-relaxed text-slate-500 sm:text-xl">
+                  Create tailored crew task lists, schedule recurring work and verify completion with proof in one controlled captain workspace.
                 </p>
               </div>
             </div>
