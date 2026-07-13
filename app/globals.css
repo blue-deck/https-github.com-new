@@ -905,6 +905,33 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   max-width: none;
 }
 
+.bd-profile-studio-tabs {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.bd-profile-studio-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.bd-profile-studio-tab {
+  flex: 0 0 160px;
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
+}
+
+@media (min-width: 640px) {
+  .bd-profile-studio-tab {
+    flex-basis: 188px;
+    width: 188px;
+    min-width: 188px;
+    max-width: 188px;
+  }
+}
+
 @media (max-width: 1279px) {
   .bd-public-header-inner {
     grid-template-columns: minmax(0, 1fr) auto;

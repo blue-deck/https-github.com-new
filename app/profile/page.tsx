@@ -963,20 +963,20 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+    <main className="bd-ocean-shell min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1520px]">
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_45%,#2d7482_100%)]" />
-          <div className="p-6 sm:p-8">
+          <div className="p-5 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-            <h1 className="bd-serif mt-3 text-4xl font-normal text-[#071f3c] sm:text-5xl">
+            <h1 className="bd-serif mt-3 text-3xl font-normal text-[#071f3c] sm:text-5xl">
               {profile.full_name || "Professional Crew Profile"}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
               Build a clean yachting CV from verified profile data, documents,
               work preferences, skills and references.
             </p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-4">
+            <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
               <Snapshot label="Experience" value={`${totalExperienceYears} yrs`} tone="cyan" />
               <Snapshot label="Documents" value={String(documents.length)} tone="gold" />
@@ -1020,26 +1020,26 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <section className="mt-6 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14">
+        <section className="mt-6 min-w-0 overflow-hidden rounded-[24px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:rounded-[28px]">
           <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
           <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-4 py-5 text-white sm:px-6">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
+            <div className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
                 <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#8ed8e6]">BlueDeck CV Studio</p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
                 <p className="mt-1 text-sm font-semibold text-white/70">{activeStudioTabInfo.description}</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:justify-start">
                 <CvCompletionRing percent={cvCompletionPercent} />
-                <span className="rounded-full border border-[#8ed8e6]/35 bg-white/10 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-black/10">
+                <span className="min-w-0 truncate rounded-full border border-[#8ed8e6]/35 bg-white/10 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-black/10">
                   {activeStudioTabInfo.status}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] px-3 pb-3 sm:px-5">
-            <div className="flex gap-2 overflow-x-auto rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10">
+          <div className="min-w-0 border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] px-3 pb-3 sm:px-5">
+            <div className="bd-profile-studio-tabs flex min-w-0 snap-x snap-proximity gap-2 overflow-x-auto overflow-y-hidden rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10">
               {studioTabs.map((tab) => {
                 const active = activeStudioTab === tab.id;
 
@@ -1047,8 +1047,12 @@ export default function ProfilePage() {
                   <button
                     key={tab.id}
                     type="button"
-                    onClick={() => setActiveStudioTab(tab.id)}
-                    className={`group flex min-w-[188px] items-center gap-3 rounded-[18px] border px-3.5 py-3.5 text-left transition ${
+                    aria-current={active ? "page" : undefined}
+                    onClick={(event) => {
+                      setActiveStudioTab(tab.id);
+                      event.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                    }}
+                    className={`bd-profile-studio-tab group flex shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[18px] border px-3 py-3 text-left transition sm:gap-3 sm:px-3.5 sm:py-3.5 ${
                       active
                         ? "border-[#c9f7ff] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-[#062c35]/20"
                         : "border-white/18 bg-white/10 text-white/86 hover:border-[#c9f7ff]/70 hover:bg-white/16 hover:text-white"
@@ -1063,7 +1067,7 @@ export default function ProfilePage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-[13px] font-black">{tab.label}</span>
-                      <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${active ? "bg-[#e6f8fb] text-[#2d7482]" : "bg-white/12 text-white/72"}`}>{tab.status}</span>
+                      <span className={`mt-1 block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${active ? "bg-[#e6f8fb] text-[#2d7482]" : "bg-white/12 text-white/72"}`}>{tab.status}</span>
                     </span>
                   </button>
                 );
@@ -1071,7 +1075,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="bg-[#f6f9fa] p-4 sm:p-5">
+          <div className="min-w-0 bg-[#f6f9fa] p-2.5 sm:p-5">
             <div className="contents">
             <Panel
               active={activeStudioTab === "personal"}
@@ -3027,9 +3031,9 @@ function Panel({
   if (!active) return null;
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
       <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#2d7482)]" />
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>
@@ -3037,7 +3041,7 @@ function Panel({
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
-        <div className="space-y-3.5">{children}</div>
+        <div className="min-w-0 space-y-3.5">{children}</div>
       </div>
     </section>
   );
@@ -3497,9 +3501,9 @@ function ExperienceEditor({
   }
 
   return (
-    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-      <div className="grid items-stretch gap-3 sm:grid-cols-[156px_1fr]">
-        <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+    <article className="min-w-0 rounded-2xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5 sm:p-2.5">
+      <div className="grid min-w-0 items-stretch gap-3 sm:grid-cols-[156px_1fr]">
+        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           <div className="relative overflow-hidden rounded-lg border border-[#d8e2e6] bg-white">
             {draft.photo_url ? (
               <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="h-20 w-full object-cover" />
@@ -3577,7 +3581,7 @@ function ExperienceEditor({
           </div>
         </div>
 
-        <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
           <div className="mb-3 rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
               <ExperienceCardInput
@@ -3662,9 +3666,9 @@ function OtherWorkExperienceEditor({
   }, [item]);
 
   return (
-    <article className="rounded-2xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-      <div className="grid items-stretch gap-3 sm:grid-cols-[156px_1fr]">
-        <div className="flex min-h-full flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
+    <article className="min-w-0 rounded-2xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5 sm:p-2.5">
+      <div className="grid min-w-0 items-stretch gap-3 sm:grid-cols-[156px_1fr]">
+        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
           <div className="flex h-20 items-center justify-center rounded-lg border border-[#d8e2e6] bg-white text-[#2d7482]">
             <BriefcaseBusiness className="h-7 w-7" />
           </div>
@@ -3686,7 +3690,7 @@ function OtherWorkExperienceEditor({
           </div>
         </div>
 
-        <div className="flex min-h-full flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
+        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
           <div className="mb-3 rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
             <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
               <ExperienceCardInput
