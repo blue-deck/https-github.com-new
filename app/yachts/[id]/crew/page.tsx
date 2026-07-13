@@ -1791,8 +1791,6 @@ export default function CrewPage({
     setDueDate("");
     setLoading(false);
     loadData();
-
-    alert("Manual checklist assigned.");
   }
 
   async function loadData(silent = false) {
