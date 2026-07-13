@@ -8,14 +8,14 @@ export type ContractAnnexASection = {
 };
 
 const SECTION_X = 42;
-const SECTION_START_Y = 82;
-const SECTION_GAP = 12;
+const SECTION_START_Y = 80;
+const SECTION_GAP = 10;
 const SECTION_HEADER_HEIGHT = 38;
 const FIELD_START_OFFSET = 55;
-const FIELD_ROW_PITCH = 37;
-const FIELD_HEIGHT = 23;
-const FIELD_TOP_GAP = 7;
-const SECTION_BOTTOM_PADDING = 13;
+const FIELD_ROW_PITCH = 40;
+const FIELD_HEIGHT = 22;
+const FIELD_TOP_GAP = 6;
+const SECTION_BOTTOM_PADDING = 14;
 
 function hexToRgb(hex: string) {
   const clean = hex.replace("#", "");
@@ -86,7 +86,7 @@ function drawField(
   setText(doc, "#17233a");
   const availableWidth = width - 14;
   const valueWidth = doc.getTextWidth(fieldValue);
-  doc.text(fieldValue, x + 7, y + 23, {
+  doc.text(fieldValue, x + 7, y + 21.5, {
     horizontalScale: valueWidth > availableWidth ? availableWidth / valueWidth : 1,
   });
 }
