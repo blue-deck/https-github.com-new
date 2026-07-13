@@ -45,8 +45,8 @@ function setText(doc: jsPDF, hex: string) {
   doc.setTextColor(r, g, b);
 }
 
-function displayValue(value: string) {
-  return value.trim() || "-";
+function displayValue(value: string, emptyWhenMissing = false) {
+  return value.trim() || (emptyWhenMissing ? "" : "-");
 }
 
 export function drawContractAnnexDPage(
@@ -68,7 +68,8 @@ export function drawContractAnnexDPage(
     value: string,
     x: number,
     y: number,
-    width: number
+    width: number,
+    emptyWhenMissing = false
   ) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(6.6);
@@ -80,7 +81,7 @@ export function drawContractAnnexDPage(
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.4);
     setText(doc, "#17233a");
-    const fieldValue = displayValue(value);
+    const fieldValue = displayValue(value, emptyWhenMissing);
     const availableWidth = width - 12;
     const valueWidth = doc.getTextWidth(fieldValue);
     doc.text(fieldValue, x + 6, y + 19, {
@@ -98,6 +99,7 @@ export function drawContractAnnexDPage(
     placeValue,
     dateValue,
     y,
+    emptyWhenMissing = false,
   }: {
     title: string;
     paragraphs: string[];
@@ -108,6 +110,7 @@ export function drawContractAnnexDPage(
     placeValue: string;
     dateValue: string;
     y: number;
+    emptyWhenMissing?: boolean;
   }) {
     const paragraphFontSize = 8.25;
     const paragraphLineHeight = 10.35;
@@ -150,28 +153,30 @@ export function drawContractAnnexDPage(
     });
 
     cursorY += 4;
-    drawDeclarationField(nameLabel, nameValue, contentX, cursorY, contentWidth);
+    drawDeclarationField(nameLabel, nameValue, contentX, cursorY, contentWidth, emptyWhenMissing);
     cursorY += 35;
     const fieldGap = 12;
     const halfWidth = (contentWidth - fieldGap) / 2;
     drawDeclarationField(
       secondaryLabel || "Place Signed",
-      secondaryLabel ? secondaryValue || "-" : placeValue,
+      secondaryLabel ? secondaryValue || "" : placeValue,
       contentX,
       cursorY,
-      halfWidth
+      halfWidth,
+      emptyWhenMissing
     );
     drawDeclarationField(
       secondaryLabel ? "Place Signed" : "Date",
       secondaryLabel ? placeValue : dateValue,
       contentX + halfWidth + fieldGap,
       cursorY,
-      halfWidth
+      halfWidth,
+      emptyWhenMissing
     );
     cursorY += 35;
 
     if (secondaryLabel) {
-      drawDeclarationField("Date", dateValue, contentX, cursorY, halfWidth);
+      drawDeclarationField("Date", dateValue, contentX, cursorY, halfWidth, emptyWhenMissing);
       cursorY += 35;
     }
 
@@ -206,6 +211,7 @@ export function drawContractAnnexDPage(
     nameValue: details.seafarerName,
     placeValue: details.seafarerPlaceSigned,
     dateValue: details.seafarerDateSigned,
+    emptyWhenMissing: true,
     y: 82 + employerHeight + cardGap,
   });
 }

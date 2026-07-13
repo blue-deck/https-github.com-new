@@ -427,6 +427,10 @@ function contractSheetValue(value: string | undefined | null) {
   return String(value || "").trim() || "-";
 }
 
+function contractOptionalSheetValue(value: string | undefined | null) {
+  return String(value || "").trim();
+}
+
 function getContractGoverningLaw(draft: Pick<ContractDraft, "flagState">) {
   const flagState = draft.flagState.trim();
   return `Laws and regulations of ${flagState || "the Yacht's Flag State"}`;
@@ -446,10 +450,10 @@ function getContractAnnexDDetails(draft: ContractDraft, member?: ContractCrewMem
     employerDateSigned: contractValue(draft.signatureDate, "-"),
     seafarerName: contractValue(
       draft.seafarerFullName,
-      draft.employeeName || getCrewDisplayName(member) || "-"
+      draft.employeeName || getCrewDisplayName(member) || ""
     ),
-    seafarerPlaceSigned: contractValue(draft.seafarerPlaceSigned, "-"),
-    seafarerDateSigned: contractValue(draft.seafarerSignatureDate, "-"),
+    seafarerPlaceSigned: contractValue(draft.seafarerPlaceSigned, ""),
+    seafarerDateSigned: contractValue(draft.seafarerSignatureDate, ""),
   };
 }
 
@@ -809,7 +813,7 @@ export default function CrewPage({
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
   const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
-  const [openAnnexCClause, setOpenAnnexCClause] = useState<string | null>(contractAnnexCClauses[0]?.number || null);
+  const [openAnnexCClause, setOpenAnnexCClause] = useState<string | null>(null);
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractSectionKeys, setSavedContractSectionKeys] = useState<Partial<Record<ContractSaveSectionKey, string>>>({});
@@ -1034,6 +1038,11 @@ export default function CrewPage({
 
   function updateContractDraft(field: keyof ContractDraft, value: string) {
     setContractDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function navigateContractStep(step: ContractStudioStep) {
+    if (step === "clauses") setOpenAnnexCClause(null);
+    setContractStep(step);
   }
 
   function selectContractCrew(memberId: string) {
@@ -1301,7 +1310,7 @@ export default function CrewPage({
       x: number,
       y: number,
       width: number,
-      options: { fieldHeight?: number; maxLines?: number } = {}
+      options: { fieldHeight?: number; maxLines?: number; emptyWhenMissing?: boolean } = {}
     ) {
       const fieldHeight = options.fieldHeight || 18;
       const maxLines = options.maxLines || 1;
@@ -1315,12 +1324,16 @@ export default function CrewPage({
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.6);
       setText("#17233a");
-      const text = doc.splitTextToSize(contractSheetValue(value), width - 10);
+      const displayValue = options.emptyWhenMissing
+        ? contractOptionalSheetValue(value)
+        : contractSheetValue(value);
+      const text = doc.splitTextToSize(displayValue, width - 10);
       doc.text(text.slice(0, maxLines), x + 7, y + 19);
     }
 
     function drawCoverSection(section: ContractSheetSection, x: number, y: number, width: number, height: number) {
       const isSpecialConditions = section.title.toLowerCase().includes("special conditions");
+      const isCrewMemberDetails = section.title.toLowerCase() === "crew member details";
       setStroke("#c4d9ee");
       setFill("#ffffff");
       doc.roundedRect(x, y, width, height, 9, 9, "FD");
@@ -1350,10 +1363,18 @@ export default function CrewPage({
         const multiline = false;
         const isLeft = index % 2 === 0;
         const fieldX = fullWidth ? x + 26 : x + 26 + (isLeft ? 0 : colWidth + gap);
-        drawCoverField(label, value, fieldX, fieldY, fullWidth ? width - 52 : colWidth, {
-          fieldHeight: multiline ? 34 : 18,
-          maxLines: multiline ? 2 : 1,
-        });
+        drawCoverField(
+          label,
+          value,
+          fieldX,
+          fieldY,
+          fullWidth ? width - 52 : colWidth,
+          {
+            fieldHeight: multiline ? 34 : 18,
+            maxLines: multiline ? 2 : 1,
+            emptyWhenMissing: isCrewMemberDetails,
+          }
+        );
         if (fullWidth || !isLeft) fieldY += multiline ? 48 : 32;
       });
 
@@ -3075,7 +3096,7 @@ export default function CrewPage({
                     <button
                       key={step.id}
                       type="button"
-                      onClick={() => setContractStep(step.id)}
+                      onClick={() => navigateContractStep(step.id)}
                       className={`bd-focus group flex min-h-[72px] items-center gap-3 rounded-[16px] border p-3 text-left transition ${
                         active
                           ? "border-[#21aebf] bg-white text-[#0b2330] shadow-lg shadow-[#21aebf]/16 ring-2 ring-[#21aebf]/24"
@@ -3688,7 +3709,7 @@ export default function CrewPage({
               <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <button
                   type="button"
-                  onClick={() => setContractStep(previousContractStep)}
+                  onClick={() => navigateContractStep(previousContractStep)}
                   disabled={contractStepIndex === 0}
                   className="bd-focus rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:border-cyan-300 hover:text-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -3699,7 +3720,7 @@ export default function CrewPage({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setContractStep(nextContractStep)}
+                  onClick={() => navigateContractStep(nextContractStep)}
                   disabled={contractStepIndex === contractStepCards.length - 1}
                   className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -5423,6 +5444,7 @@ function ContractCoverSection({
   compact?: boolean;
 }) {
   const isSpecialConditions = title.toLowerCase().includes("special conditions");
+  const isCrewMemberDetails = title.toLowerCase() === "crew member details";
 
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white/96">
@@ -5452,7 +5474,9 @@ function ContractCoverSection({
                 {label}
               </p>
               <p className={`mt-0.5 min-h-[18px] whitespace-pre-line font-semibold text-[#17233a] ${compact ? "text-xs" : "text-[13px]"}`}>
-                {contractSheetValue(value)}
+                {isCrewMemberDetails
+                  ? contractOptionalSheetValue(value)
+                  : contractSheetValue(value)}
               </p>
             </div>
           ))}
@@ -5471,10 +5495,12 @@ function ContractAnnexDDeclarationCard({
   title,
   paragraphs,
   fields,
+  emptyWhenMissing = false,
 }: {
   title: string;
   paragraphs: string[];
   fields: Array<[string, string]>;
+  emptyWhenMissing?: boolean;
 }) {
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white">
@@ -5499,7 +5525,9 @@ function ContractAnnexDDeclarationCard({
                 {label}
               </p>
               <p className="mt-0.5 min-h-[16px] text-[11px] font-semibold text-[#17233a]">
-                {contractSheetValue(value)}
+                {emptyWhenMissing
+                  ? contractOptionalSheetValue(value)
+                  : contractSheetValue(value)}
               </p>
             </div>
           ))}
@@ -5539,6 +5567,7 @@ function ContractAnnexDPreview({
       <ContractAnnexDDeclarationCard
         title="Seafarer's Declaration"
         paragraphs={contractSeafarerDeclarationParagraphs}
+        emptyWhenMissing
         fields={[
           ["Seafarer's Full Name", details.seafarerName],
           ["Place Signed", details.seafarerPlaceSigned],
