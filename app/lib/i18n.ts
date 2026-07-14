@@ -577,6 +577,12 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   },
   "Documents & Certificates": { tr: "Belgeler & Sertifikalar" },
   "Certificates and CV visibility.": { tr: "Sertifikalar ve CV görünürlüğü." },
+  "Choose a document, add an expiry date if needed, and attach a file only when you want to.": {
+    tr: "Bir belge seçin, gerekiyorsa son kullanma tarihini ekleyin ve yalnızca istediğinizde dosya yükleyin.",
+  },
+  "Can't find it? Add a custom document": { tr: "Bulamıyor musunuz? Özel bir belge ekleyin" },
+  "Other document name": { tr: "Diğer belge adı" },
+  "Expiry not set": { tr: "Son kullanma tarihi belirtilmedi" },
   "Photo Gallery": { tr: "Fotoğraf Galerisi" },
   "Yacht and work photos.": { tr: "Yat ve iş fotoğrafları." },
   "Manage your crew ID, documents, expiry dates, photo gallery and CV.": {

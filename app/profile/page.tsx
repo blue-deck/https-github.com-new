@@ -486,11 +486,13 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
+  const [newDocumentOpen, setNewDocumentOpen] = useState<boolean | null>(null);
   const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState<boolean | null>(null);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
   const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState<boolean | null>(null);
   const [newOtherWorkExperienceDirty, setNewOtherWorkExperienceDirty] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
+  const newDocumentFormId = useId();
   const newYachtExperienceFormId = useId();
   const newOtherWorkExperienceFormId = useId();
   const uploadRunRef = useRef(0);
@@ -521,6 +523,8 @@ export default function ProfilePage() {
   );
   const showNewYachtExperienceForm = newYachtExperienceOpen ?? editableYachtExperiences.length === 0;
   const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen ?? editableOtherWorkExperiences.length === 0;
+  const showNewDocumentForm = newDocumentOpen ?? sortedDocuments.length === 0;
+  const newDocumentDirty = !saveStateEquals(documentSaveState(documentDraft), documentSaveState(newDocumentDraft()));
   const totalExperienceYears = useMemo(() => {
     const firstYear = editableYachtExperiences
       .map((item) => Number((item.start_date || "").slice(0, 4)))
@@ -766,7 +770,7 @@ export default function ProfilePage() {
   async function saveDocument(nextDraft: CrewDocument = documentDraft) {
     if (documents.length >= maxCvDocuments) {
       alert(`You can add up to ${maxCvDocuments} documents and certificates to your BlueDeck CV.`);
-      return;
+      return false;
     }
 
     const hasDocumentDetail = [
@@ -779,7 +783,7 @@ export default function ProfilePage() {
 
     if (!profile.id || !hasDocumentDetail) {
       alert("Add a document type, expiry date or file before saving.");
-      return;
+      return false;
     }
 
     const documentType = cleanSaveText(nextDraft.document_type) || "Document";
@@ -792,11 +796,12 @@ export default function ProfilePage() {
 
     if (!response.ok) {
       alert(response.error);
-      return;
+      return false;
     }
 
     setDocumentDraft(newDocumentDraft());
     await loadRelated(profile.id);
+    return true;
   }
 
   async function updateDocument(document: CrewDocument) {
@@ -1353,32 +1358,76 @@ export default function ProfilePage() {
             </Panel>
 
             <Panel active={activeStudioTab === "documents"} title="Documents & Certificates" icon={<IdCard className="h-5 w-5" />}>
-              <DocumentCreator
-                draft={documentDraft}
-                setDraft={setDocumentDraft}
-                onSave={saveDocument}
-                onUpload={async (file, uploadedDraft) => {
-                  const url = await uploadFile(file, "crew-documents", "document-file");
-                  if (!url) return;
+              <div className="space-y-4">
+                <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setNewDocumentOpen(!showNewDocumentForm)}
+                    aria-expanded={showNewDocumentForm}
+                    aria-controls={newDocumentFormId}
+                    className={`bd-focus grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-3 bg-cyan-50/70 px-4 py-4 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewDocumentForm ? "border-b border-cyan-100" : ""}`}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
+                      <Plus className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-base font-semibold text-slate-950">Add document</span>
+                      <span className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewDocumentForm ? "block" : "hidden sm:block"}`}>
+                        Choose a document, add an expiry date if needed, and attach a file only when you want to.
+                      </span>
+                    </span>
+                    <span className="mt-1.5 flex items-center gap-2">
+                      {newDocumentDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewDocumentForm ? "rotate-180" : ""}`} />
+                    </span>
+                  </button>
+                  <div id={newDocumentFormId} hidden={!showNewDocumentForm} className="p-4 sm:p-5">
+                    <DocumentCreator
+                      key={`new-document-${documents.length}`}
+                      draft={documentDraft}
+                      setDraft={setDocumentDraft}
+                      onSave={async (nextDraft) => {
+                        const saved = await saveDocument(nextDraft);
+                        if (saved) setNewDocumentOpen(false);
+                        return saved;
+                      }}
+                      onUpload={async (file, uploadedDraft) => {
+                        const url = await uploadFile(file, "crew-documents", "document-file");
+                        if (!url) return;
 
-                  const nextDraft = { ...uploadedDraft, file_url: url };
-                  setDocumentDraft(nextDraft);
-                  await saveDocument(nextDraft);
-                }}
-                onCancelUpload={cancelUpload}
-                uploading={uploading === "document-file"}
-                documentCount={documents.length}
-                maxDocuments={maxCvDocuments}
-              />
-              <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                {sortedDocuments.map((document) => (
-                  <DocumentCard
-                    key={document.id}
-                    document={document}
-                    onChange={updateDocument}
-                    onDelete={deleteDocument}
-                  />
-                ))}
+                        const nextDraft = { ...uploadedDraft, file_url: url };
+                        setDocumentDraft(nextDraft);
+                        const saved = await saveDocument(nextDraft);
+                        if (saved) setNewDocumentOpen(false);
+                      }}
+                      onCancelUpload={cancelUpload}
+                      uploading={uploading === "document-file"}
+                      documentCount={documents.length}
+                      maxDocuments={maxCvDocuments}
+                    />
+                  </div>
+                </section>
+
+                {sortedDocuments.length > 0 && (
+                  <section className="pt-2">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-slate-800">Saved</h3>
+                      <span data-i18n-ignore className="inline-flex min-w-7 items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold tabular-nums text-slate-600">
+                        {sortedDocuments.length}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {sortedDocuments.map((document) => (
+                        <DocumentCard
+                          key={document.id}
+                          document={document}
+                          onChange={updateDocument}
+                          onDelete={deleteDocument}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             </Panel>
 
@@ -1493,7 +1542,7 @@ function DocumentCreator({
 }: {
   draft: CrewDocument;
   setDraft: (draft: CrewDocument) => void;
-  onSave: (draft?: CrewDocument) => void;
+  onSave: (draft: CrewDocument) => Promise<boolean>;
   onUpload: (file: File, draft: CrewDocument) => void | Promise<void>;
   onCancelUpload: () => void;
   uploading: boolean;
@@ -1503,87 +1552,163 @@ function DocumentCreator({
   const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
   const customDocumentName = draft.document_type && !selectedCategory ? draft.document_type : "";
   const documentLimitReached = documentCount >= maxDocuments;
+  const [customNameOpen, setCustomNameOpen] = useState(Boolean(customDocumentName));
+  const [saving, setSaving] = useState(false);
+  const fileInputId = useId();
+  const formLocked = saving || uploading || documentLimitReached;
+
+  async function handleSave() {
+    if (formLocked) return;
+    setSaving(true);
+    try {
+      await onSave(draft);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleUpload(file: File) {
+    if (formLocked) return;
+    setSaving(true);
+    try {
+      await onUpload(file, draft);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
-    <div className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 sm:p-5">
-      <div className="space-y-3">
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
         <div>
-          <p className="mb-2 block select-text text-sm font-medium text-slate-600">Document type</p>
-          <select
-            value={draft.document_type}
-            disabled={documentLimitReached}
-            onChange={(event) => {
-              const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
-              setDraft({ ...draft, document_type: event.target.value, category });
-            }}
-            className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 disabled:opacity-40"
-          >
-            <option value="">Select document</option>
-            {documentCatalog.map((group) => (
-              <optgroup key={group.category} label={group.category}>
-                {group.items.map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
-        <Field
-          label="Other document name"
-          value={customDocumentName}
-          placeholder="Other"
-          disabled={documentLimitReached}
-          onChange={(value) =>
-            setDraft({
-              ...draft,
-              document_type: capitalizeFirstCharacter(value),
-              category: value.trim() ? "Other" : "",
-            })
-          }
-        />
-        <DateField label="Expiry date" value={draft.expiry_date} onChange={(value) => setDraft({ ...draft, expiry_date: value })} disabled={draft.no_expiry || documentLimitReached} />
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex min-h-[46px] w-full items-center rounded-xl border border-white/70 bg-white/75 px-3 shadow-sm shadow-cyan-950/5 sm:w-auto">
-            <Checkbox label="No expiry / unlimited" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
-          </div>
-          <label className={`inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-cyan-950/5 transition sm:w-auto ${uploading ? "cursor-progress opacity-70" : documentLimitReached ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300"}`}>
-            <Upload className="h-4 w-4 text-cyan-700" />
-            {uploading ? "Uploading..." : draft.file_url ? "File attached" : "Attach file/photo"}
-            <input
-              type="file"
-              disabled={uploading || documentLimitReached}
-              className="hidden"
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-semibold text-slate-700">Document type</span>
+            <select
+              aria-label="Document type"
+              value={selectedCategory ? draft.document_type : ""}
+              disabled={formLocked}
               onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) onUpload(file, draft);
+                const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
+                setCustomNameOpen(false);
+                setDraft({ ...draft, document_type: event.target.value, category });
               }}
-            />
+              className="min-h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-base font-medium text-slate-800 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
+            >
+              <option value="">Select document</option>
+              {documentCatalog.map((group) => (
+                <optgroup key={group.category} label={group.category}>
+                  {group.items.map((item) => (
+                    <option key={item}>{item}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </label>
-          <button type="button" disabled={documentLimitReached} onClick={() => onSave()} className="min-h-[46px] w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:min-w-[180px]">
-            Add document
-          </button>
+
+          {!customNameOpen && !documentLimitReached && (
+            <button
+              type="button"
+              disabled={saving || uploading}
+              onClick={() => {
+                setCustomNameOpen(true);
+                setDraft({ ...draft, document_type: "", category: "" });
+              }}
+              className="bd-focus mt-2 inline-flex min-h-11 items-center rounded-lg px-1 text-left text-xs font-semibold text-cyan-800 transition hover:text-cyan-950 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Can&apos;t find it? Add a custom document
+            </button>
+          )}
+
+          {customNameOpen && (
+            <div className="mt-3">
+              <Field
+                label="Other document name"
+                value={customDocumentName}
+                placeholder="Other"
+                disabled={formLocked}
+                mobileFriendly
+                onChange={(value) =>
+                  setDraft({
+                    ...draft,
+                    document_type: capitalizeFirstCharacter(value),
+                    category: value.trim() ? "Other" : "",
+                  })
+                }
+              />
+            </div>
+          )}
         </div>
-        {(uploading || draft.file_url || documentLimitReached) && (
-          <div className="flex flex-wrap items-center gap-3">
-            {uploading && (
-              <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-                Cancel upload
-              </button>
-            )}
-            {draft.file_url && !uploading && (
-              <button type="button" onClick={() => setDraft({ ...draft, file_url: "" })} className="rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-                Remove file
-              </button>
-            )}
-            {documentLimitReached && (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
-                Maximum {maxDocuments} documents and certificates can be added to this CV.
-              </p>
-            )}
+
+        <div>
+          <DateField
+            label="Expiry date"
+            value={draft.expiry_date}
+            onChange={(value) => setDraft({ ...draft, expiry_date: value })}
+            disabled={draft.no_expiry || formLocked}
+            mobileFriendly
+          />
+          <div className="mt-2 flex min-h-11 items-center rounded-xl border border-slate-200 bg-slate-50/70 px-3 [&>label]:min-h-11 [&>label]:w-full">
+            <Checkbox
+              label="No expiry / unlimited"
+              checked={draft.no_expiry}
+              disabled={formLocked}
+              onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })}
+            />
           </div>
-        )}
+        </div>
       </div>
+
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="min-w-0">
+          <input
+            id={fileInputId}
+            type="file"
+            disabled={formLocked}
+            className="peer sr-only"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (file) void handleUpload(file);
+            }}
+          />
+          <label
+            htmlFor={fileInputId}
+            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-900/5 transition peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-600 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : documentLimitReached || saving ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300 hover:bg-cyan-50/40"}`}
+          >
+            <Upload className="h-4 w-4 text-cyan-700" />
+            {uploading ? "Uploading..." : saving ? "Saving..." : draft.file_url ? "File attached" : "Attach file/photo"}
+          </label>
+        </div>
+        <button
+          type="button"
+          disabled={formLocked}
+          onClick={handleSave}
+          className="min-h-11 w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:min-w-[180px]"
+        >
+          {saving ? "Saving..." : "Add document"}
+        </button>
+      </div>
+
+      {(uploading || draft.file_url) && (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {uploading && (
+            <button type="button" onClick={onCancelUpload} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700 sm:w-auto">
+              Cancel upload
+            </button>
+          )}
+          {draft.file_url && !uploading && (
+            <button type="button" disabled={saving} onClick={() => setDraft({ ...draft, file_url: "" })} className="min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
+              Remove file
+            </button>
+          )}
+        </div>
+      )}
+
+      {documentLimitReached && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
+          Maximum {maxDocuments} documents and certificates can be added to this CV.
+        </p>
+      )}
     </div>
   );
 }
@@ -3535,9 +3660,13 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
   const [draft, setDraft] = useState(document);
   const [savedDocument, setSavedDocument] = useState(document);
   const [saving, setSaving] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const editorContentId = useId();
   const alert = !draft.no_expiry && isWithin90Days(draft.expiry_date);
   const dirty = !saveStateEquals(documentSaveState(draft), documentSaveState(savedDocument));
   const saved = !dirty;
+  const catalogDocument = documentCatalog.some((group) => group.items.includes(draft.document_type));
+  const summaryExpiry = draft.no_expiry ? "No expiry" : draft.expiry_date ? formatCvDate(draft.expiry_date) : "Expiry not set";
 
   async function handleSave() {
     if (saved || saving) return;
@@ -3551,37 +3680,90 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
   }
 
   return (
-    <article className={`rounded-2xl border p-4 ${alert ? "border-amber-300 bg-amber-50" : "border-slate-200 bg-white"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-semibold text-slate-950">{draft.document_type || "Document"}</p>
-          <p className="mt-1 text-xs text-slate-500">{draft.category || "General"}</p>
-          {draft.issuer && <p className="mt-1 truncate text-xs font-semibold text-cyan-800">{draft.issuer}</p>}
+    <article className={`min-w-0 overflow-hidden rounded-xl border bg-white shadow-sm shadow-slate-900/5 ${alert ? "border-amber-300" : "border-slate-200"}`}>
+      <button
+        type="button"
+        onClick={() => setEditorOpen((open) => !open)}
+        aria-expanded={editorOpen}
+        aria-controls={editorContentId}
+        className={`bd-focus grid min-h-16 w-full grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition sm:px-4 ${alert ? "bg-amber-50/70 hover:bg-amber-50" : "hover:bg-slate-50"}`}
+      >
+        <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${alert ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-cyan-800"}`}>
+          <IdCard className="h-5 w-5" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-[15px] font-semibold text-slate-950">
+            {draft.document_type ? (catalogDocument ? draft.document_type : <span data-i18n-ignore>{draft.document_type}</span>) : "Document"}
+          </span>
+          <span className="mt-0.5 flex min-w-0 items-center gap-1.5 truncate text-xs text-slate-500">
+            {draft.issuer ? <span data-i18n-ignore className="truncate">{draft.issuer}</span> : <span className="truncate">{draft.category || "General"}</span>}
+            <span aria-hidden>·</span>
+            {draft.expiry_date ? <span data-i18n-ignore className="shrink-0">{summaryExpiry}</span> : <span className="shrink-0">{summaryExpiry}</span>}
+            {draft.show_on_cv && (
+              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-cyan-50 px-1.5 py-0.5 text-[10px] font-semibold text-cyan-800">
+                <Check className="h-3 w-3" aria-hidden />
+                <span data-i18n-ignore aria-hidden>CV</span>
+                <span className="sr-only">Show on CV</span>
+              </span>
+            )}
+          </span>
+        </span>
+        <span className="flex items-center gap-2 text-cyan-800">
+          {alert && (
+            <span className="text-amber-700">
+              <AlertTriangle className="h-4 w-4" aria-hidden />
+              <span className="sr-only">Expiry alert: update this document soon.</span>
+            </span>
+          )}
+          {dirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
+          <span className="sr-only">{editorOpen ? "Hide details" : "View details"}</span>
+          <span aria-hidden className="hidden text-xs font-semibold sm:inline">{editorOpen ? "Hide details" : "View details"}</span>
+          <ChevronDown className={`h-5 w-5 shrink-0 transition ${editorOpen ? "rotate-180" : ""}`} />
+        </span>
+      </button>
+
+      <div id={editorContentId} hidden={!editorOpen} className="border-t border-slate-200 p-4 sm:p-5">
+        <div className="grid gap-3 sm:grid-cols-3 sm:items-end">
+          <DateField label="Expiry" value={draft.expiry_date} disabled={draft.no_expiry || saving} mobileFriendly onChange={(value) => setDraft({ ...draft, expiry_date: value })} />
+          <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-slate-50/70 px-3 [&>label]:min-h-11 [&>label]:w-full">
+            <Checkbox label="No expiry" checked={draft.no_expiry} disabled={saving} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
+          </div>
+          <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-slate-50/70 px-3 [&>label]:min-h-11 [&>label]:w-full">
+            <Checkbox label="Show on CV" checked={draft.show_on_cv} disabled={saving} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
+          </div>
         </div>
-        <button onClick={() => onDelete(draft.id)} className="text-red-200"><Trash2 className="h-4 w-4" /></button>
-      </div>
-      <div className="mt-4 grid gap-3">
-        <DateField label="Expiry" value={draft.expiry_date} disabled={draft.no_expiry} onChange={(value) => setDraft({ ...draft, expiry_date: value })} />
-      </div>
-      <div className="mt-3 flex flex-wrap gap-4">
-        <Checkbox label="No expiry" checked={draft.no_expiry} onChange={(checked) => setDraft({ ...draft, no_expiry: checked, expiry_date: checked ? "" : draft.expiry_date })} />
-        <Checkbox label="Show on CV" checked={draft.show_on_cv} onChange={(checked) => setDraft({ ...draft, show_on_cv: checked })} />
-      </div>
-      {alert && <p className="mt-3 text-sm font-semibold text-amber-800">Expiry alert: update this document soon.</p>}
-      <div className="mt-4 flex justify-end">
-        <button
-          type="button"
-          disabled={saving || saved}
-          onClick={handleSave}
-          className={`inline-flex h-9 min-w-[92px] items-center justify-center gap-1.5 rounded-lg px-3 text-[11px] font-black uppercase tracking-[0.08em] transition disabled:cursor-default ${
-            saved
-              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "cursor-pointer bg-[#173f4a] text-white hover:bg-[#235866] disabled:cursor-wait disabled:opacity-60"
-          }`}
-        >
-          {saving ? <Plus className="h-3.5 w-3.5" /> : saved ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-          {saving ? "Saving" : saved ? "Saved" : "Save"}
-        </button>
+
+        {alert && (
+          <p className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            Expiry alert: update this document soon.
+          </p>
+        )}
+
+        <div className="mt-5 flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            disabled={saving || saved}
+            onClick={handleSave}
+            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-default sm:w-auto ${
+              saved
+                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "cursor-pointer bg-cyan-400 text-[#020817] hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+            }`}
+          >
+            {saving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            <span aria-live="polite">{saving ? "Saving" : saved ? "Saved" : "Save"}</span>
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => onDelete(draft.id)}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden />
+            Delete
+          </button>
+        </div>
       </div>
     </article>
   );
@@ -4593,6 +4775,7 @@ function Field({
   pattern,
   maxLength,
   normalizeValue,
+  mobileFriendly = false,
 }: {
   label: string;
   value?: string;
@@ -4605,11 +4788,13 @@ function Field({
   pattern?: string;
   maxLength?: number;
   normalizeValue?: (value: string) => string;
+  mobileFriendly?: boolean;
 }) {
   return (
     <div className="block">
-      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
+      <p className={mobileFriendly ? "mb-1.5 block select-text text-xs font-semibold text-slate-700" : "mb-2 block select-text text-sm font-medium text-slate-600"}>{label}</p>
       <input
+        aria-label={label}
         type={type}
         value={value || ""}
         list={listId}
@@ -4631,13 +4816,15 @@ function Field({
               }
             : undefined
         }
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"
+        className={mobileFriendly
+          ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
+          : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
       />
     </div>
   );
 }
 
-function DateField({ label, value, onChange, disabled = false }: { label: string; value?: string; onChange: (value: string) => void; disabled?: boolean }) {
+function DateField({ label, value, onChange, disabled = false, mobileFriendly = false }: { label: string; value?: string; onChange: (value: string) => void; disabled?: boolean; mobileFriendly?: boolean }) {
   const [display, setDisplay] = useState(formatDateForDisplay(value || ""));
 
   useEffect(() => {
@@ -4652,15 +4839,18 @@ function DateField({ label, value, onChange, disabled = false }: { label: string
 
   return (
     <div className="block">
-      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
+      <p className={mobileFriendly ? "mb-1.5 block select-text text-xs font-semibold text-slate-700" : "mb-2 block select-text text-sm font-medium text-slate-600"}>{label}</p>
       <input
+        aria-label={label}
         inputMode="numeric"
         placeholder="DD/MM/YYYY"
         value={display}
         disabled={disabled}
         onChange={(event) => commit(event.target.value)}
         onBlur={() => setDisplay(formatDateForDisplay(parseDisplayDate(display)))}
-        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"
+        className={mobileFriendly
+          ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
+          : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
       />
     </div>
   );
@@ -4973,10 +5163,10 @@ function TextArea({
   );
 }
 
-function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+function Checkbox({ label, checked, onChange, disabled = false }: { label: string; checked: boolean; onChange: (checked: boolean) => void; disabled?: boolean }) {
   return (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-cyan-400" />
+    <label className={`inline-flex items-center gap-2 text-sm text-slate-700 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}>
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 accent-cyan-400" />
       {label}
     </label>
   );
