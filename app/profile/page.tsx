@@ -3501,10 +3501,10 @@ function ExperienceEditor({
   }
 
   return (
-    <article className="min-w-0 rounded-2xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5 sm:p-2.5">
-      <div className="grid min-w-0 items-stretch gap-3 sm:grid-cols-[156px_1fr]">
-        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
-          <div className="relative overflow-hidden rounded-lg border border-[#d8e2e6] bg-white">
+    <article className="min-w-0 border-b border-slate-200 pb-6 last:border-b-0 last:pb-0">
+      <div className="grid min-w-0 items-stretch gap-5 sm:grid-cols-[170px_minmax(0,1fr)]">
+        <div className="flex min-h-full min-w-0 flex-col border-b border-slate-200 pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5">
+          <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
             {draft.photo_url ? (
               <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="h-20 w-full object-cover" />
             ) : (
@@ -3531,7 +3531,7 @@ function ExperienceEditor({
             </label>
           </div>
 
-          <div className="mt-3 space-y-2">
+          <div className="mt-4 space-y-3">
             <ExperienceCardSelect
               label="Yacht type"
               value={draft.yacht_type || ""}
@@ -3548,22 +3548,16 @@ function ExperienceEditor({
               value={draft.yacht_size || ""}
               onChange={(value) => setDraft({ ...draft, yacht_size: value })}
             />
-            <div className="grid gap-1.5">
+            <div className="grid gap-3">
               <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
               <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
             </div>
-            <div className="grid grid-cols-[22px_1fr] items-center overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
-              <span className="flex h-full items-center justify-center text-[#2d7482]">
-                <MapPin className="h-3.5 w-3.5" />
-              </span>
-              <input
-                aria-label="Location"
-                value={draft.location || ""}
-                onChange={(event) => setDraft({ ...draft, location: capitalizeFirstCharacter(event.target.value) })}
-                placeholder="Location"
-                className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
-              />
-            </div>
+            <ExperienceCardInput
+              label="Location"
+              value={draft.location}
+              placeholder="Location"
+              onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
+            />
           </div>
 
           <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
@@ -3581,9 +3575,9 @@ function ExperienceEditor({
           </div>
         </div>
 
-        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
-          <div className="mb-3 rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
+        <div className="flex min-h-full min-w-0 flex-col sm:pl-1">
+          <div className="mb-5 border-b border-slate-200 pb-5">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(160px,220px)]">
               <ExperienceCardInput
                 label="Yacht name"
                 value={draft.yacht_name}
@@ -3591,19 +3585,12 @@ function ExperienceEditor({
                 strong
                 onChange={(value) => setDraft({ ...draft, yacht_name: value })}
               />
-              <select
-                aria-label="Position"
-                value={draft.position || ""}
-                onChange={(event) => setDraft({ ...draft, position: event.target.value })}
-                className="w-full cursor-pointer rounded-lg border border-[#173f4a] bg-[#173f4a] px-3 py-2 text-[11px] font-black uppercase tracking-[0.08em] text-white outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/20"
-              >
-                <option value="">Position</option>
-                {yachtPositionTitles.map((position) => (
-                  <option key={position} value={position}>
-                    {position}
-                  </option>
-                ))}
-              </select>
+              <ExperienceCardSelect
+                label="Position"
+                value={draft.position}
+                options={yachtPositionTitles}
+                onChange={(value) => setDraft({ ...draft, position: value })}
+              />
             </div>
           </div>
           <div className="flex flex-1 flex-col">
@@ -3666,33 +3653,24 @@ function OtherWorkExperienceEditor({
   }, [item]);
 
   return (
-    <article className="min-w-0 rounded-2xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5 sm:p-2.5">
-      <div className="grid min-w-0 items-stretch gap-3 sm:grid-cols-[156px_1fr]">
-        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
-          <div className="flex h-20 items-center justify-center rounded-lg border border-[#d8e2e6] bg-white text-[#2d7482]">
-            <BriefcaseBusiness className="h-7 w-7" />
-          </div>
-          <div className="mt-3 space-y-2">
+    <article className="min-w-0 border-b border-slate-200 pb-6 last:border-b-0 last:pb-0">
+      <div className="grid min-w-0 items-stretch gap-5 sm:grid-cols-[170px_minmax(0,1fr)]">
+        <div className="flex min-h-full min-w-0 flex-col border-b border-slate-200 pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5">
+          <div className="space-y-3">
             <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
             <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
-            <div className="grid grid-cols-[22px_1fr] items-center overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
-              <span className="flex h-full items-center justify-center text-[#2d7482]">
-                <MapPin className="h-3.5 w-3.5" />
-              </span>
-              <input
-                aria-label="Location"
-                value={draft.location || ""}
-                onChange={(event) => setDraft({ ...draft, location: capitalizeFirstCharacter(event.target.value) })}
-                placeholder="Location"
-                className="min-w-0 border-0 bg-white px-1.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
-              />
-            </div>
+            <ExperienceCardInput
+              label="Location"
+              value={draft.location}
+              placeholder="Location"
+              onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
+            />
           </div>
         </div>
 
-        <div className="flex min-h-full min-w-0 flex-col rounded-xl border border-[#dbe4e7] bg-[#f6f8f8] p-3">
-          <div className="mb-3 rounded-xl border border-[#d8e2e6] bg-white p-2.5 shadow-sm shadow-slate-950/5">
-            <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_180px]">
+        <div className="flex min-h-full min-w-0 flex-col sm:pl-1">
+          <div className="mb-5 border-b border-slate-200 pb-5">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(160px,220px)]">
               <ExperienceCardInput
                 label="Workplace / company"
                 value={draft.yacht_name}
@@ -3821,8 +3799,8 @@ function LinkedReferencePanel({
       </div>
 
       <div
-        className={`space-y-2 rounded-xl transition ${
-          requestReference ? "bg-[#f6f8f8]/70 opacity-55 grayscale-[0.35]" : ""
+        className={`divide-y divide-slate-200 transition ${
+          requestReference ? "opacity-55 grayscale-[0.35]" : ""
         }`}
         aria-disabled={Boolean(requestReference)}
       >
@@ -3865,16 +3843,16 @@ function ExperienceCardInput({
   strong?: boolean;
 }) {
   return (
-    <div className="block">
-      <span className="sr-only">{label}</span>
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</span>
       <input
         aria-label={label}
         value={value || ""}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className={`w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${strong ? "text-[15px] font-black leading-tight text-[#06111f]" : "text-[12px] font-semibold text-[#2d7482]"}`}
+        className={`w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${strong ? "text-[15px] font-semibold leading-tight text-slate-900" : "text-[13px] font-medium text-slate-700"}`}
       />
-    </div>
+    </label>
   );
 }
 
@@ -3890,13 +3868,13 @@ function ExperienceCardSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="block">
-      <span className="sr-only">{label}</span>
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</span>
       <select
         aria-label={label}
         value={value || ""}
         onChange={(event) => onChange(event.target.value)}
-        className="w-full cursor-pointer rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+        className="w-full cursor-pointer rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-2 text-[13px] font-medium text-slate-700 outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
       >
         <option value="">{label}</option>
         {options.map((option) => (
@@ -3905,7 +3883,7 @@ function ExperienceCardSelect({
           </option>
         ))}
       </select>
-    </div>
+    </label>
   );
 }
 
@@ -3929,7 +3907,7 @@ function ExperienceSizeField({ value, onChange }: { value?: string; onChange: (v
 
   return (
     <div className="block">
-      <span className="sr-only">Yacht size</span>
+      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">Yacht size</span>
       <div className="grid grid-cols-[1fr_58px] overflow-hidden rounded-lg border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15">
         <input
           aria-label="Yacht size"
@@ -3938,13 +3916,13 @@ function ExperienceSizeField({ value, onChange }: { value?: string; onChange: (v
           value={parsed.amount}
           onChange={(event) => updateAmount(event.target.value.replace(/[^\d]/g, ""))}
           placeholder="Size"
-          className="min-w-0 border-0 bg-white px-2.5 py-2 text-[12px] font-semibold text-[#2d7482] outline-none placeholder:text-[#9aa8ae]"
+          className="min-w-0 border-0 bg-white px-2.5 py-2 text-[13px] font-medium text-slate-700 outline-none placeholder:text-[#9aa8ae]"
         />
         <select
           aria-label="Yacht size unit"
           value={selectedUnit}
           onChange={(event) => updateUnit(event.target.value as YachtSizeUnit)}
-          className="cursor-pointer border-0 border-l border-[#d8e2e6] bg-[#f6f8f8] px-1.5 py-2 text-[11px] font-black uppercase tracking-[0.06em] text-[#173f4a] outline-none"
+          className="cursor-pointer border-0 border-l border-[#d8e2e6] bg-slate-50 px-1.5 py-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-600 outline-none"
         >
           <option value="ft">ft</option>
           <option value="m">m</option>
@@ -3964,8 +3942,8 @@ function ExperienceCardDateField({ label, value, onChange }: { label: string; va
   }
 
   return (
-    <div className="block">
-      <span className="sr-only">{label}</span>
+    <label className="block">
+      <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">{label}</span>
       <input
         aria-label={label}
         inputMode="numeric"
@@ -3973,9 +3951,9 @@ function ExperienceCardDateField({ label, value, onChange }: { label: string; va
         onChange={(event) => commit(event.target.value)}
         onBlur={() => setDisplay(formatDateForDisplay(parseDisplayDate(display)))}
         placeholder={label}
-        className="w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-1.5 text-[12px] font-semibold leading-5 text-[#2d7482] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
+        className="w-full rounded-lg border border-[#d8e2e6] bg-white px-2.5 py-1.5 text-[13px] font-medium leading-5 text-slate-700 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
       />
-    </div>
+    </label>
   );
 }
 
@@ -4012,7 +3990,7 @@ function ExperienceReferenceEditor({
   }
 
   return (
-    <div className={`rounded-xl border border-[#d8e2e6] bg-white p-2 shadow-sm shadow-slate-950/5 transition ${disabled ? "pointer-events-none" : ""}`}>
+    <div className={`py-2.5 transition ${disabled ? "pointer-events-none" : ""}`}>
       <div className="grid items-center gap-2 lg:grid-cols-[1.05fr_0.7fr_1.2fr_1fr_auto]">
         <ReferenceMiniField
           label="Name / Company"
@@ -4234,7 +4212,7 @@ function EditorButtons({
   }
 
   return (
-    <div className="mt-4 flex gap-2">
+    <div className="mt-5 flex justify-end gap-2 border-t border-slate-200 pt-4">
       <button
         type="button"
         disabled={activeSaving || saved}
