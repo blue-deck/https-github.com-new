@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, CheckCircle2, FileText, LogOut, Settings, Ship, Trash2, Upload, UserPlus, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, FileText, LoaderCircle, LogOut, Plus, Settings, Ship, Trash2, UserPlus, UserRound } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { createSafeStoragePath } from "../lib/storage";
@@ -20,6 +20,7 @@ type DashboardProfile = {
   phone?: string;
   role?: string;
   profile_photo_url?: string;
+  dashboard_photo_url?: string;
 };
 
 type DashboardYachtInvite = {
@@ -50,6 +51,18 @@ function cleanDisplayName(profile?: DashboardProfile | null) {
   return "";
 }
 
+function formatDashboardRole(role?: string) {
+  const cleanRole = role?.trim() || "crew";
+  return cleanRole.charAt(0).toLocaleUpperCase("en-US") + cleanRole.slice(1);
+}
+
+function dashboardPhotoFromMetadata(metadata: Record<string, unknown> | undefined, profilePhoto?: string) {
+  if (metadata && Object.prototype.hasOwnProperty.call(metadata, "avatar_url")) {
+    return typeof metadata.avatar_url === "string" ? metadata.avatar_url : "";
+  }
+  return profilePhoto || "";
+}
+
 function uniqueById<T extends { id?: string }>(items: T[]) {
   return items.filter(
     (item, index, list) =>
@@ -57,11 +70,117 @@ function uniqueById<T extends { id?: string }>(items: T[]) {
   );
 }
 
+function DashboardPhotoControl({
+  url,
+  name,
+  uploading,
+  uploadingLabel,
+  onChoose,
+  onRemove,
+}: {
+  url?: string;
+  name?: string;
+  uploading: boolean;
+  uploadingLabel: string;
+  onChoose: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div
+      className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200 sm:h-28 sm:w-28"
+      aria-busy={uploading}
+    >
+      {url && (
+        <img
+          src={url}
+          alt={`${name || "User"} dashboard photo`}
+          className="h-full w-full object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
+        />
+      )}
+
+      {!url && !uploading && (
+        <button
+          type="button"
+          onClick={onChoose}
+          aria-label="Add dashboard photo"
+          title="Add dashboard photo"
+          className="absolute inset-0 flex cursor-pointer items-center justify-center text-cyan-800 transition hover:bg-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500"
+        >
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-200 bg-white shadow-sm transition group-hover:scale-105 group-hover:border-cyan-300">
+            <Plus className="h-5 w-5" aria-hidden />
+          </span>
+        </button>
+      )}
+
+      {url && !uploading && (
+        <>
+          <div className="absolute inset-0 hidden items-center justify-center gap-1 bg-slate-950/35 opacity-0 backdrop-blur-[1px] transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100 pointer-fine:flex">
+            <button
+              type="button"
+              onClick={onChoose}
+              aria-label="Change dashboard photo"
+              title="Change dashboard photo"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-cyan-800 shadow-lg">
+                <Camera className="h-4 w-4" aria-hidden />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label="Remove dashboard photo"
+              title="Remove dashboard photo"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-rose-100/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-lg">
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </span>
+            </button>
+          </div>
+
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-gradient-to-t from-slate-950/60 via-slate-950/20 to-transparent px-0.5 pb-1 pt-4 pointer-fine:hidden">
+            <button
+              type="button"
+              onClick={onChoose}
+              aria-label="Change dashboard photo"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-cyan-800 shadow-md">
+                <Camera className="h-4 w-4" aria-hidden />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label="Remove dashboard photo"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-md">
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </span>
+            </button>
+          </div>
+        </>
+      )}
+
+      {uploading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 text-cyan-800 backdrop-blur-[2px]">
+          <LoaderCircle className="h-6 w-6 animate-spin" aria-hidden />
+        </div>
+      )}
+
+      <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {uploading ? uploadingLabel : ""}
+      </span>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { t } = useLanguage();
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [photoMenuOpen, setPhotoMenuOpen] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [deckInvites, setDeckInvites] = useState<DashboardYachtInvite[]>([]);
   const [myDecks, setMyDecks] = useState<DashboardDeck[]>([]);
@@ -205,15 +324,20 @@ export default function DashboardPage() {
       profileData = { ...profileData, full_name: preferredName };
     }
 
+    const userMetadata = user.user_metadata as Record<string, unknown> | undefined;
+    const dashboardPhotoUrl = dashboardPhotoFromMetadata(userMetadata, crewProfile?.profile_photo_url);
+    if (!userMetadata || !Object.prototype.hasOwnProperty.call(userMetadata, "avatar_url")) {
+      await supabase.auth.updateUser({ data: { avatar_url: dashboardPhotoUrl } });
+    }
+
     setProfile({
       ...profileData,
       crew_profile_id: crewProfile?.id,
       full_name: preferredName,
       email: profileData?.email || crewProfile?.email || user.email,
       phone: profileData?.phone || crewProfile?.phone || user.user_metadata?.phone || "",
-      profile_photo_url:
-        crewProfile?.profile_photo_url ||
-        (typeof user.user_metadata?.avatar_url === "string" ? user.user_metadata.avatar_url : ""),
+      profile_photo_url: crewProfile?.profile_photo_url || "",
+      dashboard_photo_url: dashboardPhotoUrl,
     });
     await hydrateDeckAccess(crewProfile, profileData?.email || crewProfile?.email || user.email);
     setLoading(false);
@@ -229,58 +353,72 @@ export default function DashboardPage() {
       return;
     }
 
+    const previousProfilePhoto = profile?.profile_photo_url || "";
     setPhotoUploading(true);
     const path = createSafeStoragePath(profile?.crew_profile_id || user.id, file, "dashboard");
-    const { error: uploadError } = await supabase.storage.from("crew-portfolio").upload(path, file, {
-      upsert: false,
-    });
 
-    if (uploadError) {
-      setPhotoUploading(false);
-      alert(uploadError.message === "Bucket not found" ? "Photo storage is not ready yet. Please create the crew-portfolio bucket in Supabase." : uploadError.message);
-      return;
-    }
+    try {
+      const { error: uploadError } = await supabase.storage.from("crew-portfolio").upload(path, file, {
+        upsert: false,
+      });
 
-    const { data: publicUrl } = supabase.storage.from("crew-portfolio").getPublicUrl(path);
-    const photoUrl = publicUrl.publicUrl;
+      if (uploadError) {
+        alert(uploadError.message === "Bucket not found" ? "Photo storage is not ready yet. Please create the crew-portfolio bucket in Supabase." : uploadError.message);
+        return;
+      }
 
-    const { data: crewProfile, error: profileError } = await saveCrewProfileByUserId<{
-      id?: string;
-      profile_photo_url?: string;
-    }>(
-      supabase,
-      user.id,
-      {
-        email: profile?.email || user.email,
-        full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-        phone: profile?.phone || user.user_metadata?.phone || "",
+      const { data: publicUrl } = supabase.storage.from("crew-portfolio").getPublicUrl(path);
+      const photoUrl = publicUrl.publicUrl;
+
+      const { data: crewProfile, error: profileError } = await saveCrewProfileByUserId<{
+        id?: string;
+        profile_photo_url?: string;
+      }>(
+        supabase,
+        user.id,
+        {
+          email: profile?.email || user.email,
+          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+          phone: profile?.phone || user.user_metadata?.phone || "",
+          profile_photo_url: photoUrl,
+          public_crew_id: user.id.slice(0, 8).toUpperCase(),
+        },
+        "id, profile_photo_url"
+      );
+
+      if (profileError) {
+        await supabase.storage.from("crew-portfolio").remove([path]);
+        alert(profileError.message);
+        return;
+      }
+
+      const { error: dashboardPhotoError } = await supabase.auth.updateUser({
+        data: {
+          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+          phone: profile?.phone || user.user_metadata?.phone || "",
+          avatar_url: photoUrl,
+        },
+      });
+
+      if (dashboardPhotoError) {
+        const { error: rollbackError } = await supabase
+          .from("crew_profiles")
+          .update({ profile_photo_url: previousProfilePhoto })
+          .eq("user_id", user.id);
+        if (!rollbackError) await supabase.storage.from("crew-portfolio").remove([path]);
+        alert(rollbackError ? `${dashboardPhotoError.message} Profile photo rollback also failed: ${rollbackError.message}` : dashboardPhotoError.message);
+        return;
+      }
+
+      setProfile((current) => ({
+        ...(current || {}),
+        crew_profile_id: crewProfile?.id || current?.crew_profile_id,
         profile_photo_url: photoUrl,
-        public_crew_id: user.id.slice(0, 8).toUpperCase(),
-      },
-      "id, profile_photo_url"
-    );
-
-    await supabase.auth.updateUser({
-      data: {
-        full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-        phone: profile?.phone || user.user_metadata?.phone || "",
-        avatar_url: photoUrl,
-      },
-    });
-
-    setPhotoUploading(false);
-    setPhotoMenuOpen(false);
-
-    if (profileError) {
-      alert(profileError.message);
-      return;
+        dashboard_photo_url: photoUrl,
+      }));
+    } finally {
+      setPhotoUploading(false);
     }
-
-    setProfile((current) => ({
-      ...(current || {}),
-      crew_profile_id: crewProfile?.id || current?.crew_profile_id,
-      profile_photo_url: photoUrl,
-    }));
   }
 
   async function removeDashboardPhoto() {
@@ -294,28 +432,24 @@ export default function DashboardPage() {
     }
 
     setPhotoUploading(true);
-    const { error } = await supabase
-      .from("crew_profiles")
-      .update({ profile_photo_url: "" })
-      .eq("user_id", user.id);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          avatar_url: "",
+          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
+          phone: profile?.phone || user.user_metadata?.phone || "",
+        },
+      });
 
-    await supabase.auth.updateUser({
-      data: {
-        avatar_url: "",
-        full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-        phone: profile?.phone || user.user_metadata?.phone || "",
-      },
-    });
+      if (error) {
+        alert(error.message);
+        return;
+      }
 
-    setPhotoUploading(false);
-    setPhotoMenuOpen(false);
-
-    if (error) {
-      alert(error.message);
-      return;
+      setProfile((current) => ({ ...(current || {}), dashboard_photo_url: "" }));
+    } finally {
+      setPhotoUploading(false);
     }
-
-    setProfile((current) => ({ ...(current || {}), profile_photo_url: "" }));
   }
 
   async function acceptDashboardInvite(invite: DashboardYachtInvite) {
@@ -396,86 +530,54 @@ export default function DashboardPage() {
     );
   }
 
-  const isCaptain =
-    profile?.role === "captain" || profile?.role === "management";
+  const normalizedRole = profile?.role?.trim().toLowerCase() || "crew";
+  const isCaptain = normalizedRole === "captain" || normalizedRole === "management";
+  const roleLabel = formatDashboardRole(normalizedRole);
 
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-7xl">
-        <div className="bd-glass-card-strong relative rounded-[34px] p-6 sm:p-8">
-          <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
+        <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/6 backdrop-blur">
+          <div className="bd-brand-rule h-0.5" />
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5 sm:gap-8 sm:p-7">
             <div className="min-w-0">
-              <p className="bd-kicker">{t("dashboard.myDashboard")}</p>
-
-              <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">
-                {t("dashboard.welcome")}, <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
-              </h1>
-
-              <p className="mt-4 text-lg text-slate-600">{t("dashboard.role")}: {profile?.role}</p>
-            </div>
-
-            <div className="relative z-30 flex shrink-0 flex-col items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setPhotoMenuOpen((open) => !open)}
-                className="bd-focus group relative h-32 w-32 overflow-hidden rounded-full border border-cyan-200 bg-white shadow-2xl shadow-cyan-950/12 transition hover:border-cyan-400"
-                aria-label="Manage dashboard profile photo"
-              >
-                {profile?.profile_photo_url ? (
-                  <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,#f8fafc,#dff8fb)] text-cyan-700">
-                    <UserRound className="h-12 w-12" />
-                  </span>
-                )}
-                <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-slate-950/72 py-2 text-xs font-black text-white opacity-0 transition group-hover:opacity-100">
-                  <Camera className="h-3.5 w-3.5" />
-                  Photo
-                </span>
-              </button>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  await saveDashboardPhoto(file);
-                  event.target.value = "";
-                }}
-              />
-
-              <p className="text-xs font-semibold text-slate-500">
-                {photoUploading ? t("dashboard.updatingPhoto") : t("dashboard.profilePhoto")}
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">
+                {t("dashboard.myDashboard")}
               </p>
-
-              {photoMenuOpen && (
-                <div className="bd-auth-popover absolute right-1/2 top-[calc(100%+10px)] z-50 w-56 translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-2xl shadow-slate-900/18 lg:right-0 lg:translate-x-0">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-semibold text-slate-700 transition hover:bg-cyan-50"
-                  >
-                    <Upload className="h-4 w-4 text-cyan-700" />
-                    {profile?.profile_photo_url ? "Change photo" : "Upload photo"}
-                  </button>
-                  {profile?.profile_photo_url && (
-                    <button
-                      type="button"
-                      onClick={removeDashboardPhoto}
-                      className="flex w-full items-center gap-3 rounded-xl px-3 py-3 font-semibold text-[#b9423b] transition hover:bg-[#fff6f5]"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Remove photo
-                    </button>
-                  )}
-                </div>
-              )}
+              <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-[-0.025em] text-[#071f3c] sm:text-4xl">
+                <span className="font-medium text-slate-500">{t("dashboard.welcome")}, </span>
+                <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
+              </h1>
+              <div className="mt-3 inline-flex min-h-8 items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50/70 px-3 text-xs">
+                <span className="font-semibold text-slate-500">{t("dashboard.role")}</span>
+                <span data-i18n-ignore className="font-bold text-[#173f4a]">{roleLabel}</span>
+              </div>
             </div>
+
+            <DashboardPhotoControl
+              url={profile?.dashboard_photo_url}
+              name={profile?.full_name}
+              uploading={photoUploading}
+              uploadingLabel={t("dashboard.updatingPhoto")}
+              onChoose={() => fileInputRef.current?.click()}
+              onRemove={() => void removeDashboardPhoto()}
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              aria-label="Choose dashboard photo"
+              disabled={photoUploading}
+              className="sr-only"
+              tabIndex={-1}
+              onChange={async (event) => {
+                const file = event.currentTarget.files?.[0];
+                event.currentTarget.value = "";
+                if (file) await saveDashboardPhoto(file);
+              }}
+            />
           </div>
-        </div>
+        </section>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Link
