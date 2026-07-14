@@ -20,6 +20,7 @@ import {
   Trash2,
   Upload,
   UserRound,
+  X,
 } from "lucide-react";
 import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
@@ -3252,42 +3253,126 @@ function ProfilePhoto({
   onCancelUpload: () => void;
   onRemove: () => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function openFilePicker() {
+    if (!uploading) fileInputRef.current?.click();
+  }
+
   return (
     <div className="flex min-w-0 flex-col gap-3 py-1 sm:flex-row sm:items-center sm:gap-4">
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200 sm:h-24 sm:w-24">
-        {url ? <img src={url} alt={name || "Profile"} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-slate-400"><UserRound className="h-10 w-10" /></div>}
+      <div
+        className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200"
+        aria-busy={uploading}
+      >
+        {url && (
+          <img
+            src={url}
+            alt={`${name || "User"} profile photo`}
+            className="h-full w-full object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
+          />
+        )}
+
+        {!url && !uploading && (
+          <button
+            type="button"
+            onClick={openFilePicker}
+            aria-label="Add profile photo"
+            title="Add profile photo"
+            className="absolute inset-0 flex cursor-pointer items-center justify-center text-cyan-800 transition hover:bg-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500"
+          >
+            <span className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-200 bg-white shadow-sm transition group-hover:scale-105 group-hover:border-cyan-300">
+              <Plus className="h-5 w-5" aria-hidden />
+            </span>
+          </button>
+        )}
+
+        {url && !uploading && (
+          <>
+            <div className="absolute inset-0 hidden items-center justify-center gap-1 bg-slate-950/35 opacity-0 backdrop-blur-[1px] transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100 pointer-fine:flex">
+              <button
+                type="button"
+                onClick={openFilePicker}
+                aria-label="Change profile photo"
+                title="Change profile photo"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-cyan-800 shadow-lg">
+                  <Camera className="h-4 w-4" aria-hidden />
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={onRemove}
+                aria-label="Remove profile photo"
+                title="Remove profile photo"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-rose-100/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-lg">
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </span>
+              </button>
+            </div>
+
+            <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-gradient-to-t from-slate-950/60 via-slate-950/20 to-transparent px-0.5 pb-1 pt-4 pointer-fine:hidden">
+              <button
+                type="button"
+                onClick={openFilePicker}
+                aria-label="Change profile photo"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-cyan-800 shadow-md">
+                  <Camera className="h-4 w-4" aria-hidden />
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={onRemove}
+                aria-label="Remove profile photo"
+                className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-md">
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+
+        {uploading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-white/80 text-cyan-800 backdrop-blur-[2px]">
+            <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
+            <button
+              type="button"
+              onClick={onCancelUpload}
+              aria-label="Cancel profile photo upload"
+              title="Cancel upload"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-slate-600 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          aria-label="Choose profile photo"
+          disabled={uploading}
+          tabIndex={-1}
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (file) onUpload(file);
+          }}
+        />
+        <span className="sr-only" role="status" aria-live="polite">{uploading ? "Uploading profile photo..." : ""}</span>
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-950">Profile photo</p>
-        <p className="mt-0.5 text-xs leading-5 text-slate-500">This appears in your portal and CV.</p>
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          <label className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:bg-cyan-900"}`}>
-            <Upload className="h-4 w-4" />
-            {uploading ? "Uploading..." : url ? "Change photo" : "Upload photo"}
-            <input
-              type="file"
-              accept="image/*"
-              disabled={uploading}
-              className="hidden"
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) onUpload(file);
-              }}
-            />
-          </label>
-          {uploading && (
-            <button type="button" onClick={onCancelUpload} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-              Cancel
-            </button>
-          )}
-          {url && !uploading && (
-            <button type="button" onClick={onRemove} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-              <Trash2 className="h-4 w-4" />
-              Remove
-            </button>
-          )}
-        </div>
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "This appears in your portal and CV."}</p>
       </div>
     </div>
   );
