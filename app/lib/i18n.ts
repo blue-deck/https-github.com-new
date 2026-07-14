@@ -555,12 +555,12 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Yacht Experience": { tr: "Yat Deneyimi" },
   "Yacht experience": { tr: "Yat Deneyimi" },
   "Yachts, duties, photos and references.": { tr: "Yatlar, görevler, fotoğraflar ve referanslar." },
-  "Start with yacht name, position, dates and duties. Open the optional sections only when you need them.": {
-    tr: "Önce yat adı, pozisyon, tarihler ve görevleri girin. İsteğe bağlı bölümleri yalnızca gerektiğinde açın.",
+  "Add the yacht, position, dates and details in one clear form. Open references only when you need them.": {
+    tr: "Yat, pozisyon, tarihler ve detayları tek ve düzenli bir formda ekleyin. Referansları yalnızca gerektiğinde açın.",
   },
   "Yacht details": { tr: "Yat detayları" },
-  "Photo, type, program, size and location": { tr: "Fotoğraf, tür, program, boyut ve konum" },
   "Add contact details only when needed": { tr: "İletişim bilgilerini yalnızca gerektiğinde ekleyin" },
+  "Linked to this yacht": { tr: "Bu yata bağlı" },
   "Optional": { tr: "İsteğe bağlı" },
   "Start with workplace, position, dates and duties. Open references only when you need them.": {
     tr: "Önce iş yeri, pozisyon, tarihler ve görevleri girin. Referansları yalnızca gerektiğinde açın.",

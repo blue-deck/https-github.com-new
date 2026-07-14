@@ -1206,7 +1206,7 @@ export default function ProfilePage() {
                     <div className="min-w-0">
                       <h3 className="text-base font-semibold text-slate-950">Add experience</h3>
                       <p className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewYachtExperienceForm ? "block" : "hidden sm:block"}`}>
-                        Start with yacht name, position, dates and duties. Open the optional sections only when you need them.
+                        Add the yacht, position, dates and details in one clear form. Open references only when you need them.
                       </p>
                     </div>
                     <span className="mt-1.5 flex items-center gap-2">
@@ -3717,10 +3717,8 @@ function ExperienceEditor({
 }) {
   const [draft, setDraft] = useState(item);
   const [editorOpen, setEditorOpen] = useState(isNew);
-  const [yachtDetailsOpen, setYachtDetailsOpen] = useState(false);
   const [referencesOpen, setReferencesOpen] = useState(false);
   const editorContentId = useId();
-  const yachtDetailsId = useId();
   const referencesId = useId();
   const dutiesId = useId();
   const photoInputId = useId();
@@ -3794,7 +3792,56 @@ function ExperienceEditor({
         hidden={!isNew && !editorOpen}
         className={`${isNew ? "mx-auto max-w-3xl" : "border-t border-slate-200 p-4 sm:p-5"}`}
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <fieldset className="m-0 min-w-0 border-0 p-0">
+          <legend className="sr-only">Yacht details</legend>
+
+          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-slate-50/80 p-3 min-[380px]:grid-cols-[96px_minmax(0,1fr)]">
+          <div className="flex h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 min-[380px]:h-20 min-[380px]:w-24">
+            {draft.photo_url ? (
+              <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="flex h-full w-full items-center justify-center">
+                <Camera className="h-6 w-6" />
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">Photo</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <input
+                id={photoInputId}
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                className="peer sr-only"
+                onChange={async (event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (!file) return;
+                  const url = await onUpload(file);
+                  if (url) setDraft((current) => ({ ...current, photo_url: url }));
+                }}
+              />
+              <label htmlFor={photoInputId} className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
+                <Upload className="h-4 w-4" />
+                <span aria-live="polite">{uploading ? "Uploading..." : draft.photo_url ? "Change photo" : "Add photo"}</span>
+              </label>
+              {uploading && (
+                <button type="button" onClick={onCancelUpload} className="min-h-11 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                  Cancel
+                </button>
+              )}
+              {draft.photo_url && !uploading && (
+                <button type="button" onClick={removePhoto} className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+                  <Trash2 className="h-4 w-4" />
+                  Remove photo
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <ExperienceCardInput
             label="Yacht name"
             value={draft.yacht_name}
@@ -3812,9 +3859,38 @@ function ExperienceEditor({
           />
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
           <ExperienceCardDateField label="Start date" value={draft.start_date} mobileFriendly onChange={(value) => setDraft({ ...draft, start_date: value })} />
           <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <ExperienceCardSelect
+            label="Yacht type"
+            value={draft.yacht_type || ""}
+            options={yachtTypeOptions}
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, yacht_type: value })}
+          />
+          <ExperienceCardSelect
+            label="Yacht program"
+            value={draft.yacht_program || ""}
+            options={yachtProgramOptions}
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, yacht_program: value })}
+          />
+          <ExperienceSizeField
+            value={draft.yacht_size || ""}
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, yacht_size: value })}
+          />
+          <ExperienceCardInput
+            label="Location"
+            value={draft.location}
+            placeholder="Location"
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
+          />
         </div>
 
         <div className="mt-4">
@@ -3834,109 +3910,15 @@ function ExperienceEditor({
           />
         </div>
 
-        <section className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <button
-            type="button"
-            onClick={() => setYachtDetailsOpen((open) => !open)}
-            aria-expanded={yachtDetailsOpen}
-            aria-controls={yachtDetailsId}
-            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 text-left transition hover:bg-slate-50 sm:px-4"
-          >
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-slate-900">Yacht details</span>
-              <span className="mt-0.5 block truncate text-xs text-slate-500">Photo, type, program, size and location</span>
-            </span>
-            <span className="flex items-center gap-2 text-slate-500">
-              <span className="hidden rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold sm:inline">Optional</span>
-              <ChevronDown className={`h-5 w-5 shrink-0 transition ${yachtDetailsOpen ? "rotate-180 text-cyan-700" : ""}`} />
-            </span>
-          </button>
+        </fieldset>
 
-          <div id={yachtDetailsId} hidden={!yachtDetailsOpen} className="border-t border-slate-200 bg-slate-50/60 p-3.5 sm:p-4">
-            <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 min-[380px]:grid-cols-[96px_minmax(0,1fr)]">
-              <div className="flex h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-slate-100 text-slate-400 min-[380px]:h-20 min-[380px]:w-24">
-                {draft.photo_url ? (
-                  <img src={draft.photo_url} alt={draft.yacht_name || "Yacht"} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center">
-                    <Camera className="h-6 w-6" />
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-slate-900">Photo</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <input
-                    id={photoInputId}
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    className="peer sr-only"
-                    onChange={async (event) => {
-                      const file = event.currentTarget.files?.[0];
-                      event.currentTarget.value = "";
-                      if (!file) return;
-                      const url = await onUpload(file);
-                      if (url) setDraft((current) => ({ ...current, photo_url: url }));
-                    }}
-                  />
-                  <label htmlFor={photoInputId} className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
-                    <Upload className="h-4 w-4" />
-                    {uploading ? "Uploading" : draft.photo_url ? "Change" : "Photo"}
-                  </label>
-                  {uploading && (
-                    <button type="button" onClick={onCancelUpload} className="min-h-11 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-                      Cancel
-                    </button>
-                  )}
-                  {draft.photo_url && !uploading && (
-                    <button type="button" onClick={removePhoto} className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-                      <Trash2 className="h-4 w-4" />
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <ExperienceCardSelect
-                label="Yacht type"
-                value={draft.yacht_type || ""}
-                options={yachtTypeOptions}
-                mobileFriendly
-                onChange={(value) => setDraft({ ...draft, yacht_type: value })}
-              />
-              <ExperienceCardSelect
-                label="Yacht program"
-                value={draft.yacht_program || ""}
-                options={yachtProgramOptions}
-                mobileFriendly
-                onChange={(value) => setDraft({ ...draft, yacht_program: value })}
-              />
-              <ExperienceSizeField
-                value={draft.yacht_size || ""}
-                mobileFriendly
-                onChange={(value) => setDraft({ ...draft, yacht_size: value })}
-              />
-              <ExperienceCardInput
-                label="Location"
-                value={draft.location}
-                placeholder="Location"
-                mobileFriendly
-                onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <section className="mt-5 border-t border-slate-200 pt-2">
           <button
             type="button"
             onClick={() => setReferencesOpen((open) => !open)}
             aria-expanded={referencesOpen}
             aria-controls={referencesId}
-            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 text-left transition hover:bg-slate-50 sm:px-4"
+            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-1 py-3 text-left transition hover:bg-slate-50 sm:px-2"
           >
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">References</span>
@@ -3949,7 +3931,7 @@ function ExperienceEditor({
               <ChevronDown className={`h-5 w-5 shrink-0 transition ${referencesOpen ? "rotate-180 text-cyan-700" : ""}`} />
             </span>
           </button>
-          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
+          <div id={referencesId} hidden={!referencesOpen} className="mt-1 rounded-xl bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
             <LinkedReferencePanel
               targetName={draft.yacht_name}
               targetKind="yacht"
@@ -4218,7 +4200,7 @@ function LinkedReferencePanel({
           }`}
         >
           {requestReference ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-          References available upon request
+          {referenceUponRequestText}
         </button>
         {requestReference && (
           <button
