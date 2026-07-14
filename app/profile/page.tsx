@@ -488,8 +488,11 @@ export default function ProfilePage() {
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState<boolean | null>(null);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
+  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState<boolean | null>(null);
+  const [newOtherWorkExperienceDirty, setNewOtherWorkExperienceDirty] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const newYachtExperienceFormId = useId();
+  const newOtherWorkExperienceFormId = useId();
   const uploadRunRef = useRef(0);
 
   const sortedDocuments = useMemo(() => sortCrewDocuments(documents), [documents]);
@@ -517,6 +520,7 @@ export default function ProfilePage() {
     [sortedExperiences],
   );
   const showNewYachtExperienceForm = newYachtExperienceOpen ?? editableYachtExperiences.length === 0;
+  const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen ?? editableOtherWorkExperiences.length === 0;
   const totalExperienceYears = useMemo(() => {
     const firstYear = editableYachtExperiences
       .map((item) => Number((item.start_date || "").slice(0, 4)))
@@ -1275,31 +1279,60 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
-                <section className="border-l-4 border-cyan-500 bg-cyan-50/50 px-4 py-5 sm:px-5">
-                  <div className="mb-5 flex items-center gap-2 text-slate-900">
-                    <Plus className="h-4 w-4 text-cyan-700" />
-                    <h3 className="text-sm font-semibold">Add experience</h3>
+                <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
+                  <button
+                    type="button"
+                    onClick={() => setNewOtherWorkExperienceOpen(!showNewOtherWorkExperienceForm)}
+                    aria-expanded={showNewOtherWorkExperienceForm}
+                    aria-controls={newOtherWorkExperienceFormId}
+                    className={`bd-focus grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-3 bg-cyan-50/70 px-4 py-4 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewOtherWorkExperienceForm ? "border-b border-cyan-100" : ""}`}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
+                      <Plus className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-slate-950">Add experience</h3>
+                      <p className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewOtherWorkExperienceForm ? "block" : "hidden sm:block"}`}>
+                        Start with workplace, position, dates and duties. Open references only when you need them.
+                      </p>
+                    </div>
+                    <span className="mt-1.5 flex items-center gap-2">
+                      {newOtherWorkExperienceDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
+                      <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewOtherWorkExperienceForm ? "rotate-180" : ""}`} />
+                    </span>
+                  </button>
+                  <div id={newOtherWorkExperienceFormId} hidden={!showNewOtherWorkExperienceForm} className="p-4 sm:p-5">
+                    <OtherWorkExperienceEditor
+                      key={`new-other-work-${editableOtherWorkExperiences.length}`}
+                      item={emptyOtherWorkExperience}
+                      isNew
+                      references={references}
+                      referenceSaving={referenceSaving}
+                      onSave={async (item) => {
+                        const saved = await saveExperience(item);
+                        if (saved) {
+                          setNewOtherWorkExperienceDirty(false);
+                          setNewOtherWorkExperienceOpen(false);
+                        }
+                        return saved;
+                      }}
+                      onDirtyChange={setNewOtherWorkExperienceDirty}
+                      onDelete={deleteExperience}
+                      onSaveReference={saveReference}
+                      onDeleteReference={deleteReference}
+                    />
                   </div>
-                  <OtherWorkExperienceEditor
-                    key={`new-other-work-${editableOtherWorkExperiences.length}`}
-                    item={emptyOtherWorkExperience}
-                    isNew
-                    references={references}
-                    referenceSaving={referenceSaving}
-                    onSave={saveExperience}
-                    onDelete={deleteExperience}
-                    onSaveReference={saveReference}
-                    onDeleteReference={deleteReference}
-                  />
                 </section>
 
                 {editableOtherWorkExperiences.length > 0 && (
-                  <section className="border-t border-slate-300 pt-6">
-                    <div className="mb-5 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-semibold text-slate-900">Saved</h3>
-                      <span className="text-xs font-semibold text-slate-500">{editableOtherWorkExperiences.length} saved</span>
+                  <section className="pt-2">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-slate-800">Saved</h3>
+                      <span data-i18n-ignore className="inline-flex min-w-7 items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold tabular-nums text-slate-600">
+                        {editableOtherWorkExperiences.length}
+                      </span>
                     </div>
-                    <div className="space-y-6">
+                    <div className="space-y-2">
                       {editableOtherWorkExperiences.map((item) => (
                         <OtherWorkExperienceEditor
                           key={item.id || `${item.yacht_name}-${item.start_date}`}
@@ -3843,6 +3876,7 @@ function OtherWorkExperienceEditor({
   onDelete,
   onSaveReference,
   onDeleteReference,
+  onDirtyChange,
 }: {
   item: Experience;
   isNew: boolean;
@@ -3852,82 +3886,169 @@ function OtherWorkExperienceEditor({
   onDelete: (id?: string) => void;
   onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
   onDeleteReference: (id?: string) => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState(normalizeOtherWorkExperience(item));
+  const [editorOpen, setEditorOpen] = useState(isNew);
+  const [referencesOpen, setReferencesOpen] = useState(false);
+  const editorContentId = useId();
+  const referencesId = useId();
+  const dutiesId = useId();
   const normalizedDraft = normalizeOtherWorkExperience(draft);
   const dirty = !saveStateEquals(experienceSaveState(normalizedDraft), experienceSaveState(normalizeOtherWorkExperience(item)));
   const dutiesValue = (draft.description || "").slice(0, yachtDutiesMaxLength);
   const dutiesLength = dutiesValue.length;
+  const summaryDate = [
+    draft.start_date ? formatCvDate(draft.start_date) : "",
+    draft.end_date ? formatCvDate(draft.end_date) : "",
+  ].filter(Boolean).join(" – ");
+  const summaryOngoing = Boolean(draft.start_date && !draft.end_date);
+  const hasSummaryMeta = Boolean(draft.position || summaryDate);
+  const linkedReferenceCount = draft.yacht_name.trim()
+    ? references.filter((reference) => referenceMatchesTargetName(reference, draft.yacht_name.trim())).length
+    : 0;
 
   useEffect(() => {
     setDraft(normalizeOtherWorkExperience(item));
   }, [item]);
 
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
   return (
-    <article className="min-w-0 border-b border-slate-200 pb-6 last:border-b-0 last:pb-0">
-      <div className="grid min-w-0 items-stretch gap-5 sm:grid-cols-[170px_minmax(0,1fr)]">
-        <div className="flex min-h-full min-w-0 flex-col border-b border-slate-200 pb-5 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5">
-          <div className="space-y-3">
-            <ExperienceCardDateField label="Start date" value={draft.start_date} onChange={(value) => setDraft({ ...draft, start_date: value })} />
-            <ExperienceCardDateField label="End date" value={draft.end_date} onChange={(value) => setDraft({ ...draft, end_date: value })} />
-            <ExperienceCardInput
-              label="Location"
-              value={draft.location}
-              placeholder="Location"
-              onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
-            />
-          </div>
+    <article className={isNew ? "min-w-0" : "min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5"}>
+      {!isNew && (
+        <button
+          type="button"
+          onClick={() => setEditorOpen((open) => !open)}
+          aria-expanded={editorOpen}
+          aria-controls={editorContentId}
+          className="bd-focus grid min-h-16 w-full grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-slate-50 sm:px-4"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+            <BriefcaseBusiness className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-[15px] font-semibold text-slate-950">
+              {draft.yacht_name ? <span data-i18n-ignore>{draft.yacht_name}</span> : "Workplace / company"}
+            </span>
+            {hasSummaryMeta ? (
+              <span className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs text-slate-500">
+                {draft.position && <span data-i18n-ignore className="truncate">{draft.position}</span>}
+                {draft.position && summaryDate && <span aria-hidden>·</span>}
+                {summaryDate && <span data-i18n-ignore className="shrink-0">{summaryDate}</span>}
+                {summaryOngoing && <span aria-hidden>–</span>}
+                {summaryOngoing && <span className="shrink-0">Present</span>}
+              </span>
+            ) : (
+              <span aria-hidden className="mt-0.5 block text-xs text-slate-500">View details</span>
+            )}
+          </span>
+          <span className="flex items-center gap-2 text-cyan-800">
+            {dirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
+            <span className="sr-only">{editorOpen ? "Hide details" : "View details"}</span>
+            <span aria-hidden className="hidden text-xs font-semibold sm:inline">{editorOpen ? "Hide details" : "View details"}</span>
+            <ChevronDown className={`h-5 w-5 shrink-0 transition ${editorOpen ? "rotate-180" : ""}`} />
+          </span>
+        </button>
+      )}
+
+      <div
+        id={editorContentId}
+        hidden={!isNew && !editorOpen}
+        className={`${isNew ? "mx-auto max-w-3xl" : "border-t border-slate-200 p-4 sm:p-5"}`}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <ExperienceCardInput
+            label="Workplace / company"
+            value={draft.yacht_name}
+            placeholder="Workplace / company"
+            strong
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, yacht_name: capitalizeFirstCharacter(value) })}
+          />
+          <ExperienceCardInput
+            label="Position"
+            value={draft.position}
+            placeholder="Position"
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, position: capitalizeFirstCharacter(value) })}
+          />
         </div>
 
-        <div className="flex min-h-full min-w-0 flex-col sm:pl-1">
-          <div className="mb-5 border-b border-slate-200 pb-5">
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(160px,220px)]">
-              <ExperienceCardInput
-                label="Workplace / company"
-                value={draft.yacht_name}
-                placeholder="Workplace / company"
-                strong
-                onChange={(value) => setDraft({ ...draft, yacht_name: capitalizeFirstCharacter(value) })}
-              />
-              <ExperienceCardInput
-                label="Position"
-                value={draft.position}
-                placeholder="Position"
-                onChange={(value) => setDraft({ ...draft, position: capitalizeFirstCharacter(value) })}
-              />
-            </div>
-          </div>
-          <div className="flex flex-1 flex-col">
-            <div className="flex items-center justify-between gap-3">
-              <p className="select-text text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-              <span className="rounded-full border border-[#c7d2d6] bg-white px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-[#2d7482]">
-                {dutiesLength}/{yachtDutiesMaxLength}
-              </span>
-            </div>
-            <textarea
-              value={dutiesValue}
-              maxLength={yachtDutiesMaxLength}
-              onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
-              placeholder="Responsibilities, achievements and work duties"
-              className="mt-2 min-h-24 flex-1 resize-y rounded-lg border border-[#d8e2e6] bg-white px-3 py-2.5 text-[13px] leading-5 text-[#364650] outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15"
-            />
-          </div>
-          <LinkedReferencePanel
-            targetName={draft.yacht_name}
-            targetKind="workplace"
-            references={references}
-            referenceSaving={referenceSaving}
-            onSaveReference={onSaveReference}
-            onDeleteReference={onDeleteReference}
-          />
-          <EditorButtons
-            isNew={isNew}
-            dirty={dirty}
-            onSave={() => onSave(normalizedDraft)}
-            onDelete={() => onDelete(draft.id)}
-            addLabel="Add work experience"
+        <div className="mt-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+          <ExperienceCardDateField label="Start date" value={draft.start_date} mobileFriendly onChange={(value) => setDraft({ ...draft, start_date: value })} />
+          <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
+        </div>
+
+        <div className="mt-4">
+          <ExperienceCardInput
+            label="Location"
+            value={draft.location}
+            placeholder="Location"
+            mobileFriendly
+            onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
           />
         </div>
+
+        <div className="mt-4">
+          <div className="flex items-center justify-between gap-3">
+            <label htmlFor={dutiesId} className="text-xs font-semibold text-slate-700">Duties</label>
+            <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">
+              {dutiesLength}/{yachtDutiesMaxLength}
+            </span>
+          </div>
+          <textarea
+            id={dutiesId}
+            value={dutiesValue}
+            maxLength={yachtDutiesMaxLength}
+            onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
+            placeholder="Responsibilities, achievements and work duties"
+            className="mt-1.5 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
+          />
+        </div>
+
+        <section className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <button
+            type="button"
+            onClick={() => setReferencesOpen((open) => !open)}
+            aria-expanded={referencesOpen}
+            aria-controls={referencesId}
+            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 text-left transition hover:bg-slate-50 sm:px-4"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-900">References</span>
+              <span className="mt-0.5 block text-xs text-slate-500">Add contact details only when needed</span>
+            </span>
+            <span className="flex items-center gap-2 text-slate-500">
+              <span className={`rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold ${linkedReferenceCount > 0 ? "inline-flex" : "hidden sm:inline-flex"}`}>
+                {linkedReferenceCount > 0 ? <span data-i18n-ignore>{linkedReferenceCount}</span> : "Optional"}
+              </span>
+              <ChevronDown className={`h-5 w-5 shrink-0 transition ${referencesOpen ? "rotate-180 text-cyan-700" : ""}`} />
+            </span>
+          </button>
+          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
+            <LinkedReferencePanel
+              targetName={draft.yacht_name}
+              targetKind="workplace"
+              references={references}
+              referenceSaving={referenceSaving}
+              onSaveReference={onSaveReference}
+              onDeleteReference={onDeleteReference}
+              embedded
+            />
+          </div>
+        </section>
+
+        <EditorButtons
+          isNew={isNew}
+          dirty={dirty}
+          onSave={() => onSave(normalizedDraft)}
+          onDelete={() => onDelete(draft.id)}
+          addLabel="Add work experience"
+          mobileWide
+        />
       </div>
     </article>
   );

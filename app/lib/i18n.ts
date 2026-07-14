@@ -562,6 +562,14 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Photo, type, program, size and location": { tr: "Fotoğraf, tür, program, boyut ve konum" },
   "Add contact details only when needed": { tr: "İletişim bilgilerini yalnızca gerektiğinde ekleyin" },
   "Optional": { tr: "İsteğe bağlı" },
+  "Start with workplace, position, dates and duties. Open references only when you need them.": {
+    tr: "Önce iş yeri, pozisyon, tarihler ve görevleri girin. Referansları yalnızca gerektiğinde açın.",
+  },
+  "Non-yacht work history, duties and references.": { tr: "Yat dışı iş geçmişi, görevler ve referanslar." },
+  "Workplace / company": { tr: "İş yeri / şirket" },
+  "Add work experience": { tr: "İş deneyimi ekle" },
+  "Responsibilities, achievements and work duties": { tr: "Sorumluluklar, başarılar ve iş görevleri" },
+  "Linked to this work": { tr: "Bu işe bağlı" },
   "Skills & Characteristics": { tr: "Beceriler ve Özellikler" },
   "Skills & characteristics": { tr: "Beceriler ve Özellikler" },
   "Skills, traits, preferences and seeking roles.": {
