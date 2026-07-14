@@ -1149,8 +1149,10 @@ export default function ProfilePage() {
                   <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-5 md:grid-cols-5">
-                  <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
+                <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-5 md:grid-cols-5 [&>*]:min-w-0">
+                  <div className="col-span-2 md:col-span-1">
+                    <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
+                  </div>
                   <Field
                     label="Height cm"
                     value={String(profile.height_cm || "")}
