@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, CheckCircle2, ClipboardCheck, FileText, LogOut, Settings, Ship, Trash2, Upload, UserPlus, UserRound } from "lucide-react";
+import { Camera, CheckCircle2, FileText, LogOut, Settings, Ship, Trash2, Upload, UserPlus, UserRound } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
-import { BLUEDECK } from "../config";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
@@ -552,29 +551,16 @@ export default function DashboardPage() {
           ) : null}
 
           {isCaptain ? (
-            <>
-              <Link
-                href="/yachts"
-                className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-              >
-                <Ship className="h-8 w-8 text-cyan-700" />
-                <h2 className="mt-5 text-3xl font-semibold text-slate-950">Captain Workspace</h2>
-                <p className="mt-3 leading-7 text-slate-600">
-                  Manage yachts, crew, documents and onboard operations.
-                </p>
-              </Link>
-
-              <Link
-                href={`/yachts/${BLUEDECK.yachtId}/checklists`}
-                className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-              >
-                <ClipboardCheck className="h-8 w-8 text-cyan-700" />
-                <h2 className="mt-5 text-3xl font-semibold text-slate-950">Checklist System</h2>
-                <p className="mt-3 leading-7 text-slate-600">
-                  Assign checklist duties, review crew progress and inspect task proof.
-                </p>
-              </Link>
-            </>
+            <Link
+              href="/yachts"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <Ship className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Captain Workspace</h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                Manage yachts, crew, documents and onboard operations.
+              </p>
+            </Link>
           ) : null}
 
           <Link

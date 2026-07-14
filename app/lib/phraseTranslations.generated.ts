@@ -298,9 +298,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Arrival time and position logged": {
     "tr": "Varış zamanı ve konumu günlüğe kaydedildi",
   },
-  "Assign checklist duties, review crew progress and inspect task proof.": {
-    "tr": "Kontrol listesi görevlerini atayın, mürettebatın ilerlemesini gözden geçirin ve görev kanıtını inceleyin.",
-  },
   "Assign professional yacht checklists through the correct onboard hierarchy, review crew progress and keep proof records in one focused workspace.": {
     "tr": "Tek bir odaklanmış çalışma alanında doğru tekne hiyerarşisi aracılığıyla profesyonel yat kontrol listeleri atayın, mürettebatın ilerlemesini inceleyin ve kanıt kayıtlarını tutun.",
   },
