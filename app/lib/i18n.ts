@@ -295,6 +295,7 @@ const en = {
   "settings.profileDescription":
     "Update the details used across your BlueDeck account and crew profile.",
   "settings.emailManaged": "Your email is managed by your secure login.",
+  "settings.positionManaged": "Manage your yacht position from your crew profile.",
   "settings.roleManaged": "Account type is protected and cannot be changed here.",
   "settings.saveProfile": "Save changes",
   "settings.savingProfile": "Saving...",
@@ -322,10 +323,11 @@ const en = {
   "settings.passwordRuleNumber": "At least one number",
   "settings.passwordRuleSymbol": "At least one special character",
   "settings.changePassword": "Change password",
+  "settings.cancel": "Cancel",
   "settings.changingPassword": "Changing password...",
   "settings.passwordChanged": "Password changed successfully.",
   "settings.loadError": "Your settings could not be loaded. Please refresh and try again.",
-  "settings.requiredError": "Name and yacht position are required.",
+  "settings.requiredError": "Name and surname is required.",
   "settings.phoneError":
     "Please select a country code and enter a valid mobile number.",
   "settings.saveError": "Your profile changes could not be saved. Please try again.",
@@ -588,6 +590,7 @@ const tr: Record<TranslationKey, string> = {
   "settings.profileDescription":
     "BlueDeck hesabınızda ve mürettebat profilinizde kullanılan bilgileri güncelleyin.",
   "settings.emailManaged": "E-posta adresiniz güvenli giriş sağlayıcınız tarafından yönetilir.",
+  "settings.positionManaged": "Yat pozisyonunuzu mürettebat profilinizden yönetin.",
   "settings.roleManaged": "Hesap türü korumalıdır ve buradan değiştirilemez.",
   "settings.saveProfile": "Değişiklikleri kaydet",
   "settings.savingProfile": "Kaydediliyor...",
@@ -614,10 +617,11 @@ const tr: Record<TranslationKey, string> = {
   "settings.passwordRuleNumber": "En az bir rakam",
   "settings.passwordRuleSymbol": "En az bir özel karakter",
   "settings.changePassword": "Şifreyi değiştir",
+  "settings.cancel": "Vazgeç",
   "settings.changingPassword": "Şifre değiştiriliyor...",
   "settings.passwordChanged": "Şifre başarıyla değiştirildi.",
   "settings.loadError": "Ayarlarınız yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.",
-  "settings.requiredError": "Ad soyad ve yat pozisyonu zorunludur.",
+  "settings.requiredError": "Ad soyad zorunludur.",
   "settings.phoneError":
     "Lütfen ülke kodunu seçin ve geçerli bir cep telefonu numarası girin.",
   "settings.saveError": "Profil değişiklikleri kaydedilemedi. Lütfen tekrar deneyin.",

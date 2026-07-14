@@ -126,8 +126,8 @@ export function PhoneInput({
                 <button
                   key={`${item.country}-${item.dial}`}
                   type="button"
-                  onMouseDown={(event) => {
-                    event.preventDefault();
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
                     setManualCountry(item);
                     onChange(composePhone(item, localNumber));
                     setOpen(false);
