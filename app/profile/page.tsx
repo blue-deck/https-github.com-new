@@ -782,7 +782,7 @@ export default function ProfilePage() {
     ].some((value) => typeof value === "string" && value.trim().length > 0);
 
     if (!profile.id || !hasDocumentDetail) {
-      alert("Add a document type, expiry date or file before saving.");
+      alert("Add a document type or expiry date before saving.");
       return false;
     }
 
@@ -1373,7 +1373,7 @@ export default function ProfilePage() {
                     <span className="min-w-0">
                       <span className="block text-base font-semibold text-slate-950">Add document</span>
                       <span className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewDocumentForm ? "block" : "hidden sm:block"}`}>
-                        Choose a document, add an expiry date if needed, and attach a file only when you want to.
+                        Choose a document or enter another document name, then add an expiry date if needed.
                       </span>
                     </span>
                     <span className="mt-1.5 flex items-center gap-2">
@@ -1391,17 +1391,6 @@ export default function ProfilePage() {
                         if (saved) setNewDocumentOpen(false);
                         return saved;
                       }}
-                      onUpload={async (file, uploadedDraft) => {
-                        const url = await uploadFile(file, "crew-documents", "document-file");
-                        if (!url) return;
-
-                        const nextDraft = { ...uploadedDraft, file_url: url };
-                        setDocumentDraft(nextDraft);
-                        const saved = await saveDocument(nextDraft);
-                        if (saved) setNewDocumentOpen(false);
-                      }}
-                      onCancelUpload={cancelUpload}
-                      uploading={uploading === "document-file"}
                       documentCount={documents.length}
                       maxDocuments={maxCvDocuments}
                     />
@@ -1534,44 +1523,26 @@ function DocumentCreator({
   draft,
   setDraft,
   onSave,
-  onUpload,
-  onCancelUpload,
-  uploading,
   documentCount,
   maxDocuments,
 }: {
   draft: CrewDocument;
   setDraft: (draft: CrewDocument) => void;
   onSave: (draft: CrewDocument) => Promise<boolean>;
-  onUpload: (file: File, draft: CrewDocument) => void | Promise<void>;
-  onCancelUpload: () => void;
-  uploading: boolean;
   documentCount: number;
   maxDocuments: number;
 }) {
   const selectedCategory = documentCatalog.find((group) => group.items.includes(draft.document_type))?.category || "";
   const customDocumentName = draft.document_type && !selectedCategory ? draft.document_type : "";
   const documentLimitReached = documentCount >= maxDocuments;
-  const [customNameOpen, setCustomNameOpen] = useState(Boolean(customDocumentName));
   const [saving, setSaving] = useState(false);
-  const fileInputId = useId();
-  const formLocked = saving || uploading || documentLimitReached;
+  const formLocked = saving || documentLimitReached;
 
   async function handleSave() {
     if (formLocked) return;
     setSaving(true);
     try {
       await onSave(draft);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleUpload(file: File) {
-    if (formLocked) return;
-    setSaving(true);
-    try {
-      await onUpload(file, draft);
     } finally {
       setSaving(false);
     }
@@ -1589,7 +1560,6 @@ function DocumentCreator({
               disabled={formLocked}
               onChange={(event) => {
                 const category = documentCatalog.find((group) => group.items.includes(event.target.value))?.category || "";
-                setCustomNameOpen(false);
                 setDraft({ ...draft, document_type: event.target.value, category });
               }}
               className="min-h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-base font-medium text-slate-800 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
@@ -1605,38 +1575,22 @@ function DocumentCreator({
             </select>
           </label>
 
-          {!customNameOpen && !documentLimitReached && (
-            <button
-              type="button"
-              disabled={saving || uploading}
-              onClick={() => {
-                setCustomNameOpen(true);
-                setDraft({ ...draft, document_type: "", category: "" });
-              }}
-              className="bd-focus mt-2 inline-flex min-h-11 items-center rounded-lg px-1 text-left text-xs font-semibold text-cyan-800 transition hover:text-cyan-950 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Can&apos;t find it? Add a custom document
-            </button>
-          )}
-
-          {customNameOpen && (
-            <div className="mt-3">
-              <Field
-                label="Other document name"
-                value={customDocumentName}
-                placeholder="Other"
-                disabled={formLocked}
-                mobileFriendly
-                onChange={(value) =>
-                  setDraft({
-                    ...draft,
-                    document_type: capitalizeFirstCharacter(value),
-                    category: value.trim() ? "Other" : "",
-                  })
-                }
-              />
-            </div>
-          )}
+          <div className="mt-3">
+            <Field
+              label="Other document name"
+              value={customDocumentName}
+              placeholder="Other"
+              disabled={formLocked}
+              mobileFriendly
+              onChange={(value) =>
+                setDraft({
+                  ...draft,
+                  document_type: capitalizeFirstCharacter(value),
+                  category: value.trim() ? "Other" : "",
+                })
+              }
+            />
+          </div>
         </div>
 
         <div>
@@ -1658,27 +1612,7 @@ function DocumentCreator({
         </div>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <div className="min-w-0">
-          <input
-            id={fileInputId}
-            type="file"
-            disabled={formLocked}
-            className="peer sr-only"
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (file) void handleUpload(file);
-            }}
-          />
-          <label
-            htmlFor={fileInputId}
-            className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm shadow-slate-900/5 transition peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-600 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : documentLimitReached || saving ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-cyan-300 hover:bg-cyan-50/40"}`}
-          >
-            <Upload className="h-4 w-4 text-cyan-700" />
-            {uploading ? "Uploading..." : saving ? "Saving..." : draft.file_url ? "File attached" : "Attach file/photo"}
-          </label>
-        </div>
+      <div className="flex justify-end">
         <button
           type="button"
           disabled={formLocked}
@@ -1688,21 +1622,6 @@ function DocumentCreator({
           {saving ? "Saving..." : "Add document"}
         </button>
       </div>
-
-      {(uploading || draft.file_url) && (
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {uploading && (
-            <button type="button" onClick={onCancelUpload} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700 sm:w-auto">
-              Cancel upload
-            </button>
-          )}
-          {draft.file_url && !uploading && (
-            <button type="button" disabled={saving} onClick={() => setDraft({ ...draft, file_url: "" })} className="min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
-              Remove file
-            </button>
-          )}
-        </div>
-      )}
 
       {documentLimitReached && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">
