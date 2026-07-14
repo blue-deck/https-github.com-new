@@ -114,7 +114,7 @@ export default function YachtsPage() {
     <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-7xl">
         <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
-          <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
+          <div className="bd-brand-rule h-1.5" />
           <div className="p-8">
             <p className="bd-kicker">Captain Workspace</p>
             <h1 className="bd-serif mt-4 text-5xl font-normal text-[#071f3c] sm:text-6xl">

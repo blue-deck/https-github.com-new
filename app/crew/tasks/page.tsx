@@ -1087,7 +1087,7 @@ export default function CrewTasksPage() {
 
           {profile && invitations.length > 0 && (
             <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
-              <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
+              <div className="bd-brand-rule h-1.5" />
               <div className="p-7">
                 <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
                   <div className="flex items-center gap-4">

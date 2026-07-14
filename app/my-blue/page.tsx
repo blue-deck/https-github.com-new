@@ -456,7 +456,7 @@ export default function MyBluePage() {
         </Link>
 
         <header className="bd-glass-card-strong overflow-hidden rounded-[24px]">
-          <div className="h-1 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_48%,#2d7482_100%)]" />
+          <div className="bd-brand-rule h-1" />
           <div className="flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">

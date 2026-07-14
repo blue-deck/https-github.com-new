@@ -223,12 +223,14 @@ export function PublicPageShell({
   return (
     <main className="bd-site-shell min-h-screen text-[#071f3c]">
       <PublicHeader />
-      <section className="mx-auto max-w-[1500px] px-5 pb-14 pt-16 sm:px-8 lg:px-12 lg:pt-24">
-        <p className="bd-kicker">{eyebrow}</p>
-        <h1 className="bd-serif mt-5 max-w-5xl text-5xl leading-[1.02] text-[#071f3c] sm:text-7xl">
-          {title}
-        </h1>
-        <p className="mt-7 max-w-3xl text-lg leading-8 text-[#5b7088]">{intro}</p>
+      <section className="bd-public-page-intro">
+        <div className="mx-auto max-w-[1500px] px-5 pb-14 pt-16 sm:px-8 lg:px-12 lg:pt-24">
+          <p className="bd-kicker">{eyebrow}</p>
+          <h1 className="bd-serif mt-5 max-w-5xl text-5xl leading-[1.02] text-[#071f3c] sm:text-7xl">
+            {title}
+          </h1>
+          <p className="mt-7 max-w-3xl text-lg leading-8 text-[#5b7088]">{intro}</p>
+        </div>
       </section>
       {children}
       <PublicFooter />

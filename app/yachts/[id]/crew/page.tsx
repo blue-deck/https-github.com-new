@@ -2460,7 +2460,7 @@ export default function CrewPage({
       <div className="mx-auto w-full min-w-0 max-w-[1700px]">
         {isChecklistSystem && (
           <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
-            <div className="h-1.5 bg-[linear-gradient(90deg,#08111f,#22d3ee,#d8b45f,#ef776f)]" />
+            <div className="bd-brand-rule h-1.5" />
             <div className="p-5 sm:p-8">
               <div className="min-w-0">
                 <p className="font-semibold uppercase tracking-[0.18em] text-cyan-700">

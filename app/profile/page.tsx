@@ -985,7 +985,7 @@ export default function ProfilePage() {
     <main className="bd-ocean-shell min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1520px]">
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
-          <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_45%,#2d7482_100%)]" />
+          <div className="bd-brand-rule h-1.5" />
           <div className="p-5 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
             <h1 className="bd-serif mt-3 text-3xl font-normal text-[#071f3c] sm:text-5xl">

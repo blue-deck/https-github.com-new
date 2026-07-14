@@ -254,7 +254,7 @@ export default function SettingsPage() {
     <main className="bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-6xl">
         <header className="bd-glass-card-strong overflow-hidden rounded-[34px]">
-          <div className="h-1.5 bg-[linear-gradient(90deg,#07111f_0%,#0891b2_34%,#d7b46a_68%,#ef776f_100%)]" />
+          <div className="bd-brand-rule h-1.5" />
           <div className="flex flex-col gap-5 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="bd-kicker">Account Settings</p>

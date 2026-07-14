@@ -325,7 +325,7 @@ export default function YachtDashboard() {
       <div className="mx-auto w-full min-w-0 max-w-7xl">
         <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
           <div className="relative overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8 lg:p-10">
-            <div className="absolute inset-x-0 top-0 h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#d6a84f,#ef776f)]" />
+            <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
                 <p className="bd-kicker">Private Yacht Command</p>
