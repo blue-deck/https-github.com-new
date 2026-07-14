@@ -454,6 +454,8 @@ const referenceUponRequestText = "References available upon request.";
 const referenceUponRequestCvText = "REFERENCES AVAILABLE UPON REQUEST";
 const referenceUponRequestMarker = "__BLUDECK_REFERENCE_ON_REQUEST__";
 const maxCvDocuments = 15;
+const profileFieldLabelClassName = "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700";
+const profileFieldControlClassName = "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-medium text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm";
 
 const emptyOtherWorkExperience: Experience = {
   ...emptyExperience,
@@ -1122,28 +1124,32 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
-                  <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} mobileFriendly />
-                  <DropdownChoiceGroup
-                    title="Position"
-                    options={yachtPositionTitles}
-                    value={currentPositionValue ? [currentPositionValue] : []}
-                    onChange={(value) => {
-                      const nextPosition = cleanSaveText(value[0]);
-                      setProfile((current) => ({
-                        ...current,
-                        current_position: nextPosition,
-                        current_positions: nextPosition ? [nextPosition] : [],
-                      }));
-                    }}
-                    selectedAsTitle
-                    singleSelect
-                  />
-                  <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} mobileFriendly />
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} profileField />
+                  <div>
+                    <p className={profileFieldLabelClassName}>Position</p>
+                    <DropdownChoiceGroup
+                      title="Position"
+                      options={yachtPositionTitles}
+                      value={currentPositionValue ? [currentPositionValue] : []}
+                      onChange={(value) => {
+                        const nextPosition = cleanSaveText(value[0]);
+                        setProfile((current) => ({
+                          ...current,
+                          current_position: nextPosition,
+                          current_positions: nextPosition ? [nextPosition] : [],
+                        }));
+                      }}
+                      selectedAsTitle
+                      singleSelect
+                      profileField
+                    />
+                  </div>
+                  <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} profileField />
                   <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
                 </div>
 
-                <div className="grid gap-x-4 gap-y-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-5 md:grid-cols-5">
                   <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
                   <Field
                     label="Height cm"
@@ -1153,7 +1159,7 @@ export default function ProfilePage() {
                     maxLength={3}
                     normalizeValue={normalizeThreeDigitNumber}
                     onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })}
-                    mobileFriendly
+                    profileField
                   />
                   <Field
                     label="Weight kg"
@@ -1163,16 +1169,16 @@ export default function ProfilePage() {
                     maxLength={3}
                     normalizeValue={normalizeThreeDigitNumber}
                     onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })}
-                    mobileFriendly
+                    profileField
                   />
                   <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
                   <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
                 </div>
 
-                <div className="grid gap-x-4 gap-y-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
-                  <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
-                  <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} mobileFriendly />
-                  <div className="sm:col-span-2">
+                <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-5 md:grid-cols-2">
+                  <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} variant="profile" />
+                  <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} profileField />
+                  <div className="md:col-span-2">
                     <LocationSelect value={profile.location || ""} onChange={(value) => setProfile({ ...profile, location: value })} />
                   </div>
                 </div>
@@ -3297,6 +3303,7 @@ function DropdownChoiceGroup({
   inlineSelected = false,
   commitOnSelect = false,
   compact = false,
+  profileField = false,
   open: controlledOpen,
   onOpenChange,
 }: {
@@ -3311,6 +3318,7 @@ function DropdownChoiceGroup({
   inlineSelected?: boolean;
   commitOnSelect?: boolean;
   compact?: boolean;
+  profileField?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -3320,8 +3328,8 @@ function DropdownChoiceGroup({
   const [draft, setDraft] = useState(displayValue);
   const hasSelection = displayValue.length > 0;
   const selectedText = hasSelection ? displayValue.join(", ") : "Select";
-  const triggerTitle = selectedAsTitle && hasSelection ? selectedText : title;
-  const triggerMeta = selectedAsTitle && hasSelection ? "Change" : selectedPanel || inlineSelected ? `${displayValue.length}${maxSelected ? `/${maxSelected}` : ""} selected` : selectedText;
+  const triggerTitle = selectedAsTitle ? (hasSelection ? selectedText : profileField ? "Select" : title) : title;
+  const triggerMeta = selectedAsTitle ? (hasSelection ? "Change" : profileField ? "" : selectedText) : selectedPanel || inlineSelected ? `${displayValue.length}${maxSelected ? `/${maxSelected}` : ""} selected` : selectedText;
 
   useEffect(() => {
     setDraft(displayValue);
@@ -3361,6 +3369,7 @@ function DropdownChoiceGroup({
       <div className={selectedPanel ? "grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.85fr)]" : ""}>
         <button
           type="button"
+          aria-label={title}
           aria-expanded={open}
           onClick={() => {
             setDraft(displayValue);
@@ -3368,7 +3377,9 @@ function DropdownChoiceGroup({
           }}
           className={compact
             ? "bd-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-            : "flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"}
+            : profileField
+              ? `${profileFieldControlClassName} flex items-center justify-between gap-3 text-left`
+              : "flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"}
         >
           <span className="min-w-0 truncate">{triggerTitle}</span>
           {compact ? (
@@ -3376,9 +3387,9 @@ function DropdownChoiceGroup({
               <span className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">{triggerMeta}</span>
               <ChevronDown className={`h-4 w-4 text-slate-400 transition ${open ? "rotate-180" : ""}`} aria-hidden />
             </span>
-          ) : (
+          ) : triggerMeta ? (
             <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
-          )}
+          ) : null}
         </button>
 
         {selectedPanel && (
@@ -4737,6 +4748,7 @@ function Field({
   maxLength,
   normalizeValue,
   mobileFriendly = false,
+  profileField = false,
 }: {
   label: string;
   value?: string;
@@ -4750,10 +4762,11 @@ function Field({
   maxLength?: number;
   normalizeValue?: (value: string) => string;
   mobileFriendly?: boolean;
+  profileField?: boolean;
 }) {
   return (
     <div className="block">
-      <p className={mobileFriendly ? "mb-1.5 block select-text text-xs font-semibold text-slate-700" : "mb-2 block select-text text-sm font-medium text-slate-600"}>{label}</p>
+      <p className={profileField ? profileFieldLabelClassName : mobileFriendly ? "mb-1.5 block select-text text-xs font-semibold text-slate-700" : "mb-2 block select-text text-sm font-medium text-slate-600"}>{label}</p>
       <input
         aria-label={label}
         type={type}
@@ -4777,15 +4790,17 @@ function Field({
               }
             : undefined
         }
-        className={mobileFriendly
-          ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
-          : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
+        className={profileField
+          ? `${profileFieldControlClassName} py-0 placeholder:text-slate-400 disabled:opacity-40`
+          : mobileFriendly
+            ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
+            : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
       />
     </div>
   );
 }
 
-function DateField({ label, value, onChange, disabled = false, mobileFriendly = false }: { label: string; value?: string; onChange: (value: string) => void; disabled?: boolean; mobileFriendly?: boolean }) {
+function DateField({ label, value, onChange, disabled = false, mobileFriendly = false, profileField = false }: { label: string; value?: string; onChange: (value: string) => void; disabled?: boolean; mobileFriendly?: boolean; profileField?: boolean }) {
   const [display, setDisplay] = useState(formatDateForDisplay(value || ""));
 
   useEffect(() => {
@@ -4800,7 +4815,7 @@ function DateField({ label, value, onChange, disabled = false, mobileFriendly = 
 
   return (
     <div className="block">
-      <p className={mobileFriendly ? "mb-1.5 block select-text text-xs font-semibold text-slate-700" : "mb-2 block select-text text-sm font-medium text-slate-600"}>{label}</p>
+      <p className={profileField ? profileFieldLabelClassName : mobileFriendly ? "mb-1.5 block select-text text-xs font-semibold text-slate-700" : "mb-2 block select-text text-sm font-medium text-slate-600"}>{label}</p>
       <input
         aria-label={label}
         inputMode="numeric"
@@ -4809,9 +4824,11 @@ function DateField({ label, value, onChange, disabled = false, mobileFriendly = 
         disabled={disabled}
         onChange={(event) => commit(event.target.value)}
         onBlur={() => setDisplay(formatDateForDisplay(parseDisplayDate(display)))}
-        className={mobileFriendly
-          ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
-          : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
+        className={profileField
+          ? `${profileFieldControlClassName} py-0 placeholder:text-slate-400 disabled:opacity-40`
+          : mobileFriendly
+            ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
+            : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
       />
     </div>
   );
@@ -4822,15 +4839,13 @@ function NationalitySelect({ value, onChange }: { value: string; onChange: (valu
 
   return (
     <div className="block">
-      <p className="mb-2 block select-text text-sm font-medium text-slate-600">Nationality</p>
-      <div className="rounded-xl border border-slate-200 bg-white">
-        <CountrySearch
-          selectedLabel={selectedCountry ? `${selectedCountry.flag} ${selectedCountry.country} / ${selectedCountry.nationality}` : "Select nationality"}
-          options={nationalityOptions}
-          onSelect={(country) => onChange(country.nationality)}
-          fullWidth
-        />
-      </div>
+      <p className={profileFieldLabelClassName}>Nationality</p>
+      <CountrySearch
+        selectedLabel={selectedCountry ? `${selectedCountry.flag} ${selectedCountry.country} / ${selectedCountry.nationality}` : "Select nationality"}
+        options={nationalityOptions}
+        onSelect={(country) => onChange(country.nationality)}
+        fullWidth
+      />
     </div>
   );
 }
@@ -4889,10 +4904,12 @@ function CountrySearch({
           setOpen(!open);
           setQuery("");
         }}
-        className={`flex min-h-11 w-full items-center justify-between gap-2 bg-white px-3 py-2.5 text-left text-base font-semibold text-slate-950 transition hover:text-cyan-800 sm:text-sm ${fullWidth ? "rounded-xl border-0 shadow-none" : phoneMode ? "rounded-l-xl" : "rounded-xl border border-slate-200 shadow-sm"}`}
+        className={fullWidth
+          ? `${profileFieldControlClassName} flex items-center justify-between gap-2 py-0 text-left hover:text-cyan-800`
+          : `flex min-h-11 w-full items-center justify-between gap-2 bg-white px-3 py-2.5 text-left text-base font-semibold text-slate-950 transition hover:text-cyan-800 sm:text-sm ${phoneMode ? "rounded-l-xl" : "rounded-xl border border-slate-200 shadow-sm"}`}
       >
         <span className="min-w-0 flex-1 truncate">{buttonLabel}</span>
-        <span className="shrink-0 text-cyan-700">⌄</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
       </button>
       {open && (
         <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
@@ -4901,7 +4918,7 @@ function CountrySearch({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search country..."
-            className="min-h-11 w-full border-b border-slate-200 px-4 py-2.5 text-base text-slate-950 outline-none sm:text-sm"
+            className="h-12 w-full border-b border-slate-200 px-4 py-0 text-base font-medium text-slate-950 outline-none sm:text-sm"
           />
           <div className="max-h-72 overflow-auto p-2">
             {filtered.map((country) => (
@@ -4997,8 +5014,8 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
 
   return (
     <div ref={wrapperRef} className="block">
-      <p className="mb-2 block select-text text-sm font-medium text-slate-600">Location</p>
-      <div className="flex min-h-11 overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-cyan-500">
+      <p className={profileFieldLabelClassName}>Location</p>
+      <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15">
         <span className="flex items-center pl-3 text-cyan-700">
           <MapPin className="h-4 w-4" />
         </span>
@@ -5025,7 +5042,7 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
             }
           }}
           placeholder="Search any city, marina or country"
-          className="min-w-0 flex-1 px-3 py-2.5 text-base text-slate-950 outline-none sm:text-sm"
+          className="h-full min-w-0 flex-1 px-3 py-0 text-base font-medium text-slate-950 outline-none sm:text-sm"
         />
       </div>
       {open && (suggestions.length > 0 || searching) && (
@@ -5077,11 +5094,14 @@ function cleanLocationCountry(country?: string) {
 function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   return (
     <div className="block">
-      <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-950 outline-none focus:border-cyan-500 sm:text-sm">
-        <option value="">Select</option>
-        {options.map((option) => <option key={option}>{option}</option>)}
-      </select>
+      <p className={profileFieldLabelClassName}>{label}</p>
+      <div className="relative">
+        <select value={value} onChange={(event) => onChange(event.target.value)} className={`${profileFieldControlClassName} cursor-pointer appearance-none py-0 pr-10`}>
+          <option value="">Select</option>
+          {options.map((option) => <option key={option}>{option}</option>)}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
+      </div>
     </div>
   );
 }
@@ -5106,8 +5126,8 @@ function TextArea({
 
   return (
     <div className={`${className} block`}>
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <p className="block select-text text-sm font-medium text-slate-600">{label}</p>
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <p className="block select-text text-xs font-semibold leading-4 text-slate-700">{label}</p>
         {maxLength && (
           <span className="rounded-full border border-cyan-100 bg-[#f8fdff] px-2.5 py-1 text-[10px] font-black tabular-nums tracking-[0.08em] text-cyan-800 shadow-sm shadow-cyan-950/5">
             {currentLength}/{maxLength}
@@ -5118,7 +5138,7 @@ function TextArea({
         value={displayValue}
         maxLength={maxLength}
         onChange={(event) => onChange(maxLength ? event.target.value.slice(0, maxLength) : event.target.value)}
-        className={`h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition focus:border-cyan-500 ${textareaClassName}`}
+        className={`min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm ${textareaClassName}`}
       />
     </div>
   );

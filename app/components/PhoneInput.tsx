@@ -32,12 +32,14 @@ export function PhoneInput({
   onChange,
   required = false,
   autoComplete = "tel",
+  variant = "default",
 }: {
   label?: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   autoComplete?: string;
+  variant?: "default" | "profile";
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -45,6 +47,7 @@ export function PhoneInput({
   const [manualCountry, setManualCountry] = useState<BlueDeckCountry | null>(null);
   const country = countryFromValue(value) || manualCountry;
   const localNumber = localNumberFromValue(value, country);
+  const profileVariant = variant === "profile";
   const filteredCountries = blueDeckCountries
     .filter((item) => `${item.country} ${item.nationality} ${item.code} ${item.dial}`.toLowerCase().includes(query.toLowerCase()))
     .slice(0, 260);
@@ -63,18 +66,20 @@ export function PhoneInput({
 
   return (
     <div ref={wrapperRef} className="block">
-      <span className="mb-2 block select-text text-sm font-semibold text-slate-600">
+      <span className={profileVariant ? "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700" : "mb-2 block select-text text-sm font-semibold text-slate-600"}>
         {label} {required && <span className="text-rose-500">*</span>}
       </span>
       <div className="relative">
-        <div className="flex min-h-[54px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10">
+        <div className={profileVariant
+          ? "flex h-12 min-h-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15"
+          : "flex min-h-[54px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10"}>
           <button
             type="button"
             onClick={() => {
               setOpen(!open);
               setQuery("");
             }}
-            className={`flex w-[106px] shrink-0 items-center justify-center gap-2 border-r border-slate-200 bg-white px-3 text-sm font-black transition hover:bg-cyan-50 sm:w-[116px] ${country ? "text-slate-950" : "text-slate-400"}`}
+            className={`flex shrink-0 items-center justify-center gap-2 border-r border-slate-200 bg-white text-sm font-black transition hover:bg-cyan-50 ${profileVariant ? "h-full w-[100px] px-2 sm:w-[108px]" : "w-[106px] px-3 sm:w-[116px]"} ${country ? "text-slate-950" : "text-slate-400"}`}
             aria-label="Select country code"
           >
             {country ? (
@@ -95,7 +100,9 @@ export function PhoneInput({
               inputMode="tel"
               autoComplete={autoComplete}
               placeholder="Mobile number"
-              className="min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-slate-950 outline-none placeholder:text-slate-400"
+              className={profileVariant
+                ? "h-full min-w-0 flex-1 bg-transparent px-3 py-0 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
+                : "min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-slate-950 outline-none placeholder:text-slate-400"}
             />
           </div>
         </div>
@@ -107,7 +114,9 @@ export function PhoneInput({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search country..."
-              className="w-full border-b border-slate-200 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400"
+              className={profileVariant
+                ? "h-12 w-full border-b border-slate-200 px-4 py-0 text-base text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
+                : "w-full border-b border-slate-200 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400"}
             />
             <div className="max-h-72 overflow-auto p-2">
               {filteredCountries.map((item) => (
