@@ -1178,27 +1178,57 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
-                {[emptyExperience, ...editableYachtExperiences].map((item) => {
-                  const isNewExperience = !item.id;
-                  const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-new-${editableYachtExperiences.length}`;
+                <section className="border-l-4 border-cyan-500 bg-cyan-50/50 px-4 py-5 sm:px-5">
+                  <div className="mb-5 flex items-center gap-2 text-slate-900">
+                    <Plus className="h-4 w-4 text-cyan-700" />
+                    <h3 className="text-sm font-semibold">Add experience</h3>
+                  </div>
+                  <ExperienceEditor
+                    key={`new-${experiences.length}`}
+                    item={emptyExperience}
+                    isNew
+                    references={references}
+                    referenceSaving={referenceSaving}
+                    onSave={saveExperience}
+                    onDelete={deleteExperience}
+                    onSaveReference={saveReference}
+                    onDeleteReference={deleteReference}
+                    onUpload={async (file) => uploadFile(file, "crew-portfolio", `experience-photo-new-${editableYachtExperiences.length}`)}
+                    onCancelUpload={cancelUpload}
+                    uploading={uploading === `experience-photo-new-${editableYachtExperiences.length}`}
+                  />
+                </section>
 
-                  return (
-                    <ExperienceEditor
-                      key={item.id || `new-${experiences.length}`}
-                      item={item}
-                      isNew={isNewExperience}
-                      references={references}
-                      referenceSaving={referenceSaving}
-                      onSave={saveExperience}
-                      onDelete={deleteExperience}
-                      onSaveReference={saveReference}
-                      onDeleteReference={deleteReference}
-                      onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
-                      onCancelUpload={cancelUpload}
-                      uploading={uploading === uploadSlot}
-                    />
-                  );
-                })}
+                {editableYachtExperiences.length > 0 && (
+                  <section className="border-t border-slate-300 pt-6">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Saved</h3>
+                      <span className="text-xs font-semibold text-slate-500">{editableYachtExperiences.length} saved</span>
+                    </div>
+                    <div className="space-y-6">
+                      {editableYachtExperiences.map((item) => {
+                        const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-${editableYachtExperiences.length}`;
+
+                        return (
+                          <ExperienceEditor
+                            key={item.id || `${item.yacht_name}-${item.start_date}`}
+                            item={item}
+                            isNew={false}
+                            references={references}
+                            referenceSaving={referenceSaving}
+                            onSave={saveExperience}
+                            onDelete={deleteExperience}
+                            onSaveReference={saveReference}
+                            onDeleteReference={deleteReference}
+                            onUpload={async (file) => uploadFile(file, "crew-portfolio", uploadSlot)}
+                            onCancelUpload={cancelUpload}
+                            uploading={uploading === uploadSlot}
+                          />
+                        );
+                      })}
+                    </div>
+                  </section>
+                )}
               </div>
             </Panel>
 
@@ -1211,23 +1241,47 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
-                {[emptyOtherWorkExperience, ...editableOtherWorkExperiences].map((item) => {
-                  const isNewExperience = !item.id;
+                <section className="border-l-4 border-cyan-500 bg-cyan-50/50 px-4 py-5 sm:px-5">
+                  <div className="mb-5 flex items-center gap-2 text-slate-900">
+                    <Plus className="h-4 w-4 text-cyan-700" />
+                    <h3 className="text-sm font-semibold">Add experience</h3>
+                  </div>
+                  <OtherWorkExperienceEditor
+                    key={`new-other-work-${editableOtherWorkExperiences.length}`}
+                    item={emptyOtherWorkExperience}
+                    isNew
+                    references={references}
+                    referenceSaving={referenceSaving}
+                    onSave={saveExperience}
+                    onDelete={deleteExperience}
+                    onSaveReference={saveReference}
+                    onDeleteReference={deleteReference}
+                  />
+                </section>
 
-                  return (
-                    <OtherWorkExperienceEditor
-                      key={item.id || `new-other-work-${editableOtherWorkExperiences.length}`}
-                      item={item}
-                      isNew={isNewExperience}
-                      references={references}
-                      referenceSaving={referenceSaving}
-                      onSave={saveExperience}
-                      onDelete={deleteExperience}
-                      onSaveReference={saveReference}
-                      onDeleteReference={deleteReference}
-                    />
-                  );
-                })}
+                {editableOtherWorkExperiences.length > 0 && (
+                  <section className="border-t border-slate-300 pt-6">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold text-slate-900">Saved</h3>
+                      <span className="text-xs font-semibold text-slate-500">{editableOtherWorkExperiences.length} saved</span>
+                    </div>
+                    <div className="space-y-6">
+                      {editableOtherWorkExperiences.map((item) => (
+                        <OtherWorkExperienceEditor
+                          key={item.id || `${item.yacht_name}-${item.start_date}`}
+                          item={item}
+                          isNew={false}
+                          references={references}
+                          referenceSaving={referenceSaving}
+                          onSave={saveExperience}
+                          onDelete={deleteExperience}
+                          onSaveReference={saveReference}
+                          onDeleteReference={deleteReference}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                )}
               </div>
             </Panel>
 
