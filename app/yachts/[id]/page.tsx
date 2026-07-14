@@ -10,7 +10,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   ClipboardList,
-  Crown,
   FileSignature,
   FileText,
   Gauge,
@@ -241,7 +240,7 @@ export default function YachtDashboard() {
     {
       label: "YACHT-OS",
       value: "Live",
-      detail: "Captain, crew and owner modules are connected",
+      detail: "Captain and crew modules are connected",
       tone: "emerald",
     },
   ] as const;
@@ -319,14 +318,6 @@ export default function YachtDashboard() {
       tone: "rose",
       meta: "Safety",
     },
-    {
-      title: "Owner View",
-      text: "Luxury owner-facing readiness view without operational clutter.",
-      href: `/yachts/${yachtId}/owner`,
-      icon: Crown,
-      tone: "gold",
-      meta: "Private",
-    },
   ] as const;
 
   return (
@@ -343,7 +334,7 @@ export default function YachtDashboard() {
                 </h1>
                 <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">
                   Captain dashboard for crew invitations, duty proof, compliance
-                  documents, IMO crew list and owner-ready yacht operations.
+                  documents, IMO crew list and connected yacht operations.
                 </p>
               </div>
             </div>

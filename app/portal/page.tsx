@@ -21,7 +21,7 @@ export default function PortalPage() {
     } else if (user.role === "crew") {
       window.location.href = `/yachts/${user.yacht_id}/crew-mobile`;
     } else if (user.role === "owner") {
-      window.location.href = `/yachts/${user.yacht_id}/owner`;
+      window.location.href = "/dashboard";
     } else {
       window.location.href = "/login";
     }

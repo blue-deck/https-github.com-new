@@ -622,8 +622,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Captain Daily Report": {
     "tr": "Kaptan Günlük Raporu",
   },
-  "Captain dashboard for crew invitations, duty proof, compliance documents, IMO crew list and owner-ready yacht operations.": {
-    "tr": "Mürettebat davetleri, görev kanıtı, uyumluluk belgeleri, IMO mürettebat listesi ve sahibinin hazır yat operasyonları için kaptan kontrol paneli.",
+  "Captain dashboard for crew invitations, duty proof, compliance documents, IMO crew list and connected yacht operations.": {
+    "tr": "Mürettebat davetleri, görev kanıtı, uyumluluk belgeleri, IMO mürettebat listesi ve bağlantılı yat operasyonları için kaptan kontrol paneli.",
   },
   "Captain Document": {
     "tr": "Kaptan Belgesi",
@@ -676,8 +676,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Captain Workspace": {
     "tr": "Kaptan Çalışma Alanı",
   },
-  "Captain, crew and owner modules are connected": {
-    "tr": "Kaptan, mürettebat ve gemi sahibi modülleri birbirine bağlıdır",
+  "Captain and crew modules are connected": {
+    "tr": "Kaptan ve mürettebat modülleri birbirine bağlıdır",
   },
   "Captain, engineer and deck team communication confirmed": {
     "tr": "Kaptan, mühendis ve güverte ekibinin iletişimi onaylandı",
@@ -1900,9 +1900,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Guest Cruise": {
     "tr": "Misafir Gezisi",
   },
-  "Guest cruise active": {
-    "tr": "Misafir gezisi aktif",
-  },
   "Guest documents stored securely": {
     "tr": "Konuk belgeleri güvenli bir şekilde saklanır",
   },
@@ -2365,9 +2362,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Location": {
     "tr": "Konum",
   },
-  "Location not set": {
-    "tr": "Konum ayarlanmadı",
-  },
   "Location required": {
     "tr": "Konum gerekli",
   },
@@ -2391,9 +2385,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Low Stock": {
     "tr": "Düşük Stok",
-  },
-  "Luxury owner-facing readiness view without operational clutter.": {
-    "tr": "Operasyonel karmaşa olmadan lüks sahibine dönük hazır görünüm.",
   },
   "Main Engine": {
     "tr": "Ana Motor",
@@ -2674,9 +2665,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Next due:": {
     "tr": "Sonraki tarih:",
   },
-  "Next Moment": {
-    "tr": "Sonraki An",
-  },
   "Next waypoint and watch priorities confirmed": {
     "tr": "Sonraki ara nokta ve izleme öncelikleri onaylandı",
   },
@@ -2806,9 +2794,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "No major operational warnings detected.": {
     "tr": "Önemli bir operasyonel uyarı algılanmadı.",
   },
-  "No owner-level alert": {
-    "tr": "Sahip düzeyinde uyarı yok",
-  },
   "No position": {
     "tr": "Pozisyon yok",
   },
@@ -2935,9 +2920,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Open Portal": {
     "tr": "Portalı Aç",
   },
-  "Open reports": {
-    "tr": "Raporları aç",
-  },
   "Open-Meteo ready": {
     "tr": "Açık Meteo'ya hazır",
   },
@@ -2989,26 +2971,14 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Owner": {
     "tr": "Sahip",
   },
-  "Owner Alerts": {
-    "tr": "Sahip Uyarıları",
-  },
-  "Owner and captain PDF reports": {
-    "tr": "Sahibi ve kaptan PDF raporları",
-  },
   "Owner and VIP cabin comfort confirmed": {
     "tr": "Sahip ve VIP kabin konforu onaylandı",
   },
   "Owner Arrival Ready": {
     "tr": "Sahibin Gelişine Hazır",
   },
-  "Owner Brief": {
-    "tr": "Sahip Özeti",
-  },
   "Owner cabin inspected": {
     "tr": "Sahibinin kabini incelendi",
-  },
-  "Owner data could not be loaded.": {
-    "tr": "Sahip verileri yüklenemedi.",
   },
   "Owner Experience": {
     "tr": "Sahip Deneyimi",
@@ -3021,18 +2991,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Owner Onboard": {
     "tr": "Araç Sahibi",
-  },
-  "Owner Ready": {
-    "tr": "Sahibi Hazır",
-  },
-  "Owner Report": {
-    "tr": "Sahip Raporu",
-  },
-  "Owner View": {
-    "tr": "Sahip Görünümü",
-  },
-  "Owner-ready daily report and PDF export.": {
-    "tr": "Sahibinin kullanımına hazır günlük rapor ve PDF dışa aktarımı.",
   },
   "Oxygen kit and first aid ready": {
     "tr": "Oksijen kiti ve ilk yardım hazır",
@@ -3253,14 +3211,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Private": {
     "tr": "Özel",
   },
-  "Private mode": {
-    "tr": "Özel mod",
-  },
   "Private Mode": {
     "tr": "Özel Mod",
-  },
-  "Private Owner View": {
-    "tr": "Özel Sahip Görünümü",
   },
   "Private yacht": {
     "tr": "Özel yat",
@@ -3616,9 +3568,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Sea State": {
     "tr": "Deniz Durumu",
   },
-  "Sea state waiting": {
-    "tr": "Deniz durumu bekliyor",
-  },
   "Seabob and E-Foil Preparation": {
     "tr": "Seabob ve E-Folyo Hazırlama",
   },
@@ -3775,9 +3724,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Set / Check Anchor Alarm": {
     "tr": "Çapa Alarmını Ayarlama / Kontrol Etme",
   },
-  "Set yacht position": {
-    "tr": "Yat konumunu ayarla",
-  },
   "Settings": {
     "tr": "Ayarlar",
   },
@@ -3927,9 +3873,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Sun pads, cushions and covers checked": {
     "tr": "Güneş yastıkları, minderler ve kılıflar kontrol edildi",
-  },
-  "Sunset service": {
-    "tr": "Gün batımı servisi",
   },
   "Supabase": {
     "tr": "Supabaz",
@@ -4425,9 +4368,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Weather and sea state reviewed": {
     "tr": "Hava ve deniz durumu incelendi",
-  },
-  "Weather not set": {
-    "tr": "Hava durumu ayarlanmadı",
   },
   "Weather, tides and currents reviewed": {
     "tr": "Hava durumu, gelgitler ve akıntılar incelendi",

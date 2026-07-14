@@ -55,7 +55,7 @@ const en = {
     "Crew profiles, invitations, contracts, document expiry alerts and onboard checklist workflows.",
   "home.pillar3.title": "Owner Experience",
   "home.pillar3.text":
-    "A calm owner view focused on privacy, guest comfort, readiness, location and high-level confidence.",
+    "A calm owner experience focused on privacy, guest comfort, readiness, location and high-level confidence.",
   "home.pillar4.title": "Operational Readiness",
   "home.pillar4.text":
     "Departure, arrival, daily readiness and onboard workflow records structured for captain-grade oversight.",
@@ -329,7 +329,7 @@ const tr: Record<TranslationKey, string> = {
   "home.pillar2.title": "Mürettebat Operasyonları",
   "home.pillar2.text": "Mürettebat profilleri, davetler, kontratlar, belge bitiş uyarıları ve onboard checklist akışları.",
   "home.pillar3.title": "Sahip Deneyimi",
-  "home.pillar3.text": "Gizlilik, misafir konforu, hazırlık, lokasyon ve üst düzey güvene odaklanan sakin sahip görünümü.",
+  "home.pillar3.text": "Gizlilik, misafir konforu, hazırlık, lokasyon ve üst düzey güvene odaklanan sakin sahip deneyimi.",
   "home.pillar4.title": "Köprüüstü Hazırlığı",
   "home.pillar4.text": "Navigasyon, vardiya, seyir, varış ve ayrılış akışları kaptan seviyesinde kontrol için yapılandırılır.",
   "home.deepEyebrow": "Private YACHT-OS",
@@ -540,8 +540,8 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "BlueDeck Secure Access": { tr: "BlueDeck Güvenli Erişim" },
   "Opening private yacht workspace...": { tr: "Özel yat çalışma alanı açılıyor..." },
   "Private Yacht Command": { tr: "Özel Yat Komutası" },
-  "Captain dashboard for crew invitations, duty proof, compliance documents, IMO crew list and owner-ready yacht operations.": {
-    tr: "Mürettebat davetleri, görev kanıtları, uyum belgeleri, IMO mürettebat listesi ve sahip görünümüne hazır yat operasyonları için kaptan paneli.",
+  "Captain dashboard for crew invitations, duty proof, compliance documents, IMO crew list and connected yacht operations.": {
+    tr: "Mürettebat davetleri, görev kanıtları, uyum belgeleri, IMO mürettebat listesi ve bağlantılı yat operasyonları için kaptan paneli.",
   },
   "Readiness": { tr: "Hazırlık" },
   "Invite / Manage Crew": { tr: "Mürettebat Davet / Yönet" },
@@ -673,7 +673,7 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Crew portal connected": { tr: "Mürettebat portalı bağlı" },
   "Crew portal ready": { tr: "Mürettebat portalı hazır" },
   "No active expiry pressure": { tr: "Aktif bitiş tarihi baskısı yok" },
-  "Captain, crew and owner modules are connected": { tr: "Kaptan, mürettebat ve sahip modülleri bağlı" },
+  "Captain and crew modules are connected": { tr: "Kaptan ve mürettebat modülleri bağlı" },
   "Connected Workspaces": { tr: "Bağlı Çalışma Alanları" },
   "Recent Activity": { tr: "Son Aktivite" },
   "Yacht Log": { tr: "Yat Günlüğü" },
@@ -689,7 +689,6 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Engineering": { tr: "Mühendislik" },
   "Safety Center": { tr: "Güvenlik Merkezi" },
   "Operations": { tr: "Operasyonlar" },
-  "Owner View": { tr: "Sahip Görünümü" },
   "Open module": { tr: "Modülü aç" },
   "Course": { tr: "Rota" },
   "Speed": { tr: "Hız" },

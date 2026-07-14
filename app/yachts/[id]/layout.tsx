@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
 import {
-  Crown,
   Home,
   ClipboardList,
   Users,
@@ -54,7 +53,6 @@ export default function YachtAppLayout({
     { label: translatePhrase("Overview", language), href: `/yachts/${yachtId}`, icon: Home },
     { label: translatePhrase("Checklist", language), href: `/yachts/${yachtId}/checklists`, icon: ClipboardList },
     { label: translatePhrase("Crew", language), href: `/yachts/${yachtId}/crew`, icon: Users },
-    { label: translatePhrase("Owner", language), href: `/yachts/${yachtId}/owner`, icon: Crown },
   ];
   const isActive = (href: string) =>
     href === `/yachts/${yachtId}`
