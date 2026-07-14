@@ -2537,9 +2537,6 @@ export default function CrewPage({
                         </p>
                       </div>
                     </div>
-                    <span className="self-start rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-cyan-900">
-                      Step 1 of 1
-                    </span>
                   </div>
 
                   <form
