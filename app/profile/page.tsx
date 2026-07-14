@@ -487,9 +487,9 @@ export default function ProfilePage() {
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const [newDocumentOpen, setNewDocumentOpen] = useState<boolean | null>(null);
-  const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState<boolean | null>(null);
+  const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState(true);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
-  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState<boolean | null>(null);
+  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState(true);
   const [newOtherWorkExperienceDirty, setNewOtherWorkExperienceDirty] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const newDocumentFormId = useId();
@@ -521,8 +521,8 @@ export default function ProfilePage() {
     () => sortedExperiences.filter(isOtherWorkExperience),
     [sortedExperiences],
   );
-  const showNewYachtExperienceForm = newYachtExperienceOpen ?? editableYachtExperiences.length === 0;
-  const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen ?? editableOtherWorkExperiences.length === 0;
+  const showNewYachtExperienceForm = newYachtExperienceOpen;
+  const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen;
   const showNewDocumentForm = newDocumentOpen ?? sortedDocuments.length === 0;
   const newDocumentDirty = !saveStateEquals(documentSaveState(documentDraft), documentSaveState(newDocumentDraft()));
   const totalExperienceYears = useMemo(() => {
@@ -1198,18 +1198,15 @@ export default function ProfilePage() {
                     onClick={() => setNewYachtExperienceOpen(!showNewYachtExperienceForm)}
                     aria-expanded={showNewYachtExperienceForm}
                     aria-controls={newYachtExperienceFormId}
-                    className={`bd-focus grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-3 bg-cyan-50/70 px-4 py-4 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewYachtExperienceForm ? "border-b border-cyan-100" : ""}`}
+                    className={`bd-focus grid min-h-16 w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 bg-cyan-50/70 px-4 py-3.5 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewYachtExperienceForm ? "border-b border-cyan-100" : ""}`}
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
                       <Plus className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
                       <h3 className="text-base font-semibold text-slate-950">Add experience</h3>
-                      <p className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewYachtExperienceForm ? "block" : "hidden sm:block"}`}>
-                        Add the yacht, position, dates and details in one clear form. Open references only when you need them.
-                      </p>
                     </div>
-                    <span className="mt-1.5 flex items-center gap-2">
+                    <span className="flex shrink-0 items-center gap-2">
                       {newYachtExperienceDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
                       <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewYachtExperienceForm ? "rotate-180" : ""}`} />
                     </span>
@@ -1290,18 +1287,15 @@ export default function ProfilePage() {
                     onClick={() => setNewOtherWorkExperienceOpen(!showNewOtherWorkExperienceForm)}
                     aria-expanded={showNewOtherWorkExperienceForm}
                     aria-controls={newOtherWorkExperienceFormId}
-                    className={`bd-focus grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-3 bg-cyan-50/70 px-4 py-4 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewOtherWorkExperienceForm ? "border-b border-cyan-100" : ""}`}
+                    className={`bd-focus grid min-h-16 w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 bg-cyan-50/70 px-4 py-3.5 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewOtherWorkExperienceForm ? "border-b border-cyan-100" : ""}`}
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
                       <Plus className="h-4 w-4" />
                     </span>
                     <div className="min-w-0">
                       <h3 className="text-base font-semibold text-slate-950">Add experience</h3>
-                      <p className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewOtherWorkExperienceForm ? "block" : "hidden sm:block"}`}>
-                        Start with workplace, position, dates and duties. Open references only when you need them.
-                      </p>
                     </div>
-                    <span className="mt-1.5 flex items-center gap-2">
+                    <span className="flex shrink-0 items-center gap-2">
                       {newOtherWorkExperienceDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
                       <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewOtherWorkExperienceForm ? "rotate-180" : ""}`} />
                     </span>
