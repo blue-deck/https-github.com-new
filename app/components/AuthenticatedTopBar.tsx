@@ -43,14 +43,20 @@ export function AuthenticatedTopBar() {
   useEffect(() => {
     let active = true;
 
+    function reflectSession(session: unknown) {
+      const authenticated = Boolean(session);
+      setHasSession(authenticated);
+      setChecked(true);
+      document.documentElement.toggleAttribute("data-authenticated", authenticated);
+    }
+
     async function loadSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!active) return;
-      setHasSession(Boolean(session));
-      setChecked(true);
+      reflectSession(session);
     }
 
     loadSession();
@@ -58,13 +64,13 @@ export function AuthenticatedTopBar() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(Boolean(session));
-      setChecked(true);
+      reflectSession(session);
     });
 
     return () => {
       active = false;
       subscription.unsubscribe();
+      document.documentElement.removeAttribute("data-authenticated");
     };
   }, []);
 

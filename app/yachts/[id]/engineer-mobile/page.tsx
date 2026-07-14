@@ -92,13 +92,13 @@ export default function EngineerMobilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] p-4 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-4 pb-28 text-white">
       <div className="mx-auto max-w-md">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back
         </a>
 
-        <div className="mt-5 rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-500/20 to-green-500/10 p-7">
+        <div className="bd-page-hero mt-5 rounded-[2rem] border border-white/10 bg-gradient-to-br from-cyan-500/20 to-green-500/10 p-7">
           <p className="text-sm text-gray-400">BlueDeck Mobile</p>
           <h1 className="mt-3 text-4xl font-black">Engineer App</h1>
           <p className="mt-3 text-gray-400">
@@ -116,7 +116,7 @@ export default function EngineerMobilePage() {
           <Stat title="Reports" value={reports.length} />
         </div>
 
-        <div className="mt-5 rounded-[2rem] border border-white/10 bg-white/5 p-5">
+        <div className="bd-app-card mt-5 rounded-[2rem] border border-white/10 bg-white/5 p-5">
           <h2 className="text-2xl font-bold">Quick Report</h2>
 
           <div className="mt-4 space-y-3">
@@ -160,7 +160,7 @@ export default function EngineerMobilePage() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-[2rem] border border-white/10 bg-white/5 p-5">
+        <div className="bd-app-card mt-5 rounded-[2rem] border border-white/10 bg-white/5 p-5">
           <h2 className="text-2xl font-bold">Systems</h2>
 
           <div className="mt-4 space-y-3">
@@ -212,7 +212,7 @@ export default function EngineerMobilePage() {
           </div>
         </div>
 
-        <div className="mt-5 rounded-[2rem] border border-white/10 bg-white/5 p-5">
+        <div className="bd-app-card mt-5 rounded-[2rem] border border-white/10 bg-white/5 p-5">
           <h2 className="text-2xl font-bold">Reports</h2>
 
           <div className="mt-4 space-y-3">
@@ -224,7 +224,7 @@ export default function EngineerMobilePage() {
                     ? "border-red-500/30 bg-red-500/10"
                     : report.issue_level === "warning"
                     ? "border-yellow-500/30 bg-yellow-500/10"
-                    : "border-white/10 bg-black/20"
+                    : "bd-app-card border-white/10 bg-black/20"
                 }`}
               >
                 <p className="text-xs uppercase opacity-70">
@@ -270,7 +270,7 @@ function Stat({ title, value, danger = false }: any) {
   return (
     <div
       className={`rounded-2xl border p-4 ${
-        danger ? "border-red-500/30 bg-red-500/10" : "border-white/10 bg-white/5"
+        danger ? "border-red-500/30 bg-red-500/10" : "bd-app-card border-white/10 bg-white/5"
       }`}
     >
       <p className="text-xs text-gray-400">{title}</p>

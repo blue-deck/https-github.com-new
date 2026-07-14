@@ -175,13 +175,13 @@ export default function DocumentsPage() {
   }, [yachtId]);
 
   return (
-    <main className="min-h-screen bg-[#081120] p-10 text-white">
+    <main className="bd-app-page min-h-screen bg-[#081120] p-10 text-white">
       <div className="mx-auto max-w-7xl">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl bg-white/5 p-8">
+        <div className="bd-page-hero mt-6 rounded-3xl bg-white/5 p-8">
           <p className="text-gray-400">BlueDeck Documents</p>
 
           <h1 className="mt-3 text-5xl font-bold">Yacht Documents</h1>
@@ -193,7 +193,7 @@ export default function DocumentsPage() {
         </div>
 
         <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-          <div className="rounded-3xl bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Upload Document</h2>
 
             <div className="mt-8 space-y-4">
@@ -249,7 +249,7 @@ export default function DocumentsPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-8">
             <div className="flex items-center justify-between">
               <h2 className="text-3xl font-bold">Documents</h2>
 
@@ -260,7 +260,7 @@ export default function DocumentsPage() {
 
             <div className="mt-6 space-y-4">
               {loading && (
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
+                <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
                   Loading documents...
                 </div>
               )}
@@ -269,7 +269,7 @@ export default function DocumentsPage() {
                 documents.map((document) => (
                   <div
                     key={document.id}
-                    className="rounded-2xl border border-white/10 bg-black/20 p-5"
+                    className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-5"
                   >
                     <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                       <div className="flex items-start gap-4">
@@ -331,7 +331,7 @@ export default function DocumentsPage() {
                 ))}
 
               {!loading && documents.length === 0 && (
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
+                <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
                   No documents uploaded yet.
                 </div>
               )}

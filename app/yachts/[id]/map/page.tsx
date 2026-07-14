@@ -88,20 +88,20 @@ export default function YachtMapPage() {
   const latest = positions[0];
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 text-white">
       <div className="mx-auto max-w-7xl">
         <a href={`/yachts/${yachtId}`} className="text-cyan-300">
           ← Back
         </a>
 
-        <div className="mt-6 rounded-3xl border border-cyan-500/20 bg-cyan-500/10 p-10">
+        <div className="bd-page-hero mt-6 rounded-3xl border border-cyan-500/20 bg-cyan-500/10 p-10">
           <p className="text-cyan-300">BlueDeck Navigation</p>
           <h1 className="mt-4 text-6xl font-black">Live Fleet Map</h1>
           <p className="mt-4 text-xl text-gray-300">
             AIS-style yacht movement tracking and navigation history.
           </p>
 
-          <div className="mt-4 rounded-2xl bg-black/30 p-4 text-sm text-gray-300">
+          <div className="bd-app-card mt-4 rounded-2xl bg-black/30 p-4 text-sm text-gray-300">
             Debug yachtId: {yachtId}
             {lastError && <p className="mt-2 text-red-300">Error: {lastError}</p>}
           </div>
@@ -115,7 +115,7 @@ export default function YachtMapPage() {
         </div>
 
         <div className="mt-8 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6">
             <h2 className="text-3xl font-bold">Update Position</h2>
 
             <div className="mt-5 space-y-4">
@@ -139,7 +139,7 @@ export default function YachtMapPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-black/30 p-6">
+          <div className="bd-media-canvas rounded-3xl border border-white/10 bg-black/30 p-6">
             <h2 className="text-3xl font-bold">Position History</h2>
 
             <div className="mt-6 space-y-4">
@@ -170,7 +170,7 @@ export default function YachtMapPage() {
 
 function Stat({ title, value }: any) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6">
       <p className="text-gray-400">{title}</p>
       <h2 className="mt-3 text-5xl font-black">{value}</h2>
     </div>

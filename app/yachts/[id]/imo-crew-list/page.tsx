@@ -54,16 +54,16 @@ export default function ImoCrewListPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#020817] p-8 text-white">
+      <main className="bd-app-page min-h-screen bg-[#020817] p-8 text-white">
         Loading IMO crew list...
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] px-5 py-8 text-white sm:px-8 lg:px-10">
+    <main className="bd-app-page min-h-screen bg-[#020817] px-5 py-8 text-white sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex flex-col justify-between gap-5 rounded-[32px] border border-cyan-500/20 bg-cyan-500/10 p-8 print:hidden md:flex-row md:items-end">
+        <header className="bd-page-hero mb-8 flex flex-col justify-between gap-5 rounded-[32px] border border-cyan-500/20 bg-cyan-500/10 p-8 print:hidden md:flex-row md:items-end">
           <div>
             <p className="text-cyan-300">Captain Document</p>
             <h1 className="mt-3 text-5xl font-black">IMO Crew List</h1>
@@ -81,7 +81,7 @@ export default function ImoCrewListPage() {
           </button>
         </header>
 
-        <section className="rounded-[28px] border border-white/10 bg-white p-8 text-black print:border-0">
+        <section className="bd-document-surface rounded-[28px] border border-white/10 bg-white p-8 text-black print:border-0">
           <div className="flex items-start justify-between gap-8 border-b border-black/20 pb-6">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.14em]">

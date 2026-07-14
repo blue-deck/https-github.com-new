@@ -244,14 +244,14 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+      <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900">
         <div className="bd-ocean-content">Loading settings...</div>
       </main>
     );
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
+    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-6xl">
         <header className="bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="bd-brand-rule h-1.5" />

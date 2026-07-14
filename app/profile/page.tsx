@@ -975,14 +975,14 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+      <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900">
         <div className="bd-ocean-content">Loading profile...</div>
       </main>
     );
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
+    <main className="bd-app-page bd-ocean-shell min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1520px]">
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="bd-brand-rule h-1.5" />
@@ -4733,7 +4733,7 @@ function ReferenceMiniPhoneField({
       </div>
 
       {open && !disabled && (
-        <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[min(330px,84vw)] overflow-hidden rounded-xl border border-[#d8e2e6] bg-white shadow-2xl shadow-slate-900/18">
+        <div className="bd-auth-popover absolute left-0 top-[calc(100%+6px)] z-50 w-[min(330px,84vw)] overflow-hidden rounded-xl border border-[#d8e2e6] bg-white shadow-2xl shadow-slate-900/18">
           <input
             autoFocus
             value={query}
@@ -4999,7 +4999,7 @@ function CountrySearch({
         <ChevronDown className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
       </button>
       {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+        <div className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
           <input
             autoFocus
             value={query}

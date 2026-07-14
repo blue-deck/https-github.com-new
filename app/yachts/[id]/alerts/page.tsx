@@ -208,20 +208,20 @@ export default function AlertsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#081120] p-10 text-white">
+      <main className="bd-app-page min-h-screen bg-[#081120] p-10 text-white">
         Loading expiry alerts...
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#081120] p-10 text-white">
+    <main className="bd-app-page min-h-screen bg-[#081120] p-10 text-white">
       <div className="mx-auto max-w-7xl">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl bg-white/5 p-8">
+        <div className="bd-page-hero mt-6 rounded-3xl bg-white/5 p-8">
           <p className="text-gray-400">BlueDeck Expiry Monitoring</p>
 
           <h1 className="mt-3 text-5xl font-bold">Expiry Alerts</h1>
@@ -253,28 +253,28 @@ export default function AlertsPage() {
         </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-4">
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Expired</p>
             <h2 className="mt-4 text-5xl font-bold text-red-300">
               {expired}
             </h2>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Critical</p>
             <h2 className="mt-4 text-5xl font-bold text-orange-300">
               {critical}
             </h2>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Warning</p>
             <h2 className="mt-4 text-5xl font-bold text-yellow-300">
               {warning}
             </h2>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Normal</p>
             <h2 className="mt-4 text-5xl font-bold text-green-300">
               {normal}
@@ -282,7 +282,7 @@ export default function AlertsPage() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-3xl bg-white/5 p-8">
+        <div className="bd-app-card mt-8 rounded-3xl bg-white/5 p-8">
           <h2 className="text-3xl font-bold">Active Alerts</h2>
 
           <div className="mt-6 space-y-4">
@@ -319,7 +319,7 @@ export default function AlertsPage() {
             ))}
 
             {activeAlerts.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
+              <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
                 No active expiry alerts. Click sync after uploading documents
                 with expiry dates.
               </div>

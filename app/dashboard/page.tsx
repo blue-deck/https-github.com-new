@@ -390,7 +390,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen p-10 text-slate-900">
+      <main className="bd-app-page bd-ocean-shell min-h-screen p-10 text-slate-900">
         <div className="bd-ocean-content">{t("dashboard.loading")}</div>
       </main>
     );
@@ -400,7 +400,7 @@ export default function DashboardPage() {
     profile?.role === "captain" || profile?.role === "management";
 
   return (
-    <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-7xl">
         <div className="bd-glass-card-strong relative rounded-[34px] p-6 sm:p-8">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
@@ -452,7 +452,7 @@ export default function DashboardPage() {
               </p>
 
               {photoMenuOpen && (
-                <div className="absolute right-1/2 top-[calc(100%+10px)] z-50 w-56 translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-2xl shadow-slate-900/18 lg:right-0 lg:translate-x-0">
+                <div className="bd-auth-popover absolute right-1/2 top-[calc(100%+10px)] z-50 w-56 translate-x-1/2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 text-sm shadow-2xl shadow-slate-900/18 lg:right-0 lg:translate-x-0">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}

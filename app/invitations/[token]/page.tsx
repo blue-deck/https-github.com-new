@@ -93,7 +93,7 @@ export default function InvitationPage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+      <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900">
         <div className="bd-ocean-content">Loading invitation...</div>
       </main>
     );
@@ -101,7 +101,7 @@ export default function InvitationPage() {
 
   if (!invite) {
     return (
-      <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-8 text-slate-900">
+      <main className="bd-app-page bd-ocean-shell flex min-h-screen items-center justify-center p-8 text-slate-900">
         <div className="bd-glass-card-strong max-w-lg rounded-[32px] p-8 text-center">
           <Mail className="mx-auto h-12 w-12 text-cyan-700" />
           <h1 className="bd-serif mt-4 text-4xl font-normal text-[#071f3c]">Invitation not found</h1>
@@ -114,7 +114,7 @@ export default function InvitationPage() {
   }
 
   return (
-    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-900">
+    <main className="bd-app-page bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-900">
       <div className="bd-glass-card-strong w-full max-w-xl rounded-[36px] p-8">
         <BlueDeckLogoLink href="/" className="mb-8 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52" imageClassName="object-contain p-0" />
         {accepted ? (

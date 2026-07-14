@@ -431,7 +431,7 @@ export default function MyBluePage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+      <main className="bd-app-page bd-ocean-shell min-h-screen px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
         <div className="bd-ocean-content mx-auto max-w-[1320px]">
           <div className="bd-glass-card-strong rounded-[28px] p-6 text-sm font-semibold text-slate-600">
             Loading photo gallery...
@@ -442,7 +442,7 @@ export default function MyBluePage() {
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen overflow-x-hidden px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+    <main className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
       <div className="bd-ocean-content mx-auto max-w-[1320px]">
         <Link
           href="/dashboard"
@@ -616,14 +616,14 @@ export default function MyBluePage() {
       {preview &&
         createPortal(
           <div
-            className="fixed inset-0 z-[200] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-[#06111f]/80 p-3 backdrop-blur-sm sm:p-6"
+            className="bd-modal-backdrop fixed inset-0 z-[200] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-[#06111f]/80 p-3 backdrop-blur-sm sm:p-6"
             onClick={() => setPreview(null)}
             role="dialog"
             aria-modal="true"
             aria-label="Photo gallery preview"
           >
             <div
-              className="relative flex max-h-[calc(100dvh-1.5rem)] w-[min(960px,94vw)] items-center justify-center overflow-hidden rounded-3xl bg-white p-2 shadow-2xl shadow-black/40 sm:max-h-[calc(100dvh-3rem)] sm:p-3"
+              className="bd-auth-modal-panel relative flex max-h-[calc(100dvh-1.5rem)] w-[min(960px,94vw)] items-center justify-center overflow-hidden rounded-3xl bg-white p-2 shadow-2xl shadow-black/40 sm:max-h-[calc(100dvh-3rem)] sm:p-3"
               onClick={(event) => event.stopPropagation()}
             >
               <button

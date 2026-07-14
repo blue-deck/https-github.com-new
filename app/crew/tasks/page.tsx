@@ -720,7 +720,7 @@ export default function CrewTasksPage() {
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
+    <main className="bd-app-page bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
       <div className="bd-ocean-content bd-crew-task-content mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
         {portalView === "home" && (
           <section className="space-y-5">
@@ -1008,11 +1008,11 @@ export default function CrewTasksPage() {
 
         {photoPreview && (
           <div
-            className="fixed inset-0 z-[90] flex items-center justify-center bg-[#071631]/80 p-4 backdrop-blur-sm"
+            className="bd-modal-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-[#071631]/80 p-4 backdrop-blur-sm"
             onClick={() => setPhotoPreview(null)}
           >
             <div
-              className="w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/20 bg-white shadow-2xl"
+              className="bd-auth-modal-panel w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/20 bg-white shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
@@ -1029,7 +1029,7 @@ export default function CrewTasksPage() {
                   <X className="h-5 w-5" strokeWidth={2.5} />
                 </button>
               </div>
-              <div className="bg-[#071631] p-3">
+              <div className="bd-media-canvas bg-[#071631] p-3">
                 <img src={photoPreview.url} alt={`${photoPreview.label} proof`} className="max-h-[76vh] w-full object-contain" />
               </div>
             </div>

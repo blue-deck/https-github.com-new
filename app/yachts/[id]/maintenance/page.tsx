@@ -249,13 +249,13 @@ export default function MaintenancePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#081120] p-10 text-white">
+    <main className="bd-app-page min-h-screen bg-[#081120] p-10 text-white">
       <div className="mx-auto max-w-7xl">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl bg-white/5 p-8">
+        <div className="bd-page-hero mt-6 rounded-3xl bg-white/5 p-8">
           <p className="text-gray-400">BlueDeck Maintenance</p>
 
           <h1 className="mt-3 text-5xl font-bold">
@@ -269,17 +269,17 @@ export default function MaintenancePage() {
         </div>
 
         <div className="mt-8 grid gap-6 md:grid-cols-4">
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Current Hours</p>
             <h2 className="mt-4 text-5xl font-bold">{currentMaxHours()}h</h2>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Active Services</p>
             <h2 className="mt-4 text-5xl font-bold">{schedules.length}</h2>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Due Soon</p>
             <h2 className="mt-4 text-5xl font-bold">
               {
@@ -290,7 +290,7 @@ export default function MaintenancePage() {
             </h2>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-6">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-6">
             <p className="text-gray-400">Overdue</p>
             <h2 className="mt-4 text-5xl font-bold">
               {
@@ -303,7 +303,7 @@ export default function MaintenancePage() {
         </div>
 
         <div className="mt-8 grid gap-8 md:grid-cols-2">
-          <div className="rounded-3xl bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Create Service Schedule</h2>
 
             <div className="mt-8 space-y-4">
@@ -351,7 +351,7 @@ export default function MaintenancePage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Engine Hours</h2>
 
             <div className="mt-8 space-y-4">
@@ -381,7 +381,7 @@ export default function MaintenancePage() {
               {engineHours.map((engine) => (
                 <div
                   key={engine.id}
-                  className="rounded-2xl border border-white/10 bg-black/20 p-5"
+                  className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-5"
                 >
                   <h3 className="text-2xl font-semibold">
                     {engine.engine_name}
@@ -392,7 +392,7 @@ export default function MaintenancePage() {
               ))}
 
               {engineHours.length === 0 && (
-                <div className="rounded-2xl border border-white/10 bg-black/20 p-5 text-gray-400">
+                <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-5 text-gray-400">
                   No engine hours recorded yet.
                 </div>
               )}
@@ -400,14 +400,14 @@ export default function MaintenancePage() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-3xl bg-white/5 p-8">
+        <div className="bd-app-card mt-8 rounded-3xl bg-white/5 p-8">
           <h2 className="text-3xl font-bold">Active Maintenance</h2>
 
           <div className="mt-6 space-y-4">
             {schedules.map((item) => (
               <div
                 key={item.id}
-                className="rounded-2xl border border-white/10 bg-black/20 p-6"
+                className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6"
               >
                 <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -477,21 +477,21 @@ export default function MaintenancePage() {
             ))}
 
             {schedules.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
+              <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
                 No maintenance schedules yet.
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-8 rounded-3xl bg-white/5 p-8">
+        <div className="bd-app-card mt-8 rounded-3xl bg-white/5 p-8">
           <h2 className="text-3xl font-bold">Maintenance History</h2>
 
           <div className="mt-6 space-y-4">
             {logs.map((log) => (
               <div
                 key={log.id}
-                className="rounded-2xl border border-white/10 bg-black/20 p-5"
+                className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-5"
               >
                 <p className="font-semibold">
                   Completed at {log.completed_hours}h
@@ -508,7 +508,7 @@ export default function MaintenancePage() {
             ))}
 
             {logs.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
+              <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
                 No maintenance history yet.
               </div>
             )}

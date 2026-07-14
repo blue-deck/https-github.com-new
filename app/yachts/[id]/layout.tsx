@@ -61,7 +61,7 @@ export default function YachtAppLayout({
 
   if (!sessionChecked) {
     return (
-      <main className="bd-site-shell min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12">
+      <main className="bd-app-page bd-site-shell min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1500px]">
           <p className="bd-kicker">BlueDeck Secure Access</p>
           <h1 className="bd-serif mt-4 text-5xl">Opening private yacht workspace...</h1>
@@ -102,7 +102,7 @@ export default function YachtAppLayout({
           </div>
         </nav>
 
-        <div className="bd-yacht-page-content">{children}</div>
+        <div className="bd-yacht-page-content bd-private-workspace">{children}</div>
       </div>
     </div>
   );

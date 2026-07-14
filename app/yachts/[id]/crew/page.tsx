@@ -2456,10 +2456,10 @@ export default function CrewPage({
   }
 
   return (
-    <main className="bd-crew-command-page min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
+    <main className="bd-app-page bd-crew-command-page min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
       <div className="mx-auto w-full min-w-0 max-w-[1700px]">
         {isChecklistSystem && (
-          <div className="mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
+          <div className="bd-page-hero mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-white/85 shadow-2xl shadow-cyan-950/10 backdrop-blur sm:mb-10 sm:rounded-[40px]">
             <div className="bd-brand-rule h-1.5" />
             <div className="p-5 sm:p-8">
               <div className="min-w-0">
@@ -2518,7 +2518,7 @@ export default function CrewPage({
                 id="crew-command-invite-panel"
                 role="tabpanel"
                 aria-labelledby="crew-command-invite-tab"
-                className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
+                className="bd-page-hero overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
               >
                 <div className="h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
                 <div className="p-5 sm:p-8">
@@ -2630,7 +2630,7 @@ export default function CrewPage({
                 id="crew-command-status-panel"
                 role="tabpanel"
                 aria-labelledby="crew-command-status-tab"
-                className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
+                className="bd-page-hero overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
               >
                 <div className="h-1.5 bg-[linear-gradient(90deg,#0f766e,#22d3ee,#f4bf57)]" />
                 <div className="p-5 sm:p-8">
@@ -2706,7 +2706,7 @@ export default function CrewPage({
                 id="crew-command-directory-panel"
                 role="tabpanel"
                 aria-labelledby="crew-command-directory-tab"
-                className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
+                className="bd-page-hero overflow-hidden rounded-[28px] border border-cyan-100 bg-white shadow-2xl shadow-cyan-950/8 sm:rounded-[36px]"
               >
                 <div className="h-1.5 bg-[linear-gradient(90deg,#082f49,#0891b2,#67e8f9)]" />
                 <div className="p-5 sm:p-8">
@@ -2932,7 +2932,7 @@ export default function CrewPage({
         )}
 
         {isContractStudio && (
-          <section className="mb-8 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:mb-10">
+          <section className="bd-app-card mb-8 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:mb-10">
             <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
             <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-5 py-4 text-white sm:px-6 sm:py-5">
               <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -3566,7 +3566,7 @@ export default function CrewPage({
                         type="button"
                         onClick={assignContract}
                         disabled={loading || !selectedCrew}
-                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#08313b] py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-[#0e4f5d] disabled:opacity-50"
+                        className="bd-surface-inverse mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#08313b] py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-[#0e4f5d] disabled:opacity-50"
                       >
                         <Send className="h-5 w-5" />
                         Send for Signature
@@ -4344,7 +4344,7 @@ export default function CrewPage({
         )}
 
         {isChecklistSystem && checklistSection === "monitor" && (
-          <section className="rounded-[34px] border border-slate-200 bg-white/90 p-5 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px] sm:p-8">
+          <section className="bd-app-card rounded-[34px] border border-slate-200 bg-white/90 p-5 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px] sm:p-8">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="font-black uppercase tracking-[0.18em] text-cyan-700">
@@ -4504,7 +4504,7 @@ export default function CrewPage({
         )}
 
         {isChecklistSystem && checklistSection === "archive" && (
-          <section className="min-w-0 overflow-hidden rounded-[34px] border border-slate-200 bg-white/90 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px]">
+          <section className="bd-app-card min-w-0 overflow-hidden rounded-[34px] border border-slate-200 bg-white/90 shadow-2xl shadow-cyan-950/8 sm:rounded-[44px]">
             <div className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-8">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">
@@ -4658,11 +4658,11 @@ export default function CrewPage({
 
       {photoPreview && (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+          className="bd-modal-backdrop fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
           onClick={() => setPhotoPreview(null)}
         >
           <div
-            className="w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/20 bg-white shadow-2xl shadow-slate-950/40"
+            className="bd-auth-modal-panel w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/20 bg-white shadow-2xl shadow-slate-950/40"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
@@ -4684,7 +4684,7 @@ export default function CrewPage({
               </button>
             </div>
 
-            <div className="bg-slate-950">
+            <div className="bd-media-canvas bg-slate-950">
               <img
                 src={photoPreview.url}
                 alt={`${photoPreview.label} task photo`}

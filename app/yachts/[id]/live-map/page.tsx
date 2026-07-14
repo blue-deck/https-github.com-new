@@ -66,9 +66,9 @@ export default function LiveMapPage() {
     : [37.93665, 23.64949];
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 pb-28 text-white">
       <div className="mx-auto max-w-[1700px]">
-        <div className="rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
+        <div className="bd-page-hero rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
           <p className="text-cyan-400">BlueDeck Real Navigation</p>
 
           <h1 className="mt-4 text-6xl font-black">
@@ -100,7 +100,7 @@ export default function LiveMapPage() {
           <Stat title="Updated" value={position ? position.time : "-"} />
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-[40px] border border-white/10">
+        <div className="bd-media-canvas mt-8 overflow-hidden rounded-[40px] border border-white/10">
           {boatIcon ? (
             <MapContainer center={center} zoom={15} style={{ height: "850px", width: "100%" }}>
               <TileLayer
@@ -123,7 +123,7 @@ export default function LiveMapPage() {
               )}
             </MapContainer>
           ) : (
-            <div className="flex h-[850px] items-center justify-center bg-black text-3xl text-gray-500">
+            <div className="bd-media-canvas flex h-[850px] items-center justify-center bg-black text-3xl text-gray-500">
               Loading map...
             </div>
           )}
@@ -135,7 +135,7 @@ export default function LiveMapPage() {
 
 function Stat({ title, value }: any) {
   return (
-    <div className="rounded-[30px] border border-white/10 bg-white/5 p-6">
+    <div className="bd-app-card rounded-[30px] border border-white/10 bg-white/5 p-6">
       <p className="text-gray-400">{title}</p>
       <h2 className="mt-5 break-all text-3xl font-black">{value}</h2>
     </div>

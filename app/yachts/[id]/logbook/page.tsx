@@ -139,13 +139,13 @@ export default function LogbookPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-indigo-500/10 p-10">
+        <div className="bd-page-hero mt-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-indigo-500/10 p-10">
           <p className="text-xl text-gray-400">BlueDeck Official Records</p>
 
           <h1 className="mt-4 text-6xl font-black">Captain Logbook</h1>
@@ -156,7 +156,7 @@ export default function LogbookPage() {
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
             <h2 className="text-3xl font-bold">New Log Entry</h2>
 
             <div className="mt-6 space-y-4">
@@ -187,7 +187,7 @@ export default function LogbookPage() {
 
               <button
                 onClick={createLog}
-                className="w-full rounded-2xl bg-indigo-400 py-4 font-bold text-black"
+                className="bd-primary-action w-full rounded-2xl bg-indigo-400 py-4 font-bold text-black"
               >
                 Create Logbook Entry
               </button>
@@ -196,10 +196,10 @@ export default function LogbookPage() {
 
           <div className="space-y-6 lg:col-span-2">
             {logs.map((log) => (
-              <div key={log.id} className="rounded-3xl border border-white/10 bg-white/5 p-6">
+              <div key={log.id} className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6">
                 <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <p className="text-sm uppercase text-indigo-300">{log.log_type}</p>
+                    <p className="bd-brand-label text-sm uppercase text-indigo-300">{log.log_type}</p>
 
                     <h2 className="mt-2 text-3xl font-bold">{log.title}</h2>
 
@@ -218,7 +218,7 @@ export default function LogbookPage() {
                     </div>
 
                     {log.captain_notes && (
-                      <div className="mt-5 rounded-2xl bg-black/30 p-4">
+                      <div className="bd-app-card mt-5 rounded-2xl bg-black/30 p-4">
                         <p className="text-sm text-gray-400">Captain Notes</p>
                         <p className="mt-2">{log.captain_notes}</p>
                       </div>
@@ -228,7 +228,7 @@ export default function LogbookPage() {
                   <div className="flex min-w-[160px] flex-col gap-3">
                     <button
                       onClick={() => printLog(log)}
-                      className="rounded-xl bg-indigo-400 px-4 py-3 font-bold text-black"
+                      className="bd-primary-action rounded-xl bg-indigo-400 px-4 py-3 font-bold text-black"
                     >
                       Print / PDF
                     </button>
@@ -245,7 +245,7 @@ export default function LogbookPage() {
             ))}
 
             {logs.length === 0 && (
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-gray-400">
+              <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8 text-gray-400">
                 No logbook entries yet.
               </div>
             )}

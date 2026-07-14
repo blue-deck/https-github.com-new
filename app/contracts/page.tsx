@@ -71,14 +71,14 @@ export default function ContractsPage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen p-8 text-slate-900">
+      <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900">
         <div className="bd-ocean-content">Loading contracts...</div>
       </main>
     );
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
+    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-5xl">
         <header className="bd-glass-card-strong rounded-[34px] p-8">
           <p className="text-cyan-300">My Contracts</p>

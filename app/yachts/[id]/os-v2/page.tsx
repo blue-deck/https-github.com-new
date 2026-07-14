@@ -132,13 +132,13 @@ export default function BlueDeckOSV2Page() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
         <Link href={`/yachts/${yachtId}`} className="text-cyan-300">
           ← Back to yacht
         </Link>
 
-        <div className="mt-6 rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/20 to-cyan-500/10 p-10">
+        <div className="bd-page-hero mt-6 rounded-3xl border border-purple-500/20 bg-gradient-to-br from-purple-500/20 to-cyan-500/10 p-10">
           <p className="text-cyan-300">BlueDeck OS v2</p>
           <h1 className="mt-4 text-6xl font-black">Enterprise Yacht Operating System</h1>
           <p className="mt-4 max-w-4xl text-xl text-gray-300">
@@ -162,7 +162,7 @@ export default function BlueDeckOSV2Page() {
         </div>
 
         <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,430px)_minmax(0,1fr)]">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Create OS Item</h2>
 
             <div className="mt-6 space-y-4">
@@ -242,7 +242,7 @@ export default function BlueDeckOSV2Page() {
 
               <button
                 onClick={addEvent}
-                className="w-full rounded-2xl bg-purple-400 py-4 text-xl font-bold text-black"
+                className="bd-primary-action w-full rounded-2xl bg-purple-400 py-4 text-xl font-bold text-black"
               >
                 Add to BlueDeck OS
               </button>
@@ -284,7 +284,7 @@ export default function BlueDeckOSV2Page() {
             {grouped.map((group) => (
               <div
                 key={group.module}
-                className="rounded-3xl border border-white/10 bg-white/5 p-6"
+                className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6"
               >
                 <div className="flex items-center justify-between">
                   <h2 className="text-3xl font-bold">{group.module}</h2>
@@ -302,7 +302,7 @@ export default function BlueDeckOSV2Page() {
                           ? "border-red-500/30 bg-red-500/10"
                           : item.priority === "warning"
                           ? "border-yellow-500/30 bg-yellow-500/10"
-                          : "border-white/10 bg-black/20"
+                          : "bd-app-card border-white/10 bg-black/20"
                       }`}
                     >
                       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -376,7 +376,7 @@ function Stat({ title, value, danger = false }: any) {
   return (
     <div
       className={`rounded-3xl border p-6 ${
-        danger ? "border-red-500/30 bg-red-500/10" : "border-white/10 bg-white/5"
+        danger ? "border-red-500/30 bg-red-500/10" : "bd-app-card border-white/10 bg-white/5"
       }`}
     >
       <p className="text-gray-400">{title}</p>
@@ -389,7 +389,7 @@ function Insight({ title, text, danger = false }: any) {
   return (
     <div
       className={`rounded-2xl border p-5 ${
-        danger ? "border-red-500/30 bg-red-500/10" : "border-white/10 bg-black/20"
+        danger ? "border-red-500/30 bg-red-500/10" : "bd-app-card border-white/10 bg-black/20"
       }`}
     >
       <h3 className="text-xl font-bold">{title}</h3>

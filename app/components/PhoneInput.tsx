@@ -108,7 +108,7 @@ export function PhoneInput({
         </div>
 
         {open && (
-          <div className="absolute left-0 top-[calc(100%+8px)] z-50 w-full max-w-[430px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/18">
+          <div className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-50 w-full max-w-[430px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/18">
             <input
               autoFocus
               value={query}

@@ -63,13 +63,13 @@ export default function YachtStatusPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 text-white">
       <div className="mx-auto max-w-7xl">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-blue-500/10 p-10">
+        <div className="bd-page-hero mt-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-blue-500/10 p-10">
           <p className="text-xl text-gray-400">BlueDeck Live Operations</p>
 
           <h1 className="mt-4 text-6xl font-black">
@@ -82,7 +82,7 @@ export default function YachtStatusPage() {
         </div>
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
             <h2 className="text-3xl font-bold">
               Update Status
             </h2>
@@ -186,7 +186,7 @@ export default function YachtStatusPage() {
               />
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+            <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
               <div className="flex flex-wrap gap-4">
                 <Badge
                   active={status?.owner_onboard}
@@ -208,7 +208,7 @@ export default function YachtStatusPage() {
 
 function InfoCard({ title, value }: any) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-6">
+    <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6">
       <p className="text-gray-400">
         {title}
       </p>

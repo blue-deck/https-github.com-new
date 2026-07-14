@@ -141,13 +141,13 @@ export default function CommandCenterPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
         <Link href={`/yachts/${yachtId}`} className="text-cyan-300">
           ← Back to yacht
         </Link>
 
-        <div className="mt-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 p-10">
+        <div className="bd-page-hero mt-6 rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/20 to-blue-500/10 p-10">
           <p className="text-cyan-300">BlueDeck Command System</p>
           <h1 className="mt-4 text-6xl font-black">Captain Command Center</h1>
           <p className="mt-4 max-w-3xl text-xl text-gray-300">
@@ -268,7 +268,7 @@ export default function CommandCenterPage() {
 
 function Stat({ title, value, danger = false }: any) {
   return (
-    <div className={`rounded-3xl border p-6 ${danger ? "border-red-500/30 bg-red-500/10" : "border-white/10 bg-white/5"}`}>
+    <div className={`rounded-3xl border p-6 ${danger ? "border-red-500/30 bg-red-500/10" : "bd-app-card border-white/10 bg-white/5"}`}>
       <p className="text-gray-400">{title}</p>
       <h2 className="mt-3 text-4xl font-black">{value}</h2>
     </div>
@@ -277,7 +277,7 @@ function Stat({ title, value, danger = false }: any) {
 
 function Panel({ title, children }: any) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+    <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
       <h2 className="text-3xl font-bold">{title}</h2>
       <div className="mt-5">{children}</div>
     </div>
@@ -294,7 +294,7 @@ function Badge({ text }: any) {
 
 function Quick({ href, title }: any) {
   return (
-    <Link href={href} className="rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-xl font-bold hover:border-cyan-400/50">
+    <Link href={href} className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6 text-center text-xl font-bold hover:border-cyan-400/50">
       {title}
     </Link>
   );

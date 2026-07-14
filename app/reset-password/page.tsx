@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="bd-site-shell min-h-screen overflow-hidden text-[#071f3c]">
+    <main className="bd-app-page bd-site-shell min-h-screen overflow-hidden text-[#071f3c]">
       <PublicHeader />
 
       <section className="bd-ocean-content mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-[1280px] items-center gap-10 px-5 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-12">

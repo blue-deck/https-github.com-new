@@ -93,7 +93,7 @@ export default function ConfirmAuthPage() {
   }, []);
 
   return (
-    <main className="bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-950">
+    <main className="bd-app-page bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-950">
       <div className="bd-glass-card-strong w-full max-w-lg rounded-[34px] p-8 text-center">
         <BlueDeckLogoLink
           href="/"

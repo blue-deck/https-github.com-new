@@ -80,13 +80,13 @@ export default function TimelinePage() {
   }, [yachtId]);
 
   return (
-    <main className="min-h-screen bg-[#081120] p-10 text-white">
+    <main className="bd-app-page min-h-screen bg-[#081120] p-10 text-white">
       <div className="mx-auto max-w-5xl">
         <a href={`/yachts/${yachtId}`} className="text-blue-300">
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl bg-white/5 p-8">
+        <div className="bd-page-hero mt-6 rounded-3xl bg-white/5 p-8">
           <p className="text-gray-400">BlueDeck Live Operations</p>
           <h1 className="mt-3 text-5xl font-bold">Captain Timeline</h1>
           <p className="mt-4 text-gray-400">
@@ -98,7 +98,7 @@ export default function TimelinePage() {
           {events.map((event, index) => (
             <div
               key={index}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6"
+              className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-6"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -119,7 +119,7 @@ export default function TimelinePage() {
           ))}
 
           {events.length === 0 && (
-            <div className="rounded-3xl bg-white/5 p-8 text-gray-400">
+            <div className="bd-app-card rounded-3xl bg-white/5 p-8 text-gray-400">
               No timeline activity yet.
             </div>
           )}

@@ -104,14 +104,14 @@ export default function YachtsPage() {
 
   if (loading) {
     return (
-      <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+      <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
         <div className="bd-ocean-content mx-auto max-w-7xl">Loading yachts...</div>
       </main>
     );
   }
 
   return (
-    <main className="bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content mx-auto max-w-7xl">
         <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="bd-brand-rule h-1.5" />

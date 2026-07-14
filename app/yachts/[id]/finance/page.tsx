@@ -123,9 +123,9 @@ export default function FinancePage() {
   ].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
   return (
-    <main className="min-h-screen bg-[#020817] p-8 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-8 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
+        <div className="bd-page-hero mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
           <p className="text-cyan-300">BlueDeck FinanceOS</p>
           <h1 className="mt-3 text-6xl font-black">Finance Center</h1>
           <p className="mt-5 max-w-3xl text-xl text-gray-400">
@@ -141,7 +141,7 @@ export default function FinancePage() {
         </div>
 
         <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,390px)]">
-          <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
+          <div className="bd-app-card rounded-[36px] border border-white/10 bg-white/5 p-8">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-cyan-300">Ledger</p>
@@ -152,7 +152,7 @@ export default function FinancePage() {
 
             <div className="mt-10 space-y-5">
               {recentItems.map((item) => (
-                <div key={item.id} className="rounded-3xl border border-white/10 bg-black/20 p-6">
+                <div key={item.id} className="bd-app-card rounded-3xl border border-white/10 bg-black/20 p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-black uppercase tracking-[0.16em] text-cyan-300">{item.type}</p>
@@ -165,7 +165,7 @@ export default function FinancePage() {
               ))}
 
               {recentItems.length === 0 && (
-                <div className="rounded-3xl border border-white/10 bg-black/20 p-6 text-gray-400">
+                <div className="bd-app-card rounded-3xl border border-white/10 bg-black/20 p-6 text-gray-400">
                   No finance records yet.
                 </div>
               )}
@@ -173,7 +173,7 @@ export default function FinancePage() {
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-[32px] border border-white/10 bg-white/5 p-6">
+            <div className="bd-app-card rounded-[32px] border border-white/10 bg-white/5 p-6">
               <div className="text-cyan-300"><Plus /></div>
               <h2 className="mt-5 text-3xl font-black">Add Expense</h2>
               <div className="mt-6 space-y-4">
@@ -201,7 +201,7 @@ function formatMoney(value: number) {
 
 function Stat({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-[30px] border border-white/10 bg-white/5 p-6">
+    <div className="bd-app-card rounded-[30px] border border-white/10 bg-white/5 p-6">
       <p className="text-gray-400">{title}</p>
       <h2 className="mt-4 break-words text-3xl font-black">{value}</h2>
     </div>
@@ -210,7 +210,7 @@ function Stat({ title, value }: { title: string; value: string }) {
 
 function Box({ icon, title, value }: { icon: React.ReactNode; title: string; value: string }) {
   return (
-    <div className="rounded-[32px] border border-white/10 bg-white/5 p-6">
+    <div className="bd-app-card rounded-[32px] border border-white/10 bg-white/5 p-6">
       <div className="text-cyan-300">{icon}</div>
       <p className="mt-5 text-gray-400">{title}</p>
       <h3 className="mt-3 text-3xl font-black">{value}</h3>

@@ -77,9 +77,9 @@ export default function InventoryPage() {
   }, [items]);
 
   return (
-    <main className="min-h-screen bg-[#020817] p-8 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-8 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
+        <div className="bd-page-hero mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
           <p className="text-cyan-300">BlueDeck InventoryOS</p>
           <h1 className="mt-3 text-6xl font-black">Inventory & Provisioning</h1>
           <p className="mt-5 max-w-3xl text-xl text-gray-400">
@@ -94,7 +94,7 @@ export default function InventoryPage() {
           <Stat title="Status" value={stats.critical ? "Action" : "Ready"} />
         </div>
 
-        <div className="mb-8 rounded-[32px] border border-white/10 bg-white/5 p-6">
+        <div className="bd-app-card mb-8 rounded-[32px] border border-white/10 bg-white/5 p-6">
           <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.5fr)_minmax(0,1fr)_auto]">
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="rounded-2xl bg-white/10 p-4 text-white outline-none placeholder:text-white/45" />
             <input value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="Qty" inputMode="numeric" className="rounded-2xl bg-white/10 p-4 text-white outline-none placeholder:text-white/45" />
@@ -110,7 +110,7 @@ export default function InventoryPage() {
             const low = Number(item.quantity || 0) <= 2;
 
             return (
-              <div key={item.id} className="rounded-[36px] border border-white/10 bg-white/5 p-8">
+              <div key={item.id} className="bd-app-card rounded-[36px] border border-white/10 bg-white/5 p-8">
                 <div className="flex items-start justify-between">
                   <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-cyan-400 text-black">
                     <Package className="h-8 w-8" />
@@ -126,7 +126,7 @@ export default function InventoryPage() {
                 <h2 className="mt-8 text-4xl font-black">{item.title || "Inventory Item"}</h2>
                 <p className="mt-3 text-gray-400">{item.location || item.description || "No location set"}</p>
 
-                <div className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5">
+                <div className="bd-app-card mt-8 rounded-2xl border border-white/10 bg-black/20 p-5">
                   <p className="text-gray-400">Stock</p>
                   <h3 className="mt-3 text-3xl font-black text-cyan-300">{Number(item.quantity || 0)}</h3>
                 </div>
@@ -140,7 +140,7 @@ export default function InventoryPage() {
           })}
 
           {items.length === 0 && (
-            <div className="rounded-[36px] border border-white/10 bg-white/5 p-8 text-gray-400">
+            <div className="bd-app-card rounded-[36px] border border-white/10 bg-white/5 p-8 text-gray-400">
               No inventory items recorded yet.
             </div>
           )}
@@ -152,7 +152,7 @@ export default function InventoryPage() {
 
 function Stat({ title, value }: { title: string; value: string }) {
   return (
-    <div className="rounded-[30px] border border-white/10 bg-white/5 p-6">
+    <div className="bd-app-card rounded-[30px] border border-white/10 bg-white/5 p-6">
       <p className="text-gray-400">{title}</p>
       <h2 className="mt-4 text-3xl font-black">{value}</h2>
     </div>

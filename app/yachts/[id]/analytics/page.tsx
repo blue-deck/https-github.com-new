@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
       : 0;
 
   return (
-    <main className="min-h-screen bg-[#020817] p-6 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-6 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
 
         <a
@@ -128,7 +128,7 @@ export default function AnalyticsPage() {
           ← Back to yacht
         </a>
 
-        <div className="mt-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-cyan-500/10 p-10">
+        <div className="bd-page-hero mt-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/10 to-cyan-500/10 p-10">
           <p className="text-xl text-gray-400">
             BlueDeck Analytics
           </p>
@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+          <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
 
             <h2 className="text-3xl font-bold">
               Engine Log
@@ -253,7 +253,7 @@ export default function AnalyticsPage() {
 
           <div className="lg:col-span-2 space-y-6">
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+            <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
 
               <div className="flex items-center justify-between">
 
@@ -280,7 +280,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
+            <div className="bd-app-card rounded-3xl border border-white/10 bg-white/5 p-8">
 
               <h2 className="text-3xl font-bold">
                 Engine History
@@ -291,7 +291,7 @@ export default function AnalyticsPage() {
                 {engineLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="rounded-2xl border border-white/10 bg-black/20 p-6"
+                    className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6"
                   >
 
                     <div className="flex items-start justify-between">
@@ -366,7 +366,7 @@ function Stat({
       className={`rounded-3xl border p-6 ${
         danger
           ? "border-red-500/20 bg-red-500/10"
-          : "border-white/10 bg-white/5"
+          : "bd-app-card border-white/10 bg-white/5"
       }`}
     >
       <p className="text-gray-400">

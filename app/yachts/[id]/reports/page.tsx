@@ -64,9 +64,9 @@ export default function ReportsPage() {
   }, [checklists, engineering, expenses, fuel]);
 
   return (
-    <main className="min-h-screen bg-[#020817] p-8 pb-28 text-white">
+    <main className="bd-app-page min-h-screen bg-[#020817] p-8 pb-28 text-white">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
+        <div className="bd-page-hero mb-12 rounded-[40px] border border-cyan-500/20 bg-gradient-to-br from-cyan-500/10 to-blue-900/10 p-10">
           <p className="text-cyan-300">BlueDeck Reports</p>
           <h1 className="mt-3 text-6xl font-black">Reports & PDF Export</h1>
           <p className="mt-5 max-w-3xl text-xl text-gray-400">
@@ -113,7 +113,7 @@ export default function ReportsPage() {
 
 function Report({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-[36px] border border-white/10 bg-white/5 p-8">
+    <div className="bd-app-card rounded-[36px] border border-white/10 bg-white/5 p-8">
       <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-cyan-400 text-black">
         {icon}
       </div>
@@ -121,7 +121,7 @@ function Report({ icon, title, text }: { icon: React.ReactNode; title: string; t
       <h2 className="text-4xl font-black">{title}</h2>
       <p className="mt-5 text-xl leading-relaxed text-gray-400">{text}</p>
 
-      <div className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-5">
+      <div className="bd-app-card mt-8 rounded-2xl border border-white/10 bg-black/20 p-5">
         <div className="flex items-center gap-3 text-cyan-300">
           <FileText />
           Ready for PDF export

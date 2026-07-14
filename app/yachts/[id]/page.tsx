@@ -321,10 +321,10 @@ export default function YachtDashboard() {
   ] as const;
 
   return (
-    <main className="min-h-screen min-w-0 overflow-x-hidden px-5 pb-32 pt-8 text-slate-950 sm:px-8 lg:px-10">
+    <main className="bd-app-page min-h-screen min-w-0 overflow-x-hidden px-5 pb-32 pt-8 text-slate-950 sm:px-8 lg:px-10">
       <div className="mx-auto w-full min-w-0 max-w-7xl">
         <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
-          <div className="relative overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8 lg:p-10">
+          <div className="bd-page-hero relative overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8 lg:p-10">
             <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />
             <div className="flex flex-wrap items-start justify-between gap-5">
               <div>
@@ -371,7 +371,7 @@ export default function YachtDashboard() {
             )}
           </div>
 
-          <div className="rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8">
+          <div className="bd-app-card rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8">
             <div className="flex items-start justify-between gap-5">
               <div>
                 <p className="bd-kicker">Today</p>
@@ -433,7 +433,7 @@ export default function YachtDashboard() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
+          <div className="bd-app-card mt-6 rounded-[32px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="bd-kicker">Recent Activity</p>
@@ -534,7 +534,7 @@ function ReadinessRow({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="bd-app-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <p className="font-black text-slate-950">{label}</p>
         <p className={`rounded-full border px-3 py-1 text-sm font-black ${tones[tone]}`}>
@@ -567,7 +567,7 @@ function StatusPanel({
   };
 
   return (
-    <article className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
+    <article className="bd-app-card rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
       <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${tones[tone]}`}>
         <Icon className="h-6 w-6" />
       </div>
@@ -603,7 +603,7 @@ function ModuleLink({
   return (
     <Link
       href={href}
-      className="bd-focus group rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5 transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-2xl hover:shadow-cyan-950/10"
+      className="bd-focus bd-app-card group rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5 transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-2xl hover:shadow-cyan-950/10"
     >
       <div className="flex items-start justify-between gap-4">
         <div className={`flex h-13 w-13 items-center justify-center rounded-2xl border ${tones[tone]}`}>
