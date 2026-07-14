@@ -28,7 +28,6 @@ import {
   AlertTriangle,
   Camera,
   ChevronLeft,
-  GripVertical,
   Trash2,
   Upload,
   X,
@@ -455,82 +454,93 @@ export default function MyBluePage() {
           Dashboard
         </Link>
 
-        <header className="bd-glass-card-strong overflow-hidden rounded-[24px]">
-          <div className="bd-brand-rule h-1" />
-          <div className="flex flex-col gap-3 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
-                <Camera className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-700">My Blue</p>
-                <h1 className="truncate text-xl font-black tracking-[-0.02em] text-[#071f3c] sm:text-2xl">
-                  Photo Gallery
-                </h1>
+        <header
+          className="overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/95 shadow-lg shadow-slate-950/6 backdrop-blur"
+          aria-busy={uploading || saving}
+        >
+          <div className="bd-brand-rule h-0.5" />
+          <div className="p-4 sm:p-5">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#173f4a] text-white shadow-sm">
+                  <Camera className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">My Blue</p>
+                  <h1 className="truncate text-xl font-black tracking-[-0.02em] text-[#071f3c] sm:text-2xl">
+                    Photo Gallery
+                  </h1>
+                </div>
               </div>
-            </div>
 
-            <div className="flex w-full items-center gap-2 sm:w-auto">
-              <span className="inline-flex h-10 shrink-0 items-center rounded-xl border border-cyan-100 bg-cyan-50/80 px-3 text-xs font-black tabular-nums text-[#173f4a]">
+              <span
+                className="inline-flex h-8 shrink-0 items-center rounded-full border border-cyan-100 bg-cyan-50/80 px-3 text-xs font-bold tabular-nums text-[#173f4a]"
+                aria-label={`${editablePortfolio.length} ${editablePortfolio.length === 1 ? "photo" : "photos"}`}
+              >
                 {editablePortfolio.length} {editablePortfolio.length === 1 ? "photo" : "photos"}
               </span>
-              <button
-                type="button"
-                disabled={uploading || saving}
-                onClick={() => photoInputRef.current?.click()}
-                className={`inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[#173f4a] px-3 text-sm font-bold text-white shadow-sm transition sm:flex-none ${
-                  uploading || saving
-                    ? "cursor-progress opacity-70"
-                    : "cursor-pointer hover:bg-[#0d5968]"
-                }`}
-              >
-                <Upload className="h-4 w-4" />
-                {uploading ? "Uploading..." : "Add photo"}
-              </button>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                disabled={uploading || saving}
-                className="hidden"
-                tabIndex={-1}
-                onChange={async (event) => {
-                  const file = event.currentTarget.files?.[0];
-                  event.currentTarget.value = "";
-                  if (!file) return;
-                  const url = await uploadPhoto(file);
-                  if (url) await saveNewPhoto(url);
-                }}
-              />
             </div>
-          </div>
 
-          <div className="flex min-h-8 flex-wrap items-center justify-between gap-2 border-t border-cyan-100/80 bg-cyan-50/55 px-4 py-1.5 sm:px-5">
-            <p
-              id="gallery-reorder-instructions"
-              className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold leading-4 text-[#5b6f78]"
-            >
-              <GripVertical className="h-4 w-4 shrink-0 text-cyan-700" />
-              {editablePortfolio.length > 1
-                ? "Hold and drag a photo to reorder. Changes save automatically."
-                : editablePortfolio.length === 1
-                  ? "Add another photo to enable drag reordering."
-                  : "Add photos to build your gallery."}
-            </p>
-            {uploading && (
-              <button
-                type="button"
-                onClick={cancelUpload}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700"
+            <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <p
+                id="gallery-reorder-instructions"
+                className="order-2 min-w-0 text-[11px] font-medium leading-4 text-slate-500 sm:order-1"
               >
-                Cancel upload
-              </button>
-            )}
-            {saving && (
-              <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[#2d7482]">
-                Saving gallery...
-              </span>
-            )}
+                {saving
+                  ? "Saving gallery changes..."
+                  : editablePortfolio.length > 1
+                    ? "Hold and drag to reorder · Saves automatically"
+                    : editablePortfolio.length === 1
+                      ? "Add another photo to arrange your gallery"
+                      : "Add photos to build your gallery"}
+              </p>
+
+              <div className="order-1 flex w-full items-center gap-2 sm:order-2 sm:w-auto">
+                <button
+                  type="button"
+                  disabled={uploading || saving}
+                  onClick={() => photoInputRef.current?.click()}
+                  className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#173f4a] px-4 text-sm font-bold text-white shadow-sm transition sm:min-w-40 sm:flex-none ${
+                    uploading || saving
+                      ? "cursor-progress opacity-70"
+                      : "cursor-pointer hover:bg-[#0d5968] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                  }`}
+                >
+                  <Upload className="h-4 w-4" aria-hidden />
+                  {uploading ? "Uploading..." : "Add photo"}
+                </button>
+                {uploading && (
+                  <button
+                    type="button"
+                    onClick={cancelUpload}
+                    className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+                    aria-label="Cancel photo upload"
+                    title="Cancel upload"
+                  >
+                    <X className="h-4 w-4" aria-hidden />
+                  </button>
+                )}
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  aria-label="Choose gallery photo"
+                  disabled={uploading || saving}
+                  className="sr-only"
+                  tabIndex={-1}
+                  onChange={async (event) => {
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = "";
+                    if (!file) return;
+                    const url = await uploadPhoto(file);
+                    if (url) await saveNewPhoto(url);
+                  }}
+                />
+              </div>
+            </div>
+            <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+              {uploading ? "Uploading gallery photo..." : saving ? "Saving gallery changes..." : ""}
+            </span>
           </div>
         </header>
 
@@ -709,14 +719,6 @@ function GalleryPhotoCard({
             className="h-full w-full select-none object-cover transition duration-300 group-hover:scale-[1.025]"
           />
         </button>
-        {total > 1 && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/70 bg-[#071f3c]/88 text-white shadow-lg backdrop-blur-sm"
-          >
-            <GripVertical className="h-4 w-4" />
-          </span>
-        )}
       </div>
       <div className="mt-2 grid gap-1.5">
         <button
