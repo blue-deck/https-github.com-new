@@ -11,6 +11,7 @@ import {
   ExternalLink,
   IdCard,
   Languages,
+  LoaderCircle,
   Mail,
   MapPin,
   Phone,
@@ -486,6 +487,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
+  const [openSkillsGroup, setOpenSkillsGroup] = useState<string | null>(null);
   const [newDocumentOpen, setNewDocumentOpen] = useState(true);
   const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState(true);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
@@ -1064,6 +1066,7 @@ export default function ProfilePage() {
                     aria-current={active ? "page" : undefined}
                     onClick={(event) => {
                       setActiveStudioTab(tab.id);
+                      if (tab.id !== "skills") setOpenSkillsGroup(null);
                       event.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
                     }}
                     className={`bd-profile-studio-tab group flex shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[18px] border px-3 py-3 text-left transition sm:gap-3 sm:px-3.5 sm:py-3.5 ${
@@ -1095,89 +1098,101 @@ export default function ProfilePage() {
               active={activeStudioTab === "personal"}
               title="Personal details"
               icon={<UserRound className="h-5 w-5" />}
-              action={
-                <button
-                  type="button"
-                  onClick={() => saveProfile()}
-                  disabled={saving || !profileDirty}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
-                    profileDirty
-                      ? "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3] disabled:opacity-70"
-                      : "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                  }`}
-                >
-                  {saving ? <Plus className="h-4 w-4" /> : profileDirty ? <Plus className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-                  {saving ? "Saving..." : profileDirty ? "Save" : "Saved"}
-                </button>
-              }
             >
-              <div className="grid gap-4 xl:grid-cols-[minmax(320px,440px)_1fr]">
-                <ProfilePhoto
-                  url={profile.profile_photo_url}
-                  name={profile.full_name}
-                  uploading={uploading === "profile-photo"}
-                  onCancelUpload={cancelUpload}
-                  onRemove={() => setProfile((current) => ({ ...current, profile_photo_url: "" }))}
-                  onUpload={async (file) => {
-                    const url = await uploadFile(file, "crew-portfolio", "profile-photo");
-                    if (url) setProfile((current) => ({ ...current, profile_photo_url: url }));
-                  }}
-                />
-                <TextArea
-                  label="Professional summary"
-                  value={profile.bio || ""}
-                  onChange={(value) => setProfile({ ...profile, bio: value.slice(0, professionalSummaryMaxLength) })}
-                  className="min-h-full"
-                  textareaClassName="h-[calc(100%-30px)] min-h-40"
-                  maxLength={professionalSummaryMaxLength}
-                />
+              <div className="space-y-5">
+                <div className="grid gap-5 border-b border-slate-200 pb-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
+                  <ProfilePhoto
+                    url={profile.profile_photo_url}
+                    name={profile.full_name}
+                    uploading={uploading === "profile-photo"}
+                    onCancelUpload={cancelUpload}
+                    onRemove={() => setProfile((current) => ({ ...current, profile_photo_url: "" }))}
+                    onUpload={async (file) => {
+                      const url = await uploadFile(file, "crew-portfolio", "profile-photo");
+                      if (url) setProfile((current) => ({ ...current, profile_photo_url: url }));
+                    }}
+                  />
+                  <TextArea
+                    label="Professional summary"
+                    value={profile.bio || ""}
+                    onChange={(value) => setProfile({ ...profile, bio: value.slice(0, professionalSummaryMaxLength) })}
+                    className=""
+                    textareaClassName="min-h-32 resize-y text-base sm:text-sm"
+                    maxLength={professionalSummaryMaxLength}
+                  />
+                </div>
+
+                <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2">
+                  <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} mobileFriendly />
+                  <DropdownChoiceGroup
+                    title="Position"
+                    options={yachtPositionTitles}
+                    value={currentPositionValue ? [currentPositionValue] : []}
+                    onChange={(value) => {
+                      const nextPosition = cleanSaveText(value[0]);
+                      setProfile((current) => ({
+                        ...current,
+                        current_position: nextPosition,
+                        current_positions: nextPosition ? [nextPosition] : [],
+                      }));
+                    }}
+                    selectedAsTitle
+                    singleSelect
+                  />
+                  <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} mobileFriendly />
+                  <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
+                </div>
+
+                <div className="grid gap-x-4 gap-y-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
+                  <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
+                  <Field
+                    label="Height cm"
+                    value={String(profile.height_cm || "")}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={3}
+                    normalizeValue={normalizeThreeDigitNumber}
+                    onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })}
+                    mobileFriendly
+                  />
+                  <Field
+                    label="Weight kg"
+                    value={String(profile.weight_kg || "")}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={3}
+                    normalizeValue={normalizeThreeDigitNumber}
+                    onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })}
+                    mobileFriendly
+                  />
+                  <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
+                  <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
+                </div>
+
+                <div className="grid gap-x-4 gap-y-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
+                  <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
+                  <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} mobileFriendly />
+                  <div className="sm:col-span-2">
+                    <LocationSelect value={profile.location || ""} onChange={(value) => setProfile({ ...profile, location: value })} />
+                  </div>
+                </div>
+
+                <div className="flex justify-end border-t border-slate-200 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => saveProfile()}
+                    disabled={saving || !profileDirty}
+                    className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-black transition disabled:cursor-default sm:w-auto sm:min-w-32 ${
+                      profileDirty
+                        ? "bg-[#5fd3e5] text-[#031923] shadow-sm hover:bg-[#84e6f3] disabled:opacity-70"
+                        : "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                    }`}
+                  >
+                    {saving ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
+                    <span aria-live="polite">{saving ? "Saving..." : profileDirty ? "Save" : "Saved"}</span>
+                  </button>
+                </div>
               </div>
-              <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} />
-              <DropdownChoiceGroup
-                title="Position"
-                options={yachtPositionTitles}
-                value={currentPositionValue ? [currentPositionValue] : []}
-                onChange={(value) => {
-                  const nextPosition = cleanSaveText(value[0]);
-                  setProfile((current) => ({
-                    ...current,
-                    current_position: nextPosition,
-                    current_positions: nextPosition ? [nextPosition] : [],
-                  }));
-                }}
-                selectedAsTitle
-                singleSelect
-              />
-              <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} />
-              <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
-              <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="Height cm"
-                  value={String(profile.height_cm || "")}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={3}
-                  normalizeValue={normalizeThreeDigitNumber}
-                  onChange={(value) => setProfile({ ...profile, height_cm: Number(value) || undefined })}
-                />
-                <Field
-                  label="Weight kg"
-                  value={String(profile.weight_kg || "")}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={3}
-                  normalizeValue={normalizeThreeDigitNumber}
-                  onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
-                <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
-              </div>
-              <PhoneInput label="Mobile number" value={profile.phone || ""} onChange={(value) => setProfile({ ...profile, phone: value })} />
-              <Field label="Email" value={profile.email} onChange={(value) => setProfile({ ...profile, email: value })} />
-              <LocationSelect value={profile.location || ""} onChange={(value) => setProfile({ ...profile, location: value })} />
             </Panel>
 
           </div>
@@ -1422,62 +1437,73 @@ export default function ProfilePage() {
               />
             </Panel>
 
-            <Panel active={activeStudioTab === "skills"} title="Work preferences" icon={<Star className="h-5 w-5" />}>
-              <DropdownChoiceGroup
-                title="Work preferences"
-                options={workPreferences}
-                value={profile.work_preferences || []}
-                onChange={(value) => {
-                  const nextProfile = { ...profile, work_preferences: value };
-                  setProfile(nextProfile);
-                  void saveProfile(nextProfile);
-                }}
-                maxSelected={5}
-                inlineSelected
-                commitOnSelect
-              />
-            </Panel>
-
             <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
-              <DropdownChoiceGroup
-                title="Personal skills"
-                options={personalSkills}
-                value={profile.personal_skills || []}
-                onChange={(value) => {
-                  const nextProfile = { ...profile, personal_skills: value };
-                  setProfile(nextProfile);
-                  void saveProfile(nextProfile);
-                }}
-                maxSelected={5}
-                inlineSelected
-                commitOnSelect
-              />
-              <DropdownChoiceGroup
-                title="Personal characteristics"
-                options={characteristics}
-                value={profile.personal_characteristics || []}
-                onChange={(value) => {
-                  const nextProfile = { ...profile, personal_characteristics: value };
-                  setProfile(nextProfile);
-                  void saveProfile(nextProfile);
-                }}
-                maxSelected={5}
-                inlineSelected
-                commitOnSelect
-              />
-              <DropdownChoiceGroup
-                title="Seeking positions"
-                options={yachtPositionTitles}
-                value={profile.seeking_positions || []}
-                onChange={(value) => {
-                  const nextProfile = { ...profile, seeking_positions: value };
-                  setProfile(nextProfile);
-                  void saveProfile(nextProfile);
-                }}
-                maxSelected={5}
-                inlineSelected
-                commitOnSelect
-              />
+              <div className="divide-y divide-slate-200">
+                <DropdownChoiceGroup
+                  title="Personal skills"
+                  options={personalSkills}
+                  value={profile.personal_skills || []}
+                  onChange={(value) => {
+                    const nextProfile = { ...profile, personal_skills: value };
+                    setProfile(nextProfile);
+                    void saveProfile(nextProfile);
+                  }}
+                  maxSelected={5}
+                  inlineSelected
+                  commitOnSelect
+                  compact
+                  open={openSkillsGroup === "personal-skills"}
+                  onOpenChange={(open) => setOpenSkillsGroup(open ? "personal-skills" : null)}
+                />
+                <DropdownChoiceGroup
+                  title="Personal characteristics"
+                  options={characteristics}
+                  value={profile.personal_characteristics || []}
+                  onChange={(value) => {
+                    const nextProfile = { ...profile, personal_characteristics: value };
+                    setProfile(nextProfile);
+                    void saveProfile(nextProfile);
+                  }}
+                  maxSelected={5}
+                  inlineSelected
+                  commitOnSelect
+                  compact
+                  open={openSkillsGroup === "personal-characteristics"}
+                  onOpenChange={(open) => setOpenSkillsGroup(open ? "personal-characteristics" : null)}
+                />
+                <DropdownChoiceGroup
+                  title="Work preferences"
+                  options={workPreferences}
+                  value={profile.work_preferences || []}
+                  onChange={(value) => {
+                    const nextProfile = { ...profile, work_preferences: value };
+                    setProfile(nextProfile);
+                    void saveProfile(nextProfile);
+                  }}
+                  maxSelected={5}
+                  inlineSelected
+                  commitOnSelect
+                  compact
+                  open={openSkillsGroup === "work-preferences"}
+                  onOpenChange={(open) => setOpenSkillsGroup(open ? "work-preferences" : null)}
+                />
+                <DropdownChoiceGroup
+                  title="Seeking positions"
+                  options={yachtPositionTitles}
+                  value={profile.seeking_positions || []}
+                  onChange={(value) => {
+                    const nextProfile = { ...profile, seeking_positions: value };
+                    setProfile(nextProfile);
+                    void saveProfile(nextProfile);
+                  }}
+                  maxSelected={5}
+                  inlineSelected
+                  commitOnSelect
+                  compact
+                  open={openSkillsGroup === "seeking-positions"}
+                  onOpenChange={(open) => setOpenSkillsGroup(open ? "seeking-positions" : null)}
+                />
+              </div>
             </Panel>
 
             {activeStudioTab === "preview" && (
@@ -3219,15 +3245,15 @@ function ProfilePhoto({
   onRemove: () => void;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="h-24 w-24 overflow-hidden rounded-2xl bg-slate-100">
+    <div className="flex min-w-0 flex-col gap-3 py-1 sm:flex-row sm:items-center sm:gap-4">
+      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200 sm:h-24 sm:w-24">
         {url ? <img src={url} alt={name || "Profile"} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center text-slate-400"><UserRound className="h-10 w-10" /></div>}
       </div>
-      <div>
-        <p className="font-semibold text-slate-950">Profile photo</p>
-        <p className="mt-1 text-sm text-slate-500">This appears in your portal and CV.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <label className={`inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:bg-cyan-900"}`}>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-slate-950">Profile photo</p>
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">This appears in your portal and CV.</p>
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          <label className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition ${uploading ? "cursor-progress opacity-70" : "cursor-pointer hover:bg-cyan-900"}`}>
             <Upload className="h-4 w-4" />
             {uploading ? "Uploading..." : url ? "Change photo" : "Upload photo"}
             <input
@@ -3243,12 +3269,12 @@ function ProfilePhoto({
             />
           </label>
           {uploading && (
-            <button type="button" onClick={onCancelUpload} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+            <button type="button" onClick={onCancelUpload} className="min-h-11 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
               Cancel
             </button>
           )}
           {url && !uploading && (
-            <button type="button" onClick={onRemove} className="inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+            <button type="button" onClick={onRemove} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-rose-100 bg-white px-3 py-2 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
               <Trash2 className="h-4 w-4" />
               Remove
             </button>
@@ -3270,6 +3296,9 @@ function DropdownChoiceGroup({
   selectedPanel = false,
   inlineSelected = false,
   commitOnSelect = false,
+  compact = false,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   title: string;
   options: string[];
@@ -3281,8 +3310,12 @@ function DropdownChoiceGroup({
   selectedPanel?: boolean;
   inlineSelected?: boolean;
   commitOnSelect?: boolean;
+  compact?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
   const displayValue = singleSelect ? value.slice(0, 1) : value;
   const [draft, setDraft] = useState(displayValue);
   const hasSelection = displayValue.length > 0;
@@ -3294,13 +3327,18 @@ function DropdownChoiceGroup({
     setDraft(displayValue);
   }, [value]);
 
+  function setGroupOpen(nextOpen: boolean) {
+    if (controlledOpen === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
+
   function updateSelection(option: string) {
     const selected = draft.includes(option);
 
     if (singleSelect) {
       onChange([option]);
       setDraft([option]);
-      setOpen(false);
+      setGroupOpen(false);
       return;
     }
 
@@ -3309,7 +3347,7 @@ function DropdownChoiceGroup({
     const nextDraft = selected ? draft.filter((item) => item !== option) : [...draft, option];
     setDraft(nextDraft);
     if (commitOnSelect) onChange(nextDraft);
-    if (!selected && maxSelected && nextDraft.length >= maxSelected) setOpen(false);
+    if (!selected && maxSelected && nextDraft.length >= maxSelected) setGroupOpen(false);
   }
 
   function removeSelection(item: string) {
@@ -3319,18 +3357,28 @@ function DropdownChoiceGroup({
   }
 
   return (
-    <div>
+    <div className={compact ? "py-3.5 first:pt-0 last:pb-0" : ""}>
       <div className={selectedPanel ? "grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.85fr)]" : ""}>
         <button
           type="button"
+          aria-expanded={open}
           onClick={() => {
             setDraft(displayValue);
-            setOpen(!open);
+            setGroupOpen(!open);
           }}
-          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"
+          className={compact
+            ? "bd-focus flex min-h-12 w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+            : "flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-800 shadow-sm"}
         >
           <span className="min-w-0 truncate">{triggerTitle}</span>
-          <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
+          {compact ? (
+            <span className="ml-3 flex shrink-0 items-center gap-2">
+              <span className="rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-800">{triggerMeta}</span>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition ${open ? "rotate-180" : ""}`} aria-hidden />
+            </span>
+          ) : (
+            <span className="ml-3 shrink-0 text-right text-xs text-cyan-700">{triggerMeta}</span>
+          )}
         </button>
 
         {selectedPanel && (
@@ -3361,21 +3409,15 @@ function DropdownChoiceGroup({
         )}
       </div>
       {inlineSelected && (
-        <div className="mt-2 rounded-xl border border-cyan-100 bg-[#f8fcfd] p-3 shadow-sm">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2d7482]">{title}</p>
-            <p className="text-[10px] font-black text-slate-500">{displayValue.length}{maxSelected ? ` / ${maxSelected}` : ""}</p>
-          </div>
-          {displayValue.length === 0 ? (
-            <p className="text-xs font-semibold text-slate-400">Nothing selected yet.</p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5">
+        compact ? (
+          displayValue.length > 0 && (
+            <div className="mt-0.5 flex flex-wrap gap-1.5 px-2 pb-1">
               {displayValue.map((item) => (
                 <button
                   key={item}
                   type="button"
                   onClick={() => removeSelection(item)}
-                  className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-cyan-100 bg-white px-2 py-1 text-[11px] font-black text-[#173f4a] shadow-sm transition hover:border-rose-200 hover:text-rose-700"
+                  className="inline-flex min-h-10 cursor-pointer items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-[#173f4a] transition hover:bg-rose-50 hover:text-rose-700"
                   title={`Remove ${item}`}
                 >
                   {item}
@@ -3383,13 +3425,40 @@ function DropdownChoiceGroup({
                 </button>
               ))}
             </div>
-          )}
-        </div>
+          )
+        ) : (
+          <div className="mt-2 rounded-xl border border-cyan-100 bg-[#f8fcfd] p-3 shadow-sm">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#2d7482]">{title}</p>
+              <p className="text-[10px] font-black text-slate-500">{displayValue.length}{maxSelected ? ` / ${maxSelected}` : ""}</p>
+            </div>
+            {displayValue.length === 0 ? (
+              <p className="text-xs font-semibold text-slate-400">Nothing selected yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {displayValue.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => removeSelection(item)}
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-cyan-100 bg-white px-2 py-1 text-[11px] font-black text-[#173f4a] shadow-sm transition hover:border-rose-200 hover:text-rose-700"
+                    title={`Remove ${item}`}
+                  >
+                    {item}
+                    <span aria-hidden="true" className="text-xs leading-none">×</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )
       )}
       {displayValue.length > 0 && !selectedAsTitle && !selectedPanel && !inlineSelected && <PillList items={displayValue} light />}
       {open && (
-        <div className="mt-3 rounded-2xl border border-slate-200 bg-[#fbfaf7] p-3">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={compact
+          ? "mt-2 max-h-[min(55vh,28rem)] overflow-y-auto overscroll-contain rounded-xl bg-slate-50 p-2.5"
+          : "mt-3 rounded-2xl border border-slate-200 bg-[#fbfaf7] p-3"}>
+          <div className={compact ? "grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 lg:grid-cols-3" : "grid gap-2 sm:grid-cols-2 lg:grid-cols-3"}>
             {options.map((option) => {
               const selected = draft.includes(option);
               const locked = !selected && Boolean(maxSelected && draft.length >= maxSelected);
@@ -3399,7 +3468,7 @@ function DropdownChoiceGroup({
                   type="button"
                   disabled={locked}
                   onClick={() => updateSelection(option)}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm font-semibold transition ${
+                  className={`${compact ? "min-h-11 rounded-lg px-2.5 py-2 text-xs sm:text-sm" : "rounded-xl px-3 py-2 text-sm"} border text-left font-semibold transition ${
                     selected
                       ? "border-cyan-600 bg-cyan-600 text-white"
                       : locked
@@ -3412,13 +3481,13 @@ function DropdownChoiceGroup({
               );
             })}
           </div>
-          {maxSelected && <p className="mt-3 text-xs font-semibold text-slate-500">Maximum {maxSelected} selections.</p>}
+          {maxSelected && <p className={`mt-3 text-xs font-semibold text-slate-500 ${compact ? "px-1" : ""}`}>Maximum {maxSelected} selections.</p>}
           {!singleSelect && !commitOnSelect && <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
             <button
               type="button"
               onClick={() => {
                 setDraft(displayValue);
-                setOpen(false);
+                setGroupOpen(false);
               }}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600"
             >
@@ -3428,7 +3497,7 @@ function DropdownChoiceGroup({
               type="button"
               onClick={() => {
                 onChange(draft);
-                setOpen(false);
+                setGroupOpen(false);
               }}
               className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white"
             >
@@ -4820,7 +4889,7 @@ function CountrySearch({
           setOpen(!open);
           setQuery("");
         }}
-        className={`flex w-full items-center justify-between gap-2 bg-white px-3 py-3 text-left text-sm font-semibold text-slate-950 transition hover:text-cyan-800 ${fullWidth ? "rounded-xl border-0 shadow-none" : phoneMode ? "rounded-l-xl" : "rounded-xl border border-slate-200 shadow-sm"}`}
+        className={`flex min-h-11 w-full items-center justify-between gap-2 bg-white px-3 py-2.5 text-left text-base font-semibold text-slate-950 transition hover:text-cyan-800 sm:text-sm ${fullWidth ? "rounded-xl border-0 shadow-none" : phoneMode ? "rounded-l-xl" : "rounded-xl border border-slate-200 shadow-sm"}`}
       >
         <span className="min-w-0 flex-1 truncate">{buttonLabel}</span>
         <span className="shrink-0 text-cyan-700">⌄</span>
@@ -4832,7 +4901,7 @@ function CountrySearch({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search country..."
-            className="w-full border-b border-slate-200 px-4 py-3 text-sm text-slate-950 outline-none"
+            className="min-h-11 w-full border-b border-slate-200 px-4 py-2.5 text-base text-slate-950 outline-none sm:text-sm"
           />
           <div className="max-h-72 overflow-auto p-2">
             {filtered.map((country) => (
@@ -4929,7 +4998,7 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
   return (
     <div ref={wrapperRef} className="block">
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">Location</p>
-      <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-cyan-500">
+      <div className="flex min-h-11 overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-cyan-500">
         <span className="flex items-center pl-3 text-cyan-700">
           <MapPin className="h-4 w-4" />
         </span>
@@ -4956,7 +5025,7 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
             }
           }}
           placeholder="Search any city, marina or country"
-          className="min-w-0 flex-1 px-3 py-3 text-sm text-slate-950 outline-none"
+          className="min-w-0 flex-1 px-3 py-2.5 text-base text-slate-950 outline-none sm:text-sm"
         />
       </div>
       {open && (suggestions.length > 0 || searching) && (
@@ -5009,7 +5078,7 @@ function SelectField({ label, value, options, onChange }: { label: string; value
   return (
     <div className="block">
       <p className="mb-2 block select-text text-sm font-medium text-slate-600">{label}</p>
-      <select value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none focus:border-cyan-500">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base text-slate-950 outline-none focus:border-cyan-500 sm:text-sm">
         <option value="">Select</option>
         {options.map((option) => <option key={option}>{option}</option>)}
       </select>
