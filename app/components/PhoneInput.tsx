@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Phone } from "lucide-react";
 import { blueDeckCountries, type BlueDeckCountry } from "../lib/countries";
 
@@ -42,6 +42,8 @@ export function PhoneInput({
   variant?: "default" | "profile";
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const generatedId = useId();
+  const inputId = `phone-${generatedId.replace(/:/g, "")}`;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [manualCountry, setManualCountry] = useState<BlueDeckCountry | null>(null);
@@ -66,9 +68,9 @@ export function PhoneInput({
 
   return (
     <div ref={wrapperRef} className="block">
-      <span className={profileVariant ? "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700" : "mb-2 block select-text text-sm font-semibold text-slate-600"}>
+      <label htmlFor={inputId} className={profileVariant ? "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700" : "mb-2 block select-text text-sm font-semibold text-slate-600"}>
         {label} {required && <span className="text-rose-500">*</span>}
-      </span>
+      </label>
       <div className="relative">
         <div className={profileVariant
           ? "flex h-12 min-h-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15"
@@ -94,6 +96,7 @@ export function PhoneInput({
           <div className="flex min-w-0 flex-1 items-center">
             <Phone className="ml-3 h-4 w-4 shrink-0 text-cyan-700" />
             <input
+              id={inputId}
               value={localNumber}
               onChange={(event) => onChange(composePhone(country, event.target.value))}
               required={required}
