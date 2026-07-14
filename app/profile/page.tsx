@@ -486,7 +486,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
-  const [newDocumentOpen, setNewDocumentOpen] = useState<boolean | null>(null);
+  const [newDocumentOpen, setNewDocumentOpen] = useState(true);
   const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState(true);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
   const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState(true);
@@ -523,7 +523,7 @@ export default function ProfilePage() {
   );
   const showNewYachtExperienceForm = newYachtExperienceOpen;
   const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen;
-  const showNewDocumentForm = newDocumentOpen ?? sortedDocuments.length === 0;
+  const showNewDocumentForm = newDocumentOpen;
   const newDocumentDirty = !saveStateEquals(documentSaveState(documentDraft), documentSaveState(newDocumentDraft()));
   const totalExperienceYears = useMemo(() => {
     const firstYear = editableYachtExperiences
@@ -1359,18 +1359,15 @@ export default function ProfilePage() {
                     onClick={() => setNewDocumentOpen(!showNewDocumentForm)}
                     aria-expanded={showNewDocumentForm}
                     aria-controls={newDocumentFormId}
-                    className={`bd-focus grid w-full grid-cols-[36px_minmax(0,1fr)_auto] items-start gap-3 bg-cyan-50/70 px-4 py-4 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewDocumentForm ? "border-b border-cyan-100" : ""}`}
+                    className={`bd-focus grid min-h-16 w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 bg-cyan-50/70 px-4 py-3.5 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewDocumentForm ? "border-b border-cyan-100" : ""}`}
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
                       <Plus className="h-4 w-4" />
                     </span>
-                    <span className="min-w-0">
-                      <span className="block text-base font-semibold text-slate-950">Add document</span>
-                      <span className={`mt-1 max-w-2xl text-sm leading-5 text-slate-600 ${showNewDocumentForm ? "block" : "hidden sm:block"}`}>
-                        Choose a document or enter another document name, then add an expiry date if needed.
-                      </span>
-                    </span>
-                    <span className="mt-1.5 flex items-center gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold text-slate-950">Add document</h3>
+                    </div>
+                    <span className="flex shrink-0 items-center gap-2">
                       {newDocumentDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
                       <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewDocumentForm ? "rotate-180" : ""}`} />
                     </span>

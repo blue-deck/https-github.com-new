@@ -571,9 +571,6 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   },
   "Documents & Certificates": { tr: "Belgeler & Sertifikalar" },
   "Certificates and CV visibility.": { tr: "Sertifikalar ve CV görünürlüğü." },
-  "Choose a document or enter another document name, then add an expiry date if needed.": {
-    tr: "Bir belge seçin veya başka bir belge adı girin, ardından gerekiyorsa son kullanma tarihini ekleyin.",
-  },
   "Other document name": { tr: "Diğer belge adı" },
   "Expiry not set": { tr: "Son kullanma tarihi belirtilmedi" },
   "Photo Gallery": { tr: "Fotoğraf Galerisi" },
