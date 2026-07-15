@@ -27,21 +27,16 @@ export async function POST(request: NextRequest) {
   const email = body.email?.trim().toLowerCase();
   const password = body.password || "";
   const fullName = body.fullName?.trim() || "";
-  const phone = body.phone?.trim() || "";
   const role = accountTypes.includes(body.role || "") ? body.role || "crew" : "";
   const requestedPosition = body.position?.trim() || getDefaultPositionForAccountType(role);
   const position = yachtPositionTitles.includes(requestedPosition) ? requestedPosition : "";
 
-  if (!email || !password || !fullName || !phone || !role || !position) {
-    return NextResponse.json({ error: "Name, email, password, phone, account type and yacht position are required." }, { status: 400 });
+  if (!email || !password || !fullName || !role || !position) {
+    return NextResponse.json({ error: "Name, email, password, account type and yacht position are required." }, { status: 400 });
   }
 
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
-  }
-
-  if (!isCompletePhoneNumber(phone)) {
-    return NextResponse.json({ error: "Please select a country code and enter a valid mobile number." }, { status: 400 });
   }
 
   if (!hasSignupPasswordRequirements(password)) {
@@ -67,7 +62,6 @@ export async function POST(request: NextRequest) {
       emailRedirectTo: authConfirmUrl("/dashboard"),
       data: {
         full_name: fullName,
-        phone,
         role,
         position,
       },
@@ -92,7 +86,6 @@ export async function POST(request: NextRequest) {
           id: data.user.id,
           email,
           full_name: fullName,
-          phone,
           role,
         }),
         saveCrewProfileByUserId(
@@ -101,7 +94,6 @@ export async function POST(request: NextRequest) {
           {
             email,
             full_name: fullName,
-            phone,
             current_position: position,
             public_crew_id: data.user.id.slice(0, 8).toUpperCase(),
           }
@@ -131,17 +123,12 @@ type SignupRequestBody = {
   email?: string;
   password?: string;
   fullName?: string;
-  phone?: string;
   role?: string;
   position?: string;
 };
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function isCompletePhoneNumber(value: string) {
-  return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
 }
 
 function hasSignupPasswordRequirements(value: string) {

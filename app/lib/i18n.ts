@@ -137,7 +137,7 @@ const en = {
     "BlueDeck is designed around account ownership, yacht membership, document visibility and traceable operational activity.",
   "trust.item1.title": "Real Accounts",
   "trust.item1.text":
-    "Users create accounts with their own email, phone number, name, role and yacht position.",
+    "Users create accounts with their own email, name, role and yacht position.",
   "trust.item2.title": "Secure Login",
   "trust.item2.text":
     "Authentication, email confirmation and password reset are handled through the configured secure provider.",
@@ -177,7 +177,7 @@ const en = {
   "login.loginIntro": "Login to continue to My Dashboard.",
   "login.recoveryIntro":
     "Enter a new password for your BlueDeck account. After saving, login again with your new password.",
-  "login.signupIntro": "Use your real email and phone. BlueDeck will send a secure confirmation email.",
+  "login.signupIntro": "Use your real email. BlueDeck will send a secure confirmation email.",
   "login.fullName": "Name and surname",
   "login.mobile": "Mobile number",
   "login.accountType": "Account type",
@@ -217,8 +217,7 @@ const en = {
     "BlueDeck could not complete the password reset. Please request a new reset email.",
   "login.notice.emailPassword": "Please enter your email and password.",
   "login.notice.required":
-    "Name, email, password, phone, account type and yacht position are required.",
-  "login.notice.phone": "Please select a country code and enter a valid mobile number.",
+    "Name, email, password, account type and yacht position are required.",
   "login.notice.privacy": "Please accept the Privacy Policy to create your account.",
   "login.notice.loginService":
     "BlueDeck could not reach the login service. Please try again in a moment.",
@@ -330,8 +329,6 @@ const en = {
   "settings.passwordChanged": "Password changed successfully.",
   "settings.loadError": "Your settings could not be loaded. Please refresh and try again.",
   "settings.requiredError": "Name and surname is required.",
-  "settings.phoneError":
-    "Please select a country code and enter a valid mobile number.",
   "settings.saveError": "Your profile changes could not be saved. Please try again.",
   "settings.currentPasswordError": "Enter your current password first.",
   "settings.newPasswordError": "Enter and repeat your new password.",
@@ -452,7 +449,7 @@ const tr: Record<TranslationKey, string> = {
   "trust.title": "Özel yat verisi sakin ve kontrollü bir yapıyı hak eder.",
   "trust.intro": "BlueDeck hesap sahipliği, yat üyeliği, belge görünürlüğü ve izlenebilir operasyon aktivitesi etrafında tasarlanmıştır.",
   "trust.item1.title": "Gerçek Hesaplar",
-  "trust.item1.text": "Kullanıcılar kendi e-posta, telefon, isim, rol ve yat pozisyonlarıyla hesap oluşturur.",
+  "trust.item1.text": "Kullanıcılar kendi e-posta, isim, rol ve yat pozisyonlarıyla hesap oluşturur.",
   "trust.item2.title": "Güvenli Giriş",
   "trust.item2.text": "Kimlik doğrulama, e-posta onayı ve şifre sıfırlama yapılandırılmış güvenli sağlayıcı üzerinden yapılır.",
   "trust.item3.title": "Rol Tabanlı Erişim",
@@ -486,7 +483,7 @@ const tr: Record<TranslationKey, string> = {
   "login.createTitle": "BlueDeck hesabınızı oluşturun",
   "login.loginIntro": "My Dashboard’a devam etmek için giriş yapın.",
   "login.recoveryIntro": "BlueDeck hesabınız için yeni şifre girin. Kaydettikten sonra yeni şifrenizle tekrar giriş yapın.",
-  "login.signupIntro": "Gerçek e-posta ve telefonunuzu kullanın. BlueDeck güvenli onay e-postası gönderecek.",
+  "login.signupIntro": "Gerçek e-postanızı kullanın. BlueDeck güvenli onay e-postası gönderecek.",
   "login.fullName": "İsim ve soyisim",
   "login.mobile": "Telefon numarası",
   "login.accountType": "Hesap tipi",
@@ -522,8 +519,7 @@ const tr: Record<TranslationKey, string> = {
   "login.notice.passwordUpdated": "Şifreniz güncellendi. Lütfen yeni şifrenizle giriş yapın.",
   "login.notice.resetFailed": "BlueDeck şifre sıfırlamayı tamamlayamadı. Lütfen yeni sıfırlama e-postası isteyin.",
   "login.notice.emailPassword": "Lütfen e-posta ve şifrenizi girin.",
-  "login.notice.required": "İsim, e-posta, şifre, telefon, hesap tipi ve yat pozisyonu zorunludur.",
-  "login.notice.phone": "Lütfen ülke kodu seçin ve geçerli telefon numarası girin.",
+  "login.notice.required": "İsim, e-posta, şifre, hesap tipi ve yat pozisyonu zorunludur.",
   "login.notice.privacy": "Hesap oluşturmak için Gizlilik Politikası’nı kabul edin.",
   "login.notice.loginService": "BlueDeck giriş servisine ulaşamadı. Lütfen biraz sonra tekrar deneyin.",
   "login.notice.accountFailed": "Hesap oluşturulamadı. Lütfen tekrar deneyin.",
@@ -626,8 +622,6 @@ const tr: Record<TranslationKey, string> = {
   "settings.passwordChanged": "Şifre başarıyla değiştirildi.",
   "settings.loadError": "Ayarlarınız yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.",
   "settings.requiredError": "Ad soyad zorunludur.",
-  "settings.phoneError":
-    "Lütfen ülke kodunu seçin ve geçerli bir cep telefonu numarası girin.",
   "settings.saveError": "Profil değişiklikleri kaydedilemedi. Lütfen tekrar deneyin.",
   "settings.currentPasswordError": "Önce mevcut şifrenizi girin.",
   "settings.newPasswordError": "Yeni şifrenizi girin ve tekrar edin.",

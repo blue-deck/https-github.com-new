@@ -4195,8 +4195,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Upcoming expiry alerts sent": {
     "tr": "Yaklaşan süre sonu uyarıları gönderildi",
   },
-  "Update account details, phone, email, password and security access.": {
-    "tr": "Hesap ayrıntılarını, telefonu, e-postayı, şifreyi ve güvenlik erişimini güncelleyin.",
+  "Manage your name, password, language and security access.": {
+    "tr": "İsminizi, şifrenizi, dil tercihinizi ve güvenlik erişiminizi yönetin.",
   },
   "Update Hours": {
     "tr": "Güncelleme Saatleri",

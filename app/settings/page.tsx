@@ -17,7 +17,6 @@ import {
   EyeOff,
   ShieldCheck,
 } from "lucide-react";
-import { PhoneInput } from "../components/PhoneInput";
 import { useLanguage } from "../components/LanguageProvider";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -29,7 +28,6 @@ type SettingsProfile = {
   id?: string;
   email: string;
   full_name: string;
-  phone: string;
   role: string;
   current_position: string;
   current_positions?: string[];
@@ -50,7 +48,6 @@ const accountTypes = [
 const emptyProfile: SettingsProfile = {
   email: "",
   full_name: "",
-  phone: "",
   role: "crew",
   current_position: "",
 };
@@ -98,10 +95,14 @@ export default function SettingsPage() {
         { data: baseProfile, error: baseProfileError },
         { data: crewProfile, error: crewProfileError },
       ] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
+        supabase
+          .from("profiles")
+          .select("email, full_name, role")
+          .eq("id", user.id)
+          .maybeSingle(),
         supabase
           .from("crew_profiles")
-          .select("full_name, phone, email, current_position, current_positions")
+          .select("full_name, email, current_position, current_positions")
           .eq("user_id", user.id)
           .maybeSingle(),
       ]);
@@ -116,10 +117,6 @@ export default function SettingsPage() {
         cleanText(crewProfile?.full_name) ||
         cleanText(user.user_metadata?.full_name) ||
         email;
-      const phone =
-        baseProfile?.phone ||
-        crewProfile?.phone ||
-        (typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : "");
       const currentPosition =
         cleanText(crewProfile?.current_position) ||
         cleanStringList(crewProfile?.current_positions)[0] ||
@@ -132,7 +129,6 @@ export default function SettingsPage() {
         id: user.id,
         email,
         full_name: fullName,
-        phone,
         role,
         current_position:
           currentPosition || getDefaultPositionForAccountType(role) || "Deckhand",
@@ -158,11 +154,6 @@ export default function SettingsPage() {
       return;
     }
 
-    if (profile.phone && !isCompletePhoneNumber(profile.phone)) {
-      setProfileNotice({ tone: "error", message: t("settings.phoneError") });
-      return;
-    }
-
     setSavingProfile(true);
 
     try {
@@ -179,12 +170,10 @@ export default function SettingsPage() {
         .trim()
         .toLowerCase();
       const fullName = profile.full_name.trim();
-      const phone = profile.phone.trim();
 
       const { error: authError } = await supabase.auth.updateUser({
         data: {
           full_name: fullName,
-          phone,
         },
       });
 
@@ -198,12 +187,10 @@ export default function SettingsPage() {
           id: user.id,
           email,
           full_name: fullName,
-          phone,
         }),
         saveCrewProfileByUserId(supabase, user.id, {
           email,
           full_name: fullName,
-          phone,
           public_crew_id: user.id.slice(0, 8).toUpperCase(),
         }),
       ]);
@@ -223,7 +210,6 @@ export default function SettingsPage() {
         ...profile,
         email,
         full_name: fullName,
-        phone,
       };
 
       setOriginalEmail(email);
@@ -368,7 +354,7 @@ export default function SettingsPage() {
             description={t("settings.profileDescription")}
           >
             <form onSubmit={saveAccountProfile}>
-              <fieldset disabled={savingProfile} className="grid min-w-0 gap-5 sm:grid-cols-2">
+              <fieldset disabled={savingProfile} className="min-w-0 max-w-xl">
                 <TextField
                   id="settings-full-name"
                   label={t("login.fullName")}
@@ -376,12 +362,6 @@ export default function SettingsPage() {
                   value={profile.full_name}
                   onChange={(value) => updateProfile({ full_name: value })}
                   autoComplete="name"
-                />
-                <PhoneInput
-                  label={t("login.mobile")}
-                  value={profile.phone}
-                  onChange={(value) => updateProfile({ phone: value })}
-                  variant="ledger"
                 />
               </fieldset>
 
@@ -891,7 +871,6 @@ function comparableProfile(profile: SettingsProfile | null) {
   if (!profile) return "";
   return JSON.stringify({
     full_name: profile.full_name.trim(),
-    phone: profile.phone.trim(),
   });
 }
 
@@ -915,8 +894,4 @@ function inferRoleFromPosition(value: unknown) {
   if (position.includes("owner")) return "owner";
   if (position.includes("manager") || position.includes("management")) return "management";
   return "";
-}
-
-function isCompletePhoneNumber(value: string) {
-  return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
 }

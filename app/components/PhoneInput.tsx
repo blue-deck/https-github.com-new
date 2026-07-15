@@ -39,7 +39,7 @@ export function PhoneInput({
   onChange: (value: string) => void;
   required?: boolean;
   autoComplete?: string;
-  variant?: "default" | "profile" | "ledger";
+  variant?: "default" | "profile";
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const generatedId = useId();
@@ -50,8 +50,6 @@ export function PhoneInput({
   const country = countryFromValue(value) || manualCountry;
   const localNumber = localNumberFromValue(value, country);
   const profileVariant = variant === "profile";
-  const ledgerVariant = variant === "ledger";
-  const compactVariant = profileVariant || ledgerVariant;
   const filteredCountries = blueDeckCountries
     .filter((item) => `${item.country} ${item.nationality} ${item.code} ${item.dial}`.toLowerCase().includes(query.toLowerCase()))
     .slice(0, 260);
@@ -82,22 +80,18 @@ export function PhoneInput({
       <label
         htmlFor={inputId}
         className={
-          ledgerVariant
-            ? "mb-2 block select-text text-[11px] font-bold uppercase tracking-[0.08em] text-[#536b78]"
-            : profileVariant
-              ? "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700"
-              : "mb-2 block select-text text-sm font-semibold text-slate-600"
+          profileVariant
+            ? "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700"
+            : "mb-2 block select-text text-sm font-semibold text-slate-600"
         }
       >
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <div className="relative">
         <div className={
-          ledgerVariant
-            ? "flex h-[50px] min-h-0 overflow-hidden rounded-[6px] border border-[#aebfc5] bg-white transition focus-within:border-[#087f8c] focus-within:ring-2 focus-within:ring-[#087f8c]/10"
-            : profileVariant
-              ? "flex h-12 min-h-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15"
-              : "flex min-h-[54px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10"
+          profileVariant
+            ? "flex h-12 min-h-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15"
+            : "flex min-h-[54px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10"
         }>
           <button
             type="button"
@@ -105,7 +99,7 @@ export function PhoneInput({
               setOpen(!open);
               setQuery("");
             }}
-            className={`flex shrink-0 items-center justify-center gap-2 border-r border-slate-200 bg-white text-sm font-black transition hover:bg-cyan-50 ${compactVariant ? "h-full w-[100px] px-2 sm:w-[108px]" : "w-[106px] px-3 sm:w-[116px]"} ${country ? "text-slate-950" : "text-slate-400"}`}
+            className={`flex shrink-0 items-center justify-center gap-2 border-r border-slate-200 bg-white text-sm font-black transition hover:bg-cyan-50 ${profileVariant ? "h-full w-[100px] px-2 sm:w-[108px]" : "w-[106px] px-3 sm:w-[116px]"} ${country ? "text-slate-950" : "text-slate-400"}`}
             aria-label="Select country code"
             aria-expanded={open}
             aria-haspopup="dialog"
@@ -130,7 +124,7 @@ export function PhoneInput({
               inputMode="tel"
               autoComplete={autoComplete}
               placeholder="Mobile number"
-              className={compactVariant
+              className={profileVariant
                 ? "h-full min-w-0 flex-1 bg-transparent px-3 py-0 text-base font-medium text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
                 : "min-w-0 flex-1 bg-transparent px-3 py-4 text-base text-slate-950 outline-none placeholder:text-slate-400"}
             />
@@ -142,7 +136,7 @@ export function PhoneInput({
             id={`${inputId}-country-picker`}
             role="dialog"
             aria-label="Select country code"
-            className={`bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-50 w-full max-w-[430px] overflow-hidden border border-slate-200 bg-white ${ledgerVariant ? "rounded-[6px] shadow-[0_14px_36px_rgba(9,38,58,0.16)]" : "rounded-2xl shadow-2xl shadow-slate-900/18"}`}
+            className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-50 w-full max-w-[430px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/18"
           >
             <input
               autoFocus
@@ -150,7 +144,7 @@ export function PhoneInput({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search country..."
               aria-label="Search country"
-              className={compactVariant
+              className={profileVariant
                 ? "h-12 w-full border-b border-slate-200 px-4 py-0 text-base text-slate-950 outline-none placeholder:text-slate-400 sm:text-sm"
                 : "w-full border-b border-slate-200 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400"}
             />
@@ -166,7 +160,7 @@ export function PhoneInput({
                     setOpen(false);
                     setQuery("");
                   }}
-                  className={`flex w-full items-center justify-between gap-4 px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-cyan-50 ${ledgerVariant ? "rounded-[4px]" : "rounded-xl"}`}
+                  className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-cyan-50"
                 >
                   <span className="min-w-0 flex-1 truncate">
                     {item.flag} {item.country}

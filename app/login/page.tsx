@@ -6,7 +6,6 @@ import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } 
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
-import { PhoneInput } from "../components/PhoneInput";
 import type { TranslationKey } from "../lib/i18n";
 import { authConfirmUrl } from "../lib/site";
 import { supabase } from "../lib/supabase";
@@ -20,7 +19,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
   const [role, setRole] = useState("");
   const [position, setPosition] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
@@ -104,13 +102,8 @@ export default function LoginPage() {
       return;
     }
 
-    if (mode === "signup" && (!fullName.trim() || !phone.trim() || !role || !position)) {
+    if (mode === "signup" && (!fullName.trim() || !role || !position)) {
       setNotice(t("login.notice.required"));
-      return;
-    }
-
-    if (mode === "signup" && !isCompletePhoneNumber(phone)) {
-      setNotice(t("login.notice.phone"));
       return;
     }
 
@@ -157,7 +150,6 @@ export default function LoginPage() {
           email,
           password,
           fullName: fullName.trim(),
-          phone,
           role,
           position,
         }),
@@ -299,7 +291,6 @@ export default function LoginPage() {
                     placeholder={t("login.fullName")}
                   />
                 </AuthField>
-                <PhoneInput label={t("login.mobile")} value={phone} onChange={setPhone} required />
                 <div className="block">
                   <p className="mb-2 block select-text text-sm text-slate-500">
                     {t("login.accountType")} <span className="text-rose-500">*</span>
@@ -534,10 +525,6 @@ function getPasswordStrength(password: string, t: (key: TranslationKey) => strin
   }
 
   return { visible: true, score: 3, label: t("password.strong"), barClass: "bg-emerald-500", textClass: "text-emerald-600" };
-}
-
-function isCompletePhoneNumber(value: string) {
-  return /^\+\d{1,5}\s+[\d\s()-]{5,}$/.test(value.trim());
 }
 
 function hasSignupPasswordRequirements(value: string) {
