@@ -4,8 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, CheckCircle2, FileText, LoaderCircle, LogOut, Plus, Settings, Ship, Trash2, UserPlus, UserRound } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
+import {
+  dashboardPhotoFromMetadata,
+  removeDashboardPhoto as clearDashboardPhoto,
+  saveDashboardPhoto as persistDashboardPhoto,
+  subscribeDashboardPhotoUpdates,
+} from "../lib/accountIdentity";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
-import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import {
   markInvitationAccepted,
@@ -54,13 +59,6 @@ function cleanDisplayName(profile?: DashboardProfile | null) {
 function formatDashboardRole(role?: string) {
   const cleanRole = role?.trim() || "crew";
   return cleanRole.charAt(0).toLocaleUpperCase("en-US") + cleanRole.slice(1);
-}
-
-function dashboardPhotoFromMetadata(metadata: Record<string, unknown> | undefined, profilePhoto?: string) {
-  if (metadata && Object.prototype.hasOwnProperty.call(metadata, "avatar_url")) {
-    return typeof metadata.avatar_url === "string" ? metadata.avatar_url : "";
-  }
-  return profilePhoto || "";
 }
 
 function uniqueById<T extends { id?: string }>(items: T[]) {
@@ -353,69 +351,29 @@ export default function DashboardPage() {
       return;
     }
 
-    const previousProfilePhoto = profile?.profile_photo_url || "";
     setPhotoUploading(true);
-    const path = createSafeStoragePath(profile?.crew_profile_id || user.id, file, "dashboard");
 
     try {
-      const { error: uploadError } = await supabase.storage.from("crew-portfolio").upload(path, file, {
-        upsert: false,
+      const result = await persistDashboardPhoto({
+        user,
+        file,
+        crewProfileId: profile?.crew_profile_id,
+        email: profile?.email,
+        fullName: profile?.full_name,
       });
-
-      if (uploadError) {
-        alert(uploadError.message === "Bucket not found" ? "Photo storage is not ready yet. Please create the crew-portfolio bucket in Supabase." : uploadError.message);
-        return;
-      }
-
-      const { data: publicUrl } = supabase.storage.from("crew-portfolio").getPublicUrl(path);
-      const photoUrl = publicUrl.publicUrl;
-
-      const { data: crewProfile, error: profileError } = await saveCrewProfileByUserId<{
-        id?: string;
-        profile_photo_url?: string;
-      }>(
-        supabase,
-        user.id,
-        {
-          email: profile?.email || user.email,
-          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-          phone: profile?.phone || user.user_metadata?.phone || "",
-          profile_photo_url: photoUrl,
-          public_crew_id: user.id.slice(0, 8).toUpperCase(),
-        },
-        "id, profile_photo_url"
-      );
-
-      if (profileError) {
-        await supabase.storage.from("crew-portfolio").remove([path]);
-        alert(profileError.message);
-        return;
-      }
-
-      const { error: dashboardPhotoError } = await supabase.auth.updateUser({
-        data: {
-          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-          phone: profile?.phone || user.user_metadata?.phone || "",
-          avatar_url: photoUrl,
-        },
-      });
-
-      if (dashboardPhotoError) {
-        const { error: rollbackError } = await supabase
-          .from("crew_profiles")
-          .update({ profile_photo_url: previousProfilePhoto })
-          .eq("user_id", user.id);
-        if (!rollbackError) await supabase.storage.from("crew-portfolio").remove([path]);
-        alert(rollbackError ? `${dashboardPhotoError.message} Profile photo rollback also failed: ${rollbackError.message}` : dashboardPhotoError.message);
-        return;
-      }
 
       setProfile((current) => ({
         ...(current || {}),
-        crew_profile_id: crewProfile?.id || current?.crew_profile_id,
-        profile_photo_url: photoUrl,
-        dashboard_photo_url: photoUrl,
+        crew_profile_id: result.crewProfileId || current?.crew_profile_id,
+        dashboard_photo_url: result.photoUrl,
       }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Your photo could not be updated.";
+      alert(
+        message === "Bucket not found"
+          ? "Photo storage is not ready yet. Please try again later."
+          : message,
+      );
     } finally {
       setPhotoUploading(false);
     }
@@ -433,20 +391,13 @@ export default function DashboardPage() {
 
     setPhotoUploading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          avatar_url: "",
-          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-          phone: profile?.phone || user.user_metadata?.phone || "",
-        },
+      await clearDashboardPhoto({
+        user,
+        fullName: profile?.full_name,
       });
-
-      if (error) {
-        alert(error.message);
-        return;
-      }
-
       setProfile((current) => ({ ...(current || {}), dashboard_photo_url: "" }));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Your photo could not be removed.");
     } finally {
       setPhotoUploading(false);
     }
@@ -522,6 +473,25 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
+  useEffect(
+    () =>
+      subscribeDashboardPhotoUpdates((update) => {
+        setProfile((current) => {
+          if (!current || (current.id && current.id !== update.userId)) return current;
+
+          return {
+            ...current,
+            crew_profile_id: update.crewProfileId || current.crew_profile_id,
+            dashboard_photo_url: update.photoUrl,
+            email: update.email || current.email,
+            full_name: update.fullName || current.full_name,
+            role: update.role || current.role,
+          };
+        });
+      }),
+    [],
+  );
+
   if (loading) {
     return (
       <main className="bd-app-page bd-ocean-shell min-h-screen p-10 text-slate-900">
@@ -565,7 +535,7 @@ export default function DashboardPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/avif"
               aria-label="Choose dashboard photo"
               disabled={photoUploading}
               className="sr-only"

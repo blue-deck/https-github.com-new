@@ -5,29 +5,21 @@ import { usePathname } from "next/navigation";
 import { supabase } from "../lib/supabase";
 import { BlueDeckTopBar } from "./BlueDeckTopBar";
 
-const publicPaths = [
-  "/",
-  "/about",
-  "/auth",
-  "/auth/confirm",
-  "/contact",
-  "/forgot-password",
-  "/login",
-  "/management",
-  "/offline",
-  "/privacy",
-  "/reset-password",
-  "/services",
-  "/signup",
-  "/terms",
-  "/trust",
+const authenticatedPaths = [
+  "/contracts",
+  "/crew/tasks",
+  "/dashboard",
+  "/my-blue",
+  "/portal",
+  "/profile",
+  "/settings",
+  "/yachts",
 ];
 
-function isPublicPath(pathname: string) {
-  if (publicPaths.includes(pathname)) return true;
-  if (pathname.startsWith("/auth/")) return true;
-  if (pathname.startsWith("/yachts/")) return true;
-  return false;
+function usesAuthenticatedTopBar(pathname: string) {
+  return authenticatedPaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
 }
 
 export function AuthenticatedTopBar() {
@@ -35,8 +27,8 @@ export function AuthenticatedTopBar() {
   const [hasSession, setHasSession] = useState(false);
   const [checked, setChecked] = useState(false);
 
-  const shouldHideForRoute = useMemo(
-    () => isPublicPath(pathname || "/"),
+  const shouldShowForRoute = useMemo(
+    () => usesAuthenticatedTopBar(pathname || "/"),
     [pathname],
   );
 
@@ -74,7 +66,7 @@ export function AuthenticatedTopBar() {
     };
   }, []);
 
-  if (!checked || !hasSession || shouldHideForRoute) return null;
+  if (!checked || !hasSession || !shouldShowForRoute) return null;
 
   return <BlueDeckTopBar />;
 }

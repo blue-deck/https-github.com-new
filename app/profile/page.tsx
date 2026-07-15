@@ -26,6 +26,10 @@ import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
 import { PhoneInput } from "../components/PhoneInput";
+import {
+  dashboardPhotoFromMetadata,
+  publishDashboardPhotoUpdate,
+} from "../lib/accountIdentity";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -744,22 +748,42 @@ export default function ProfilePage() {
       return false;
     }
 
-    await Promise.all([
+    const nextRole = inferBaseRoleFromPosition(normalizedForSave.current_position);
+    const [baseProfileResult, authResult] = await Promise.all([
       saveBaseProfileById(supabase, {
         id: user.id,
         email: user.email || "",
         full_name: normalizedForSave.full_name || user.email,
         phone: normalizedForSave.phone || "",
-        role: inferBaseRoleFromPosition(normalizedForSave.current_position),
+        role: nextRole,
       }),
       supabase.auth.updateUser({
         data: {
           full_name: normalizedForSave.full_name || user.email,
           phone: normalizedForSave.phone || "",
           gender: normalizedForSave.gender || "",
+          role: nextRole,
         },
       }),
     ]);
+
+    const linkedProfileError = baseProfileResult.error || authResult.error;
+    if (linkedProfileError) {
+      setSaving(false);
+      alert(linkedProfileError.message);
+      return false;
+    }
+
+    const updatedUser = authResult.data.user || user;
+    publishDashboardPhotoUpdate({
+      userId: user.id,
+      photoUrl: dashboardPhotoFromMetadata(
+        updatedUser.user_metadata as Record<string, unknown> | undefined,
+        normalizedForSave.profile_photo_url,
+      ),
+      fullName: normalizedForSave.full_name || user.email || "",
+      role: nextRole,
+    });
 
     const normalizedProfile = normalizeProfile({
       ...normalizedForSave,
