@@ -519,7 +519,9 @@ export function BlueDeckTopBar({
                           >
                             <Icon className="h-4 w-4" aria-hidden />
                           </span>
-                          <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                          <span data-i18n-ignore className="min-w-0 flex-1 truncate">
+                            {item.label}
+                          </span>
                           <ChevronRight
                             className={`h-4 w-4 shrink-0 ${active ? "text-cyan-200/75" : "text-slate-400"}`}
                             aria-hidden
