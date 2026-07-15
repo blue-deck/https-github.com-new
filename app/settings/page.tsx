@@ -6,13 +6,16 @@ import {
   useMemo,
   useState,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import {
   AlertCircle,
+  ArrowRight,
   Check,
   CheckCircle2,
   Eye,
   EyeOff,
+  ShieldCheck,
 } from "lucide-react";
 import { PhoneInput } from "../components/PhoneInput";
 import { useLanguage } from "../components/LanguageProvider";
@@ -306,33 +309,66 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="bd-app-page min-h-screen bg-[#f4f6f8] px-4 py-6 text-slate-900 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-[800px]">
-        <header className="mb-7">
-          <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[#0b1f33] sm:text-[34px]">
-            {t("settings.title")}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-[15px]">
-            {t("settings.intro")}
-          </p>
-        </header>
+    <main className="bd-app-page relative min-h-screen overflow-hidden bg-[#edf3f4] px-4 py-7 text-[#102a3b] sm:px-6 sm:py-11">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(16, 54, 70, 0.035) 1px, transparent 1px)",
+          backgroundSize: "100% 40px",
+        }}
+      />
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.05)]">
-          <section aria-labelledby="profile-settings-title">
-            <div className="px-5 pb-2 pt-5 sm:px-7 sm:pt-7">
-              <h2 id="profile-settings-title" className="text-lg font-semibold tracking-[-0.01em] text-slate-950">
-                {t("settings.profileTitle")}
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-slate-500">
-                {t("settings.profileDescription")}
+      <div className="relative mx-auto max-w-[1080px]">
+        <header className="border-b-2 border-[#17394a] pb-7 sm:pb-8">
+          <div className="grid gap-7 md:grid-cols-[minmax(0,1fr)_340px] md:items-end">
+            <div>
+              <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#0b7682] sm:text-[11px]">
+                <span data-i18n-ignore className="font-mono">BD–03</span>
+                <span className="h-px w-8 bg-[#20a8b5]" />
+                <span>{t("settings.eyebrow")}</span>
+              </div>
+              <h1 className="bd-serif mt-3 text-[44px] leading-none tracking-[-0.035em] text-[#09263a] sm:text-[58px]">
+                {t("settings.title")}
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#5b7180] sm:text-[15px]">
+                {t("settings.intro")}
               </p>
             </div>
 
+            <dl className="grid grid-cols-2 border-y border-[#bfcdd2] md:border-y-0 md:border-l">
+              <div className="py-4 pr-4 md:px-5 md:py-1">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#4f6876]">
+                  {t("settings.account")}
+                </dt>
+                <dd className="mt-1.5 text-sm font-semibold text-[#102a3b]">{accountTypeLabel}</dd>
+                <dd data-i18n-ignore className="mt-0.5 text-xs text-[#526a78]">{profile.current_position}</dd>
+              </div>
+              <div className="border-l border-[#bfcdd2] py-4 pl-4 md:px-5 md:py-1">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#4f6876]">
+                  {t("settings.security")}
+                </dt>
+                <dd className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-[#102a3b]">
+                  <span className="h-2 w-2 rounded-full bg-[#16836d]" />
+                  {t("settings.secureAccount")}
+                </dd>
+                <dd className="mt-0.5 text-xs text-[#526a78]">{t("settings.securityNavHint")}</dd>
+              </div>
+            </dl>
+          </div>
+        </header>
+
+        <div className="mt-8 space-y-7 sm:mt-10">
+          <LedgerSection
+            id="profile-settings"
+            index="01"
+            eyebrow={t("settings.profileNavHint")}
+            title={t("settings.profileTitle")}
+            description={t("settings.profileDescription")}
+          >
             <form onSubmit={saveAccountProfile}>
-              <fieldset
-                disabled={savingProfile}
-                className="grid min-w-0 gap-5 px-5 py-5 sm:grid-cols-2 sm:px-7"
-              >
+              <fieldset disabled={savingProfile} className="grid min-w-0 gap-5 sm:grid-cols-2">
                 <TextField
                   id="settings-full-name"
                   label={t("login.fullName")}
@@ -345,92 +381,126 @@ export default function SettingsPage() {
                   label={t("login.mobile")}
                   value={profile.phone}
                   onChange={(value) => updateProfile({ phone: value })}
-                  variant="profile"
+                  variant="ledger"
                 />
               </fieldset>
 
-              <dl className="grid gap-5 border-t border-slate-200 bg-[#f8fafc] px-5 py-5 sm:grid-cols-3 sm:px-7">
-                <AccountDetail
-                  label={t("login.email")}
-                  value={profile.email}
-                  hint={t("settings.emailManaged")}
-                />
-                <AccountDetail
-                  label={t("login.position")}
-                  value={profile.current_position}
-                  hint={t("settings.positionManaged")}
-                />
-                <AccountDetail
-                  label={t("login.accountType")}
-                  value={accountTypeLabel}
-                  hint={t("settings.roleManaged")}
-                />
-              </dl>
+              <div className="mt-7">
+                <div className="flex items-center gap-3 border-b border-[#d2dde0] pb-3">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#0b7682]">
+                    {t("settings.account")}
+                  </span>
+                  <span className="h-px flex-1 bg-[#d2dde0]" />
+                  <span data-i18n-ignore className="font-mono text-[10px] text-[#526a78]">BD / 01</span>
+                </div>
+                <dl className="divide-y divide-[#d7e1e3] md:grid md:grid-cols-3 md:divide-x md:divide-y-0">
+                  <AccountDetail
+                    label={t("login.email")}
+                    value={profile.email}
+                    hint={t("settings.emailManaged")}
+                  />
+                  <AccountDetail
+                    label={t("login.position")}
+                    value={profile.current_position}
+                    hint={t("settings.positionManaged")}
+                  />
+                  <AccountDetail
+                    label={t("login.accountType")}
+                    value={accountTypeLabel}
+                    hint={t("settings.roleManaged")}
+                  />
+                </dl>
+              </div>
 
               {profileNotice && (
-                <div className="px-5 pt-5 sm:px-7">
+                <div className="mt-5">
                   <NoticeBanner notice={profileNotice} />
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
-                <div className="min-h-5 text-sm font-medium text-amber-700">
-                  {profileChanged ? t("settings.unsavedChanges") : null}
+              <div className="mt-6 flex flex-col gap-4 border-t border-dashed border-[#c8d5d9] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className={`flex min-h-5 items-center gap-2 text-sm font-semibold ${profileChanged ? "text-amber-700" : "text-[#367063]"}`}>
+                  <span className={`h-2 w-2 rounded-full ${profileChanged ? "bg-amber-500" : "bg-[#1c8a72]"}`} />
+                  {profileChanged ? t("settings.unsavedChanges") : t("settings.upToDate")}
                 </div>
                 <button
                   type="submit"
                   disabled={savingProfile || !profileChanged}
-                  className="bd-focus inline-flex min-h-11 items-center justify-center rounded-[10px] bg-[#0b1f33] px-5 text-sm font-semibold text-white transition hover:bg-[#123a5a] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                  className="bd-focus inline-flex min-h-11 items-center justify-center rounded-[6px] bg-[#09263a] px-5 text-sm font-semibold text-white transition hover:bg-[#123e54] disabled:cursor-not-allowed disabled:bg-[#dce5e8] disabled:text-[#8797a0]"
                 >
                   {savingProfile ? t("settings.savingProfile") : t("settings.saveProfile")}
                 </button>
               </div>
             </form>
-          </section>
+          </LedgerSection>
 
-          <section className="border-t border-slate-200 px-5 py-5 sm:px-7" aria-labelledby="language-settings-title">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 id="language-settings-title" className="text-lg font-semibold tracking-[-0.01em] text-slate-950">
-                  {t("settings.languageNav")}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  {t("settings.languageDescription")}
-                </p>
-              </div>
-              <div className="inline-flex w-full rounded-xl border border-slate-200 bg-[#f5f7f9] p-1 sm:w-auto">
-                {languages.map((item) => {
-                  const active = item.code === language;
+          <LedgerSection
+            id="language-settings"
+            index="02"
+            eyebrow={t("settings.preferences")}
+            title={t("settings.languageTitle")}
+            description={t("settings.languageDescription")}
+          >
+            <div
+              role="radiogroup"
+              aria-label={t("settings.languageTitle")}
+              className="grid overflow-hidden rounded-[4px] border border-[#c5d3d7] sm:grid-cols-2"
+            >
+              {languages.map((item) => {
+                const active = item.code === language;
 
-                  return (
-                    <button
-                      key={item.code}
-                      type="button"
-                      aria-pressed={active}
-                      onClick={() => setLanguage(item.code)}
-                      className={`bd-focus min-h-10 flex-1 rounded-lg px-4 text-sm font-semibold transition sm:flex-none ${
-                        active
-                          ? "bg-white text-[#0b1f33] shadow-sm"
-                          : "text-slate-500 hover:text-slate-900"
-                      }`}
-                    >
-                      {item.name}
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <label
+                    key={item.code}
+                    className={`flex min-h-[68px] cursor-pointer items-center gap-4 border-b border-[#c5d3d7] px-4 text-left transition last:border-b-0 focus-within:z-10 focus-within:ring-2 focus-within:ring-[#087f8c] focus-within:ring-inset sm:border-b-0 sm:border-r sm:last:border-r-0 ${
+                      active
+                        ? "bg-[#e5f3f2] text-[#0b3544]"
+                        : "bg-white text-[#526a78] hover:bg-[#f6f9f9] hover:text-[#102a3b]"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="settings-language"
+                      value={item.code}
+                      checked={active}
+                      onChange={() => setLanguage(item.code)}
+                      className="sr-only"
+                    />
+                    <span data-i18n-ignore className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[4px] border font-mono text-xs font-bold ${active ? "border-[#178b96] bg-white text-[#08717c]" : "border-[#c5d3d7] bg-[#f6f9f9] text-[#687d89]"}`}>
+                      {item.label}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold">{item.name}</span>
+                      <span data-i18n-ignore className="mt-0.5 block font-mono text-[10px] uppercase tracking-[0.12em] text-[#526a78]">
+                        {`BlueDeck / ${item.label}`}
+                      </span>
+                    </span>
+                    <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${active ? "border-[#087f8c] bg-[#087f8c] text-white" : "border-[#b7c6cb] bg-white text-transparent"}`}>
+                      <Check className="h-3 w-3" />
+                    </span>
+                  </label>
+                );
+              })}
             </div>
-          </section>
+            <p className="mt-4 text-xs leading-5 text-[#526a78]">{t("settings.languageAvailable")}</p>
+          </LedgerSection>
 
-          <section className="border-t border-slate-200 px-5 py-5 sm:px-7 sm:py-6" aria-labelledby="security-settings-title">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 id="security-settings-title" className="text-lg font-semibold tracking-[-0.01em] text-slate-950">
-                  {t("settings.securityTitle")}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  {t("settings.securityDescription")}
-                </p>
+          <LedgerSection
+            id="security-settings"
+            index="03"
+            eyebrow={t("settings.security")}
+            title={t("settings.securityTitle")}
+            description={t("settings.securityDescription")}
+          >
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[4px] border border-[#bdd7d7] bg-[#e7f4f3] text-[#08717c]">
+                  <ShieldCheck className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-[#102a3b]">{t("settings.protectedTitle")}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#526a78]">{t("settings.protectedDescription")}</p>
+                </div>
               </div>
               {!passwordOpen && (
                 <button
@@ -439,9 +509,10 @@ export default function SettingsPage() {
                     setPasswordNotice(null);
                     setPasswordOpen(true);
                   }}
-                  className="bd-focus inline-flex min-h-10 items-center justify-center rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                  className="bd-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[6px] border border-[#99aeb6] bg-white px-4 text-sm font-semibold text-[#17384a] transition hover:border-[#087f8c] hover:bg-[#f1f8f8]"
                 >
                   {t("settings.changePassword")}
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               )}
             </div>
@@ -453,11 +524,7 @@ export default function SettingsPage() {
             )}
 
             {passwordOpen && (
-              <form onSubmit={changePassword} className="mt-6 border-t border-slate-200 pt-6">
-                <p className="mb-5 text-sm leading-6 text-slate-500">
-                  {t("settings.protectedDescription")}
-                </p>
-
+              <form onSubmit={changePassword} className="mt-6 border-t border-[#d2dde0] pt-6">
                 <fieldset disabled={savingPassword} className="space-y-5">
                   <PasswordField
                     id="settings-current-password"
@@ -485,7 +552,7 @@ export default function SettingsPage() {
                       autoComplete="new-password"
                       showLabel={t("settings.showPassword")}
                       hideLabel={t("settings.hidePassword")}
-                      describedBy="settings-password-requirements"
+                      describedBy={newPassword ? "settings-password-requirements" : undefined}
                       required
                     />
                     <PasswordField
@@ -507,6 +574,8 @@ export default function SettingsPage() {
                     <PasswordRequirements
                       id="settings-password-requirements"
                       title={t("settings.passwordRequirements")}
+                      metLabel={t("settings.requirementMet")}
+                      pendingLabel={t("settings.requirementPending")}
                       rules={passwordRules.map((rule) => ({
                         label: t(rule.key),
                         passed: rule.passed,
@@ -515,10 +584,10 @@ export default function SettingsPage() {
                   )}
                 </fieldset>
 
-                <div className="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-6 flex flex-col gap-4 border-t border-dashed border-[#c8d5d9] pt-5 sm:flex-row sm:items-center sm:justify-between">
                   <Link
                     href={`/forgot-password?email=${encodeURIComponent((originalEmail || profile.email).trim().toLowerCase())}`}
-                    className="bd-focus w-fit rounded-md text-sm font-semibold text-cyan-800 transition hover:text-[#0b1f33]"
+                    className="bd-focus w-fit rounded-[4px] text-sm font-semibold text-[#08717c] transition hover:text-[#09263a]"
                   >
                     {t("login.forgot")}
                   </Link>
@@ -533,14 +602,14 @@ export default function SettingsPage() {
                         setPasswordNotice(null);
                         setPasswordOpen(false);
                       }}
-                      className="bd-focus min-h-11 rounded-[10px] border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="bd-focus min-h-11 rounded-[6px] border border-[#aabac0] bg-white px-4 text-sm font-semibold text-[#425d6c] transition hover:bg-[#f5f8f8] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {t("settings.cancel")}
                     </button>
                     <button
                       type="submit"
                       disabled={savingPassword}
-                      className="bd-focus min-h-11 rounded-[10px] bg-[#0b1f33] px-5 text-sm font-semibold text-white transition hover:bg-[#123a5a] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="bd-focus min-h-11 rounded-[6px] bg-[#09263a] px-5 text-sm font-semibold text-white transition hover:bg-[#123e54] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingPassword ? t("settings.changingPassword") : t("settings.changePassword")}
                     </button>
@@ -548,10 +617,53 @@ export default function SettingsPage() {
                 </div>
               </form>
             )}
-          </section>
+          </LedgerSection>
         </div>
       </div>
     </main>
+  );
+}
+
+function LedgerSection({
+  id,
+  index,
+  eyebrow,
+  title,
+  description,
+  children,
+}: {
+  id: string;
+  index: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  const titleId = `${id}-title`;
+
+  return (
+    <section
+      id={id}
+      aria-labelledby={titleId}
+      className="rounded-[4px] border border-[#cbd8dc] bg-white/95 shadow-[0_10px_30px_rgba(9,38,58,0.045)]"
+    >
+      <div className="grid lg:grid-cols-[215px_minmax(0,1fr)]">
+        <header className="relative border-b border-[#cbd8dc] bg-[#f2f7f7] px-5 py-5 lg:border-b-0 lg:border-r lg:px-6 lg:py-7">
+          <div className="flex items-start gap-3">
+            <span data-i18n-ignore className="font-mono text-[40px] font-light leading-none tracking-[-0.08em] text-[#adc2c8]">
+              {index}
+            </span>
+            <span className="mt-4 h-px w-7 bg-[#20a8b5]" />
+          </div>
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.17em] text-[#0b7682]">{eyebrow}</p>
+          <h2 id={titleId} className="mt-1.5 text-lg font-semibold tracking-[-0.015em] text-[#102a3b]">
+            {title}
+          </h2>
+          <p className="mt-2 max-w-sm text-xs leading-5 text-[#526a78]">{description}</p>
+        </header>
+        <div className="min-w-0 p-5 sm:p-7 lg:p-8">{children}</div>
+      </div>
+    </section>
   );
 }
 
@@ -572,7 +684,7 @@ function TextField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-semibold text-slate-700">
+      <label htmlFor={id} className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#536b78]">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <input
@@ -581,7 +693,7 @@ function TextField({
         required={required}
         autoComplete={autoComplete}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 w-full rounded-[10px] border border-slate-200 bg-white px-3.5 text-base font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/10 sm:text-sm"
+        className="min-h-[50px] w-full rounded-[6px] border border-[#aebfc5] bg-white px-3.5 text-base font-medium text-[#102a3b] outline-none transition placeholder:text-[#83949d] focus:border-[#087f8c] focus:ring-2 focus:ring-[#087f8c]/10 sm:text-sm"
       />
     </div>
   );
@@ -612,7 +724,7 @@ function PasswordField({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-xs font-semibold text-slate-700">
+      <label htmlFor={id} className="mb-2 block text-[11px] font-bold uppercase tracking-[0.08em] text-[#536b78]">
         {label} {required && <span className="text-rose-500">*</span>}
       </label>
       <div className="relative">
@@ -624,14 +736,14 @@ function PasswordField({
           autoComplete={autoComplete}
           aria-describedby={describedBy}
           onChange={(event) => onChange(event.target.value)}
-          className="min-h-12 w-full rounded-[10px] border border-slate-200 bg-white py-3 pl-3.5 pr-12 text-base font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-500/10 sm:text-sm"
+          className="min-h-[50px] w-full rounded-[6px] border border-[#aebfc5] bg-white py-3 pl-3.5 pr-12 text-base font-medium text-[#102a3b] outline-none transition placeholder:text-[#83949d] focus:border-[#087f8c] focus:ring-2 focus:ring-[#087f8c]/10 sm:text-sm"
         />
         <button
           type="button"
           onClick={() => setVisible((current) => !current)}
           aria-label={visible ? hideLabel : showLabel}
           aria-pressed={visible}
-          className="bd-focus absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+          className="bd-focus absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[4px] text-[#526a78] transition hover:bg-[#edf5f5] hover:text-[#08717c]"
         >
           {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
@@ -650,10 +762,10 @@ function AccountDetail({
   hint: string;
 }) {
   return (
-    <div className="min-w-0">
-      <dt className="text-xs font-semibold text-slate-500">{label}</dt>
-      <dd data-i18n-ignore className="mt-1 truncate text-sm font-semibold text-slate-900">{value || "—"}</dd>
-      <dd className="mt-1 text-xs leading-5 text-slate-500">{hint}</dd>
+    <div className="min-w-0 py-4 md:px-5 md:first:pl-0 md:last:pr-0">
+      <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#526a78]">{label}</dt>
+      <dd data-i18n-ignore className="mt-1.5 break-words text-sm font-semibold text-[#102a3b]">{value || "—"}</dd>
+      <dd className="mt-1 text-xs leading-5 text-[#526a78]">{hint}</dd>
     </div>
   );
 }
@@ -665,7 +777,7 @@ function NoticeBanner({ notice }: { notice: Notice }) {
     <div
       role={success ? "status" : "alert"}
       aria-live={success ? "polite" : "assertive"}
-      className={`flex items-start gap-3 rounded-[10px] border px-4 py-3 text-sm font-medium ${
+      className={`flex items-start gap-3 rounded-[4px] border px-4 py-3 text-sm font-medium ${
         success
           ? "border-emerald-200 bg-emerald-50 text-emerald-900"
           : "border-rose-200 bg-rose-50 text-rose-900"
@@ -705,29 +817,34 @@ function getPasswordRules(password: string): PasswordRule[] {
 function PasswordRequirements({
   id,
   title,
+  metLabel,
+  pendingLabel,
   rules,
 }: {
   id: string;
   title: string;
+  metLabel: string;
+  pendingLabel: string;
   rules: Array<{ label: string; passed: boolean }>;
 }) {
   return (
-    <div id={id} className="rounded-[10px] bg-[#f8fafc] px-4 py-3">
-      <p className="text-xs font-semibold text-slate-500">{title}</p>
-      <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2">
+    <div id={id} className="border-y border-[#d2dde0] py-4">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#526a78]">{title}</p>
+      <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
         {rules.map((rule) => (
           <li
             key={rule.label}
-            className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-              rule.passed ? "text-emerald-700" : "text-slate-500"
+            aria-label={`${rule.label}: ${rule.passed ? metLabel : pendingLabel}`}
+            className={`inline-flex items-center gap-2 text-xs font-medium ${
+              rule.passed ? "text-[#16715d]" : "text-[#526a78]"
             }`}
           >
             <span
               aria-hidden="true"
               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
                 rule.passed
-                  ? "bg-emerald-600 text-white"
-                  : "border border-slate-300 bg-white"
+                  ? "bg-[#1c8a72] text-white"
+                  : "border border-[#aebfc5] bg-white"
               }`}
             >
               {rule.passed && <Check className="h-3 w-3" />}
@@ -742,14 +859,28 @@ function PasswordRequirements({
 
 function SettingsSkeleton() {
   return (
-    <main className="bd-app-page min-h-screen bg-[#f4f6f8] px-4 py-6 text-slate-900 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-[800px] animate-pulse" aria-busy="true" aria-label="Loading settings">
-        <div className="h-9 w-40 rounded-lg bg-slate-200" />
-        <div className="mt-3 h-4 w-full max-w-md rounded bg-slate-200/80" />
-        <div className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div className="h-[420px] border-b border-slate-200" />
-          <div className="h-24 border-b border-slate-200" />
-          <div className="h-28" />
+    <main className="bd-app-page min-h-screen bg-[#edf3f4] px-4 py-7 text-[#102a3b] sm:px-6 sm:py-11">
+      <div className="mx-auto max-w-[1080px] animate-pulse" aria-busy="true" aria-label="Loading settings">
+        <div className="border-b-2 border-[#c1cfd3] pb-8">
+          <div className="h-3 w-40 rounded-sm bg-[#c9d7da]" />
+          <div className="mt-4 h-14 w-56 rounded-sm bg-[#b8c9cd]" />
+          <div className="mt-4 h-4 w-full max-w-xl rounded-sm bg-[#cfdbde]" />
+        </div>
+        <div className="mt-10 space-y-7">
+          {[330, 150, 180].map((height, index) => (
+            <div key={height} className="grid overflow-hidden rounded-[4px] border border-[#cbd8dc] bg-white lg:grid-cols-[215px_minmax(0,1fr)]">
+              <div className="border-b border-[#cbd8dc] bg-[#e8f0f1] p-6 lg:border-b-0 lg:border-r">
+                <div className="h-10 w-16 rounded-sm bg-[#cbd8dc]" />
+                <div className="mt-5 h-3 w-20 rounded-sm bg-[#c1d1d5]" />
+                <div className="mt-3 h-5 w-32 rounded-sm bg-[#b8c9cd]" />
+              </div>
+              <div className="p-6 sm:p-8" style={{ minHeight: height }}>
+                <div className="h-5 w-40 rounded-sm bg-[#d2dde0]" />
+                <div className="mt-5 h-12 rounded-[4px] bg-[#e1e8ea]" />
+                {index === 0 && <div className="mt-6 h-24 rounded-[4px] bg-[#edf2f3]" />}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </main>
