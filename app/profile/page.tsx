@@ -3948,24 +3948,26 @@ function ExperienceEditor({
       <div
         id={editorContentId}
         hidden={!isNew && !editorOpen}
-        className={`${isNew ? "mx-auto max-w-3xl" : "border-t border-slate-200 p-4 sm:p-5"}`}
+        className={`${isNew ? "w-full min-w-0" : "border-t border-slate-200 p-4 sm:p-5"}`}
       >
         <fieldset className="m-0 min-w-0 border-0 p-0">
           <legend className="sr-only">Yacht details</legend>
 
-          <div className="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-3 rounded-xl bg-slate-50/80 p-3 min-[380px]:grid-cols-[96px_minmax(0,1fr)]">
-          <div className="flex h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 min-[380px]:h-20 min-[380px]:w-24">
-            {draft.photo_url ? (
-              <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center">
-                <Camera className="h-6 w-6" />
-              </span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-900">Photo</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+          <div className="grid min-w-0 gap-4 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)] xl:gap-5">
+            <section className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-semibold text-slate-900">Photo</p>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">Optional</span>
+              </div>
+              <div className="mt-4 flex aspect-[16/9] w-full overflow-hidden rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 md:aspect-[4/3]">
+                {draft.photo_url ? (
+                  <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center">
+                    <Camera className="h-7 w-7" />
+                  </span>
+                )}
+              </div>
               <input
                 id={photoInputId}
                 type="file"
@@ -3980,78 +3982,91 @@ function ExperienceEditor({
                   if (url) setDraft((current) => ({ ...current, photo_url: url }));
                 }}
               />
-              <label htmlFor={photoInputId} className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
-                <Upload className="h-4 w-4" />
-                <span aria-live="polite">{uploading ? "Uploading..." : draft.photo_url ? "Change photo" : "Add photo"}</span>
-              </label>
-              {uploading && (
-                <button type="button" onClick={onCancelUpload} className="min-h-11 cursor-pointer rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
-                  Cancel
-                </button>
-              )}
-              {draft.photo_url && !uploading && (
-                <button type="button" onClick={removePhoto} className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
-                  <Trash2 className="h-4 w-4" />
-                  Remove photo
-                </button>
-              )}
-            </div>
+              <div className="mt-3 grid gap-2">
+                <label htmlFor={photoInputId} className={`inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
+                  <Upload className="h-4 w-4" />
+                  <span aria-live="polite">{uploading ? "Uploading..." : draft.photo_url ? "Change photo" : "Add photo"}</span>
+                </label>
+                {uploading && (
+                  <button type="button" onClick={onCancelUpload} className="min-h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                    Cancel
+                  </button>
+                )}
+                {draft.photo_url && !uploading && (
+                  <button type="button" onClick={removePhoto} className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-white px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+                    <Trash2 className="h-4 w-4" />
+                    Remove photo
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">Yacht details</p>
+                  <p className="mt-1 text-sm text-slate-500">Role, dates and vessel information</p>
+                </div>
+                <span className="hidden text-xs font-medium text-slate-400 sm:inline">CV information</span>
+              </div>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="xl:col-span-2">
+                  <ExperienceCardInput
+                    label="Yacht name"
+                    value={draft.yacht_name}
+                    placeholder="Yacht name"
+                    strong
+                    mobileFriendly
+                    onChange={(value) => setDraft({ ...draft, yacht_name: value })}
+                  />
+                </div>
+                <div className="xl:col-span-2">
+                  <ExperienceCardSelect
+                    label="Position"
+                    value={draft.position}
+                    options={yachtPositionTitles}
+                    mobileFriendly
+                    onChange={(value) => setDraft({ ...draft, position: value })}
+                  />
+                </div>
+                <ExperienceCardDateField label="Start date" value={draft.start_date} mobileFriendly onChange={(value) => setDraft({ ...draft, start_date: value })} />
+                <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
+                <ExperienceCardSelect
+                  label="Yacht type"
+                  value={draft.yacht_type || ""}
+                  options={yachtTypeOptions}
+                  mobileFriendly
+                  onChange={(value) => setDraft({ ...draft, yacht_type: value })}
+                />
+                <ExperienceCardSelect
+                  label="Yacht program"
+                  value={draft.yacht_program || ""}
+                  options={yachtProgramOptions}
+                  mobileFriendly
+                  onChange={(value) => setDraft({ ...draft, yacht_program: value })}
+                />
+                <div className="xl:col-span-2">
+                  <ExperienceSizeField
+                    value={draft.yacht_size || ""}
+                    mobileFriendly
+                    onChange={(value) => setDraft({ ...draft, yacht_size: value })}
+                  />
+                </div>
+                <div className="xl:col-span-2">
+                  <ExperienceCardInput
+                    label="Location"
+                    value={draft.location}
+                    placeholder="Location"
+                    mobileFriendly
+                    onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
+                  />
+                </div>
+              </div>
+            </section>
           </div>
-        </div>
 
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <ExperienceCardInput
-            label="Yacht name"
-            value={draft.yacht_name}
-            placeholder="Yacht name"
-            strong
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, yacht_name: value })}
-          />
-          <ExperienceCardSelect
-            label="Position"
-            value={draft.position}
-            options={yachtPositionTitles}
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, position: value })}
-          />
-        </div>
-
-        <div className="mt-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-          <ExperienceCardDateField label="Start date" value={draft.start_date} mobileFriendly onChange={(value) => setDraft({ ...draft, start_date: value })} />
-          <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
-        </div>
-
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <ExperienceCardSelect
-            label="Yacht type"
-            value={draft.yacht_type || ""}
-            options={yachtTypeOptions}
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, yacht_type: value })}
-          />
-          <ExperienceCardSelect
-            label="Yacht program"
-            value={draft.yacht_program || ""}
-            options={yachtProgramOptions}
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, yacht_program: value })}
-          />
-          <ExperienceSizeField
-            value={draft.yacht_size || ""}
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, yacht_size: value })}
-          />
-          <ExperienceCardInput
-            label="Location"
-            value={draft.location}
-            placeholder="Location"
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
-          />
-        </div>
-
-        <div className="mt-4">
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor={dutiesId} className="text-xs font-semibold text-slate-700">Duties</label>
             <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">
@@ -4064,19 +4079,19 @@ function ExperienceEditor({
             maxLength={yachtDutiesMaxLength}
             onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
             placeholder="Responsibilities and onboard duties"
-            className="mt-1.5 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
+            className="mt-1.5 min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
           />
-        </div>
+        </section>
 
         </fieldset>
 
-        <section className="mt-5 border-t border-slate-200 pt-2">
+        <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <button
             type="button"
             onClick={() => setReferencesOpen((open) => !open)}
             aria-expanded={referencesOpen}
             aria-controls={referencesId}
-            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-1 py-3 text-left transition hover:bg-slate-50 sm:px-2"
+            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 text-left transition hover:bg-slate-50 sm:px-4"
           >
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">References</span>
@@ -4089,7 +4104,7 @@ function ExperienceEditor({
               <ChevronDown className={`h-5 w-5 shrink-0 transition ${referencesOpen ? "rotate-180 text-cyan-700" : ""}`} />
             </span>
           </button>
-          <div id={referencesId} hidden={!referencesOpen} className="mt-1 rounded-xl bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
+          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
             <LinkedReferencePanel
               targetName={draft.yacht_name}
               targetKind="yacht"
@@ -4198,42 +4213,56 @@ function OtherWorkExperienceEditor({
       <div
         id={editorContentId}
         hidden={!isNew && !editorOpen}
-        className={`${isNew ? "mx-auto max-w-3xl" : "border-t border-slate-200 p-4 sm:p-5"}`}
+        className={`${isNew ? "w-full min-w-0" : "border-t border-slate-200 p-4 sm:p-5"}`}
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ExperienceCardInput
-            label="Workplace / company"
-            value={draft.yacht_name}
-            placeholder="Workplace / company"
-            strong
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, yacht_name: capitalizeFirstCharacter(value) })}
-          />
-          <ExperienceCardInput
-            label="Position"
-            value={draft.position}
-            placeholder="Position"
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, position: capitalizeFirstCharacter(value) })}
-          />
-        </div>
+        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">Other work experience</p>
+              <p className="mt-1 text-sm text-slate-500">Workplace, role and employment period</p>
+            </div>
+            <span className="hidden text-xs font-medium text-slate-400 sm:inline">CV information</span>
+          </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-          <ExperienceCardDateField label="Start date" value={draft.start_date} mobileFriendly onChange={(value) => setDraft({ ...draft, start_date: value })} />
-          <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
-        </div>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+            <div className="xl:col-span-3">
+              <ExperienceCardInput
+                label="Workplace / company"
+                value={draft.yacht_name}
+                placeholder="Workplace / company"
+                strong
+                mobileFriendly
+                onChange={(value) => setDraft({ ...draft, yacht_name: capitalizeFirstCharacter(value) })}
+              />
+            </div>
+            <div className="xl:col-span-3">
+              <ExperienceCardInput
+                label="Position"
+                value={draft.position}
+                placeholder="Position"
+                mobileFriendly
+                onChange={(value) => setDraft({ ...draft, position: capitalizeFirstCharacter(value) })}
+              />
+            </div>
+            <div className="xl:col-span-2">
+              <ExperienceCardDateField label="Start date" value={draft.start_date} mobileFriendly onChange={(value) => setDraft({ ...draft, start_date: value })} />
+            </div>
+            <div className="xl:col-span-2">
+              <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
+            </div>
+            <div className="sm:col-span-2 xl:col-span-2">
+              <ExperienceCardInput
+                label="Location"
+                value={draft.location}
+                placeholder="Location"
+                mobileFriendly
+                onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
+              />
+            </div>
+          </div>
+        </section>
 
-        <div className="mt-4">
-          <ExperienceCardInput
-            label="Location"
-            value={draft.location}
-            placeholder="Location"
-            mobileFriendly
-            onChange={(value) => setDraft({ ...draft, location: capitalizeFirstCharacter(value) })}
-          />
-        </div>
-
-        <div className="mt-4">
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor={dutiesId} className="text-xs font-semibold text-slate-700">Duties</label>
             <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">
@@ -4246,11 +4275,11 @@ function OtherWorkExperienceEditor({
             maxLength={yachtDutiesMaxLength}
             onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
             placeholder="Responsibilities, achievements and work duties"
-            className="mt-1.5 min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
+            className="mt-1.5 min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
           />
-        </div>
+        </section>
 
-        <section className="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           <button
             type="button"
             onClick={() => setReferencesOpen((open) => !open)}
@@ -4269,7 +4298,7 @@ function OtherWorkExperienceEditor({
               <ChevronDown className={`h-5 w-5 shrink-0 transition ${referencesOpen ? "rotate-180 text-cyan-700" : ""}`} />
             </span>
           </button>
-          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
+          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
             <LinkedReferencePanel
               targetName={draft.yacht_name}
               targetKind="workplace"
