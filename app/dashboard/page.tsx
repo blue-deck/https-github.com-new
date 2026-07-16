@@ -2,20 +2,32 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, CheckCircle2, FileText, LoaderCircle, LogOut, Plus, Settings, Ship, Trash2, UserPlus, UserRound } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Camera,
+  CheckCircle2,
+  ClipboardList,
+  FileText,
+  LoaderCircle,
+  LogOut,
+  Plus,
+  Search,
+  Settings,
+  Ship,
+  Trash2,
+  UserPlus,
+  UserRound,
+} from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
+import { OptimizedSupabaseImage } from "../components/OptimizedSupabaseImage";
 import {
   dashboardPhotoFromMetadata,
   removeDashboardPhoto as clearDashboardPhoto,
   saveDashboardPhoto as persistDashboardPhoto,
   subscribeDashboardPhotoUpdates,
 } from "../lib/accountIdentity";
-import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
-import {
-  markInvitationAccepted,
-  saveYachtMembership,
-} from "../lib/yachtMemberships";
+import { acceptYachtInvitation } from "../lib/yachtMemberships";
 
 type DashboardProfile = {
   id?: string;
@@ -40,6 +52,8 @@ type DashboardYachtInvite = {
   crew_profile_id?: string;
   sender_name?: string;
   sender_role?: string;
+  token?: string;
+  invite_link?: string;
 };
 
 type DashboardDeck = {
@@ -89,10 +103,13 @@ function DashboardPhotoControl({
       aria-busy={uploading}
     >
       {url && (
-        <img
+        <OptimizedSupabaseImage
           src={url}
           alt={`${name || "User"} dashboard photo`}
-          className="h-full w-full object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
+          delivery="square"
+          fill
+          sizes="(max-width: 639px) 96px, 112px"
+          className="object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
         />
       )}
 
@@ -405,62 +422,26 @@ export default function DashboardPage() {
 
   async function acceptDashboardInvite(invite: DashboardYachtInvite) {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!user?.email) {
+    if (!session?.access_token || !session.user.email) {
       window.location.href = "/login";
       return;
     }
 
     setAcceptingInviteId(invite.id);
-    let crewProfileId = profile?.crew_profile_id || invite.crew_profile_id;
-
-    if (!crewProfileId) {
-      const { data: crewProfile, error } = await saveCrewProfileByUserId<{ id?: string }>(
-        supabase,
-        user.id,
-        {
-          email: profile?.email || user.email,
-          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-          phone: profile?.phone || user.user_metadata?.phone || "",
-          public_crew_id: user.id.slice(0, 8).toUpperCase(),
-        },
-        "id"
-      );
-
-      if (error) {
-        alert(error.message);
-        setAcceptingInviteId("");
-        return;
-      }
-
-      crewProfileId = crewProfile?.id;
-    }
-
-    const { error: memberError } = await saveYachtMembership(supabase, {
-      yacht_id: invite.yacht_id,
-      crew_profile_id: crewProfileId,
-      invited_email: profile?.email || user.email,
-      position: invite.position,
-      department: invite.department,
-      status: "active",
-    });
-
-    if (memberError) {
-      alert(memberError.message);
-      setAcceptingInviteId("");
-      return;
-    }
-
-    const { error: inviteError } = await markInvitationAccepted(
-      supabase,
-      invite.id,
-      crewProfileId
+    const invitationToken =
+      invite.token ||
+      invite.invite_link?.split("/").filter(Boolean).at(-1) ||
+      "";
+    const { error } = await acceptYachtInvitation(
+      invitationToken,
+      session.access_token,
     );
 
-    if (inviteError) {
-      alert(inviteError.message);
+    if (error) {
+      alert(error.message);
       setAcceptingInviteId("");
       return;
     }
@@ -501,7 +482,10 @@ export default function DashboardPage() {
   }
 
   const normalizedRole = profile?.role?.trim().toLowerCase() || "crew";
-  const isCaptain = normalizedRole === "captain" || normalizedRole === "management";
+  const isCaptain =
+    normalizedRole === "captain" ||
+    normalizedRole === "management" ||
+    normalizedRole === "owner";
   const roleLabel = formatDashboardRole(normalizedRole);
 
   return (
@@ -550,6 +534,31 @@ export default function DashboardPage() {
         </section>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Link
+            href="/jobs"
+            className="bd-focus bd-dashboard-priority-card rounded-[28px] p-8 transition hover:-translate-y-1"
+          >
+            <Search className="h-8 w-8 text-cyan-200" />
+            <p className="mt-5 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200/72">
+              BlueDeck Jobs
+            </p>
+            <h2 className="mt-2 text-3xl font-semibold text-white">Find Yacht Jobs</h2>
+            <p className="mt-3 leading-7 text-white/66">
+              Search structured roles by position, department, contract and location.
+            </p>
+          </Link>
+
+          <Link
+            href="/applications"
+            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+          >
+            <ClipboardList className="h-8 w-8 text-cyan-700" />
+            <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Applications</h2>
+            <p className="mt-3 leading-7 text-slate-600">
+              Track every yacht job application and hiring status in one place.
+            </p>
+          </Link>
+
           <Link
             href="/profile"
             className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
@@ -619,6 +628,22 @@ export default function DashboardPage() {
                   +{myDecks.length - 1} deck
                 </p>
               )}
+            </Link>
+          ) : null}
+
+          {isCaptain ? (
+            <Link
+              href="/hiring"
+              className="bd-focus bd-glass-card-strong rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white"
+            >
+              <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
+              <p className="mt-5 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                Employer workspace
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold text-slate-950">Hiring Desk</h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                Publish roles, review candidates and connect a hire to YACHT-OS.
+              </p>
             </Link>
           ) : null}
 

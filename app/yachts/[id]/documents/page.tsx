@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { parseSupabaseStorageObjectUrl } from "../../../lib/imageDelivery";
 import { createSafeStoragePath } from "../../../lib/storage";
 import { supabase } from "../../../lib/supabase";
 
@@ -134,6 +135,27 @@ export default function DocumentsPage() {
     }
 
     fetchDocuments();
+  }
+
+  async function openDocument(document: YachtDocument) {
+    if (!document.file_url) return;
+
+    const storageObject = parseSupabaseStorageObjectUrl(document.file_url);
+    if (!storageObject?.isPrivate) {
+      window.open(document.file_url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const { data, error } = await supabase.storage
+      .from(storageObject.bucket)
+      .createSignedUrl(storageObject.path, 60 * 10);
+
+    if (error || !data?.signedUrl) {
+      alert("This document could not be opened securely.");
+      return;
+    }
+
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
 
   function getFileBadge(fileName: string | null) {
@@ -310,13 +332,13 @@ export default function DocumentsPage() {
 
                       <div className="flex gap-3">
                         {document.file_url && (
-                          <a
-                            href={document.file_url}
-                            target="_blank"
+                          <button
+                            type="button"
+                            onClick={() => void openDocument(document)}
                             className="rounded-xl bg-blue-400 px-4 py-2 font-semibold text-black"
                           >
                             Open
-                          </a>
+                          </button>
                         )}
 
                         <button

@@ -3,6 +3,7 @@ import { AuthenticatedTopBar } from "./components/AuthenticatedTopBar";
 import { LanguageProvider } from "./components/LanguageProvider";
 import { PlatformBridge } from "./components/PlatformBridge";
 import { BLUEDECK_SITE_URL } from "./lib/site";
+import { BLUEDECK_SUPABASE_URL } from "./lib/supabaseConfig";
 import "./globals.css";
 
 const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
@@ -11,9 +12,12 @@ const bluedeckSearchIconUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
 export const metadata: Metadata = {
   metadataBase: new URL(BLUEDECK_SITE_URL),
   applicationName: "BlueDeck",
-  title: "BlueDeck | Yacht Management Platform",
+  title: {
+    default: "BlueDeck | Yacht Jobs, Crew Careers & YACHT-OS",
+    template: "%s | BlueDeck",
+  },
   description:
-    "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",
+    "Find professional yacht jobs, hire qualified crew and connect every successful placement to BlueDeck profiles, contracts, onboarding and yacht operations.",
   manifest: "/manifest.webmanifest",
   alternates: {
     canonical: "/",
@@ -24,9 +28,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "BlueDeck Yacht Management",
+    title: "BlueDeck Yacht Jobs, Crew Careers & YACHT-OS",
     description:
-      "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
+      "Professional yacht recruitment and connected crew operations in one premium platform.",
     url: BLUEDECK_SITE_URL,
     siteName: "BlueDeck",
     images: [
@@ -40,9 +44,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "BlueDeck Yacht Management",
+    title: "BlueDeck Yacht Jobs, Crew Careers & YACHT-OS",
     description:
-      "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
+      "Professional yacht recruitment and connected crew operations in one premium platform.",
     images: [bluedeckSearchIconUrl],
   },
   other: {
@@ -79,6 +83,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href={BLUEDECK_SUPABASE_URL} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href={BLUEDECK_SUPABASE_URL} />
+      </head>
       <body>
         <script
           type="application/ld+json"

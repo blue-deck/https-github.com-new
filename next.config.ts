@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    qualities: [75, 84, 90],
+  },
   async redirects() {
     return [
       {
@@ -44,10 +47,6 @@ const nextConfig: NextConfig = {
           { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
           { key: "Content-Security-Policy", value: "default-src 'self'; script-src 'self'" },
         ],
-      },
-      {
-        source: "/management/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }],
       },
     ];
   },

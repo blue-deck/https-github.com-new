@@ -1,7 +1,7 @@
 "use client";
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import { createSafeStoragePath } from "./storage";
+import { createSafeStoragePath, immutableImageCacheControl } from "./storage";
 import { supabase } from "./supabase";
 
 export const DASHBOARD_PHOTO_EVENT = "bluedeck:dashboard-photo-updated";
@@ -163,7 +163,10 @@ export async function saveDashboardPhoto({
 
   const path = createSafeStoragePath(user.id, file, "dashboard");
   const storage = client.storage.from("crew-portfolio");
-  const { error: uploadError } = await storage.upload(path, file, { upsert: false });
+  const { error: uploadError } = await storage.upload(path, file, {
+    cacheControl: immutableImageCacheControl,
+    upsert: false,
+  });
 
   if (uploadError) throw uploadError;
 

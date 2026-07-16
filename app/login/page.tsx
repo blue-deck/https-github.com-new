@@ -8,6 +8,7 @@ import { PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import type { TranslationKey } from "../lib/i18n";
 import { authConfirmUrl } from "../lib/site";
+import { safeInternalPath } from "../lib/safeNavigation";
 import { supabase } from "../lib/supabase";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [postAuthPath, setPostAuthPath] = useState("/dashboard");
   const passwordStrength = useMemo(() => getPasswordStrength(password, t), [password, t]);
   const forgotPasswordHref = email.trim()
     ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
@@ -35,6 +37,13 @@ export default function LoginPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const requestedMode = searchParams.get("mode");
+    const invitationToken = searchParams.get("invite");
+    const requestedPostAuthPath = safeInternalPath(
+      searchParams.get("next") ||
+        (invitationToken
+          ? `/invitations/${encodeURIComponent(invitationToken)}`
+          : ""),
+    );
     const isPasswordRecovery =
       requestedMode === "recovery" ||
       searchParams.get("type") === "recovery" ||
@@ -45,10 +54,9 @@ export default function LoginPage() {
       return;
     }
 
-    if (requestedMode !== "signup") return;
-
     const frame = window.requestAnimationFrame(() => {
-      setMode("signup");
+      setPostAuthPath(requestedPostAuthPath);
+      if (requestedMode === "signup") setMode("signup");
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -133,7 +141,7 @@ export default function LoginPage() {
           return;
         }
 
-        window.location.href = "/dashboard";
+        window.location.href = postAuthPath;
       } catch {
         setLoading(false);
         setNotice(t("login.notice.loginService"));
@@ -152,6 +160,7 @@ export default function LoginPage() {
           fullName: fullName.trim(),
           role,
           position,
+          next: postAuthPath,
         }),
       });
 
@@ -193,7 +202,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: authConfirmUrl("/dashboard") },
+        options: { emailRedirectTo: authConfirmUrl(postAuthPath) },
       });
 
       setNotice(error ? error.message : t("login.notice.confirmationSent"));

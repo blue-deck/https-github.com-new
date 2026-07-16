@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 import {
   canInviteCrew,
-  getDefaultPositionForAccountType,
   getDepartmentByPosition,
   getPosition,
   isCaptainLevel,
@@ -101,74 +100,65 @@ export async function GET(
     return NextResponse.json({ ok: false, error: crewResponse.error.message }, { status: 500 });
   }
 
-  const normalizedUserEmail = normalizeEmail(user.email);
   const isYachtOwner = yacht.owner_id === user.id;
-  const operatorMembership = (crewResponse.data || []).find((member: any) => {
-    return (
-      member.crew_profiles?.user_id === user.id ||
-      normalizeEmail(member.crew_profiles?.email) === normalizedUserEmail ||
-      normalizeEmail(member.invited_email) === normalizedUserEmail
-    );
-  });
-  const isYachtMember = Boolean(operatorMembership);
+  const crewMemberships = crewResponse.data || [];
+  const operatorMembership = crewMemberships.find((member: any) =>
+    isMembershipLinkedToUser(member, user.id),
+  );
+  const isYachtMember =
+    Boolean(operatorMembership) &&
+    String(operatorMembership?.status || "").trim().toLowerCase() === "active";
 
   if (!isYachtOwner && !isYachtMember) {
     return NextResponse.json({ ok: false, error: "You do not have access to this yacht." }, { status: 403 });
   }
 
-  const { data: baseProfile } = await serviceClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const accountRole = isYachtOwner
-    ? "owner"
-    : normalizeRole(baseProfile?.role) || normalizeRole(user.user_metadata?.role);
-  const elevatedRole = ["captain", "owner", "management"].includes(accountRole);
-  const roleDefaultPosition = getDefaultPositionForAccountType(accountRole);
-  const operatorPosition = elevatedRole
-    ? roleDefaultPosition
-    : operatorMembership?.position ||
-      operatorMembership?.crew_profiles?.current_position ||
-      roleDefaultPosition ||
-      "";
+  const accountRole = isYachtOwner ? "owner" : "crew";
+  const operatorPosition = isYachtOwner ? "Owner" : operatorMembership?.position || "";
   const operatorDepartment = operatorMembership?.department || getDepartmentByPosition(operatorPosition);
+  const canManageCrew =
+    isYachtOwner || (isYachtMember && isCaptainLevel(operatorPosition, "crew"));
+  const operatorCrewProfile = getJoinedCrewProfile(operatorMembership);
+  const operatorCrewProfileId =
+    operatorMembership?.crew_profile_id || operatorCrewProfile?.id || "";
 
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const retentionCutoff = sixMonthsAgo.toISOString();
-  let purgedChecklists = 0;
-
-  const { data: staleChecklists } = await serviceClient
-    .from("yacht_checklists")
-    .select("id")
-    .eq("yacht_id", yachtId)
-    .lt("created_at", retentionCutoff);
-
-  if (staleChecklists?.length) {
-    const staleIds = staleChecklists.map((item: { id: string }) => item.id);
-    await serviceClient.from("yacht_checklist_items").delete().in("checklist_id", staleIds);
-    const purgeResponse = await serviceClient.from("yacht_checklists").delete().in("id", staleIds);
-    if (!purgeResponse.error) purgedChecklists = staleIds.length;
-  }
-
-  const { data: checklists, error: checklistError } = await serviceClient
+  let checklistQuery = serviceClient
     .from("yacht_checklists")
     .select(`
       *,
       yacht_checklist_items (*)
     `)
-    .eq("yacht_id", yachtId)
-    .order("created_at", { ascending: false });
+    .eq("yacht_id", yachtId);
+
+  if (!canManageCrew) {
+    if (!operatorCrewProfileId) {
+      return NextResponse.json(
+        { ok: false, error: "Your active crew profile could not be resolved." },
+        { status: 403 },
+      );
+    }
+    checklistQuery = checklistQuery.eq("assigned_to", operatorCrewProfileId);
+  }
+
+  const { data: checklists, error: checklistError } = await checklistQuery.order(
+    "created_at",
+    { ascending: false },
+  );
 
   if (checklistError) {
     return NextResponse.json({ ok: false, error: checklistError.message }, { status: 500 });
   }
 
+  const visibleCrew = crewMemberships.map((member: any) =>
+    toVisibleCrewMember(member, {
+      canManageCrew,
+      userId: user.id,
+    }),
+  );
+
   return NextResponse.json({
     ok: true,
-    crew: crewResponse.data || [],
+    crew: visibleCrew,
     checklists: checklists || [],
     operator: {
       position: operatorPosition,
@@ -178,8 +168,7 @@ export async function GET(
     },
     checklist_retention: {
       months: 6,
-      cutoff: retentionCutoff,
-      purged: purgedChecklists,
+      purged: 0,
     },
   });
 }
@@ -252,24 +241,33 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Login session is invalid." }, { status: 401 });
   }
 
-  const [{ data: yacht }, { data: baseProfile }, { data: actorProfile }, targetMembershipResponse] = await Promise.all([
-    serviceClient.from("yachts").select("id,owner_id").eq("id", yachtId).maybeSingle(),
-    serviceClient.from("profiles").select("role").eq("id", user.id).maybeSingle(),
-    serviceClient
-      .from("crew_profiles")
-      .select("id,current_position")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    serviceClient
-      .from("yacht_crew_memberships")
-      .select("id,crew_profile_id,position,department")
-      .eq("id", membershipId)
-      .eq("yacht_id", yachtId)
-      .maybeSingle(),
-  ]);
+  const [{ data: yacht }, actorProfileResponse, targetMembershipResponse] =
+    await Promise.all([
+      serviceClient.from("yachts").select("id,owner_id").eq("id", yachtId).maybeSingle(),
+      serviceClient
+        .from("crew_profiles")
+        .select("id,user_id,current_position,email")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle(),
+      serviceClient
+        .from("yacht_crew_memberships")
+        .select("id,crew_profile_id,position,department")
+        .eq("id", membershipId)
+        .eq("yacht_id", yachtId)
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   if (!yacht) {
     return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
+  }
+
+  if (actorProfileResponse.error) {
+    return NextResponse.json(
+      { ok: false, error: actorProfileResponse.error.message },
+      { status: 500 },
+    );
   }
 
   if (targetMembershipResponse.error) {
@@ -283,56 +281,32 @@ export async function PATCH(
     return NextResponse.json({ ok: false, error: "Crew member not found on this yacht." }, { status: 404 });
   }
 
-  let resolvedActorProfile = actorProfile;
-  if (!resolvedActorProfile?.id && user.email) {
-    const emailProfileResponse = await serviceClient
-      .from("crew_profiles")
-      .select("id,current_position")
-      .ilike("email", normalizeEmail(user.email))
-      .maybeSingle();
-
-    if (emailProfileResponse.error) {
-      return NextResponse.json({ ok: false, error: emailProfileResponse.error.message }, { status: 500 });
-    }
-
-    resolvedActorProfile = emailProfileResponse.data;
-  }
+  const resolvedActorProfile = actorProfileResponse.data;
 
   const isYachtOwner = yacht.owner_id === user.id;
-  const accountRole = isYachtOwner
-    ? "owner"
-    : normalizeRole(baseProfile?.role) || normalizeRole(user.user_metadata?.role);
-  let actorMembershipResponse = resolvedActorProfile?.id
+  const accountRole = isYachtOwner ? "owner" : "crew";
+  const actorMembershipResponse = resolvedActorProfile?.id
     ? await serviceClient
         .from("yacht_crew_memberships")
-        .select("position,department,status")
+        .select("position,department,status,crew_profile_id")
         .eq("yacht_id", yachtId)
         .eq("crew_profile_id", resolvedActorProfile.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle()
     : { data: null, error: null };
-
-  if (!actorMembershipResponse.data && user.email) {
-    actorMembershipResponse = await serviceClient
-      .from("yacht_crew_memberships")
-      .select("position,department,status")
-      .eq("yacht_id", yachtId)
-      .ilike("invited_email", normalizeEmail(user.email))
-      .maybeSingle();
-  }
 
   if (actorMembershipResponse.error) {
     return NextResponse.json({ ok: false, error: actorMembershipResponse.error.message }, { status: 500 });
   }
 
   const actorMembership = actorMembershipResponse.data;
-  const actorPosition =
-    actorMembership?.position ||
-    resolvedActorProfile?.current_position ||
-    getDefaultPositionForAccountType(accountRole);
+  const actorPosition = isYachtOwner ? "Owner" : actorMembership?.position || "";
   const actorDepartment = actorMembership?.department || getDepartmentByPosition(actorPosition);
   const canManageCrew =
     isYachtOwner ||
-    (actorMembership?.status === "active" && isCaptainLevel(actorPosition, accountRole));
+    (String(actorMembership?.status || "").trim().toLowerCase() === "active" &&
+      isCaptainLevel(actorPosition, "crew"));
 
   if (!canManageCrew) {
     return NextResponse.json(
@@ -342,6 +316,21 @@ export async function PATCH(
   }
 
   const targetMembership = targetMembershipResponse.data;
+  const protectedPosition = (value?: string | null) =>
+    ["owner", "yacht manager"].includes((value || "").trim().toLowerCase());
+  if (
+    !isYachtOwner &&
+    (
+      protectedPosition(targetMembership.position) ||
+      protectedPosition(positionDefinition?.title)
+    )
+  ) {
+    return NextResponse.json(
+      { ok: false, error: "Only the yacht owner can edit or assign this position." },
+      { status: 403 },
+    );
+  }
+
   const canManageCurrentPosition =
     isYachtOwner ||
     canInviteCrew(
@@ -377,13 +366,51 @@ export async function PATCH(
       );
     }
 
+    const targetProfileResult = await serviceClient
+      .from("crew_profiles")
+      .select("id,user_id")
+      .eq("id", targetMembership.crew_profile_id)
+      .maybeSingle();
+    if (targetProfileResult.error) {
+      return NextResponse.json(
+        { ok: false, error: targetProfileResult.error.message },
+        { status: 500 },
+      );
+    }
+    if (!targetProfileResult.data) {
+      return NextResponse.json(
+        { ok: false, error: "This crew profile could not be resolved." },
+        { status: 404 },
+      );
+    }
+    if (targetProfileResult.data.user_id) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Claimed crew identities can only be edited by their profile owner.",
+        },
+        { status: 403 },
+      );
+    }
+
     const profileUpdate = await serviceClient
       .from("crew_profiles")
       .update({ full_name: fullName })
-      .eq("id", targetMembership.crew_profile_id);
+      .eq("id", targetMembership.crew_profile_id)
+      .is("user_id", null)
+      .select("id")
+      .maybeSingle();
 
-    if (profileUpdate.error) {
-      return NextResponse.json({ ok: false, error: profileUpdate.error.message }, { status: 500 });
+    if (profileUpdate.error || !profileUpdate.data) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            profileUpdate.error?.message ||
+            "This crew identity changed before the update could be completed.",
+        },
+        { status: profileUpdate.error ? 500 : 409 },
+      );
     }
   }
 
@@ -413,13 +440,55 @@ export async function PATCH(
   });
 }
 
-function normalizeEmail(value?: string | null) {
-  return (value || "").trim().toLowerCase();
+function toVisibleCrewMember(
+  member: any,
+  context: {
+    canManageCrew: boolean;
+    userId: string;
+  },
+) {
+  const profile = getJoinedCrewProfile(member);
+  const isSelf = isMembershipLinkedToUser(member, context.userId);
+  const canSeePrivateFields = context.canManageCrew || isSelf;
+
+  return {
+    id: member?.id,
+    yacht_id: member?.yacht_id,
+    crew_profile_id: member?.crew_profile_id,
+    position: member?.position,
+    department: member?.department,
+    status: member?.status,
+    created_at: member?.created_at,
+    invited_email: canSeePrivateFields ? member?.invited_email || null : null,
+    crew_profiles: profile
+      ? {
+          id: profile.id,
+          user_id: isSelf ? profile.user_id || null : null,
+          full_name: profile.full_name || null,
+          public_crew_id: profile.public_crew_id || null,
+          current_position: profile.current_position || null,
+          email: canSeePrivateFields ? profile.email || null : null,
+          phone: canSeePrivateFields ? profile.phone || null : null,
+          nationality: canSeePrivateFields ? profile.nationality || null : null,
+          date_of_birth: canSeePrivateFields ? profile.date_of_birth || null : null,
+          passport_number: canSeePrivateFields ? profile.passport_number || null : null,
+          passport_expiry: canSeePrivateFields ? profile.passport_expiry || null : null,
+          stcw_expiry: canSeePrivateFields ? profile.stcw_expiry || null : null,
+          medical_expiry: canSeePrivateFields ? profile.medical_expiry || null : null,
+        }
+      : null,
+  };
 }
 
-function normalizeRole(value?: unknown) {
-  const role = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return ["crew", "captain", "owner", "management"].includes(role) ? role : "";
+function getJoinedCrewProfile(member: any) {
+  const profile = member?.crew_profiles;
+  if (Array.isArray(profile)) return profile[0] || null;
+  return profile || null;
+}
+
+function isMembershipLinkedToUser(member: any, userId: string) {
+  const profile = getJoinedCrewProfile(member);
+  return Boolean(userId && profile?.user_id === userId);
 }
 
 function isSchemaCacheError(error: { message?: string; code?: string } | null) {

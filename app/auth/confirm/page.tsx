@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { BlueDeckLogoLink } from "../../components/BlueDeckLogo";
+import { safeInternalPath } from "../../lib/safeNavigation";
 import { supabase } from "../../lib/supabase";
 
 function getHashParams() {
@@ -15,16 +16,23 @@ function getHashParams() {
 export default function ConfirmAuthPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Confirming your BlueDeck account...");
+  const [loginHref, setLoginHref] = useState("/login");
 
   useEffect(() => {
     async function finishSuccess() {
       await supabase.auth.signOut();
       setStatus("success");
-      setMessage("Your BlueDeck account has been activated. Please login with your email and password to open My Dashboard.");
+      setMessage("Your BlueDeck account has been activated. Please log in to continue securely to BlueDeck.");
     }
 
     async function confirmAccount() {
       const searchParams = new URLSearchParams(window.location.search);
+      const nextPath = safeInternalPath(searchParams.get("next"));
+      setLoginHref(
+        nextPath === "/dashboard"
+          ? "/login"
+          : `/login?next=${encodeURIComponent(nextPath)}`,
+      );
       const hashParams = getHashParams();
       const errorDescription =
         searchParams.get("error_description") ||
@@ -86,7 +94,7 @@ export default function ConfirmAuthPage() {
       }
 
       setStatus("success");
-      setMessage("Your BlueDeck account has been activated. Please login with your email and password to open My Dashboard.");
+      setMessage("Your BlueDeck account has been activated. Please log in to continue securely to BlueDeck.");
     }
 
     confirmAccount();
@@ -114,7 +122,7 @@ export default function ConfirmAuthPage() {
 
         {status !== "loading" && (
           <Link
-            href="/login"
+            href={loginHref}
             className="mt-7 inline-flex rounded-2xl bg-cyan-600 px-6 py-4 font-black text-white transition hover:bg-cyan-700"
           >
             Login to BlueDeck

@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, LayoutDashboard, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ArrowUpRight,
+  BriefcaseBusiness,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  ShieldCheck,
+  UserRound,
+  X,
+} from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
@@ -10,17 +21,17 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
 
 const publicNavigation = [
-  { labelKey: "nav.yachts", href: "/#yacht-platform" },
-  { labelKey: "nav.services", href: "/services" },
-  { labelKey: "nav.management", href: "/management" },
+  { labelKey: "nav.jobs", href: "/jobs" },
+  { labelKey: "nav.forCrew", href: "/for-crew" },
+  { labelKey: "nav.hireCrew", href: "/hire-crew" },
+  { labelKey: "nav.yachtOperations", href: "/services" },
   { labelKey: "nav.trust", href: "/trust" },
-  { labelKey: "nav.about", href: "/about" },
-  { labelKey: "nav.contact", href: "/contact" },
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
 export function PublicHeader() {
   const { t } = useLanguage();
   const [sessionEmail, setSessionEmail] = useState("");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -47,6 +58,17 @@ export function PublicHeader() {
       subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileOpen(false);
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [mobileOpen]);
 
   async function logout() {
     await supabase.auth.signOut();
@@ -105,8 +127,15 @@ export function PublicHeader() {
           ) : (
             <>
               <Link
+                href="/hiring"
+                className="bd-focus bd-public-action bd-public-action-outline bd-public-post-action"
+              >
+                <BriefcaseBusiness className="h-4 w-4" />
+                {t("nav.postJob")}
+              </Link>
+              <Link
                 href="/login"
-                className="bd-focus bd-public-action bd-public-action-outline"
+                className="bd-focus bd-public-action bd-public-action-outline bd-public-login-action"
               >
                 {t("auth.login")}
               </Link>
@@ -119,6 +148,81 @@ export function PublicHeader() {
             </>
           )}
           <LanguageSwitcher size="compact" className="bd-public-language" />
+          <button
+            type="button"
+            className="bd-focus bd-public-mobile-toggle"
+            aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={mobileOpen}
+            aria-controls="bluedeck-public-mobile-menu"
+            onClick={() => setMobileOpen((current) => !current)}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="bluedeck-public-mobile-menu"
+        className="bd-public-mobile-menu"
+        data-open={mobileOpen ? "true" : "false"}
+        aria-hidden={!mobileOpen}
+        inert={mobileOpen ? undefined : true}
+      >
+        <nav aria-label="BlueDeck mobile navigation">
+          {publicNavigation.map((item) => (
+            <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+              <span>{t(item.labelKey)}</span>
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          ))}
+          <Link href="/about" onClick={() => setMobileOpen(false)}>
+            <span>{t("nav.about")}</span>
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+          <Link href="/contact" onClick={() => setMobileOpen(false)}>
+            <span>{t("nav.contact")}</span>
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </nav>
+        <div className="bd-public-mobile-menu-actions">
+          <Link href="/jobs" onClick={() => setMobileOpen(false)} className="bd-primary-cta">
+            {t("home.searchJobs")}
+          </Link>
+          <Link href="/hiring" onClick={() => setMobileOpen(false)} className="bd-secondary-cta">
+            {t("nav.postJob")}
+          </Link>
+          {sessionEmail ? (
+            <>
+              <Link
+                href="/dashboard"
+                onClick={() => setMobileOpen(false)}
+                className="bd-secondary-cta"
+              >
+                {t("topbar.dashboard")}
+              </Link>
+              <Link
+                href="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="bd-secondary-cta"
+              >
+                {t("topbar.profile")}
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  void logout();
+                }}
+                className="bd-secondary-cta"
+              >
+                {t("topbar.logout")}
+              </button>
+            </>
+          ) : (
+            <Link href="/login" onClick={() => setMobileOpen(false)} className="bd-secondary-cta">
+              {t("auth.login")}
+            </Link>
+          )}
         </div>
       </div>
     </header>
@@ -145,16 +249,17 @@ export function PublicFooter() {
         <FooterColumn
           title={t("footer.company")}
           links={[
+            [t("nav.jobs"), "/jobs"],
+            [t("nav.forCrew"), "/for-crew"],
+            [t("nav.hireCrew"), "/hire-crew"],
             [t("nav.about"), "/about"],
-            [t("footer.vision"), "/about#vision"],
-            [t("nav.services"), "/services"],
             [t("nav.contact"), "/contact"],
           ]}
         />
         <FooterColumn
           title={t("footer.platform")}
           links={[
-            [t("nav.yachts"), "/#yacht-platform"],
+            [t("nav.yachtOperations"), "/services"],
             [t("nav.management"), "/management"],
             [t("nav.trust"), "/trust"],
             [t("footer.clientLogin"), "/login"],

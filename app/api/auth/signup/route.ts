@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 import { authConfirmUrl } from "../../../lib/site";
+import { safeInternalPath } from "../../../lib/safeNavigation";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
   const role = accountTypes.includes(body.role || "") ? body.role || "crew" : "";
   const requestedPosition = body.position?.trim() || getDefaultPositionForAccountType(role);
   const position = yachtPositionTitles.includes(requestedPosition) ? requestedPosition : "";
+  const nextPath = safeInternalPath(body.next);
 
   if (!email || !password || !fullName || !role || !position) {
     return NextResponse.json({ error: "Name, email, password, account type and yacht position are required." }, { status: 400 });
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     options: {
-      emailRedirectTo: authConfirmUrl("/dashboard"),
+      emailRedirectTo: authConfirmUrl(nextPath),
       data: {
         full_name: fullName,
         role,
@@ -125,6 +127,7 @@ type SignupRequestBody = {
   fullName?: string;
   role?: string;
   position?: string;
+  next?: string;
 };
 
 function isValidEmail(value: string) {

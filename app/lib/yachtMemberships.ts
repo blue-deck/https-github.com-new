@@ -74,37 +74,39 @@ export async function saveYachtMembership(
   return supabase.from("yacht_crew_memberships").insert(payload).select().limit(1);
 }
 
-function isMissingColumnError(error: any, column: string) {
-  const message = `${error?.message || ""} ${error?.details || ""}`;
-  return message.includes(column) && message.includes("schema cache");
-}
+const INVITATION_TOKEN_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export async function markInvitationAccepted(
-  supabase: SupabaseClientLike,
-  invitationId: string,
-  crewProfileId?: string | null
+export async function acceptYachtInvitation(
+  token: string,
+  accessToken: string,
 ) {
-  const updateWithTimestamp: Record<string, string> = {
-    status: "accepted",
-    accepted_at: new Date().toISOString(),
-  };
-
-  if (crewProfileId) updateWithTimestamp.crew_profile_id = crewProfileId;
-
-  const response = await supabase
-    .from("crew_invitations")
-    .update(updateWithTimestamp)
-    .eq("id", invitationId);
-
-  if (!isMissingColumnError(response.error, "accepted_at")) {
-    return response;
+  if (!INVITATION_TOKEN_PATTERN.test(token) || !accessToken) {
+    return {
+      error: new Error("This invitation needs a valid secure link before it can be accepted."),
+    };
   }
 
-  const fallbackUpdate: Record<string, string> = { status: "accepted" };
-  if (crewProfileId) fallbackUpdate.crew_profile_id = crewProfileId;
+  try {
+    const response = await fetch(`/api/invitations/${encodeURIComponent(token)}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const payload = (await response.json()) as { ok?: boolean; error?: string };
 
-  return supabase
-    .from("crew_invitations")
-    .update(fallbackUpdate)
-    .eq("id", invitationId);
+    if (!response.ok || !payload.ok) {
+      return {
+        error: new Error(payload.error || "Invitation could not be accepted."),
+      };
+    }
+
+    return { data: payload, error: null };
+  } catch {
+    return {
+      error: new Error("Invitation could not be accepted. Check your connection and try again."),
+    };
+  }
 }

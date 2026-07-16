@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Camera, Ship, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../../../components/BlueDeckLogo";
+import { OptimizedSupabaseImage } from "../../../components/OptimizedSupabaseImage";
 import { absoluteSiteUrl } from "../../../lib/site";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 import { PublicCrewGallery, type PublicGalleryPhoto } from "./GalleryClient";
@@ -31,6 +32,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!gallery) {
     return {
       title: "Crew photo gallery not found | BlueDeck",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -43,6 +48,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: `${position} professional yacht work photo gallery on BlueDeck.`,
     alternates: {
       canonical: absoluteSiteUrl(`/crew/${encodeURIComponent(publicCrewId)}/gallery`),
+    },
+    robots: {
+      index: false,
+      follow: false,
+      noarchive: true,
+      nosnippet: true,
+      noimageindex: true,
     },
   };
 }
@@ -65,9 +77,17 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_20%,rgba(95,211,229,0.22),transparent_30%),linear-gradient(120deg,#06111f_0%,#0d2534_56%,#123748_100%)]" />
           <div className="relative flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-              <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25">
+              <div className="relative h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25">
                 {profilePhoto ? (
-                  <img src={profilePhoto} alt={name} className="h-full w-full object-cover" />
+                  <OptimizedSupabaseImage
+                    src={profilePhoto}
+                    alt={name}
+                    delivery="square"
+                    fill
+                    sizes="80px"
+                    loading="eager"
+                    className="object-cover"
+                  />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-[#2d7482]">
                     <UserRound className="h-9 w-9" />
@@ -75,7 +95,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
                 )}
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#9be7f1]">Verified BlueDeck Gallery</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#9be7f1]">BlueDeck Crew Gallery</p>
                 <h1 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">{name}</h1>
                 <p className="mt-1 text-sm font-semibold tracking-[0.22em] text-white/80">{position}</p>
               </div>
@@ -147,7 +167,7 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
 
   const { data: profile, error } = await serviceClient
     .from("crew_profiles")
-    .select("*")
+    .select("id,public_crew_id,full_name,current_position,current_positions,profile_photo_url")
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 

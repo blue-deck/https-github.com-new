@@ -1,3 +1,6 @@
+import { parseSupabaseStorageObjectUrl } from "./imageDelivery";
+import { supabase } from "./supabase";
+
 export type ChecklistPdfTask = {
   title: string;
   completed: boolean;
@@ -355,11 +358,13 @@ async function loadPdfImage(source: string, max = 960): Promise<PdfImage | null>
   if (!source) return null;
 
   try {
-    const imageSource = source.startsWith("data:image/")
-      ? source
-      : source.startsWith("/")
-        ? source
-        : `/api/cv-image?src=${encodeURIComponent(source)}&max=${max}&fit=inside`;
+    const resolvedSource = await resolvePdfImageSource(source);
+    if (!resolvedSource) return null;
+    const imageSource = resolvedSource.startsWith("data:image/")
+      ? resolvedSource
+      : resolvedSource.startsWith("/")
+        ? resolvedSource
+        : `/api/cv-image?src=${encodeURIComponent(resolvedSource)}&max=${max}&fit=inside`;
     const response = await fetch(imageSource, { cache: "force-cache" });
     if (!response.ok) return null;
     const blob = await response.blob();
@@ -376,6 +381,17 @@ async function loadPdfImage(source: string, max = 960): Promise<PdfImage | null>
   } catch {
     return null;
   }
+}
+
+async function resolvePdfImageSource(source: string) {
+  const storageObject = parseSupabaseStorageObjectUrl(source);
+  if (!storageObject?.isPrivate) return source;
+
+  const { data, error } = await supabase.storage
+    .from(storageObject.bucket)
+    .createSignedUrl(storageObject.path, 60 * 10);
+
+  return !error && data?.signedUrl ? data.signedUrl : "";
 }
 
 function blobToDataUrl(blob: Blob) {

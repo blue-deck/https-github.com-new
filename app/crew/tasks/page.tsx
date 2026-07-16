@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { createSafeStoragePath } from "../../lib/storage";
+import {
+  createSafeStoragePath,
+  immutableImageCacheControl,
+  validateTransformableImage,
+} from "../../lib/storage";
 import {
   CheckCircle2,
   ChevronDown,
@@ -22,15 +26,13 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
+import { OptimizedSupabaseImage } from "../../components/OptimizedSupabaseImage";
 import {
   downloadChecklistPdfDocument,
   downloadYachtLogPdfDocument,
   type ChecklistPdfRecord,
 } from "../../lib/operationsPdf";
-import {
-  markInvitationAccepted,
-  saveYachtMembership,
-} from "../../lib/yachtMemberships";
+import { acceptYachtInvitation } from "../../lib/yachtMemberships";
 
 export default function CrewTasksPage() {
   const [email, setEmail] = useState("");
@@ -254,29 +256,10 @@ export default function CrewTasksPage() {
       return;
     }
 
-    let nextLists = (lists || []).map((list: any) => ({
+    const nextLists = (lists || []).map((list: any) => ({
       ...list,
       assigned_by_name: operatorByYacht[list.yacht_id] || getChecklistSender(list),
     }));
-    const createdRecurring = await ensureRecurringChecklistInstances(nextLists, crewProfile.id);
-
-    if (createdRecurring > 0) {
-      const { data: refreshedLists, error: refreshError } = await supabase
-        .from("yacht_checklists")
-        .select(`
-          *,
-          yacht_checklist_items (*)
-        `)
-        .eq("assigned_to", crewProfile.id)
-        .order("created_at", { ascending: false });
-
-      if (!refreshError) {
-        nextLists = (refreshedLists || []).map((list: any) => ({
-          ...list,
-          assigned_by_name: operatorByYacht[list.yacht_id] || getChecklistSender(list),
-        }));
-      }
-    }
 
     setChecklists(nextLists);
     setActiveChecklist((current: any) =>
@@ -285,145 +268,31 @@ export default function CrewTasksPage() {
     setLoading(false);
   }
 
-  async function ensureRecurringChecklistInstances(lists: any[], crewProfileId: string) {
-    const sourceBySignature = new Map<string, any>();
-    const currentPeriodSignatures = new Set<string>();
-    const now = new Date();
-
-    lists.forEach((list) => {
-      const frequency = getChecklistFrequency(list);
-      if (!isRecurringFrequency(frequency)) return;
-
-      const signature = getRecurringSignature(list, frequency);
-      if (!signature) return;
-
-      if (!sourceBySignature.has(signature)) {
-        sourceBySignature.set(signature, list);
-      }
-
-      if (getPeriodKey(list.created_at, frequency) === getPeriodKey(now.toISOString(), frequency)) {
-        currentPeriodSignatures.add(signature);
-      }
-    });
-
-    let created = 0;
-
-    for (const [signature, source] of sourceBySignature.entries()) {
-      const frequency = getChecklistFrequency(source);
-      if (currentPeriodSignatures.has(signature)) continue;
-
-      const checklistPayload = {
-        yacht_id: source.yacht_id,
-        title: source.title,
-        department: source.department,
-        checklist_type: source.checklist_type,
-        frequency,
-        due_date: now.toISOString().slice(0, 10),
-        captain_note: getCaptainNote(source) || null,
-        assigned_to: crewProfileId,
-        status: "open",
-        items: {
-          ...(typeof source.items === "object" && source.items ? source.items : {}),
-          frequency,
-          captain_note: getCaptainNote(source) || null,
-          recurring_from: source.id,
-          recurring_period: getPeriodKey(now.toISOString(), frequency),
-        },
-      };
-
-      const { data: checklist, error } = await insertRecurringChecklist(checklistPayload);
-
-      if (error || !checklist?.id) continue;
-
-      const sourceTasks = (source.yacht_checklist_items || [])
-        .map((task: any) => (task.task_text || "").trim())
-        .filter(Boolean);
-
-      if (sourceTasks.length) {
-        await supabase.from("yacht_checklist_items").insert(
-          sourceTasks.map((task: string) => ({
-            checklist_id: checklist.id,
-            task_text: task,
-            completed: false,
-          }))
-        );
-      }
-
-      created += 1;
-    }
-
-    return created;
-  }
-
-  async function insertRecurringChecklist(payload: Record<string, any>) {
-    const variants = [
-      payload,
-      omitKeys(payload, ["captain_note"]),
-      omitKeys(payload, ["frequency"]),
-      omitKeys(payload, ["frequency", "captain_note"]),
-      omitKeys(payload, ["items"]),
-      omitKeys(payload, ["items", "captain_note"]),
-      omitKeys(payload, ["items", "frequency"]),
-      omitKeys(payload, ["items", "frequency", "captain_note"]),
-      omitKeys(payload, ["items", "frequency", "captain_note", "due_date"]),
-      omitKeys(payload, ["items", "frequency", "captain_note", "due_date", "status"]),
-    ];
-
-    let lastResponse: any = null;
-
-    for (const variant of variants) {
-      const response = await supabase
-        .from("yacht_checklists")
-        .insert(variant)
-        .select()
-        .single();
-
-      if (!response.error) return response;
-      lastResponse = response;
-
-      if (!isSchemaCacheError(response.error)) return response;
-    }
-
-    return lastResponse;
-  }
-
   async function acceptInvitation(invitation: any) {
     if (!profile?.id) return;
 
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!user?.email) {
+    if (!session?.access_token || !session.user.email) {
       alert("Please login first, then open My YACHT-OS again.");
       window.location.href = "/login";
       return;
     }
 
     setAcceptingInviteId(invitation.id);
-    const { error: memberError } = await saveYachtMembership(supabase, {
-      yacht_id: invitation.yacht_id,
-      crew_profile_id: profile.id,
-      invited_email: profile.email || email,
-      position: invitation.position,
-      department: invitation.department,
-      status: "active",
-    });
-
-    if (memberError) {
-      alert(memberError.message);
-      setAcceptingInviteId("");
-      return;
-    }
-
-    const { error: inviteError } = await markInvitationAccepted(
-      supabase,
-      invitation.id,
-      profile.id
+    const invitationToken =
+      invitation.token ||
+      invitation.invite_link?.split("/").filter(Boolean).at(-1) ||
+      "";
+    const { error } = await acceptYachtInvitation(
+      invitationToken,
+      session.access_token,
     );
 
-    if (inviteError) {
-      alert(inviteError.message);
+    if (error) {
+      alert(error.message);
       setAcceptingInviteId("");
       return;
     }
@@ -451,6 +320,12 @@ export default function CrewTasksPage() {
   }
 
   async function uploadTaskPhoto(task: any, file: File, type: "before" | "after") {
+    const validationError = validateTransformableImage(file);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     setUploadingPhoto(`${type}-${task.id}`);
 
     const filePath = createSafeStoragePath(`${activeChecklist.yacht_id}/${task.id}`, file, type);
@@ -486,27 +361,23 @@ export default function CrewTasksPage() {
   }
 
   async function uploadTaskFile(filePath: string, file: File) {
-    const buckets = ["task-photos", "crew-portfolio"];
-    let lastError = "";
+    const bucket = "task-photos";
+    const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
+      cacheControl: immutableImageCacheControl,
+      upsert: false,
+    });
 
-    for (const bucket of buckets) {
-      const { error } = await supabase.storage.from(bucket).upload(filePath, file);
-
-      if (!error) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-        return { publicUrl: data.publicUrl, error: "" };
-      }
-
-      lastError = error.message;
-      if (error.message !== "Bucket not found") break;
+    if (!error) {
+      const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+      return { publicUrl: data.publicUrl, error: "" };
     }
 
     return {
       publicUrl: "",
       error:
-        lastError === "Bucket not found"
-          ? "Photo storage is not ready yet. Please create the task-photos bucket in Supabase Storage."
-          : lastError,
+        error.message === "Bucket not found"
+          ? "Secure task photo storage is temporarily unavailable."
+          : error.message,
     };
   }
 
@@ -1029,8 +900,16 @@ export default function CrewTasksPage() {
                   <X className="h-5 w-5" strokeWidth={2.5} />
                 </button>
               </div>
-              <div className="bd-media-canvas bg-[#071631] p-3">
-                <img src={photoPreview.url} alt={`${photoPreview.label} proof`} className="max-h-[76vh] w-full object-contain" />
+              <div className="bd-media-canvas relative h-[min(76vh,900px)] bg-[#071631] p-3">
+                <OptimizedSupabaseImage
+                  src={photoPreview.url}
+                  alt={`${photoPreview.label} proof`}
+                  delivery="contained"
+                  fill
+                  sizes="(max-width: 1024px) calc(100vw - 32px), 896px"
+                  loading="eager"
+                  className="object-contain p-3"
+                />
               </div>
             </div>
           </div>
@@ -1326,11 +1205,14 @@ function PhotoBox({
     <div className="bd-crew-proof-card min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white/70 p-3 sm:p-4">
       <p className="font-semibold text-slate-700">{label}</p>
       {url && (
-        <div className="mt-3 aspect-[4/3] overflow-hidden rounded-xl bg-slate-100">
-          <img
+        <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-xl bg-slate-100">
+          <OptimizedSupabaseImage
             src={url}
             alt={label}
-            className="h-full w-full object-contain"
+            delivery="contained"
+            fill
+            sizes="(max-width: 639px) calc(100vw - 56px), 320px"
+            className="object-contain"
           />
         </div>
       )}
@@ -1377,7 +1259,14 @@ function ProofThumbnail({
       className="group relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 transition hover:border-cyan-300 hover:shadow-lg"
       title={`Open ${label.toLowerCase()} proof photo`}
     >
-      <img src={url} alt={`${label} proof`} className="h-full w-full object-contain p-1 transition group-hover:scale-[1.02]" />
+      <OptimizedSupabaseImage
+        src={url}
+        alt={`${label} proof`}
+        delivery="contained"
+        fill
+        sizes="96px"
+        className="object-contain p-1 transition group-hover:scale-[1.02]"
+      />
       <span className="absolute bottom-1.5 left-1.5 rounded-md bg-[#071631]/90 px-2 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white">
         {label}
       </span>
@@ -1423,40 +1312,6 @@ function getCaptainNote(checklist: any) {
 
 function getChecklistFrequency(checklist: any) {
   return checklist?.frequency || checklist?.items?.frequency || "";
-}
-
-function isRecurringFrequency(frequency?: string) {
-  return ["daily", "weekly", "monthly"].includes((frequency || "").toLowerCase());
-}
-
-function getRecurringSignature(checklist: any, frequency: string) {
-  if (!checklist?.assigned_to || !checklist?.title) return "";
-  return [
-    checklist.assigned_to,
-    checklist.yacht_id,
-    checklist.title,
-    checklist.department,
-    checklist.checklist_type,
-    frequency,
-  ].join("|").toLowerCase();
-}
-
-function getPeriodKey(value: string, frequency: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  const normalized = (frequency || "").toLowerCase();
-
-  if (normalized === "daily") return `${year}-${month}-${day}`;
-  if (normalized === "monthly") return `${year}-${month}`;
-
-  const firstDay = new Date(year, 0, 1);
-  const dayOfYear = Math.floor((date.getTime() - firstDay.getTime()) / 86400000) + 1;
-  const week = Math.ceil((dayOfYear + firstDay.getDay()) / 7);
-  return `${year}-W${`${week}`.padStart(2, "0")}`;
 }
 
 function parseTaskNote(task: any) {
