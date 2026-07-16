@@ -3,10 +3,10 @@ import { createClient } from "@supabase/supabase-js";
 import { saveYachtMembership } from "../../../../lib/yachtMemberships";
 import {
   canInviteCrew,
+  getDefaultPositionForAccountType,
   getDepartmentByPosition,
   getPosition,
 } from "../../../../lib/yachtOperations";
-import { absoluteSiteUrl } from "../../../../lib/site";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -74,13 +74,13 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Login session is invalid." }, { status: 401 });
   }
 
-  const [{ data: yacht }, actorProfileResponse] = await Promise.all([
+  const [{ data: yacht }, { data: baseProfile }, { data: actorProfile }] = await Promise.all([
     serviceClient.from("yachts").select("id,owner_id").eq("id", yachtId).maybeSingle(),
+    serviceClient.from("profiles").select("role").eq("id", user.id).maybeSingle(),
     serviceClient
       .from("crew_profiles")
-      .select("id,user_id,current_position,email")
+      .select("id, current_position, email")
       .eq("user_id", user.id)
-      .limit(1)
       .maybeSingle(),
   ]);
 
@@ -88,23 +88,12 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
   }
 
-  if (actorProfileResponse.error) {
-    return NextResponse.json(
-      { ok: false, error: actorProfileResponse.error.message },
-      { status: 500 },
-    );
-  }
-
-  const actorProfile = actorProfileResponse.data;
-
   const actorMembership = actorProfile?.id
     ? await serviceClient
         .from("yacht_crew_memberships")
-        .select("position,department,status,crew_profile_id")
+        .select("position, department, status")
         .eq("yacht_id", yachtId)
         .eq("crew_profile_id", actorProfile.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
         .maybeSingle()
     : { data: null, error: null };
 
@@ -113,36 +102,29 @@ export async function POST(
   }
 
   const isYachtOwner = yacht.owner_id === user.id;
-  const hasActiveMembership =
-    String(actorMembership.data?.status || "").trim().toLowerCase() === "active";
-  const accountRole = isYachtOwner ? "owner" : "crew";
-  const actorPosition = isYachtOwner ? "Owner" : actorMembership.data?.position || "";
+  const accountRole = isYachtOwner
+    ? "owner"
+    : normalizeRole(baseProfile?.role) || normalizeRole(user.user_metadata?.role);
+  const elevatedRole = ["captain", "owner", "management"].includes(accountRole);
+  const defaultPosition = getDefaultPositionForAccountType(accountRole);
+  const actorPosition = elevatedRole
+    ? defaultPosition
+    : actorMembership.data?.position || actorProfile?.current_position || defaultPosition;
   const actorDepartment = actorMembership.data?.department || getDepartmentByPosition(actorPosition);
 
   const canInvite =
     isYachtOwner ||
-    (hasActiveMembership &&
-      canInviteCrew(
-        actorPosition,
-        actorDepartment,
-        positionDefinition.title,
-        positionDefinition.department,
-        accountRole,
-      ));
+    canInviteCrew(
+      actorPosition,
+      actorDepartment,
+      positionDefinition.title,
+      positionDefinition.department,
+      accountRole,
+    );
 
   if (!canInvite) {
     return NextResponse.json(
       { ok: false, error: "Your account is not authorised to invite this position to this yacht." },
-      { status: 403 },
-    );
-  }
-
-  if (
-    !isYachtOwner &&
-    ["owner", "yacht manager"].includes(positionDefinition.title.trim().toLowerCase())
-  ) {
-    return NextResponse.json(
-      { ok: false, error: "Only the yacht owner can invite this position." },
       { status: 403 },
     );
   }
@@ -170,7 +152,6 @@ export async function POST(
       .from("crew_profiles")
       .select("id, email, public_crew_id, current_position")
       .eq("email", email)
-      .limit(1)
       .maybeSingle();
 
     if (error) {
@@ -203,34 +184,12 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "Crew profile could not be resolved." }, { status: 500 });
   }
 
-  const targetEmail = normalizeEmail(targetProfile.email);
-  if (!targetEmail || !isValidEmail(targetEmail)) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "This crew profile must add a verified contact email before it can be invited.",
-      },
-      { status: 409 },
-    );
-  }
-  if (email && email !== targetEmail) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "The email address must match the email registered to this Crew ID.",
-      },
-      { status: 409 },
-    );
-  }
-
   const { data: existingInvitation, error: existingInvitationError } = await serviceClient
     .from("crew_invitations")
     .select("id")
     .eq("yacht_id", yachtId)
     .eq("crew_profile_id", targetProfile.id)
-    .in("status", ["pending", "processing"])
-    .order("created_at", { ascending: false })
-    .limit(1)
+    .eq("status", "pending")
     .maybeSingle();
 
   if (existingInvitationError) {
@@ -245,11 +204,11 @@ export async function POST(
   }
 
   const invitationToken = crypto.randomUUID();
-  const inviteLink = absoluteSiteUrl(`/invitations/${invitationToken}`);
+  const inviteLink = new URL(`/invitations/${invitationToken}`, request.nextUrl.origin).toString();
   const invitePayload = {
     yacht_id: yachtId,
     crew_profile_id: targetProfile.id,
-    invited_email: targetEmail,
+    invited_email: email || targetProfile.email || null,
     public_crew_id: targetProfile.public_crew_id || null,
     position: positionDefinition.title,
     department: positionDefinition.department,
@@ -260,35 +219,19 @@ export async function POST(
   const invitationResponse = await insertCrewInvitation(serviceClient, invitePayload);
 
   if (invitationResponse.error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          invitationResponse.error.code === "23505"
-            ? "A pending invitation already exists for this crew member."
-            : invitationResponse.error.message,
-      },
-      { status: invitationResponse.error.code === "23505" ? 409 : 500 },
-    );
+    return NextResponse.json({ ok: false, error: invitationResponse.error.message }, { status: 500 });
   }
 
   const membershipResponse = await saveYachtMembership(serviceClient, {
     yacht_id: yachtId,
     crew_profile_id: targetProfile.id,
-    invited_email: targetEmail,
+    invited_email: email || targetProfile.email || null,
     position: positionDefinition.title,
     department: positionDefinition.department,
     status: "invited",
   });
 
   if (membershipResponse.error) {
-    if (invitationResponse.data?.id) {
-      await serviceClient
-        .from("crew_invitations")
-        .delete()
-        .eq("id", invitationResponse.data.id)
-        .eq("status", "pending");
-    }
     return NextResponse.json({ ok: false, error: membershipResponse.error.message }, { status: 500 });
   }
 
@@ -304,6 +247,11 @@ export async function POST(
 
 function normalizeEmail(value?: string | null) {
   return (value || "").trim().toLowerCase();
+}
+
+function normalizeRole(value?: unknown) {
+  const role = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return ["crew", "captain", "owner", "management"].includes(role) ? role : "";
 }
 
 function isValidEmail(value: string) {

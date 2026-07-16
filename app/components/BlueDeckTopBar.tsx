@@ -4,10 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
-  BriefcaseBusiness,
   Camera,
   ChevronRight,
-  ClipboardList,
   FileText,
   Languages,
   LayoutDashboard,
@@ -16,7 +14,6 @@ import {
   Menu,
   Settings,
   Ship,
-  Search,
   Trash2,
   UserRound,
   X,
@@ -33,7 +30,6 @@ import { languages } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { useLanguage } from "./LanguageProvider";
-import { OptimizedSupabaseImage } from "./OptimizedSupabaseImage";
 
 type BlueDeckTopBarProps = {
   title?: string;
@@ -198,10 +194,7 @@ export function BlueDeckTopBar({
   const photoUrl = identity?.dashboardPhotoUrl || "";
   const showPhoto = Boolean(photoUrl && failedPhotoUrl !== photoUrl);
   const normalizedRole = identity?.role?.trim().toLowerCase() || "crew";
-  const isCaptain =
-    normalizedRole === "captain" ||
-    normalizedRole === "management" ||
-    normalizedRole === "owner";
+  const isCaptain = normalizedRole === "captain" || normalizedRole === "management";
   const roleLabel =
     normalizedRole === "captain"
       ? t("login.roleCaptain")
@@ -214,11 +207,6 @@ export function BlueDeckTopBar({
 
   const navigationItems = [
     { href: "/dashboard", label: t("topbar.dashboard"), icon: LayoutDashboard },
-    { href: "/jobs", label: t("topbar.findJobs"), icon: Search },
-    { href: "/applications", label: t("topbar.applications"), icon: ClipboardList },
-    ...(isCaptain
-      ? [{ href: "/hiring", label: t("topbar.hiring"), icon: BriefcaseBusiness }]
-      : []),
     { href: "/profile", label: t("topbar.myProfile"), icon: UserRound },
     { href: "/my-blue", label: t("topbar.myBlue"), icon: Camera },
     { href: "/crew/tasks", label: t("topbar.myDeck"), icon: Ship },
@@ -354,14 +342,11 @@ export function BlueDeckTopBar({
           >
             <span className="absolute inset-[3px] overflow-hidden rounded-full bg-[#0b2746]">
               {showPhoto ? (
-                <OptimizedSupabaseImage
+                <img
                   src={photoUrl}
                   alt=""
-                  delivery="square"
-                  fill
-                  sizes="42px"
                   onError={() => setFailedPhotoUrl(photoUrl)}
-                  className="object-cover"
+                  className="h-full w-full object-cover"
                 />
               ) : (
                 <span
@@ -434,14 +419,11 @@ export function BlueDeckTopBar({
                         className="bd-focus relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-cyan-950/10 bg-white text-[#0a5465] shadow-sm disabled:cursor-wait disabled:opacity-65"
                       >
                         {showPhoto ? (
-                          <OptimizedSupabaseImage
+                          <img
                             src={photoUrl}
                             alt=""
-                            delivery="square"
-                            fill
-                            sizes="56px"
                             onError={() => setFailedPhotoUrl(photoUrl)}
-                            className="object-cover"
+                            className="h-full w-full object-cover"
                           />
                         ) : (
                           <span data-i18n-ignore className="text-sm font-black tracking-[0.08em]">

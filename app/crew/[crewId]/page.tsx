@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
   BriefcaseBusiness,
+  Mail,
   MapPin,
+  Phone,
   UserRound,
 } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import { CvScaleFrame } from "../../components/CvScaleFrame";
-import { OptimizedSupabaseImage } from "../../components/OptimizedSupabaseImage";
 import { absoluteSiteUrl } from "../../lib/site";
 import { resolveSupabaseUrl } from "../../lib/supabaseConfig";
 
@@ -43,10 +44,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!cv) {
     return {
       title: "Crew CV not found | BlueDeck",
-      robots: {
-        index: false,
-        follow: false,
-      },
     };
   }
 
@@ -58,13 +55,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: `${position} CV on BlueDeck.`,
     alternates: {
       canonical: absoluteSiteUrl(`/crew/${encodeURIComponent(text(cv.profile, "public_crew_id") || crewId)}`),
-    },
-    robots: {
-      index: false,
-      follow: false,
-      noarchive: true,
-      nosnippet: true,
-      noimageindex: true,
     },
   };
 }
@@ -114,15 +104,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             <CvSidebarSignature />
             <div className="bd-cv-avatar absolute right-[-42px] top-8 z-20 h-44 w-44 translate-x-0 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
               {text(profile, "profile_photo_url") ? (
-                <OptimizedSupabaseImage
-                  src={text(profile, "profile_photo_url")}
-                  alt={name}
-                  delivery="square"
-                  fill
-                  sizes="352px"
-                  loading="eager"
-                  className="rounded-full object-cover"
-                />
+                <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
                   <UserRound className="h-16 w-16" />
@@ -133,8 +115,21 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             <div className="bd-cv-side-stack space-y-8">
               <SideSection title="Profile">
                 <div className="space-y-2.5">
+                  <SidebarLine label="Date of Birth" value={formatFullCvDate(text(profile, "date_of_birth"))} />
                   <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
-                  <SidebarLine label="Current location" value={text(profile, "location") || "-"} />
+                  <SidebarLine label="Gender" value={text(profile, "gender") || "-"} />
+                  <SidebarLine label="Height" value={text(profile, "height_cm") ? `${text(profile, "height_cm")} cm` : "-"} />
+                  <SidebarLine label="Weight" value={text(profile, "weight_kg") ? `${text(profile, "weight_kg")} kg` : "-"} />
+                  <SidebarLine label="Smoker" value={text(profile, "smoker") || "-"} />
+                  <SidebarLine label="Visible tattoos" value={text(profile, "visible_tattoos") || "-"} />
+                </div>
+              </SideSection>
+
+              <SideSection title="Contact">
+                <div className="space-y-2.5 text-sm font-semibold text-[#3d454c]">
+                  <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
+                  <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
+                  <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
                 </div>
               </SideSection>
 
@@ -192,7 +187,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
               <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-28 shadow-lg shadow-slate-950/10">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Professional Crew Profile</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
                   <h1 className="bd-cv-crew-name mt-3 block max-w-full whitespace-nowrap font-black uppercase leading-none text-white" style={crewNameStyle(name)}>{name}</h1>
                   <p className="mt-3 text-lg font-semibold tracking-[0.26em] text-white/82">{position}</p>
                 </div>
@@ -222,16 +217,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                       <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
                         <div className="bd-cv-experience-meta h-full rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] p-2">
                           {text(experience, "photo_url") ? (
-                            <div className="relative h-24 w-full overflow-hidden rounded-lg">
-                              <OptimizedSupabaseImage
-                                src={text(experience, "photo_url")}
-                                alt={yachtName}
-                                delivery="contained"
-                                fill
-                                sizes="272px"
-                                className="object-cover"
-                              />
-                            </div>
+                            <img src={text(experience, "photo_url")} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
                           ) : (
                             <div className="h-24 rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)]" />
                           )}
@@ -275,11 +261,12 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               <CvSection title="References">
                 <div className="grid gap-3 sm:grid-cols-2">
                   {standaloneReferences.slice(0, 4).map((reference) => (
-                    <div key={text(reference, "id") || text(reference, "name") || text(reference, "vessel")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
+                    <div key={text(reference, "id") || text(reference, "email") || text(reference, "name")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                       <p className="font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
                       <p className="mt-1 text-sm font-semibold text-[#2d7482]">
                         {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
                       </p>
+                      <p className="mt-2 text-xs text-[#5a6870]">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
                     </div>
                   ))}
                 </div>
@@ -313,9 +300,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
 
   const { data: profile, error } = await serviceClient
     .from("crew_profiles")
-    .select(
-      "id,public_crew_id,full_name,current_position,current_positions,profile_photo_url,nationality,location,bio,work_preferences,personal_skills,personal_characteristics,languages",
-    )
+    .select("*")
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 
@@ -325,18 +310,18 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   const [documentRes, experienceRes, referenceRes] = await Promise.all([
     serviceClient
       .from("crew_documents")
-      .select("id,document_type,category,issuer,expiry_date,no_expiry")
+      .select("*")
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false }),
     serviceClient
       .from("crew_experiences")
-      .select("id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,photo_url")
+      .select("*")
       .eq("crew_profile_id", profileId)
       .order("start_date", { ascending: false }),
     serviceClient
       .from("crew_references")
-      .select("id,name,role,vessel,company")
+      .select("*")
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false }),
@@ -438,6 +423,13 @@ function formatCvDate(value?: string) {
   return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
 }
 
+function formatFullCvDate(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 function yachtNameFontSize(value: string) {
   const length = value.trim().length;
   if (length <= 12) return "15px";
@@ -482,7 +474,9 @@ function publicReferenceEntries(references: Row[]) {
       text(reference, "name") ||
         text(reference, "role") ||
         text(reference, "vessel") ||
-        text(reference, "company"),
+        text(reference, "company") ||
+        text(reference, "phone") ||
+        text(reference, "email"),
     ),
   );
 }
@@ -506,7 +500,7 @@ function publicUnmatchedExperienceReferences(experiences: Row[], references: Row
 function publicReferenceDisplayName(reference: Row) {
   const name = text(reference, "name");
   if (name && name.toLowerCase() !== "reference") return name;
-  return text(reference, "company") || text(reference, "vessel") || "Reference";
+  return text(reference, "company") || text(reference, "vessel") || "Contact";
 }
 
 function languageLevelWidth(level: string) {
@@ -517,6 +511,15 @@ function languageLevelWidth(level: string) {
   if (normalized.includes("intermediate")) return "58%";
   if (normalized.includes("basic")) return "34%";
   return "50%";
+}
+
+function ContactLine({ icon, text: value }: { icon: ReactNode; text: string }) {
+  return (
+    <p className="flex items-start gap-2 break-words font-semibold">
+      <span className="mt-0.5 text-[#2d7482]">{icon}</span>
+      <span>{value}</span>
+    </p>
+  );
 }
 
 function CvSection({
@@ -587,11 +590,14 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid gap-2">
         {references.slice(0, 2).map((reference) => (
-          <div key={text(reference, "id") || text(reference, "name") || text(reference, "vessel")} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
             <p className="text-[13px] font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
             </p>
+            {(text(reference, "email") || text(reference, "phone")) && (
+              <p className="mt-1 text-xs text-[#5a6870]">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
+            )}
           </div>
         ))}
       </div>

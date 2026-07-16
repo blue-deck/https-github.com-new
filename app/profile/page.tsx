@@ -25,25 +25,16 @@ import {
 import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
-import { OptimizedSupabaseImage } from "../components/OptimizedSupabaseImage";
 import { PhoneInput } from "../components/PhoneInput";
 import {
   dashboardPhotoFromMetadata,
   publishDashboardPhotoUpdate,
 } from "../lib/accountIdentity";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
-import {
-  createSupabaseTransformedImageUrl,
-  isSupabaseStorageImageUrl,
-} from "../lib/imageDelivery";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { absoluteSiteUrl } from "../lib/site";
-import {
-  createSafeStoragePath,
-  immutableImageCacheControl,
-  validateTransformableImage,
-} from "../lib/storage";
+import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { yachtPositionTitles } from "../lib/yachtOperations";
 
@@ -927,14 +918,6 @@ export default function ProfilePage() {
 
   async function uploadFile(file: File, bucket: UploadBucket, slot: string = bucket) {
     if (!profile.id) return "";
-    if (bucket === "crew-portfolio") {
-      const validationError = validateTransformableImage(file);
-      if (validationError) {
-        setUploadError(validationError);
-        return "";
-      }
-    }
-
     const uploadRun = uploadRunRef.current + 1;
     uploadRunRef.current = uploadRun;
     setUploadError("");
@@ -942,10 +925,7 @@ export default function ProfilePage() {
     const path = createSafeStoragePath(profile.id, file);
 
     try {
-      const { error } = await supabase.storage.from(bucket).upload(path, file, {
-        ...(bucket === "crew-portfolio" ? { cacheControl: immutableImageCacheControl } : {}),
-        upsert: false,
-      });
+      const { error } = await supabase.storage.from(bucket).upload(path, file);
 
       if (uploadRun !== uploadRunRef.current) {
         if (!error) await supabase.storage.from(bucket).remove([path]);
@@ -2107,24 +2087,6 @@ function cvImageRequestSource(source: string, options: CvImageProxyOptions = {})
   return `/api/cv-image?${params.toString()}`;
 }
 
-function printReadyImageSource(
-  source: string,
-  options: { width: number; height?: number; resize: "cover" | "contain" },
-) {
-  if (isSupabaseStorageImageUrl(source)) {
-    return createSupabaseTransformedImageUrl(source, {
-      ...options,
-      quality: 90,
-    });
-  }
-
-  return cvImageRequestSource(source, {
-    width: options.width,
-    height: options.height,
-    fit: options.resize,
-  });
-}
-
 type YachtSizeUnit = "ft" | "m";
 
 function parseYachtSize(value?: string | null): { amount: string; unit: YachtSizeUnit } {
@@ -2529,15 +2491,7 @@ function SeazoneStyleCvPreview({
               <CvSidebarSignature />
               <div className="bd-cv-avatar absolute right-[-42px] top-8 z-20 h-44 w-44 translate-x-0 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
                 {profile.profile_photo_url ? (
-                  <OptimizedSupabaseImage
-                    src={profile.profile_photo_url}
-                    alt={profile.full_name || "Profile"}
-                    delivery="square"
-                    fill
-                    sizes="640px"
-                    loading="eager"
-                    className="rounded-full object-cover"
-                  />
+                  <img src={profile.profile_photo_url} alt={profile.full_name || "Profile"} className="h-full w-full rounded-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
                     <UserRound className="h-16 w-16" />
@@ -2883,7 +2837,7 @@ function PrintablePageFooter() {
 
 function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewProfile; crewName: string; primaryPosition: string }) {
   const profilePhotoSource = profile.profile_photo_url
-    ? printReadyImageSource(profile.profile_photo_url, { width: 720, height: 720, resize: "cover" })
+    ? cvImageRequestSource(profile.profile_photo_url, { width: 720, height: 720, fit: "cover" })
     : "";
 
   return (
@@ -3064,15 +3018,12 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
   const yachtName = displayExperienceTitle(experience);
   const metaParts = displayExperienceMetaParts(experience);
   const isOtherWork = isOtherWorkExperience(experience);
-  const photoSource = experience.photo_url
-    ? printReadyImageSource(experience.photo_url, { width: 720, height: 520, resize: "cover" })
-    : "";
 
   return (
     <article className="bd-print-experience-card">
       <div className="bd-print-experience-meta">
-        {photoSource ? (
-          <img src={photoSource} alt={yachtName} loading="eager" decoding="sync" />
+        {experience.photo_url ? (
+          <img src={experience.photo_url} alt={yachtName} loading="eager" decoding="sync" />
         ) : (
           <div className="bd-print-experience-placeholder">{isOtherWork ? <BriefcaseBusiness /> : null}</div>
         )}
@@ -3200,16 +3151,7 @@ function SeazoneExperienceCard({
       <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
         <div className="bd-cv-experience-meta h-full rounded-xl border border-[#cbd8dd] bg-[#f8fbfc] p-2">
           {experience.photo_url ? (
-            <div className="relative h-24 w-full overflow-hidden rounded-lg">
-              <OptimizedSupabaseImage
-                src={experience.photo_url}
-                alt={yachtName}
-                delivery="contained"
-                fill
-                sizes="272px"
-                className="object-cover"
-              />
-            </div>
+            <img src={experience.photo_url} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
           ) : (
             <div className="flex h-24 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-[#2d7482]">
               {isOtherWork ? <BriefcaseBusiness className="h-7 w-7" /> : <Camera className="h-6 w-6 opacity-45" />}
@@ -3348,13 +3290,10 @@ function ProfilePhoto({
         aria-busy={uploading}
       >
         {url && (
-          <OptimizedSupabaseImage
+          <img
             src={url}
             alt={`${name || "User"} profile photo`}
-            delivery="square"
-            fill
-            sizes="96px"
-            className="object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
+            className="h-full w-full object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
           />
         )}
 
@@ -3996,16 +3935,9 @@ function ExperienceEditor({
           aria-controls={editorContentId}
           className="bd-focus grid min-h-16 w-full grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-slate-50 sm:px-4"
         >
-          <span className="relative flex h-12 w-12 overflow-hidden rounded-xl bg-slate-100 text-slate-400">
+          <span className="flex h-12 w-12 overflow-hidden rounded-xl bg-slate-100 text-slate-400">
             {draft.photo_url ? (
-              <OptimizedSupabaseImage
-                src={draft.photo_url}
-                alt=""
-                delivery="square"
-                fill
-                sizes="48px"
-                className="object-cover"
-              />
+              <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
             ) : (
               <span className="flex h-full w-full items-center justify-center">
                 <Camera className="h-5 w-5" />
@@ -4051,16 +3983,9 @@ function ExperienceEditor({
                 <p className="text-sm font-semibold text-slate-900">Photo</p>
                 <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">Optional</span>
               </div>
-              <div className="relative mt-4 flex aspect-[16/9] w-full overflow-hidden rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 md:aspect-[4/3]">
+              <div className="mt-4 flex aspect-[16/9] w-full overflow-hidden rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 md:aspect-[4/3]">
                 {draft.photo_url ? (
-                  <OptimizedSupabaseImage
-                    src={draft.photo_url}
-                    alt=""
-                    delivery="contained"
-                    fill
-                    sizes="(max-width: 767px) calc(100vw - 64px), 260px"
-                    className="object-cover"
-                  />
+                  <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <span className="flex h-full w-full items-center justify-center">
                     <Camera className="h-7 w-7" />

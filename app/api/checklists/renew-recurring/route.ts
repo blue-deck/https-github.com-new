@@ -4,32 +4,19 @@ import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const cronSecret = process.env.CRON_SECRET;
 
 type ChecklistRow = Record<string, any>;
 
-type CronAuthorization = "authorized" | "unauthorized" | "unconfigured";
-
-const noStoreHeaders = {
-  "Cache-Control": "no-store, max-age=0",
-};
-
-function jsonResponse(payload: Record<string, unknown>, status = 200) {
-  return NextResponse.json(payload, {
-    status,
-    headers: noStoreHeaders,
-  });
-}
-
-function getCronAuthorization(request: NextRequest): CronAuthorization {
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret?.trim()) {
-    return process.env.NODE_ENV === "production" ? "unconfigured" : "authorized";
+function isAuthorized(request: NextRequest) {
+  if (cronSecret) {
+    return request.headers.get("authorization") === `Bearer ${cronSecret}`;
   }
 
-  return request.headers.get("authorization") === `Bearer ${cronSecret}`
-    ? "authorized"
-    : "unauthorized";
+  if (process.env.NODE_ENV !== "production") return true;
+
+  const userAgent = request.headers.get("user-agent") || "";
+  return userAgent.toLowerCase().includes("vercel-cron");
 }
 
 function getFrequency(checklist: ChecklistRow) {
@@ -116,21 +103,12 @@ async function insertChecklist(supabase: any, payload: Record<string, any>) {
 }
 
 export async function GET(request: NextRequest) {
-  const authorization = getCronAuthorization(request);
-
-  if (authorization === "unconfigured") {
-    return jsonResponse(
-      { ok: false, error: "Cron authentication is not configured." },
-      503
-    );
-  }
-
-  if (authorization === "unauthorized") {
-    return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    return jsonResponse({ ok: false, error: "Supabase is not configured." }, 500);
+    return NextResponse.json({ ok: false, error: "Supabase is not configured." }, { status: 500 });
   }
 
   const supabase = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
@@ -148,7 +126,7 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return jsonResponse({ ok: false, error: error.message }, 500);
+    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
   }
 
   const sourceBySignature = new Map<string, ChecklistRow>();
@@ -220,7 +198,7 @@ export async function GET(request: NextRequest) {
     created += 1;
   }
 
-  return jsonResponse({
+  return NextResponse.json({
     ok: true,
     created,
     skipped: currentPeriodSignatures.size,

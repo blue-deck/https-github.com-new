@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "BlueDeck YACHT-OS",
     short_name: "BlueDeck",
-    description: "Professional yacht jobs, crew hiring and connected YACHT-OS operations.",
+    description: "Enterprise superyacht operations for owners, captains and crew.",
     id: "/",
     start_url: "/",
     scope: "/",
@@ -46,20 +46,6 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
     shortcuts: [
-      {
-        name: "Find Yacht Jobs",
-        short_name: "Jobs",
-        description: "Browse professional yacht opportunities.",
-        url: "/jobs",
-        icons: [{ src: appIcon, sizes: "192x192", type: "image/png" }],
-      },
-      {
-        name: "Applications",
-        short_name: "Applications",
-        description: "Track your BlueDeck job applications.",
-        url: "/applications",
-        icons: [{ src: appIcon, sizes: "192x192", type: "image/png" }],
-      },
       {
         name: "Dashboard",
         short_name: "Dashboard",

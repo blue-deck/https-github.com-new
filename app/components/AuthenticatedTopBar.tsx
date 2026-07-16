@@ -6,11 +6,9 @@ import { supabase } from "../lib/supabase";
 import { BlueDeckTopBar } from "./BlueDeckTopBar";
 
 const authenticatedPaths = [
-  "/applications",
   "/contracts",
   "/crew/tasks",
   "/dashboard",
-  "/hiring",
   "/my-blue",
   "/portal",
   "/profile",

@@ -32,12 +32,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { OptimizedSupabaseImage } from "../components/OptimizedSupabaseImage";
-import {
-  createSafeStoragePath,
-  immutableImageCacheControl,
-  validateTransformableImage,
-} from "../lib/storage";
+import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 
 type CrewProfileSummary = {
@@ -408,12 +403,6 @@ export default function MyBluePage() {
   async function uploadPhoto(file: File) {
     if (!profile?.id) return "";
 
-    const validationError = validateTransformableImage(file);
-    if (validationError) {
-      setErrorMessage(validationError);
-      return "";
-    }
-
     const uploadRun = uploadRunRef.current + 1;
     uploadRunRef.current = uploadRun;
     setErrorMessage("");
@@ -421,10 +410,7 @@ export default function MyBluePage() {
     const path = createSafeStoragePath(profile.id, file);
 
     try {
-      const { error } = await supabase.storage.from("crew-portfolio").upload(path, file, {
-        cacheControl: immutableImageCacheControl,
-        upsert: false,
-      });
+      const { error } = await supabase.storage.from("crew-portfolio").upload(path, file);
 
       if (uploadRun !== uploadRunRef.current) {
         if (!error) await supabase.storage.from("crew-portfolio").remove([path]);
@@ -649,18 +635,11 @@ export default function MyBluePage() {
               >
                 <X className="h-5 w-5" />
               </button>
-              <div className="relative h-[calc(100dvh-2.5rem)] max-h-[900px] w-full overflow-hidden rounded-2xl bg-[#f4f8f9] sm:h-[calc(100dvh-4.5rem)]">
-                <OptimizedSupabaseImage
-                  src={preview.image_url}
-                  alt="Photo gallery preview"
-                  delivery="contained"
-                  fill
-                  sizes="(max-width: 1024px) 94vw, 960px"
-                  loading="eager"
-                  decoding="async"
-                  className="object-contain"
-                />
-              </div>
+              <img
+                src={preview.image_url}
+                alt="Photo gallery preview"
+                className="max-h-[calc(100dvh-2.5rem)] w-full rounded-2xl object-contain sm:max-h-[calc(100dvh-4.5rem)]"
+              />
             </div>
           </div>,
           document.body,
@@ -733,16 +712,11 @@ function GalleryPhotoCard({
           aria-describedby={describedBy}
           title={sortableEnabled ? "Click to preview. Hold and drag to reorder." : "Click to preview."}
         >
-          <OptimizedSupabaseImage
+          <img
             src={item.image_url}
             alt="Photo gallery"
-            delivery="square"
-            fill
-            sizes="(max-width: 639px) calc((100vw - 44px) / 2), (max-width: 1023px) calc((100vw - 64px) / 3), (max-width: 1535px) 300px, 245px"
-            loading={position <= 4 ? "eager" : "lazy"}
-            decoding="async"
             draggable={false}
-            className="select-none object-cover transition duration-300 group-hover:scale-[1.025]"
+            className="h-full w-full select-none object-cover transition duration-300 group-hover:scale-[1.025]"
           />
         </button>
       </div>

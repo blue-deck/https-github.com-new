@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { OptimizedSupabaseImage } from "../../../components/OptimizedSupabaseImage";
 
 export type PublicGalleryPhoto = {
   id: string;
@@ -21,22 +20,17 @@ export function PublicCrewGallery({
   return (
     <>
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:grid-cols-4">
-        {photos.map((photo, index) => (
+        {photos.map((photo) => (
           <button
             key={photo.id || photo.imageUrl}
             type="button"
             onClick={() => setActivePhoto(photo)}
-            className="group relative aspect-square cursor-pointer overflow-hidden bg-[#edf5f7] outline-none ring-0 transition focus-visible:ring-4 focus-visible:ring-cyan-200"
+            className="group aspect-square cursor-pointer overflow-hidden bg-[#edf5f7] outline-none ring-0 transition focus-visible:ring-4 focus-visible:ring-cyan-200"
             aria-label={`Open ${crewName} gallery photo`}
           >
-            <OptimizedSupabaseImage
+            <img
               src={photo.imageUrl}
               alt={`${crewName} yacht work photo`}
-              delivery="square"
-              fill
-              sizes="(max-width: 767px) calc((100vw - 44px) / 3), (max-width: 1151px) calc((100vw - 80px) / 4), 190px"
-              loading={index < 4 ? "eager" : "lazy"}
-              decoding="async"
               className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.035]"
             />
           </button>
@@ -70,18 +64,11 @@ export function PublicCrewGallery({
             >
               <X className="h-5 w-5" />
             </button>
-            <div className="relative h-[min(72vh,760px)] w-full overflow-hidden rounded-[22px] bg-[#f4f8f9]">
-              <OptimizedSupabaseImage
-                src={activePhoto.imageUrl}
-                alt={`${crewName} yacht work photo preview`}
-                delivery="contained"
-                fill
-                sizes="(max-width: 860px) 88vw, 760px"
-                loading="eager"
-                decoding="async"
-                className="object-contain"
-              />
-            </div>
+            <img
+              src={activePhoto.imageUrl}
+              alt={`${crewName} yacht work photo preview`}
+              className="max-h-[72vh] w-full rounded-[22px] object-contain"
+            />
           </div>
         </div>
       )}

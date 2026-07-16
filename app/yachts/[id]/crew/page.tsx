@@ -14,13 +14,7 @@ import {
   contractSeafarerDeclarationParagraphs,
   drawContractAnnexDPage,
 } from "../../../lib/contractAnnexD";
-import {
-  createSafeStoragePath,
-  immutableImageCacheControl,
-  validateTransformableImage,
-} from "../../../lib/storage";
-import { OptimizedSupabaseImage } from "../../../components/OptimizedSupabaseImage";
-import { parseSupabaseStorageObjectUrl } from "../../../lib/imageDelivery";
+import { createSafeStoragePath } from "../../../lib/storage";
 import {
   downloadChecklistPdfDocument,
   type ChecklistPdfRecord,
@@ -55,7 +49,6 @@ import {
 import {
   canAssignChecklistDepartment,
   canAssignToCrew,
-  canInviteCrew,
   checklistFrequencies,
   checklistTaskCategories,
   getChecklistTaskSuggestions,
@@ -860,29 +853,14 @@ export default function CrewPage({
   });
 
   const assignableCrew = useMemo(() => {
-    return crew.filter(
-      (member) =>
-        String(member.status || "").trim().toLowerCase() === "active" &&
-        (operator.role === "owner" ||
-          !["owner", "yacht manager"].includes(
-            String(member.position || member.crew_profiles?.current_position || "")
-              .trim()
-              .toLowerCase()
-          )) &&
-        canAssignToCrew(
-          operator.position,
-          operator.department,
-          member.position || member.crew_profiles?.current_position,
-          member.department,
-          operator.role
-        ) &&
-        canInviteCrew(
-          operator.position,
-          operator.department,
-          member.position || member.crew_profiles?.current_position,
-          member.department,
-          operator.role
-        )
+    return crew.filter((member) =>
+      canAssignToCrew(
+        operator.position,
+        operator.department,
+        member.position || member.crew_profiles?.current_position,
+        member.department,
+        operator.role
+      )
     );
   }, [crew, operator.department, operator.position, operator.role]);
 
@@ -1577,14 +1555,6 @@ export default function CrewPage({
   function addManualTask(taskOverride?: string) {
     const task = (taskOverride || manualTaskDraft).trim();
     if (!task) return;
-    if (task.length > 500) {
-      alert("Checklist tasks can contain up to 500 characters.");
-      return;
-    }
-    if (manualTasks.length >= 80) {
-      alert("A checklist can contain up to 80 tasks.");
-      return;
-    }
 
     setManualTasks((current) => [
       ...current,
@@ -1617,9 +1587,8 @@ export default function CrewPage({
 
   function selectManualTaskPhoto(file?: File) {
     if (!file) return;
-    const validationError = validateTransformableImage(file);
-    if (validationError) {
-      alert(validationError);
+    if (!file.type.startsWith("image/")) {
+      alert("Select an image file for the task.");
       return;
     }
 
@@ -1640,61 +1609,28 @@ export default function CrewPage({
     setManualTaskDraftPhoto(null);
   }
 
-  async function attachCaptainTaskPhoto(task: ManualChecklistTask, itemId: string) {
+  async function uploadCaptainTaskPhoto(task: ManualChecklistTask) {
     if (!task.beforePhotoFile) {
       return { publicUrl: "", bucket: "", path: "", error: "" };
     }
 
     const path = createSafeStoragePath(
-      `${yachtId}/${itemId}`,
+      `${yachtId}/manual-checklist/${task.id}`,
       task.beforePhotoFile,
       "before",
     );
-    const bucket = "task-photos";
-    const { error } = await supabase.storage.from(bucket).upload(path, task.beforePhotoFile, {
-      cacheControl: immutableImageCacheControl,
-      upsert: false,
-    });
-    if (!error) {
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-      const proofUpdate = await supabase
-        .from("yacht_checklist_items")
-        .update({
-          note: JSON.stringify({ before_photo_url: data.publicUrl }),
-        })
-        .eq("id", itemId)
-        .select("id")
-        .maybeSingle();
+    const buckets = ["task-photos", "crew-portfolio"];
+    let lastError = "";
 
-      if (!proofUpdate.error && proofUpdate.data) {
+    for (const bucket of buckets) {
+      const { error } = await supabase.storage.from(bucket).upload(path, task.beforePhotoFile);
+      if (!error) {
+        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
         return { publicUrl: data.publicUrl, bucket, path, error: "" };
       }
 
-      const canTryLegacyColumn =
-        proofUpdate.error?.code === "PGRST204" ||
-        /schema cache|column/i.test(proofUpdate.error?.message || "");
-      if (canTryLegacyColumn) {
-        const legacyUpdate = await supabase
-          .from("yacht_checklist_items")
-          .update({ before_photo_url: data.publicUrl })
-          .eq("id", itemId)
-          .select("id")
-          .maybeSingle();
-
-        if (!legacyUpdate.error && legacyUpdate.data) {
-          return { publicUrl: data.publicUrl, bucket, path, error: "" };
-        }
-      }
-
-      await supabase.storage.from(bucket).remove([path]);
-      return {
-        publicUrl: "",
-        bucket: "",
-        path: "",
-        error:
-          proofUpdate.error?.message ||
-          "The before-task proof could not be attached to the checklist.",
-      };
+      lastError = error.message;
+      if (error.message !== "Bucket not found") break;
     }
 
     return {
@@ -1702,9 +1638,9 @@ export default function CrewPage({
       bucket: "",
       path: "",
       error:
-        error.message === "Bucket not found"
-          ? "Secure task photo storage is temporarily unavailable."
-          : error.message || "Task photo could not be uploaded.",
+        lastError === "Bucket not found"
+          ? "Photo storage is not ready yet. Please create the task-photos bucket in Supabase Storage."
+          : lastError || "Task photo could not be uploaded.",
     };
   }
 
@@ -1728,25 +1664,12 @@ export default function CrewPage({
     }
 
     const member = crew.find((item) => item.id === selectedCrew);
-    const memberPosition =
-      member?.position || member?.crew_profiles?.current_position || "";
     if (
       !member ||
-      (operator.role !== "owner" &&
-        ["owner", "yacht manager"].includes(
-          String(memberPosition).trim().toLowerCase()
-        )) ||
       !canAssignToCrew(
         operator.position,
         operator.department,
-        memberPosition,
-        member.department,
-        operator.role
-      ) ||
-      !canInviteCrew(
-        operator.position,
-        operator.department,
-        memberPosition,
+        member.position || member.crew_profiles?.current_position,
         member.department,
         operator.role
       )
@@ -1769,107 +1692,83 @@ export default function CrewPage({
 
     setLoading(true);
 
-    let createdChecklistId = "";
-    let accessToken = "";
+    const uploadedTaskPhotos: Array<{ bucket: string; path: string }> = [];
+    const preparedTasks: Array<ManualChecklistTask & { beforePhotoUrl?: string }> = [];
 
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.access_token) {
-        throw new Error("Your login session has expired. Sign in and try again.");
-      }
-      accessToken = session.access_token;
-
-      const response = await fetch(
-        `/api/yachts/${encodeURIComponent(yachtId)}/checklists`,
-        {
-          method: "POST",
-          headers: {
-            accept: "application/json",
-            authorization: `Bearer ${session.access_token}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({
-            membershipId: member.id,
-            title,
-            department: assignmentDepartment,
-            checklistType: type,
-            frequency,
-            captainNote: captainNote || null,
-            dueDate: dueDate || null,
-            tasks: tasks.map((task) => ({
-              text: task.text,
-              beforePhotoUrl: null,
-            })),
-          }),
-        },
-      );
-      const payload = await response.json().catch(() => null);
-
-      if (!response.ok || !payload?.ok) {
-        throw new Error(payload?.error || "Checklist could not be created.");
-      }
-
-      createdChecklistId = String(payload.checklist?.id || "");
-      const createdItems = Array.isArray(payload.checklist?.items)
-        ? payload.checklist.items
-        : [];
-      if (
-        !createdChecklistId ||
-        createdItems.length !== tasks.length ||
-        createdItems.some((item: { id?: unknown }) => typeof item?.id !== "string")
-      ) {
-        throw new Error(
-          "Checklist was created without a complete task reference. It has been rolled back.",
+    for (const task of tasks) {
+      const upload = await uploadCaptainTaskPhoto(task);
+      if (upload.error) {
+        await Promise.all(
+          uploadedTaskPhotos.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path]))
         );
+        alert(upload.error);
+        setLoading(false);
+        return;
       }
 
-      for (let index = 0; index < tasks.length; index += 1) {
-        const task = tasks[index];
-        if (!task.beforePhotoFile) continue;
-
-        const upload = await attachCaptainTaskPhoto(task, createdItems[index].id);
-        if (upload.error) {
-          throw new Error(upload.error);
-        }
+      if (upload.bucket && upload.path) {
+        uploadedTaskPhotos.push({ bucket: upload.bucket, path: upload.path });
       }
-
-      setManualType("Custom Routine");
-      setManualTaskDraft("");
-      tasks.forEach((task) => {
-        if (task.beforePhotoPreview) URL.revokeObjectURL(task.beforePhotoPreview);
-      });
-      setManualTasks([]);
-      setCaptainNote("");
-      setDueDate("");
-      void loadData();
-    } catch (error) {
-      if (createdChecklistId) {
-        if (accessToken) {
-          await fetch(
-            `/api/yachts/${encodeURIComponent(yachtId)}/checklists`,
-            {
-              method: "DELETE",
-              headers: {
-                accept: "application/json",
-                authorization: `Bearer ${accessToken}`,
-                "content-type": "application/json",
-              },
-              body: JSON.stringify({ checklistId: createdChecklistId }),
-            },
-          ).catch(() => null);
-        }
-      }
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Checklist could not be created. Check your connection and try again.",
-      );
-    } finally {
-      setLoading(false);
+      preparedTasks.push({ ...task, beforePhotoUrl: upload.publicUrl || undefined });
     }
+
+    const { data: checklist, error } = await createChecklist({
+      yacht_id: yachtId,
+      title,
+      department: assignmentDepartment,
+      checklist_type: type,
+      frequency,
+      captain_note: captainNote || null,
+      assigned_to: member?.crew_profile_id,
+      due_date: dueDate || null,
+      status: "open",
+      items: {
+        frequency,
+        captain_note: captainNote || null,
+        tasks: tasks.map((task) => task.text),
+        source_template: "manual",
+        summary: "Manual BlueDeck checklist created onboard.",
+      },
+    });
+
+    if (error) {
+      await Promise.all(
+        uploadedTaskPhotos.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path]))
+      );
+      alert(error.message);
+      setLoading(false);
+      return;
+    }
+
+    const { error: itemError } = await insertChecklistItems(
+      preparedTasks.map((task) => ({
+        checklist_id: checklist.id,
+        task_text: task.text,
+        completed: false,
+        beforePhotoUrl: task.beforePhotoUrl,
+      }))
+    );
+
+    if (itemError) {
+      await Promise.all(
+        uploadedTaskPhotos.map(({ bucket, path }) => supabase.storage.from(bucket).remove([path]))
+      );
+      await supabase.from("yacht_checklists").delete().eq("id", checklist.id);
+      alert(itemError.message);
+      setLoading(false);
+      return;
+    }
+
+    setManualType("Custom Routine");
+    setManualTaskDraft("");
+    tasks.forEach((task) => {
+      if (task.beforePhotoPreview) URL.revokeObjectURL(task.beforePhotoPreview);
+    });
+    setManualTasks([]);
+    setCaptainNote("");
+    setDueDate("");
+    setLoading(false);
+    loadData();
   }
 
   async function loadData(silent = false) {
@@ -2117,6 +2016,78 @@ export default function CrewPage({
     }
   }
 
+  async function createChecklist(payload: Record<string, any>) {
+    const variants = [
+      payload,
+      omitKeys(payload, ["captain_note"]),
+      omitKeys(payload, ["frequency"]),
+      omitKeys(payload, ["frequency", "captain_note"]),
+      omitKeys(payload, ["items"]),
+      omitKeys(payload, ["items", "captain_note"]),
+      omitKeys(payload, ["items", "frequency"]),
+      omitKeys(payload, ["items", "frequency", "captain_note"]),
+      omitKeys(payload, ["items", "due_date"]),
+      omitKeys(payload, ["items", "due_date", "status"]),
+      omitKeys(payload, ["items", "frequency", "captain_note", "due_date"]),
+      omitKeys(payload, ["items", "frequency", "captain_note", "due_date", "status"]),
+    ];
+
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase
+        .from("yacht_checklists")
+        .insert(variant)
+        .select()
+        .single();
+
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
+  }
+
+  async function insertChecklistItems(tasks: any[]) {
+    const baseTasks = tasks.map((task) => omitKeys(task, ["beforePhotoUrl"]));
+    const hasCaptainPhotos = tasks.some((task) => Boolean(task.beforePhotoUrl));
+    const noteTasks = tasks.map((task) => ({
+      ...omitKeys(task, ["beforePhotoUrl"]),
+      ...(task.beforePhotoUrl
+        ? { note: JSON.stringify({ before_photo_url: task.beforePhotoUrl }) }
+        : {}),
+    }));
+    const columnTasks = tasks.map((task) => ({
+      ...omitKeys(task, ["beforePhotoUrl"]),
+      ...(task.beforePhotoUrl ? { before_photo_url: task.beforePhotoUrl } : {}),
+    }));
+    const variants = hasCaptainPhotos
+      ? [
+          noteTasks,
+          noteTasks.map((task) => omitKeys(task, ["completed"])),
+          columnTasks,
+          columnTasks.map((task) => omitKeys(task, ["completed"])),
+        ]
+      : [
+          baseTasks,
+          baseTasks.map((task) => omitKeys(task, ["completed"])),
+        ];
+
+    let lastResponse: any = null;
+
+    for (const variant of variants) {
+      const response = await supabase.from("yacht_checklist_items").insert(variant);
+      if (!response.error) return response;
+      lastResponse = response;
+
+      if (!isSchemaCacheError(response.error)) return response;
+    }
+
+    return lastResponse;
+  }
+
   function getAssignedCrewLabel(checklist: any) {
     const assignedCrew = crew.find(
       (member) => member.crew_profile_id === checklist.assigned_to
@@ -2186,18 +2157,9 @@ export default function CrewPage({
 
     async function loadProofImage(source: string) {
       try {
-        const storageObject = parseSupabaseStorageObjectUrl(source);
-        const resolvedSource = storageObject?.isPrivate
-          ? (
-              await supabase.storage
-                .from(storageObject.bucket)
-                .createSignedUrl(storageObject.path, 60 * 10)
-            ).data?.signedUrl || ""
-          : source;
-        if (!resolvedSource) return null;
-        const imageSource = resolvedSource.startsWith("data:image/")
-          ? resolvedSource
-          : `/api/cv-image?src=${encodeURIComponent(resolvedSource)}&max=640&fit=inside`;
+        const imageSource = source.startsWith("data:image/")
+          ? source
+          : `/api/cv-image?src=${encodeURIComponent(source)}&max=640&fit=inside`;
         const response = await fetch(imageSource, { cache: "force-cache" });
         if (!response.ok) return null;
 
@@ -3883,7 +3845,6 @@ export default function CrewPage({
                     <div className="flex gap-2">
                       <input
                         value={manualTaskDraft}
-                        maxLength={500}
                         onChange={(event) => setManualTaskDraft(event.target.value)}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") {
@@ -3986,7 +3947,6 @@ export default function CrewPage({
                         <div className="min-w-0 flex-1">
                           <input
                             value={task.text}
-                            maxLength={500}
                             onChange={(event) => updateManualTask(index, event.target.value)}
                             className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-cyan-300"
                           />
@@ -4035,7 +3995,6 @@ export default function CrewPage({
                     <textarea
                       placeholder="Optional note for the assigned crew"
                       value={captainNote}
-                      maxLength={2000}
                       onChange={(event) => setCaptainNote(event.target.value)}
                       className="mt-2 h-20 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                     />
@@ -4709,15 +4668,11 @@ export default function CrewPage({
               </button>
             </div>
 
-            <div className="bd-media-canvas relative h-[min(78vh,960px)] bg-slate-950">
-              <OptimizedSupabaseImage
+            <div className="bd-media-canvas bg-slate-950">
+              <img
                 src={photoPreview.url}
                 alt={`${photoPreview.label} task photo`}
-                delivery="contained"
-                fill
-                sizes="(max-width: 1100px) calc(100vw - 32px), 1024px"
-                loading="eager"
-                className="object-contain"
+                className="max-h-[78vh] w-full object-contain"
               />
             </div>
           </div>
@@ -5981,13 +5936,10 @@ function TaskPhotoPreview({
       className="group relative h-24 w-24 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-left transition hover:border-cyan-300 hover:shadow-lg hover:shadow-cyan-950/10"
       title={`Open ${label.toLowerCase()} proof photo`}
     >
-      <OptimizedSupabaseImage
+      <img
         src={url}
         alt={`${label} task photo`}
-        delivery="contained"
-        fill
-        sizes="96px"
-        className="object-contain p-1 transition group-hover:scale-[1.02]"
+        className="h-full w-full object-contain p-1 transition group-hover:scale-[1.02]"
       />
       <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-slate-950/78 text-white shadow-sm">
         <Camera className="h-3.5 w-3.5" />
