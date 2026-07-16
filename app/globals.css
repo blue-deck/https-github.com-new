@@ -71,7 +71,7 @@ body {
 html,
 body {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 html {
@@ -804,7 +804,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     radial-gradient(circle at 88% 4%, rgba(13, 37, 79, 0.075), transparent 28rem),
     linear-gradient(180deg, #fbfdff 0%, var(--bluedeck-canvas) 100%);
   color: var(--ocean-ink);
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .bd-yacht-portal main {
@@ -1377,7 +1377,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 
   .bd-yacht-section-nav {
     display: block;
-    top: calc(var(--topbar-height-mobile) + var(--safe-area-top)) !important;
+    top: calc(var(--topbar-height) + var(--safe-area-top)) !important;
   }
 
   input,

@@ -72,7 +72,7 @@ export default function YachtAppLayout({
   return (
     <div className="bd-yacht-portal min-h-screen text-slate-900">
       <div className="bd-main-column">
-        <nav className="bd-yacht-section-nav sticky top-[88px] z-40 border-b border-[#071f3c]/10 bg-white shadow-sm">
+        <nav className="bd-yacht-section-nav sticky z-40 border-b border-[#071f3c]/10 bg-white shadow-sm">
           <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 sm:px-8 lg:px-12">
             <div className="flex min-w-0 flex-1 items-center gap-6 overflow-x-auto">
               {nav.map((item) => {
