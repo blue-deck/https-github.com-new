@@ -12,7 +12,6 @@ import {
   ClipboardList,
   FileSignature,
   FileText,
-  Gauge,
   Map,
   RefreshCcw,
   ShieldCheck,
@@ -71,7 +70,6 @@ export default function YachtDashboard() {
   const [stats, setStats] = useState<OverviewStats>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [updatedAt, setUpdatedAt] = useState("");
 
   async function loadOverview(silent = false) {
     if (!silent) setLoading(true);
@@ -194,7 +192,6 @@ export default function YachtDashboard() {
       recent,
     });
     setYacht((yachtResponse.data as YachtRecord | null) || null);
-    setUpdatedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
     setLoading(false);
   }
 
@@ -215,33 +212,6 @@ export default function YachtDashboard() {
     const alertPenalty = Math.min(stats.criticalDocuments * 8, 24);
     return Math.max(0, Math.min(99, crewScore + taskScore + documentScore + 25 - alertPenalty));
   }, [stats, taskProgress]);
-
-  const readinessRows = [
-    {
-      label: "Crew",
-      value: `${stats.crewCount} profile`,
-      detail: stats.invitedCrew ? `${stats.invitedCrew} invitation waiting` : "Crew portal connected",
-      tone: stats.crewCount ? "emerald" : "gold",
-    },
-    {
-      label: "Checklists",
-      value: `${taskProgress}% done`,
-      detail: `${stats.completedTasks}/${stats.totalTasks} tasks completed`,
-      tone: taskProgress >= 70 ? "emerald" : "cyan",
-    },
-    {
-      label: "Documents",
-      value: `${stats.documentCount} saved`,
-      detail: stats.expiringDocuments ? `${stats.expiringDocuments} expiry alert inside 90 days` : "No active expiry pressure",
-      tone: stats.criticalDocuments ? "rose" : "cyan",
-    },
-    {
-      label: "YACHT-OS",
-      value: "Live",
-      detail: "Captain and crew modules are connected",
-      tone: "emerald",
-    },
-  ] as const;
 
   const modules = [
     {
@@ -305,7 +275,7 @@ export default function YachtDashboard() {
   return (
     <main className="bd-app-page min-h-screen min-w-0 overflow-x-hidden px-5 pb-32 pt-8 text-slate-950 sm:px-8 lg:px-10">
       <div className="mx-auto w-full min-w-0 max-w-7xl">
-        <section className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+        <section className="min-w-0">
           <div className="bd-page-hero relative overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8 lg:p-10">
             <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />
             <div className="flex flex-wrap items-start justify-between gap-5">
@@ -353,26 +323,6 @@ export default function YachtDashboard() {
             )}
           </div>
 
-          <div className="bd-app-card rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8">
-            <div className="flex items-start justify-between gap-5">
-              <div>
-                <p className="bd-kicker">Today</p>
-                <h2 className="mt-3 text-4xl font-black text-slate-950">Yacht Readiness</h2>
-                <p className="mt-3 text-sm font-semibold text-slate-500">
-                  {updatedAt ? `Updated ${updatedAt}` : "Loading live yacht data"}
-                </p>
-              </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300">
-                <Gauge className="h-7 w-7" />
-              </div>
-            </div>
-
-            <div className="mt-7 space-y-4">
-              {readinessRows.map((item) => (
-                <ReadinessRow key={item.label} {...item} />
-              ))}
-            </div>
-          </div>
         </section>
 
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -494,37 +444,6 @@ function PrimaryLink({
       <Icon className="h-5 w-5 text-cyan-300" />
       {label}
     </Link>
-  );
-}
-
-function ReadinessRow({
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  tone: "cyan" | "emerald" | "gold" | "rose";
-}) {
-  const tones = {
-    cyan: "bg-cyan-50 text-cyan-800 border-cyan-200",
-    emerald: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    gold: "bg-amber-50 text-amber-800 border-amber-200",
-    rose: "bg-rose-50 text-rose-800 border-rose-200",
-  };
-
-  return (
-    <div className="bd-app-card rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        <p className="font-black text-slate-950">{label}</p>
-        <p className={`rounded-full border px-3 py-1 text-sm font-black ${tones[tone]}`}>
-          {value}
-        </p>
-      </div>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{detail}</p>
-    </div>
   );
 }
 

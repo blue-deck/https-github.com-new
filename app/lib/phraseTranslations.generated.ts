@@ -670,9 +670,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Captain Workspace": {
     "tr": "Kaptan Çalışma Alanı",
   },
-  "Captain and crew modules are connected": {
-    "tr": "Kaptan ve mürettebat modülleri birbirine bağlıdır",
-  },
   "Captain, engineer and deck team communication confirmed": {
     "tr": "Kaptan, mühendis ve güverte ekibinin iletişimi onaylandı",
   },
@@ -1035,9 +1032,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Crew Payroll": {
     "tr": "Mürettebat Bordrosu",
-  },
-  "Crew portal connected": {
-    "tr": "Mürettebat portalı bağlandı",
   },
   "Crew portal ready": {
     "tr": "Mürettebat portalı hazır",
@@ -2326,9 +2320,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Loading invitation...": {
     "tr": "Davetiye yükleniyor...",
   },
-  "Loading live yacht data": {
-    "tr": "Canlı yat verileri yükleniyor",
-  },
   "Loading map...": {
     "tr": "Harita yükleniyor...",
   },
@@ -2670,9 +2661,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "No active expiry alerts. Click sync after uploading documents with expiry dates.": {
     "tr": "Aktif süre sonu uyarısı yok. Son kullanma tarihi olan belgeleri yükledikten sonra senkronizasyona tıklayın.",
-  },
-  "No active expiry pressure": {
-    "tr": "Aktif ekspirasyon basıncı yok",
   },
   "No activity yet. Start by inviting crew or assigning a checklist.": {
     "tr": "Henüz etkinlik yok. Mürettebat davet ederek veya bir kontrol listesi atayarak başlayın.",
@@ -4443,9 +4431,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Yacht position": {
     "tr": "Yat konumu",
-  },
-  "Yacht Readiness": {
-    "tr": "Yat Hazırlığı",
   },
   "Yacht Status": {
     "tr": "Yat Durumu",
