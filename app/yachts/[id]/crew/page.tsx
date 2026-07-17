@@ -3749,17 +3749,8 @@ export default function CrewPage({
             */}
 
             {isChecklistSystem && (
-            <div className="overflow-hidden rounded-[28px] border border-cyan-100 bg-white/90 shadow-xl shadow-cyan-950/5 sm:rounded-[36px]">
-              <div className="border-b border-cyan-100 bg-[linear-gradient(135deg,#f8fdff_0%,#e9f8fb_100%)] p-5 sm:p-7">
-                <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">
-                  Create Checklist
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-slate-500">
-                  Select crew and a schedule, then build a checklist task by task from suggestions or your own wording.
-                </p>
-              </div>
-
-              <div className="m-5 overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:m-7 sm:p-6">
+            <div className="min-w-0">
+              <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:p-6">
                 <div className="grid min-w-0 gap-4 border-b border-slate-200 pb-6 sm:grid-cols-2 xl:grid-cols-5">
                   <label className="block min-w-0 sm:col-span-2 xl:col-span-3">
                     <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
