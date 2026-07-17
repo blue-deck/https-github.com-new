@@ -13,13 +13,11 @@ import {
   FileSignature,
   FileText,
   Gauge,
-  LifeBuoy,
   Map,
   RefreshCcw,
   ShieldCheck,
   Ship,
   Users,
-  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { BLUEDECK } from "../../config";
@@ -301,22 +299,6 @@ export default function YachtDashboard() {
       icon: Bell,
       tone: stats.criticalDocuments ? "rose" : "emerald",
       meta: `${stats.criticalDocuments} critical`,
-    },
-    {
-      title: "Engineering",
-      text: "Technical systems, maintenance planning and onboard machinery readiness.",
-      href: `/yachts/${yachtId}/engineering`,
-      icon: Wrench,
-      tone: "gold",
-      meta: "Systems",
-    },
-    {
-      title: "Safety Center",
-      text: "Safety status, emergency readiness and operational protection checks.",
-      href: `/yachts/${yachtId}/status`,
-      icon: LifeBuoy,
-      tone: "rose",
-      meta: "Safety",
     },
   ] as const;
 

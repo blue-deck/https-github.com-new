@@ -856,7 +856,6 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Document Vault": { tr: "Belge Kasası" },
   "Expiry Alerts": { tr: "Bitiş Uyarıları" },
   "Engineering": { tr: "Mühendislik" },
-  "Safety Center": { tr: "Güvenlik Merkezi" },
   "Operations": { tr: "Operasyonlar" },
   "Open module": { tr: "Modülü aç" },
   "Course": { tr: "Rota" },

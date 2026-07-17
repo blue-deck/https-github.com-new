@@ -460,9 +460,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "BlueDeck Documents": {
     "tr": "BlueDeck Belgeleri",
   },
-  "BlueDeck EngineeringOS": {
-    "tr": "BlueDeck Mühendislik İşletim Sistemi",
-  },
   "BlueDeck Expiry Monitoring": {
     "tr": "BlueDeck Vade Takibi",
   },
@@ -1084,9 +1081,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Critical": {
     "tr": "Kritik",
   },
-  "Critical Alerts": {
-    "tr": "Kritik Uyarılar",
-  },
   "Critical items detected. Review before departure.": {
     "tr": "Kritik öğeler algılandı. Ayrılmadan önce gözden geçirin.",
   },
@@ -1470,9 +1464,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Engineering": {
     "tr": "Mühendislik",
-  },
-  "Engineering Center": {
-    "tr": "Mühendislik Merkezi",
   },
   "Engineering healthy": {
     "tr": "Mühendislik sağlıklı",
@@ -1914,9 +1905,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Guest Mode": {
     "tr": "Misafir Modu",
-  },
-  "Guest mode active": {
-    "tr": "Misafir modu etkin",
   },
   "Guest Movement": {
     "tr": "Misafir Hareketi",
@@ -3349,9 +3337,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Real-time yacht command center with navigation, AIS, engineering and onboard operational monitoring.": {
     "tr": "Navigasyon, AIS, mühendislik ve yerleşik operasyonel izleme özelliklerine sahip gerçek zamanlı yat komuta merkezi.",
   },
-  "Real-time yacht operational mode, owner presence and navigation status.": {
-    "tr": "Gerçek zamanlı yat çalışma modu, sahibinin varlığı ve navigasyon durumu.",
-  },
   "Realtime": {
     "tr": "Gerçek zamanlı",
   },
@@ -3493,9 +3478,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Safety": {
     "tr": "Güvenlik",
   },
-  "Safety Center": {
-    "tr": "Güvenlik Merkezi",
-  },
   "Safety critical equipment tasks verified": {
     "tr": "Güvenlik açısından kritik ekipman görevleri doğrulandı",
   },
@@ -3513,9 +3495,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Safety Officer": {
     "tr": "Güvenlik Görevlisi",
-  },
-  "Safety status, emergency readiness and operational protection checks.": {
-    "tr": "Güvenlik durumu, acil duruma hazırlık ve operasyonel koruma kontrolleri.",
   },
   "Safety-focused": {
     "tr": "Güvenlik odaklı",
@@ -3546,9 +3525,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Save profile details": {
     "tr": "Profil ayrıntılarını kaydet",
-  },
-  "Save Yacht Status": {
-    "tr": "Yat Durumunu Kaydet",
   },
   "Schengen Visa": {
     "tr": "Schengen Vizesi",
@@ -3693,9 +3669,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Service call timing agreed": {
     "tr": "Servis çağrısı zamanlaması kabul edildi",
-  },
-  "Service Due": {
-    "tr": "Hizmet Süresi",
   },
   "Service notes": {
     "tr": "Servis notları",
@@ -3927,9 +3900,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Systems": {
     "tr": "Sistemler",
-  },
-  "Systems Online": {
-    "tr": "Sistemler Çevrimiçi",
   },
   "Table plan confirmed with chief stew and chef": {
     "tr": "Şef güveç ve şefle onaylanan masa planı",
@@ -4204,9 +4174,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Update Position": {
     "tr": "Konumu Güncelle",
   },
-  "Update Status": {
-    "tr": "Durumu Güncelle",
-  },
   "Update your identity, login details, phone number and password from one clean settings area.": {
     "tr": "Tek bir temiz ayar alanından kimliğinizi, oturum açma bilgilerinizi, telefon numaranızı ve şifrenizi güncelleyin.",
   },
@@ -4450,9 +4417,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Yacht Health": {
     "tr": "Yat Sağlığı",
   },
-  "Yacht Live Status": {
-    "tr": "Yat Canlı Durumu",
-  },
   "Yacht Log": {
     "tr": "Yat Günlüğü",
   },
@@ -4485,9 +4449,6 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "Yacht Status": {
     "tr": "Yat Durumu",
-  },
-  "Yacht status updated": {
-    "tr": "Yat durumu güncellendi",
   },
   "YACHT-OS": {
     "tr": "YACHT-OS",
