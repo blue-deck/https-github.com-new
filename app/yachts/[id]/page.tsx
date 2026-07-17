@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
-  AlertTriangle,
   Bell,
   CalendarDays,
   ChevronRight,
@@ -12,10 +11,6 @@ import {
   ClipboardList,
   FileSignature,
   FileText,
-  Map,
-  RefreshCcw,
-  ShieldCheck,
-  Ship,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -45,9 +40,6 @@ type ActivityItem = {
 type YachtRecord = {
   id: string;
   name?: string | null;
-  model?: string | null;
-  flag?: string | null;
-  mmsi?: string | null;
 };
 
 const emptyStats: OverviewStats = {
@@ -68,11 +60,9 @@ export default function YachtDashboard() {
   const yachtId = String(params?.id || BLUEDECK.yachtId);
   const [yacht, setYacht] = useState<YachtRecord | null>(null);
   const [stats, setStats] = useState<OverviewStats>(emptyStats);
-  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  async function loadOverview(silent = false) {
-    if (!silent) setLoading(true);
+  async function loadOverview() {
     setLoadError("");
 
     const [yachtResponse, crewResponse, checklistResponse, invitationResponse, documentResponse] =
@@ -192,26 +182,17 @@ export default function YachtDashboard() {
       recent,
     });
     setYacht((yachtResponse.data as YachtRecord | null) || null);
-    setLoading(false);
   }
 
   useEffect(() => {
     loadOverview();
-    const interval = window.setInterval(() => loadOverview(true), 15000);
+    const interval = window.setInterval(() => loadOverview(), 15000);
     return () => window.clearInterval(interval);
   }, [yachtId]);
 
   const taskProgress = stats.totalTasks
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
     : 0;
-
-  const readinessScore = useMemo(() => {
-    const crewScore = stats.crewCount > 0 ? 25 : 8;
-    const taskScore = stats.totalTasks > 0 ? Math.round(taskProgress * 0.35) : 22;
-    const documentScore = stats.documentCount > 0 ? 25 : 12;
-    const alertPenalty = Math.min(stats.criticalDocuments * 8, 24);
-    return Math.max(0, Math.min(99, crewScore + taskScore + documentScore + 25 - alertPenalty));
-  }, [stats, taskProgress]);
 
   const modules = [
     {
@@ -292,28 +273,7 @@ export default function YachtDashboard() {
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <div className="rounded-[24px] border border-cyan-200 bg-cyan-50 px-5 py-3">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-800">
-                  Readiness
-                </p>
-                <p className="mt-1 text-3xl font-black text-slate-950">{readinessScore}%</p>
-              </div>
               <PrimaryLink href={`/yachts/${yachtId}/crew`} icon={Users} label="Invite / Manage Crew" />
-              <PrimaryLink href={`/yachts/${yachtId}/alerts`} icon={AlertTriangle} label="Open Alerts" />
-              <button
-                type="button"
-                onClick={() => loadOverview()}
-                className="bd-focus inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 font-black text-slate-800 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-50"
-              >
-                <RefreshCcw className={`h-5 w-5 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <HeroMetric icon={Ship} label="Mode" value={BLUEDECK.mode} />
-              <HeroMetric icon={Map} label="Flag" value={yacht?.flag || BLUEDECK.flag} />
-              <HeroMetric icon={ShieldCheck} label="Privacy" value="Active" />
             </div>
 
             {loadError && (
@@ -407,24 +367,6 @@ function formatDate(value?: string | null) {
     month: "2-digit",
     year: "numeric",
   });
-}
-
-function HeroMetric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <Icon className="h-5 w-5 text-cyan-700" />
-      <p className="mt-4 text-sm font-semibold text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-black text-slate-950">{value}</p>
-    </div>
-  );
 }
 
 function PrimaryLink({
