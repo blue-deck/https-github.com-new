@@ -2562,7 +2562,7 @@ function SeazoneStyleCvPreview({
 
             <div className="bg-white">
               <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
-                <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-28 shadow-lg shadow-slate-950/10">
+                <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#071631] px-8 pl-28 shadow-lg shadow-slate-950/10">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
                     <h2 className="bd-cv-crew-name mt-3 block max-w-full whitespace-nowrap font-black uppercase leading-none text-white" style={crewNameStyle(crewName)}>{crewName}</h2>
@@ -2573,7 +2573,7 @@ function SeazoneStyleCvPreview({
 
               <main className="bd-cv-main p-6 sm:p-8 print:p-7">
                 <SeazoneSection title="About Me" className="mt-0">
-                  <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[14px] font-semibold leading-7 text-[#17232c]">
+                  <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[16px] font-semibold leading-7 text-[#17232c]">
                     {professionalSummary}
                   </p>
                 </SeazoneSection>
@@ -3174,8 +3174,8 @@ function SeazoneExperienceCard({
                 {experience.position || "Position"}
               </span>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-            <p className="mt-2 text-[13px] font-semibold leading-5 text-[#17232c]">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+            <p className="mt-2 text-[15px] font-semibold leading-6 text-[#17232c]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
             </p>
             <SeazoneExperienceReferences references={references} />

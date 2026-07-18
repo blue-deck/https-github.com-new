@@ -127,7 +127,7 @@ function cvPdfTextFallback(element: Element) {
 function cvPdfBackgroundFallback(element: Element) {
   const classes = elementClassName(element);
 
-  if (element.classList.contains("bd-print-hero-band")) return "#20242a";
+  if (element.classList.contains("bd-print-hero-band")) return "#071631";
   if (element.classList.contains("bd-print-sidebar")) return "#e7ecee";
   if (
     element.classList.contains("bd-print-page") ||
@@ -142,7 +142,7 @@ function cvPdfBackgroundFallback(element: Element) {
   if (element.classList.contains("bd-print-document-row")) return "#f6f8f8";
   if (element.matches(".bd-print-experience-top span, .bd-print-contact-line i")) return "#173f4a";
   if (classes.includes("bg-white")) return "#ffffff";
-  if (classes.includes("bg-[#20242a]")) return "#20242a";
+  if (classes.includes("bg-[#071631]")) return "#071631";
   if (classes.includes("bg-[#e7ecee]")) return "#e7ecee";
   if (classes.includes("bg-[#f6f8f8]")) return "#f6f8f8";
   if (classes.includes("bg-[#f3f7f8]")) return "#f3f7f8";
