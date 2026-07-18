@@ -2708,9 +2708,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-experience-top h4 {
     margin-top: 0 !important;
     overflow: visible !important;
-    padding: 0.6mm 0 0.4mm !important;
+    padding: 0 !important;
     text-overflow: clip !important;
-    line-height: 1.2 !important;
+    line-height: 1.05 !important;
   }
 
   .bd-print-document-row {

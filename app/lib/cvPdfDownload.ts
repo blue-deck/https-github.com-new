@@ -21,50 +21,55 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
     creator: "BlueDeck Yacht Management Platform",
   });
 
-  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-    const canvas = await html2canvas(pages[pageIndex], {
-      scale: renderScale,
-      useCORS: true,
-      allowTaint: false,
-      backgroundColor: "#ffffff",
-      logging: false,
-      imageTimeout: 30000,
-      windowWidth: 794,
-      windowHeight: 1123,
-      onclone: async (clonedDocument, clonedPage) => {
-        const style = clonedDocument.createElement("style");
-        style.dataset.cvPdfPrintStyles = "true";
-        style.textContent = printCss;
-        clonedDocument.head.appendChild(style);
-        clonedDocument.body.classList.add("bd-pdf-exporting");
+  const restoreFontMetricStyles = installHtml2CanvasFontMetricStyles();
+  try {
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+      const canvas = await html2canvas(pages[pageIndex], {
+        scale: renderScale,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+        logging: false,
+        imageTimeout: 30000,
+        windowWidth: 794,
+        windowHeight: 1123,
+        onclone: async (clonedDocument, clonedPage) => {
+          const style = clonedDocument.createElement("style");
+          style.dataset.cvPdfPrintStyles = "true";
+          style.textContent = printCss;
+          clonedDocument.head.appendChild(style);
+          clonedDocument.body.classList.add("bd-pdf-exporting");
 
-        const clonedRoot = clonedPage.closest<HTMLElement>(".bd-cv-print-root");
-        if (clonedRoot) {
-          clonedRoot.style.position = "static";
-          clonedRoot.style.transform = "none";
-          clonedRoot.style.opacity = "1";
-          clonedRoot.style.pointerEvents = "auto";
-        }
+          const clonedRoot = clonedPage.closest<HTMLElement>(".bd-cv-print-root");
+          if (clonedRoot) {
+            clonedRoot.style.position = "static";
+            clonedRoot.style.transform = "none";
+            clonedRoot.style.opacity = "1";
+            clonedRoot.style.pointerEvents = "auto";
+          }
 
-        clonedDocument.documentElement.style.width = "210mm";
-        clonedDocument.documentElement.style.margin = "0";
-        clonedDocument.documentElement.style.padding = "0";
-        clonedDocument.documentElement.style.setProperty("background-color", "#ffffff", "important");
-        clonedDocument.documentElement.style.setProperty("color", "#242a31", "important");
-        clonedDocument.body.style.width = "210mm";
-        clonedDocument.body.style.margin = "0";
-        clonedDocument.body.style.padding = "0";
-        clonedDocument.body.style.setProperty("background-color", "#ffffff", "important");
-        clonedDocument.body.style.setProperty("color", "#242a31", "important");
-        await clonedDocument.fonts?.ready;
-        normalizeCvExportColors(clonedPage);
-      },
-    });
+          clonedDocument.documentElement.style.width = "210mm";
+          clonedDocument.documentElement.style.margin = "0";
+          clonedDocument.documentElement.style.padding = "0";
+          clonedDocument.documentElement.style.setProperty("background-color", "#ffffff", "important");
+          clonedDocument.documentElement.style.setProperty("color", "#242a31", "important");
+          clonedDocument.body.style.width = "210mm";
+          clonedDocument.body.style.margin = "0";
+          clonedDocument.body.style.padding = "0";
+          clonedDocument.body.style.setProperty("background-color", "#ffffff", "important");
+          clonedDocument.body.style.setProperty("color", "#242a31", "important");
+          await clonedDocument.fonts?.ready;
+          normalizeCvExportColors(clonedPage);
+        },
+      });
 
-    if (pageIndex > 0) pdf.addPage("a4", "portrait");
-    pdf.addImage(canvas, "PNG", 0, 0, 210, 297, undefined, "FAST");
-    canvas.width = 1;
-    canvas.height = 1;
+      if (pageIndex > 0) pdf.addPage("a4", "portrait");
+      pdf.addImage(canvas, "PNG", 0, 0, 210, 297, undefined, "FAST");
+      canvas.width = 1;
+      canvas.height = 1;
+    }
+  } finally {
+    restoreFontMetricStyles();
   }
 
   const pdfBlob = pdf.output("blob");
@@ -77,6 +82,23 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 45000);
+}
+
+function installHtml2CanvasFontMetricStyles() {
+  // html2canvas measures text baselines with a hidden 1px GIF; Tailwind's block-image reset skews it.
+  const style = document.createElement("style");
+  style.dataset.cvPdfFontMetrics = "true";
+  style.textContent = `
+    body > div:last-child > img[src^="data:image/gif;base64,"],
+    body > div[style*="visibility: hidden"] > img[src^="data:image/gif;base64,"] {
+      display: inline-block !important;
+      width: 1px !important;
+      height: 1px !important;
+      max-width: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+  return () => style.remove();
 }
 
 const unsupportedPdfColorPattern =
