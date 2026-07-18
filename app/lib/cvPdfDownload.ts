@@ -12,7 +12,7 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
   ]);
   const printCss = collectPrintCss();
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
-  const renderScale = Math.min(2, Math.max(1.5, window.devicePixelRatio || 1));
+  const renderScale = 3;
 
   pdf.setProperties({
     title,
@@ -62,7 +62,7 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
     });
 
     if (pageIndex > 0) pdf.addPage("a4", "portrait");
-    pdf.addImage(canvas, "JPEG", 0, 0, 210, 297, undefined, "FAST");
+    pdf.addImage(canvas, "PNG", 0, 0, 210, 297, undefined, "FAST");
     canvas.width = 1;
     canvas.height = 1;
   }
@@ -81,13 +81,6 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
 
 const unsupportedPdfColorPattern =
   /\b(?:oklab|oklch|lab|lch|color|color-mix|light-dark|device-cmyk)\(/i;
-
-function safePdfColor(value: string | null | undefined, fallback: string) {
-  const cleanValue = (value || "").trim();
-  if (!cleanValue || cleanValue === "initial" || cleanValue === "inherit") return fallback;
-  if (unsupportedPdfColorPattern.test(cleanValue)) return fallback;
-  return cleanValue;
-}
 
 function elementClassName(element: Element) {
   return element.getAttribute("class") || "";
@@ -139,6 +132,16 @@ function setImportantColor(style: CSSStyleDeclaration, property: string, value: 
   style.setProperty(property, value, "important");
 }
 
+function replaceUnsupportedColor(
+  style: CSSStyleDeclaration,
+  property: string,
+  value: string | null | undefined,
+  fallback: string,
+) {
+  if (!unsupportedPdfColorPattern.test(value || "")) return;
+  setImportantColor(style, property, fallback);
+}
+
 function normalizeCvExportColors(root: HTMLElement) {
   const view = root.ownerDocument.defaultView || window;
   const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement | SVGElement>("*"))];
@@ -149,39 +152,32 @@ function normalizeCvExportColors(root: HTMLElement) {
     const textFallback = cvPdfTextFallback(element);
     const backgroundFallback = cvPdfBackgroundFallback(element);
     const borderFallback = "#d8e2e6";
-    const textColor = safePdfColor(computed.color, textFallback);
+    const textColor = unsupportedPdfColorPattern.test(computed.color) ? textFallback : computed.color;
 
-    setImportantColor(style, "color", textColor);
-    setImportantColor(style, "background-color", safePdfColor(computed.backgroundColor, backgroundFallback));
-    setImportantColor(style, "border-top-color", safePdfColor(computed.borderTopColor, borderFallback));
-    setImportantColor(style, "border-right-color", safePdfColor(computed.borderRightColor, borderFallback));
-    setImportantColor(style, "border-bottom-color", safePdfColor(computed.borderBottomColor, borderFallback));
-    setImportantColor(style, "border-left-color", safePdfColor(computed.borderLeftColor, borderFallback));
-    setImportantColor(style, "outline-color", safePdfColor(computed.outlineColor, borderFallback));
-    setImportantColor(
-      style,
-      "text-decoration-color",
-      safePdfColor(computed.textDecorationColor, textColor),
-    );
-    setImportantColor(
-      style,
-      "-webkit-text-stroke-color",
-      safePdfColor(computed.webkitTextStrokeColor, textColor),
-    );
+    replaceUnsupportedColor(style, "color", computed.color, textFallback);
+    replaceUnsupportedColor(style, "background-color", computed.backgroundColor, backgroundFallback);
+    replaceUnsupportedColor(style, "border-top-color", computed.borderTopColor, borderFallback);
+    replaceUnsupportedColor(style, "border-right-color", computed.borderRightColor, borderFallback);
+    replaceUnsupportedColor(style, "border-bottom-color", computed.borderBottomColor, borderFallback);
+    replaceUnsupportedColor(style, "border-left-color", computed.borderLeftColor, borderFallback);
+    replaceUnsupportedColor(style, "outline-color", computed.outlineColor, borderFallback);
+    replaceUnsupportedColor(style, "text-decoration-color", computed.textDecorationColor, textColor);
+    replaceUnsupportedColor(style, "-webkit-text-stroke-color", computed.webkitTextStrokeColor, textColor);
 
     if (unsupportedPdfColorPattern.test(computed.backgroundImage || "")) {
       style.setProperty("background-image", "none", "important");
     }
 
-    style.setProperty("box-shadow", "none", "important");
-    style.setProperty("text-shadow", "none", "important");
-    style.setProperty("filter", "none", "important");
-    style.setProperty("backdrop-filter", "none", "important");
-    style.setProperty("-webkit-backdrop-filter", "none", "important");
+    if (unsupportedPdfColorPattern.test(computed.boxShadow || "")) {
+      style.setProperty("box-shadow", "none", "important");
+    }
+    if (unsupportedPdfColorPattern.test(computed.textShadow || "")) {
+      style.setProperty("text-shadow", "none", "important");
+    }
 
     if (element.namespaceURI === "http://www.w3.org/2000/svg") {
-      setImportantColor(style, "fill", safePdfColor(computed.getPropertyValue("fill"), textColor));
-      setImportantColor(style, "stroke", safePdfColor(computed.getPropertyValue("stroke"), textColor));
+      replaceUnsupportedColor(style, "fill", computed.getPropertyValue("fill"), textColor);
+      replaceUnsupportedColor(style, "stroke", computed.getPropertyValue("stroke"), textColor);
     }
   });
 }
