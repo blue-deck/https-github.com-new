@@ -299,8 +299,8 @@ export function BlueDeckTopBar({
       <div className="bd-app-topbar-inner mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         <div className="bd-topbar-logo-area flex min-w-0 items-center gap-4">
           <BlueDeckLogoLink
-            href="/dashboard"
-            label="BlueDeck Dashboard"
+            href="/"
+            label="BlueDeck home"
             className="bd-topbar-logo h-12 w-48 shrink-0 sm:w-60"
             imageClassName="object-contain p-0"
           />
