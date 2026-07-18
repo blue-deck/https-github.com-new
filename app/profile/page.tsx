@@ -37,6 +37,7 @@ import { absoluteSiteUrl } from "../lib/site";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { yachtPositionTitles } from "../lib/yachtOperations";
+import { downloadCvPages } from "../lib/cvPdfDownload";
 
 type CountryOption = (typeof blueDeckCountries)[number] | (typeof nationalityOptions)[number];
 type PhoneCountryOption = (typeof blueDeckCountries)[number];
@@ -1553,7 +1554,7 @@ export default function ProfilePage() {
                     try {
                       await downloadCvPdf(payload);
                     } catch (error) {
-                      alert(error instanceof Error ? error.message : "CV print dialog could not be opened.");
+                      alert(error instanceof Error ? error.message : "CV PDF could not be generated.");
                     } finally {
                       setPdfDownloading(false);
                     }
@@ -1895,63 +1896,20 @@ async function downloadCvPdf(payload: CvPdfPayload) {
 
   await waitForCvPrintAssets(root);
   const restoreExportImages = await prepareCvExportImages(root);
-  await waitForCvPrintAssets(root);
-  await waitForNextPaint();
-  openCvPrintDialog(cvPdfFileName(payload.profile), restoreExportImages);
-}
+  try {
+    await waitForCvPrintAssets(root);
+    await waitForNextPaint();
 
-function openCvPrintDialog(fileName: string, cleanup?: () => void) {
-  const previousTitle = document.title;
-  const printTitle = fileName.replace(/\.pdf$/i, "");
-  const restorePrintIsolation = isolateCvForPrint();
-  let restored = false;
-  const restoreTitle = () => {
-    if (restored) return;
-    restored = true;
-    window.clearTimeout(restoreTimeout);
-    document.title = previousTitle;
-    restorePrintIsolation();
-    cleanup?.();
-  };
-
-  document.title = printTitle;
-  window.addEventListener("afterprint", restoreTitle, { once: true });
-  const restoreTimeout = window.setTimeout(restoreTitle, 10 * 60 * 1000);
-  window.print();
-}
-
-function isolateCvForPrint() {
-  const cvRoot = document.getElementById("bluedeck-cv");
-  const bodyAlreadyExporting = document.body.classList.contains("bd-pdf-exporting");
-  const hiddenSiblings: HTMLElement[] = [];
-  const printAncestors: HTMLElement[] = [];
-
-  document.body.classList.add("bd-pdf-exporting");
-
-  let current: HTMLElement | null = cvRoot;
-  while (current && current !== document.body) {
-    const parent = current.parentElement;
-    if (!parent) break;
-
-    if (parent !== document.body && !parent.classList.contains("bd-pdf-print-ancestor")) {
-      parent.classList.add("bd-pdf-print-ancestor");
-      printAncestors.push(parent);
-    }
-
-    Array.from(parent.children).forEach((sibling) => {
-      if (sibling === current || !(sibling instanceof HTMLElement) || sibling.classList.contains("bd-pdf-print-hidden")) return;
-      sibling.classList.add("bd-pdf-print-hidden");
-      hiddenSiblings.push(sibling);
+    const fileName = cvPdfFileName(payload.profile);
+    await downloadCvPages({
+      pages,
+      fileName,
+      title: fileName.replace(/\.pdf$/i, ""),
+      author: payload.crewName,
     });
-
-    current = parent;
+  } finally {
+    restoreExportImages();
   }
-
-  return () => {
-    hiddenSiblings.forEach((element) => element.classList.remove("bd-pdf-print-hidden"));
-    printAncestors.forEach((element) => element.classList.remove("bd-pdf-print-ancestor"));
-    if (!bodyAlreadyExporting) document.body.classList.remove("bd-pdf-exporting");
-  };
 }
 
 async function prepareCvExportImages(root: HTMLElement) {
@@ -2516,7 +2474,7 @@ function SeazoneStyleCvPreview({
           className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70 sm:w-auto"
         >
           {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-          {downloading ? "Opening print..." : "Print / Save PDF"}
+          {downloading ? "Generating PDF..." : "Download PDF"}
         </button>
       </div>
 

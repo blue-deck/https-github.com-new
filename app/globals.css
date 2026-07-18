@@ -1883,12 +1883,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-main {
     position: relative !important;
     z-index: 2 !important;
+    box-sizing: border-box !important;
     background: #ffffff !important;
     padding: 0 8mm 18mm !important;
     height: 297mm !important;
     max-height: 297mm !important;
     min-width: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
   }
 
   .bd-print-main-continuation {
@@ -1898,9 +1899,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page-footer {
     position: absolute !important;
+    z-index: 10 !important;
     right: 8mm !important;
     bottom: 6mm !important;
     left: 8mm !important;
+    background: #ffffff !important;
     border-top: 1px solid #c7d2d6 !important;
     padding-top: 1.8mm !important;
     color: #6b747a !important;
@@ -2421,7 +2424,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-main-continuation .bd-print-experience-list-4 {
-    min-height: 264mm !important;
+    height: 258mm !important;
+    min-height: 258mm !important;
+    max-height: 258mm !important;
     grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
   }
 
@@ -2698,6 +2703,14 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-page:first-child .bd-print-reference-card em {
     margin-top: 0.4mm !important;
     font-size: 7.5px !important;
+  }
+
+  .bd-print-experience-top h4 {
+    margin-top: 0 !important;
+    overflow: visible !important;
+    padding: 0.6mm 0 0.4mm !important;
+    text-overflow: clip !important;
+    line-height: 1.2 !important;
   }
 
   .bd-print-document-row {
