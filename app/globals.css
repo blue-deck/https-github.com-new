@@ -1757,6 +1757,30 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     background: white !important;
   }
 
+  body.bd-pdf-exporting {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
+  body.bd-pdf-exporting .bd-pdf-print-hidden,
+  body.bd-pdf-exporting #bluedeck-cv > :not(.bd-cv-print-root) {
+    display: none !important;
+  }
+
+  body.bd-pdf-exporting .bd-pdf-print-ancestor {
+    display: block !important;
+    width: 210mm !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
   body:has(.bd-cv-print-root) #bluedeck-cv > :not(.bd-cv-print-root) {
     display: none !important;
   }

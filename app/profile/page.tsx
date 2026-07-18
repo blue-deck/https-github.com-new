@@ -1903,12 +1903,14 @@ async function downloadCvPdf(payload: CvPdfPayload) {
 function openCvPrintDialog(fileName: string, cleanup?: () => void) {
   const previousTitle = document.title;
   const printTitle = fileName.replace(/\.pdf$/i, "");
+  const restorePrintIsolation = isolateCvForPrint();
   let restored = false;
   const restoreTitle = () => {
     if (restored) return;
     restored = true;
     window.clearTimeout(restoreTimeout);
     document.title = previousTitle;
+    restorePrintIsolation();
     cleanup?.();
   };
 
@@ -1916,6 +1918,40 @@ function openCvPrintDialog(fileName: string, cleanup?: () => void) {
   window.addEventListener("afterprint", restoreTitle, { once: true });
   const restoreTimeout = window.setTimeout(restoreTitle, 10 * 60 * 1000);
   window.print();
+}
+
+function isolateCvForPrint() {
+  const cvRoot = document.getElementById("bluedeck-cv");
+  const bodyAlreadyExporting = document.body.classList.contains("bd-pdf-exporting");
+  const hiddenSiblings: HTMLElement[] = [];
+  const printAncestors: HTMLElement[] = [];
+
+  document.body.classList.add("bd-pdf-exporting");
+
+  let current: HTMLElement | null = cvRoot;
+  while (current && current !== document.body) {
+    const parent = current.parentElement;
+    if (!parent) break;
+
+    if (parent !== document.body && !parent.classList.contains("bd-pdf-print-ancestor")) {
+      parent.classList.add("bd-pdf-print-ancestor");
+      printAncestors.push(parent);
+    }
+
+    Array.from(parent.children).forEach((sibling) => {
+      if (sibling === current || !(sibling instanceof HTMLElement) || sibling.classList.contains("bd-pdf-print-hidden")) return;
+      sibling.classList.add("bd-pdf-print-hidden");
+      hiddenSiblings.push(sibling);
+    });
+
+    current = parent;
+  }
+
+  return () => {
+    hiddenSiblings.forEach((element) => element.classList.remove("bd-pdf-print-hidden"));
+    printAncestors.forEach((element) => element.classList.remove("bd-pdf-print-ancestor"));
+    if (!bodyAlreadyExporting) document.body.classList.remove("bd-pdf-exporting");
+  };
 }
 
 async function prepareCvExportImages(root: HTMLElement) {
