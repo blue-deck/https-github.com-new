@@ -1819,9 +1819,9 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     box-shadow: none !important;
   }
 
-  #bluedeck-cv > div,
-  #bluedeck-cv > div > div,
-  #bluedeck-cv > div > div > div {
+  body:not(.bd-pdf-exporting) #bluedeck-cv > div,
+  body:not(.bd-pdf-exporting) #bluedeck-cv > div > div,
+  body:not(.bd-pdf-exporting) #bluedeck-cv > div > div > div {
     max-width: none !important;
     overflow: visible !important;
     border-radius: 0 !important;
@@ -2422,8 +2422,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-list-4 {
     min-height: 264mm !important;
-    grid-template-rows: repeat(4, auto) !important;
-    align-content: stretch !important;
+    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
   }
 
   .bd-print-main-continuation .bd-print-subsection-label {
@@ -2592,8 +2591,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-list-3 {
     min-height: 172mm !important;
-    grid-template-rows: repeat(3, auto) !important;
-    align-content: stretch !important;
+    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
   }
 
   .bd-print-page:first-child .bd-print-subsection-label {
