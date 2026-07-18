@@ -2214,19 +2214,22 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-experience-card {
     display: grid !important;
     grid-template-columns: 34mm 1fr !important;
-    gap: 3mm !important;
     border: 1px solid #d8e2e6 !important;
     border-radius: 4mm !important;
     background: #ffffff !important;
-    padding: 2.7mm !important;
+    overflow: hidden !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  .bd-print-experience-meta,
+  .bd-print-experience-meta {
+    border-right: 1px solid #d8e2e6 !important;
+    background: #f3f7f8 !important;
+    padding: 2.7mm !important;
+  }
+
   .bd-print-experience-body {
-    border: 1px solid #b8c9d0 !important;
-    border-radius: 3mm !important;
+    min-width: 0 !important;
     background: #ffffff !important;
     padding: 2.4mm !important;
   }
@@ -2304,10 +2307,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     grid-template-columns: minmax(0, 1fr) auto !important;
     gap: 3mm !important;
     align-items: center !important;
-    border: 1px solid #d8e2e6 !important;
-    border-radius: 2mm !important;
-    background: #ffffff !important;
-    padding: 1.8mm 2.2mm !important;
+    border-bottom: 1px solid #d8e2e6 !important;
+    padding: 0 0 2mm !important;
     margin-bottom: 2.4mm !important;
   }
 
@@ -2353,10 +2354,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-reference-card {
     margin-top: 1.8mm !important;
-    border: 1px solid #d8e2e6 !important;
-    border-radius: 2mm !important;
-    background: #ffffff !important;
-    padding: 2mm !important;
+    border-top: 1px solid #e2e8eb !important;
+    padding: 1.8mm 0 0 !important;
+  }
+
+  .bd-print-reference-block > .bd-print-reference-card:first-of-type {
+    border-top: 0 !important;
+    padding-top: 0 !important;
   }
 
   .bd-print-reference-card b,
@@ -2388,15 +2392,14 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-card {
     grid-template-columns: 31mm 1fr !important;
-    gap: 2.4mm !important;
     border-radius: 3.4mm !important;
-    padding: 2.2mm !important;
     min-height: 0 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-list-4 {
     min-height: 264mm !important;
-    grid-template-rows: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(4, auto) !important;
+    align-content: stretch !important;
   }
 
   .bd-print-main-continuation .bd-print-subsection-label {
@@ -2405,7 +2408,6 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-meta,
   .bd-print-main-continuation .bd-print-experience-body {
-    border-radius: 2.6mm !important;
     padding: 2mm !important;
   }
 
@@ -2451,8 +2453,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-top {
     gap: 2mm !important;
-    border-radius: 1.8mm !important;
-    padding: 1.4mm 1.8mm !important;
+    padding: 0 0 1.5mm !important;
     margin-bottom: 1.5mm !important;
   }
 
@@ -2484,8 +2485,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-reference-card {
     margin-top: 1mm !important;
-    border-radius: 1.8mm !important;
-    padding: 1.5mm !important;
+    padding: 1mm 0 0 !important;
   }
 
   .bd-print-main-continuation .bd-print-reference-card b {
@@ -2568,7 +2568,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-list-3 {
     min-height: 172mm !important;
-    grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(3, auto) !important;
+    align-content: stretch !important;
   }
 
   .bd-print-page:first-child .bd-print-subsection-label {
@@ -2577,15 +2578,12 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-card {
     grid-template-columns: 31mm 1fr !important;
-    gap: 2.3mm !important;
     border-radius: 3.2mm !important;
-    padding: 2mm !important;
     min-height: 0 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-meta,
   .bd-print-page:first-child .bd-print-experience-body {
-    border-radius: 2.4mm !important;
     padding: 1.8mm !important;
   }
 
@@ -2631,8 +2629,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-top {
     gap: 2mm !important;
-    border-radius: 1.7mm !important;
-    padding: 1.2mm 1.7mm !important;
+    padding: 0 0 1.3mm !important;
     margin-bottom: 1.3mm !important;
   }
 
@@ -2664,8 +2661,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-reference-card {
     margin-top: 0.9mm !important;
-    border-radius: 1.7mm !important;
-    padding: 1.3mm !important;
+    padding: 0.9mm 0 0 !important;
   }
 
   .bd-print-page:first-child .bd-print-reference-card b {
@@ -2905,7 +2901,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   #bluedeck-cv .bd-cv-experience {
     margin: 0 !important;
-    padding: 2.8mm !important;
+    padding: 0 !important;
+    overflow: hidden !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
@@ -2918,7 +2915,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   #bluedeck-cv .bd-cv-experience-grid {
     display: grid !important;
     grid-template-columns: 34mm 1fr !important;
-    gap: 3mm !important;
+    gap: 0 !important;
     align-items: stretch !important;
   }
 
@@ -2971,9 +2968,16 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     padding: 1.15mm 1.45mm !important;
   }
 
-  #bluedeck-cv .bd-cv-experience-meta,
+  #bluedeck-cv .bd-cv-experience-meta {
+    padding: 2.5mm !important;
+    border-right: 1px solid #d8e2e6 !important;
+    border-bottom: 0 !important;
+    background: #f3f7f8 !important;
+  }
+
   #bluedeck-cv .bd-cv-experience-body {
     padding: 2.5mm !important;
+    background: #ffffff !important;
   }
 
   #bluedeck-cv .bd-cv-experience-body {
@@ -2983,7 +2987,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   #bluedeck-cv .bd-cv-experience-titlebar {
     margin-bottom: 2.2mm !important;
-    padding: 1.7mm 2.2mm !important;
+    padding: 0 0 2.2mm !important;
   }
 
   #bluedeck-cv .bd-cv-experience-meta > img,

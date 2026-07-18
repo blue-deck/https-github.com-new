@@ -3147,9 +3147,9 @@ function SeazoneExperienceCard({
   const isOtherWork = isOtherWorkExperience(experience);
 
   return (
-    <article className={`bd-cv-experience rounded-2xl border border-[#d8e2e6] bg-white p-3 shadow-sm shadow-slate-950/5 ${breakBefore ? "bd-cv-experience-break-before" : ""}`}>
-      <div className="bd-cv-experience-grid grid items-stretch gap-3 sm:grid-cols-[136px_1fr]">
-        <div className="bd-cv-experience-meta h-full rounded-xl border border-[#cbd8dd] bg-[#f8fbfc] p-2">
+    <article className={`bd-cv-experience overflow-hidden rounded-2xl border border-[#cbd8dd] bg-white shadow-sm shadow-slate-950/5 ${breakBefore ? "bd-cv-experience-break-before" : ""}`}>
+      <div className="bd-cv-experience-grid grid items-stretch sm:grid-cols-[136px_1fr]">
+        <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-[#f3f7f8] p-3">
           {experience.photo_url ? (
             <img src={experience.photo_url} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
           ) : (
@@ -3173,8 +3173,8 @@ function SeazoneExperienceCard({
           </div>
         </div>
 
-        <div className="bd-cv-experience-body h-full rounded-xl border border-[#b8c9d0] bg-white p-3">
-            <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+        <div className="bd-cv-experience-body h-full bg-white p-4">
+            <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#d8e2e6] pb-3">
               <h4 className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
               <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
                 {experience.position || "Position"}
@@ -3197,9 +3197,9 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
   return (
     <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
-      <div className="mt-2 grid gap-2">
+      <div className="mt-2 grid">
         {references.slice(0, 2).map((reference) => (
-          <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card rounded-lg border border-[#d8e2e6] bg-white px-3 py-2">
+          <div key={reference.id || reference.email || reference.phone || reference.name} className="bd-cv-reference-card border-t border-[#e2e8eb] py-2 first:border-t-0 first:pt-0 last:pb-0">
             <p className="text-[13px] font-black text-[#06111f]">{referenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {referenceDetailText(reference)}
