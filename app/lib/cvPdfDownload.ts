@@ -49,10 +49,15 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
         clonedDocument.documentElement.style.width = "210mm";
         clonedDocument.documentElement.style.margin = "0";
         clonedDocument.documentElement.style.padding = "0";
+        clonedDocument.documentElement.style.setProperty("background-color", "#ffffff", "important");
+        clonedDocument.documentElement.style.setProperty("color", "#242a31", "important");
         clonedDocument.body.style.width = "210mm";
         clonedDocument.body.style.margin = "0";
         clonedDocument.body.style.padding = "0";
+        clonedDocument.body.style.setProperty("background-color", "#ffffff", "important");
+        clonedDocument.body.style.setProperty("color", "#242a31", "important");
         await clonedDocument.fonts?.ready;
+        normalizeCvExportColors(clonedPage);
       },
     });
 
@@ -72,6 +77,113 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 45000);
+}
+
+const unsupportedPdfColorPattern =
+  /\b(?:oklab|oklch|lab|lch|color|color-mix|light-dark|device-cmyk)\(/i;
+
+function safePdfColor(value: string | null | undefined, fallback: string) {
+  const cleanValue = (value || "").trim();
+  if (!cleanValue || cleanValue === "initial" || cleanValue === "inherit") return fallback;
+  if (unsupportedPdfColorPattern.test(cleanValue)) return fallback;
+  return cleanValue;
+}
+
+function elementClassName(element: Element) {
+  return element.getAttribute("class") || "";
+}
+
+function cvPdfTextFallback(element: Element) {
+  const classes = elementClassName(element);
+
+  if (element.closest(".bd-print-hero-band, .bd-print-contact-line i")) return "#ffffff";
+  if (classes.includes("text-white") || classes.includes("text-cyan-200")) return "#ffffff";
+  if (
+    element.matches(".bd-print-label, .bd-print-subsection-label") ||
+    classes.includes("text-cyan") ||
+    classes.includes("text-sky")
+  ) {
+    return "#2d7482";
+  }
+  if (classes.includes("text-slate-500") || classes.includes("text-slate-600")) return "#52616d";
+  return "#25313a";
+}
+
+function cvPdfBackgroundFallback(element: Element) {
+  const classes = elementClassName(element);
+
+  if (element.classList.contains("bd-print-hero-band")) return "#20242a";
+  if (element.classList.contains("bd-print-sidebar")) return "#e7ecee";
+  if (
+    element.classList.contains("bd-print-page") ||
+    element.classList.contains("bd-print-main") ||
+    element.classList.contains("bd-print-experience-body") ||
+    element.classList.contains("bd-print-reference-card")
+  ) {
+    return "#ffffff";
+  }
+  if (element.classList.contains("bd-print-experience-meta")) return "#f3f7f8";
+  if (element.classList.contains("bd-print-experience-placeholder")) return "#edf3f5";
+  if (element.classList.contains("bd-print-document-row")) return "#f6f8f8";
+  if (element.matches(".bd-print-experience-top span, .bd-print-contact-line i")) return "#173f4a";
+  if (classes.includes("bg-white")) return "#ffffff";
+  if (classes.includes("bg-[#20242a]")) return "#20242a";
+  if (classes.includes("bg-[#e7ecee]")) return "#e7ecee";
+  if (classes.includes("bg-[#f6f8f8]")) return "#f6f8f8";
+  if (classes.includes("bg-[#f3f7f8]")) return "#f3f7f8";
+  if (classes.includes("bg-[#1d4852]")) return "#1d4852";
+  return "rgba(0, 0, 0, 0)";
+}
+
+function setImportantColor(style: CSSStyleDeclaration, property: string, value: string) {
+  style.setProperty(property, value, "important");
+}
+
+function normalizeCvExportColors(root: HTMLElement) {
+  const view = root.ownerDocument.defaultView || window;
+  const elements = [root, ...Array.from(root.querySelectorAll<HTMLElement | SVGElement>("*"))];
+
+  elements.forEach((element) => {
+    const computed = view.getComputedStyle(element);
+    const style = element.style;
+    const textFallback = cvPdfTextFallback(element);
+    const backgroundFallback = cvPdfBackgroundFallback(element);
+    const borderFallback = "#d8e2e6";
+    const textColor = safePdfColor(computed.color, textFallback);
+
+    setImportantColor(style, "color", textColor);
+    setImportantColor(style, "background-color", safePdfColor(computed.backgroundColor, backgroundFallback));
+    setImportantColor(style, "border-top-color", safePdfColor(computed.borderTopColor, borderFallback));
+    setImportantColor(style, "border-right-color", safePdfColor(computed.borderRightColor, borderFallback));
+    setImportantColor(style, "border-bottom-color", safePdfColor(computed.borderBottomColor, borderFallback));
+    setImportantColor(style, "border-left-color", safePdfColor(computed.borderLeftColor, borderFallback));
+    setImportantColor(style, "outline-color", safePdfColor(computed.outlineColor, borderFallback));
+    setImportantColor(
+      style,
+      "text-decoration-color",
+      safePdfColor(computed.textDecorationColor, textColor),
+    );
+    setImportantColor(
+      style,
+      "-webkit-text-stroke-color",
+      safePdfColor(computed.webkitTextStrokeColor, textColor),
+    );
+
+    if (unsupportedPdfColorPattern.test(computed.backgroundImage || "")) {
+      style.setProperty("background-image", "none", "important");
+    }
+
+    style.setProperty("box-shadow", "none", "important");
+    style.setProperty("text-shadow", "none", "important");
+    style.setProperty("filter", "none", "important");
+    style.setProperty("backdrop-filter", "none", "important");
+    style.setProperty("-webkit-backdrop-filter", "none", "important");
+
+    if (element.namespaceURI === "http://www.w3.org/2000/svg") {
+      setImportantColor(style, "fill", safePdfColor(computed.getPropertyValue("fill"), textColor));
+      setImportantColor(style, "stroke", safePdfColor(computed.getPropertyValue("stroke"), textColor));
+    }
+  });
 }
 
 function collectPrintCss() {
