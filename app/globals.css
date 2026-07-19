@@ -2849,11 +2849,12 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     position: relative !important;
     display: grid !important;
     grid-template-columns: 1fr auto !important;
+    align-items: center !important;
     gap: 1.4mm !important;
     border: 1px solid #c7d2d6 !important;
     border-radius: 2mm !important;
     background: #f6f8f8 !important;
-    min-height: 11.4mm !important;
+    min-height: 0 !important;
     padding: 1.75mm 1.8mm !important;
     margin-top: 1.25mm !important;
   }
@@ -2866,7 +2867,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-document-row b {
     color: #06111f !important;
-    font-size: 10.4px !important;
+    font-size: 9.4px !important;
     font-weight: 900 !important;
   }
 
