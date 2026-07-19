@@ -2351,13 +2351,14 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-experience-meta small {
     display: flex !important;
-    gap: 1mm !important;
+    gap: 1.2mm !important;
     align-items: center !important;
     margin-top: 1.4mm !important;
     color: #2d7482 !important;
     font-size: 8.5px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
   }
 
   .bd-print-experience-meta small svg {
@@ -2508,7 +2509,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-meta > img,
   .bd-print-main-continuation .bd-print-experience-meta > div {
-    height: 18mm !important;
+    height: 23mm !important;
     border-radius: 1.8mm !important;
   }
 
@@ -2519,25 +2520,25 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-experience-meta span {
     margin-top: 1mm !important;
-    font-size: 7.6px !important;
-    line-height: 1.25 !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-meta em {
     margin-top: 1mm !important;
-    font-size: 9px !important;
+    font-size: 12px !important;
     line-height: 1.25 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-meta small {
     margin-top: 1mm !important;
-    font-size: 7.6px !important;
+    font-size: 10px !important;
     line-height: 1.2 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-meta small svg {
-    width: 2.2mm !important;
-    height: 2.2mm !important;
+    width: 3mm !important;
+    height: 3mm !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-top {
@@ -2691,7 +2692,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-meta > img,
   .bd-print-page:first-child .bd-print-experience-meta > div {
-    height: 17mm !important;
+    height: 23mm !important;
     border-radius: 1.7mm !important;
   }
 
@@ -2702,25 +2703,25 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-experience-meta span {
     margin-top: 0.9mm !important;
-    font-size: 7.3px !important;
+    font-size: 10px !important;
     line-height: 1.2 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-meta em {
     margin-top: 0.9mm !important;
-    font-size: 8.6px !important;
-    line-height: 1.22 !important;
+    font-size: 12px !important;
+    line-height: 1.25 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-meta small {
     margin-top: 0.9mm !important;
-    font-size: 7.3px !important;
-    line-height: 1.15 !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-meta small svg {
-    width: 2.1mm !important;
-    height: 2.1mm !important;
+    width: 3mm !important;
+    height: 3mm !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-top {
