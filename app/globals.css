@@ -1918,6 +1918,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     gap: 4mm !important;
   }
 
+  .bd-print-primary-sidebar-stack {
+    gap: 3mm !important;
+  }
+
   .bd-print-document-sidebar-stack {
     display: flex !important;
     flex-direction: column !important;
@@ -2219,7 +2223,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-pills {
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 1.4mm !important;
+    gap: 1mm !important;
   }
 
   .bd-print-pills span {
@@ -2227,8 +2231,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border-radius: 999px !important;
     background: #ffffff !important;
     color: #314158 !important;
-    padding: 1mm 2mm !important;
-    font-size: 9px !important;
+    padding: 0.6mm 2mm !important;
+    font-size: 11px !important;
     font-weight: 600 !important;
     line-height: 1.1 !important;
   }
@@ -2632,7 +2636,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-page:first-child .bd-print-primary-sidebar-stack > .bd-print-side-section:first-of-type {
-    margin-top: 45mm !important;
+    margin-top: 40mm !important;
   }
 
   .bd-print-page:first-child .bd-print-section {

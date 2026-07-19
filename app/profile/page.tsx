@@ -2526,11 +2526,11 @@ function SeazoneStyleCvPreview({
                 </SeazoneSideSection>
 
                 <SeazoneSideSection title="Skills & Characteristics">
-                  <PillList items={visibleSkills} light />
+                  <PillList items={visibleSkills} light large />
                 </SeazoneSideSection>
 
                 <SeazoneSideSection title="Preferences">
-                  <PillList items={profile.work_preferences || []} light />
+                  <PillList items={profile.work_preferences || []} light large />
                 </SeazoneSideSection>
 
                 <SeazoneSideSection title="Documents & Certificates" className="bd-cv-documents-section">
@@ -5314,9 +5314,9 @@ function CvCompletionRing({ percent }: { percent: number }) {
   );
 }
 
-function PillList({ items, light = false }: { items: string[]; light?: boolean }) {
+function PillList({ items, light = false, large = false }: { items: string[]; light?: boolean; large?: boolean }) {
   if (items.length === 0) return <p className={light ? "text-slate-500" : "text-slate-500"}>-</p>;
-  return <div className="bd-cv-pill-list flex flex-wrap gap-2">{items.map((item, index) => <span key={`${item}-${index}`} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${light ? "border border-slate-200 bg-white text-slate-700" : "bg-cyan-400/10 text-cyan-200"}`}>{item}</span>)}</div>;
+  return <div className="bd-cv-pill-list flex flex-wrap gap-2">{items.map((item, index) => <span key={`${item}-${index}`} className={`rounded-full px-2.5 py-1 ${large ? "text-[14px]" : "text-xs"} font-semibold ${light ? "border border-slate-200 bg-white text-slate-700" : "bg-cyan-400/10 text-cyan-200"}`}>{item}</span>)}</div>;
 }
 
 function normalizeProfile(profile: CrewProfile) {
