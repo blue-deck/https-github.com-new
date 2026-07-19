@@ -3053,6 +3053,7 @@ function PrintableDocumentRow({ document }: { document: CrewDocument }) {
   return (
     <div className={`bd-print-document-row ${expiring ? "bd-print-document-row-expiring" : ""}`}>
       <b>{document.document_type || "Document"}</b>
+      <span>{document.expiry_date ? formatCvDate(document.expiry_date) : "No expiry"}</span>
     </div>
   );
 }
@@ -3206,7 +3207,12 @@ function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
     <div className={`bd-cv-document-row rounded-lg border px-2.5 py-1.5 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
-      <p className="text-[13px] font-black leading-4 text-[#06111f]">{document.document_type || "Document"}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-[13px] font-black leading-4 text-[#06111f]">{document.document_type || "Document"}</p>
+        <p className={`shrink-0 text-right text-[9px] font-black leading-3 ${expiring ? "text-[#9a4b2e]" : "text-[#2d7482]"}`}>
+          {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
+        </p>
+      </div>
     </div>
   );
 }
