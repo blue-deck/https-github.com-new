@@ -3021,9 +3021,14 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
         {experience.photo_url ? (
           <img src={experience.photo_url} alt={yachtName} loading="eager" decoding="sync" />
         ) : (
-          <div className="bd-print-experience-placeholder">{isOtherWork ? <BriefcaseBusiness color="#2d7482" /> : null}</div>
+          <div className="bd-print-experience-placeholder">
+            {isOtherWork ? (
+              <BriefcaseBusiness color="#2d7482" />
+            ) : (
+              <Camera className="bd-print-experience-placeholder-camera" color="#2d7482" />
+            )}
+          </div>
         )}
-        <b style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</b>
         {metaParts.length > 0 && <span>{metaParts.join(" / ")}</span>}
         <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
         {experience.location && <small><MapPin color="#2d7482" /> {experience.location}</small>}

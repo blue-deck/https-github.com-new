@@ -2313,7 +2313,12 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     height: 7mm !important;
   }
 
-  .bd-print-experience-meta b,
+  .bd-print-experience-placeholder .bd-print-experience-placeholder-camera {
+    width: 6mm !important;
+    height: 6mm !important;
+    opacity: 0.45 !important;
+  }
+
   .bd-print-experience-top h4 {
     display: block !important;
     margin: 2.4mm 0 0 !important;
@@ -2507,7 +2512,6 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border-radius: 1.8mm !important;
   }
 
-  .bd-print-main-continuation .bd-print-experience-meta b,
   .bd-print-main-continuation .bd-print-experience-top h4 {
     margin-top: 1.5mm !important;
     line-height: 1 !important;
@@ -2691,7 +2695,6 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     border-radius: 1.7mm !important;
   }
 
-  .bd-print-page:first-child .bd-print-experience-meta b,
   .bd-print-page:first-child .bd-print-experience-top h4 {
     margin-top: 1.3mm !important;
     line-height: 1 !important;

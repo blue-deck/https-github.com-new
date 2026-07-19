@@ -107,7 +107,7 @@ async function rasterizeCvExportSvgs(root: HTMLElement) {
   const view = document.defaultView;
   if (!view) return;
 
-  const svgs = Array.from(root.querySelectorAll<SVGSVGElement>("svg"));
+  const svgs = Array.from(root.querySelectorAll<SVGSVGElement>("svg.lucide"));
   await Promise.all(
     svgs.map(async (svg) => {
       const bounds = svg.getBoundingClientRect();
@@ -145,20 +145,21 @@ async function rasterizeCvExportSvgs(root: HTMLElement) {
         context.scale(iconScale, iconScale);
         context.drawImage(sourceImage, 0, 0, width, height);
 
-        const replacement = document.createElement("img");
-        replacement.src = canvas.toDataURL("image/png");
-        replacement.alt = "";
-        replacement.setAttribute("aria-hidden", "true");
-        replacement.style.display = computed.display === "inline" ? "block" : computed.display;
-        replacement.style.width = `${width}px`;
-        replacement.style.height = `${height}px`;
-        replacement.style.flexShrink = computed.flexShrink;
-        replacement.style.marginTop = computed.marginTop;
-        replacement.style.marginRight = computed.marginRight;
-        replacement.style.marginBottom = computed.marginBottom;
-        replacement.style.marginLeft = computed.marginLeft;
-        replacement.style.objectFit = "contain";
-        svg.replaceWith(replacement);
+        // Keep the populated canvas in the cloned DOM. Converting it to a new data-URL
+        // image introduces an async decode race: html2canvas can snapshot naturalWidth=0
+        // before that image has loaded and permanently skip the icon.
+        canvas.setAttribute("aria-hidden", "true");
+        canvas.style.display = computed.display === "inline" ? "block" : computed.display;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+        canvas.style.flexShrink = computed.flexShrink;
+        canvas.style.opacity = computed.opacity;
+        canvas.style.verticalAlign = computed.verticalAlign;
+        canvas.style.marginTop = computed.marginTop;
+        canvas.style.marginRight = computed.marginRight;
+        canvas.style.marginBottom = computed.marginBottom;
+        canvas.style.marginLeft = computed.marginLeft;
+        svg.replaceWith(canvas);
       } catch {
         // Keep the original SVG if the browser cannot rasterize a particular icon.
       }
