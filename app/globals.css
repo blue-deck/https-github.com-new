@@ -2390,6 +2390,28 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     padding-top: 0 !important;
   }
 
+  .bd-print-reference-block-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 1.5mm !important;
+  }
+
+  .bd-print-reference-block-2 > .bd-print-label {
+    grid-column: 1 / -1 !important;
+  }
+
+  .bd-print-reference-block-2 > .bd-print-reference-card {
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  .bd-print-reference-block-2 > .bd-print-reference-card + .bd-print-reference-card {
+    border-top: 0 !important;
+    border-left: 1px solid #e2e8eb !important;
+    padding-top: 0 !important;
+    padding-left: 1.5mm !important;
+  }
+
   .bd-print-reference-card b,
   .bd-print-reference-card span,
   .bd-print-reference-card em {
@@ -2498,8 +2520,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-main-continuation .bd-print-duties {
     margin-top: 1.1mm !important;
-    font-size: 10.5px !important;
-    line-height: 1.32 !important;
+    font-size: 12.5px !important;
+    line-height: 1.25 !important;
   }
 
   .bd-print-main-continuation .bd-print-experience-list-4 .bd-print-duties {
@@ -2514,6 +2536,15 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-main-continuation .bd-print-reference-card {
     margin-top: 1mm !important;
     padding: 1mm 0 0 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-block-2 > .bd-print-reference-card {
+    margin-top: 0.7mm !important;
+    padding-top: 0 !important;
+  }
+
+  .bd-print-main-continuation .bd-print-reference-block-2 > .bd-print-reference-card + .bd-print-reference-card {
+    padding-left: 1.1mm !important;
   }
 
   .bd-print-main-continuation .bd-print-reference-card b {
@@ -2585,8 +2616,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     margin-top: 2mm !important;
     border-radius: 3mm !important;
     padding: 2.3mm !important;
-    font-size: 11.5px !important;
-    line-height: 1.42 !important;
+    font-size: 13.5px !important;
+    line-height: 1.34 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-list {
@@ -2673,8 +2704,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-page:first-child .bd-print-duties {
     margin-top: 1mm !important;
-    font-size: 10.5px !important;
-    line-height: 1.32 !important;
+    font-size: 12.5px !important;
+    line-height: 1.25 !important;
   }
 
   .bd-print-page:first-child .bd-print-experience-list-3 .bd-print-duties {
@@ -2689,6 +2720,15 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-page:first-child .bd-print-reference-card {
     margin-top: 0.9mm !important;
     padding: 0.9mm 0 0 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-block-2 > .bd-print-reference-card {
+    margin-top: 0.6mm !important;
+    padding-top: 0 !important;
+  }
+
+  .bd-print-page:first-child .bd-print-reference-block-2 > .bd-print-reference-card + .bd-print-reference-card {
+    padding-left: 1mm !important;
   }
 
   .bd-print-page:first-child .bd-print-reference-card b {

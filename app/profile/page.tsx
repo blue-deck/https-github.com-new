@@ -2573,7 +2573,7 @@ function SeazoneStyleCvPreview({
 
               <main className="bd-cv-main p-6 sm:p-8 print:p-7">
                 <SeazoneSection title="About Me" className="mt-0">
-                  <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[16px] font-semibold leading-7 text-[#17232c]">
+                  <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[18px] font-semibold leading-7 text-[#17232c]">
                     {professionalSummary}
                   </p>
                 </SeazoneSection>
@@ -3034,7 +3034,7 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
         <p className="bd-print-label">Duties</p>
         <p className="bd-print-duties">{experience.description || "Responsibilities and onboard duties will appear here."}</p>
         {references.length > 0 && (
-          <div className="bd-print-reference-block">
+          <div className={`bd-print-reference-block ${references.length > 1 ? "bd-print-reference-block-2" : ""}`}>
             <p className="bd-print-label">Reference</p>
             {references.slice(0, 2).map((reference) => (
               <div className="bd-print-reference-card" key={reference.id || reference.email || reference.phone || reference.name}>
@@ -3175,7 +3175,7 @@ function SeazoneExperienceCard({
               </span>
             </div>
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-            <p className="mt-2 text-[15px] font-semibold leading-6 text-[#17232c]">
+            <p className="mt-2 text-[17px] font-semibold leading-6 text-[#17232c]">
               {experience.description || "Responsibilities and onboard duties will appear here."}
             </p>
             <SeazoneExperienceReferences references={references} />
