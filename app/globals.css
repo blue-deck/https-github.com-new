@@ -2794,9 +2794,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-document-row {
     position: relative !important;
-    display: grid !important;
-    grid-template-columns: 1fr auto !important;
-    gap: 1.4mm !important;
+    display: flex !important;
+    align-items: center !important;
     border: 1px solid #c7d2d6 !important;
     border-radius: 2mm !important;
     background: #f6f8f8 !important;
@@ -2805,40 +2804,17 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     margin-top: 1.25mm !important;
   }
 
-  .bd-print-document-row b,
-  .bd-print-document-row span,
-  .bd-print-document-row em {
-    margin: 0 !important;
-    line-height: 1.12 !important;
-  }
-
   .bd-print-document-row b {
+    margin: 0 !important;
     color: #06111f !important;
-    font-size: 8.4px !important;
+    font-size: 10.4px !important;
     font-weight: 900 !important;
-  }
-
-  .bd-print-document-row span {
-    color: #2d7482 !important;
-    font-size: 7.7px !important;
-    font-weight: 900 !important;
-  }
-
-  .bd-print-document-row em {
-    grid-column: 1 / -1 !important;
-    color: #7a858b !important;
-    font-size: 7.1px !important;
-    font-style: normal !important;
-    font-weight: 900 !important;
+    line-height: 1.2 !important;
   }
 
   .bd-print-document-row-expiring {
     border-color: #d8b4a0 !important;
     background: #fff7f3 !important;
-  }
-
-  .bd-print-document-row-expiring span {
-    color: #9a4b2e !important;
   }
 
   .bd-print-qr {

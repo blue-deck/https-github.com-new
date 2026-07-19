@@ -1773,15 +1773,6 @@ function documentDisplayCategory(document: CrewDocument) {
   return cleanSaveText(document.category) || catalogCategoryForDocumentType(document.document_type);
 }
 
-function documentSubtitle(document: CrewDocument) {
-  const issuer = cleanSaveText(document.issuer);
-  if (issuer) return issuer;
-
-  const category = documentDisplayCategory(document);
-  if (!category || ["other", "general"].includes(normalizeDocumentText(category))) return "";
-  return category;
-}
-
 function documentPriorityRank(document: CrewDocument) {
   const type = normalizeDocumentText(document.document_type);
   const category = normalizeDocumentText(documentDisplayCategory(document));
@@ -3058,13 +3049,10 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
 }
 
 function PrintableDocumentRow({ document }: { document: CrewDocument }) {
-  const subtitle = documentSubtitle(document);
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
     <div className={`bd-print-document-row ${expiring ? "bd-print-document-row-expiring" : ""}`}>
       <b>{document.document_type || "Document"}</b>
-      <span>{document.expiry_date ? formatCvDate(document.expiry_date) : "No expiry"}</span>
-      {subtitle && <em>{subtitle}</em>}
     </div>
   );
 }
@@ -3216,18 +3204,9 @@ function SeazoneExperienceReferences({ references }: { references: ReferenceEntr
 
 function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
-  const subtitle = documentSubtitle(document);
   return (
     <div className={`bd-cv-document-row rounded-lg border px-2.5 py-1.5 ${expiring ? "border-[#d8b4a0] bg-[#fff7f3]" : "border-[#c7d2d6] bg-[#f6f8f8]"}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-black leading-3 text-[#06111f]">{document.document_type || "Document"}</p>
-          {subtitle && <p className="mt-0.5 truncate text-[8px] font-black uppercase tracking-[0.08em] text-[#7a858b]">{subtitle}</p>}
-        </div>
-        <p className={`shrink-0 text-right text-[9px] font-black leading-3 ${expiring ? "text-[#9a4b2e]" : "text-[#2d7482]"}`}>
-          {document.no_expiry ? "No expiry" : formatCvDate(document.expiry_date)}
-        </p>
-      </div>
+      <p className="text-[13px] font-black leading-4 text-[#06111f]">{document.document_type || "Document"}</p>
     </div>
   );
 }
