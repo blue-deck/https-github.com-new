@@ -1,6 +1,14 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
@@ -15,6 +23,10 @@ import {
   drawContractAnnexDPage,
 } from "../../../lib/contractAnnexD";
 import { createSafeStoragePath } from "../../../lib/storage";
+import {
+  isContractSignatureDataUrl,
+  serializeAssignedContractPayload,
+} from "../../../lib/contractPayload";
 import {
   downloadChecklistPdfDocument,
   type ChecklistPdfRecord,
@@ -142,6 +154,7 @@ type ContractDraft = {
   seafarerFullName: string;
   seafarerPlaceSigned: string;
   seafarerSignatureDate: string;
+  employerSignatureDataUrl: string;
 };
 
 type ContractSheetRow = [string, string | undefined | null];
@@ -299,6 +312,7 @@ const contractAnnexDEmployerFields: ContractDraftField[] = [
   "signerTitle",
   "signatureLocation",
   "signatureDate",
+  "employerSignatureDataUrl",
 ];
 
 const contractAnnexDSeafarerFields: ContractDraftField[] = [
@@ -408,6 +422,7 @@ function createEmptyContractDraft(): ContractDraft {
     seafarerFullName: "",
     seafarerPlaceSigned: "",
     seafarerSignatureDate: "",
+    employerSignatureDataUrl: "",
   };
 }
 
@@ -453,6 +468,11 @@ function getContractAnnexDDetails(draft: ContractDraft, member?: ContractCrewMem
     ),
     employerPlaceSigned: contractValue(draft.signatureLocation, "-"),
     employerDateSigned: contractValue(draft.signatureDate, "-"),
+    employerSignatureDataUrl: isContractSignatureDataUrl(
+      draft.employerSignatureDataUrl,
+    )
+      ? draft.employerSignatureDataUrl
+      : "",
     seafarerName: contractValue(
       draft.seafarerFullName,
       draft.employeeName || getCrewDisplayName(member) || ""
@@ -747,7 +767,9 @@ function getContractDocumentSections(draft: ContractDraft, member?: ContractCrew
         `Capacity: ${annexD.employerCapacity}`,
         `Place Signed: ${annexD.employerPlaceSigned}`,
         `Date: ${annexD.employerDateSigned}`,
-        "Signature:",
+        draft.employerSignatureDataUrl
+          ? "Signature: Electronic signature captured"
+          : "Signature:",
         "",
         "SEAFARER'S DECLARATION",
         ...contractSeafarerDeclarationParagraphs,
@@ -2420,7 +2442,10 @@ export default function CrewPage({
       yacht_id: yachtId,
       crew_profile_id: member?.crew_profile_id,
       membership_id: selectedCrew,
-      contract_text: contractPreviewText,
+      contract_text: serializeAssignedContractPayload(
+        contractPreviewText,
+        contractPreviewDraft.employerSignatureDataUrl,
+      ),
       status: "sent_for_signature",
       sent_at: new Date().toISOString(),
     });
@@ -3463,7 +3488,13 @@ export default function CrewPage({
                           className="sm:col-span-2"
                         />
                       </div>
-                      <ContractSignatureArea party="Employer / Authorised Signatory" />
+                      <ContractMobileSignatureArea
+                        party="Employer / Authorised Signatory"
+                        value={contractDraft.employerSignatureDataUrl}
+                        onChange={(value) =>
+                          updateContractDraft("employerSignatureDataUrl", value)
+                        }
+                      />
                       <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs font-semibold leading-5 text-slate-500">
                           Changes are reflected automatically in Preview PDF.
@@ -5355,11 +5386,15 @@ function ContractAnnexDDeclarationCard({
   paragraphs,
   fields,
   emptyWhenMissing = false,
+  signatureDataUrl = "",
+  halfSignatureWidth = false,
 }: {
   title: string;
   paragraphs: string[];
   fields: Array<[string, string]>;
   emptyWhenMissing?: boolean;
+  signatureDataUrl?: string;
+  halfSignatureWidth?: boolean;
 }) {
   return (
     <section className="overflow-hidden rounded-[18px] border border-[#bfd8ea] bg-white">
@@ -5391,11 +5426,19 @@ function ContractAnnexDDeclarationCard({
             </div>
           ))}
         </div>
-        <div className="mt-3">
+        <div className={`mt-3 ${halfSignatureWidth ? "w-1/2" : "w-full"}`}>
           <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[#0b3c77]">
             Signature
           </p>
-          <div className="mt-1 h-[72px] rounded-lg border-2 border-[#8fb9df] bg-white" />
+          <div className="mt-1 flex h-[72px] items-center justify-center rounded-lg border-2 border-[#8fb9df] bg-white p-1.5">
+            {isContractSignatureDataUrl(signatureDataUrl) ? (
+              <img
+                src={signatureDataUrl}
+                alt="Employer electronic signature"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </section>
@@ -5422,6 +5465,8 @@ function ContractAnnexDPreview({
           ["Place Signed", details.employerPlaceSigned],
           ["Date", details.employerDateSigned],
         ]}
+        signatureDataUrl={details.employerSignatureDataUrl}
+        halfSignatureWidth
       />
       <ContractAnnexDDeclarationCard
         title="Seafarer's Declaration"
@@ -5547,6 +5592,199 @@ function ContractSignatureArea({ party }: { party: string }) {
         <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
           Reserved signature area
         </span>
+      </div>
+    </div>
+  );
+}
+
+function ContractMobileSignatureArea({
+  party,
+  value,
+  onChange,
+}: {
+  party: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
+  const [drawing, setDrawing] = useState(false);
+  const hasSignature = isContractSignatureDataUrl(value);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let disposed = false;
+
+    function prepareCanvas() {
+      if (!canvas || disposed) return;
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (!width || !height) return;
+
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.5);
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      const context = canvas.getContext("2d");
+      if (!context) return;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      context.clearRect(0, 0, width, height);
+
+      if (!isContractSignatureDataUrl(value)) return;
+      const signatureImage = new Image();
+      signatureImage.onload = () => {
+        if (disposed) return;
+        context.clearRect(0, 0, width, height);
+        context.drawImage(signatureImage, 0, 0, width, height);
+      };
+      signatureImage.src = value;
+    }
+
+    prepareCanvas();
+    const observer = new ResizeObserver(prepareCanvas);
+    observer.observe(canvas);
+
+    return () => {
+      disposed = true;
+      observer.disconnect();
+    };
+  }, [value]);
+
+  function getCanvasPoint(event: ReactPointerEvent<HTMLCanvasElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    return {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+  }
+
+  function startSignature(event: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!event.isPrimary) return;
+    event.preventDefault();
+    const context = event.currentTarget.getContext("2d");
+    if (!context) return;
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const point = getCanvasPoint(event);
+    drawingRef.current = true;
+    setDrawing(true);
+    context.strokeStyle = "#082759";
+    context.fillStyle = "#082759";
+    context.lineCap = "round";
+    context.lineJoin = "round";
+    context.beginPath();
+    context.arc(point.x, point.y, 1.15, 0, Math.PI * 2);
+    context.fill();
+    context.beginPath();
+    context.moveTo(point.x, point.y);
+  }
+
+  function drawSignature(event: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!drawingRef.current || !event.isPrimary) return;
+    event.preventDefault();
+    const context = event.currentTarget.getContext("2d");
+    if (!context) return;
+
+    const point = getCanvasPoint(event);
+    const pressure = event.pressure > 0 ? event.pressure : 0.5;
+    context.lineWidth = event.pointerType === "pen" ? 1.5 + pressure * 2.8 : 2.6;
+    context.lineTo(point.x, point.y);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(point.x, point.y);
+  }
+
+  function finishSignature(event: ReactPointerEvent<HTMLCanvasElement>) {
+    if (!drawingRef.current || !event.isPrimary) return;
+    event.preventDefault();
+    drawingRef.current = false;
+    setDrawing(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    onChange(event.currentTarget.toDataURL("image/png"));
+  }
+
+  function clearSignature() {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d");
+    if (canvas && context) {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2.5);
+      context.clearRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
+    }
+    drawingRef.current = false;
+    setDrawing(false);
+    onChange("");
+  }
+
+  return (
+    <div className="mt-4 w-full md:w-1/2 md:pr-2">
+      <div className="overflow-hidden rounded-2xl border border-[#9ec4ed] bg-white shadow-sm shadow-blue-950/5">
+        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#d9e8f3] bg-[#f4f8fc] px-3.5 py-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#0b3c77]">
+              Mobile electronic signature
+            </p>
+            <p className="mt-1 text-[11px] font-semibold text-slate-500">{party}</p>
+          </div>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] ${
+              hasSignature
+                ? "bg-emerald-50 text-emerald-700"
+                : "bg-white text-slate-500"
+            }`}
+          >
+            {hasSignature ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
+            {hasSignature ? "Signature captured" : "Awaiting signature"}
+          </span>
+        </div>
+
+        <div className="relative bg-white">
+          <canvas
+            ref={canvasRef}
+            aria-label="Draw employer electronic signature"
+            className="block h-36 w-full cursor-crosshair touch-none select-none sm:h-40"
+            onPointerDown={startSignature}
+            onPointerMove={drawSignature}
+            onPointerUp={finishSignature}
+            onPointerCancel={finishSignature}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-5 bottom-7 border-b border-slate-300"
+          />
+          {!hasSignature && !drawing ? (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center"
+            >
+              <div>
+                <Pencil className="mx-auto h-5 w-5 text-cyan-700" />
+                <p className="mt-2 text-xs font-bold text-slate-500">
+                  Sign here with your finger or stylus
+                </p>
+              </div>
+            </div>
+          ) : null}
+          <span className="pointer-events-none absolute bottom-2 right-4 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            Signature
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-2 border-t border-[#e1edf7] bg-[#fbfdff] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[10px] font-semibold leading-4 text-slate-500">
+            The captured signature is saved with the Employer&apos;s Declaration and included in the PDF.
+          </p>
+          <button
+            type="button"
+            onClick={clearSignature}
+            disabled={!hasSignature && !drawing}
+            className="bd-focus inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 transition hover:border-cyan-300 hover:text-[#082759] disabled:cursor-default disabled:opacity-45"
+          >
+            <RefreshCcw className="h-3.5 w-3.5" aria-hidden />
+            Clear and sign again
+          </button>
+        </div>
       </div>
     </div>
   );

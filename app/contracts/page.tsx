@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, FileSignature, PenLine } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { parseAssignedContractPayload } from "../lib/contractPayload";
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<any[]>([]);
@@ -110,9 +111,7 @@ export default function ContractsPage() {
                 )}
               </div>
 
-              <pre className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white/70 p-5 font-sans leading-7 text-slate-700">
-                {contract.contract_text}
-              </pre>
+              <ContractDocument value={contract.contract_text} />
 
               {contract.status !== "signed" ? (
                 <div className="mt-6 grid gap-4 md:grid-cols-[1fr_auto]">
@@ -146,5 +145,36 @@ export default function ContractsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function ContractDocument({ value }: { value: unknown }) {
+  const contract = parseAssignedContractPayload(value);
+
+  return (
+    <>
+      <pre className="mt-6 whitespace-pre-wrap rounded-2xl border border-slate-200 bg-white/70 p-5 font-sans leading-7 text-slate-700">
+        {contract.contractText}
+      </pre>
+      {contract.employerSignatureDataUrl ? (
+        <section className="mt-4 overflow-hidden rounded-2xl border border-[#bfd8ea] bg-white sm:w-1/2">
+          <div className="border-b border-[#d9e8f3] bg-[#f4f8fc] px-4 py-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#0b3c77]">
+              Employer / Authorised Signatory
+            </p>
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              Electronic signature recorded in Annex D
+            </p>
+          </div>
+          <div className="flex h-28 items-center justify-center p-3">
+            <img
+              src={contract.employerSignatureDataUrl}
+              alt="Employer electronic signature"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        </section>
+      ) : null}
+    </>
   );
 }

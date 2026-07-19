@@ -5,6 +5,7 @@ export type ContractAnnexDDetails = {
   employerCapacity: string;
   employerPlaceSigned: string;
   employerDateSigned: string;
+  employerSignatureDataUrl: string;
   seafarerName: string;
   seafarerPlaceSigned: string;
   seafarerDateSigned: string;
@@ -100,6 +101,8 @@ export function drawContractAnnexDPage(
     dateValue,
     y,
     emptyWhenMissing = false,
+    signatureDataUrl = "",
+    halfSignatureWidth = false,
   }: {
     title: string;
     paragraphs: string[];
@@ -111,6 +114,8 @@ export function drawContractAnnexDPage(
     dateValue: string;
     y: number;
     emptyWhenMissing?: boolean;
+    signatureDataUrl?: string;
+    halfSignatureWidth?: boolean;
   }) {
     const paragraphFontSize = 8.25;
     const paragraphLineHeight = 10.35;
@@ -187,7 +192,37 @@ export function drawContractAnnexDPage(
     setStroke(doc, "#8fb9df");
     setFill(doc, "#ffffff");
     doc.setLineWidth(0.9);
-    doc.roundedRect(contentX, cursorY + 8, contentWidth, signatureHeight, 4, 4, "FD");
+    const signatureWidth = halfSignatureWidth
+      ? (contentWidth - fieldGap) / 2
+      : contentWidth;
+    const signatureY = cursorY + 8;
+    doc.roundedRect(contentX, signatureY, signatureWidth, signatureHeight, 4, 4, "FD");
+
+    if (signatureDataUrl.startsWith("data:image/png;base64,")) {
+      try {
+        const image = doc.getImageProperties(signatureDataUrl);
+        const availableWidth = signatureWidth - 12;
+        const availableHeight = signatureHeight - 12;
+        const scale = Math.min(
+          availableWidth / image.width,
+          availableHeight / image.height,
+        );
+        const imageWidth = image.width * scale;
+        const imageHeight = image.height * scale;
+        doc.addImage(
+          signatureDataUrl,
+          "PNG",
+          contentX + (signatureWidth - imageWidth) / 2,
+          signatureY + (signatureHeight - imageHeight) / 2,
+          imageWidth,
+          imageHeight,
+          undefined,
+          "FAST",
+        );
+      } catch {
+        // Keep the signature box printable if a stored image is malformed.
+      }
+    }
 
     return cardHeight;
   }
@@ -201,6 +236,8 @@ export function drawContractAnnexDPage(
     secondaryValue: details.employerCapacity,
     placeValue: details.employerPlaceSigned,
     dateValue: details.employerDateSigned,
+    signatureDataUrl: details.employerSignatureDataUrl,
+    halfSignatureWidth: true,
     y: 82,
   });
 
