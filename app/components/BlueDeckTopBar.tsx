@@ -30,12 +30,6 @@ import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { useLanguage } from "./LanguageProvider";
 
-type BlueDeckTopBarProps = {
-  title?: string;
-  subtitle?: string;
-  className?: string;
-};
-
 type PhotoNotice = {
   tone: "success" | "error";
   message: string;
@@ -66,11 +60,7 @@ function isRouteActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function BlueDeckTopBar({
-  title = "BlueDeck",
-  subtitle = "YACHT-OS",
-  className = "",
-}: BlueDeckTopBarProps) {
+export function BlueDeckTopBar() {
   const pathname = usePathname() || "/dashboard";
   const { language, setLanguage, t } = useLanguage();
   const [identity, setIdentity] = useState<AccountIdentity | null>(null);
@@ -323,7 +313,7 @@ export function BlueDeckTopBar({
 
   return (
     <header
-      className={`bd-app-topbar bd-account-topbar border-b border-white/10 shadow-2xl shadow-slate-950/22 ${className}`}
+      className="bd-app-topbar bd-account-topbar border-b border-white/10 shadow-2xl shadow-slate-950/22"
     >
       <div className="bd-app-topbar-inner mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         <div className="bd-topbar-logo-area flex min-w-0 items-center gap-4">
@@ -334,14 +324,6 @@ export function BlueDeckTopBar({
             imageClassName="object-contain p-0"
           />
 
-          <div className="hidden min-w-0 border-l border-white/10 pl-4 md:block">
-            <p className="truncate text-sm font-black tracking-[0.05em] text-cyan-200">
-              {title}
-            </p>
-            <p className="truncate text-xs font-semibold uppercase tracking-[0.2em] text-white/55">
-              {subtitle}
-            </p>
-          </div>
         </div>
 
         <div className="bd-topbar-account-area relative flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
