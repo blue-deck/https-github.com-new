@@ -8,20 +8,16 @@ import {
   FileText,
   Languages,
   LayoutDashboard,
-  LoaderCircle,
   LogOut,
   Menu,
   Settings,
   Ship,
-  Trash2,
   UserRound,
   X,
 } from "lucide-react";
 import {
   dashboardPhotoFromMetadata,
   loadAccountIdentity,
-  removeDashboardPhoto,
-  saveDashboardPhoto,
   subscribeDashboardPhotoUpdates,
   type AccountIdentity,
 } from "../lib/accountIdentity";
@@ -29,11 +25,6 @@ import { languages } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { useLanguage } from "./LanguageProvider";
-
-type PhotoNotice = {
-  tone: "success" | "error";
-  message: string;
-};
 
 function getInitials(name: string) {
   const parts = name
@@ -43,17 +34,6 @@ function getInitials(name: string) {
     .slice(0, 2);
 
   return parts.map((part) => part.charAt(0).toLocaleUpperCase()).join("") || "BD";
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    if (error.message === "Bucket not found") {
-      return "Photo storage is not ready yet. Please try again later.";
-    }
-    return error.message;
-  }
-
-  return "Your photo could not be updated. Please try again.";
 }
 
 function isRouteActive(pathname: string, href: string) {
@@ -66,12 +46,9 @@ export function BlueDeckTopBar() {
   const [identity, setIdentity] = useState<AccountIdentity | null>(null);
   const [identityLoading, setIdentityLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [photoBusy, setPhotoBusy] = useState(false);
-  const [photoNotice, setPhotoNotice] = useState<PhotoNotice | null>(null);
   const [failedPhotoUrl, setFailedPhotoUrl] = useState("");
   const menuId = useId();
   const menuHeadingId = useId();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuPanelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -158,7 +135,6 @@ export function BlueDeckTopBar() {
 
   useEffect(() => {
     setMenuOpen(false);
-    setPhotoNotice(null);
   }, [pathname]);
 
   useEffect(() => {
@@ -222,8 +198,6 @@ export function BlueDeckTopBar() {
           : normalizedRole === "crew"
             ? t("login.roleCrew")
             : identity?.role?.trim() || t("login.roleCrew");
-  const photoActionLabel = photoUrl ? t("topbar.changePhoto") : t("topbar.addPhoto");
-
   const navigationItems = [
     { href: "/dashboard", label: t("topbar.dashboard"), icon: LayoutDashboard },
     { href: "/profile", label: t("topbar.myProfile"), icon: UserRound },
@@ -235,76 +209,6 @@ export function BlueDeckTopBar() {
     { href: "/contracts", label: t("topbar.contracts"), icon: FileText },
     { href: "/settings", label: t("topbar.settings"), icon: Settings },
   ];
-
-  function choosePhoto() {
-    if (!photoBusy && identity) fileInputRef.current?.click();
-  }
-
-  async function handlePhotoFile(file: File) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    setPhotoBusy(true);
-    setPhotoNotice(null);
-
-    try {
-      const result = await saveDashboardPhoto({
-        user,
-        file,
-        crewProfileId: identity?.crewProfileId,
-        email: identity?.email,
-        fullName: identity?.fullName,
-      });
-
-      setIdentity((current) =>
-        current
-          ? {
-              ...current,
-              crewProfileId: result.crewProfileId || current.crewProfileId,
-              dashboardPhotoUrl: result.photoUrl,
-            }
-          : current,
-      );
-      setPhotoNotice({ tone: "success", message: t("topbar.photoUpdated") });
-    } catch (error) {
-      setPhotoNotice({ tone: "error", message: getErrorMessage(error) });
-      setMenuOpen(true);
-    } finally {
-      setPhotoBusy(false);
-    }
-  }
-
-  async function handlePhotoRemove() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    setPhotoBusy(true);
-    setPhotoNotice(null);
-
-    try {
-      await removeDashboardPhoto({ user, fullName: identity?.fullName });
-      setIdentity((current) =>
-        current ? { ...current, dashboardPhotoUrl: "" } : current,
-      );
-      setPhotoNotice({ tone: "success", message: t("topbar.photoUpdated") });
-    } catch (error) {
-      setPhotoNotice({ tone: "error", message: getErrorMessage(error) });
-    } finally {
-      setPhotoBusy(false);
-    }
-  }
 
   async function logout() {
     await supabase.auth.signOut();
@@ -341,75 +245,18 @@ export function BlueDeckTopBar() {
           </div>
 
           <button
-            type="button"
-            onClick={choosePhoto}
-            disabled={photoBusy || !identity}
-            aria-label={photoActionLabel}
-            title={photoActionLabel}
-            className="bd-focus bd-topbar-avatar-button group relative flex h-12 w-12 shrink-0 items-center justify-center overflow-visible rounded-full border border-white/18 bg-white/9 text-white shadow-lg shadow-slate-950/22 transition hover:border-cyan-200 hover:bg-white/14 disabled:cursor-wait disabled:opacity-70"
-          >
-            <span className="absolute inset-[3px] overflow-hidden rounded-full bg-[#0b2746]">
-              {showPhoto ? (
-                <img
-                  src={photoUrl}
-                  alt=""
-                  onError={() => setFailedPhotoUrl(photoUrl)}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span
-                  data-i18n-ignore
-                  className="flex h-full w-full items-center justify-center text-xs font-black tracking-[0.08em] text-cyan-50"
-                >
-                  {getInitials(displayName)}
-                </span>
-              )}
-              {photoBusy ? (
-                <span className="absolute inset-0 flex items-center justify-center bg-[#06172b]/78">
-                  <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
-                </span>
-              ) : null}
-            </span>
-            <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#071631] bg-cyan-300 text-[#071631] shadow-md transition group-hover:bg-white">
-              <Camera className="h-2.5 w-2.5" aria-hidden />
-            </span>
-          </button>
-
-          <button
             ref={menuButtonRef}
             type="button"
             aria-label={menuOpen ? t("topbar.closeMenu") : t("topbar.openMenu")}
             aria-expanded={menuOpen}
             aria-controls={menuId}
-            onClick={() => {
-              setMenuOpen((current) => !current);
-              setPhotoNotice(null);
-            }}
+            onClick={() => setMenuOpen((current) => !current)}
             className={`bd-focus bd-topbar-menu-button relative z-[60] inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/7 text-white shadow-lg shadow-slate-950/16 transition hover:border-cyan-200 hover:bg-white/13 ${
               menuOpen ? "invisible pointer-events-none" : ""
             }`}
           >
             {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
           </button>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
-            aria-label={photoActionLabel}
-            disabled={photoBusy}
-            className="sr-only"
-            tabIndex={-1}
-            onChange={(event) => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = "";
-              if (file) void handlePhotoFile(file);
-            }}
-          />
-
-          <span className="sr-only" aria-live="polite" aria-atomic="true">
-            {photoBusy ? t("topbar.updatingPhoto") : photoNotice?.message || ""}
-          </span>
 
           {menuOpen ? (
             <>
@@ -452,12 +299,9 @@ export function BlueDeckTopBar() {
                   </div>
 
                   <div className="mt-4 flex items-center gap-3.5">
-                    <button
-                      type="button"
-                      onClick={choosePhoto}
-                      disabled={photoBusy || !identity}
-                      aria-label={photoActionLabel}
-                      className="bd-focus relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#eef5f9] text-[#0a5465] disabled:cursor-wait disabled:opacity-65"
+                    <div
+                      aria-hidden="true"
+                      className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#eef5f9] text-[#0a5465]"
                     >
                       {showPhoto ? (
                         <img
@@ -471,12 +315,7 @@ export function BlueDeckTopBar() {
                           {getInitials(displayName)}
                         </span>
                       )}
-                      {photoBusy ? (
-                        <span className="absolute inset-0 flex items-center justify-center bg-white/82 text-cyan-800">
-                          <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
-                        </span>
-                      ) : null}
-                    </button>
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <h2
@@ -494,39 +333,6 @@ export function BlueDeckTopBar() {
                       </p>
                     </div>
                   </div>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-3">
-                    <button
-                      type="button"
-                      onClick={choosePhoto}
-                      disabled={photoBusy || !identity}
-                      className="bd-focus inline-flex min-h-9 items-center gap-2 rounded-md text-xs font-black text-cyan-800 transition hover:text-cyan-600 disabled:cursor-wait disabled:opacity-50"
-                    >
-                      <Camera className="h-3.5 w-3.5" aria-hidden />
-                      <span>{photoActionLabel}</span>
-                    </button>
-                    {photoUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => void handlePhotoRemove()}
-                        disabled={photoBusy}
-                        className="bd-focus inline-flex min-h-9 items-center gap-2 rounded-md text-xs font-black text-rose-600 transition hover:text-rose-500 disabled:cursor-wait disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                        <span>{t("topbar.removePhoto")}</span>
-                      </button>
-                    ) : null}
-                  </div>
-
-                  {photoNotice ? (
-                    <p
-                      className={`mt-2 text-xs font-semibold ${
-                        photoNotice.tone === "error" ? "text-rose-600" : "text-emerald-700"
-                      }`}
-                    >
-                      {photoNotice.message}
-                    </p>
-                  ) : null}
                 </div>
 
                 <div className="bd-account-menu-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5">
