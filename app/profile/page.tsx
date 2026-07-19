@@ -2844,7 +2844,7 @@ function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewPr
           {profilePhotoSource ? (
             <img src={profilePhotoSource} alt={profile.full_name || "Profile"} loading="eager" decoding="sync" />
           ) : (
-            <UserRound />
+            <UserRound color="#2d7482" />
           )}
         </div>
         <div className="bd-print-hero-text">
@@ -2869,7 +2869,9 @@ function PrintablePrimarySidebar({
   return (
     <div className="bd-print-sidebar-stack bd-print-primary-sidebar-stack">
       <div className="bd-print-sidebar-brand">
-        <img className="bd-print-brand-logo" src="/bluedeck-logo-mark.png" alt="BlueDeck" loading="eager" decoding="sync" />
+        <div className="bd-print-brand-logo">
+          <img src="/bluedeck-logo-mark.png" alt="BlueDeck" loading="eager" decoding="sync" />
+        </div>
         <div>
           <p>BlueDeck.app</p>
           <span>YACHT-OS</span>
@@ -2887,9 +2889,9 @@ function PrintablePrimarySidebar({
       </PrintableSideSection>
 
       <PrintableSideSection title="Contact">
-        <PrintableContactLine icon={<Phone />} value={profile.phone || "-"} />
-        <PrintableContactLine icon={<Mail />} value={profile.email || "-"} />
-        <PrintableContactLine icon={<MapPin />} value={profile.location || "-"} />
+        <PrintableContactLine icon={<Phone color="#ffffff" />} value={profile.phone || "-"} />
+        <PrintableContactLine icon={<Mail color="#ffffff" />} value={profile.email || "-"} />
+        <PrintableContactLine icon={<MapPin color="#ffffff" />} value={profile.location || "-"} />
       </PrintableSideSection>
 
       <PrintableSideSection title="Language">
@@ -3019,19 +3021,19 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
         {experience.photo_url ? (
           <img src={experience.photo_url} alt={yachtName} loading="eager" decoding="sync" />
         ) : (
-          <div className="bd-print-experience-placeholder">{isOtherWork ? <BriefcaseBusiness /> : null}</div>
+          <div className="bd-print-experience-placeholder">{isOtherWork ? <BriefcaseBusiness color="#2d7482" /> : null}</div>
         )}
         <b style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</b>
         {metaParts.length > 0 && <span>{metaParts.join(" / ")}</span>}
         <em>{formatDateRange(experience.start_date, experience.end_date)}</em>
-        {experience.location && <small><MapPin /> {experience.location}</small>}
+        {experience.location && <small><MapPin color="#2d7482" /> {experience.location}</small>}
       </div>
       <div className="bd-print-experience-body">
         <div className="bd-print-experience-top">
           <h4 style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h4>
           <span>{experience.position || "Position"}</span>
         </div>
-        <p className="bd-print-label">Duties</p>
+        <p className="bd-print-label bd-print-duties-label">Duties</p>
         <p className="bd-print-duties">{experience.description || "Responsibilities and onboard duties will appear here."}</p>
         {references.length > 0 && (
           <div className={`bd-print-reference-block ${references.length > 1 ? "bd-print-reference-block-2" : ""}`}>
@@ -3052,8 +3054,9 @@ function PrintableExperienceCard({ experience, references }: { experience: Exper
 
 function PrintableDocumentRow({ document }: { document: CrewDocument }) {
   const subtitle = documentSubtitle(document);
+  const expiring = !document.no_expiry && isWithin90Days(document.expiry_date);
   return (
-    <div className="bd-print-document-row">
+    <div className={`bd-print-document-row ${expiring ? "bd-print-document-row-expiring" : ""}`}>
       <b>{document.document_type || "Document"}</b>
       <span>{document.expiry_date ? formatCvDate(document.expiry_date) : "No expiry"}</span>
       {subtitle && <em>{subtitle}</em>}

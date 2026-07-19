@@ -59,6 +59,7 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
           clonedDocument.body.style.setProperty("background-color", "#ffffff", "important");
           clonedDocument.body.style.setProperty("color", "#242a31", "important");
           await clonedDocument.fonts?.ready;
+          await rasterizeCvExportSvgs(clonedPage);
           normalizeCvExportColors(clonedPage);
         },
       });
@@ -99,6 +100,70 @@ function installHtml2CanvasFontMetricStyles() {
   `;
   document.head.appendChild(style);
   return () => style.remove();
+}
+
+async function rasterizeCvExportSvgs(root: HTMLElement) {
+  const document = root.ownerDocument;
+  const view = document.defaultView;
+  if (!view) return;
+
+  const svgs = Array.from(root.querySelectorAll<SVGSVGElement>("svg"));
+  await Promise.all(
+    svgs.map(async (svg) => {
+      const bounds = svg.getBoundingClientRect();
+      const width = Math.max(1, Math.round(bounds.width));
+      const height = Math.max(1, Math.round(bounds.height));
+      const computed = view.getComputedStyle(svg);
+      const serializedSvg = svg.cloneNode(true) as SVGSVGElement;
+
+      serializedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      serializedSvg.setAttribute("width", String(width));
+      serializedSvg.setAttribute("height", String(height));
+      serializedSvg.style.width = `${width}px`;
+      serializedSvg.style.height = `${height}px`;
+      serializedSvg.style.color = computed.color;
+
+      const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+        new XMLSerializer().serializeToString(serializedSvg),
+      )}`;
+      const sourceImage = document.createElement("img");
+
+      try {
+        await new Promise<void>((resolve, reject) => {
+          sourceImage.onload = () => resolve();
+          sourceImage.onerror = () => reject(new Error("CV icon could not be rasterized."));
+          sourceImage.src = source;
+        });
+
+        const iconScale = 4;
+        const canvas = document.createElement("canvas");
+        canvas.width = width * iconScale;
+        canvas.height = height * iconScale;
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        context.scale(iconScale, iconScale);
+        context.drawImage(sourceImage, 0, 0, width, height);
+
+        const replacement = document.createElement("img");
+        replacement.src = canvas.toDataURL("image/png");
+        replacement.alt = "";
+        replacement.setAttribute("aria-hidden", "true");
+        replacement.style.display = computed.display === "inline" ? "block" : computed.display;
+        replacement.style.width = `${width}px`;
+        replacement.style.height = `${height}px`;
+        replacement.style.flexShrink = computed.flexShrink;
+        replacement.style.marginTop = computed.marginTop;
+        replacement.style.marginRight = computed.marginRight;
+        replacement.style.marginBottom = computed.marginBottom;
+        replacement.style.marginLeft = computed.marginLeft;
+        replacement.style.objectFit = "contain";
+        svg.replaceWith(replacement);
+      } catch {
+        // Keep the original SVG if the browser cannot rasterize a particular icon.
+      }
+    }),
+  );
 }
 
 const unsupportedPdfColorPattern =

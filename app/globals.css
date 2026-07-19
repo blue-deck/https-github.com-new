@@ -1904,11 +1904,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     bottom: 6mm !important;
     left: 8mm !important;
     background: #ffffff !important;
-    border-top: 1px solid #c7d2d6 !important;
+    border-top: 1px solid #e2e8f0 !important;
     padding-top: 1.8mm !important;
-    color: #6b747a !important;
+    color: #90a1b9 !important;
     font-size: 7.8px !important;
-    font-weight: 800 !important;
+    font-weight: 400 !important;
     line-height: 1.35 !important;
     letter-spacing: 0.02em !important;
   }
@@ -1938,14 +1938,22 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-brand-logo {
-    display: block !important;
-    width: 17mm !important;
+    display: flex !important;
+    width: 14mm !important;
     height: 10mm !important;
-    object-fit: contain !important;
+    align-items: center !important;
+    justify-content: center !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
+  }
+
+  .bd-print-brand-logo img {
+    display: block !important;
+    width: 10mm !important;
+    height: 10mm !important;
+    object-fit: contain !important;
   }
 
   .bd-print-sidebar-brand p,
@@ -1966,7 +1974,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-sidebar-brand span {
     color: #59666d !important;
     font-size: 9px !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
   }
 
   .bd-print-primary-sidebar-stack > .bd-print-side-section:first-of-type {
@@ -2040,7 +2048,8 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-hero-text h2 {
     margin-top: 2mm !important;
     font-size: 15px !important;
-    font-weight: 700 !important;
+    color: rgba(255, 255, 255, 0.82) !important;
+    font-weight: 600 !important;
     letter-spacing: 0.24em !important;
   }
 
@@ -2065,11 +2074,18 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-section-title h3,
   .bd-print-side-section h3 {
     margin: 0 !important;
-    color: #06111f !important;
     font-size: 11px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.16em !important;
+  }
+
+  .bd-print-section-title h3 {
+    color: #06111f !important;
+  }
+
+  .bd-print-side-section h3 {
+    color: #242a31 !important;
   }
 
   .bd-print-section-title span {
@@ -2092,6 +2108,14 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     font-size: 12px !important;
     font-weight: 600 !important;
     line-height: 1.55 !important;
+  }
+
+  .bd-print-empty-card {
+    border-color: #c7d2d6 !important;
+    border-style: dashed !important;
+    background: #f6f8f8 !important;
+    color: #5a6870 !important;
+    font-weight: 400 !important;
   }
 
   .bd-print-side-section > div:first-child {
@@ -2119,7 +2143,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-side-line span {
     color: #6b747a !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
   }
 
   .bd-print-side-line b {
@@ -2136,7 +2160,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     margin-top: 2mm !important;
     color: #3d454c !important;
     font-size: 10px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
   }
 
   .bd-print-contact-line i {
@@ -2173,7 +2197,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-language span {
     color: #2d7482 !important;
-    font-weight: 800 !important;
+    font-weight: 600 !important;
   }
 
   .bd-print-language i {
@@ -2199,12 +2223,13 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-print-pills span {
+    border: 1px solid #e2e8f0 !important;
     border-radius: 999px !important;
     background: #ffffff !important;
-    color: #3d454c !important;
+    color: #314158 !important;
     padding: 1mm 2mm !important;
     font-size: 9px !important;
-    font-weight: 800 !important;
+    font-weight: 600 !important;
     line-height: 1.1 !important;
   }
 
@@ -2214,6 +2239,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     color: #6b747a !important;
     font-size: 9px !important;
     font-weight: 700 !important;
+  }
+
+  .bd-print-empty {
+    color: #62748e !important;
+    font-weight: 400 !important;
   }
 
   .bd-print-experience-list {
@@ -2241,7 +2271,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-print-experience-card {
     display: grid !important;
     grid-template-columns: 34mm 1fr !important;
-    border: 1px solid #d8e2e6 !important;
+    border: 1px solid #cbd8dd !important;
     border-radius: 4mm !important;
     background: #ffffff !important;
     overflow: hidden !important;
@@ -2261,7 +2291,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     padding: 2.4mm !important;
   }
 
-  .bd-print-experience-meta img,
+  .bd-print-experience-meta > img,
   .bd-print-experience-meta > div {
     width: 100% !important;
     height: 22mm !important;
@@ -2275,6 +2305,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     align-items: center !important;
     justify-content: center !important;
     color: #2d7482 !important;
+    background: linear-gradient(135deg, #f5f8f9, #e8f0f2) !important;
   }
 
   .bd-print-experience-placeholder svg {
@@ -2309,7 +2340,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     color: #2d7482 !important;
     font-size: 10px !important;
     font-style: normal !important;
-    font-weight: 800 !important;
+    font-weight: 600 !important;
     line-height: 1.35 !important;
   }
 
@@ -2363,6 +2394,10 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.18em !important;
+  }
+
+  .bd-print-duties-label {
+    color: #6b7b84 !important;
   }
 
   .bd-print-duties {
@@ -2429,7 +2464,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     margin-top: 1mm !important;
     color: #2d7482 !important;
     font-size: 9px !important;
-    font-weight: 800 !important;
+    font-weight: 600 !important;
   }
 
   .bd-print-reference-card em {
@@ -2466,7 +2501,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     flex-direction: column !important;
   }
 
-  .bd-print-main-continuation .bd-print-experience-meta img,
+  .bd-print-main-continuation .bd-print-experience-meta > img,
   .bd-print-main-continuation .bd-print-experience-meta > div {
     height: 18mm !important;
     border-radius: 1.8mm !important;
@@ -2650,7 +2685,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     flex-direction: column !important;
   }
 
-  .bd-print-page:first-child .bd-print-experience-meta img,
+  .bd-print-page:first-child .bd-print-experience-meta > img,
   .bd-print-page:first-child .bd-print-experience-meta > div {
     height: 17mm !important;
     border-radius: 1.7mm !important;
@@ -2787,10 +2822,19 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-document-row em {
     grid-column: 1 / -1 !important;
-    color: #6b747a !important;
+    color: #7a858b !important;
     font-size: 7.1px !important;
     font-style: normal !important;
-    font-weight: 800 !important;
+    font-weight: 900 !important;
+  }
+
+  .bd-print-document-row-expiring {
+    border-color: #d8b4a0 !important;
+    background: #fff7f3 !important;
+  }
+
+  .bd-print-document-row-expiring span {
+    color: #9a4b2e !important;
   }
 
   .bd-print-qr {
@@ -2845,17 +2889,24 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-qr p,
   .bd-print-qr b {
-    color: #2d7482 !important;
     font-size: 7.8px !important;
     font-weight: 900 !important;
     text-transform: uppercase !important;
     letter-spacing: 0.15em !important;
   }
 
+  .bd-print-qr p {
+    color: #6b747a !important;
+  }
+
+  .bd-print-qr b {
+    color: #2d7482 !important;
+  }
+
   .bd-print-qr span {
     color: #40535d !important;
     font-size: 8.2px !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
     line-height: 1.35 !important;
   }
 
