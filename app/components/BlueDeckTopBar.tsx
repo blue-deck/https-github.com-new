@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   Camera,
-  ChevronRight,
   FileText,
   Languages,
   LayoutDashboard,
@@ -84,7 +83,8 @@ export function BlueDeckTopBar({
   const menuHeadingId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const accountAreaRef = useRef<HTMLDivElement>(null);
+  const menuPanelRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -120,9 +120,14 @@ export function BlueDeckTopBar({
             typeof metadata?.full_name === "string" && metadata.full_name.trim()
               ? metadata.full_name.trim()
               : current.fullName;
+          const nextRole =
+            typeof metadata?.role === "string" && metadata.role.trim()
+              ? metadata.role.trim()
+              : current.role;
           return {
             ...current,
             fullName: nextName,
+            role: nextRole,
             dashboardPhotoUrl: dashboardPhotoFromMetadata(
               metadata,
               current.profilePhotoUrl,
@@ -169,23 +174,45 @@ export function BlueDeckTopBar({
   useEffect(() => {
     if (!menuOpen) return;
 
-    function handlePointerDown(event: PointerEvent) {
-      if (!accountAreaRef.current?.contains(event.target as Node)) {
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
         setMenuOpen(false);
+        window.setTimeout(() => menuButtonRef.current?.focus(), 0);
+        return;
+      }
+
+      if (event.key !== "Tab" || !menuPanelRef.current) return;
+
+      const focusableElements = Array.from(
+        menuPanelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => element.getClientRects().length > 0);
+
+      if (!focusableElements.length) return;
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey && (activeElement === firstElement || !menuPanelRef.current.contains(activeElement))) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     }
 
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== "Escape") return;
-      setMenuOpen(false);
-      menuButtonRef.current?.focus();
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousBodyOverflow;
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuOpen]);
@@ -202,7 +229,9 @@ export function BlueDeckTopBar({
         ? t("login.roleManagement")
         : normalizedRole === "owner"
           ? t("login.roleOwner")
-          : t("login.roleCrew");
+          : normalizedRole === "crew"
+            ? t("login.roleCrew")
+            : identity?.role?.trim() || t("login.roleCrew");
   const photoActionLabel = photoUrl ? t("topbar.changePhoto") : t("topbar.addPhoto");
 
   const navigationItems = [
@@ -315,10 +344,7 @@ export function BlueDeckTopBar({
           </div>
         </div>
 
-        <div
-          ref={accountAreaRef}
-          className="bd-topbar-account-area relative flex min-w-0 shrink-0 items-center gap-2 sm:gap-3"
-        >
+        <div className="bd-topbar-account-area relative flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <div className="bd-topbar-user-copy min-w-0 text-right">
             <p
               data-i18n-ignore
@@ -327,8 +353,8 @@ export function BlueDeckTopBar({
             >
               {identityLoading ? "BlueDeck" : displayName}
             </p>
-            <p className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100/58">
-              {t("topbar.account")}
+            <p className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100/70">
+              {identityLoading || !identity ? t("topbar.account") : roleLabel}
             </p>
           </div>
 
@@ -377,7 +403,9 @@ export function BlueDeckTopBar({
               setMenuOpen((current) => !current);
               setPhotoNotice(null);
             }}
-            className="bd-focus bd-topbar-menu-button relative z-[90] inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/7 text-white shadow-lg shadow-slate-950/16 transition hover:border-cyan-200 hover:bg-white/13"
+            className={`bd-focus bd-topbar-menu-button relative z-[60] inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/7 text-white shadow-lg shadow-slate-950/16 transition hover:border-cyan-200 hover:bg-white/13 ${
+              menuOpen ? "invisible pointer-events-none" : ""
+            }`}
           >
             {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
           </button>
@@ -402,90 +430,126 @@ export function BlueDeckTopBar({
           </span>
 
           {menuOpen ? (
-            <section
-              id={menuId}
-              aria-labelledby={menuHeadingId}
-              className="bd-account-menu-panel absolute right-0 top-[calc(100%+0.8rem)] z-[80] w-[min(25rem,calc(100vw-1.25rem))] overflow-hidden rounded-[26px] border border-slate-200/90 bg-white text-[#071f3c] shadow-[0_30px_90px_rgba(2,8,23,0.34)]"
-            >
-                <div className="bd-brand-rule h-0.5" />
-                <div className="bd-account-menu-scroll max-h-[calc(100dvh-var(--topbar-height)-var(--safe-area-top)-1.5rem)] overflow-y-auto overscroll-contain p-3 sm:p-4">
-                  <div className="rounded-[22px] border border-slate-200/80 bg-[#f3f7fb] p-3.5">
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={choosePhoto}
-                        disabled={photoBusy || !identity}
-                        aria-label={photoActionLabel}
-                        className="bd-focus relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-cyan-950/10 bg-white text-[#0a5465] shadow-sm disabled:cursor-wait disabled:opacity-65"
-                      >
-                        {showPhoto ? (
-                          <img
-                            src={photoUrl}
-                            alt=""
-                            onError={() => setFailedPhotoUrl(photoUrl)}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span data-i18n-ignore className="text-sm font-black tracking-[0.08em]">
-                            {getInitials(displayName)}
-                          </span>
-                        )}
-                        {photoBusy ? (
-                          <span className="absolute inset-0 flex items-center justify-center bg-white/82 text-cyan-800">
-                            <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
-                          </span>
-                        ) : null}
-                      </button>
+            <>
+              <div
+                aria-hidden="true"
+                className="bd-account-menu-backdrop fixed inset-0 z-[70] bg-[#020817]/48 backdrop-blur-[2px]"
+                onPointerDown={() => {
+                  setMenuOpen(false);
+                  window.setTimeout(() => menuButtonRef.current?.focus(), 0);
+                }}
+              />
 
-                      <div className="min-w-0 flex-1">
-                        <h2
-                          id={menuHeadingId}
-                          data-i18n-ignore
-                          className="truncate text-base font-black tracking-[-0.015em] text-[#071f3c]"
-                        >
-                          {displayName}
-                        </h2>
-                        <p data-i18n-ignore className="mt-0.5 truncate text-xs font-medium text-slate-600">
-                          {identity?.email || roleLabel}
-                        </p>
-                        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.13em] text-cyan-700">
-                          {roleLabel}
-                        </p>
-                      </div>
+              <aside
+                ref={menuPanelRef}
+                id={menuId}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={menuHeadingId}
+                className="bd-account-menu-panel fixed inset-y-0 right-0 z-[80] flex w-[min(23rem,100vw)] flex-col overflow-hidden border-l border-slate-200 bg-[#f8fafc] text-[#071f3c] shadow-[-24px_0_70px_rgba(2,8,23,0.24)]"
+              >
+                <div className="bd-brand-rule h-1 shrink-0" />
+
+                <div className="bd-account-drawer-header shrink-0 border-b border-slate-200 bg-white px-5 pb-5 pt-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                      {t("topbar.account")}
+                    </p>
+                    <button
+                      ref={closeButtonRef}
+                      type="button"
+                      aria-label={t("topbar.closeMenu")}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        window.setTimeout(() => menuButtonRef.current?.focus(), 0);
+                      }}
+                      className="bd-focus inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-cyan-300 hover:text-[#071f3c]"
+                    >
+                      <X className="h-5 w-5" aria-hidden />
+                    </button>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-3.5">
+                    <button
+                      type="button"
+                      onClick={choosePhoto}
+                      disabled={photoBusy || !identity}
+                      aria-label={photoActionLabel}
+                      className="bd-focus relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#eef5f9] text-[#0a5465] disabled:cursor-wait disabled:opacity-65"
+                    >
+                      {showPhoto ? (
+                        <img
+                          src={photoUrl}
+                          alt=""
+                          onError={() => setFailedPhotoUrl(photoUrl)}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span data-i18n-ignore className="text-sm font-black tracking-[0.08em]">
+                          {getInitials(displayName)}
+                        </span>
+                      )}
+                      {photoBusy ? (
+                        <span className="absolute inset-0 flex items-center justify-center bg-white/82 text-cyan-800">
+                          <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
+                        </span>
+                      ) : null}
+                    </button>
+
+                    <div className="min-w-0 flex-1">
+                      <h2
+                        id={menuHeadingId}
+                        data-i18n-ignore
+                        className="truncate text-base font-black tracking-[-0.015em] text-[#071f3c]"
+                      >
+                        {displayName}
+                      </h2>
+                      <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
+                        {identityLoading || !identity ? t("topbar.account") : roleLabel}
+                      </p>
+                      <p data-i18n-ignore className="mt-1 truncate text-xs font-medium text-slate-500">
+                        {identity?.email || ""}
+                      </p>
                     </div>
+                  </div>
 
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={choosePhoto}
-                        disabled={photoBusy || !identity}
-                        className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-900/10 bg-white px-3 text-xs font-black text-[#0b5263] transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-wait disabled:opacity-60"
-                      >
-                        <Camera className="h-3.5 w-3.5" aria-hidden />
-                        <span>{photoActionLabel}</span>
-                      </button>
+                  <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-slate-100 pt-3">
+                    <button
+                      type="button"
+                      onClick={choosePhoto}
+                      disabled={photoBusy || !identity}
+                      className="bd-focus inline-flex min-h-9 items-center gap-2 rounded-md text-xs font-black text-cyan-800 transition hover:text-cyan-600 disabled:cursor-wait disabled:opacity-50"
+                    >
+                      <Camera className="h-3.5 w-3.5" aria-hidden />
+                      <span>{photoActionLabel}</span>
+                    </button>
+                    {photoUrl ? (
                       <button
                         type="button"
                         onClick={() => void handlePhotoRemove()}
-                        disabled={photoBusy || !photoUrl}
-                        className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-rose-200/80 bg-white px-3 text-xs font-black text-rose-600 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        disabled={photoBusy}
+                        className="bd-focus inline-flex min-h-9 items-center gap-2 rounded-md text-xs font-black text-rose-600 transition hover:text-rose-500 disabled:cursor-wait disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden />
                         <span>{t("topbar.removePhoto")}</span>
                       </button>
-                    </div>
-
-                    <div
-                      className={`overflow-hidden text-xs font-semibold transition-all ${
-                        photoNotice ? "mt-2.5 max-h-20" : "max-h-0"
-                      } ${photoNotice?.tone === "error" ? "text-rose-600" : "text-emerald-700"}`}
-                    >
-                      {photoNotice?.message || ""}
-                    </div>
+                    ) : null}
                   </div>
 
-                  <div className="px-1 pb-1 pt-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-700">
+                  {photoNotice ? (
+                    <p
+                      className={`mt-2 text-xs font-semibold ${
+                        photoNotice.tone === "error" ? "text-rose-600" : "text-emerald-700"
+                      }`}
+                    >
+                      {photoNotice.message}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="bd-account-menu-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5">
+                  <div className="px-2 pb-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">
                       {t("topbar.allAreas")}
                     </p>
                     <p className="mt-1 text-xs font-medium text-slate-500">
@@ -493,7 +557,7 @@ export function BlueDeckTopBar({
                     </p>
                   </div>
 
-                  <nav aria-label={t("topbar.navigation")} className="mt-2 grid gap-1">
+                  <nav aria-label={t("topbar.navigation")} className="grid gap-1">
                     {navigationItems.map((item) => {
                       const Icon = item.icon;
                       const active = isRouteActive(pathname, item.href);
@@ -504,73 +568,63 @@ export function BlueDeckTopBar({
                           href={item.href}
                           aria-current={active ? "page" : undefined}
                           onClick={() => setMenuOpen(false)}
-                          className={`bd-focus bd-account-menu-link group flex min-h-12 items-center gap-3 rounded-2xl px-3 py-2 text-sm font-extrabold transition ${
+                          className={`bd-focus bd-account-menu-link flex min-h-12 items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-sm font-extrabold transition ${
                             active
-                              ? "bg-[#082643] text-white shadow-md shadow-cyan-950/12"
-                              : "text-[#173b58] hover:bg-cyan-50 hover:text-[#071f3c]"
+                              ? "border-cyan-500 bg-cyan-50 text-[#071f3c]"
+                              : "border-transparent text-[#26455f] hover:border-cyan-200 hover:bg-white hover:text-[#071f3c]"
                           }`}
                         >
-                          <span
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition ${
-                              active
-                                ? "border-cyan-200/18 bg-white/10 text-cyan-200"
-                                : "border-cyan-900/8 bg-[#eef5f9] text-cyan-700 group-hover:bg-white"
-                            }`}
-                          >
-                            <Icon className="h-4 w-4" aria-hidden />
-                          </span>
+                          <Icon
+                            className={`h-[18px] w-[18px] shrink-0 ${active ? "text-cyan-700" : "text-slate-500"}`}
+                            aria-hidden
+                          />
                           <span data-i18n-ignore className="min-w-0 flex-1 truncate">
                             {item.label}
                           </span>
-                          <ChevronRight
-                            className={`h-4 w-4 shrink-0 ${active ? "text-cyan-200/75" : "text-slate-400"}`}
-                            aria-hidden
-                          />
                         </Link>
                       );
                     })}
                   </nav>
+                </div>
 
-                  <div className="mt-3 rounded-2xl border border-slate-200/85 bg-[#f8fafc] p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-center gap-2 text-sm font-black text-[#173b58]">
-                        <Languages className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
-                        <span>{t("topbar.language")}</span>
-                      </div>
-                      <div data-i18n-ignore role="group" aria-label={t("topbar.language")} className="flex gap-1">
-                        {languages.map((item) => (
-                          <button
-                            key={item.code}
-                            type="button"
-                            aria-pressed={language === item.code}
-                            aria-label={item.name}
-                            onClick={() => setLanguage(item.code)}
-                            className={`bd-focus inline-flex min-h-10 items-center gap-1.5 rounded-xl px-2.5 text-xs font-black transition ${
-                              language === item.code
-                                ? "bg-[#082643] text-white shadow-sm"
-                                : "text-slate-600 hover:bg-white hover:text-[#071f3c]"
-                            }`}
-                          >
-                            <span aria-hidden>{item.flag}</span>
-                            <span>{item.label}</span>
-                          </button>
-                        ))}
-                      </div>
+                <div className="bd-account-drawer-footer shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3">
+                  <div className="flex min-h-12 items-center justify-between gap-3 px-2">
+                    <div className="flex min-w-0 items-center gap-2 text-sm font-extrabold text-[#26455f]">
+                      <Languages className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
+                      <span>{t("topbar.language")}</span>
+                    </div>
+                    <div data-i18n-ignore role="group" aria-label={t("topbar.language")} className="flex gap-1">
+                      {languages.map((item) => (
+                        <button
+                          key={item.code}
+                          type="button"
+                          aria-pressed={language === item.code}
+                          aria-label={item.name}
+                          onClick={() => setLanguage(item.code)}
+                          className={`bd-focus inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-black transition ${
+                            language === item.code
+                              ? "bg-[#082643] text-white"
+                              : "text-slate-600 hover:bg-slate-100 hover:text-[#071f3c]"
+                          }`}
+                        >
+                          <span aria-hidden>{item.flag}</span>
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => void logout()}
-                    className="bd-focus mt-2 flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-black text-rose-600 transition hover:bg-rose-50"
+                    className="bd-focus mt-1 flex min-h-12 w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-black text-rose-600 transition hover:border-rose-100 hover:bg-rose-50"
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-100 bg-rose-50">
-                      <LogOut className="h-4 w-4" aria-hidden />
-                    </span>
+                    <LogOut className="h-[18px] w-[18px]" aria-hidden />
                     <span className="flex-1 text-left">{t("topbar.logout")}</span>
                   </button>
                 </div>
-            </section>
+              </aside>
+            </>
           ) : null}
         </div>
       </div>

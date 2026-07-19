@@ -123,12 +123,9 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
       .maybeSingle<CrewProfileRow>(),
   ]);
 
-  if (baseProfileResult.error) throw baseProfileResult.error;
-  if (crewProfileResult.error) throw crewProfileResult.error;
-
   const metadata = user.user_metadata as Record<string, unknown> | undefined;
-  const baseProfile = baseProfileResult.data;
-  const crewProfile = crewProfileResult.data;
+  const baseProfile = baseProfileResult.error ? null : baseProfileResult.data;
+  const crewProfile = crewProfileResult.error ? null : crewProfileResult.data;
   const email = firstText(baseProfile?.email, crewProfile?.email, user.email);
   const fullName = firstDisplayName(
     baseProfile?.full_name,

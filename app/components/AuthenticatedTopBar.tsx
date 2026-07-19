@@ -1,36 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { BlueDeckTopBar } from "./BlueDeckTopBar";
 
-const authenticatedPaths = [
-  "/contracts",
-  "/crew/tasks",
-  "/dashboard",
-  "/my-blue",
-  "/portal",
-  "/profile",
-  "/settings",
-  "/yachts",
-];
-
-function usesAuthenticatedTopBar(pathname: string) {
-  return authenticatedPaths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-}
-
 export function AuthenticatedTopBar() {
-  const pathname = usePathname();
   const [hasSession, setHasSession] = useState(false);
   const [checked, setChecked] = useState(false);
-
-  const shouldShowForRoute = useMemo(
-    () => usesAuthenticatedTopBar(pathname || "/"),
-    [pathname],
-  );
 
   useEffect(() => {
     let active = true;
@@ -66,7 +42,7 @@ export function AuthenticatedTopBar() {
     };
   }, []);
 
-  if (!checked || !hasSession || !shouldShowForRoute) return null;
+  if (!checked || !hasSession) return null;
 
   return <BlueDeckTopBar />;
 }
