@@ -215,7 +215,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                   return (
                     <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className={`bd-cv-experience overflow-hidden rounded-2xl border border-[#cbd8dd] bg-white shadow-sm shadow-slate-950/5 ${shouldBreakBeforeExperience(index) ? "bd-cv-experience-break-before" : ""}`}>
                       <div className="bd-cv-experience-grid grid items-stretch sm:grid-cols-[136px_1fr]">
-                        <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-[#f3f7f8] p-3">
+                        <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-white p-3">
                           {text(experience, "photo_url") ? (
                             <img src={text(experience, "photo_url")} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
                           ) : (

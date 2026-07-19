@@ -203,7 +203,7 @@ function cvPdfBackgroundFallback(element: Element) {
   ) {
     return "#ffffff";
   }
-  if (element.classList.contains("bd-print-experience-meta")) return "#f3f7f8";
+  if (element.classList.contains("bd-print-experience-meta")) return "#ffffff";
   if (element.classList.contains("bd-print-experience-placeholder")) return "#edf3f5";
   if (element.classList.contains("bd-print-document-row")) return "#f6f8f8";
   if (element.matches(".bd-print-experience-top span, .bd-print-contact-line i")) return "#173f4a";

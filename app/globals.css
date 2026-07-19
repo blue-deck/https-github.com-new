@@ -2281,7 +2281,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-print-experience-meta {
     border-right: 1px solid #d8e2e6 !important;
-    background: #f3f7f8 !important;
+    background: #ffffff !important;
     padding: 2.7mm !important;
   }
 
@@ -3102,7 +3102,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     padding: 2.5mm !important;
     border-right: 1px solid #d8e2e6 !important;
     border-bottom: 0 !important;
-    background: #f3f7f8 !important;
+    background: #ffffff !important;
   }
 
   #bluedeck-cv .bd-cv-experience-body {
