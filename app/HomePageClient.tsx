@@ -53,7 +53,7 @@ export default function HomePageClient() {
 
   return (
     <main className="bd-site-shell min-h-screen overflow-hidden text-[#071f3c]">
-      <PublicHeader />
+      <PublicHeader homepageNavigation />
 
       <section className="bd-home-hero">
         <div className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-[1500px] items-center px-5 py-16 sm:px-8 lg:px-12">

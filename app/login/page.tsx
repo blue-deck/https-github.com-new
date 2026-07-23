@@ -35,6 +35,7 @@ export default function LoginPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const requestedMode = searchParams.get("mode");
+    const requestedRole = searchParams.get("role");
     const isPasswordRecovery =
       requestedMode === "recovery" ||
       searchParams.get("type") === "recovery" ||
@@ -49,6 +50,11 @@ export default function LoginPage() {
 
     const frame = window.requestAnimationFrame(() => {
       setMode("signup");
+
+      if (requestedRole && ["crew", "captain", "owner", "management"].includes(requestedRole)) {
+        setRole(requestedRole);
+        setPosition(getDefaultPositionForAccountType(requestedRole));
+      }
     });
 
     return () => window.cancelAnimationFrame(frame);

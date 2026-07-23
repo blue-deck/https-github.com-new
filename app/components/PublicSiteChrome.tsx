@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { ArrowUpRight, LayoutDashboard, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ArrowUpRight, ChevronDown, LayoutDashboard, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
@@ -18,7 +18,17 @@ const publicNavigation = [
   { labelKey: "nav.contact", href: "/contact" },
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
-export function PublicHeader() {
+const homepagePrimaryNavigation = [
+  { labelKey: "nav.findJob", href: "/login?mode=signup&role=crew" },
+  { labelKey: "nav.findCrew", href: "/login?mode=signup&role=management" },
+] satisfies Array<{ labelKey: TranslationKey; href: string }>;
+
+const homepageMoreNavigation = [
+  { labelKey: "nav.about", href: "/about" },
+  { labelKey: "nav.contact", href: "/contact" },
+] satisfies Array<{ labelKey: TranslationKey; href: string }>;
+
+export function PublicHeader({ homepageNavigation = false }: { homepageNavigation?: boolean }) {
   const { t } = useLanguage();
   const [sessionEmail, setSessionEmail] = useState("");
 
@@ -54,7 +64,7 @@ export function PublicHeader() {
   }
 
   return (
-    <header className="bd-public-header">
+    <header className={`bd-public-header ${homepageNavigation ? "bd-public-header-home" : ""}`}>
       <div className="bd-public-header-inner">
         <BlueDeckLogoLink
           href="/"
@@ -64,14 +74,31 @@ export function PublicHeader() {
         />
 
         <nav className="bd-public-shortcuts" aria-label="BlueDeck public navigation">
-          {publicNavigation.map((item) => (
-            <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
-              {t(item.labelKey)}
-            </Link>
-          ))}
+          {homepageNavigation ? (
+            <>
+              {homepagePrimaryNavigation.map((item) => (
+                <Link key={item.href} href={item.href} className="bd-focus bd-public-shortcut-button">
+                  {t(item.labelKey)}
+                </Link>
+              ))}
+              <HomepageMoreMenu items={homepageMoreNavigation} />
+            </>
+          ) : (
+            publicNavigation.map((item) => (
+              <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
+                {t(item.labelKey)}
+              </Link>
+            ))
+          )}
         </nav>
 
         <div className="bd-public-actions">
+          {homepageNavigation && !sessionEmail ? (
+            <HomepageMoreMenu
+              items={[...homepagePrimaryNavigation, ...homepageMoreNavigation]}
+              mobile
+            />
+          ) : null}
           {sessionEmail ? (
             <>
               <Link
@@ -122,6 +149,83 @@ export function PublicHeader() {
         </div>
       </div>
     </header>
+  );
+}
+
+function HomepageMoreMenu({
+  items,
+  mobile = false,
+}: {
+  items: Array<{ labelKey: TranslationKey; href: string }>;
+  mobile?: boolean;
+}) {
+  const { t } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelId = useId();
+
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && open) {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={menuRef}
+      className={`bd-public-more-menu ${mobile ? "bd-public-more-menu-mobile" : ""}`}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((current) => !current)}
+        className={`bd-focus bd-public-more-trigger ${
+          mobile ? "bd-public-action bd-public-action-outline" : ""
+        }`}
+      >
+        {t("nav.more")}
+        <ChevronDown
+          aria-hidden
+          className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open ? (
+        <div id={panelId} aria-label={t("nav.more")} className="bd-public-more-panel">
+          {items.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="bd-focus bd-public-more-item"
+            >
+              {t(item.labelKey)}
+              <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
+            </Link>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
