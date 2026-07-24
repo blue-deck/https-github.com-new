@@ -65,51 +65,23 @@ export default function YachtDashboard() {
   async function loadOverview() {
     setLoadError("");
 
-    const [yachtResponse, crewResponse, checklistResponse, invitationResponse, documentResponse] =
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      window.location.href = `/login?next=${encodeURIComponent(`/yachts/${yachtId}`)}`;
+      return;
+    }
+
+    const [crewDataResponse, invitationResponse, documentResponse] =
       await Promise.all([
-        supabase
-          .from("yachts")
-          .select("*")
-          .eq("id", yachtId)
-          .maybeSingle(),
-        supabase
-          .from("yacht_crew_memberships")
-          .select(
-            `
-              id,
-              status,
-              position,
-              department,
-              invited_email,
-              created_at,
-              crew_profiles (
-                full_name,
-                email
-              )
-            `
-          )
-          .eq("yacht_id", yachtId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("yacht_checklists")
-          .select(
-            `
-              id,
-              title,
-              status,
-              department,
-              created_at,
-              yacht_checklist_items (
-                id,
-                completed,
-                completed_at,
-                task_text,
-                completed_by
-              )
-            `
-          )
-          .eq("yacht_id", yachtId)
-          .order("created_at", { ascending: false }),
+        fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        }),
         supabase
           .from("crew_invitations")
           .select("id,status,position,department,invited_email,created_at")
@@ -122,16 +94,32 @@ export default function YachtDashboard() {
           .order("created_at", { ascending: false }),
       ]);
 
-    const errors = [crewResponse, checklistResponse, invitationResponse, documentResponse]
+    const crewPayload: unknown = await crewDataResponse.json();
+    const crewRecord =
+      crewPayload && typeof crewPayload === "object"
+        ? (crewPayload as Record<string, unknown>)
+        : {};
+
+    const errors = [invitationResponse, documentResponse]
       .map((response) => response.error?.message)
       .filter(Boolean);
+
+    if (!crewDataResponse.ok) {
+      errors.unshift(
+        typeof crewRecord.error === "string"
+          ? crewRecord.error
+          : "Crew overview could not be loaded.",
+      );
+    }
 
     if (errors.length) {
       setLoadError(errors[0] || "Overview data could not be loaded.");
     }
 
-    const crew = crewResponse.data || [];
-    const checklists = checklistResponse.data || [];
+    const crew = Array.isArray(crewRecord.crew) ? crewRecord.crew : [];
+    const checklists = Array.isArray(crewRecord.checklists)
+      ? crewRecord.checklists
+      : [];
     const invitations = invitationResponse.data || [];
     const documents = documentResponse.data || [];
     const taskItems = checklists.flatMap((checklist: any) => checklist.yacht_checklist_items || []);
@@ -181,7 +169,11 @@ export default function YachtDashboard() {
       criticalDocuments,
       recent,
     });
-    setYacht((yachtResponse.data as YachtRecord | null) || null);
+    setYacht(
+      crewRecord.yacht && typeof crewRecord.yacht === "object"
+        ? (crewRecord.yacht as YachtRecord)
+        : null,
+    );
   }
 
   useEffect(() => {

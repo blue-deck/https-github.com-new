@@ -90,7 +90,8 @@ const copy = {
       "No further action is required. This page will show the decision when the review is complete.",
     verifiedTitle: "Hiring access is active",
     verifiedText:
-      "This yacht is approved for BlueDeck hiring. Job publishing is the next product step.",
+      "This yacht is approved for BlueDeck hiring. You can now create and publish crew opportunities.",
+    manageJobs: "Manage job posts",
     rejectedTitle: "The request needs another review",
     rejectedText:
       "Check the review note, update your details and submit the yacht again.",
@@ -156,7 +157,8 @@ const copy = {
       "Şu an başka bir işlem yapman gerekmiyor. İnceleme tamamlandığında karar bu sayfada görünecek.",
     verifiedTitle: "İşe alım yetkisi aktif",
     verifiedText:
-      "Bu yat BlueDeck işe alım araçları için onaylandı. Sıradaki ürün adımı iş ilanı yayınlama.",
+      "Bu yat BlueDeck işe alım araçları için onaylandı. Artık mürettebat ilanları oluşturup yayınlayabilirsin.",
+    manageJobs: "İş ilanlarını yönet",
     rejectedTitle: "Talebin yeniden incelenmesi gerekiyor",
     rejectedText:
       "İnceleme notunu kontrol et, bilgilerini güncelle ve yatı yeniden gönder.",
@@ -636,6 +638,17 @@ function YachtAccessCard({
                   {access.reviewNote}
                 </p>
               </div>
+            ) : null}
+
+            {status === "verified" ? (
+              <Link
+                href="/hiring/jobs"
+                className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+              >
+                <BriefcaseBusiness className="h-4 w-4" aria-hidden />
+                {c.manageJobs}
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
             ) : null}
           </div>
         ) : null}

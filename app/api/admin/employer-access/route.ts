@@ -1,29 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, type User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import {
-  employerAccessNoteLimit,
+  isAllowedEmployerAccessTransition,
   isEmployerAccessStatus,
-  isPlatformAdmin,
-  readEmployerAccessMetadata,
-  upsertEmployerAccessEntry,
-  writeEmployerAccessMetadata,
   type EmployerAccessStatus,
 } from "../../../lib/employerAccess";
-import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
+import {
+  adminEmployerClients,
+  cleanEmployerAccessNote,
+  cleanText,
+  employerAccessEntryFromRow,
+  employerAccessSelect,
+  employerAccessWithYachtSelect,
+  isRecord,
+  isUuid,
+  logEmployerAccessError,
+  type EmployerAccessDatabaseRow,
+} from "../../../lib/employerAccessServer";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const databasePageSize = 1000;
+const authPageSize = 1000;
+const maximumInternalPages = 100;
 
 type ReviewBody = {
-  userId?: string;
-  requestId?: string;
-  status?: EmployerAccessStatus;
-  note?: string;
+  userId?: unknown;
+  requestId?: unknown;
+  status?: unknown;
+  note?: unknown;
+};
+
+type LoadedAccess = {
+  row: EmployerAccessDatabaseRow;
+  access: NonNullable<ReturnType<typeof employerAccessEntryFromRow>>;
 };
 
 export async function GET(request: NextRequest) {
-  const clients = await adminClients(request);
+  const clients = await adminEmployerClients(request);
   if ("error" in clients) {
     return NextResponse.json(
       { ok: false, error: clients.error },
@@ -31,38 +43,82 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const users: User[] = [];
-  const perPage = 1000;
+  const accessResult = await loadAllEmployerAccess(
+    clients.serviceClient,
+  );
+  if ("error" in accessResult) {
+    logEmployerAccessError(
+      "administrator_queue_load_failed",
+      accessResult.error,
+      { actorUserId: clients.adminUser.id },
+    );
+    return NextResponse.json(
+      { ok: false, error: "The employer review queue could not be loaded." },
+      { status: accessResult.overflow ? 503 : 500 },
+    );
+  }
 
-  for (let page = 1; page <= 10; page += 1) {
-    const { data, error } =
-      await clients.serviceClient.auth.admin.listUsers({ page, perPage });
-
-    if (error) {
-      console.error("Employer access queue could not be loaded", error);
+  const loadedAccess: LoadedAccess[] = [];
+  for (const rawRow of accessResult.rows) {
+    const row = rawRow as EmployerAccessDatabaseRow;
+    const access = employerAccessEntryFromRow(row);
+    if (!access || !isUuid(cleanText(row.user_id))) {
+      logEmployerAccessError("invalid_administrator_queue_record", undefined, {
+        actorUserId: clients.adminUser.id,
+        recordId: cleanText(row.id) || "unknown",
+      });
       return NextResponse.json(
         { ok: false, error: "The employer review queue could not be loaded." },
         { status: 500 },
       );
     }
+    loadedAccess.push({ row, access });
+  }
+  loadedAccess.sort(
+    (first, second) =>
+      Date.parse(second.access.updatedAt) -
+        Date.parse(first.access.updatedAt) ||
+      second.access.requestId.localeCompare(first.access.requestId),
+  );
 
-    users.push(...data.users);
-    if (data.users.length < perPage) break;
+  const userIds = new Set(loadedAccess.map(({ row }) => row.user_id));
+  const usersResult = await loadApplicantUsers(
+    clients.serviceClient,
+    userIds,
+  );
+  if ("error" in usersResult) {
+    logEmployerAccessError(
+      "administrator_applicant_accounts_load_failed",
+      usersResult.error,
+      { actorUserId: clients.adminUser.id },
+    );
+    return NextResponse.json(
+      { ok: false, error: "The employer review queue could not be loaded." },
+      { status: usersResult.overflow ? 503 : 500 },
+    );
   }
 
-  const requests = users
-    .flatMap((user) => employerRequestsForUser(user))
-    .sort(
-      (first, second) =>
-        Date.parse(second.access.updatedAt || second.access.requestedAt) -
-        Date.parse(first.access.updatedAt || first.access.requestedAt),
-    );
+  const requests = loadedAccess.map(({ row, access }) => {
+    const user = usersResult.users.get(row.user_id);
+    const applicantEmail = user?.email || "";
+    const fullName =
+      typeof user?.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name.trim()
+        : "";
+
+    return {
+      userId: row.user_id,
+      applicantName: fullName || applicantEmail || "BlueDeck account",
+      applicantEmail,
+      access,
+    };
+  });
 
   return NextResponse.json({ ok: true, requests });
 }
 
 export async function PATCH(request: NextRequest) {
-  const clients = await adminClients(request);
+  const clients = await adminEmployerClients(request);
   if ("error" in clients) {
     return NextResponse.json(
       { ok: false, error: clients.error },
@@ -74,7 +130,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const value: unknown = await request.json();
     if (!isRecord(value)) throw new Error("Invalid JSON object");
-    body = value as ReviewBody;
+    body = value;
   } catch {
     return NextResponse.json(
       { ok: false, error: "Invalid employer review request." },
@@ -84,8 +140,7 @@ export async function PATCH(request: NextRequest) {
 
   const userId = cleanText(body.userId);
   const requestId = cleanText(body.requestId);
-  const reviewNote =
-    cleanText(body.note).slice(0, employerAccessNoteLimit);
+  const reviewNote = cleanEmployerAccessNote(body.note);
 
   if (
     !isUuid(userId) ||
@@ -99,54 +154,78 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  const targetUserResponse =
-    await clients.serviceClient.auth.admin.getUserById(userId);
-  const targetUser = targetUserResponse.data.user;
+  if (!reviewNote.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "The note must be text and no longer than 240 characters.",
+      },
+      { status: 400 },
+    );
+  }
 
-  if (targetUserResponse.error) {
-    console.error(
-      "Employer access applicant could not be loaded",
-      targetUserResponse.error,
+  const nextStatus: EmployerAccessStatus = body.status;
+  const { data: currentData, error: currentError } =
+    await clients.serviceClient
+      .from("employer_access")
+      .select(employerAccessWithYachtSelect)
+      .eq("id", requestId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+  if (currentError) {
+    logEmployerAccessError(
+      "administrator_request_lookup_failed",
+      currentError,
+      {
+        actorUserId: clients.adminUser.id,
+        applicantUserId: userId,
+        recordId: requestId,
+      },
     );
     return NextResponse.json(
-      { ok: false, error: "The applicant account could not be loaded." },
+      { ok: false, error: "Employer access request could not be loaded." },
       { status: 500 },
     );
   }
 
-  if (!targetUser) {
-    return NextResponse.json(
-      { ok: false, error: "Applicant account could not be found." },
-      { status: 404 },
-    );
-  }
-
-  const currentMetadata = targetUser.app_metadata as Record<string, unknown>;
-  const accessMetadata = readEmployerAccessMetadata(currentMetadata);
-  const currentEntry = accessMetadata.entries.find(
-    (entry) => entry.requestId === requestId,
-  );
-
-  if (!currentEntry) {
+  if (!currentData) {
     return NextResponse.json(
       { ok: false, error: "Employer access request could not be found." },
       { status: 404 },
     );
   }
 
-  if (!isAllowedTransition(currentEntry.status, body.status)) {
+  const currentRow = currentData as EmployerAccessDatabaseRow;
+  const currentAccess = employerAccessEntryFromRow(currentRow);
+  if (!currentAccess) {
+    logEmployerAccessError("invalid_review_record", undefined, {
+      actorUserId: clients.adminUser.id,
+      applicantUserId: userId,
+      recordId: requestId,
+    });
+    return NextResponse.json(
+      { ok: false, error: "Employer access request could not be loaded." },
+      { status: 500 },
+    );
+  }
+
+  if (
+    !isAllowedEmployerAccessTransition(currentAccess.status, nextStatus)
+  ) {
     return NextResponse.json(
       {
         ok: false,
-        error: `This request cannot move from ${currentEntry.status} to ${body.status}.`,
+        error:
+          "This request changed or cannot be updated in its current state. Refresh and try again.",
       },
       { status: 409 },
     );
   }
 
   if (
-    (body.status === "rejected" || body.status === "suspended") &&
-    !reviewNote
+    (nextStatus === "rejected" || nextStatus === "suspended") &&
+    !reviewNote.value
   ) {
     return NextResponse.json(
       {
@@ -157,23 +236,29 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  let verifiedYacht:
-    | { id: string; name: string | null; model: string | null }
-    | null = null;
+  let yachtForResponse = {
+    name: currentAccess.yachtName,
+    model: currentAccess.yachtModel,
+  };
 
-  if (body.status === "verified") {
+  if (nextStatus === "verified") {
     const { data: ownedYacht, error: yachtError } =
       await clients.serviceClient
         .from("yachts")
         .select("id,name,model,owner_id")
-        .eq("id", currentEntry.yachtId)
+        .eq("id", currentAccess.yachtId)
         .eq("owner_id", userId)
         .maybeSingle();
 
     if (yachtError) {
-      console.error(
-        "Employer access yacht ownership could not be verified",
+      logEmployerAccessError(
+        "administrator_yacht_ownership_lookup_failed",
         yachtError,
+        {
+          actorUserId: clients.adminUser.id,
+          applicantUserId: userId,
+          yachtId: currentAccess.yachtId,
+        },
       );
       return NextResponse.json(
         { ok: false, error: "Yacht ownership could not be verified." },
@@ -192,141 +277,147 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    verifiedYacht = ownedYacht;
+    yachtForResponse = {
+      name: cleanText(ownedYacht.name) || "BlueDeck yacht",
+      model: cleanText(ownedYacht.model),
+    };
   }
 
-  const now = new Date().toISOString();
-  const nextEntry = {
-    ...currentEntry,
-    yachtName: verifiedYacht?.name || currentEntry.yachtName,
-    yachtModel: verifiedYacht?.model || currentEntry.yachtModel,
-    status: body.status,
-    reviewNote,
-    reviewedAt: now,
-    reviewedBy: clients.adminUser.id,
-    updatedAt: now,
-  };
-  const nextEntries = upsertEmployerAccessEntry(
-    accessMetadata.entries,
-    nextEntry,
-  );
+  const { data: savedData, error: saveError } =
+    await clients.serviceClient
+      .from("employer_access")
+      .update({
+        status: nextStatus,
+        review_note: reviewNote.value || null,
+        reviewed_by: clients.adminUser.id,
+      })
+      .eq("id", requestId)
+      .eq("user_id", userId)
+      .eq("status", currentAccess.status)
+      .eq("updated_at", currentRow.updated_at)
+      .select(employerAccessSelect)
+      .maybeSingle();
 
-  const { error: updateError } =
-    await clients.serviceClient.auth.admin.updateUserById(userId, {
-      app_metadata: writeEmployerAccessMetadata(currentMetadata, nextEntries),
-    });
-
-  if (updateError) {
-    console.error("Employer access review could not be saved", updateError);
+  if (saveError) {
+    const stateChanged = cleanText(saveError.code) === "23514";
+    logEmployerAccessError(
+      "administrator_review_save_failed",
+      saveError,
+      {
+        actorUserId: clients.adminUser.id,
+        applicantUserId: userId,
+        recordId: requestId,
+      },
+    );
     return NextResponse.json(
-      { ok: false, error: "The review decision could not be saved." },
+      {
+        ok: false,
+        error: stateChanged
+          ? "The request or yacht ownership changed. Refresh and try again."
+          : "The review decision could not be saved.",
+      },
+      { status: stateChanged ? 409 : 500 },
+    );
+  }
+
+  if (!savedData) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "This request changed while it was being reviewed. Refresh and try again.",
+      },
+      { status: 409 },
+    );
+  }
+
+  const access = employerAccessEntryFromRow(savedData, yachtForResponse);
+  if (!access) {
+    logEmployerAccessError("invalid_saved_review_record", undefined, {
+      actorUserId: clients.adminUser.id,
+      applicantUserId: userId,
+      recordId: requestId,
+    });
+    return NextResponse.json(
+      { ok: false, error: "The saved review could not be loaded." },
       { status: 500 },
     );
   }
 
-  return NextResponse.json({ ok: true, access: nextEntry });
+  return NextResponse.json({ ok: true, access });
 }
 
-async function adminClients(request: NextRequest) {
-  if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-    return {
-      error: "Supabase is not configured.",
-      status: 500,
-    } as const;
+async function loadAllEmployerAccess(serviceClient: SupabaseClient) {
+  const rows: unknown[] = [];
+  let cursor = "";
+
+  for (let page = 0; page < maximumInternalPages; page += 1) {
+    let query = serviceClient
+      .from("employer_access")
+      .select(employerAccessWithYachtSelect)
+      .order("id", { ascending: true })
+      .limit(databasePageSize);
+    if (cursor) query = query.gt("id", cursor);
+
+    const { data, error } = await query;
+
+    if (error) return { error, overflow: false as const };
+
+    const batch = data || [];
+    rows.push(...batch);
+    if (batch.length < databasePageSize) {
+      return { rows };
+    }
+
+    const nextCursor = cleanText(batch.at(-1)?.id);
+    if (!isUuid(nextCursor) || nextCursor === cursor) {
+      return {
+        error: new Error("Employer access pagination cursor is invalid"),
+        overflow: false as const,
+      };
+    }
+    cursor = nextCursor;
   }
 
-  const token = request.headers
-    .get("authorization")
-    ?.replace(/^Bearer\s+/i, "")
-    .trim();
-  if (!token) {
-    return { error: "Login session is required.", status: 401 } as const;
-  }
-
-  const resolvedUrl = resolveSupabaseUrl(supabaseUrl);
-  const authClient = createClient(resolvedUrl, supabaseAnonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const serviceClient = createClient(resolvedUrl, supabaseServiceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
-  const {
-    data: { user },
-    error,
-  } = await authClient.auth.getUser(token);
-  if (error || !user) {
-    return { error: "Login session is invalid.", status: 401 } as const;
-  }
-
-  const freshAdminResponse = await serviceClient.auth.admin.getUserById(user.id);
-  const adminUser = freshAdminResponse.data.user;
-
-  if (freshAdminResponse.error) {
-    console.error(
-      "Employer access administrator could not be verified",
-      freshAdminResponse.error,
-    );
-    return {
-      error: "Platform administrator access could not be verified.",
-      status: 500,
-    } as const;
-  }
-
-  if (
-    !adminUser ||
-    !isPlatformAdmin(adminUser.app_metadata as Record<string, unknown>)
-  ) {
-    return { error: "Platform administrator access is required.", status: 403 } as const;
-  }
-
-  return { adminUser, serviceClient } as const;
-}
-
-function employerRequestsForUser(user: User) {
-  const metadata = readEmployerAccessMetadata(
-    user.app_metadata as Record<string, unknown>,
-  );
-  const fullName =
-    typeof user.user_metadata?.full_name === "string"
-      ? user.user_metadata.full_name.trim()
-      : "";
-
-  return metadata.entries.map((access) => ({
-    userId: user.id,
-    applicantName: fullName || user.email || "BlueDeck account",
-    applicantEmail: user.email || "",
-    access,
-  }));
-}
-
-function cleanText(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  );
-}
-
-function isAllowedTransition(
-  current: EmployerAccessStatus,
-  next: EmployerAccessStatus,
-) {
-  const transitions: Record<
-    EmployerAccessStatus,
-    EmployerAccessStatus[]
-  > = {
-    pending: ["verified", "rejected"],
-    verified: ["suspended"],
-    rejected: ["verified"],
-    suspended: ["verified"],
+  return {
+    error: new Error("Employer access internal page limit reached"),
+    overflow: true as const,
   };
+}
 
-  return transitions[current].includes(next);
+async function loadApplicantUsers(
+  serviceClient: SupabaseClient,
+  requestedUserIds: ReadonlySet<string>,
+) {
+  const users = new Map<string, User>();
+  const remainingUserIds = new Set(requestedUserIds);
+  if (remainingUserIds.size === 0) return { users };
+
+  for (let page = 1; page <= maximumInternalPages; page += 1) {
+    const { data, error } =
+      await serviceClient.auth.admin.listUsers({
+        page,
+        perPage: authPageSize,
+      });
+
+    if (error) return { error, overflow: false as const };
+
+    for (const user of data.users) {
+      if (!remainingUserIds.has(user.id)) continue;
+      users.set(user.id, user);
+      remainingUserIds.delete(user.id);
+    }
+
+    if (
+      remainingUserIds.size === 0 ||
+      data.users.length < authPageSize
+    ) {
+      return { users };
+    }
+  }
+
+  return {
+    error: new Error("Auth user internal page limit reached"),
+    overflow: true as const,
+  };
 }

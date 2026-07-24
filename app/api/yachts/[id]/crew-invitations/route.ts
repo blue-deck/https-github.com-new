@@ -1,61 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { saveYachtMembership } from "../../../../lib/yachtMemberships";
-import {
-  canInviteCrew,
-  getDefaultPositionForAccountType,
-  getDepartmentByPosition,
-  getPosition,
-} from "../../../../lib/yachtOperations";
+import { getPosition } from "../../../../lib/yachtOperations";
+import { absoluteSiteUrl } from "../../../../lib/site";
+import { getPublicCrewDiscoverySettings } from "../../../../lib/publicCrewSafety";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const maximumRequestBytes = 8_192;
+const maximumCrewIdLength = 64;
+const maximumEmailLength = 254;
+const maximumPositionLength = 80;
 
 type InvitationRequest = {
-  crewId?: string;
-  email?: string;
-  position?: string;
+  crewId: string;
+  email: string;
+  position: string;
+};
+
+type CrewProfileRow = {
+  id: string;
+  email: string;
+  publicCrewId: string;
+  notes: string;
 };
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const { id: yachtId } = await context.params;
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+  try {
+    return await createCrewInvitation(request, context);
+  } catch (error) {
+    logCrewInvitationError("unhandled_invitation_error", error);
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
+  }
+}
+
+async function createCrewInvitation(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const yachtId = cleanText((await context.params).id).toLowerCase();
+  if (!isUuid(yachtId)) {
+    return invitationResponse(
+      { ok: false, error: "Yacht not found." },
+      404,
+    );
+  }
 
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-    return NextResponse.json({ ok: false, error: "Supabase is not configured." }, { status: 500 });
+    logCrewInvitationError("configuration_missing");
+    return invitationResponse(
+      { ok: false, error: "Crew invitation service is unavailable." },
+      503,
+    );
   }
 
+  const token = bearerToken(request);
   if (!token) {
-    return NextResponse.json({ ok: false, error: "Login session is required." }, { status: 401 });
-  }
-
-  let body: InvitationRequest;
-  try {
-    body = (await request.json()) as InvitationRequest;
-  } catch {
-    return NextResponse.json({ ok: false, error: "Invalid invitation request." }, { status: 400 });
-  }
-
-  const crewId = (body.crewId || "").trim().toUpperCase();
-  const email = normalizeEmail(body.email);
-  const targetPosition = (body.position || "").trim();
-  const positionDefinition = getPosition(targetPosition);
-
-  if (!crewId && !email) {
-    return NextResponse.json({ ok: false, error: "Crew ID or email is required." }, { status: 400 });
-  }
-
-  if (!positionDefinition) {
-    return NextResponse.json({ ok: false, error: "Select a valid yacht position." }, { status: 400 });
-  }
-
-  if (email && !isValidEmail(email)) {
-    return NextResponse.json({ ok: false, error: "Enter a valid crew email address." }, { status: 400 });
+    return invitationResponse(
+      { ok: false, error: "Login session is required." },
+      401,
+    );
   }
 
   const authClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey, {
@@ -71,94 +83,209 @@ export async function POST(
   } = await authClient.auth.getUser(token);
 
   if (userError || !user) {
-    return NextResponse.json({ ok: false, error: "Login session is invalid." }, { status: 401 });
+    return invitationResponse(
+      { ok: false, error: "Login session is invalid." },
+      401,
+    );
   }
 
-  const [{ data: yacht }, { data: baseProfile }, { data: actorProfile }] = await Promise.all([
-    serviceClient.from("yachts").select("id,owner_id").eq("id", yachtId).maybeSingle(),
-    serviceClient.from("profiles").select("role").eq("id", user.id).maybeSingle(),
-    serviceClient
-      .from("crew_profiles")
-      .select("id, current_position, email")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-  ]);
+  const invitationRequest = await readInvitationRequest(request);
+  if (!invitationRequest.ok) {
+    return invitationResponse(
+      { ok: false, error: invitationRequest.error },
+      400,
+    );
+  }
 
+  const { crewId, email, position: targetPosition } = invitationRequest.data;
+  const positionDefinition = getPosition(targetPosition);
+  if (!positionDefinition) {
+    return invitationResponse(
+      { ok: false, error: "Select a valid yacht position." },
+      400,
+    );
+  }
+
+  const yachtResponse = await serviceClient
+    .from("yachts")
+    .select("id,owner_id")
+    .eq("id", yachtId)
+    .maybeSingle();
+
+  if (yachtResponse.error) {
+    logCrewInvitationError("yacht_lookup_failed", yachtResponse.error, {
+      actorUserId: user.id,
+      yachtId,
+    });
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
+  }
+
+  if (!yachtResponse.data) {
+    return invitationResponse(
+      { ok: false, error: "Yacht not found." },
+      404,
+    );
+  }
+
+  const yacht = yachtFromRow(yachtResponse.data);
   if (!yacht) {
-    return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
-  }
-
-  const actorMembership = actorProfile?.id
-    ? await serviceClient
-        .from("yacht_crew_memberships")
-        .select("position, department, status")
-        .eq("yacht_id", yachtId)
-        .eq("crew_profile_id", actorProfile.id)
-        .maybeSingle()
-    : { data: null, error: null };
-
-  if (actorMembership.error) {
-    return NextResponse.json({ ok: false, error: actorMembership.error.message }, { status: 500 });
-  }
-
-  const isYachtOwner = yacht.owner_id === user.id;
-  const accountRole = isYachtOwner
-    ? "owner"
-    : normalizeRole(baseProfile?.role) || normalizeRole(user.user_metadata?.role);
-  const elevatedRole = ["captain", "owner", "management"].includes(accountRole);
-  const defaultPosition = getDefaultPositionForAccountType(accountRole);
-  const actorPosition = elevatedRole
-    ? defaultPosition
-    : actorMembership.data?.position || actorProfile?.current_position || defaultPosition;
-  const actorDepartment = actorMembership.data?.department || getDepartmentByPosition(actorPosition);
-
-  const canInvite =
-    isYachtOwner ||
-    canInviteCrew(
-      actorPosition,
-      actorDepartment,
-      positionDefinition.title,
-      positionDefinition.department,
-      accountRole,
-    );
-
-  if (!canInvite) {
-    return NextResponse.json(
-      { ok: false, error: "Your account is not authorised to invite this position to this yacht." },
-      { status: 403 },
+    logCrewInvitationError("invalid_yacht_record", undefined, {
+      actorUserId: user.id,
+      yachtId,
+    });
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
     );
   }
 
-  let targetProfile: Record<string, any> | null = null;
+  // Legacy membership rows were historically client-writable, so they cannot
+  // be trusted as management authority. Only the registered yacht owner may
+  // create invitations until an explicit owner-approved delegation model is
+  // introduced.
+  if (yacht.ownerId !== user.id) {
+    return invitationResponse(
+      {
+        ok: false,
+        error:
+          "Your account is not authorised to invite this position to this yacht.",
+      },
+      403,
+    );
+  }
+
+  const employerAccessResponse = await serviceClient
+    .from("employer_access")
+    .select("status,can_post_jobs")
+    .eq("user_id", user.id)
+    .eq("yacht_id", yachtId)
+    .maybeSingle();
+
+  if (employerAccessResponse.error) {
+    logCrewInvitationError(
+      "verified_hiring_access_lookup_failed",
+      employerAccessResponse.error,
+      { actorUserId: user.id, yachtId },
+    );
+    return invitationResponse(
+      { ok: false, error: "Hiring access could not be verified." },
+      500,
+    );
+  }
+
+  if (
+    employerAccessResponse.data?.status !== "verified" ||
+    employerAccessResponse.data.can_post_jobs !== true
+  ) {
+    return invitationResponse(
+      {
+        ok: false,
+        error:
+          "Verified BlueDeck hiring access is required before inviting crew.",
+      },
+      403,
+    );
+  }
+
+  let targetProfile: CrewProfileRow | null = null;
 
   if (crewId) {
     const { data, error } = await serviceClient
       .from("crew_profiles")
-      .select("id, email, public_crew_id, current_position")
+      .select("id,email,public_crew_id,current_position,notes")
       .eq("public_crew_id", crewId)
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      logCrewInvitationError("crew_id_profile_lookup_failed", error, {
+        actorUserId: user.id,
+        yachtId,
+      });
+      return invitationResponse(
+        { ok: false, error: "Crew invitation could not be created." },
+        500,
+      );
     }
 
     if (!data) {
-      return NextResponse.json({ ok: false, error: "No BlueDeck crew profile matches that Crew ID." }, { status: 404 });
+      return invitationResponse(
+        {
+          ok: false,
+          error: "No BlueDeck crew profile matches that Crew ID.",
+        },
+        404,
+      );
     }
 
-    targetProfile = data;
+    targetProfile = crewProfileFromRow(data);
+    if (!targetProfile) {
+      logCrewInvitationError("invalid_target_profile_record", undefined, {
+        actorUserId: user.id,
+        yachtId,
+      });
+      return invitationResponse(
+        { ok: false, error: "Crew invitation could not be created." },
+        500,
+      );
+    }
+
+    if (!getPublicCrewDiscoverySettings(targetProfile.notes)) {
+      return invitationResponse(
+        {
+          ok: false,
+          error: "This crew profile is not currently available for discovery.",
+        },
+        404,
+      );
+    }
+
+    if (
+      email &&
+      targetProfile.email &&
+      normalizeEmail(targetProfile.email) !== email
+    ) {
+      return invitationResponse(
+        {
+          ok: false,
+          error: "The Crew ID and email do not match the same crew profile.",
+        },
+        400,
+      );
+    }
   } else if (email) {
     const { data, error } = await serviceClient
       .from("crew_profiles")
-      .select("id, email, public_crew_id, current_position")
+      .select("id,email,public_crew_id,current_position,notes")
       .eq("email", email)
       .maybeSingle();
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      logCrewInvitationError("email_profile_lookup_failed", error, {
+        actorUserId: user.id,
+        yachtId,
+      });
+      return invitationResponse(
+        { ok: false, error: "Crew invitation could not be created." },
+        500,
+      );
     }
 
-    targetProfile = data;
+    if (data) {
+      targetProfile = crewProfileFromRow(data);
+      if (!targetProfile) {
+        logCrewInvitationError("invalid_target_profile_record", undefined, {
+          actorUserId: user.id,
+          yachtId,
+        });
+        return invitationResponse(
+          { ok: false, error: "Crew invitation could not be created." },
+          500,
+        );
+      }
+    }
   }
 
   if (!targetProfile && email) {
@@ -170,18 +297,30 @@ export async function POST(
     };
     const profileResponse = await insertCrewProfile(serviceClient, profilePayload);
 
-    if (profileResponse.error || !profileResponse.data?.id) {
-      return NextResponse.json(
-        { ok: false, error: profileResponse.error?.message || "Crew profile could not be created." },
-        { status: 500 },
+    if (profileResponse.error) {
+      logCrewInvitationError(
+        "target_profile_create_failed",
+        profileResponse.error,
+        { actorUserId: user.id, yachtId },
+      );
+      return invitationResponse(
+        { ok: false, error: "Crew profile could not be created." },
+        500,
       );
     }
 
-    targetProfile = profileResponse.data;
+    targetProfile = crewProfileFromRow(profileResponse.data);
   }
 
-  if (!targetProfile?.id) {
-    return NextResponse.json({ ok: false, error: "Crew profile could not be resolved." }, { status: 500 });
+  if (!targetProfile) {
+    logCrewInvitationError("target_profile_resolution_failed", undefined, {
+      actorUserId: user.id,
+      yachtId,
+    });
+    return invitationResponse(
+      { ok: false, error: "Crew profile could not be resolved." },
+      500,
+    );
   }
 
   const { data: existingInvitation, error: existingInvitationError } = await serviceClient
@@ -190,82 +329,321 @@ export async function POST(
     .eq("yacht_id", yachtId)
     .eq("crew_profile_id", targetProfile.id)
     .eq("status", "pending")
+    .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
   if (existingInvitationError) {
-    return NextResponse.json({ ok: false, error: existingInvitationError.message }, { status: 500 });
+    logCrewInvitationError(
+      "pending_invitation_lookup_failed",
+      existingInvitationError,
+      { actorUserId: user.id, yachtId },
+    );
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
   }
 
-  if (existingInvitation?.id) {
-    return NextResponse.json(
+  if (idFromRow(existingInvitation)) {
+    return invitationResponse(
       { ok: false, error: "A pending invitation already exists for this crew member." },
-      { status: 409 },
+      409,
+    );
+  }
+
+  const existingMembershipResponse = await serviceClient
+    .from("yacht_crew_memberships")
+    .select("id,status")
+    .eq("yacht_id", yachtId)
+    .eq("crew_profile_id", targetProfile.id)
+    .maybeSingle();
+
+  if (existingMembershipResponse.error) {
+    logCrewInvitationError(
+      "target_membership_lookup_failed",
+      existingMembershipResponse.error,
+      { actorUserId: user.id, yachtId },
+    );
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
+  }
+
+  if (
+    isRecord(existingMembershipResponse.data) &&
+    cleanText(existingMembershipResponse.data.status).toLowerCase() === "active"
+  ) {
+    return invitationResponse(
+      { ok: false, error: "This crew member is already active on this yacht." },
+      409,
     );
   }
 
   const invitationToken = crypto.randomUUID();
-  const inviteLink = new URL(`/invitations/${invitationToken}`, request.nextUrl.origin).toString();
+  const inviteLink = absoluteSiteUrl(`/invitations/${invitationToken}`);
+  // A Crew ID never grants permission to reveal or persist the profile's
+  // private email. Store an address only when the employer explicitly supplied
+  // it as part of this request.
+  const invitedEmail = email || null;
+  const expiresAt = new Date(
+    Date.now() + 14 * 24 * 60 * 60 * 1_000,
+  ).toISOString();
   const invitePayload = {
     yacht_id: yachtId,
     crew_profile_id: targetProfile.id,
-    invited_email: email || targetProfile.email || null,
-    public_crew_id: targetProfile.public_crew_id || null,
+    invited_by: user.id,
+    invited_email: invitedEmail,
+    public_crew_id: targetProfile.publicCrewId || null,
     position: positionDefinition.title,
     department: positionDefinition.department,
     status: "pending",
     token: invitationToken,
     invite_link: inviteLink,
+    expires_at: expiresAt,
   };
-  const invitationResponse = await insertCrewInvitation(serviceClient, invitePayload);
+  const invitationInsertResponse = await insertCrewInvitation(
+    serviceClient,
+    invitePayload,
+  );
 
-  if (invitationResponse.error) {
-    return NextResponse.json({ ok: false, error: invitationResponse.error.message }, { status: 500 });
+  if (invitationInsertResponse.error) {
+    logCrewInvitationError(
+      "invitation_create_failed",
+      invitationInsertResponse.error,
+      { actorUserId: user.id, yachtId },
+    );
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
+  }
+
+  const invitationId = idFromRow(invitationInsertResponse.data);
+  if (!invitationId) {
+    logCrewInvitationError("invalid_created_invitation_record", undefined, {
+      actorUserId: user.id,
+      yachtId,
+    });
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
   }
 
   const membershipResponse = await saveYachtMembership(serviceClient, {
     yacht_id: yachtId,
     crew_profile_id: targetProfile.id,
-    invited_email: email || targetProfile.email || null,
+    invited_email: invitedEmail,
     position: positionDefinition.title,
     department: positionDefinition.department,
     status: "invited",
   });
 
   if (membershipResponse.error) {
-    return NextResponse.json({ ok: false, error: membershipResponse.error.message }, { status: 500 });
+    logCrewInvitationError(
+      "invited_membership_save_failed",
+      membershipResponse.error,
+      { actorUserId: user.id, yachtId, invitationId },
+    );
+
+    const cleanupResponse = await serviceClient
+      .from("crew_invitations")
+      .delete()
+      .eq("id", invitationId)
+      .eq("status", "pending");
+    if (cleanupResponse.error) {
+      logCrewInvitationError(
+        "failed_invitation_cleanup_failed",
+        cleanupResponse.error,
+        { actorUserId: user.id, yachtId, invitationId },
+      );
+    }
+
+    return invitationResponse(
+      { ok: false, error: "Crew invitation could not be created." },
+      500,
+    );
   }
 
-  return NextResponse.json({
+  return invitationResponse({
     ok: true,
     invitation: {
       crew_profile_id: targetProfile.id,
       position: positionDefinition.title,
       department: positionDefinition.department,
+      expires_at: expiresAt,
     },
   });
 }
 
-function normalizeEmail(value?: string | null) {
-  return (value || "").trim().toLowerCase();
+async function readInvitationRequest(
+  request: NextRequest,
+): Promise<
+  | { ok: true; data: InvitationRequest }
+  | { ok: false; error: string }
+> {
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maximumRequestBytes) {
+    return { ok: false, error: "Invalid invitation request." };
+  }
+
+  let rawBody: string;
+  try {
+    rawBody = await request.text();
+  } catch {
+    return { ok: false, error: "Invalid invitation request." };
+  }
+
+  if (
+    rawBody.length > maximumRequestBytes ||
+    new TextEncoder().encode(rawBody).byteLength > maximumRequestBytes
+  ) {
+    return { ok: false, error: "Invalid invitation request." };
+  }
+
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return { ok: false, error: "Invalid invitation request." };
+  }
+
+  if (!isRecord(body)) {
+    return { ok: false, error: "Invalid invitation request." };
+  }
+
+  const crewIdInput = optionalBoundedText(
+    body.crewId,
+    maximumCrewIdLength,
+  );
+  const emailInput = optionalBoundedText(body.email, maximumEmailLength);
+  const positionInput = optionalBoundedText(
+    body.position,
+    maximumPositionLength,
+  );
+
+  if (!crewIdInput.ok || !emailInput.ok || !positionInput.ok) {
+    return { ok: false, error: "Invalid invitation request." };
+  }
+
+  const crewId = crewIdInput.value.toUpperCase();
+  const email = normalizeEmail(emailInput.value);
+  const position = positionInput.value;
+
+  if (!crewId && !email) {
+    return { ok: false, error: "Crew ID or email is required." };
+  }
+
+  if (crewId && !/^[A-Z0-9_-]+$/.test(crewId)) {
+    return { ok: false, error: "Enter a valid Crew ID." };
+  }
+
+  if (email && !isValidEmail(email)) {
+    return { ok: false, error: "Enter a valid crew email address." };
+  }
+
+  return {
+    ok: true,
+    data: {
+      crewId,
+      email,
+      position,
+    },
+  };
 }
 
-function normalizeRole(value?: unknown) {
-  const role = typeof value === "string" ? value.trim().toLowerCase() : "";
-  return ["crew", "captain", "owner", "management"].includes(role) ? role : "";
+function yachtFromRow(value: unknown) {
+  if (!isRecord(value)) return null;
+  const id = cleanText(value.id).toLowerCase();
+  const ownerId = cleanText(value.owner_id).toLowerCase();
+  if (!isUuid(id) || (ownerId && !isUuid(ownerId))) return null;
+  return { id, ownerId };
+}
+
+function crewProfileFromRow(value: unknown): CrewProfileRow | null {
+  if (!isRecord(value)) return null;
+  const id = cleanText(value.id).toLowerCase();
+  if (!isUuid(id)) return null;
+
+  const storedEmail = normalizeEmail(value.email);
+  return {
+    id,
+    email: isValidEmail(storedEmail) ? storedEmail : "",
+    publicCrewId: cleanText(value.public_crew_id).toUpperCase(),
+    notes: cleanText(value.notes),
+  };
+}
+
+function idFromRow(value: unknown) {
+  if (!isRecord(value)) return "";
+  const id = cleanText(value.id).toLowerCase();
+  return isUuid(id) ? id : "";
+}
+
+function bearerToken(request: NextRequest) {
+  const authorization = request.headers.get("authorization") || "";
+  const match = /^Bearer[ \t]+([^\s,]+)[ \t]*$/i.exec(authorization);
+  const token = match?.[1] || "";
+  return token.length <= maximumRequestBytes ? token : "";
+}
+
+function optionalBoundedText(value: unknown, maximumLength: number) {
+  if (value === undefined || value === null) {
+    return { ok: true as const, value: "" };
+  }
+  if (typeof value !== "string") return { ok: false as const };
+
+  const text = value.trim();
+  if (text.length > maximumLength) return { ok: false as const };
+  return { ok: true as const, value: text };
+}
+
+function cleanText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeEmail(value: unknown) {
+  return cleanText(value).toLowerCase();
 }
 
 function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  return (
+    value.length <= maximumEmailLength &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+  );
 }
 
-function isSchemaCacheError(error: any) {
-  const message = `${error?.message || ""} ${error?.details || ""}`.toLowerCase();
-  return error?.code === "PGRST204" || message.includes("schema cache") || message.includes("column");
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
-async function insertCrewProfile(supabase: any, payload: Record<string, any>) {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isSchemaCacheError(error: unknown) {
+  if (!isRecord(error)) return false;
+  const message =
+    `${cleanText(error.message)} ${cleanText(error.details)}`.toLowerCase();
+  return (
+    cleanText(error.code) === "PGRST204" ||
+    message.includes("schema cache") ||
+    message.includes("column")
+  );
+}
+
+async function insertCrewProfile(
+  supabase: SupabaseClient,
+  payload: Record<string, unknown>,
+) {
   const variants = [payload, omitKeys(payload, ["public_crew_id"])];
-  let lastResponse: any = null;
+  let lastResponse: {
+    data: unknown;
+    error: unknown;
+  } = { data: null, error: new Error("Crew profile insert failed.") };
 
   for (const variant of variants) {
     const response = await supabase.from("crew_profiles").insert(variant).select().single();
@@ -279,14 +657,20 @@ async function insertCrewProfile(supabase: any, payload: Record<string, any>) {
   return lastResponse;
 }
 
-async function insertCrewInvitation(supabase: any, payload: Record<string, any>) {
+async function insertCrewInvitation(
+  supabase: SupabaseClient,
+  payload: Record<string, unknown>,
+) {
   const variants = [
     payload,
     omitKeys(payload, ["invite_link"]),
     omitKeys(payload, ["public_crew_id"]),
     omitKeys(payload, ["invite_link", "public_crew_id"]),
   ];
-  let lastResponse: any = null;
+  let lastResponse: {
+    data: unknown;
+    error: unknown;
+  } = { data: null, error: new Error("Crew invitation insert failed.") };
 
   for (const variant of variants) {
     const response = await supabase.from("crew_invitations").insert(variant).select().single();
@@ -302,4 +686,27 @@ async function insertCrewInvitation(supabase: any, payload: Record<string, any>)
 
 function omitKeys<T extends Record<string, unknown>>(value: T, keys: string[]) {
   return Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));
+}
+
+function invitationResponse(
+  payload: Record<string, unknown>,
+  status = 200,
+) {
+  return NextResponse.json(payload, { status });
+}
+
+function logCrewInvitationError(
+  event: string,
+  error?: unknown,
+  context: Record<string, unknown> = {},
+) {
+  const errorRecord = isRecord(error) ? error : {};
+  console.error("[crew-invitation-create]", {
+    event,
+    ...context,
+    code: cleanText(errorRecord.code) || undefined,
+    message:
+      cleanText(errorRecord.message) ||
+      (error instanceof Error ? error.message : undefined),
+  });
 }

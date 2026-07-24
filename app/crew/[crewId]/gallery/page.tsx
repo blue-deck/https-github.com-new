@@ -4,6 +4,13 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { Camera, Ship, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../../../components/BlueDeckLogo";
+import {
+  getPublicCrewDiscoverySettings,
+  normalizePublicCrewId,
+  publicStringArray,
+  redactPublicContactDetails,
+  safePublicMediaUrl,
+} from "../../../lib/publicCrewSafety";
 import { absoluteSiteUrl } from "../../../lib/site";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 import { PublicCrewGallery, type PublicGalleryPhoto } from "./GalleryClient";
@@ -31,6 +38,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!gallery) {
     return {
       title: "Crew photo gallery not found | BlueDeck",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -43,6 +54,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: `${position} professional yacht work photo gallery on BlueDeck.`,
     alternates: {
       canonical: absoluteSiteUrl(`/crew/${encodeURIComponent(publicCrewId)}/gallery`),
+    },
+    robots: {
+      index: false,
+      follow: false,
     },
   };
 }
@@ -135,7 +150,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
 const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: string): Promise<GalleryData | null> {
   if (!supabaseUrl || !supabaseServiceRoleKey) return null;
 
-  const cleanCrewId = decodeURIComponent(crewId).trim().toUpperCase();
+  const cleanCrewId = normalizePublicCrewId(crewId);
   if (!cleanCrewId) return null;
 
   const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
@@ -147,27 +162,49 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
 
   const { data: profile, error } = await serviceClient
     .from("crew_profiles")
-    .select("*")
+    .select(
+      "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,notes",
+    )
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 
-  if (error || !profile?.id) return null;
+  const discovery = getPublicCrewDiscoverySettings(profile?.notes);
+  if (error || !profile?.id || !discovery) return null;
 
-  const { data: photos } = await serviceClient
+  const { data: photos, error: photosError } = await serviceClient
     .from("crew_portfolio_photos")
-    .select("id,image_url,created_at,location")
+    .select("image_url,created_at,location")
     .eq("crew_profile_id", String(profile.id))
     .not("image_url", "is", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (photosError) return null;
 
   return {
-    profile: profile as Row,
+    profile: {
+      public_crew_id: cleanCrewId,
+      full_name: redactPublicContactDetails(profile.full_name, 120),
+      profile_photo_url: safePublicMediaUrl(profile.profile_photo_url),
+      current_position: redactPublicContactDetails(
+        profile.current_position,
+        120,
+      ),
+      current_positions: publicStringArray(
+        profile.current_positions,
+        18,
+        120,
+      ),
+    },
     photos: (photos || [])
-      .map((photo) => ({
-        id: text(photo as Row, "id") || text(photo as Row, "image_url"),
-        imageUrl: text(photo as Row, "image_url"),
-        order: gallerySortValue(photo as Row),
-      }))
+      .map((photo) => {
+        const imageUrl = safePublicMediaUrl(photo.image_url);
+        return {
+          id: imageUrl,
+          imageUrl,
+          order: gallerySortValue(photo as Row),
+        };
+      })
       .sort((first, second) => first.order - second.order)
       .filter((photo) => photo.imageUrl),
   };

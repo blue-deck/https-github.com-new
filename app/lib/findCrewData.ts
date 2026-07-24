@@ -1,10 +1,14 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
+import { type CrewDiscoverySettings } from "./crewDiscovery";
 import {
-  parseCrewDiscoverySettings,
-  type CrewDiscoverySettings,
-} from "./crewDiscovery";
+  getPublicCrewDiscoverySettings,
+  normalizePublicCrewId,
+  publicStringArray,
+  redactPublicContactDetails,
+  safePublicMediaUrl,
+} from "./publicCrewSafety";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
 export type DiscoverableCrewProfile = {
@@ -32,6 +36,8 @@ type CrewProfileRow = Record<string, unknown> & {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const discoverableCrewSelect =
+  "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes";
 
 export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]> {
   const serviceClient = createServiceClient();
@@ -39,9 +45,7 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
 
   const { data, error } = await serviceClient
     .from("crew_profiles")
-    .select(
-      "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at",
-    )
+    .select(discoverableCrewSelect)
     .not("public_crew_id", "is", null)
     .order("updated_at", { ascending: false })
     .limit(250);
@@ -51,13 +55,22 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
     return [];
   }
 
-  const visibleRows = ((data || []) as CrewProfileRow[]).filter((row) => {
-    const settings = parseCrewDiscoverySettings(text(row.notes));
-    return settings.discoverable && settings.contactVisibility !== "hidden";
-  });
+  const visibleRows = ((data || []) as CrewProfileRow[])
+    .map((row) => ({
+      row,
+      settings: getPublicCrewDiscoverySettings(row.notes),
+    }))
+    .filter(
+      (
+        entry,
+      ): entry is {
+        row: CrewProfileRow;
+        settings: CrewDiscoverySettings;
+      } => Boolean(entry.settings),
+    );
 
   const profileIds = visibleRows
-    .map((row) => text(row.id))
+    .map(({ row }) => text(row.id))
     .filter(Boolean);
   const experienceStarts = new Map<string, string[]>();
 
@@ -65,7 +78,8 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
     const { data: experienceRows } = await serviceClient
       .from("crew_experiences")
       .select("crew_profile_id,start_date")
-      .in("crew_profile_id", profileIds);
+      .in("crew_profile_id", profileIds)
+      .limit(5_000);
 
     for (const experience of experienceRows || []) {
       const profileId = text(experience.crew_profile_id);
@@ -76,7 +90,13 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
   }
 
   return visibleRows
-    .map((row) => toDiscoverableCrew(row, experienceStarts.get(text(row.id)) || []))
+    .map(({ row, settings }) =>
+      toDiscoverableCrew(
+        row,
+        experienceStarts.get(text(row.id)) || [],
+        settings,
+      ),
+    )
     .filter((profile): profile is DiscoverableCrewProfile => Boolean(profile))
     .sort(sortDiscoverableCrew);
 }
@@ -84,11 +104,38 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
 export async function getDiscoverableCrew(
   crewId: string,
 ): Promise<DiscoverableCrewProfile | null> {
-  const cleanCrewId = decodeURIComponent(crewId).trim().toUpperCase();
+  const cleanCrewId = normalizePublicCrewId(crewId);
   if (!cleanCrewId) return null;
 
-  const profiles = await listDiscoverableCrew();
-  return profiles.find((profile) => profile.crewId === cleanCrewId) || null;
+  const serviceClient = createServiceClient();
+  if (!serviceClient) return null;
+
+  const { data, error } = await serviceClient
+    .from("crew_profiles")
+    .select(discoverableCrewSelect)
+    .eq("public_crew_id", cleanCrewId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const row = data as CrewProfileRow;
+  const settings = getPublicCrewDiscoverySettings(row.notes);
+  const profileId = text(row.id);
+  if (!settings || !profileId) return null;
+
+  const { data: experienceRows, error: experienceError } = await serviceClient
+    .from("crew_experiences")
+    .select("start_date")
+    .eq("crew_profile_id", profileId)
+    .limit(100);
+
+  if (experienceError) return null;
+
+  return toDiscoverableCrew(
+    row,
+    (experienceRows || []).map((experience) => text(experience.start_date)),
+    settings,
+  );
 }
 
 function createServiceClient() {
@@ -105,30 +152,37 @@ function createServiceClient() {
 function toDiscoverableCrew(
   row: CrewProfileRow,
   experienceStarts: string[],
+  discovery: CrewDiscoverySettings,
 ): DiscoverableCrewProfile | null {
   const crewId = text(row.public_crew_id).toUpperCase();
   if (!crewId) return null;
 
   const currentPosition =
-    stringArray(row.current_positions)[0] ||
-    text(row.current_position) ||
+    publicStringArray(row.current_positions, 1, 120)[0] ||
+    redactPublicContactDetails(row.current_position, 120) ||
     "Yacht Crew";
 
   return {
     crewId,
-    fullName: text(row.full_name) || "BlueDeck Crew Member",
-    profilePhotoUrl: safePublicUrl(text(row.profile_photo_url)),
+    fullName:
+      redactPublicContactDetails(row.full_name, 120) ||
+      "BlueDeck Crew Member",
+    profilePhotoUrl: safePublicMediaUrl(row.profile_photo_url),
     currentPosition,
-    seekingPositions: stringArray(row.seeking_positions),
-    location: text(row.location),
-    nationality: text(row.nationality),
-    bio: text(row.bio),
+    seekingPositions: publicStringArray(row.seeking_positions, 18, 120),
+    location: redactPublicContactDetails(row.location, 160),
+    nationality: redactPublicContactDetails(row.nationality, 80),
+    bio: redactPublicContactDetails(row.bio, 2_000),
     languages: languageArray(row.languages),
-    personalSkills: stringArray(row.personal_skills).slice(0, 8),
-    personalCharacteristics: stringArray(row.personal_characteristics).slice(0, 8),
-    workPreferences: stringArray(row.work_preferences).slice(0, 8),
+    personalSkills: publicStringArray(row.personal_skills, 8, 120),
+    personalCharacteristics: publicStringArray(
+      row.personal_characteristics,
+      8,
+      120,
+    ),
+    workPreferences: publicStringArray(row.work_preferences, 8, 120),
     experienceYears: calculateExperienceYears(experienceStarts),
-    discovery: parseCrewDiscoverySettings(text(row.notes)),
+    discovery,
   };
 }
 
@@ -165,30 +219,15 @@ function languageArray(value: unknown) {
     .map((item) => {
       if (!item || typeof item !== "object") return null;
       const record = item as Record<string, unknown>;
-      const name = text(record.name);
+      const name = redactPublicContactDetails(record.name, 80);
       if (!name) return null;
-      return { name, level: text(record.level) };
+      return {
+        name,
+        level: redactPublicContactDetails(record.level, 80),
+      };
     })
     .filter((item): item is { name: string; level: string } => Boolean(item))
     .slice(0, 8);
-}
-
-function stringArray(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((item): item is string => typeof item === "string")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function safePublicUrl(value: string) {
-  if (!value) return "";
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";
-  } catch {
-    return "";
-  }
 }
 
 function text(value: unknown) {

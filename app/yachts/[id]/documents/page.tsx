@@ -2,14 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  parsePrivateStorageReference,
+  resolvePrivateStorageUrls,
+  type PrivateStorageReference,
+} from "../../../lib/privateStorageUrls";
 import { createSafeStoragePath } from "../../../lib/storage";
 import { supabase } from "../../../lib/supabase";
+import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
+
+const configuredSupabaseUrl = resolveSupabaseUrl(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+);
 
 type YachtDocument = {
   id: string;
   title: string | null;
   category: string | null;
   file_url: string | null;
+  storage_reference: string | null;
   file_name: string | null;
   expiry_date: string | null;
   created_at: string;
@@ -26,6 +37,29 @@ export default function DocumentsPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [accessLoaded, setAccessLoaded] = useState(false);
+  const [canManageDocuments, setCanManageDocuments] = useState(false);
+
+  async function fetchDocumentAccess() {
+    if (!yachtId) return;
+
+    const [
+      {
+        data: { user },
+      },
+      { data: yacht },
+    ] = await Promise.all([
+      supabase.auth.getUser(),
+      supabase
+        .from("yachts")
+        .select("owner_id")
+        .eq("id", yachtId)
+        .maybeSingle(),
+    ]);
+
+    setCanManageDocuments(Boolean(user && yacht?.owner_id === user.id));
+    setAccessLoaded(true);
+  }
 
   async function fetchDocuments() {
     if (!yachtId) return;
@@ -44,11 +78,36 @@ export default function DocumentsPage() {
       return;
     }
 
-    setDocuments(data || []);
+    const rows = data || [];
+    const signedUrls = await resolvePrivateStorageUrls(
+      supabase,
+      rows.map(
+        (document): PrivateStorageReference => ({
+          value: document.file_url,
+          defaultBucket: "documents",
+          allowedBuckets: ["documents", "yacht-documents"],
+          expectedPathOwner: yachtId,
+        }),
+      ),
+      configuredSupabaseUrl,
+    );
+
+    setDocuments(
+      rows.map((document, index) => ({
+        ...document,
+        storage_reference: document.file_url,
+        file_url: signedUrls[index] || null,
+      })),
+    );
     setLoading(false);
   }
 
   async function uploadDocument() {
+    if (!canManageDocuments) {
+      alert("Only the registered yacht owner can upload documents.");
+      return;
+    }
+
     if (!title.trim()) {
       alert("Document title is required");
       return;
@@ -61,23 +120,11 @@ export default function DocumentsPage() {
 
     setUploading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setUploading(false);
-      alert("Not authenticated");
-      return;
-    }
-
     const filePath = createSafeStoragePath(yachtId, file, "document");
-
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(filePath, file, {
-        upsert: false,
-      });
+    const storage = supabase.storage.from("documents");
+    const { error: uploadError } = await storage.upload(filePath, file, {
+      upsert: false,
+    });
 
     if (uploadError) {
       setUploading(false);
@@ -85,26 +132,21 @@ export default function DocumentsPage() {
       return;
     }
 
-    const { data: publicUrlData } = supabase.storage
-      .from("documents")
-      .getPublicUrl(filePath);
-
     const { error: insertError } = await supabase
       .from("yacht_documents")
       .insert([
         {
           yacht_id: yachtId,
-          uploaded_by: user.id,
           title,
           category,
           expiry_date: expiryDate || null,
-          file_url: publicUrlData.publicUrl,
+          file_url: filePath,
           file_name: file.name,
-          visibility: "captain",
         },
       ]);
 
     if (insertError) {
+      await storage.remove([filePath]);
       setUploading(false);
       alert(insertError.message);
       return;
@@ -119,21 +161,50 @@ export default function DocumentsPage() {
     fetchDocuments();
   }
 
-  async function deleteDocument(documentId: string) {
+  async function deleteDocument(document: YachtDocument) {
+    if (!canManageDocuments) {
+      alert("Only the registered yacht owner can delete documents.");
+      return;
+    }
+
     const confirmDelete = confirm("Delete this document?");
     if (!confirmDelete) return;
 
     const { error } = await supabase
       .from("yacht_documents")
       .delete()
-      .eq("id", documentId);
+      .eq("id", document.id)
+      .eq("yacht_id", yachtId);
 
     if (error) {
       alert(error.message);
       return;
     }
 
-    fetchDocuments();
+    const storedObject = parsePrivateStorageReference(
+      {
+        value: document.storage_reference,
+        defaultBucket: "documents",
+        allowedBuckets: ["documents", "yacht-documents"],
+        expectedPathOwner: yachtId,
+      },
+      configuredSupabaseUrl,
+    );
+    const cleanupError = storedObject
+      ? (
+          await supabase.storage
+            .from(storedObject.bucket)
+            .remove([storedObject.path])
+        ).error
+      : null;
+
+    await fetchDocuments();
+
+    if (cleanupError) {
+      alert(
+        "The document record was deleted, but its stored file could not be cleaned up.",
+      );
+    }
   }
 
   function getFileBadge(fileName: string | null) {
@@ -171,6 +242,7 @@ export default function DocumentsPage() {
   useEffect(() => {
     if (yachtId) {
       fetchDocuments();
+      fetchDocumentAccess();
     }
   }, [yachtId]);
 
@@ -196,57 +268,66 @@ export default function DocumentsPage() {
           <div className="bd-app-card rounded-3xl bg-white/5 p-8">
             <h2 className="text-3xl font-bold">Upload Document</h2>
 
-            <div className="mt-8 space-y-4">
-              <input
-                placeholder="Document title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
-              />
+            {!accessLoaded ? (
+              <p className="mt-8 text-gray-400">Checking document access...</p>
+            ) : !canManageDocuments ? (
+              <p className="mt-8 text-gray-400">
+                Documents are read-only here. Only the registered yacht owner
+                can upload or delete files.
+              </p>
+            ) : (
+              <div className="mt-8 space-y-4">
+                <input
+                  placeholder="Document title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                />
 
-              <select
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
-              >
-                <option value="Crew">Crew</option>
-                <option value="License">License</option>
-                <option value="Technical">Technical</option>
-                <option value="Insurance">Insurance</option>
-                <option value="Manual">Manual</option>
-                <option value="Contract">Contract</option>
-                <option value="Yacht Papers">Yacht Papers</option>
-                <option value="Invoice">Invoice</option>
-                <option value="Other">Other</option>
-              </select>
+                <select
+                  value={category}
+                  onChange={(event) => setCategory(event.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                >
+                  <option value="Crew">Crew</option>
+                  <option value="License">License</option>
+                  <option value="Technical">Technical</option>
+                  <option value="Insurance">Insurance</option>
+                  <option value="Manual">Manual</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Yacht Papers">Yacht Papers</option>
+                  <option value="Invoice">Invoice</option>
+                  <option value="Other">Other</option>
+                </select>
 
-              <input
-                type="date"
-                value={expiryDate}
-                onChange={(event) => setExpiryDate(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
-              />
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(event) => setExpiryDate(event.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                />
 
-              <input
-                type="file"
-                onChange={(event) => setFile(event.target.files?.[0] || null)}
-                className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4"
-              />
+                <input
+                  type="file"
+                  onChange={(event) => setFile(event.target.files?.[0] || null)}
+                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4"
+                />
 
-              {file && (
-                <p className="text-sm text-gray-400">
-                  Selected file: {file.name}
-                </p>
-              )}
+                {file && (
+                  <p className="text-sm text-gray-400">
+                    Selected file: {file.name}
+                  </p>
+                )}
 
-              <button
-                onClick={uploadDocument}
-                disabled={uploading}
-                className="w-full rounded-2xl bg-blue-400 px-5 py-4 font-semibold text-black disabled:opacity-50"
-              >
-                {uploading ? "Uploading..." : "Upload Document"}
-              </button>
-            </div>
+                <button
+                  onClick={uploadDocument}
+                  disabled={uploading}
+                  className="w-full rounded-2xl bg-blue-400 px-5 py-4 font-semibold text-black disabled:opacity-50"
+                >
+                  {uploading ? "Uploading..." : "Upload Document"}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bd-app-card rounded-3xl bg-white/5 p-8">
@@ -313,18 +394,21 @@ export default function DocumentsPage() {
                           <a
                             href={document.file_url}
                             target="_blank"
+                            rel="noreferrer"
                             className="rounded-xl bg-blue-400 px-4 py-2 font-semibold text-black"
                           >
                             Open
                           </a>
                         )}
 
-                        <button
-                          onClick={() => deleteDocument(document.id)}
-                          className="rounded-xl border border-red-500/30 px-4 py-2 font-semibold text-red-300"
-                        >
-                          Delete
-                        </button>
+                        {canManageDocuments && (
+                          <button
+                            onClick={() => deleteDocument(document)}
+                            className="rounded-xl border border-red-500/30 px-4 py-2 font-semibold text-red-300"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

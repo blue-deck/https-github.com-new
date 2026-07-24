@@ -4,27 +4,39 @@ import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const cronSecret = process.env.CRON_SECRET;
 
-type ChecklistRow = Record<string, any>;
+type ChecklistRow = Record<string, unknown>;
+
+const noStoreHeaders = {
+  "Cache-Control": "no-store, max-age=0",
+};
+
+function jsonResponse(payload: Record<string, unknown>, status = 200) {
+  return NextResponse.json(payload, {
+    status,
+    headers: noStoreHeaders,
+  });
+}
 
 function isAuthorized(request: NextRequest) {
-  if (cronSecret) {
-    return request.headers.get("authorization") === `Bearer ${cronSecret}`;
-  }
+  const cronSecret = process.env.CRON_SECRET;
 
-  if (process.env.NODE_ENV !== "production") return true;
+  if (!cronSecret?.trim()) return false;
 
-  const userAgent = request.headers.get("user-agent") || "";
-  return userAgent.toLowerCase().includes("vercel-cron");
+  return request.headers.get("authorization") === `Bearer ${cronSecret}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function getFrequency(checklist: ChecklistRow) {
-  return checklist?.frequency || checklist?.items?.frequency || "";
-}
-
-function getCaptainNote(checklist: ChecklistRow) {
-  return checklist?.captain_note || checklist?.items?.captain_note || "";
+  const items = isRecord(checklist.items) ? checklist.items : null;
+  return getString(checklist.frequency) || getString(items?.frequency);
 }
 
 function isRecurringFrequency(frequency?: string) {
@@ -32,13 +44,19 @@ function isRecurringFrequency(frequency?: string) {
 }
 
 function getRecurringSignature(checklist: ChecklistRow, frequency: string) {
-  if (!checklist?.assigned_to || !checklist?.title) return "";
+  const checklistId = getString(checklist.id);
+  const assignedTo = getString(checklist.assigned_to);
+  const yachtId = getString(checklist.yacht_id);
+  const title = getString(checklist.title);
+
+  if (!checklistId || !assignedTo || !yachtId || !title) return "";
+
   return [
-    checklist.assigned_to,
-    checklist.yacht_id,
-    checklist.title,
-    checklist.department,
-    checklist.checklist_type,
+    assignedTo,
+    yachtId,
+    title,
+    getString(checklist.department),
+    getString(checklist.checklist_type),
     frequency,
   ].join("|").toLowerCase();
 }
@@ -61,150 +79,104 @@ function getPeriodKey(value: string, frequency: string) {
   return `${year}-W${`${week}`.padStart(2, "0")}`;
 }
 
-function omitKeys<T extends Record<string, unknown>>(value: T, keys: string[]) {
-  return Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));
-}
-
-function isSchemaCacheError(error: any) {
-  const text = `${error?.message || ""} ${error?.details || ""} ${error?.hint || ""}`.toLowerCase();
-  return text.includes("schema cache") || text.includes("column");
-}
-
-async function insertChecklist(supabase: any, payload: Record<string, any>) {
-  const variants = [
-    payload,
-    omitKeys(payload, ["captain_note"]),
-    omitKeys(payload, ["frequency"]),
-    omitKeys(payload, ["frequency", "captain_note"]),
-    omitKeys(payload, ["items"]),
-    omitKeys(payload, ["items", "captain_note"]),
-    omitKeys(payload, ["items", "frequency"]),
-    omitKeys(payload, ["items", "frequency", "captain_note"]),
-    omitKeys(payload, ["items", "frequency", "captain_note", "due_date"]),
-    omitKeys(payload, ["items", "frequency", "captain_note", "due_date", "status"]),
-  ];
-
-  let lastResponse: any = null;
-
-  for (const variant of variants) {
-    const response = await supabase
-      .from("yacht_checklists")
-      .insert(variant)
-      .select()
-      .single();
-
-    if (!response.error) return response;
-    lastResponse = response;
-
-    if (!isSchemaCacheError(response.error)) return response;
-  }
-
-  return lastResponse;
-}
-
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    return jsonResponse({ ok: false, error: "Unauthorized" }, 401);
   }
 
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    return NextResponse.json({ ok: false, error: "Supabase is not configured." }, { status: 500 });
+    return jsonResponse(
+      { ok: false, error: "Checklist renewal is unavailable." },
+      503
+    );
   }
 
-  const supabase = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-
-  const now = new Date();
-  const { data: checklists, error } = await supabase
-    .from("yacht_checklists")
-    .select("*, yacht_checklist_items (*)")
-    .not("assigned_to", "is", null)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  }
-
-  const sourceBySignature = new Map<string, ChecklistRow>();
-  const currentPeriodSignatures = new Set<string>();
-
-  (checklists || []).forEach((checklist: ChecklistRow) => {
-    const frequency = getFrequency(checklist);
-    if (!isRecurringFrequency(frequency)) return;
-
-    const signature = getRecurringSignature(checklist, frequency);
-    if (!signature) return;
-
-    if (!sourceBySignature.has(signature)) {
-      sourceBySignature.set(signature, checklist);
-    }
-
-    if (getPeriodKey(checklist.created_at, frequency) === getPeriodKey(now.toISOString(), frequency)) {
-      currentPeriodSignatures.add(signature);
-    }
-  });
-
-  let created = 0;
-  const failures: string[] = [];
-
-  for (const [signature, source] of sourceBySignature.entries()) {
-    const frequency = getFrequency(source);
-    if (currentPeriodSignatures.has(signature)) continue;
-
-    const periodKey = getPeriodKey(now.toISOString(), frequency);
-    const payload = {
-      yacht_id: source.yacht_id,
-      title: source.title,
-      department: source.department,
-      checklist_type: source.checklist_type,
-      frequency,
-      due_date: now.toISOString().slice(0, 10),
-      captain_note: getCaptainNote(source) || null,
-      assigned_to: source.assigned_to,
-      status: "open",
-      items: {
-        ...(typeof source.items === "object" && source.items ? source.items : {}),
-        frequency,
-        captain_note: getCaptainNote(source) || null,
-        recurring_from: source.id,
-        recurring_period: periodKey,
+  try {
+    const supabase = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
       },
-    };
+    });
 
-    const { data: checklist, error: insertError } = await insertChecklist(supabase, payload);
-    if (insertError || !checklist?.id) {
-      failures.push(signature);
-      continue;
+    const now = new Date();
+    const { data: checklists, error } = await supabase
+      .from("yacht_checklists")
+      .select("*, yacht_checklist_items (*)")
+      .not("assigned_to", "is", null)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Recurring checklist lookup failed", error);
+      return jsonResponse({ ok: false, error: "Checklist renewal failed." }, 500);
     }
 
-    const tasks = (source.yacht_checklist_items || [])
-      .map((task: any) => (task.task_text || "").trim())
-      .filter(Boolean);
+    const sourceBySignature = new Map<string, ChecklistRow>();
+    const currentPeriodSignatures = new Set<string>();
 
-    if (tasks.length) {
-      await supabase.from("yacht_checklist_items").insert(
-        tasks.map((task: string) => ({
-          checklist_id: checklist.id,
-          task_text: task,
-          completed: false,
-        }))
+    (Array.isArray(checklists) ? checklists : [])
+      .filter(isRecord)
+      .forEach((checklist) => {
+        const frequency = getFrequency(checklist);
+        const createdAt = getString(checklist.created_at);
+
+        if (!isRecurringFrequency(frequency) || !createdAt) return;
+
+        const signature = getRecurringSignature(checklist, frequency);
+        if (!signature) return;
+
+        if (!sourceBySignature.has(signature)) {
+          sourceBySignature.set(signature, checklist);
+        }
+
+        if (getPeriodKey(createdAt, frequency) === getPeriodKey(now.toISOString(), frequency)) {
+          currentPeriodSignatures.add(signature);
+        }
+      });
+
+    let created = 0;
+    let skipped = currentPeriodSignatures.size;
+    const failures: string[] = [];
+
+    for (const [signature, source] of sourceBySignature.entries()) {
+      const frequency = getFrequency(source);
+      if (currentPeriodSignatures.has(signature)) continue;
+
+      const periodKey = getPeriodKey(now.toISOString(), frequency);
+      const { data, error: renewalError } = await supabase.rpc(
+        "bluedeck_create_recurring_checklist",
+        {
+          p_source_id: getString(source.id),
+          p_period_key: periodKey,
+          p_due_date: now.toISOString().slice(0, 10),
+        },
       );
+      const renewal = isRecord(data) ? data : {};
+
+      if (renewalError || renewal.ok !== true) {
+        console.error("Recurring checklist renewal RPC failed", renewalError);
+        failures.push(signature);
+        continue;
+      }
+
+      if (renewal.created === true) {
+        created += 1;
+      } else {
+        skipped += 1;
+      }
     }
 
-    created += 1;
+    return jsonResponse({
+      ok: true,
+      created,
+      skipped,
+      failures: failures.length,
+      renewedAt: now.toISOString(),
+    });
+  } catch (error) {
+    console.error("Recurring checklist renewal failed", error);
+    return jsonResponse({ ok: false, error: "Checklist renewal failed." }, 500);
   }
-
-  return NextResponse.json({
-    ok: true,
-    created,
-    skipped: currentPeriodSignatures.size,
-    failures: failures.length,
-    renewedAt: now.toISOString(),
-  });
 }
 
 export async function POST(request: NextRequest) {

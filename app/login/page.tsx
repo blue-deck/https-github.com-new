@@ -7,7 +7,7 @@ import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import type { TranslationKey } from "../lib/i18n";
-import { authConfirmUrl } from "../lib/site";
+import { authConfirmUrl, safeInternalPath } from "../lib/site";
 import { supabase } from "../lib/supabase";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const requestedMode = searchParams.get("mode");
     const requestedRole = searchParams.get("role");
-    const requestedNext = safeNextPath(searchParams.get("next"));
+    const requestedNext = safeInternalPath(searchParams.get("next"));
     const isPasswordRecovery =
       requestedMode === "recovery" ||
       searchParams.get("type") === "recovery" ||
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    setNextPath(safeNextPath(searchParams.get("next")));
+    setNextPath(safeInternalPath(searchParams.get("next")));
   }, []);
 
   async function submit() {
@@ -550,9 +550,4 @@ function hasSignupPasswordRequirements(value: string) {
     /\d/.test(value) &&
     /[^A-Za-z0-9]/.test(value)
   );
-}
-
-function safeNextPath(value?: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
-  return value;
 }

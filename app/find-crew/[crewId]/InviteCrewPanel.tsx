@@ -19,6 +19,12 @@ type YachtOption = {
   name: string;
 };
 
+type HiringYacht = YachtOption & {
+  access?: {
+    status?: string;
+  } | null;
+};
+
 export function InviteCrewPanel({
   crewId,
   fullName,
@@ -31,6 +37,7 @@ export function InviteCrewPanel({
   const [loading, setLoading] = useState(true);
   const [sessionToken, setSessionToken] = useState("");
   const [authorized, setAuthorized] = useState(false);
+  const [hasOwnedYachts, setHasOwnedYachts] = useState(false);
   const [yachts, setYachts] = useState<YachtOption[]>([]);
   const [selectedYacht, setSelectedYacht] = useState("");
   const [position, setPosition] = useState(
@@ -60,29 +67,36 @@ export function InviteCrewPanel({
       setSessionToken(session.access_token);
       setShortlisted(readShortlist(session.user.user_metadata).includes(crewId));
 
-      const [{ data: baseProfile }, { data: yachtRows }] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", session.user.id)
-          .maybeSingle(),
-        supabase
-          .from("yachts")
-          .select("id,name")
-          .eq("owner_id", session.user.id)
-          .order("created_at", { ascending: false }),
-      ]);
+      try {
+        const response = await fetch("/api/employer-access", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        });
+        const payload: unknown = await response.json().catch(() => null);
+        const result =
+          payload && typeof payload === "object"
+            ? (payload as Record<string, unknown>)
+            : {};
+        const ownedYachts = Array.isArray(result.yachts)
+          ? (result.yachts as HiringYacht[])
+          : [];
+        const nextYachts = ownedYachts
+          .filter((yacht) => yacht.access?.status === "verified")
+          .map((yacht) => ({ id: yacht.id, name: yacht.name }))
+          .filter((yacht) => yacht.id && yacht.name);
 
-      const role = String(baseProfile?.role || session.user.user_metadata?.role || "")
-        .trim()
-        .toLowerCase();
-      const canHire = ["captain", "owner", "management"].includes(role);
-      const nextYachts = (yachtRows || []) as YachtOption[];
-
-      setAuthorized(canHire);
-      setYachts(nextYachts);
-      setSelectedYacht(nextYachts[0]?.id || "");
-      setLoading(false);
+        setHasOwnedYachts(ownedYachts.length > 0);
+        setAuthorized(response.ok && nextYachts.length > 0);
+        setYachts(nextYachts);
+        setSelectedYacht(nextYachts[0]?.id || "");
+      } catch {
+        setHasOwnedYachts(false);
+        setAuthorized(false);
+        setYachts([]);
+        setSelectedYacht("");
+      } finally {
+        setLoading(false);
+      }
     }
 
     void loadHiringContext();
@@ -177,11 +191,7 @@ export function InviteCrewPanel({
               <LogIn className="h-4 w-4" />
               Log in to continue
             </Link>
-          ) : !authorized ? (
-            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-              Yacht invitations are available to captain, owner and management accounts.
-            </div>
-          ) : yachts.length === 0 ? (
+          ) : !hasOwnedYachts ? (
             <div className="mt-6">
               <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-sm leading-6 text-cyan-950">
                 Add a yacht to your workspace before sending an invitation.
@@ -192,6 +202,17 @@ export function InviteCrewPanel({
               >
                 <Ship className="h-4 w-4" />
                 Open yacht workspace
+              </Link>
+            </div>
+          ) : !authorized ? (
+            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+              BlueDeck must verify hiring access for this yacht before you can
+              contact crew.
+              <Link
+                href="/hiring"
+                className="mt-3 flex min-h-11 items-center justify-center rounded-xl bg-amber-950 px-4 font-black text-white"
+              >
+                Request hiring access
               </Link>
             </div>
           ) : (

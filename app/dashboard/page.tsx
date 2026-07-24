@@ -24,12 +24,7 @@ import {
   saveDashboardPhoto as persistDashboardPhoto,
   subscribeDashboardPhotoUpdates,
 } from "../lib/accountIdentity";
-import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { supabase } from "../lib/supabase";
-import {
-  markInvitationAccepted,
-  saveYachtMembership,
-} from "../lib/yachtMemberships";
 
 type DashboardProfile = {
   id?: string;
@@ -55,6 +50,7 @@ type DashboardYachtInvite = {
   crew_profile_id?: string;
   sender_name?: string;
   sender_role?: string;
+  token?: string;
 };
 
 type DashboardDeck = {
@@ -301,6 +297,23 @@ export default function DashboardPage() {
       return;
     }
 
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      try {
+        await fetch("/api/crew-profile/reconcile", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+      } catch {
+        // Reconciliation is a safe, idempotent legacy bridge. The regular
+        // dashboard can still load when it is temporarily unavailable.
+      }
+    }
+
     let { data: profileData } = await supabase
       .from("profiles")
       .select("*")
@@ -421,68 +434,51 @@ export default function DashboardPage() {
 
   async function acceptDashboardInvite(invite: DashboardYachtInvite) {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!user?.email) {
+    if (!session?.access_token) {
       window.location.href = "/login";
       return;
     }
 
+    if (!invite.token) {
+      alert("This invitation link is incomplete. Ask the sender to create a new invitation.");
+      return;
+    }
+
     setAcceptingInviteId(invite.id);
-    let crewProfileId = profile?.crew_profile_id || invite.crew_profile_id;
-
-    if (!crewProfileId) {
-      const { data: crewProfile, error } = await saveCrewProfileByUserId<{ id?: string }>(
-        supabase,
-        user.id,
+    try {
+      const response = await fetch(
+        `/api/crew-invitations/${encodeURIComponent(invite.token)}`,
         {
-          email: profile?.email || user.email,
-          full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-          phone: profile?.phone || user.user_metadata?.phone || "",
-          public_crew_id: user.id.slice(0, 8).toUpperCase(),
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         },
-        "id"
       );
+      const payload: unknown = await response.json();
+      const error =
+        payload && typeof payload === "object"
+          ? (payload as Record<string, unknown>).error
+          : null;
 
-      if (error) {
-        alert(error.message);
-        setAcceptingInviteId("");
+      if (!response.ok) {
+        alert(
+          typeof error === "string"
+            ? error
+            : "Invitation could not be accepted.",
+        );
         return;
       }
 
-      crewProfileId = crewProfile?.id;
-    }
-
-    const { error: memberError } = await saveYachtMembership(supabase, {
-      yacht_id: invite.yacht_id,
-      crew_profile_id: crewProfileId,
-      invited_email: profile?.email || user.email,
-      position: invite.position,
-      department: invite.department,
-      status: "active",
-    });
-
-    if (memberError) {
-      alert(memberError.message);
+      await loadDashboard();
+    } catch {
+      alert("Invitation could not be accepted.");
+    } finally {
       setAcceptingInviteId("");
-      return;
     }
-
-    const { error: inviteError } = await markInvitationAccepted(
-      supabase,
-      invite.id,
-      crewProfileId
-    );
-
-    if (inviteError) {
-      alert(inviteError.message);
-      setAcceptingInviteId("");
-      return;
-    }
-
-    await loadDashboard();
-    setAcceptingInviteId("");
   }
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { signChecklistTaskPhotoUrls } from "../../../../lib/privateStorageUrls";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 import {
   canInviteCrew,
@@ -17,8 +18,12 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const { id: yachtId } = await context.params;
+  const yachtId = (await context.params).id.trim().toLowerCase();
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+
+  if (!isUuid(yachtId)) {
+    return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
+  }
 
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return NextResponse.json({ ok: false, error: "Supabase is not configured." }, { status: 500 });
@@ -46,12 +51,22 @@ export async function GET(
 
   const { data: yacht } = await serviceClient
     .from("yachts")
-    .select("id,owner_id")
+    .select("id,owner_id,name,model,flag")
     .eq("id", yachtId)
     .maybeSingle();
 
   if (!yacht) {
     return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
+  }
+
+  // Historical membership rows were client-writable and are not a trustworthy
+  // source of management authority. Keep roster PII owner-only until explicit,
+  // owner-approved manager grants are introduced.
+  if (yacht.owner_id !== user.id) {
+    return NextResponse.json(
+      { ok: false, error: "Only the registered yacht owner can manage this crew roster." },
+      { status: 403 },
+    );
   }
 
   let crewResponse = await serviceClient
@@ -70,6 +85,9 @@ export async function GET(
         date_of_birth,
         passport_number,
         passport_expiry,
+        visa_country,
+        visa_expiry,
+        seaman_book_expiry,
         stcw_expiry,
         medical_expiry
       )
@@ -138,20 +156,6 @@ export async function GET(
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
   const retentionCutoff = sixMonthsAgo.toISOString();
-  let purgedChecklists = 0;
-
-  const { data: staleChecklists } = await serviceClient
-    .from("yacht_checklists")
-    .select("id")
-    .eq("yacht_id", yachtId)
-    .lt("created_at", retentionCutoff);
-
-  if (staleChecklists?.length) {
-    const staleIds = staleChecklists.map((item: { id: string }) => item.id);
-    await serviceClient.from("yacht_checklist_items").delete().in("checklist_id", staleIds);
-    const purgeResponse = await serviceClient.from("yacht_checklists").delete().in("id", staleIds);
-    if (!purgeResponse.error) purgedChecklists = staleIds.length;
-  }
 
   const { data: checklists, error: checklistError } = await serviceClient
     .from("yacht_checklists")
@@ -166,10 +170,33 @@ export async function GET(
     return NextResponse.json({ ok: false, error: checklistError.message }, { status: 500 });
   }
 
+  const signedChecklists = await signChecklistTaskPhotoUrls(
+    serviceClient,
+    checklists || [],
+    resolveSupabaseUrl(supabaseUrl),
+  );
+
+  const safeCrew = (crewResponse.data || []).map((membership: any) => {
+    if (String(membership.status || "").trim().toLowerCase() === "active") {
+      return membership;
+    }
+
+    return {
+      ...membership,
+      crew_profiles: null,
+    };
+  });
+
   return NextResponse.json({
     ok: true,
-    crew: crewResponse.data || [],
-    checklists: checklists || [],
+    yacht: {
+      id: yacht.id,
+      name: yacht.name || "Yacht",
+      model: yacht.model || "",
+      flag: yacht.flag || "",
+    },
+    crew: safeCrew,
+    checklists: signedChecklists,
     operator: {
       position: operatorPosition,
       department: operatorDepartment,
@@ -179,8 +206,10 @@ export async function GET(
     checklist_retention: {
       months: 6,
       cutoff: retentionCutoff,
-      purged: purgedChecklists,
+      purged: 0,
     },
+  }, {
+    headers: { "Cache-Control": "no-store" },
   });
 }
 
@@ -194,8 +223,12 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const { id: yachtId } = await context.params;
+  const yachtId = (await context.params).id.trim().toLowerCase();
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "").trim();
+
+  if (!isUuid(yachtId)) {
+    return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
+  }
 
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return NextResponse.json({ ok: false, error: "Supabase is not configured." }, { status: 500 });
@@ -262,7 +295,7 @@ export async function PATCH(
       .maybeSingle(),
     serviceClient
       .from("yacht_crew_memberships")
-      .select("id,crew_profile_id,position,department")
+      .select("id,crew_profile_id,position,department,status")
       .eq("id", membershipId)
       .eq("yacht_id", yachtId)
       .maybeSingle(),
@@ -270,6 +303,13 @@ export async function PATCH(
 
   if (!yacht) {
     return NextResponse.json({ ok: false, error: "Yacht not found." }, { status: 404 });
+  }
+
+  if (yacht.owner_id !== user.id) {
+    return NextResponse.json(
+      { ok: false, error: "Only the registered yacht owner can edit this crew roster." },
+      { status: 403 },
+    );
   }
 
   if (targetMembershipResponse.error) {
@@ -370,10 +410,47 @@ export async function PATCH(
   }
 
   if (fullName !== undefined) {
+    if (
+      String(targetMembership.status || "").trim().toLowerCase() !== "active"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "A crew member must accept the invitation before their roster name can be edited.",
+        },
+        { status: 409 },
+      );
+    }
+
     if (!targetMembership.crew_profile_id) {
       return NextResponse.json(
         { ok: false, error: "This invitation does not have a crew profile to rename yet." },
         { status: 409 },
+      );
+    }
+
+    const { data: targetProfile, error: targetProfileError } =
+      await serviceClient
+        .from("crew_profiles")
+        .select("id,user_id")
+        .eq("id", targetMembership.crew_profile_id)
+        .maybeSingle();
+
+    if (targetProfileError) {
+      return NextResponse.json(
+        { ok: false, error: "Crew profile ownership could not be verified." },
+        { status: 500 },
+      );
+    }
+
+    if (!targetProfile || targetProfile.user_id) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Linked crew members control their own profile name. Update only the yacht position here.",
+        },
+        { status: 403 },
       );
     }
 
@@ -425,4 +502,10 @@ function normalizeRole(value?: unknown) {
 function isSchemaCacheError(error: { message?: string; code?: string } | null) {
   if (!error) return false;
   return error.code === "PGRST204" || /schema cache|column/i.test(error.message || "");
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }

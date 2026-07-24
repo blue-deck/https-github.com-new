@@ -4,13 +4,18 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
   BriefcaseBusiness,
-  Mail,
   MapPin,
-  Phone,
   UserRound,
 } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import { CvScaleFrame } from "../../components/CvScaleFrame";
+import {
+  getPublicCrewDiscoverySettings,
+  normalizePublicCrewId,
+  publicStringArray,
+  redactPublicContactDetails,
+  safePublicMediaUrl,
+} from "../../lib/publicCrewSafety";
 import { absoluteSiteUrl } from "../../lib/site";
 import { resolveSupabaseUrl } from "../../lib/supabaseConfig";
 
@@ -44,6 +49,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!cv) {
     return {
       title: "Crew CV not found | BlueDeck",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
@@ -55,6 +64,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     description: `${position} CV on BlueDeck.`,
     alternates: {
       canonical: absoluteSiteUrl(`/crew/${encodeURIComponent(text(cv.profile, "public_crew_id") || crewId)}`),
+    },
+    robots: {
+      index: false,
+      follow: false,
     },
   };
 }
@@ -115,21 +128,9 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             <div className="bd-cv-side-stack space-y-8">
               <SideSection title="Profile">
                 <div className="space-y-2.5">
-                  <SidebarLine label="Date of Birth" value={formatFullCvDate(text(profile, "date_of_birth"))} />
                   <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
-                  <SidebarLine label="Gender" value={text(profile, "gender") || "-"} />
-                  <SidebarLine label="Height" value={text(profile, "height_cm") ? `${text(profile, "height_cm")} cm` : "-"} />
-                  <SidebarLine label="Weight" value={text(profile, "weight_kg") ? `${text(profile, "weight_kg")} kg` : "-"} />
-                  <SidebarLine label="Smoker" value={text(profile, "smoker") || "-"} />
-                  <SidebarLine label="Visible tattoos" value={text(profile, "visible_tattoos") || "-"} />
-                </div>
-              </SideSection>
-
-              <SideSection title="Contact">
-                <div className="space-y-2.5 text-sm font-semibold text-[#3d454c]">
-                  <ContactLine icon={<Phone className="h-4 w-4" />} text={text(profile, "phone") || "-"} />
-                  <ContactLine icon={<Mail className="h-4 w-4" />} text={text(profile, "email") || "-"} />
-                  <ContactLine icon={<MapPin className="h-4 w-4" />} text={text(profile, "location") || "-"} />
+                  <SidebarLine label="Current location" value={text(profile, "location") || "-"} />
+                  <SidebarLine label="Current role" value={position} />
                 </div>
               </SideSection>
 
@@ -261,12 +262,12 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               <CvSection title="References">
                 <div className="grid gap-3 sm:grid-cols-2">
                   {standaloneReferences.slice(0, 4).map((reference) => (
-                    <div key={text(reference, "id") || text(reference, "email") || text(reference, "name")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
+                    <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                       <p className="font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
                       <p className="mt-1 text-sm font-semibold text-[#2d7482]">
                         {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
                       </p>
-                      <p className="mt-2 text-xs text-[#5a6870]">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
+                      <p className="mt-2 text-xs text-[#5a6870]">Contact details are protected by request.</p>
                     </div>
                   ))}
                 </div>
@@ -288,7 +289,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Promise<CrewCvData | null> {
   if (!supabaseUrl || !supabaseServiceRoleKey) return null;
 
-  const cleanCrewId = decodeURIComponent(crewId).trim().toUpperCase();
+  const cleanCrewId = normalizePublicCrewId(crewId);
   if (!cleanCrewId) return null;
 
   const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
@@ -300,38 +301,113 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
 
   const { data: profile, error } = await serviceClient
     .from("crew_profiles")
-    .select("*")
+    .select(
+      "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes",
+    )
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 
-  if (error || !profile?.id) return null;
+  const discovery = getPublicCrewDiscoverySettings(profile?.notes);
+  if (error || !profile?.id || !discovery) return null;
 
   const profileId = String(profile.id);
-  const [documentRes, experienceRes, referenceRes] = await Promise.all([
+  const [documentRes, initialExperienceRes, referenceRes] = await Promise.all([
     serviceClient
       .from("crew_documents")
-      .select("*")
+      .select("id,document_type,category,issuer,expiry_date,no_expiry")
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(10),
     serviceClient
       .from("crew_experiences")
-      .select("*")
+      .select(
+        "id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,photo_url",
+      )
       .eq("crew_profile_id", profileId)
-      .order("start_date", { ascending: false }),
+      .order("start_date", { ascending: false })
+      .limit(30),
     serviceClient
       .from("crew_references")
-      .select("*")
+      .select("id,role,vessel,company")
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
 
+  let experienceRows = initialExperienceRes.data as Row[] | null;
+  let experienceError = initialExperienceRes.error;
+
+  if (
+    experienceError &&
+    /yacht_type|yacht_program|yacht_size|location|schema cache|column/i.test(
+      experienceError.message,
+    )
+  ) {
+    const fallbackExperienceRes = await serviceClient
+      .from("crew_experiences")
+      .select(
+        "id,yacht_name,position,start_date,end_date,description,photo_url",
+      )
+      .eq("crew_profile_id", profileId)
+      .order("start_date", { ascending: false })
+      .limit(30);
+    experienceRows = fallbackExperienceRes.data as Row[] | null;
+    experienceError = fallbackExperienceRes.error;
+  }
+
+  if (documentRes.error || experienceError || referenceRes.error) {
+    return null;
+  }
+
   return {
-    profile: profile as Row,
-    documents: (documentRes.data || []) as Row[],
-    experiences: (experienceRes.data || []) as Row[],
-    references: (referenceRes.data || []) as Row[],
+    profile: {
+      public_crew_id: cleanCrewId,
+      full_name: redactPublicContactDetails(profile.full_name, 120),
+      profile_photo_url: safePublicMediaUrl(profile.profile_photo_url),
+      current_position: redactPublicContactDetails(
+        profile.current_position,
+        120,
+      ),
+      current_positions: publicStringArray(
+        profile.current_positions,
+        18,
+        120,
+      ),
+      location: redactPublicContactDetails(profile.location, 160),
+      nationality: redactPublicContactDetails(profile.nationality, 80),
+      bio: redactPublicContactDetails(profile.bio, 2_000),
+      languages: publicLanguageEntries(profile.languages),
+      personal_skills: publicStringArray(profile.personal_skills, 18, 120),
+      personal_characteristics: publicStringArray(
+        profile.personal_characteristics,
+        18,
+        120,
+      ),
+      work_preferences: publicStringArray(
+        profile.work_preferences,
+        18,
+        120,
+      ),
+    },
+    documents: (documentRes.data || []).map((document) => ({
+      id: text(document as Row, "id"),
+      document_type: redactPublicContactDetails(document.document_type, 160),
+      category: redactPublicContactDetails(document.category, 120),
+      issuer: redactPublicContactDetails(document.issuer, 160),
+      expiry_date: text(document as Row, "expiry_date"),
+      no_expiry: document.no_expiry === true,
+    })),
+    experiences: (experienceRows || []).map((experience) =>
+      publicExperienceRow(experience as Row),
+    ),
+    references: (referenceRes.data || []).map((reference) => ({
+      id: text(reference as Row, "id"),
+      role: redactPublicContactDetails(reference.role, 120),
+      vessel: redactPublicContactDetails(reference.vessel, 160),
+      company: redactPublicContactDetails(reference.company, 160),
+    })),
   };
 });
 
@@ -408,6 +484,46 @@ function languageEntries(value: unknown): LanguageEntry[] {
     .filter((item): item is LanguageEntry => Boolean(item));
 }
 
+function publicLanguageEntries(value: unknown) {
+  return languageEntries(value).map((language) => ({
+    name: redactPublicContactDetails(language.name, 80),
+    level: redactPublicContactDetails(language.level, 80),
+  }));
+}
+
+function publicExperienceRow(row: Row): Row {
+  const parsedDescription = splitExperienceDescription(text(row, "description"));
+
+  return {
+    id: text(row, "id"),
+    yacht_name: redactPublicContactDetails(text(row, "yacht_name"), 160),
+    yacht_type: redactPublicContactDetails(
+      text(row, "yacht_type") || parsedDescription.meta.yacht_type,
+      120,
+    ),
+    yacht_program: redactPublicContactDetails(
+      text(row, "yacht_program") || parsedDescription.meta.yacht_program,
+      120,
+    ),
+    yacht_size: redactPublicContactDetails(
+      text(row, "yacht_size") || parsedDescription.meta.yacht_size,
+      80,
+    ),
+    location: redactPublicContactDetails(
+      text(row, "location") || parsedDescription.meta.location,
+      160,
+    ),
+    position: redactPublicContactDetails(text(row, "position"), 120),
+    start_date: text(row, "start_date"),
+    end_date: text(row, "end_date"),
+    description: redactPublicContactDetails(
+      parsedDescription.description,
+      4_000,
+    ),
+    photo_url: safePublicMediaUrl(text(row, "photo_url")),
+  };
+}
+
 function totalExperienceYears(experiences: Row[]) {
   const firstYear = experiences
     .map((item) => Number(text(item, "start_date").slice(0, 4)))
@@ -421,13 +537,6 @@ function formatCvDate(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-GB", { month: "short", year: "numeric" });
-}
-
-function formatFullCvDate(value?: string) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 function yachtNameFontSize(value: string) {
@@ -471,12 +580,9 @@ function normalizeVesselName(value?: string) {
 function publicReferenceEntries(references: Row[]) {
   return references.filter((reference) =>
     Boolean(
-      text(reference, "name") ||
-        text(reference, "role") ||
+      text(reference, "role") ||
         text(reference, "vessel") ||
-        text(reference, "company") ||
-        text(reference, "phone") ||
-        text(reference, "email"),
+        text(reference, "company"),
     ),
   );
 }
@@ -498,9 +604,11 @@ function publicUnmatchedExperienceReferences(experiences: Row[], references: Row
 }
 
 function publicReferenceDisplayName(reference: Row) {
-  const name = text(reference, "name");
-  if (name && name.toLowerCase() !== "reference") return name;
-  return text(reference, "company") || text(reference, "vessel") || "Contact";
+  return (
+    text(reference, "company") ||
+    text(reference, "vessel") ||
+    "Reference available on request"
+  );
 }
 
 function languageLevelWidth(level: string) {
@@ -511,15 +619,6 @@ function languageLevelWidth(level: string) {
   if (normalized.includes("intermediate")) return "58%";
   if (normalized.includes("basic")) return "34%";
   return "50%";
-}
-
-function ContactLine({ icon, text: value }: { icon: ReactNode; text: string }) {
-  return (
-    <p className="flex items-start gap-2 break-words font-semibold">
-      <span className="mt-0.5 text-[#2d7482]">{icon}</span>
-      <span>{value}</span>
-    </p>
-  );
 }
 
 function CvSection({
@@ -590,14 +689,12 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid">
         {references.slice(0, 2).map((reference) => (
-          <div key={text(reference, "id") || text(reference, "email") || text(reference, "phone") || text(reference, "name")} className="bd-cv-reference-card border-t border-[#e2e8eb] py-2 first:border-t-0 first:pt-0 last:pb-0">
+          <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="bd-cv-reference-card border-t border-[#e2e8eb] py-2 first:border-t-0 first:pt-0 last:pb-0">
             <p className="text-[13px] font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
             </p>
-            {(text(reference, "email") || text(reference, "phone")) && (
-              <p className="mt-1 text-xs text-[#5a6870]">{[text(reference, "email"), text(reference, "phone")].filter(Boolean).join(" / ")}</p>
-            )}
+            <p className="mt-1 text-xs text-[#5a6870]">Contact details are protected by request.</p>
           </div>
         ))}
       </div>

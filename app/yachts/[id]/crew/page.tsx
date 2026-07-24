@@ -1641,28 +1641,20 @@ export default function CrewPage({
       task.beforePhotoFile,
       "before",
     );
-    const buckets = ["task-photos", "crew-portfolio"];
-    let lastError = "";
+    const bucket = "task-photos";
+    const { error } = await supabase.storage
+      .from(bucket)
+      .upload(path, task.beforePhotoFile);
 
-    for (const bucket of buckets) {
-      const { error } = await supabase.storage.from(bucket).upload(path, task.beforePhotoFile);
-      if (!error) {
-        const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-        return { publicUrl: data.publicUrl, bucket, path, error: "" };
-      }
-
-      lastError = error.message;
-      if (error.message !== "Bucket not found") break;
+    if (!error) {
+      return { publicUrl: path, bucket, path, error: "" };
     }
 
     return {
       publicUrl: "",
       bucket: "",
       path: "",
-      error:
-        lastError === "Bucket not found"
-          ? "Photo storage is not ready yet. Please create the task-photos bucket in Supabase Storage."
-          : lastError || "Task photo could not be uploaded.",
+      error: error.message || "Task photo could not be uploaded.",
     };
   }
 

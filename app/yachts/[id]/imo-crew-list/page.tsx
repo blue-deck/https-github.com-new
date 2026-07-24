@@ -13,38 +13,44 @@ export default function ImoCrewListPage() {
   const [loading, setLoading] = useState(true);
 
   async function loadData() {
-    const { data: yachtData } = await supabase
-      .from("yachts")
-      .select("*")
-      .eq("id", yachtId)
-      .maybeSingle();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    const { data: crewData, error } = await supabase
-      .from("yacht_crew_memberships")
-      .select(`
-        *,
-        crew_profiles (
-          full_name,
-          email,
-          phone,
-          nationality,
-          passport_number,
-          passport_expiry,
-          visa_country,
-          visa_expiry,
-          seaman_book_expiry
-        )
-      `)
-      .eq("yacht_id", yachtId)
-      .in("status", ["active", "invited"])
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      alert(error.message);
+    if (!session?.access_token) {
+      window.location.href = `/login?next=${encodeURIComponent(
+        `/yachts/${yachtId}/imo-crew-list`,
+      )}`;
+      return;
     }
 
-    setYacht(yachtData);
-    setCrew(crewData || []);
+    const response = await fetch(
+      `/api/yachts/${encodeURIComponent(yachtId)}/crew-data`,
+      {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: "no-store",
+      },
+    );
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      error?: string;
+      yacht?: unknown;
+      crew?: unknown[];
+    } | null;
+
+    if (!response.ok || !payload?.ok) {
+      alert(payload?.error || "IMO crew list could not be loaded.");
+      setLoading(false);
+      return;
+    }
+
+    setYacht(payload.yacht || null);
+    setCrew(
+      (payload.crew || []).filter(
+        (member: any) =>
+          String(member?.status || "").trim().toLowerCase() === "active",
+      ),
+    );
     setLoading(false);
   }
 

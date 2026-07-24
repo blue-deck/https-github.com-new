@@ -4,92 +4,115 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { CheckCircle2, Mail, UserPlus } from "lucide-react";
 import { BlueDeckLogoLink, BlueDeckMark } from "../../components/BlueDeckLogo";
-import { saveCrewProfileByUserId } from "../../lib/crewProfiles";
 import { supabase } from "../../lib/supabase";
-import {
-  markInvitationAccepted,
-  saveYachtMembership,
-} from "../../lib/yachtMemberships";
+
+type InvitationSummary = {
+  position: string;
+  department: string;
+  recipientLabel: string;
+  status: "pending" | "accepted";
+  actionRequired?: boolean;
+};
 
 export default function InvitationPage() {
   const params = useParams();
   const token = String(params?.token || "");
-  const [invite, setInvite] = useState<any>(null);
+  const [invite, setInvite] = useState<InvitationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [accepted, setAccepted] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   async function loadInvite() {
-    const { data, error } = await supabase
-      .from("crew_invitations")
-      .select("*")
-      .eq("token", token)
-      .maybeSingle();
+    setLoading(true);
+    setErrorMessage("");
 
-    if (error) {
-      alert(error.message);
+    try {
+      const response = await fetch(
+        `/api/crew-invitations/${encodeURIComponent(token)}`,
+        { cache: "no-store" },
+      );
+      const payload: unknown = await response.json();
+      const record =
+        payload && typeof payload === "object"
+          ? (payload as Record<string, unknown>)
+          : {};
+      const invitation =
+        record.invitation && typeof record.invitation === "object"
+          ? (record.invitation as InvitationSummary)
+          : null;
+
+      if (!response.ok || !invitation) {
+        setInvite(null);
+        setErrorMessage(
+          typeof record.error === "string"
+            ? record.error
+            : "Invitation could not be loaded.",
+        );
+        return;
+      }
+
+      setInvite(invitation);
+      setAccepted(
+        invitation.status === "accepted" && invitation.actionRequired !== true,
+      );
+    } catch {
+      setInvite(null);
+      setErrorMessage("Invitation could not be loaded.");
+    } finally {
+      setLoading(false);
     }
-
-    setInvite(data);
-    setLoading(false);
   }
 
   async function acceptInvite() {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!user?.email) {
-      window.location.href = `/login?invite=${token}`;
+    if (!session?.access_token) {
+      const invitationPath = `/invitations/${encodeURIComponent(token)}`;
+      window.location.href = `/login?next=${encodeURIComponent(invitationPath)}`;
       return;
     }
 
-    let crewProfileId = invite.crew_profile_id;
-
-    if (!crewProfileId) {
-      const { data: profile } = await saveCrewProfileByUserId(
-        supabase,
-        user.id,
+    setErrorMessage("");
+    setAccepting(true);
+    try {
+      const response = await fetch(
+        `/api/crew-invitations/${encodeURIComponent(token)}`,
         {
-          email: user.email,
-          full_name: user.user_metadata?.full_name || user.email,
-          public_crew_id: user.id.slice(0, 8).toUpperCase(),
-        }
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        },
       );
+      const payload: unknown = await response.json();
+      const record =
+        payload && typeof payload === "object"
+          ? (payload as Record<string, unknown>)
+          : {};
 
-      crewProfileId = profile?.id;
+      if (!response.ok) {
+        setErrorMessage(
+          typeof record.error === "string"
+            ? record.error
+            : "Invitation could not be accepted.",
+        );
+        return;
+      }
+
+      setAccepted(true);
+    } catch {
+      setErrorMessage("Invitation could not be accepted.");
+    } finally {
+      setAccepting(false);
     }
-
-    const { error: membershipError } = await saveYachtMembership(supabase, {
-      yacht_id: invite.yacht_id,
-      crew_profile_id: crewProfileId,
-      invited_email: user.email,
-      position: invite.position,
-      department: invite.department,
-      status: "active",
-    });
-
-    if (membershipError) {
-      alert(membershipError.message);
-      return;
-    }
-
-    const { error: inviteError } = await markInvitationAccepted(
-      supabase,
-      invite.id,
-      crewProfileId
-    );
-
-    if (inviteError) {
-      alert(inviteError.message);
-      return;
-    }
-
-    setAccepted(true);
   }
 
   useEffect(() => {
-    loadInvite();
-  }, []);
+    void loadInvite();
+  }, [token]);
 
   if (loading) {
     return (
@@ -106,7 +129,7 @@ export default function InvitationPage() {
           <Mail className="mx-auto h-12 w-12 text-cyan-700" />
           <h1 className="bd-serif mt-4 text-4xl font-normal text-[#071f3c]">Invitation not found</h1>
           <p className="mt-3 text-slate-500">
-            The invitation link may be expired or incorrect.
+            {errorMessage || "The invitation link may be expired or incorrect."}
           </p>
         </div>
       </main>
@@ -140,15 +163,23 @@ export default function InvitationPage() {
               <p className="text-slate-500">Department</p>
               <p className="mt-1 text-2xl font-bold">{invite.department}</p>
               <p className="mt-5 text-slate-500">Crew ID / email</p>
-              <p className="mt-1 text-xl">{invite.public_crew_id || invite.invited_email}</p>
+              <p className="mt-1 text-xl">{invite.recipientLabel}</p>
             </div>
+
+            {errorMessage ? (
+              <p className="mt-5 text-sm font-semibold text-rose-700" role="alert">
+                {errorMessage}
+              </p>
+            ) : null}
 
             <button
               onClick={acceptInvite}
-              className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-5 py-4 text-xl font-black text-black"
+              disabled={accepting}
+              aria-busy={accepting}
+              className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-5 py-4 text-xl font-black text-black disabled:cursor-not-allowed disabled:opacity-60"
             >
               <UserPlus className="h-5 w-5" />
-              Accept Invitation
+              {accepting ? "Accepting invitation..." : "Accept Invitation"}
             </button>
           </>
         )}

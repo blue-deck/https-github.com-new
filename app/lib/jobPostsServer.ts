@@ -1,0 +1,843 @@
+import "server-only";
+
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { NextRequest } from "next/server";
+import {
+  isJobEmploymentType,
+  isJobPostStatus,
+  isJobSalaryCurrency,
+  isJobSalaryPeriod,
+  type EmployerJobPost,
+  type JobEmploymentType,
+  type JobPostStatus,
+  type JobSalaryCurrency,
+  type JobSalaryPeriod,
+  type PublicJobPost,
+  type VerifiedEmployerYacht,
+} from "./jobPosts";
+import {
+  cleanText,
+  isRecord,
+  isUuid,
+} from "./employerAccessServer";
+import { getPosition } from "./yachtOperations";
+import { resolveSupabaseUrl } from "./supabaseConfig";
+
+export const maximumJobPostRequestBytes = 32_768;
+export const maximumPublicJobResults = 100;
+
+export const publicJobPostSelect =
+  "id,title,position,department,employment_type,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,closes_at,yacht:yachts(name,model,flag)";
+export const publicJobPostServiceSelect =
+  `${publicJobPostSelect},yacht_id,created_by`;
+
+export const employerJobPostSelect =
+  `${publicJobPostSelect},yacht_id,status,version,closed_at,created_at,updated_at`;
+
+const createPayloadKeys = new Set([
+  "yachtId",
+  "title",
+  "position",
+  "employmentType",
+  "location",
+  "startDate",
+  "summary",
+  "description",
+  "responsibilities",
+  "requirements",
+  "benefits",
+  "salaryVisible",
+  "salaryMin",
+  "salaryMax",
+  "salaryCurrency",
+  "salaryPeriod",
+  "showYachtName",
+  "closesAt",
+  "status",
+]);
+
+const updatePayloadKeys = new Set([
+  ...createPayloadKeys,
+  "version",
+]);
+updatePayloadKeys.delete("yachtId");
+
+export type JobPostMutation = {
+  yachtId: string;
+  title: string;
+  position: string;
+  department: string;
+  employmentType: JobEmploymentType;
+  location: string;
+  startDate: string | null;
+  summary: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  benefits: string[];
+  salaryVisible: boolean;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: JobSalaryCurrency;
+  salaryPeriod: JobSalaryPeriod;
+  showYachtName: boolean;
+  closesAt: string | null;
+  status: JobPostStatus;
+  version: number | null;
+};
+
+type ParsedMutation =
+  | { ok: true; data: JobPostMutation }
+  | { ok: false; error: string };
+
+type ServiceClientResult =
+  | { ok: true; client: SupabaseClient }
+  | { ok: false; error: string };
+
+type ReadBodyResult =
+  | { ok: true; value: Record<string, unknown> }
+  | { ok: false; error: string; status: number };
+
+type AuthorityResult =
+  | { ok: true; yacht: VerifiedEmployerYacht }
+  | { ok: false; error: string; status: number };
+
+type CurrentPublicAuthorityResult =
+  | { ok: true; jobPostIds: Set<string> }
+  | { ok: false; error: string };
+
+export function jobPostServiceClient(): ServiceClientResult {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    logJobPostError("configuration_missing");
+    return {
+      ok: false,
+      error: "The job board is temporarily unavailable.",
+    };
+  }
+
+  return {
+    ok: true,
+    client: createClient(resolveSupabaseUrl(supabaseUrl), serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    }),
+  };
+}
+
+export async function readJobPostBody(
+  request: NextRequest,
+): Promise<ReadBodyResult> {
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return {
+      ok: false,
+      error: "The request must use JSON.",
+      status: 415,
+    };
+  }
+
+  const declaredLength = Number(request.headers.get("content-length") || "0");
+  if (
+    Number.isFinite(declaredLength) &&
+    declaredLength > maximumJobPostRequestBytes
+  ) {
+    return {
+      ok: false,
+      error: "The job post request is too large.",
+      status: 413,
+    };
+  }
+
+  try {
+    const text = await request.text();
+    if (
+      new TextEncoder().encode(text).byteLength > maximumJobPostRequestBytes
+    ) {
+      return {
+        ok: false,
+        error: "The job post request is too large.",
+        status: 413,
+      };
+    }
+
+    const value: unknown = JSON.parse(text);
+    if (!isRecord(value)) {
+      return {
+        ok: false,
+        error: "The job post request must be an object.",
+        status: 400,
+      };
+    }
+
+    return { ok: true, value };
+  } catch {
+    return {
+      ok: false,
+      error: "The job post request contains invalid JSON.",
+      status: 400,
+    };
+  }
+}
+
+export function parseJobPostMutation(
+  value: Record<string, unknown>,
+  mode: "create" | "update",
+  yachtIdFallback = "",
+): ParsedMutation {
+  const allowedKeys = mode === "create" ? createPayloadKeys : updatePayloadKeys;
+  if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
+    return { ok: false, error: "The request contains unsupported fields." };
+  }
+
+  const yachtId =
+    mode === "create" ? cleanText(value.yachtId) : yachtIdFallback;
+  if (!isUuid(yachtId)) {
+    return { ok: false, error: "Select a valid yacht." };
+  }
+
+  const positionValue = strictText(value.position, 80);
+  const position = positionValue ? getPosition(positionValue) : undefined;
+  if (!position) {
+    return { ok: false, error: "Select a valid yacht position." };
+  }
+
+  if (!isJobEmploymentType(value.employmentType)) {
+    return { ok: false, error: "Select a valid employment type." };
+  }
+  if (!isJobPostStatus(value.status)) {
+    return { ok: false, error: "Select a valid job post status." };
+  }
+  if (!isJobSalaryCurrency(value.salaryCurrency)) {
+    return { ok: false, error: "Select a supported salary currency." };
+  }
+  if (!isJobSalaryPeriod(value.salaryPeriod)) {
+    return { ok: false, error: "Select a valid salary period." };
+  }
+  if (
+    typeof value.salaryVisible !== "boolean" ||
+    typeof value.showYachtName !== "boolean"
+  ) {
+    return {
+      ok: false,
+      error: "Salary and yacht visibility settings are invalid.",
+    };
+  }
+
+  const title = strictText(value.title, 120, true);
+  const location = strictText(value.location, 120, true);
+  const summary = strictText(value.summary, 320, true);
+  const description = strictText(value.description, 8000, true);
+  if (
+    title === null ||
+    location === null ||
+    summary === null ||
+    description === null
+  ) {
+    return {
+      ok: false,
+      error: "One or more job post fields exceed the allowed length.",
+    };
+  }
+  if (!title || !location) {
+    return {
+      ok: false,
+      error: "Add a public title and location before saving the job post.",
+    };
+  }
+
+  const startDate = optionalDate(value.startDate);
+  if (!startDate.ok) {
+    return { ok: false, error: "Enter a valid start date." };
+  }
+  const closesAt = optionalTimestamp(value.closesAt);
+  if (!closesAt.ok) {
+    return { ok: false, error: "Enter a valid closing date and time." };
+  }
+
+  const responsibilities = textList(value.responsibilities);
+  const requirements = textList(value.requirements);
+  const benefits = textList(value.benefits);
+  if (!responsibilities.ok || !requirements.ok || !benefits.ok) {
+    return {
+      ok: false,
+      error:
+        "Use no more than 20 concise items in each responsibilities, requirements and benefits list.",
+    };
+  }
+
+  const salaryMin = optionalMoney(value.salaryMin);
+  const salaryMax = optionalMoney(value.salaryMax);
+  if (!salaryMin.ok || !salaryMax.ok) {
+    return {
+      ok: false,
+      error: "Salary values must be positive numbers below 100,000,000.",
+    };
+  }
+  if (
+    salaryMin.value !== null &&
+    salaryMax.value !== null &&
+    salaryMin.value > salaryMax.value
+  ) {
+    return {
+      ok: false,
+      error: "The maximum salary cannot be lower than the minimum.",
+    };
+  }
+  if (
+    value.salaryVisible &&
+    salaryMin.value === null &&
+    salaryMax.value === null
+  ) {
+    return {
+      ok: false,
+      error: "Add a salary amount before making compensation public.",
+    };
+  }
+
+  if (
+    value.status === "published" &&
+    (title.length < 3 ||
+      location.length < 2 ||
+      summary.length < 20 ||
+      description.length < 60)
+  ) {
+    return {
+      ok: false,
+      error:
+        "Complete the title, location, summary and description before publishing.",
+    };
+  }
+
+  if (
+    value.status === "published" &&
+    closesAt.value &&
+    Date.parse(closesAt.value) <= Date.now()
+  ) {
+    return {
+      ok: false,
+      error: "The closing date must be in the future before publishing.",
+    };
+  }
+
+  let version: number | null = null;
+  if (mode === "update") {
+    if (
+      typeof value.version !== "number" ||
+      !Number.isSafeInteger(value.version) ||
+      value.version < 1
+    ) {
+      return {
+        ok: false,
+        error: "Refresh this job post before saving it again.",
+      };
+    }
+    version = value.version;
+  }
+
+  return {
+    ok: true,
+    data: {
+      yachtId,
+      title,
+      position: position.title,
+      department: position.department,
+      employmentType: value.employmentType,
+      location,
+      startDate: startDate.value,
+      summary,
+      description,
+      responsibilities: responsibilities.value,
+      requirements: requirements.value,
+      benefits: benefits.value,
+      salaryVisible: value.salaryVisible,
+      salaryMin: salaryMin.value,
+      salaryMax: salaryMax.value,
+      salaryCurrency: value.salaryCurrency,
+      salaryPeriod: value.salaryPeriod,
+      showYachtName: value.showYachtName,
+      closesAt: closesAt.value,
+      status: value.status,
+      version,
+    },
+  };
+}
+
+export async function verifyJobPostingAuthority(
+  client: SupabaseClient,
+  userId: string,
+  yachtId: string,
+): Promise<AuthorityResult> {
+  const [yachtResponse, accessResponse] = await Promise.all([
+    client
+      .from("yachts")
+      .select("id,name,model,flag,owner_id")
+      .eq("id", yachtId)
+      .eq("owner_id", userId)
+      .maybeSingle(),
+    client
+      .from("employer_access")
+      .select("status,can_post_jobs")
+      .eq("user_id", userId)
+      .eq("yacht_id", yachtId)
+      .maybeSingle(),
+  ]);
+
+  if (yachtResponse.error || accessResponse.error) {
+    logJobPostError(
+      "authority_lookup_failed",
+      yachtResponse.error || accessResponse.error,
+      { actorUserId: userId, yachtId },
+    );
+    return {
+      ok: false,
+      error: "Hiring access could not be verified.",
+      status: 500,
+    };
+  }
+
+  const yacht = verifiedYachtFromRow(yachtResponse.data);
+  if (
+    !yacht ||
+    accessResponse.data?.status !== "verified" ||
+    accessResponse.data.can_post_jobs !== true
+  ) {
+    return {
+      ok: false,
+      error:
+        "Verified hiring access for the selected yacht is required to manage job posts.",
+      status: 403,
+    };
+  }
+
+  return { ok: true, yacht };
+}
+
+export async function currentPublicJobPostIds(
+  client: SupabaseClient,
+  rows: unknown[],
+): Promise<CurrentPublicAuthorityResult> {
+  const authorityRows: Array<{
+    jobPostId: string;
+    yachtId: string;
+    createdBy: string;
+  }> = [];
+
+  for (const value of rows) {
+    if (!isRecord(value)) {
+      return { ok: false, error: "Invalid job post authority record." };
+    }
+    const jobPostId = cleanText(value.id);
+    const yachtId = cleanText(value.yacht_id);
+    const createdBy = cleanText(value.created_by);
+    if (!isUuid(jobPostId) || !isUuid(yachtId) || !isUuid(createdBy)) {
+      return { ok: false, error: "Invalid job post authority record." };
+    }
+    authorityRows.push({ jobPostId, yachtId, createdBy });
+  }
+
+  if (authorityRows.length === 0) {
+    return { ok: true, jobPostIds: new Set() };
+  }
+
+  const yachtIds = [...new Set(authorityRows.map((row) => row.yachtId))];
+  const creatorIds = [...new Set(authorityRows.map((row) => row.createdBy))];
+  const [yachtsResponse, accessResponse] = await Promise.all([
+    client
+      .from("yachts")
+      .select("id,owner_id")
+      .in("id", yachtIds),
+    client
+      .from("employer_access")
+      .select("user_id,yacht_id,status,can_post_jobs")
+      .in("yacht_id", yachtIds)
+      .in("user_id", creatorIds)
+      .eq("status", "verified")
+      .eq("can_post_jobs", true),
+  ]);
+
+  if (yachtsResponse.error || accessResponse.error) {
+    logJobPostError(
+      "current_public_authority_load_failed",
+      yachtsResponse.error || accessResponse.error,
+    );
+    return {
+      ok: false,
+      error: "Current employer authority could not be verified.",
+    };
+  }
+
+  const ownerPairs = new Set<string>();
+  for (const yacht of yachtsResponse.data || []) {
+    const yachtId = cleanText(yacht.id);
+    const ownerId = cleanText(yacht.owner_id);
+    if (isUuid(yachtId) && isUuid(ownerId)) {
+      ownerPairs.add(authorityPair(yachtId, ownerId));
+    }
+  }
+
+  const accessPairs = new Set<string>();
+  for (const access of accessResponse.data || []) {
+    const yachtId = cleanText(access.yacht_id);
+    const userId = cleanText(access.user_id);
+    if (
+      isUuid(yachtId) &&
+      isUuid(userId) &&
+      access.status === "verified" &&
+      access.can_post_jobs === true
+    ) {
+      accessPairs.add(authorityPair(yachtId, userId));
+    }
+  }
+
+  const jobPostIds = new Set<string>();
+  for (const row of authorityRows) {
+    const pair = authorityPair(row.yachtId, row.createdBy);
+    if (ownerPairs.has(pair) && accessPairs.has(pair)) {
+      jobPostIds.add(row.jobPostId);
+    }
+  }
+
+  return { ok: true, jobPostIds };
+}
+
+export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
+  const base = jobPostBaseFromRow(value);
+  if (!base || !base.publishedAt) return null;
+
+  return {
+    id: base.id,
+    title: base.title,
+    position: base.position,
+    department: base.department,
+    employmentType: base.employmentType,
+    location: base.location,
+    startDate: base.startDate,
+    summary: base.summary,
+    description: base.description,
+    responsibilities: base.responsibilities,
+    requirements: base.requirements,
+    benefits: base.benefits,
+    salary: base.salaryVisible ? base.salary : null,
+    yacht: base.showYachtName
+      ? base.yacht
+      : { name: "Confidential yacht", model: null, flag: null },
+    publishedAt: base.publishedAt,
+    closesAt: base.closesAt,
+  };
+}
+
+export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
+  const base = jobPostBaseFromRow(value);
+  if (!base || !isRecord(value)) return null;
+
+  const yachtId = cleanText(value.yacht_id);
+  const createdAt = timestamp(value.created_at);
+  const updatedAt = timestamp(value.updated_at);
+  const closedAt = optionalDatabaseTimestamp(value.closed_at);
+
+  if (
+    !isUuid(yachtId) ||
+    !isJobPostStatus(value.status) ||
+    typeof value.version !== "number" ||
+    !Number.isSafeInteger(value.version) ||
+    value.version < 1 ||
+    !createdAt ||
+    !updatedAt ||
+    closedAt === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    id: base.id,
+    yachtId,
+    title: base.title,
+    position: base.position,
+    department: base.department,
+    employmentType: base.employmentType,
+    location: base.location,
+    startDate: base.startDate,
+    summary: base.summary,
+    description: base.description,
+    responsibilities: base.responsibilities,
+    requirements: base.requirements,
+    benefits: base.benefits,
+    salary: base.salary,
+    salaryVisible: base.salaryVisible,
+    showYachtName: base.showYachtName,
+    yacht: base.yacht,
+    status: value.status,
+    version: value.version,
+    publishedAt: base.publishedAt,
+    closesAt: base.closesAt,
+    closedAt,
+    createdAt,
+    updatedAt,
+  };
+}
+
+export function verifiedYachtFromRow(
+  value: unknown,
+): VerifiedEmployerYacht | null {
+  if (!isRecord(value)) return null;
+  const id = cleanText(value.id);
+  if (!isUuid(id)) return null;
+
+  return {
+    id,
+    name: cleanText(value.name) || "BlueDeck yacht",
+    model: cleanText(value.model) || null,
+    flag: cleanText(value.flag) || null,
+  };
+}
+
+export function jobPostMutationColumns(
+  mutation: JobPostMutation,
+): Record<string, unknown> {
+  return {
+    title: mutation.title,
+    position: mutation.position,
+    department: mutation.department,
+    employment_type: mutation.employmentType,
+    location: mutation.location,
+    start_date: mutation.startDate,
+    summary: mutation.summary,
+    description: mutation.description,
+    responsibilities: mutation.responsibilities,
+    requirements: mutation.requirements,
+    benefits: mutation.benefits,
+    salary_visible: mutation.salaryVisible,
+    salary_min: mutation.salaryMin,
+    salary_max: mutation.salaryMax,
+    salary_currency: mutation.salaryCurrency,
+    salary_period: mutation.salaryPeriod,
+    show_yacht_name: mutation.showYachtName,
+    closes_at: mutation.closesAt,
+    status: mutation.status,
+  };
+}
+
+export function logJobPostError(
+  event: string,
+  error?: unknown,
+  context: Record<string, string | number | boolean | null | undefined> = {},
+) {
+  console.error("[job-posts]", {
+    event,
+    ...context,
+    error: safeError(error),
+  });
+}
+
+function jobPostBaseFromRow(value: unknown) {
+  if (!isRecord(value)) return null;
+
+  const id = cleanText(value.id);
+  const title = cleanText(value.title);
+  const position = cleanText(value.position);
+  const department = cleanText(value.department);
+  const location = cleanText(value.location);
+  const summary = cleanText(value.summary);
+  const description = cleanText(value.description);
+  const startDate = optionalDatabaseDate(value.start_date);
+  const publishedAt = optionalDatabaseTimestamp(value.published_at);
+  const closesAt = optionalDatabaseTimestamp(value.closes_at);
+  const responsibilities = databaseTextList(value.responsibilities);
+  const requirements = databaseTextList(value.requirements);
+  const benefits = databaseTextList(value.benefits);
+  const salaryMin = databaseMoney(value.salary_min);
+  const salaryMax = databaseMoney(value.salary_max);
+  const joinedYacht = joinedRecord(value.yacht);
+
+  if (
+    !isUuid(id) ||
+    !title ||
+    !position ||
+    !department ||
+    !isJobEmploymentType(value.employment_type) ||
+    !location ||
+    startDate === undefined ||
+    publishedAt === undefined ||
+    closesAt === undefined ||
+    !responsibilities ||
+    !requirements ||
+    !benefits ||
+    typeof value.salary_visible !== "boolean" ||
+    salaryMin === undefined ||
+    salaryMax === undefined ||
+    !isJobSalaryCurrency(value.salary_currency) ||
+    !isJobSalaryPeriod(value.salary_period) ||
+    typeof value.show_yacht_name !== "boolean" ||
+    !joinedYacht
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    title,
+    position,
+    department,
+    employmentType: value.employment_type,
+    location,
+    startDate,
+    summary,
+    description,
+    responsibilities,
+    requirements,
+    benefits,
+    salaryVisible: value.salary_visible,
+    salary: {
+      min: salaryMin,
+      max: salaryMax,
+      currency: value.salary_currency,
+      period: value.salary_period,
+    },
+    showYachtName: value.show_yacht_name,
+    yacht: {
+      name: cleanText(joinedYacht.name) || "BlueDeck yacht",
+      model: cleanText(joinedYacht.model) || null,
+      flag: cleanText(joinedYacht.flag) || null,
+    },
+    publishedAt,
+    closesAt,
+  };
+}
+
+function strictText(
+  value: unknown,
+  maximumLength: number,
+  allowEmpty = false,
+): string | null {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  if ((!allowEmpty && !text) || text.length > maximumLength) return null;
+  return text;
+}
+
+function textList(
+  value: unknown,
+): { ok: true; value: string[] } | { ok: false } {
+  if (!Array.isArray(value) || value.length > 20) return { ok: false };
+
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") return { ok: false };
+    const text = item.trim();
+    if (!text) continue;
+    if (text.length > 320) return { ok: false };
+    if (!result.includes(text)) result.push(text);
+  }
+
+  if (result.join("").length > 8000) return { ok: false };
+  return { ok: true, value: result };
+}
+
+function databaseTextList(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length > 20) return null;
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== "string") return null;
+    const text = item.trim();
+    if (text) result.push(text);
+  }
+  return result;
+}
+
+function optionalMoney(
+  value: unknown,
+): { ok: true; value: number | null } | { ok: false } {
+  if (value === null) return { ok: true, value: null };
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    value < 0 ||
+    value > 99_999_999.99
+  ) {
+    return { ok: false };
+  }
+  return { ok: true, value: Math.round(value * 100) / 100 };
+}
+
+function databaseMoney(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  const amount =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+  return Number.isFinite(amount) && amount >= 0 ? amount : undefined;
+}
+
+function optionalDate(
+  value: unknown,
+): { ok: true; value: string | null } | { ok: false } {
+  if (value === null) return { ok: true, value: null };
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return { ok: false };
+  }
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+    ? { ok: true, value }
+    : { ok: false };
+}
+
+function optionalTimestamp(
+  value: unknown,
+): { ok: true; value: string | null } | { ok: false } {
+  if (value === null) return { ok: true, value: null };
+  if (
+    typeof value !== "string" ||
+    !/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ||
+    Number.isNaN(Date.parse(value))
+  ) {
+    return { ok: false };
+  }
+  return { ok: true, value: new Date(value).toISOString() };
+}
+
+function optionalDatabaseDate(value: unknown): string | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return undefined;
+  }
+  return value;
+}
+
+function optionalDatabaseTimestamp(
+  value: unknown,
+): string | null | undefined {
+  if (value === null) return null;
+  const result = timestamp(value);
+  return result || undefined;
+}
+
+function timestamp(value: unknown) {
+  const result = cleanText(value);
+  return result && !Number.isNaN(Date.parse(result)) ? result : "";
+}
+
+function joinedRecord(value: unknown) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return isRecord(candidate) ? candidate : null;
+}
+
+function authorityPair(yachtId: string, userId: string) {
+  return `${yachtId}:${userId}`;
+}
+
+function safeError(error: unknown) {
+  if (!error) return undefined;
+  if (error instanceof Error) {
+    return { name: error.name, message: error.message };
+  }
+  if (!isRecord(error)) return { message: String(error) };
+  return {
+    code: cleanText(error.code) || undefined,
+    message: cleanText(error.message) || "Unknown server error",
+  };
+}

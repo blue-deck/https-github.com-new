@@ -10,6 +10,8 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
 
 const publicNavigation = [
+  { labelKey: "nav.findJob", href: "/jobs" },
+  { labelKey: "nav.findCrew", href: "/find-crew" },
   { labelKey: "nav.yachts", href: "/#yacht-platform" },
   { labelKey: "nav.services", href: "/services" },
   { labelKey: "nav.management", href: "/management" },
@@ -19,7 +21,7 @@ const publicNavigation = [
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
 const homepagePrimaryNavigation = [
-  { labelKey: "nav.findJob", href: "/login?mode=signup&role=crew" },
+  { labelKey: "nav.findJob", href: "/jobs" },
   { labelKey: "nav.findCrew", href: "/find-crew" },
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
@@ -275,6 +277,7 @@ export function PublicFooter() {
           title={t("footer.platform")}
           links={[
             [t("nav.yachts"), "/#yacht-platform"],
+            [t("nav.findJob"), "/jobs"],
             [t("nav.findCrew"), "/find-crew"],
             [t("nav.management"), "/management"],
             [t("nav.trust"), "/trust"],
