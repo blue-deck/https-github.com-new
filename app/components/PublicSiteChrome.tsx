@@ -24,6 +24,13 @@ const homepagePrimaryNavigation = [
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
 const homepageMoreNavigation = [
+  { labelKey: "nav.yachts", href: "/#yacht-platform" },
+  { labelKey: "nav.services", href: "/services" },
+  { labelKey: "nav.management", href: "/management" },
+  { labelKey: "nav.trust", href: "/trust" },
+] satisfies Array<{ labelKey: TranslationKey; href: string }>;
+
+const homepageTrailingNavigation = [
   { labelKey: "nav.about", href: "/about" },
   { labelKey: "nav.contact", href: "/contact" },
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
@@ -82,6 +89,11 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
                 </Link>
               ))}
               <HomepageMoreMenu items={homepageMoreNavigation} />
+              {homepageTrailingNavigation.map((item) => (
+                <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
+                  {t(item.labelKey)}
+                </Link>
+              ))}
             </>
           ) : (
             publicNavigation.map((item) => (
@@ -95,7 +107,11 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
         <div className="bd-public-actions">
           {homepageNavigation && !sessionEmail ? (
             <HomepageMoreMenu
-              items={[...homepagePrimaryNavigation, ...homepageMoreNavigation]}
+              items={[
+                ...homepagePrimaryNavigation,
+                ...homepageMoreNavigation,
+                ...homepageTrailingNavigation,
+              ]}
               mobile
             />
           ) : null}
