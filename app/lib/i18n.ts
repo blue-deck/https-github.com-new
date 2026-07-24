@@ -27,6 +27,8 @@ const en = {
   "topbar.myBlue": "My Blue",
   "topbar.myDeck": "My Deck",
   "topbar.captainWorkspace": "Captain Workspace",
+  "topbar.hiring": "Hiring",
+  "topbar.employerApprovals": "Employer approvals",
   "topbar.contracts": "Contracts",
   "topbar.language": "Language",
   "topbar.profilePhoto": "Profile photo",
@@ -35,6 +37,12 @@ const en = {
   "topbar.removePhoto": "Remove photo",
   "topbar.updatingPhoto": "Updating photo...",
   "topbar.photoUpdated": "Your photo has been updated.",
+  "dashboard.hiring": "Hiring",
+  "dashboard.hiringText":
+    "Verify your yacht and prepare to publish trusted crew roles.",
+  "dashboard.employerApprovals": "Employer Approvals",
+  "dashboard.employerApprovalsText":
+    "Review and decide who can publish roles on BlueDeck.",
   "nav.yachts": "Yachts",
   "nav.services": "Services",
   "nav.management": "Management",
@@ -383,6 +391,8 @@ const tr: Record<TranslationKey, string> = {
   "topbar.myBlue": "My Blue",
   "topbar.myDeck": "My Deck",
   "topbar.captainWorkspace": "Kaptan Çalışma Alanı",
+  "topbar.hiring": "İşe Alım",
+  "topbar.employerApprovals": "İşveren Onayları",
   "topbar.contracts": "Kontratlar",
   "topbar.language": "Dil",
   "topbar.profilePhoto": "Profil fotoğrafı",
@@ -391,6 +401,12 @@ const tr: Record<TranslationKey, string> = {
   "topbar.removePhoto": "Fotoğrafı kaldır",
   "topbar.updatingPhoto": "Fotoğraf güncelleniyor...",
   "topbar.photoUpdated": "Fotoğrafınız güncellendi.",
+  "dashboard.hiring": "İşe Alım",
+  "dashboard.hiringText":
+    "Yatını doğrula ve güvenilir mürettebat ilanları yayınlamaya hazırlan.",
+  "dashboard.employerApprovals": "İşveren Onayları",
+  "dashboard.employerApprovalsText":
+    "BlueDeck’te kimlerin ilan yayınlayabileceğini incele ve karara bağla.",
   "nav.yachts": "Yatlar",
   "nav.services": "Hizmetler",
   "nav.management": "Yönetim",

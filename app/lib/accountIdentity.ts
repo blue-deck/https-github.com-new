@@ -1,6 +1,7 @@
 "use client";
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { isPlatformAdmin } from "./employerAccess";
 import { createSafeStoragePath } from "./storage";
 import { supabase } from "./supabase";
 
@@ -23,6 +24,7 @@ export type AccountIdentity = {
   email: string;
   fullName: string;
   role: string;
+  isAdmin: boolean;
   profilePhotoUrl: string;
   dashboardPhotoUrl: string;
 };
@@ -142,6 +144,9 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
     email,
     fullName,
     role,
+    isAdmin: isPlatformAdmin(
+      user.app_metadata as Record<string, unknown> | undefined,
+    ),
     profilePhotoUrl,
     dashboardPhotoUrl: dashboardPhotoFromMetadata(metadata, profilePhotoUrl),
   } satisfies AccountIdentity;

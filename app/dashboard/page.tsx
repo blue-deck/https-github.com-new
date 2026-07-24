@@ -2,7 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Camera, CheckCircle2, FileText, LoaderCircle, LogOut, Plus, Settings, Ship, Trash2, UserPlus, UserRound } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  Camera,
+  CheckCircle2,
+  FileText,
+  LoaderCircle,
+  LogOut,
+  Plus,
+  Settings,
+  ShieldCheck,
+  Ship,
+  Trash2,
+  UserPlus,
+  UserRound,
+} from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
 import {
   dashboardPhotoFromMetadata,
@@ -24,6 +38,7 @@ type DashboardProfile = {
   full_name?: string;
   phone?: string;
   role?: string;
+  is_admin?: boolean;
   profile_photo_url?: string;
   dashboard_photo_url?: string;
 };
@@ -334,6 +349,7 @@ export default function DashboardPage() {
       full_name: preferredName,
       email: profileData?.email || crewProfile?.email || user.email,
       phone: profileData?.phone || crewProfile?.phone || user.user_metadata?.phone || "",
+      is_admin: user.app_metadata?.bluedeck_admin === true,
       profile_photo_url: crewProfile?.profile_photo_url || "",
       dashboard_photo_url: dashboardPhotoUrl,
     });
@@ -501,7 +517,9 @@ export default function DashboardPage() {
   }
 
   const normalizedRole = profile?.role?.trim().toLowerCase() || "crew";
-  const isCaptain = normalizedRole === "captain" || normalizedRole === "management";
+  const canManageYachts = ["captain", "owner", "management"].includes(
+    normalizedRole,
+  );
   const roleLabel = formatDashboardRole(normalizedRole);
 
   return (
@@ -622,7 +640,7 @@ export default function DashboardPage() {
             </Link>
           ) : null}
 
-          {isCaptain ? (
+          {canManageYachts ? (
             <Link
               href="/yachts"
               className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
@@ -631,6 +649,36 @@ export default function DashboardPage() {
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">Captain Workspace</h2>
               <p className="mt-3 leading-7 text-slate-600">
                 Manage yachts, crew, documents and onboard operations.
+              </p>
+            </Link>
+          ) : null}
+
+          {canManageYachts ? (
+            <Link
+              href="/hiring"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("dashboard.hiring")}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {t("dashboard.hiringText")}
+              </p>
+            </Link>
+          ) : null}
+
+          {profile?.is_admin ? (
+            <Link
+              href="/admin/employer-access"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <ShieldCheck className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("dashboard.employerApprovals")}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {t("dashboard.employerApprovalsText")}
               </p>
             </Link>
           ) : null}

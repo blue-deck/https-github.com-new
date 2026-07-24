@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
+  BriefcaseBusiness,
   Camera,
   FileText,
   Languages,
@@ -11,6 +12,7 @@ import {
   LogOut,
   Menu,
   Settings,
+  ShieldCheck,
   Ship,
   UserRound,
   X,
@@ -187,7 +189,9 @@ export function BlueDeckTopBar() {
   const photoUrl = identity?.dashboardPhotoUrl || "";
   const showPhoto = Boolean(photoUrl && failedPhotoUrl !== photoUrl);
   const normalizedRole = identity?.role?.trim().toLowerCase() || "crew";
-  const isCaptain = normalizedRole === "captain" || normalizedRole === "management";
+  const canManageYachts = ["captain", "owner", "management"].includes(
+    normalizedRole,
+  );
   const roleLabel =
     normalizedRole === "captain"
       ? t("login.roleCaptain")
@@ -203,8 +207,20 @@ export function BlueDeckTopBar() {
     { href: "/profile", label: t("topbar.myProfile"), icon: UserRound },
     { href: "/my-blue", label: t("topbar.myBlue"), icon: Camera },
     { href: "/crew/tasks", label: t("topbar.myDeck"), icon: Ship },
-    ...(isCaptain
+    ...(canManageYachts
       ? [{ href: "/yachts", label: t("topbar.captainWorkspace"), icon: Ship }]
+      : []),
+    ...(canManageYachts
+      ? [{ href: "/hiring", label: t("topbar.hiring"), icon: BriefcaseBusiness }]
+      : []),
+    ...(identity?.isAdmin
+      ? [
+          {
+            href: "/admin/employer-access",
+            label: t("topbar.employerApprovals"),
+            icon: ShieldCheck,
+          },
+        ]
       : []),
     { href: "/contracts", label: t("topbar.contracts"), icon: FileText },
     { href: "/settings", label: t("topbar.settings"), icon: Settings },
