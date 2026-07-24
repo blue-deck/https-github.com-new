@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
   const role = accountTypes.includes(body.role || "") ? body.role || "crew" : "";
   const requestedPosition = body.position?.trim() || getDefaultPositionForAccountType(role);
   const position = yachtPositionTitles.includes(requestedPosition) ? requestedPosition : "";
+  const nextPath = safeNextPath(body.next);
 
   if (!email || !password || !fullName || !role || !position) {
     return NextResponse.json({ error: "Name, email, password, account type and yacht position are required." }, { status: 400 });
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     email,
     password,
     options: {
-      emailRedirectTo: authConfirmUrl("/dashboard"),
+      emailRedirectTo: authConfirmUrl(nextPath),
       data: {
         full_name: fullName,
         role,
@@ -125,6 +126,7 @@ type SignupRequestBody = {
   fullName?: string;
   role?: string;
   position?: string;
+  next?: string;
 };
 
 function isValidEmail(value: string) {
@@ -139,4 +141,9 @@ function hasSignupPasswordRequirements(value: string) {
     /\d/.test(value) &&
     /[^A-Za-z0-9]/.test(value)
   );
+}
+
+function safeNextPath(value?: string) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  return value;
 }

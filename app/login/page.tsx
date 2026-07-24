@@ -26,6 +26,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [nextPath, setNextPath] = useState("/dashboard");
   const passwordStrength = useMemo(() => getPasswordStrength(password, t), [password, t]);
   const forgotPasswordHref = email.trim()
     ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
@@ -36,6 +37,7 @@ export default function LoginPage() {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const requestedMode = searchParams.get("mode");
     const requestedRole = searchParams.get("role");
+    const requestedNext = safeNextPath(searchParams.get("next"));
     const isPasswordRecovery =
       requestedMode === "recovery" ||
       searchParams.get("type") === "recovery" ||
@@ -49,6 +51,7 @@ export default function LoginPage() {
     if (requestedMode !== "signup") return;
 
     const frame = window.requestAnimationFrame(() => {
+      setNextPath(requestedNext);
       setMode("signup");
 
       if (requestedRole && ["crew", "captain", "owner", "management"].includes(requestedRole)) {
@@ -58,6 +61,11 @@ export default function LoginPage() {
     });
 
     return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setNextPath(safeNextPath(searchParams.get("next")));
   }, []);
 
   async function submit() {
@@ -139,7 +147,7 @@ export default function LoginPage() {
           return;
         }
 
-        window.location.href = "/dashboard";
+        window.location.href = nextPath;
       } catch {
         setLoading(false);
         setNotice(t("login.notice.loginService"));
@@ -158,6 +166,7 @@ export default function LoginPage() {
           fullName: fullName.trim(),
           role,
           position,
+          next: nextPath,
         }),
       });
 
@@ -541,4 +550,9 @@ function hasSignupPasswordRequirements(value: string) {
     /\d/.test(value) &&
     /[^A-Za-z0-9]/.test(value)
   );
+}
+
+function safeNextPath(value?: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  return value;
 }

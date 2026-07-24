@@ -32,6 +32,15 @@ import {
 } from "../lib/accountIdentity";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
+import {
+  crewAvailabilityStatuses,
+  crewEmploymentTypes,
+  crewPreferredLocations,
+  defaultCrewDiscoverySettings,
+  parseCrewDiscoverySettings,
+  writeCrewDiscoverySettings,
+  type CrewDiscoverySettings,
+} from "../lib/crewDiscovery";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { absoluteSiteUrl } from "../lib/site";
 import { createSafeStoragePath } from "../lib/storage";
@@ -66,6 +75,7 @@ type CrewProfile = {
   personal_skills?: string[];
   personal_characteristics?: string[];
   languages?: LanguageEntry[];
+  notes?: string;
 };
 
 type LanguageEntry = {
@@ -513,6 +523,7 @@ export default function ProfilePage() {
   const expiryAlerts = documents.filter((item) => !item.no_expiry && isWithin90Days(item.expiry_date));
   const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
   const currentPositionValue = getProfileCurrentPosition(profile);
+  const discoverySettings = parseCrewDiscoverySettings(profile.notes);
   const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
   const sortedExperiences = useMemo(
     () =>
@@ -613,6 +624,21 @@ export default function ProfilePage() {
   ];
   const activeStudioTabInfo = studioTabs.find((tab) => tab.id === activeStudioTab) || studioTabs[0];
 
+  function updateDiscoverySettings(
+    updates: Partial<CrewDiscoverySettings>,
+    autoSave = true,
+  ) {
+    const nextProfile = {
+      ...profile,
+      notes: writeCrewDiscoverySettings(profile.notes, {
+        ...discoverySettings,
+        ...updates,
+      }),
+    };
+    setProfile(nextProfile);
+    if (autoSave) void saveProfile(nextProfile);
+  }
+
   async function loadProfile() {
     const {
       data: { user },
@@ -653,6 +679,7 @@ export default function ProfilePage() {
       personal_skills: [],
       personal_characteristics: [],
       languages: [],
+      notes: writeCrewDiscoverySettings("", defaultCrewDiscoverySettings),
     };
 
     const { data } = await supabase
@@ -1472,6 +1499,106 @@ export default function ProfilePage() {
             </Panel>
 
             <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
+              <section className="mb-5 overflow-hidden rounded-[24px] border border-cyan-200 bg-[linear-gradient(145deg,#f6fdff,#ffffff)] shadow-sm">
+                <div className="border-b border-cyan-100 p-5 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                        Find Crew visibility
+                      </p>
+                      <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+                        Control how employers discover you
+                      </h3>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                        Your profile stays private until you turn discovery on. Contact details are never shown in search.
+                      </p>
+                    </div>
+                    <label className="flex min-h-12 shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-cyan-200 bg-white px-4 shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={discoverySettings.discoverable}
+                        onChange={(event) =>
+                          updateDiscoverySettings({ discoverable: event.target.checked })
+                        }
+                        className="h-5 w-5 accent-cyan-700"
+                      />
+                      <span className="text-sm font-black text-cyan-950">
+                        {discoverySettings.discoverable ? "Discoverable" : "Private"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-3">
+                  <SelectField
+                    label="Availability"
+                    value={discoverySettings.availabilityStatus}
+                    options={[...crewAvailabilityStatuses]}
+                    onChange={(value) =>
+                      updateDiscoverySettings({ availabilityStatus: value })
+                    }
+                  />
+                  <DateField
+                    label="Available from"
+                    value={discoverySettings.availableFrom}
+                    onChange={(value) =>
+                      updateDiscoverySettings({ availableFrom: value })
+                    }
+                    profileField
+                  />
+                  <SelectField
+                    label="Contact visibility"
+                    value={
+                      discoverySettings.contactVisibility === "hidden"
+                        ? "Hidden"
+                        : "Request required"
+                    }
+                    options={["Request required", "Hidden"]}
+                    onChange={(value) =>
+                      updateDiscoverySettings({
+                        contactVisibility:
+                          value === "Hidden" ? "hidden" : "request_only",
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="divide-y divide-cyan-100 border-t border-cyan-100 px-5 sm:px-6">
+                  <DropdownChoiceGroup
+                    title="Preferred hiring regions"
+                    options={[...crewPreferredLocations]}
+                    value={discoverySettings.preferredLocations}
+                    onChange={(value) =>
+                      updateDiscoverySettings({ preferredLocations: value })
+                    }
+                    maxSelected={4}
+                    inlineSelected
+                    commitOnSelect
+                    compact
+                    open={openSkillsGroup === "preferred-hiring-regions"}
+                    onOpenChange={(open) =>
+                      setOpenSkillsGroup(open ? "preferred-hiring-regions" : null)
+                    }
+                  />
+                  <DropdownChoiceGroup
+                    title="Employment types"
+                    options={[...crewEmploymentTypes]}
+                    value={discoverySettings.employmentTypes}
+                    onChange={(value) =>
+                      updateDiscoverySettings({ employmentTypes: value })
+                    }
+                    maxSelected={4}
+                    inlineSelected
+                    commitOnSelect
+                    compact
+                    open={openSkillsGroup === "employment-types"}
+                    onOpenChange={(open) =>
+                      setOpenSkillsGroup(open ? "employment-types" : null)
+                    }
+                  />
+                </div>
+              </section>
+
               <div className="divide-y divide-slate-200">
                 <DropdownChoiceGroup
                   title="Personal skills"
@@ -2300,6 +2427,7 @@ function profileSaveState(profile: CrewProfile) {
     personal_skills: cleanSaveList(profile.personal_skills),
     personal_characteristics: cleanSaveList(profile.personal_characteristics),
     languages: cleanSaveLanguages(profile.languages),
+    notes: cleanSaveText(profile.notes),
   };
 }
 
@@ -5333,6 +5461,7 @@ function normalizeProfile(profile: CrewProfile) {
     personal_skills: cleanSaveList(profile.personal_skills),
     personal_characteristics: cleanSaveList(profile.personal_characteristics),
     languages: profile.languages || [],
+    notes: cleanSaveText(profile.notes),
   };
 }
 

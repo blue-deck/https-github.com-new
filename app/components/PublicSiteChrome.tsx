@@ -20,7 +20,7 @@ const publicNavigation = [
 
 const homepagePrimaryNavigation = [
   { labelKey: "nav.findJob", href: "/login?mode=signup&role=crew" },
-  { labelKey: "nav.findCrew", href: "/login?mode=signup&role=management" },
+  { labelKey: "nav.findCrew", href: "/find-crew" },
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
 const homepageMoreNavigation = [
@@ -275,6 +275,7 @@ export function PublicFooter() {
           title={t("footer.platform")}
           links={[
             [t("nav.yachts"), "/#yacht-platform"],
+            [t("nav.findCrew"), "/find-crew"],
             [t("nav.management"), "/management"],
             [t("nav.trust"), "/trust"],
             [t("footer.clientLogin"), "/login"],
