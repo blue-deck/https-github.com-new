@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPin } from "lucide-react";
+import { nationalityOptions } from "../lib/countries";
 import {
   useEffect,
   useId,
@@ -75,7 +76,8 @@ export function LocationSearchField({
   const [activeIndex, setActiveIndex] = useState(-1);
   const trimmedQuery = query.trim();
   const searchComplete =
-    trimmedQuery.length >= 3 && searchedQuery === trimmedQuery;
+    (trimmedQuery.length >= 3 || Boolean(exactCountrySuggestion(trimmedQuery))) &&
+    searchedQuery === trimmedQuery;
   const noResults = searchComplete && !searching && suggestions.length === 0;
   const popupVisible =
     open && !disabled && (searching || suggestions.length > 0 || noResults);
@@ -86,7 +88,17 @@ export function LocationSearchField({
   }, [value]);
 
   useEffect(() => {
-    if (!open || disabled || trimmedQuery.length < 3) return;
+    if (!open || disabled) return;
+
+    const exactCountry = exactCountrySuggestion(trimmedQuery);
+    if (exactCountry) {
+      setSuggestions([exactCountry]);
+      setSearchedQuery(trimmedQuery);
+      setSearching(false);
+      setActiveIndex(-1);
+      return;
+    }
+    if (trimmedQuery.length < 3) return;
 
     const controller = new AbortController();
     const timeout = window.setTimeout(async () => {
@@ -124,7 +136,12 @@ export function LocationSearchField({
           ];
         });
 
-        setSuggestions(cleanResults);
+        setSuggestions(
+          mergeLocationSuggestions(
+            countrySuggestions(trimmedQuery),
+            cleanResults,
+          ),
+        );
         setSearchedQuery(trimmedQuery);
         setActiveIndex(-1);
       } catch {
@@ -350,4 +367,64 @@ export function cleanLocationCountry(country?: string) {
     .replace(/^State of /, "")
     .replace(/^Commonwealth of /, "")
     .trim();
+}
+
+function countrySuggestions(query: string): LocationSuggestion[] {
+  const normalizedQuery = normalizeLocationSearchText(query);
+  if (!normalizedQuery) return [];
+
+  return nationalityOptions
+    .filter((country) =>
+      countrySearchTerms(country.code, country.country).some((term) =>
+        term.startsWith(normalizedQuery),
+      ),
+    )
+    .slice(0, 4)
+    .map((country) => ({
+      key: `country-${country.code}`,
+      label: cleanLocationCountry(country.country),
+      detail: "",
+    }));
+}
+
+function exactCountrySuggestion(query: string) {
+  const normalizedQuery = normalizeLocationSearchText(query);
+  const country = nationalityOptions.find((item) =>
+    countrySearchTerms(item.code, item.country).includes(normalizedQuery),
+  );
+  if (!country) return undefined;
+
+  return {
+    key: `country-${country.code}`,
+    label: cleanLocationCountry(country.country),
+    detail: "",
+  } satisfies LocationSuggestion;
+}
+
+function countrySearchTerms(code: string, country: string) {
+  const terms = [code, country];
+  if (code === "TR") terms.push("Turkey", "Türkiye");
+  return terms.map(normalizeLocationSearchText);
+}
+
+function normalizeLocationSearchText(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase("en-US")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/ı/g, "i");
+}
+
+function mergeLocationSuggestions(
+  countryResults: LocationSuggestion[],
+  remoteResults: LocationSuggestion[],
+) {
+  const seen = new Set<string>();
+  return [...countryResults, ...remoteResults].filter((suggestion) => {
+    const identity = `${suggestion.label}\n${suggestion.detail}`;
+    if (seen.has(identity)) return false;
+    seen.add(identity);
+    return true;
+  });
 }
