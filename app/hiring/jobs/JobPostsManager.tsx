@@ -163,9 +163,6 @@ const copy = {
     startDate: "Job start date",
     datePlaceholder: "DD/MM/YYYY",
     invalidDate: "Enter a valid date in DD/MM/YYYY format.",
-    automaticExpiryTitle: "One-month publishing window",
-    automaticExpiryText:
-      "Every published listing remains open for one calendar month. BlueDeck then removes it from the public jobs board automatically.",
     narrative: "Public job brief",
     summary: "Short summary",
     summaryPlaceholder:
@@ -294,9 +291,6 @@ const copy = {
     startDate: "İşe başlama tarihi",
     datePlaceholder: "GG/AA/YYYY",
     invalidDate: "GG/AA/YYYY biçiminde geçerli bir tarih girin.",
-    automaticExpiryTitle: "Bir aylık yayın süresi",
-    automaticExpiryText:
-      "Yayınlanan her ilan bir takvim ayı boyunca açık kalır. Bu sürenin sonunda BlueDeck ilanı herkese açık iş ilanlarından otomatik olarak kaldırır.",
     narrative: "Herkese açık ilan özeti",
     summary: "Kısa özet",
     summaryPlaceholder:
@@ -1077,17 +1071,6 @@ export function JobPostsManager() {
                   />
                 </div>
 
-                <div className="mt-5 flex items-start gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-cyan-950">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
-                    <Clock3 className="h-4 w-4" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="text-sm font-black">{c.automaticExpiryTitle}</p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-cyan-900/75">
-                      {c.automaticExpiryText}
-                    </p>
-                  </div>
-                </div>
               </FormSection>
 
               <FormSection icon={<FilePenLine />} title={c.narrative}>
