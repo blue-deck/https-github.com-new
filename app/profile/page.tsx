@@ -776,21 +776,18 @@ export default function ProfilePage() {
       return false;
     }
 
-    const nextRole = inferBaseRoleFromPosition(normalizedForSave.current_position);
     const [baseProfileResult, authResult] = await Promise.all([
       saveBaseProfileById(supabase, {
         id: user.id,
         email: user.email || "",
         full_name: normalizedForSave.full_name || user.email,
         phone: normalizedForSave.phone || "",
-        role: nextRole,
       }),
       supabase.auth.updateUser({
         data: {
           full_name: normalizedForSave.full_name || user.email,
           phone: normalizedForSave.phone || "",
           gender: normalizedForSave.gender || "",
-          role: nextRole,
         },
       }),
     ]);
@@ -810,7 +807,6 @@ export default function ProfilePage() {
         normalizedForSave.profile_photo_url,
       ),
       fullName: normalizedForSave.full_name || user.email || "",
-      role: nextRole,
     });
 
     const normalizedProfile = normalizeProfile({
@@ -2386,14 +2382,6 @@ function experienceCompletionRatio(experience: Experience) {
   const fieldScore = filledRatio(fields) * 0.5;
   const dutiesScore = textCompletionRatio(experience.description, 160) * 0.5;
   return fieldScore + dutiesScore;
-}
-
-function inferBaseRoleFromPosition(value?: string) {
-  const position = cleanSaveText(value).toLowerCase();
-  if (position.includes("captain")) return "captain";
-  if (position.includes("owner")) return "owner";
-  if (position.includes("management")) return "management";
-  return "crew";
 }
 
 function cleanSaveLanguages(value?: LanguageEntry[]) {

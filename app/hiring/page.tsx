@@ -24,6 +24,13 @@ import {
   type EmployerAccessYacht,
   type EmployerRole,
 } from "../lib/employerAccess";
+import {
+  marketplaceCapabilitiesForRole,
+  marketplaceRoleLabel,
+  normalizeMarketplaceAccountRole,
+  type MarketplaceCapabilities,
+} from "../lib/marketplaceCapabilities";
+import type { VerifiedEmployerYacht } from "../lib/jobPosts";
 import { supabase } from "../lib/supabase";
 
 type EmployerAccessResponse = {
@@ -40,6 +47,16 @@ type RequestResponse = {
   access?: EmployerAccessEntry;
 };
 
+type JobWorkspaceResponse = {
+  ok?: boolean;
+  error?: string;
+  capabilities?: MarketplaceCapabilities & {
+    postingStatus?: "enabled" | "suspended" | "unavailable";
+    planCode?: string;
+  };
+  yachts?: VerifiedEmployerYacht[];
+};
+
 type Notice = {
   tone: "success" | "error";
   message: string;
@@ -47,20 +64,21 @@ type Notice = {
 
 const copy = {
   en: {
-    eyebrow: "Secure hiring",
-    title: "Hiring access",
+    eyebrow: "BlueDeck marketplace",
+    title: "Hiring & job access",
     intro:
-      "Connect hiring authority to a yacht before publishing roles or contacting candidates. BlueDeck reviews every request.",
+      "Job posting is self-service for Captain, Owner / Employer and Management accounts. Candidate outreach remains a separate verified yacht tool.",
     privacy: "Private account area",
     adminReview: "Open admin review",
-    stepOne: "Connect",
-    stepOneText: "Choose a yacht registered to your account.",
-    stepTwo: "Review",
-    stepTwoText: "BlueDeck confirms your relationship to the yacht.",
-    stepThree: "Hire",
-    stepThreeText: "Approved yachts can use secure hiring tools.",
-    yachts: "Connected yachts",
-    yachtsIntro: "Hiring access is reviewed separately for each yacht.",
+    stepOne: "Connect yacht",
+    stepOneText: "Choose a yacht for private candidate outreach.",
+    stepTwo: "Verify outreach",
+    stepTwoText: "BlueDeck reviews access to private crew contact tools.",
+    stepThree: "Contact crew",
+    stepThreeText: "Verified yachts can securely invite suitable candidates.",
+    yachts: "Outreach verification",
+    yachtsIntro:
+      "This review applies only to private candidate contact and yacht invitation tools—not to job posting.",
     yacht: "Yacht",
     pending: "Pending",
     verified: "Verified",
@@ -71,7 +89,7 @@ const copy = {
     requestAgain: "Request another review",
     closeForm: "Cancel",
     relationship: "Your relationship to this yacht",
-    owner: "Owner",
+    owner: "Owner / Employer",
     captain: "Captain",
     management: "Yacht management",
     note: "Note for the BlueDeck review team",
@@ -88,46 +106,63 @@ const copy = {
     pendingTitle: "Your request is being reviewed",
     pendingText:
       "No further action is required. This page will show the decision when the review is complete.",
-    verifiedTitle: "Hiring access is active",
+    verifiedTitle: "Private outreach access is active",
     verifiedText:
-      "This yacht is approved for BlueDeck hiring. You can now create and publish crew opportunities.",
-    manageJobs: "Manage job posts",
+      "This yacht can use verified candidate contact and crew invitation tools.",
+    manageJobs: "Find crew",
     rejectedTitle: "The request needs another review",
     rejectedText:
       "Check the review note, update your details and submit the yacht again.",
-    suspendedTitle: "Hiring access is paused",
+    suspendedTitle: "Private outreach is paused",
     suspendedText:
-      "Job publishing is unavailable for this yacht until BlueDeck restores access.",
-    noYachtsTitle: "Add your first yacht",
+      "Private candidate outreach is unavailable for this yacht until BlueDeck restores access.",
+    noYachtsTitle: "No owned yacht for outreach",
     noYachtsText:
-      "A hiring request must be connected to a yacht registered to your BlueDeck account.",
+      "Private outreach verification must be connected to a yacht registered to your account.",
     addYacht: "Add yacht",
     loading: "Loading hiring access…",
     loadError: "Hiring access could not be loaded.",
     retry: "Try again",
-    requestSuccess: "Your hiring access request was sent to BlueDeck.",
+    requestSuccess: "Your private outreach request was sent to BlueDeck.",
     accountRole: "Account type",
     accessSummary: "Access summary",
     totalYachts: "Yachts",
     activeAccess: "Active",
     waitingReview: "In review",
     noDate: "Date unavailable",
+    directEyebrow: "Self-service job posting",
+    directTitle: "No administrator approval",
+    directActive:
+      "Your account type can create, publish and manage job posts directly for yachts where you hold current marketplace authority.",
+    directCrew:
+      "Crew accounts can browse and apply to jobs. Choose Captain, Owner / Employer or Management when creating an account to post jobs.",
+    directSuspended:
+      "Job posting is currently paused for this account. Existing posts remain protected until access is restored.",
+    connectedForPosting: "Yachts available for posting",
+    manageDirect: "Manage job posts",
+    browseJobs: "Browse jobs",
+    connectYacht:
+      "Connect a real yacht first: owners register their yacht; captains and management use an active, role-appropriate yacht membership.",
+    captainDual:
+      "Captain accounts can also browse and apply to jobs with the same account.",
+    separateTools: "Separate verified tool",
   },
   tr: {
-    eyebrow: "Güvenli işe alım",
-    title: "İşe alım yetkisi",
+    eyebrow: "BlueDeck marketplace",
+    title: "İşe alım ve ilan yetkisi",
     intro:
-      "İlan yayınlamadan veya adaylarla iletişime geçmeden önce işe alım yetkisini bir yata bağla. BlueDeck her talebi inceler.",
+      "Captain, Owner / Employer ve Management hesapları iş ilanını doğrudan yayınlar. Adaylarla özel iletişim ise ayrı bir doğrulanmış yat aracıdır.",
     privacy: "Özel hesap alanı",
     adminReview: "Yönetici incelemesini aç",
-    stepOne: "Bağla",
-    stepOneText: "Hesabına kayıtlı yatı seç.",
-    stepTwo: "İnceleme",
-    stepTwoText: "BlueDeck yatla ilişkini doğrular.",
-    stepThree: "İşe al",
-    stepThreeText: "Onaylanan yatlar güvenli işe alım araçlarını kullanır.",
-    yachts: "Bağlı yatlar",
-    yachtsIntro: "İşe alım yetkisi her yat için ayrı incelenir.",
+    stepOne: "Yatı bağla",
+    stepOneText: "Özel aday iletişimi için kayıtlı yatını seç.",
+    stepTwo: "İletişimi doğrula",
+    stepTwoText: "BlueDeck özel crew iletişim araçlarına erişimi inceler.",
+    stepThree: "Crew ile iletişim",
+    stepThreeText: "Doğrulanan yat uygun adaylara güvenle davet gönderebilir.",
+    yachts: "Aday iletişimi doğrulaması",
+    yachtsIntro:
+      "Bu inceleme yalnız özel aday iletişimi ve yat daveti araçları içindir; iş ilanı yayınlamayı etkilemez.",
     yacht: "Yat",
     pending: "İnceleniyor",
     verified: "Onaylandı",
@@ -138,7 +173,7 @@ const copy = {
     requestAgain: "Yeniden inceleme iste",
     closeForm: "Vazgeç",
     relationship: "Bu yatla ilişkin",
-    owner: "Yat sahibi",
+    owner: "Owner / Employer",
     captain: "Kaptan",
     management: "Yat yönetimi",
     note: "BlueDeck inceleme ekibine not",
@@ -155,30 +190,46 @@ const copy = {
     pendingTitle: "Talebin inceleniyor",
     pendingText:
       "Şu an başka bir işlem yapman gerekmiyor. İnceleme tamamlandığında karar bu sayfada görünecek.",
-    verifiedTitle: "İşe alım yetkisi aktif",
+    verifiedTitle: "Özel aday iletişimi aktif",
     verifiedText:
-      "Bu yat BlueDeck işe alım araçları için onaylandı. Artık mürettebat ilanları oluşturup yayınlayabilirsin.",
-    manageJobs: "İş ilanlarını yönet",
+      "Bu yat doğrulanmış aday iletişimi ve crew daveti araçlarını kullanabilir.",
+    manageJobs: "Crew bul",
     rejectedTitle: "Talebin yeniden incelenmesi gerekiyor",
     rejectedText:
       "İnceleme notunu kontrol et, bilgilerini güncelle ve yatı yeniden gönder.",
-    suspendedTitle: "İşe alım yetkisi duraklatıldı",
+    suspendedTitle: "Özel aday iletişimi duraklatıldı",
     suspendedText:
-      "BlueDeck yetkiyi yeniden açana kadar bu yat için ilan yayınlanamaz.",
-    noYachtsTitle: "İlk yatını ekle",
+      "BlueDeck yetkiyi yeniden açana kadar bu yat için özel aday iletişimi kullanılamaz.",
+    noYachtsTitle: "Aday iletişimi için kayıtlı yat yok",
     noYachtsText:
-      "İşe alım talebi BlueDeck hesabına kayıtlı bir yata bağlı olmalıdır.",
+      "Özel aday iletişimi doğrulaması hesabına kayıtlı bir yata bağlanmalıdır.",
     addYacht: "Yat ekle",
     loading: "İşe alım yetkisi yükleniyor…",
     loadError: "İşe alım yetkisi yüklenemedi.",
     retry: "Tekrar dene",
-    requestSuccess: "İşe alım yetkisi talebin BlueDeck’e gönderildi.",
+    requestSuccess: "Özel aday iletişimi talebin BlueDeck’e gönderildi.",
     accountRole: "Hesap türü",
     accessSummary: "Yetki özeti",
     totalYachts: "Yat",
     activeAccess: "Aktif",
     waitingReview: "İncelemede",
     noDate: "Tarih bilgisi yok",
+    directEyebrow: "Doğrudan iş ilanı yayınlama",
+    directTitle: "Yönetici onayı gerektirmez",
+    directActive:
+      "Hesap türün, güncel marketplace yetkin bulunan yatlar için doğrudan iş ilanı oluşturabilir, yayınlayabilir ve yönetebilir.",
+    directCrew:
+      "Crew hesapları ilanları görüntüleyip başvurabilir. İlan vermek için hesap oluştururken Captain, Owner / Employer veya Management seçilir.",
+    directSuspended:
+      "Bu hesap için ilan yayınlama şu anda duraklatılmış. Yetki yeniden açılana kadar mevcut ilanlar korunur.",
+    connectedForPosting: "İlan verilebilen yat",
+    manageDirect: "İş ilanlarını yönet",
+    browseJobs: "İş ilanlarına göz at",
+    connectYacht:
+      "Önce gerçek bir yat bağlantısı kur: yat sahipleri yatını kaydeder; Captain ve Management hesapları role uygun aktif yat üyeliğini kullanır.",
+    captainDual:
+      "Captain hesabı aynı zamanda iş ilanlarını görüntüleyip başvuru yapabilir.",
+    separateTools: "Ayrı doğrulanan araç",
   },
 } as const;
 
@@ -190,6 +241,10 @@ export default function HiringPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [accountRole, setAccountRole] = useState("crew");
+  const [marketplaceCapabilities, setMarketplaceCapabilities] = useState<
+    JobWorkspaceResponse["capabilities"]
+  >(marketplaceCapabilitiesForRole("crew"));
+  const [marketplaceYachtCount, setMarketplaceYachtCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [yachts, setYachts] = useState<EmployerAccessYacht[]>([]);
   const [activeYachtId, setActiveYachtId] = useState("");
@@ -225,26 +280,48 @@ export default function HiringPage() {
     }
 
     try {
-      const response = await fetch("/api/employer-access", {
+      const requestOptions = {
         headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: "no-store",
-      });
-      const result = (await response
-        .json()
-        .catch(() => null)) as EmployerAccessResponse | null;
+        cache: "no-store" as const,
+      };
+      const [accessResponse, workspaceResponse] = await Promise.all([
+        fetch("/api/employer-access", requestOptions),
+        fetch("/api/employer/job-posts", requestOptions),
+      ]);
+      const [result, workspace] = await Promise.all([
+        accessResponse
+          .json()
+          .catch(() => null) as Promise<EmployerAccessResponse | null>,
+        workspaceResponse
+          .json()
+          .catch(() => null) as Promise<JobWorkspaceResponse | null>,
+      ]);
 
-      if (response.status === 401) {
+      if (accessResponse.status === 401 || workspaceResponse.status === 401) {
         window.location.replace(
           `/login?next=${encodeURIComponent("/hiring")}`,
         );
         return;
       }
 
-      if (!response.ok || !result?.ok) {
+      if (!accessResponse.ok || !result?.ok) {
         throw new Error(result?.error || c.loadError);
       }
+      if (!workspaceResponse.ok || !workspace?.ok || !workspace.capabilities) {
+        throw new Error(workspace?.error || c.loadError);
+      }
 
-      setAccountRole(result.accountRole || "crew");
+      const canonicalRole = normalizeMarketplaceAccountRole(
+        workspace.capabilities.role,
+      );
+      setAccountRole(canonicalRole);
+      setMarketplaceCapabilities({
+        ...marketplaceCapabilitiesForRole(canonicalRole),
+        ...workspace.capabilities,
+        role: canonicalRole,
+        requiresAdminApproval: false,
+      });
+      setMarketplaceYachtCount(workspace.yachts?.length || 0);
       setIsAdmin(Boolean(result.isAdmin));
       setYachts(result.yachts || []);
     } catch (error) {
@@ -408,7 +485,76 @@ export default function HiringPage() {
             ) : null}
           </div>
 
-          <div className="mt-9 grid overflow-hidden rounded-2xl border border-slate-200 bg-white/75 md:grid-cols-3">
+          <div className="mt-9 overflow-hidden rounded-[26px] border border-emerald-200 bg-emerald-50/70 p-5 sm:p-7">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-800">
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                    {c.directEyebrow}
+                  </span>
+                  <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[#071f3c]">
+                    {marketplaceRoleLabel(
+                      normalizeMarketplaceAccountRole(accountRole),
+                      language,
+                    )}
+                  </span>
+                </div>
+                <h2 className="mt-4 text-2xl font-semibold text-slate-950 sm:text-3xl">
+                  {c.directTitle}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-700 sm:text-base">
+                  {marketplaceCapabilities?.postingStatus === "suspended"
+                    ? c.directSuspended
+                    : marketplaceCapabilities?.canPostJobs
+                      ? c.directActive
+                      : c.directCrew}
+                </p>
+                {marketplaceCapabilities?.canPostJobs ? (
+                  <p className="mt-3 text-sm font-bold text-emerald-900">
+                    {c.connectedForPosting}: {marketplaceYachtCount}
+                  </p>
+                ) : null}
+                {marketplaceCapabilities?.canPostJobs &&
+                marketplaceYachtCount === 0 ? (
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {c.connectYacht}
+                  </p>
+                ) : null}
+                {normalizeMarketplaceAccountRole(accountRole) === "captain" ? (
+                  <p className="mt-2 text-sm font-semibold text-cyan-900">
+                    {c.captainDual}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+                {marketplaceCapabilities?.canPostJobs &&
+                marketplaceYachtCount > 0 ? (
+                  <Link
+                    href="/hiring/jobs"
+                    className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                  >
+                    <BriefcaseBusiness className="h-4 w-4" aria-hidden />
+                    {c.manageDirect}
+                    <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                ) : null}
+                {marketplaceCapabilities?.canApplyJobs ? (
+                  <Link
+                    href="/jobs"
+                    className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-[#071f3c]/15 bg-white px-5 text-sm font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
+                  >
+                    {c.browseJobs}
+                    <ArrowRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <p className="bd-kicker mt-9">{c.separateTools}</p>
+          <div className="mt-4 grid overflow-hidden rounded-2xl border border-slate-200 bg-white/75 md:grid-cols-3">
             <ProcessStep
               number="01"
               title={c.stepOne}
@@ -642,7 +788,7 @@ function YachtAccessCard({
 
             {status === "verified" ? (
               <Link
-                href="/hiring/jobs"
+                href="/find-crew"
                 className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <BriefcaseBusiness className="h-4 w-4" aria-hidden />

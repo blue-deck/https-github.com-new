@@ -90,14 +90,9 @@ export function BlueDeckTopBar() {
             typeof metadata?.full_name === "string" && metadata.full_name.trim()
               ? metadata.full_name.trim()
               : current.fullName;
-          const nextRole =
-            typeof metadata?.role === "string" && metadata.role.trim()
-              ? metadata.role.trim()
-              : current.role;
           return {
             ...current,
             fullName: nextName,
-            role: nextRole,
             dashboardPhotoUrl: dashboardPhotoFromMetadata(
               metadata,
               current.profilePhotoUrl,

@@ -20,6 +20,7 @@ import {
   Send,
   ShieldCheck,
   Ship,
+  UsersRound,
   XCircle,
 } from "lucide-react";
 import {
@@ -81,11 +82,11 @@ type FormState = {
 
 const copy = {
   en: {
-    eyebrow: "Verified employer workspace",
+    eyebrow: "Publisher workspace",
     title: "Job posts",
     intro:
       "Create clear crew opportunities, control what is public and manage every role from draft to close.",
-    back: "Hiring access",
+    back: "Hiring workspace",
     publicBoard: "View public jobs",
     privateArea: "Private employer area",
     total: "All posts",
@@ -98,10 +99,10 @@ const copy = {
     loading: "Loading your job posting workspace…",
     loadError: "Your job posting workspace could not be loaded.",
     retry: "Try again",
-    accessRequired: "Verified hiring access is required",
+    accessRequired: "Connect a yacht to publish roles",
     accessRequiredText:
-      "Return to Hiring Access and complete BlueDeck review for at least one yacht. Only verified yacht owners can publish roles.",
-    reviewAccess: "Open hiring access",
+      "Captain, Owner and Management accounts can publish for a yacht they own or actively manage. Add or connect your yacht first.",
+    reviewAccess: "Open hiring workspace",
     noPosts: "No job posts yet",
     noPostsText:
       "Create your first role. You can keep it private as a draft until every detail is ready.",
@@ -129,7 +130,7 @@ const copy = {
     logistics: "Timing and location",
     location: "Location",
     locationPlaceholder: "e.g. Palma, Spain · Mediterranean",
-    startDate: "Preferred start date",
+    startDate: "Job start date",
     closesAt: "Applications close",
     narrative: "Public job brief",
     summary: "Short summary",
@@ -171,6 +172,7 @@ const copy = {
     reopen: "Reopen as draft",
     saving: "Saving…",
     viewLive: "View live post",
+    applications: "Applications",
     savedDraft: "Draft saved.",
     savedPublished: "Job post published.",
     savedClosed: "Job post closed.",
@@ -183,11 +185,11 @@ const copy = {
     selectPost: "Select a post",
   },
   tr: {
-    eyebrow: "Doğrulanmış işveren alanı",
+    eyebrow: "İlan yayınlama alanı",
     title: "İş ilanları",
     intro:
       "Net mürettebat fırsatları oluştur, hangi bilgilerin yayınlanacağını kontrol et ve her ilanı taslaktan kapanışa kadar yönet.",
-    back: "İşe alım yetkisi",
+    back: "İşe alım alanı",
     publicBoard: "Yayındaki ilanları gör",
     privateArea: "Özel işveren alanı",
     total: "Tüm ilanlar",
@@ -200,10 +202,10 @@ const copy = {
     loading: "İş ilanı alanın yükleniyor…",
     loadError: "İş ilanı alanın yüklenemedi.",
     retry: "Tekrar dene",
-    accessRequired: "Onaylanmış işe alım yetkisi gerekiyor",
+    accessRequired: "İlan vermek için bir yat bağlayın",
     accessRequiredText:
-      "İşe Alım Yetkisi sayfasına dön ve en az bir yat için BlueDeck incelemesini tamamla. Yalnız onaylanmış yat sahipleri ilan yayınlayabilir.",
-    reviewAccess: "İşe alım yetkisini aç",
+      "Captain, Owner ve Management hesapları sahibi oldukları veya aktif olarak yönettikleri yat için ilan verebilir. Önce yatınızı ekleyin ya da hesabınıza bağlayın.",
+    reviewAccess: "İşe alım alanını aç",
     noPosts: "Henüz iş ilanı yok",
     noPostsText:
       "İlk pozisyonunu oluştur. Tüm ayrıntılar hazır olana kadar ilanı gizli taslak olarak tutabilirsin.",
@@ -231,7 +233,7 @@ const copy = {
     logistics: "Tarih ve konum",
     location: "Konum",
     locationPlaceholder: "Örn. Palma, İspanya · Akdeniz",
-    startDate: "Tercih edilen başlangıç",
+    startDate: "İşe başlama tarihi",
     closesAt: "Başvuru kapanışı",
     narrative: "Herkese açık ilan özeti",
     summary: "Kısa özet",
@@ -273,6 +275,7 @@ const copy = {
     reopen: "Taslak olarak yeniden aç",
     saving: "Kaydediliyor…",
     viewLive: "Yayındaki ilanı gör",
+    applications: "Başvurular",
     savedDraft: "Taslak kaydedildi.",
     savedPublished: "İş ilanı yayınlandı.",
     savedClosed: "İş ilanı kapatıldı.",
@@ -298,6 +301,9 @@ export function JobPostsManager() {
   const [form, setForm] = useState<FormState>(() => emptyForm(""));
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [applicationCounts, setApplicationCounts] = useState<
+    Record<string, number>
+  >({});
 
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === selectedId) || null,
@@ -382,6 +388,49 @@ export function JobPostsManager() {
       active = false;
     };
   }, [reloadVersion]);
+
+  useEffect(() => {
+    if (!selectedJob || applicationCounts[selectedJob.id] !== undefined) return;
+    let active = true;
+
+    async function loadApplicationCount() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session || !selectedJob) return;
+
+      const response = await fetch(
+        `/api/employer/job-posts/${encodeURIComponent(selectedJob.id)}/applications?summary=1`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        },
+      );
+      const result = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        total?: number;
+      } | null;
+      if (
+        active &&
+        response.ok &&
+        result?.ok &&
+        typeof result.total === "number"
+      ) {
+        setApplicationCounts((current) => ({
+          ...current,
+          [selectedJob.id]: result.total || 0,
+        }));
+      }
+    }
+
+    void loadApplicationCount();
+    return () => {
+      active = false;
+    };
+  }, [applicationCounts, selectedJob]);
 
   function startNewPost() {
     setSelectedId("");
@@ -1087,15 +1136,31 @@ export function JobPostsManager() {
                   ) : null}
                 </div>
 
-                {selectedJob?.status === "published" ? (
-                  <Link
-                    href={`/jobs/${encodeURIComponent(selectedJob.id)}`}
-                    className="bd-focus inline-flex min-h-11 w-fit items-center gap-2 rounded-xl text-sm font-black text-cyan-800 transition hover:text-cyan-950"
-                  >
-                    <Eye className="h-4 w-4" aria-hidden />
-                    {c.viewLive}
-                    <ArrowUpRight className="h-4 w-4" aria-hidden />
-                  </Link>
+                {selectedJob ? (
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <Link
+                      href={`/hiring/jobs/${encodeURIComponent(selectedJob.id)}/applications`}
+                      className="bd-focus inline-flex min-h-11 w-fit items-center gap-2 rounded-xl text-sm font-black text-cyan-800 transition hover:text-cyan-950"
+                    >
+                      <UsersRound className="h-4 w-4" aria-hidden />
+                      {c.applications}
+                      <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] text-cyan-900">
+                        {applicationCounts[selectedJob.id] ?? "—"}
+                      </span>
+                      <ArrowUpRight className="h-4 w-4" aria-hidden />
+                    </Link>
+
+                    {selectedJob.status === "published" ? (
+                      <Link
+                        href={`/jobs/${encodeURIComponent(selectedJob.id)}`}
+                        className="bd-focus inline-flex min-h-11 w-fit items-center gap-2 rounded-xl text-sm font-black text-cyan-800 transition hover:text-cyan-950"
+                      >
+                        <Eye className="h-4 w-4" aria-hidden />
+                        {c.viewLive}
+                        <ArrowUpRight className="h-4 w-4" aria-hidden />
+                      </Link>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             </div>

@@ -12,7 +12,7 @@ import {
   logJobPostError,
   parseJobPostMutation,
   readJobPostBody,
-  verifyJobPostingAuthority,
+  verifyJobManagementAuthority,
 } from "../../../../lib/jobPostsServer";
 
 export const dynamic = "force-dynamic";
@@ -68,9 +68,10 @@ export async function PATCH(
     );
   }
 
-  const authority = await verifyJobPostingAuthority(
+  const authority = await verifyJobManagementAuthority(
     clients.serviceClient,
     clients.user.id,
+    jobPostId,
     yachtId,
   );
   if (!authority.ok) {
@@ -115,6 +116,10 @@ export async function PATCH(
 
   if (error) {
     const code = cleanText(error.code);
+    const databaseMessage = cleanText(error.message);
+    const publishingValidationFailed =
+      code === "23514" &&
+      databaseMessage.startsWith("Published job posts require");
     logJobPostError("job_post_update_failed", error, {
       actorUserId: clients.user.id,
       jobPostId,
@@ -125,13 +130,17 @@ export async function PATCH(
         ok: false,
         error:
           code === "42501"
-            ? "Your verified hiring access changed before the job post was saved."
+            ? "Your yacht marketplace access changed before the job post was saved."
+            : publishingValidationFailed
+              ? "Complete the public job details and use a future closing date before publishing."
             : code === "23514" || code === "22023"
               ? "This status change is not available. Refresh the job post and try again."
               : "The job post could not be updated.",
       },
       code === "42501"
         ? 403
+        : publishingValidationFailed
+          ? 400
         : code === "23514" || code === "22023"
           ? 409
           : 500,

@@ -11,12 +11,10 @@ import {
   CircleDollarSign,
   Clock3,
   LoaderCircle,
-  LogIn,
   MapPin,
   RefreshCw,
   ShieldCheck,
   Ship,
-  UserRoundPlus,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
@@ -27,6 +25,7 @@ import {
   type PublicJob,
   yachtLabel,
 } from "../job-data";
+import { JobApplicationPanel } from "./JobApplicationPanel";
 
 type LoadState = "loading" | "ready" | "not-found" | "error";
 
@@ -122,9 +121,6 @@ function JobDetail({
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
   const yacht = yachtLabel(job);
-  const returnPath = `/jobs/${encodeURIComponent(job.id)}`;
-  const loginHref = `/login?next=${encodeURIComponent(returnPath)}`;
-  const signupHref = `/login?mode=signup&role=crew&next=${encodeURIComponent(returnPath)}`;
 
   return (
     <>
@@ -250,20 +246,7 @@ function JobDetail({
                     ) : null}
                   </div>
 
-                  <Link
-                    href={loginHref}
-                    className="bd-focus mt-6 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
-                  >
-                    <LogIn className="h-4 w-4" aria-hidden />
-                    {c.signIn}
-                  </Link>
-                  <Link
-                    href={signupHref}
-                    className="bd-focus mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
-                  >
-                    <UserRoundPlus className="h-4 w-4" aria-hidden />
-                    {c.createProfile}
-                  </Link>
+                  <JobApplicationPanel jobId={job.id} language={language} />
                 </div>
               </div>
 
@@ -440,11 +423,9 @@ const copy = {
     department: "Department",
     published: "Published",
     closes: "Closes",
-    secureTitle: "Keep your profile ready",
+    secureTitle: "Apply securely",
     secureText:
-      "Sign in to manage your professional BlueDeck crew profile. Private contact details are not shown on this public listing.",
-    signIn: "Sign in to BlueDeck",
-    createProfile: "Create crew profile",
+      "Crew and Captain accounts can apply with a short note and their professional BlueDeck profile summary.",
     keepReady: "A professional first step",
     keepReadyText:
       "Keep your experience, certificates and availability current so your profile is ready for secure hiring workflows.",
@@ -471,11 +452,9 @@ const copy = {
     department: "Departman",
     published: "Yayınlandı",
     closes: "Son tarih",
-    secureTitle: "Profilinizi hazır tutun",
+    secureTitle: "Güvenle başvurun",
     secureText:
-      "Profesyonel BlueDeck crew profilinizi yönetmek için giriş yapın. Özel iletişim bilgileri bu herkese açık ilanda gösterilmez.",
-    signIn: "BlueDeck’e giriş yap",
-    createProfile: "Crew profili oluştur",
+      "Crew ve Captain hesapları kısa bir not ve profesyonel BlueDeck profil özetiyle başvurabilir.",
     keepReady: "Profesyonel bir ilk adım",
     keepReadyText:
       "Profilinizin güvenli işe alım akışlarına hazır olması için deneyim, sertifika ve müsaitlik bilgilerinizi güncel tutun.",

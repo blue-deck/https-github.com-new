@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "Hiring Access | BlueDeck",
+  title: "Hiring & Job Access | BlueDeck",
   description:
-    "Request and review secure hiring access for yachts connected to your BlueDeck account.",
+    "Publish yacht jobs directly or manage separately verified candidate outreach tools.",
   robots: {
     index: false,
     follow: false,

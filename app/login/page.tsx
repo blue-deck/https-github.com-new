@@ -13,6 +13,13 @@ import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/y
 
 type AuthMode = "login" | "signup" | "recovery";
 
+const roleAccessCopy: Record<string, TranslationKey> = {
+  crew: "login.roleCrewAccess",
+  captain: "login.roleCaptainAccess",
+  owner: "login.roleOwnerAccess",
+  management: "login.roleManagementAccess",
+};
+
 export default function LoginPage() {
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
@@ -326,6 +333,11 @@ export default function LoginPage() {
                     <option value="owner">{t("login.roleOwner")}</option>
                     <option value="management">{t("login.roleManagement")}</option>
                   </select>
+                  {role && roleAccessCopy[role] ? (
+                    <p className="mt-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-sm leading-6 text-slate-700">
+                      {t(roleAccessCopy[role])}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="block">
                   <p className="mb-2 block select-text text-sm text-slate-500">

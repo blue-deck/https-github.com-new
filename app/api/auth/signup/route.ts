@@ -4,12 +4,13 @@ import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 import { authConfirmUrl, safeInternalPath } from "../../../lib/site";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
+import { isMarketplaceAccountRole } from "../../../lib/marketplaceCapabilities";
+import { ensureMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const accountTypes = ["crew", "captain", "owner", "management"];
 
 export async function POST(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
   const email = body.email?.trim().toLowerCase();
   const password = body.password || "";
   const fullName = body.fullName?.trim() || "";
-  const role = accountTypes.includes(body.role || "") ? body.role || "crew" : "";
+  const role = isMarketplaceAccountRole(body.role) ? body.role : "";
   const requestedPosition = body.position?.trim() || getDefaultPositionForAccountType(role);
   const position = yachtPositionTitles.includes(requestedPosition) ? requestedPosition : "";
   const nextPath = safeInternalPath(body.next);
@@ -107,6 +108,22 @@ export async function POST(request: NextRequest) {
 
       if (failedProfileWrites.length > 0) {
         console.error("BlueDeck profile sync returned errors after signup", failedProfileWrites);
+      }
+
+      const entitlementResult = await ensureMarketplaceEntitlement(
+        adminSupabase,
+        data.user.id,
+        role,
+        "self_service",
+      );
+      if (!entitlementResult.ok) {
+        console.error("BlueDeck marketplace entitlement sync failed after signup", {
+          schemaUnavailable: entitlementResult.schemaUnavailable,
+          message:
+            entitlementResult.error instanceof Error
+              ? entitlementResult.error.message
+              : "Marketplace entitlement sync failed",
+        });
       }
     } catch (profileError) {
       console.error("BlueDeck profile sync failed after signup", profileError);

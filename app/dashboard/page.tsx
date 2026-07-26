@@ -67,11 +67,6 @@ function cleanDisplayName(profile?: DashboardProfile | null) {
   return "";
 }
 
-function formatDashboardRole(role?: string) {
-  const cleanRole = role?.trim() || "crew";
-  return cleanRole.charAt(0).toLocaleUpperCase("en-US") + cleanRole.slice(1);
-}
-
 function uniqueById<T extends { id?: string }>(items: T[]) {
   return items.filter(
     (item, index, list) =>
@@ -340,7 +335,7 @@ export default function DashboardPage() {
           email: user.email,
           full_name: preferredName,
           phone: crewProfile?.phone || user.user_metadata?.phone || "",
-          role: user.user_metadata?.role || "crew",
+          role: "crew",
         })
         .select()
         .single();
@@ -516,7 +511,15 @@ export default function DashboardPage() {
   const canManageYachts = ["captain", "owner", "management"].includes(
     normalizedRole,
   );
-  const roleLabel = formatDashboardRole(normalizedRole);
+  const canApplyToJobs = ["crew", "captain"].includes(normalizedRole);
+  const roleLabel =
+    normalizedRole === "captain"
+      ? t("login.roleCaptain")
+      : normalizedRole === "management"
+        ? t("login.roleManagement")
+        : normalizedRole === "owner"
+          ? t("login.roleOwner")
+          : t("login.roleCrew");
 
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
@@ -660,6 +663,21 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
                 {t("dashboard.hiringText")}
+              </p>
+            </Link>
+          ) : null}
+
+          {canApplyToJobs ? (
+            <Link
+              href="/jobs"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("dashboard.findJob")}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {t("dashboard.findJobText")}
               </p>
             </Link>
           ) : null}

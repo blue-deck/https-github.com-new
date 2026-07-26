@@ -20,6 +20,16 @@ import {
   isRecord,
   isUuid,
 } from "./employerAccessServer";
+import {
+  marketplaceCapabilitiesForRole,
+  type MarketplaceAccountRole,
+  type MarketplaceCapabilities,
+} from "./marketplaceCapabilities";
+import {
+  isMarketplaceSchemaUnavailable,
+  loadOrEnsureMarketplaceEntitlement,
+  type MarketplaceEntitlement,
+} from "./marketplaceEntitlementsServer";
 import { getPosition } from "./yachtOperations";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
@@ -100,6 +110,23 @@ type ReadBodyResult =
 
 type AuthorityResult =
   | { ok: true; yacht: VerifiedEmployerYacht }
+  | { ok: false; error: string; status: number };
+
+type JobManagementAuthorityResult =
+  | { ok: true }
+  | { ok: false; error: string; status: number };
+
+export type JobPostingWorkspaceCapabilities = MarketplaceCapabilities & {
+  postingStatus: "enabled" | "suspended" | "unavailable";
+  planCode: string;
+};
+
+export type JobPostingWorkspaceAuthority =
+  | {
+      ok: true;
+      capabilities: JobPostingWorkspaceCapabilities;
+      yachts: VerifiedEmployerYacht[];
+    }
   | { ok: false; error: string; status: number };
 
 type CurrentPublicAuthorityResult =
@@ -369,49 +396,309 @@ export async function verifyJobPostingAuthority(
   userId: string,
   yachtId: string,
 ): Promise<AuthorityResult> {
-  const [yachtResponse, accessResponse] = await Promise.all([
-    client
-      .from("yachts")
-      .select("id,name,model,flag,owner_id")
-      .eq("id", yachtId)
-      .eq("owner_id", userId)
-      .maybeSingle(),
-    client
-      .from("employer_access")
-      .select("status,can_post_jobs")
-      .eq("user_id", userId)
-      .eq("yacht_id", yachtId)
-      .maybeSingle(),
-  ]);
+  const workspace = await loadJobPostingWorkspaceAuthority(client, userId);
+  if (!workspace.ok) return workspace;
 
-  if (yachtResponse.error || accessResponse.error) {
-    logJobPostError(
-      "authority_lookup_failed",
-      yachtResponse.error || accessResponse.error,
-      { actorUserId: userId, yachtId },
-    );
-    return {
-      ok: false,
-      error: "Hiring access could not be verified.",
-      status: 500,
-    };
-  }
-
-  const yacht = verifiedYachtFromRow(yachtResponse.data);
-  if (
-    !yacht ||
-    accessResponse.data?.status !== "verified" ||
-    accessResponse.data.can_post_jobs !== true
-  ) {
+  const yacht = workspace.yachts.find((candidate) => candidate.id === yachtId);
+  if (!workspace.capabilities.canPostJobs || !yacht) {
     return {
       ok: false,
       error:
-        "Verified hiring access for the selected yacht is required to manage job posts.",
+        workspace.capabilities.postingStatus === "suspended"
+          ? "Job posting is paused for this account."
+          : "A current owner, captain or management relationship to the selected yacht is required.",
       status: 403,
     };
   }
 
   return { ok: true, yacht };
+}
+
+export async function verifyJobManagementAuthority(
+  client: SupabaseClient,
+  userId: string,
+  jobPostId: string,
+  yachtId: string,
+): Promise<JobManagementAuthorityResult> {
+  const response = await client.rpc("bluedeck_can_manage_job", {
+    p_actor_user_id: userId,
+    p_job_post_id: jobPostId,
+  });
+
+  if (response.error) {
+    if (isMarketplaceSchemaUnavailable(response.error)) {
+      const legacyAuthority = await verifyJobPostingAuthority(
+        client,
+        userId,
+        yachtId,
+      );
+      return legacyAuthority.ok ? { ok: true } : legacyAuthority;
+    }
+
+    logJobPostError("job_management_authority_failed", response.error, {
+      actorUserId: userId,
+      jobPostId,
+      yachtId,
+    });
+    return {
+      ok: false,
+      error: "Job management access could not be verified.",
+      status: 500,
+    };
+  }
+
+  if (response.data !== true) {
+    return {
+      ok: false,
+      error:
+        "A current owner, captain or management relationship is required to manage this job post.",
+      status: 403,
+    };
+  }
+
+  return { ok: true };
+}
+
+export async function loadJobPostingWorkspaceAuthority(
+  client: SupabaseClient,
+  userId: string,
+): Promise<JobPostingWorkspaceAuthority> {
+  const [entitlementResult, ownedYachtsResponse, legacyAccessResponse] =
+    await Promise.all([
+      loadOrEnsureMarketplaceEntitlement(client, userId),
+      client
+        .from("yachts")
+        .select("id,name,model,flag,owner_id,created_at")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false }),
+      client
+        .from("employer_access")
+        .select("yacht_id,requested_role,status,can_post_jobs")
+        .eq("user_id", userId)
+        .eq("status", "verified")
+        .eq("can_post_jobs", true),
+    ]);
+
+  if (ownedYachtsResponse.error || legacyAccessResponse.error) {
+    logJobPostError(
+      "workspace_authority_lookup_failed",
+      ownedYachtsResponse.error || legacyAccessResponse.error,
+      { actorUserId: userId },
+    );
+    return {
+      ok: false,
+      error: "Your job posting workspace could not be loaded.",
+      status: 500,
+    };
+  }
+
+  if (!entitlementResult.ok && !entitlementResult.schemaUnavailable) {
+    logJobPostError("marketplace_entitlement_lookup_failed", entitlementResult.error, {
+      actorUserId: userId,
+    });
+    return {
+      ok: false,
+      error: "Your marketplace access could not be verified.",
+      status: 500,
+    };
+  }
+
+  const ownedYachts = (ownedYachtsResponse.data || [])
+    .map(verifiedYachtFromRow)
+    .filter((yacht): yacht is VerifiedEmployerYacht => Boolean(yacht));
+  const ownedYachtsById = new Map(ownedYachts.map((yacht) => [yacht.id, yacht]));
+  const legacyAccessRows = legacyAccessResponse.data || [];
+  const legacyYachtIds = new Set(
+    legacyAccessRows
+      .map((row) => cleanText(row.yacht_id))
+      .filter((id) => isUuid(id)),
+  );
+
+  if (!entitlementResult.ok || !entitlementResult.entitlement) {
+    const yachts = ownedYachts.filter((yacht) => legacyYachtIds.has(yacht.id));
+    const legacyRole = legacyMarketplaceRole(legacyAccessRows);
+    const roleCapabilities = marketplaceCapabilitiesForRole(legacyRole);
+    return {
+      ok: true,
+      capabilities: {
+        ...roleCapabilities,
+        canPostJobs: yachts.length > 0 && roleCapabilities.canPostJobs,
+        postingStatus: yachts.length > 0 ? "enabled" : "unavailable",
+        planCode: "legacy",
+      },
+      yachts,
+    };
+  }
+
+  const entitlement = entitlementResult.entitlement;
+  if (!entitlement.canPostJobs) {
+    return {
+      ok: true,
+      capabilities: workspaceCapabilities(entitlement),
+      yachts: [],
+    };
+  }
+
+  const yachtsById = new Map(ownedYachtsById);
+  if (entitlement.role === "captain" || entitlement.role === "management") {
+    const memberYachtsResult = await loadActiveMembershipYachts(client, userId);
+    if (!memberYachtsResult.ok) {
+      logJobPostError("membership_yacht_authority_load_failed", memberYachtsResult.error, {
+        actorUserId: userId,
+      });
+      return {
+        ok: false,
+        error: "Your connected yachts could not be loaded.",
+        status: 500,
+      };
+    }
+    for (const yacht of memberYachtsResult.yachts) {
+      yachtsById.set(yacht.id, yacht);
+    }
+  }
+
+  const authorizedYachts = await filterYachtsByMarketplaceAuthority(
+    client,
+    userId,
+    [...yachtsById.values()],
+  );
+  if (!authorizedYachts.ok) {
+    logJobPostError("database_marketplace_authority_load_failed", authorizedYachts.error, {
+      actorUserId: userId,
+    });
+    return {
+      ok: false,
+      error: "Your yacht marketplace authority could not be verified.",
+      status: 500,
+    };
+  }
+
+  return {
+    ok: true,
+    capabilities: workspaceCapabilities(entitlement),
+    yachts: authorizedYachts.yachts,
+  };
+}
+
+async function filterYachtsByMarketplaceAuthority(
+  client: SupabaseClient,
+  userId: string,
+  yachts: VerifiedEmployerYacht[],
+): Promise<
+  | { ok: true; yachts: VerifiedEmployerYacht[] }
+  | { ok: false; error: unknown }
+> {
+  const allowed = new Set<string>();
+
+  for (let index = 0; index < yachts.length; index += 12) {
+    const batch = yachts.slice(index, index + 12);
+    const results = await Promise.all(
+      batch.map(async (yacht) => ({
+        yacht,
+        response: await client.rpc("bluedeck_can_manage_yacht_marketplace", {
+          p_actor_user_id: userId,
+          p_yacht_id: yacht.id,
+        }),
+      })),
+    );
+
+    for (const result of results) {
+      if (result.response.error) {
+        return { ok: false, error: result.response.error };
+      }
+      if (result.response.data === true) allowed.add(result.yacht.id);
+    }
+  }
+
+  return {
+    ok: true,
+    yachts: yachts.filter((yacht) => allowed.has(yacht.id)),
+  };
+}
+
+async function loadActiveMembershipYachts(
+  client: SupabaseClient,
+  userId: string,
+): Promise<
+  | { ok: true; yachts: VerifiedEmployerYacht[] }
+  | { ok: false; error: unknown }
+> {
+  const profilesResponse = await client
+    .from("crew_profiles")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (profilesResponse.error) {
+    return { ok: false, error: profilesResponse.error };
+  }
+
+  const profileIds = (profilesResponse.data || [])
+    .map((row) => cleanText(row.id))
+    .filter((id) => isUuid(id));
+  if (profileIds.length === 0) return { ok: true, yachts: [] };
+
+  const membershipsResponse = await client
+    .from("yacht_crew_memberships")
+    .select("yacht_id")
+    .in("crew_profile_id", profileIds)
+    .eq("status", "active");
+
+  if (membershipsResponse.error) {
+    return { ok: false, error: membershipsResponse.error };
+  }
+
+  const yachtIds = [
+    ...new Set(
+      (membershipsResponse.data || [])
+        .map((row) => cleanText(row.yacht_id))
+        .filter((id) => isUuid(id)),
+    ),
+  ];
+  if (yachtIds.length === 0) return { ok: true, yachts: [] };
+
+  const yachtsResponse = await client
+    .from("yachts")
+    .select("id,name,model,flag")
+    .in("id", yachtIds);
+
+  if (yachtsResponse.error) {
+    return { ok: false, error: yachtsResponse.error };
+  }
+
+  return {
+    ok: true,
+    yachts: (yachtsResponse.data || [])
+      .map(verifiedYachtFromRow)
+      .filter((yacht): yacht is VerifiedEmployerYacht => Boolean(yacht)),
+  };
+}
+
+function workspaceCapabilities(
+  entitlement: MarketplaceEntitlement,
+): JobPostingWorkspaceCapabilities {
+  return {
+    role: entitlement.role,
+    canPostJobs: entitlement.canPostJobs,
+    canApplyJobs: entitlement.canApplyJobs,
+    requiresAdminApproval: false,
+    postingStatus: entitlement.postingStatus,
+    planCode: entitlement.planCode,
+  };
+}
+
+function legacyMarketplaceRole(rows: unknown[]): MarketplaceAccountRole {
+  for (const row of rows) {
+    if (!isRecord(row)) continue;
+    const requestedRole = cleanText(row.requested_role).toLowerCase();
+    if (
+      requestedRole === "captain" ||
+      requestedRole === "owner" ||
+      requestedRole === "management"
+    ) {
+      return requestedRole;
+    }
+  }
+  return "crew";
 }
 
 export async function currentPublicJobPostIds(
@@ -491,10 +778,62 @@ export async function currentPublicJobPostIds(
     }
   }
 
+  const authorityPairs = [
+    ...new Map(
+      authorityRows.map((row) => [
+        authorityPair(row.yachtId, row.createdBy),
+        { yachtId: row.yachtId, userId: row.createdBy },
+      ]),
+    ).values(),
+  ];
+  const marketplacePairs = new Set<string>();
+  let marketplaceFunctionUnavailable = false;
+
+  for (let index = 0; index < authorityPairs.length; index += 12) {
+    const batch = authorityPairs.slice(index, index + 12);
+    const results = await Promise.all(
+      batch.map(async (pair) => ({
+        pair,
+        response: await client.rpc("bluedeck_can_manage_yacht_marketplace", {
+          p_actor_user_id: pair.userId,
+          p_yacht_id: pair.yachtId,
+        }),
+      })),
+    );
+
+    for (const result of results) {
+      if (result.response.error) {
+        if (isMarketplaceSchemaUnavailable(result.response.error)) {
+          marketplaceFunctionUnavailable = true;
+          break;
+        }
+        logJobPostError(
+          "current_public_marketplace_authority_failed",
+          result.response.error,
+        );
+        return {
+          ok: false,
+          error: "Current employer authority could not be verified.",
+        };
+      }
+      if (result.response.data === true) {
+        marketplacePairs.add(
+          authorityPair(result.pair.yachtId, result.pair.userId),
+        );
+      }
+    }
+
+    if (marketplaceFunctionUnavailable) break;
+  }
+
   const jobPostIds = new Set<string>();
   for (const row of authorityRows) {
     const pair = authorityPair(row.yachtId, row.createdBy);
-    if (ownerPairs.has(pair) && accessPairs.has(pair)) {
+    const currentlyAuthorized = marketplaceFunctionUnavailable
+      ? ownerPairs.has(pair) && accessPairs.has(pair)
+      : marketplacePairs.has(pair);
+
+    if (currentlyAuthorized) {
       jobPostIds.add(row.jobPostId);
     }
   }

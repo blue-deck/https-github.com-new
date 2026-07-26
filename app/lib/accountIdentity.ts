@@ -135,7 +135,7 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
     metadata?.full_name,
     email
   );
-  const role = firstText(baseProfile?.role, metadata?.role, "crew");
+  const role = firstText(baseProfile?.role, "crew");
   const profilePhotoUrl = firstText(crewProfile?.profile_photo_url);
 
   return {

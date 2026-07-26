@@ -1,0 +1,155 @@
+import { NextRequest } from "next/server";
+import {
+  cleanText,
+  isUuid,
+} from "../../../../../../lib/employerAccessServer";
+import { isEmployerJobApplicationStatus } from "../../../../../../lib/jobApplications";
+import {
+  applicationResponse,
+  authenticatedApplicationClients,
+  canManageJobApplications,
+  employerJobApplicationFromRow,
+  logJobApplicationError,
+  readApplicationBody,
+} from "../../../../../../lib/jobApplicationsServer";
+
+export const dynamic = "force-dynamic";
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ id: string; applicationId: string }> },
+) {
+  const params = await context.params;
+  const jobPostId = params.id.trim().toLowerCase();
+  const applicationId = params.applicationId.trim().toLowerCase();
+  if (!isUuid(jobPostId) || !isUuid(applicationId)) {
+    return applicationResponse({ ok: false, error: "Application not found." }, 404);
+  }
+
+  const clients = await authenticatedApplicationClients(request);
+  if ("error" in clients) {
+    return applicationResponse(
+      { ok: false, error: clients.error },
+      clients.status,
+    );
+  }
+
+  const body = await readApplicationBody(request);
+  if (!body.ok) {
+    return applicationResponse({ ok: false, error: body.error }, body.status);
+  }
+  if (
+    Object.keys(body.value).some(
+      (key) => key !== "status" && key !== "version",
+    ) ||
+    !isEmployerJobApplicationStatus(body.value.status) ||
+    typeof body.value.version !== "number" ||
+    !Number.isSafeInteger(body.value.version) ||
+    body.value.version < 1
+  ) {
+    return applicationResponse(
+      { ok: false, error: "Select a valid application status." },
+      400,
+    );
+  }
+
+  const [applicationResult, authority] = await Promise.all([
+    clients.serviceClient
+      .from("job_applications")
+      .select("id,job_post_id,version,status")
+      .eq("id", applicationId)
+      .eq("job_post_id", jobPostId)
+      .maybeSingle(),
+    canManageJobApplications(
+      clients.serviceClient,
+      clients.user.id,
+      jobPostId,
+    ),
+  ]);
+
+  if (applicationResult.error || !authority.ok) {
+    logJobApplicationError(
+      "managed_application_update_lookup_failed",
+      applicationResult.error,
+      { actorUserId: clients.user.id, jobPostId, applicationId },
+    );
+    return applicationResponse(
+      { ok: false, error: "The application could not be loaded." },
+      500,
+    );
+  }
+  if (!applicationResult.data) {
+    return applicationResponse({ ok: false, error: "Application not found." }, 404);
+  }
+  if (!authority.allowed) {
+    return applicationResponse(
+      { ok: false, error: "You cannot manage this application." },
+      403,
+    );
+  }
+  if (applicationResult.data.version !== body.value.version) {
+    return applicationResponse(
+      {
+        ok: false,
+        error: "This application changed in another session. Refresh and try again.",
+      },
+      409,
+    );
+  }
+
+  const { data, error } = await clients.serviceClient.rpc(
+    "bluedeck_update_job_application_status",
+    {
+      p_application_id: applicationId,
+      p_publisher_user_id: clients.user.id,
+      p_status: body.value.status,
+      p_expected_version: body.value.version,
+    },
+  );
+
+  if (error) {
+    const code = cleanText(error.code);
+    logJobApplicationError("managed_application_update_failed", error, {
+      actorUserId: clients.user.id,
+      jobPostId,
+      applicationId,
+    });
+    return applicationResponse(
+      {
+        ok: false,
+        error:
+          code === "40001"
+            ? "This application changed in another session. Refresh and try again."
+            : code === "42501"
+              ? "You cannot manage this application."
+              : code === "22023" || code === "23514"
+                ? "This application cannot move to the selected status."
+                : "The application status could not be updated.",
+      },
+      code === "40001"
+        ? 409
+        : code === "42501"
+          ? 403
+          : code === "22023" || code === "23514"
+            ? 409
+            : 500,
+    );
+  }
+
+  const application = employerJobApplicationFromRow(
+    Array.isArray(data) ? data[0] : null,
+  );
+  if (!application) {
+    logJobApplicationError(
+      "invalid_managed_application_update_record",
+      undefined,
+      { actorUserId: clients.user.id, jobPostId, applicationId },
+    );
+    return applicationResponse(
+      { ok: false, error: "The updated application could not be loaded." },
+      500,
+    );
+  }
+
+  return applicationResponse({ ok: true, application });
+}

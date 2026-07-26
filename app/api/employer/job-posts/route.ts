@@ -2,16 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   authenticatedEmployerClients,
   cleanText,
-  isUuid,
 } from "../../../lib/employerAccessServer";
 import {
   employerJobPostFromRow,
   employerJobPostSelect,
   jobPostMutationColumns,
+  loadJobPostingWorkspaceAuthority,
   logJobPostError,
   parseJobPostMutation,
   readJobPostBody,
-  verifiedYachtFromRow,
   verifyJobPostingAuthority,
 } from "../../../lib/jobPostsServer";
 
@@ -26,46 +25,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const [yachtsResponse, accessResponse] = await Promise.all([
-    clients.serviceClient
-      .from("yachts")
-      .select("id,name,model,flag,owner_id")
-      .eq("owner_id", clients.user.id)
-      .order("created_at", { ascending: false }),
-    clients.serviceClient
-      .from("employer_access")
-      .select("yacht_id,status,can_post_jobs")
-      .eq("user_id", clients.user.id)
-      .eq("status", "verified")
-      .eq("can_post_jobs", true),
-  ]);
-
-  if (yachtsResponse.error || accessResponse.error) {
-    logJobPostError(
-      "employer_workspace_authority_load_failed",
-      yachtsResponse.error || accessResponse.error,
-      { actorUserId: clients.user.id },
-    );
+  const authority = await loadJobPostingWorkspaceAuthority(
+    clients.serviceClient,
+    clients.user.id,
+  );
+  if (!authority.ok) {
     return employerResponse(
-      { ok: false, error: "Your job posting workspace could not be loaded." },
-      500,
+      { ok: false, error: authority.error },
+      authority.status,
     );
   }
 
-  const verifiedYachtIds = new Set(
-    (accessResponse.data || [])
-      .map((row) => cleanText(row.yacht_id))
-      .filter((id) => isUuid(id)),
-  );
-  const yachts = (yachtsResponse.data || [])
-    .map(verifiedYachtFromRow)
-    .filter(
-      (yacht): yacht is NonNullable<typeof yacht> =>
-        Boolean(yacht && verifiedYachtIds.has(yacht.id)),
-    );
+  const { yachts, capabilities } = authority;
 
   if (yachts.length === 0) {
-    return employerResponse({ ok: true, yachts: [], jobs: [] });
+    return employerResponse({ ok: true, capabilities, yachts: [], jobs: [] });
   }
 
   const { data, error } = await clients.serviceClient
@@ -105,7 +79,7 @@ export async function GET(request: NextRequest) {
     jobs.push(job);
   }
 
-  return employerResponse({ ok: true, yachts, jobs });
+  return employerResponse({ ok: true, capabilities, yachts, jobs });
 }
 
 export async function POST(request: NextRequest) {
@@ -166,7 +140,7 @@ export async function POST(request: NextRequest) {
         ok: false,
         error:
           code === "42501"
-            ? "Your verified hiring access changed before the job post was saved."
+            ? "Your yacht marketplace access changed before the job post was saved."
             : code === "23514"
               ? "The job post does not meet the publishing requirements."
               : "The job post could not be created.",

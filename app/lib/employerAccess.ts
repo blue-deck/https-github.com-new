@@ -1,3 +1,5 @@
+import { marketplacePostingRoles } from "./marketplaceCapabilities";
+
 export const platformAdminMetadataKey = "bluedeck_admin";
 export const employerAccessNoteLimit = 240;
 
@@ -8,7 +10,7 @@ export const employerAccessStatuses = [
   "suspended",
 ] as const;
 
-export const employerRoles = ["owner", "captain", "management"] as const;
+export const employerRoles = marketplacePostingRoles;
 
 export type EmployerAccessStatus = (typeof employerAccessStatuses)[number];
 export type EmployerRole = (typeof employerRoles)[number];

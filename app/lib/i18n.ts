@@ -39,7 +39,10 @@ const en = {
   "topbar.photoUpdated": "Your photo has been updated.",
   "dashboard.hiring": "Hiring",
   "dashboard.hiringText":
-    "Verify your yacht and prepare to publish trusted crew roles.",
+    "Add or access a yacht, then publish and manage crew roles directly.",
+  "dashboard.findJob": "Find a Job",
+  "dashboard.findJobText":
+    "Explore current yacht roles and submit secure applications.",
   "dashboard.employerApprovals": "Employer Approvals",
   "dashboard.employerApprovalsText":
     "Review and decide who can publish roles on BlueDeck.",
@@ -215,8 +218,15 @@ const en = {
   "login.selectAccountType": "Select account type",
   "login.roleCrew": "Crew",
   "login.roleCaptain": "Captain",
-  "login.roleOwner": "Owner",
+  "login.roleOwner": "Owner / Employer",
   "login.roleManagement": "Management",
+  "login.roleCrewAccess": "Find roles and apply to published yacht jobs.",
+  "login.roleCaptainAccess":
+    "Find and apply to roles, or publish and manage jobs for your yachts.",
+  "login.roleOwnerAccess":
+    "Publish and manage jobs for your yachts without waiting for admin approval.",
+  "login.roleManagementAccess":
+    "Publish and manage jobs for yachts you actively manage, without admin approval.",
   "login.position": "Yacht position",
   "login.selectPosition": "Select yacht position",
   "login.email": "Email",
@@ -404,7 +414,10 @@ const tr: Record<TranslationKey, string> = {
   "topbar.photoUpdated": "Fotoğrafınız güncellendi.",
   "dashboard.hiring": "İşe Alım",
   "dashboard.hiringText":
-    "Yatını doğrula ve güvenilir mürettebat ilanları yayınlamaya hazırlan.",
+    "Bir yat ekle veya yat erişimini kullan; ilanları doğrudan yayınlayıp yönet.",
+  "dashboard.findJob": "İş Bul",
+  "dashboard.findJobText":
+    "Güncel yat ilanlarını incele ve güvenli başvuru gönder.",
   "dashboard.employerApprovals": "İşveren Onayları",
   "dashboard.employerApprovalsText":
     "BlueDeck’te kimlerin ilan yayınlayabileceğini incele ve karara bağla.",
@@ -552,8 +565,15 @@ const tr: Record<TranslationKey, string> = {
   "login.selectAccountType": "Hesap tipi seçin",
   "login.roleCrew": "Mürettebat",
   "login.roleCaptain": "Kaptan",
-  "login.roleOwner": "Sahip",
+  "login.roleOwner": "Sahip / İşveren",
   "login.roleManagement": "Yönetim",
+  "login.roleCrewAccess": "İlanları bulun ve yayınlanmış yat işlerine başvurun.",
+  "login.roleCaptainAccess":
+    "İşlere başvurun; ayrıca yatlarınız için ilan yayınlayıp yönetin.",
+  "login.roleOwnerAccess":
+    "Admin onayı beklemeden yatlarınız için ilan yayınlayıp yönetin.",
+  "login.roleManagementAccess":
+    "Aktif olarak yönettiğiniz yatlar için admin onayı olmadan ilan yayınlayıp yönetin.",
   "login.position": "Yat pozisyonu",
   "login.selectPosition": "Yat pozisyonu seçin",
   "login.email": "E-posta",

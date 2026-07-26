@@ -121,10 +121,7 @@ export default function SettingsPage() {
         cleanText(crewProfile?.current_position) ||
         cleanStringList(crewProfile?.current_positions)[0] ||
         "";
-      const role =
-        normalizeRole(baseProfile?.role || user.user_metadata?.role) ||
-        inferRoleFromPosition(currentPosition) ||
-        "crew";
+      const role = normalizeRole(baseProfile?.role) || "crew";
       const nextProfile: SettingsProfile = {
         id: user.id,
         email,
@@ -886,12 +883,4 @@ function cleanStringList(value: unknown) {
 function normalizeRole(value: unknown) {
   const role = cleanText(value).toLowerCase();
   return accountTypes.some((item) => item.value === role) ? role : "";
-}
-
-function inferRoleFromPosition(value: unknown) {
-  const position = cleanText(value).toLowerCase();
-  if (position.includes("captain")) return "captain";
-  if (position.includes("owner")) return "owner";
-  if (position.includes("manager") || position.includes("management")) return "management";
-  return "";
 }
