@@ -101,6 +101,7 @@ export type PublicJobPost = {
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
   yachtBrand: string | null;
+  yachtFlagCountryCode: string | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;

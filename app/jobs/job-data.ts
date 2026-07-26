@@ -18,6 +18,10 @@ import {
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
 } from "../lib/jobPosts";
+import {
+  countryOptionFromCode,
+  formatCountryWithFlag,
+} from "../lib/countries";
 
 export type PublicJobSalary = {
   min: number | null;
@@ -46,6 +50,7 @@ export type PublicJob = {
   location: string;
   startDate: string;
   yachtBrand: string | null;
+  yachtFlagCountryCode: string | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -143,6 +148,10 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
     yachtBrand: readOptionalString(value, "yachtBrand", "yacht_brand"),
+    yachtFlagCountryCode:
+      countryOptionFromCode(
+        readValue(value, "yachtFlagCountryCode", "yacht_flag_country_code"),
+      )?.code || null,
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
@@ -260,7 +269,11 @@ export function yachtSpecificationLabel(
         )
       : "";
 
-  return [job.yachtBrand, type, length].filter(Boolean).join(" · ");
+  const flag = job.yachtFlagCountryCode
+    ? formatCountryWithFlag(job.yachtFlagCountryCode)
+    : "";
+
+  return [job.yachtBrand, flag, type, length].filter(Boolean).join(" · ");
 }
 
 export function minimumYachtExperienceLabel(

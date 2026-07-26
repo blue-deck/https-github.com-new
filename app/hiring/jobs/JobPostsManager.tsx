@@ -31,6 +31,7 @@ import {
   type FormEvent,
 } from "react";
 import { DateTextField } from "../../components/DateTextField";
+import { CountryFlagField } from "../../components/CountryFlagField";
 import { useLanguage } from "../../components/LanguageProvider";
 import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
@@ -65,6 +66,7 @@ import {
 } from "../../lib/jobPosts";
 import { positionSelectGroups } from "../../lib/yachtOperations";
 import { supabase } from "../../lib/supabase";
+import { formatCountryWithFlag } from "../../lib/countries";
 
 type WorkspaceResponse = {
   ok?: boolean;
@@ -94,6 +96,7 @@ type FormState = {
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
   yachtBrand: string;
+  yachtFlagCountryCode: string;
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
@@ -177,6 +180,10 @@ const copy = {
     yachtDetails: "Yacht details",
     yachtBrand: "Yacht brand",
     yachtBrandPlaceholder: "Optional",
+    yachtFlag: "Yacht flag",
+    yachtFlagPlaceholder: "Search country",
+    yachtFlagClear: "Clear yacht flag",
+    yachtFlagNoResults: "No matching country found",
     yachtType: "Yacht type",
     yachtTypePlaceholder: "Select yacht type",
     yachtLength: "Yacht length",
@@ -312,6 +319,10 @@ const copy = {
     yachtDetails: "Yat bilgileri",
     yachtBrand: "Yat markası",
     yachtBrandPlaceholder: "Optional",
+    yachtFlag: "Yat bayrağı",
+    yachtFlagPlaceholder: "Ülke ara",
+    yachtFlagClear: "Yat bayrağını temizle",
+    yachtFlagNoResults: "Eşleşen ülke bulunamadı",
     yachtType: "Yat türü",
     yachtTypePlaceholder: "Yat türünü seç",
     yachtLength: "Yat uzunluğu",
@@ -616,6 +627,7 @@ export function JobPostsManager() {
       visibleTattooPolicy: form.visibleTattooPolicy,
       requiredLanguages: form.requiredLanguages,
       yachtBrand: form.yachtBrand.trim() || null,
+      yachtFlagCountryCode: form.yachtFlagCountryCode || null,
       yachtType: form.yachtType || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
@@ -1178,6 +1190,18 @@ export function JobPostsManager() {
                     />
                   </Field>
 
+                  <CountryFlagField
+                    label={c.yachtFlag}
+                    value={form.yachtFlagCountryCode}
+                    placeholder={c.yachtFlagPlaceholder}
+                    clearLabel={c.yachtFlagClear}
+                    noResults={c.yachtFlagNoResults}
+                    disabled={saving}
+                    onChange={(value) =>
+                      updateForm("yachtFlagCountryCode", value)
+                    }
+                  />
+
                   <YachtSizeField
                     label={c.yachtLength}
                     value={form.yachtLength}
@@ -1497,6 +1521,7 @@ function emptyForm(yachtId: string): FormState {
     visibleTattooPolicy: "no_preference",
     requiredLanguages: [],
     yachtBrand: "",
+    yachtFlagCountryCode: "",
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
@@ -1527,6 +1552,7 @@ function formFromJob(job: EmployerJobPost): FormState {
     visibleTattooPolicy: job.visibleTattooPolicy,
     requiredLanguages: job.requiredLanguages,
     yachtBrand: job.yachtBrand || "",
+    yachtFlagCountryCode: job.yachtFlagCountryCode || "",
     yachtType: job.yachtType || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
@@ -1796,6 +1822,9 @@ function JobListButton({
 }) {
   const yachtSpecification = [
     job.yachtBrand || "",
+    job.yachtFlagCountryCode
+      ? formatCountryWithFlag(job.yachtFlagCountryCode)
+      : "",
     job.yachtType ? formatJobYachtType(job.yachtType, language) : "",
     job.yachtLength !== null && job.yachtLengthUnit
       ? formatJobYachtLength(

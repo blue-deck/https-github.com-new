@@ -47,13 +47,14 @@ import {
   type MarketplaceEntitlement,
 } from "./marketplaceEntitlementsServer";
 import { getPosition } from "./yachtOperations";
+import { countryOptionFromCode } from "./countries";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
 export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_brand,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_brand,yacht_flag_country_code,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -65,6 +66,7 @@ const createPayloadKeys = new Set([
   "title",
   "position",
   "yachtBrand",
+  "yachtFlagCountryCode",
   "yachtType",
   "yachtLength",
   "yachtLengthUnit",
@@ -109,6 +111,7 @@ export type JobPostMutation = {
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
   yachtBrand: string | null;
+  yachtFlagCountryCode: string | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -278,6 +281,9 @@ export function parseJobPostMutation(
     return { ok: false, error: "Select a valid visible tattoo preference." };
   }
   const yachtBrand = optionalStrictText(value.yachtBrand, 80);
+  const yachtFlagCountryCode = optionalYachtFlagCountryCode(
+    value.yachtFlagCountryCode,
+  );
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
@@ -288,6 +294,7 @@ export function parseJobPostMutation(
       : optionalJobMinimumYachtExperience(value.minimumYachtExperience);
   if (
     yachtBrand === undefined ||
+    yachtFlagCountryCode === undefined ||
     yachtType === undefined ||
     !yachtLength.ok ||
     yachtLengthUnit === undefined ||
@@ -441,6 +448,7 @@ export function parseJobPostMutation(
       visibleTattooPolicy: value.visibleTattooPolicy,
       requiredLanguages: requiredLanguages.value,
       yachtBrand,
+      yachtFlagCountryCode,
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
@@ -931,6 +939,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     visibleTattooPolicy: base.visibleTattooPolicy,
     requiredLanguages: base.requiredLanguages,
     yachtBrand: base.yachtBrand,
+    yachtFlagCountryCode: base.yachtFlagCountryCode,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -1012,6 +1021,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     visibleTattooPolicy: base.visibleTattooPolicy,
     requiredLanguages: base.requiredLanguages,
     yachtBrand: base.yachtBrand,
+    yachtFlagCountryCode: base.yachtFlagCountryCode,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -1067,6 +1077,7 @@ export function jobPostMutationColumns(
     visible_tattoo_policy: mutation.visibleTattooPolicy,
     required_languages: mutation.requiredLanguages,
     yacht_brand: mutation.yachtBrand,
+    yacht_flag_country_code: mutation.yachtFlagCountryCode,
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
@@ -1110,6 +1121,9 @@ function jobPostBaseFromRow(value: unknown) {
   const position = cleanText(value.position);
   const department = cleanText(value.department);
   const yachtBrand = databaseOptionalText(value.yacht_brand, 80);
+  const yachtFlagCountryCode = databaseYachtFlagCountryCode(
+    value.yacht_flag_country_code,
+  );
   const yachtType = databaseJobYachtType(value.yacht_type);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
@@ -1139,6 +1153,7 @@ function jobPostBaseFromRow(value: unknown) {
     !position ||
     !department ||
     yachtBrand === undefined ||
+    yachtFlagCountryCode === undefined ||
     yachtType === undefined ||
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
@@ -1179,6 +1194,7 @@ function jobPostBaseFromRow(value: unknown) {
     visibleTattooPolicy: value.visible_tattoo_policy,
     requiredLanguages,
     yachtBrand,
+    yachtFlagCountryCode,
     yachtType,
     yachtLength,
     yachtLengthUnit,
@@ -1228,6 +1244,13 @@ function optionalStrictText(
   const text = value.trim();
   if (!text) return null;
   return text.length <= maximumLength ? text : undefined;
+}
+
+function optionalYachtFlagCountryCode(
+  value: unknown,
+): string | null | undefined {
+  if (value === null || value === undefined || value === "") return null;
+  return countryOptionFromCode(value)?.code;
 }
 
 function textList(
@@ -1395,6 +1418,13 @@ function databaseOptionalText(
   if (typeof value !== "string") return undefined;
   const text = value.trim();
   return text && text.length <= maximumLength ? text : undefined;
+}
+
+function databaseYachtFlagCountryCode(
+  value: unknown,
+): string | null | undefined {
+  if (value === null) return null;
+  return countryOptionFromCode(value)?.code;
 }
 
 function databaseJobYachtType(

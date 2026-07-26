@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
+import { formatCountryWithFlag } from "../../lib/countries";
 import {
   formatJobMinimumYachtExperience,
   formatJobCrewMemberCount,
@@ -151,6 +152,9 @@ function JobDetail({
   const yachtType = job.yachtType
     ? formatJobYachtType(job.yachtType, language)
     : "";
+  const yachtFlag = job.yachtFlagCountryCode
+    ? formatCountryWithFlag(job.yachtFlagCountryCode)
+    : "";
   const yachtLength =
     job.yachtLength !== null && job.yachtLengthUnit
       ? formatJobYachtLength(
@@ -230,6 +234,13 @@ function JobDetail({
                       icon={<Ship />}
                       label={c.yachtBrand}
                       value={job.yachtBrand}
+                    />
+                  ) : null}
+                  {yachtFlag ? (
+                    <JobFact
+                      icon={<Ship />}
+                      label={c.yachtFlag}
+                      value={yachtFlag}
                     />
                   ) : null}
                   {yachtType ? (
@@ -526,6 +537,7 @@ const copy = {
     publishedRole: "Published BlueDeck role",
     listingNumber: "Listing no.",
     yachtBrand: "Yacht brand",
+    yachtFlag: "Yacht flag",
     yachtType: "Yacht type",
     yachtLength: "Yacht length",
     crewMemberCount: "Crew members",
@@ -564,6 +576,7 @@ const copy = {
     publishedRole: "Yayınlanmış BlueDeck ilanı",
     listingNumber: "İlan no:",
     yachtBrand: "Yat markası",
+    yachtFlag: "Yat bayrağı",
     yachtType: "Yat türü",
     yachtLength: "Yat uzunluğu",
     crewMemberCount: "Mürettebat sayısı",

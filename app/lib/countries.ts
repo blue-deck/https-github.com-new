@@ -41,6 +41,21 @@ export const nationalityOptions = countries
   }))
   .sort(sortBlueDeckCountries);
 
+export function countryOptionFromCode(value: unknown) {
+  if (typeof value !== "string") return undefined;
+  const code = value.trim().toUpperCase();
+  return nationalityOptions.find((country) => country.code === code);
+}
+
+export function isBlueDeckCountryCode(value: unknown): value is string {
+  return Boolean(countryOptionFromCode(value));
+}
+
+export function formatCountryWithFlag(value: string) {
+  const country = countryOptionFromCode(value);
+  return country ? `${country.flag} ${country.country}` : "";
+}
+
 function countryPriority(country: { country: string; region: string }) {
   if (country.country === "Turkey" || country.country === "Türkiye") return 0;
   if (country.region === "Europe") return 1;
