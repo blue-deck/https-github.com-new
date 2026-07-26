@@ -28,6 +28,7 @@ import {
   parsePublicJobs,
   type PublicJob,
   yachtLabel,
+  yachtSpecificationLabel,
 } from "./jobs/job-data";
 import {
   getJobListingAction,
@@ -559,6 +560,7 @@ function JobCard({
   copy: (typeof copy)["en"] | (typeof copy)["tr"];
 }) {
   const yacht = yachtLabel(job);
+  const yachtSpecification = yachtSpecificationLabel(job, language);
   const salary = formatJobSalary(job.salary, language);
   const action = getJobListingAction(job.id, viewer, language);
 
@@ -578,6 +580,9 @@ function JobCard({
       <h3>{job.title}</h3>
       {yacht ? <p className={styles.yachtName}>{yacht}</p> : null}
       <div className={styles.jobMeta}>
+        {yachtSpecification ? (
+          <span><Ship aria-hidden />{yachtSpecification}</span>
+        ) : null}
         {job.location ? (
           <span><MapPin aria-hidden />{job.location}</span>
         ) : null}

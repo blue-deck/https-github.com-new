@@ -26,18 +26,27 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
 } from "react";
+import { DateTextField } from "../../components/DateTextField";
 import { useLanguage } from "../../components/LanguageProvider";
+import { LocationSearchField } from "../../components/LocationSearchField";
+import { YachtSizeField } from "../../components/YachtSizeField";
 import {
+  formatJobYachtLength,
+  formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
   jobEmploymentTypes,
   jobSalaryCurrencies,
   jobSalaryPeriods,
+  jobYachtTypes,
   type EmployerJobPost,
   type JobPostStatus,
+  type JobYachtLengthUnit,
+  type JobYachtType,
   type VerifiedEmployerYacht,
 } from "../../lib/jobPosts";
 import { positionSelectGroups } from "../../lib/yachtOperations";
@@ -66,6 +75,9 @@ type FormState = {
   title: string;
   position: string;
   employmentType: (typeof jobEmploymentTypes)[number];
+  yachtType: JobYachtType | "";
+  yachtLength: string;
+  yachtLengthUnit: JobYachtLengthUnit;
   location: string;
   startDate: string;
   summary: string;
@@ -119,8 +131,10 @@ const copy = {
     closedStatus: "Closed",
     expiredStatus: "Expired",
     cancelledStatus: "Cancelled",
-    identity: "Role and yacht",
-    yacht: "Hiring yacht",
+    identity: "Role details",
+    publishingAccount: "Publishing account",
+    publishingAccountHelp:
+      "This private selector controls publishing authority. Public yacht identity follows the visibility setting below.",
     position: "Position",
     positionPlaceholder: "Select a position",
     titleLabel: "Public title",
@@ -131,10 +145,24 @@ const copy = {
     seasonal: "Seasonal",
     rotation: "Rotation",
     daywork: "Daywork",
+    yachtDetails: "Yacht details",
+    yachtType: "Yacht type",
+    yachtTypePlaceholder: "Select yacht type",
+    yachtLength: "Yacht length",
+    yachtLengthAmount: "Yacht length value",
+    yachtLengthUnit: "Yacht length unit",
+    yachtLengthPlaceholder: "e.g. 27",
+    yachtDetailsRequired:
+      "Select a yacht type and enter a valid yacht length before publishing.",
     logistics: "Timing and location",
     location: "Location",
-    locationPlaceholder: "e.g. Palma, Spain · Mediterranean",
+    locationPlaceholder: "Search city or port",
+    locationSearching: "Searching locations…",
+    locationNoResults: "No matching location found. You can keep your own text.",
+    locationResults: "location options available.",
     startDate: "Job start date",
+    datePlaceholder: "DD/MM/YYYY",
+    invalidDate: "Enter a valid date in DD/MM/YYYY format.",
     automaticExpiryTitle: "One-month publishing window",
     automaticExpiryText:
       "Every published listing remains open for one calendar month. BlueDeck then removes it from the public jobs board automatically.",
@@ -167,6 +195,7 @@ const copy = {
     month: "Month",
     year: "Year",
     privacy: "Public yacht identity",
+    publicIdentityPreview: "Public yacht identity",
     showYachtName: "Show yacht name, model and flag",
     showYachtNameHelp:
       "Leave this off to publish the role as “Confidential yacht”.",
@@ -232,8 +261,10 @@ const copy = {
     closedStatus: "Kapalı",
     expiredStatus: "Süresi doldu",
     cancelledStatus: "İptal edildi",
-    identity: "Pozisyon ve yat",
-    yacht: "İşe alım yapılan yat",
+    identity: "Pozisyon bilgileri",
+    publishingAccount: "Yayınlayan hesap",
+    publishingAccountHelp:
+      "Bu özel seçim ilan yayınlama yetkisini belirler. Yat kimliğinin görünürlüğünü aşağıdaki ayardan yönetebilirsiniz.",
     position: "Pozisyon",
     positionPlaceholder: "Pozisyon seç",
     titleLabel: "İlan başlığı",
@@ -244,10 +275,25 @@ const copy = {
     seasonal: "Sezonluk",
     rotation: "Rotasyon",
     daywork: "Günlük iş",
+    yachtDetails: "Yat bilgileri",
+    yachtType: "Yat türü",
+    yachtTypePlaceholder: "Yat türünü seç",
+    yachtLength: "Yat uzunluğu",
+    yachtLengthAmount: "Yat uzunluğu değeri",
+    yachtLengthUnit: "Yat uzunluğu birimi",
+    yachtLengthPlaceholder: "Örn. 27",
+    yachtDetailsRequired:
+      "İlanı yayınlamadan önce yat türünü seçin ve geçerli bir yat uzunluğu girin.",
     logistics: "Tarih ve konum",
     location: "Konum",
-    locationPlaceholder: "Örn. Palma, İspanya · Akdeniz",
+    locationPlaceholder: "Şehir veya liman ara",
+    locationSearching: "Konumlar aranıyor…",
+    locationNoResults:
+      "Eşleşen konum bulunamadı. Yazdığınız konumu kullanabilirsiniz.",
+    locationResults: "konum seçeneği bulundu.",
     startDate: "İşe başlama tarihi",
+    datePlaceholder: "GG/AA/YYYY",
+    invalidDate: "GG/AA/YYYY biçiminde geçerli bir tarih girin.",
     automaticExpiryTitle: "Bir aylık yayın süresi",
     automaticExpiryText:
       "Yayınlanan her ilan bir takvim ayı boyunca açık kalır. Bu sürenin sonunda BlueDeck ilanı herkese açık iş ilanlarından otomatik olarak kaldırır.",
@@ -280,6 +326,7 @@ const copy = {
     month: "Ay",
     year: "Yıl",
     privacy: "Yat kimliği",
+    publicIdentityPreview: "İlanda görünecek yat adı",
     showYachtName: "Yat adını, modelini ve bayrağını göster",
     showYachtNameHelp:
       "Kapalı bırakırsan ilan “Gizli yat” olarak yayınlanır.",
@@ -313,6 +360,7 @@ const copy = {
 export function JobPostsManager() {
   const { language } = useLanguage();
   const c = copy[language];
+  const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reloadVersion, setReloadVersion] = useState(0);
@@ -491,8 +539,24 @@ export function JobPostsManager() {
 
     const salaryMin = inputNumber(form.salaryMin);
     const salaryMax = inputNumber(form.salaryMax);
+    const yachtLength = inputYachtLength(form.yachtLength);
     if (!salaryMin.ok || !salaryMax.ok) {
       setNotice({ tone: "error", message: c.saveError });
+      return;
+    }
+    if (
+      !yachtLength.ok ||
+      (targetStatus === "published" &&
+        (!form.yachtType || yachtLength.value === null))
+    ) {
+      setNotice({ tone: "error", message: c.yachtDetailsRequired });
+      return;
+    }
+    if (
+      targetStatus === "published" &&
+      formRef.current &&
+      !formRef.current.reportValidity()
+    ) {
       return;
     }
 
@@ -513,6 +577,10 @@ export function JobPostsManager() {
       title: form.title.trim(),
       position: form.position,
       employmentType: form.employmentType,
+      yachtType: form.yachtType || null,
+      yachtLength: yachtLength.value,
+      yachtLengthUnit:
+        yachtLength.value === null ? null : form.yachtLengthUnit,
       location: form.location.trim(),
       startDate: form.startDate || null,
       summary: form.summary.trim(),
@@ -790,7 +858,9 @@ export function JobPostsManager() {
           </aside>
 
           <form
+            ref={formRef}
             onSubmit={handleSubmit}
+            noValidate
             className="bd-glass-card-strong overflow-hidden rounded-[30px]"
           >
             <div className="bd-brand-rule h-1.5" />
@@ -827,29 +897,42 @@ export function JobPostsManager() {
                 />
               </div>
 
-              <FormSection
-                icon={<Ship />}
-                title={c.identity}
-              >
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={c.yacht}>
-                    <select
-                      value={form.yachtId}
-                      onChange={(event) =>
-                        updateForm("yachtId", event.target.value)
-                      }
-                      disabled={saving || Boolean(selectedJob)}
-                      className={inputClass}
-                      required
-                    >
-                      {yachts.map((yacht) => (
-                        <option key={yacht.id} value={yacht.id}>
-                          {[yacht.name, yacht.model].filter(Boolean).join(" · ")}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+              {yachts.length > 1 ? (
+                <div className="mt-8 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-5">
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
+                      <LockKeyhole className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <Field label={c.publishingAccount}>
+                        <select
+                          value={form.yachtId}
+                          onChange={(event) =>
+                            updateForm("yachtId", event.target.value)
+                          }
+                          disabled={saving || Boolean(selectedJob)}
+                          className={inputClass}
+                          required
+                        >
+                          {yachts.map((yacht) => (
+                            <option key={yacht.id} value={yacht.id}>
+                              {[yacht.name, yacht.model]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <p className="mt-2 text-xs font-semibold leading-5 text-cyan-950/70">
+                        {c.publishingAccountHelp}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
+              <FormSection icon={<BriefcaseBusiness />} title={c.identity}>
+                <div className="grid gap-5 lg:grid-cols-2">
                   <Field label={c.position}>
                     <select
                       value={form.position}
@@ -918,32 +1001,80 @@ export function JobPostsManager() {
                 </div>
               </FormSection>
 
+              <FormSection icon={<Ship />} title={c.yachtDetails}>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Field label={c.yachtType}>
+                    <select
+                      value={form.yachtType}
+                      onChange={(event) =>
+                        updateForm(
+                          "yachtType",
+                          event.target.value as FormState["yachtType"],
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                      required
+                    >
+                      <option value="">{c.yachtTypePlaceholder}</option>
+                      {jobYachtTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {formatJobYachtType(type, language)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <YachtSizeField
+                    label={c.yachtLength}
+                    value={form.yachtLength}
+                    unit={form.yachtLengthUnit}
+                    onChange={(value, unit) =>
+                      setForm((current) => ({
+                        ...current,
+                        yachtLength: value,
+                        yachtLengthUnit: unit,
+                      }))
+                    }
+                    amountLabel={c.yachtLengthAmount}
+                    unitLabel={c.yachtLengthUnit}
+                    placeholder={c.yachtLengthPlaceholder}
+                    feetOptionLabel="ft"
+                    metresOptionLabel="m"
+                    disabled={saving}
+                    required
+                    maxLength={7}
+                    labelClassName={fieldLabelClass}
+                  />
+                </div>
+              </FormSection>
+
               <FormSection icon={<MapPin />} title={c.logistics}>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={c.location}>
-                    <input
-                      value={form.location}
-                      onChange={(event) =>
-                        updateForm("location", event.target.value.slice(0, 120))
-                      }
-                      maxLength={120}
-                      disabled={saving}
-                      className={inputClass}
-                      placeholder={c.locationPlaceholder}
-                      required
-                    />
-                  </Field>
-                  <Field label={c.startDate}>
-                    <input
-                      type="date"
-                      value={form.startDate}
-                      onChange={(event) =>
-                        updateForm("startDate", event.target.value)
-                      }
-                      disabled={saving}
-                      className={inputClass}
-                    />
-                  </Field>
+                  <LocationSearchField
+                    label={c.location}
+                    value={form.location}
+                    onChange={(value) =>
+                      updateForm("location", value.slice(0, 120))
+                    }
+                    placeholder={c.locationPlaceholder}
+                    searchingText={c.locationSearching}
+                    noResultsText={c.locationNoResults}
+                    resultsText={c.locationResults}
+                    disabled={saving}
+                    required
+                    maxLength={120}
+                    labelClassName={fieldLabelClass}
+                  />
+                  <DateTextField
+                    label={c.startDate}
+                    value={form.startDate}
+                    onChange={(value) => updateForm("startDate", value)}
+                    placeholder={c.datePlaceholder}
+                    invalidText={c.invalidDate}
+                    disabled={saving}
+                    labelClassName={fieldLabelClass}
+                  />
                 </div>
 
                 <div className="mt-5 flex items-start gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-cyan-950">
@@ -1120,7 +1251,7 @@ export function JobPostsManager() {
                   />
                   <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
-                      {c.yacht}
+                      {c.publicIdentityPreview}
                     </p>
                     <p className="mt-2 font-black text-slate-950">
                       {form.showYachtName
@@ -1230,6 +1361,8 @@ export function JobPostsManager() {
 
 const inputClass =
   "bd-focus mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-65";
+const fieldLabelClass =
+  "mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-600";
 
 function emptyForm(yachtId: string): FormState {
   return {
@@ -1237,6 +1370,9 @@ function emptyForm(yachtId: string): FormState {
     title: "",
     position: "",
     employmentType: "permanent",
+    yachtType: "",
+    yachtLength: "",
+    yachtLengthUnit: "m",
     location: "",
     startDate: "",
     summary: "",
@@ -1259,6 +1395,10 @@ function formFromJob(job: EmployerJobPost): FormState {
     title: job.title,
     position: job.position,
     employmentType: job.employmentType,
+    yachtType: job.yachtType || "",
+    yachtLength:
+      job.yachtLength === null ? "" : String(job.yachtLength),
+    yachtLengthUnit: job.yachtLengthUnit || "m",
     location: job.location,
     startDate: job.startDate || "",
     summary: job.summary,
@@ -1468,6 +1608,19 @@ function JobListButton({
   c: (typeof copy)["en"] | (typeof copy)["tr"];
   onClick: () => void;
 }) {
+  const yachtSpecification = [
+    job.yachtType ? formatJobYachtType(job.yachtType, language) : "",
+    job.yachtLength !== null && job.yachtLengthUnit
+      ? formatJobYachtLength(
+          job.yachtLength,
+          job.yachtLengthUnit,
+          language,
+        )
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <button
       type="button"
@@ -1494,6 +1647,14 @@ function JobListButton({
           >
             {job.yacht.name}
           </p>
+          {yachtSpecification ? (
+            <p
+              data-i18n-ignore
+              className="mt-1 truncate text-[11px] font-bold text-slate-600"
+            >
+              {yachtSpecification}
+            </p>
+          ) : null}
           <p
             data-i18n-ignore
             aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
@@ -1648,6 +1809,18 @@ function inputNumber(
     return { ok: false };
   }
   return { ok: true, value: number };
+}
+
+function inputYachtLength(
+  value: string,
+): { ok: true; value: number | null } | { ok: false } {
+  if (!value.trim()) return { ok: true, value: null };
+  const number = Number(value.replace(",", "."));
+  const rounded = Math.round(number * 100) / 100;
+  if (!Number.isFinite(number) || rounded <= 0 || rounded > 1_000) {
+    return { ok: false };
+  }
+  return { ok: true, value: rounded };
 }
 
 function formatDate(value: string, language: "en" | "tr") {

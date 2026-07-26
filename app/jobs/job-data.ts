@@ -1,4 +1,12 @@
-import { isSupportedJobListingNumber } from "../lib/jobPosts";
+import {
+  formatJobYachtLength,
+  formatJobYachtType,
+  isJobYachtLengthUnit,
+  isJobYachtType,
+  isSupportedJobListingNumber,
+  type JobYachtLengthUnit,
+  type JobYachtType,
+} from "../lib/jobPosts";
 
 export type PublicJobSalary = {
   min: number | null;
@@ -22,6 +30,9 @@ export type PublicJob = {
   employmentType: string;
   location: string;
   startDate: string;
+  yachtType: JobYachtType | null;
+  yachtLength: number | null;
+  yachtLengthUnit: JobYachtLengthUnit | null;
   summary: string;
   description: string;
   responsibilities: string[];
@@ -43,6 +54,17 @@ export function parsePublicJob(value: unknown): PublicJob | null {
   if (!id || !isSupportedJobListingNumber(listingNumber) || !title) return null;
 
   const yachtValue = readRecord(value, "yacht");
+  const yachtTypeValue = readValue(value, "yachtType", "yacht_type");
+  const yachtLengthValue = readValue(value, "yachtLength", "yacht_length");
+  const yachtLengthUnitValue = readValue(
+    value,
+    "yachtLengthUnit",
+    "yacht_length_unit",
+  );
+  const yachtLength = readPositiveNullableNumber(yachtLengthValue);
+  const yachtLengthUnit = isJobYachtLengthUnit(yachtLengthUnitValue)
+    ? yachtLengthUnitValue
+    : null;
 
   return {
     id,
@@ -53,6 +75,10 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     employmentType: readString(value, "employmentType", "employment_type"),
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
+    yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
+    yachtLength:
+      yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
+    yachtLengthUnit: yachtLength !== null ? yachtLengthUnit : null,
     summary: readString(value, "summary"),
     description: readString(value, "description"),
     responsibilities: readStringList(value, "responsibilities"),
@@ -148,6 +174,25 @@ export function yachtLabel(job: PublicJob) {
     .join(" · ");
 }
 
+export function yachtSpecificationLabel(
+  job: PublicJob,
+  language: "en" | "tr",
+) {
+  const type = job.yachtType
+    ? formatJobYachtType(job.yachtType, language)
+    : "";
+  const length =
+    job.yachtLength !== null && job.yachtLengthUnit
+      ? formatJobYachtLength(
+          job.yachtLength,
+          job.yachtLengthUnit,
+          language,
+        )
+      : "";
+
+  return [type, length].filter(Boolean).join(" · ");
+}
+
 function parseSalary(value: unknown): PublicJobSalary | null {
   if (!isRecord(value)) return null;
 
@@ -189,6 +234,13 @@ function readString(record: UnknownRecord, ...keys: string[]) {
   return "";
 }
 
+function readValue(record: UnknownRecord, ...keys: string[]) {
+  for (const key of keys) {
+    if (key in record) return record[key];
+  }
+  return undefined;
+}
+
 function readStringList(record: UnknownRecord, key: string) {
   const value = record[key];
   if (!Array.isArray(value)) return [];
@@ -207,6 +259,11 @@ function readRecord(record: UnknownRecord, key: string): UnknownRecord {
 
 function readNullableNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function readPositiveNullableNumber(value: unknown) {
+  const number = readNullableNumber(value);
+  return number !== null && number > 0 ? number : null;
 }
 
 function isRecord(value: unknown): value is UnknownRecord {

@@ -13,12 +13,17 @@ import {
   LoaderCircle,
   MapPin,
   RefreshCw,
+  Ruler,
   ShieldCheck,
   Ship,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
-import { formatJobListingNumber } from "../../lib/jobPosts";
+import {
+  formatJobListingNumber,
+  formatJobYachtLength,
+  formatJobYachtType,
+} from "../../lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
@@ -133,6 +138,17 @@ function JobDetail({
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
   const yacht = yachtLabel(job);
+  const yachtType = job.yachtType
+    ? formatJobYachtType(job.yachtType, language)
+    : "";
+  const yachtLength =
+    job.yachtLength !== null && job.yachtLengthUnit
+      ? formatJobYachtLength(
+          job.yachtLength,
+          job.yachtLengthUnit,
+          language,
+        )
+      : "";
 
   return (
     <>
@@ -179,6 +195,20 @@ function JobDetail({
                 ) : null}
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  {yachtType ? (
+                    <JobFact
+                      icon={<Ship />}
+                      label={c.yachtType}
+                      value={yachtType}
+                    />
+                  ) : null}
+                  {yachtLength ? (
+                    <JobFact
+                      icon={<Ruler />}
+                      label={c.yachtLength}
+                      value={yachtLength}
+                    />
+                  ) : null}
                   {job.location ? (
                     <JobFact
                       icon={<MapPin />}
@@ -430,6 +460,8 @@ const copy = {
     back: "Back to jobs",
     publishedRole: "Published BlueDeck role",
     listingNumber: "Listing no.",
+    yachtType: "Yacht type",
+    yachtLength: "Yacht length",
     location: "Location",
     employmentType: "Employment",
     start: "Start date",
@@ -459,6 +491,8 @@ const copy = {
     back: "İş ilanlarına dön",
     publishedRole: "Yayınlanmış BlueDeck ilanı",
     listingNumber: "İlan no:",
+    yachtType: "Yat türü",
+    yachtLength: "Yat uzunluğu",
     location: "Konum",
     employmentType: "Çalışma biçimi",
     start: "Başlangıç tarihi",

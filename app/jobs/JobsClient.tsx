@@ -11,6 +11,7 @@ import {
   LoaderCircle,
   MapPin,
   RefreshCw,
+  Ruler,
   Search,
   ShieldCheck,
   Ship,
@@ -27,6 +28,7 @@ import {
   parsePublicJobs,
   type PublicJob,
   yachtLabel,
+  yachtSpecificationLabel,
 } from "./job-data";
 import {
   getJobListingAction,
@@ -107,6 +109,7 @@ export function JobsClient() {
     const normalizedQuery = query.trim().toLocaleLowerCase(locale);
 
     return jobs.filter((job) => {
+      const yachtSpecification = yachtSpecificationLabel(job, language);
       const searchableText = [
         job.title,
         job.position,
@@ -117,6 +120,9 @@ export function JobsClient() {
         job.listingNumber,
         formatJobListingNumber(job.listingNumber),
         yachtLabel(job),
+        yachtSpecification,
+        job.yachtType || "",
+        job.yachtLength === null ? "" : String(job.yachtLength),
       ]
         .join(" ")
         .toLocaleLowerCase(locale);
@@ -297,6 +303,7 @@ function JobCard({
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
   const yacht = yachtLabel(job);
+  const yachtSpecification = yachtSpecificationLabel(job, language);
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
@@ -333,6 +340,9 @@ function JobCard({
         ) : null}
 
         <div className="mt-5 space-y-2.5 text-sm text-slate-600">
+          {yachtSpecification ? (
+            <InfoLine icon={<Ruler />} value={yachtSpecification} />
+          ) : null}
           {job.location ? (
             <InfoLine icon={<MapPin />} value={job.location} />
           ) : null}
@@ -544,7 +554,7 @@ const copy = {
       "Only active role information is shown here. Candidate contact details and private hiring conversations stay outside the public page.",
     filters: "Search and filters",
     search: "Search jobs",
-    searchPlaceholder: "Role, yacht or location",
+    searchPlaceholder: "Role, yacht type or location",
     position: "All positions",
     location: "All locations",
     employmentType: "All employment types",
@@ -575,7 +585,7 @@ const copy = {
       "Burada yalnızca aktif ilana ait bilgiler gösterilir. Aday iletişim bilgileri ve özel işe alım görüşmeleri herkese açık sayfanın dışında kalır.",
     filters: "Arama ve filtreler",
     search: "İlan ara",
-    searchPlaceholder: "Pozisyon, yat veya konum",
+    searchPlaceholder: "Pozisyon, yat türü veya konum",
     position: "Tüm pozisyonlar",
     location: "Tüm konumlar",
     employmentType: "Tüm çalışma biçimleri",

@@ -9,12 +9,27 @@ export const jobEmploymentTypes = [
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
 export const jobSalaryCurrencies = ["EUR", "USD", "GBP", "AUD", "NZD"] as const;
 export const jobClosureReasons = ["expired", "cancelled"] as const;
+export const jobYachtTypes = [
+  "motor_yacht",
+  "sailing_yacht",
+  "catamaran",
+  "motor_catamaran",
+  "gulet",
+  "expedition_yacht",
+  "classic_yacht",
+  "support_vessel",
+  "chase_boat",
+  "commercial_vessel",
+] as const;
+export const jobYachtLengthUnits = ["m", "ft"] as const;
 
 export type JobPostStatus = (typeof jobPostStatuses)[number];
 export type JobEmploymentType = (typeof jobEmploymentTypes)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
+export type JobYachtType = (typeof jobYachtTypes)[number];
+export type JobYachtLengthUnit = (typeof jobYachtLengthUnits)[number];
 
 export type JobSalary = {
   min: number | null;
@@ -36,6 +51,9 @@ export type PublicJobPost = {
   position: string;
   department: string;
   employmentType: JobEmploymentType;
+  yachtType: JobYachtType | null;
+  yachtLength: number | null;
+  yachtLengthUnit: JobYachtLengthUnit | null;
   location: string;
   startDate: string | null;
   summary: string;
@@ -112,6 +130,50 @@ export function isJobClosureReason(
   value: unknown,
 ): value is JobClosureReason {
   return jobClosureReasons.includes(value as JobClosureReason);
+}
+
+export function isJobYachtType(value: unknown): value is JobYachtType {
+  return jobYachtTypes.includes(value as JobYachtType);
+}
+
+export function isJobYachtLengthUnit(
+  value: unknown,
+): value is JobYachtLengthUnit {
+  return jobYachtLengthUnits.includes(value as JobYachtLengthUnit);
+}
+
+const jobYachtTypeLabels: Record<
+  JobYachtType,
+  { en: string; tr: string }
+> = {
+  motor_yacht: { en: "Motor yacht", tr: "Motor yat" },
+  sailing_yacht: { en: "Sailing yacht", tr: "Yelkenli yat" },
+  catamaran: { en: "Catamaran", tr: "Katamaran" },
+  motor_catamaran: { en: "Motor catamaran", tr: "Motor katamaran" },
+  gulet: { en: "Gulet", tr: "Gulet" },
+  expedition_yacht: { en: "Expedition yacht", tr: "Expedition yat" },
+  classic_yacht: { en: "Classic yacht", tr: "Klasik yat" },
+  support_vessel: { en: "Support vessel", tr: "Destek teknesi" },
+  chase_boat: { en: "Chase boat", tr: "Takip botu" },
+  commercial_vessel: { en: "Commercial vessel", tr: "Ticari tekne" },
+};
+
+export function formatJobYachtType(
+  value: JobYachtType,
+  language: "en" | "tr",
+) {
+  return jobYachtTypeLabels[value][language];
+}
+
+export function formatJobYachtLength(
+  value: number,
+  unit: JobYachtLengthUnit,
+  language: "en" | "tr",
+) {
+  const formatted = new Intl.NumberFormat(language === "tr" ? "tr-TR" : "en-GB", {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted} ${unit}`;
 }
 
 export function isEmployerJobPostExpired(
