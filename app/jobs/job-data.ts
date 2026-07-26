@@ -1,6 +1,7 @@
 import {
   formatJobMinimumYachtExperience,
   formatJobYachtLength,
+  formatJobYachtBuildYear,
   formatJobYachtType,
   isJobYachtLengthUnit,
   isJobYachtType,
@@ -51,6 +52,7 @@ export type PublicJob = {
   startDate: string;
   yachtBrand: string | null;
   yachtFlagCountryCode: string | null;
+  yachtBuildYear: number | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -152,6 +154,9 @@ export function parsePublicJob(value: unknown): PublicJob | null {
       countryOptionFromCode(
         readValue(value, "yachtFlagCountryCode", "yacht_flag_country_code"),
       )?.code || null,
+    yachtBuildYear: readYachtBuildYear(
+      readValue(value, "yachtBuildYear", "yacht_build_year"),
+    ),
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
@@ -272,8 +277,14 @@ export function yachtSpecificationLabel(
   const flag = job.yachtFlagCountryCode
     ? formatCountryWithFlag(job.yachtFlagCountryCode)
     : "";
+  const buildYear =
+    job.yachtBuildYear === null
+      ? ""
+      : formatJobYachtBuildYear(job.yachtBuildYear, language);
 
-  return [job.yachtBrand, flag, type, length].filter(Boolean).join(" · ");
+  return [job.yachtBrand, flag, buildYear, type, length]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 export function minimumYachtExperienceLabel(
@@ -386,6 +397,16 @@ function readPositiveWholeNumberNullable(value: unknown, maximum: number) {
     Number.isSafeInteger(number) &&
     number >= 1 &&
     number <= maximum
+    ? number
+    : null;
+}
+
+function readYachtBuildYear(value: unknown) {
+  const number = readNullableNumber(value);
+  return number !== null &&
+    Number.isSafeInteger(number) &&
+    number >= 1800 &&
+    number <= 2100
     ? number
     : null;
 }

@@ -102,6 +102,7 @@ export type PublicJobPost = {
   requiredLanguages: JobRequiredLanguage[];
   yachtBrand: string | null;
   yachtFlagCountryCode: string | null;
+  yachtBuildYear: number | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -308,6 +309,13 @@ export function formatJobCrewMemberCount(
 ) {
   if (language === "tr") return `${value} mürettebat`;
   return `${value} ${value === 1 ? "crew member" : "crew members"}`;
+}
+
+export function formatJobYachtBuildYear(
+  value: number,
+  language: "en" | "tr",
+) {
+  return language === "tr" ? `Yapım ${value}` : `Built ${value}`;
 }
 
 const jobMinimumYachtExperienceLabels: Record<

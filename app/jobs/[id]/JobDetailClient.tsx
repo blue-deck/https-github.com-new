@@ -33,6 +33,7 @@ import {
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
   formatJobYachtLength,
+  formatJobYachtBuildYear,
   formatJobYachtType,
 } from "../../lib/jobPosts";
 import {
@@ -155,6 +156,10 @@ function JobDetail({
   const yachtFlag = job.yachtFlagCountryCode
     ? formatCountryWithFlag(job.yachtFlagCountryCode)
     : "";
+  const yachtBuildYear =
+    job.yachtBuildYear === null
+      ? ""
+      : formatJobYachtBuildYear(job.yachtBuildYear, language);
   const yachtLength =
     job.yachtLength !== null && job.yachtLengthUnit
       ? formatJobYachtLength(
@@ -241,6 +246,13 @@ function JobDetail({
                       icon={<Ship />}
                       label={c.yachtFlag}
                       value={yachtFlag}
+                    />
+                  ) : null}
+                  {yachtBuildYear ? (
+                    <JobFact
+                      icon={<CalendarDays />}
+                      label={c.yachtBuildYear}
+                      value={yachtBuildYear}
                     />
                   ) : null}
                   {yachtType ? (
@@ -538,6 +550,7 @@ const copy = {
     listingNumber: "Listing no.",
     yachtBrand: "Yacht brand",
     yachtFlag: "Yacht flag",
+    yachtBuildYear: "Yacht build year",
     yachtType: "Yacht type",
     yachtLength: "Yacht length",
     crewMemberCount: "Crew members",
@@ -577,6 +590,7 @@ const copy = {
     listingNumber: "İlan no:",
     yachtBrand: "Yat markası",
     yachtFlag: "Yat bayrağı",
+    yachtBuildYear: "Yat yapım yılı",
     yachtType: "Yat türü",
     yachtLength: "Yat uzunluğu",
     crewMemberCount: "Mürettebat sayısı",

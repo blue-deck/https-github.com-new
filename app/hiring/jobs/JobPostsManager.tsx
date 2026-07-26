@@ -42,6 +42,7 @@ import {
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
   formatJobYachtLength,
+  formatJobYachtBuildYear,
   formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
@@ -97,6 +98,7 @@ type FormState = {
   requiredLanguages: JobRequiredLanguage[];
   yachtBrand: string;
   yachtFlagCountryCode: string;
+  yachtBuildYear: string;
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
@@ -184,6 +186,10 @@ const copy = {
     yachtFlagPlaceholder: "Search country",
     yachtFlagClear: "Clear yacht flag",
     yachtFlagNoResults: "No matching country found",
+    yachtBuildYear: "Yacht build year",
+    yachtBuildYearPlaceholder: "e.g. 2024",
+    yachtBuildYearError:
+      "Yacht build year must be a four-digit year between 1800 and 2100.",
     yachtType: "Yacht type",
     yachtTypePlaceholder: "Select yacht type",
     yachtLength: "Yacht length",
@@ -323,6 +329,10 @@ const copy = {
     yachtFlagPlaceholder: "Ülke ara",
     yachtFlagClear: "Yat bayrağını temizle",
     yachtFlagNoResults: "Eşleşen ülke bulunamadı",
+    yachtBuildYear: "Yat yapım yılı",
+    yachtBuildYearPlaceholder: "Örn. 2024",
+    yachtBuildYearError:
+      "Yat yapım yılı 1800 ile 2100 arasında dört haneli bir yıl olmalıdır.",
     yachtType: "Yat türü",
     yachtTypePlaceholder: "Yat türünü seç",
     yachtLength: "Yat uzunluğu",
@@ -581,12 +591,17 @@ export function JobPostsManager() {
     const salaryMax = inputNumber(form.salaryMax);
     const yachtLength = inputYachtLength(form.yachtLength);
     const crewMemberCount = inputCrewMemberCount(form.crewMemberCount);
+    const yachtBuildYear = inputYachtBuildYear(form.yachtBuildYear);
     if (!salaryMin.ok || !salaryMax.ok) {
       setNotice({ tone: "error", message: c.saveError });
       return;
     }
     if (!crewMemberCount.ok) {
       setNotice({ tone: "error", message: c.crewMemberCountError });
+      return;
+    }
+    if (!yachtBuildYear.ok) {
+      setNotice({ tone: "error", message: c.yachtBuildYearError });
       return;
     }
     if (
@@ -628,6 +643,7 @@ export function JobPostsManager() {
       requiredLanguages: form.requiredLanguages,
       yachtBrand: form.yachtBrand.trim() || null,
       yachtFlagCountryCode: form.yachtFlagCountryCode || null,
+      yachtBuildYear: yachtBuildYear.value,
       yachtType: form.yachtType || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
@@ -1202,6 +1218,25 @@ export function JobPostsManager() {
                     }
                   />
 
+                  <Field label={c.yachtBuildYear}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{4}"
+                      value={form.yachtBuildYear}
+                      onChange={(event) =>
+                        updateForm(
+                          "yachtBuildYear",
+                          event.target.value.replace(/\D/g, "").slice(0, 4),
+                        )
+                      }
+                      maxLength={4}
+                      disabled={saving}
+                      className={inputClass}
+                      placeholder={c.yachtBuildYearPlaceholder}
+                    />
+                  </Field>
+
                   <YachtSizeField
                     label={c.yachtLength}
                     value={form.yachtLength}
@@ -1523,6 +1558,7 @@ function emptyForm(yachtId: string): FormState {
     requiredLanguages: [],
     yachtBrand: "",
     yachtFlagCountryCode: "",
+    yachtBuildYear: "",
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
@@ -1554,6 +1590,8 @@ function formFromJob(job: EmployerJobPost): FormState {
     requiredLanguages: job.requiredLanguages,
     yachtBrand: job.yachtBrand || "",
     yachtFlagCountryCode: job.yachtFlagCountryCode || "",
+    yachtBuildYear:
+      job.yachtBuildYear === null ? "" : String(job.yachtBuildYear),
     yachtType: job.yachtType || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
@@ -1826,6 +1864,9 @@ function JobListButton({
     job.yachtFlagCountryCode
       ? formatCountryWithFlag(job.yachtFlagCountryCode)
       : "",
+    job.yachtBuildYear === null
+      ? ""
+      : formatJobYachtBuildYear(job.yachtBuildYear, language),
     job.yachtType ? formatJobYachtType(job.yachtType, language) : "",
     job.yachtLength !== null && job.yachtLengthUnit
       ? formatJobYachtLength(
@@ -2083,6 +2124,17 @@ function inputCrewMemberCount(
     return { ok: false };
   }
   return { ok: true, value: count };
+}
+
+function inputYachtBuildYear(
+  value: string,
+): { ok: true; value: number | null } | { ok: false } {
+  if (!value.trim()) return { ok: true, value: null };
+  const year = Number(value);
+  if (!/^\d{4}$/.test(value) || year < 1800 || year > 2100) {
+    return { ok: false };
+  }
+  return { ok: true, value: year };
 }
 
 function formatDate(value: string, language: "en" | "tr") {
