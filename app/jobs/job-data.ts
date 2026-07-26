@@ -45,6 +45,7 @@ export type PublicJob = {
   requiredLanguages: JobRequiredLanguage[];
   location: string;
   startDate: string;
+  yachtBrand: string | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -141,6 +142,7 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     ),
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
+    yachtBrand: readOptionalString(value, "yachtBrand", "yacht_brand"),
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
@@ -258,7 +260,7 @@ export function yachtSpecificationLabel(
         )
       : "";
 
-  return [type, length].filter(Boolean).join(" · ");
+  return [job.yachtBrand, type, length].filter(Boolean).join(" · ");
 }
 
 export function minimumYachtExperienceLabel(
@@ -312,6 +314,11 @@ function readString(record: UnknownRecord, ...keys: string[]) {
     if (typeof value === "string") return value.trim();
   }
   return "";
+}
+
+function readOptionalString(record: UnknownRecord, ...keys: string[]) {
+  const text = readString(record, ...keys);
+  return text ? text.slice(0, 80) : null;
 }
 
 function readValue(record: UnknownRecord, ...keys: string[]) {

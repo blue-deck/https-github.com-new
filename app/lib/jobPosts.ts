@@ -100,6 +100,7 @@ export type PublicJobPost = {
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
+  yachtBrand: string | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;

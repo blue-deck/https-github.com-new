@@ -53,7 +53,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_brand,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -64,6 +64,7 @@ const createPayloadKeys = new Set([
   "yachtId",
   "title",
   "position",
+  "yachtBrand",
   "yachtType",
   "yachtLength",
   "yachtLengthUnit",
@@ -107,6 +108,7 @@ export type JobPostMutation = {
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
+  yachtBrand: string | null;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -275,6 +277,7 @@ export function parseJobPostMutation(
   if (!isJobVisibleTattooPolicy(value.visibleTattooPolicy)) {
     return { ok: false, error: "Select a valid visible tattoo preference." };
   }
+  const yachtBrand = optionalStrictText(value.yachtBrand, 80);
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
@@ -284,6 +287,7 @@ export function parseJobPostMutation(
       ? legacyJobMinimumYachtExperience(value.minimumYachtExperienceYears)
       : optionalJobMinimumYachtExperience(value.minimumYachtExperience);
   if (
+    yachtBrand === undefined ||
     yachtType === undefined ||
     !yachtLength.ok ||
     yachtLengthUnit === undefined ||
@@ -436,6 +440,7 @@ export function parseJobPostMutation(
       smokerPolicy: value.smokerPolicy,
       visibleTattooPolicy: value.visibleTattooPolicy,
       requiredLanguages: requiredLanguages.value,
+      yachtBrand,
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
@@ -925,6 +930,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     smokerPolicy: base.smokerPolicy,
     visibleTattooPolicy: base.visibleTattooPolicy,
     requiredLanguages: base.requiredLanguages,
+    yachtBrand: base.yachtBrand,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -1005,6 +1011,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     smokerPolicy: base.smokerPolicy,
     visibleTattooPolicy: base.visibleTattooPolicy,
     requiredLanguages: base.requiredLanguages,
+    yachtBrand: base.yachtBrand,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -1059,6 +1066,7 @@ export function jobPostMutationColumns(
     smoker_policy: mutation.smokerPolicy,
     visible_tattoo_policy: mutation.visibleTattooPolicy,
     required_languages: mutation.requiredLanguages,
+    yacht_brand: mutation.yachtBrand,
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
@@ -1101,6 +1109,7 @@ function jobPostBaseFromRow(value: unknown) {
   const title = cleanText(value.title);
   const position = cleanText(value.position);
   const department = cleanText(value.department);
+  const yachtBrand = databaseOptionalText(value.yacht_brand, 80);
   const yachtType = databaseJobYachtType(value.yacht_type);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
@@ -1129,6 +1138,7 @@ function jobPostBaseFromRow(value: unknown) {
     !title ||
     !position ||
     !department ||
+    yachtBrand === undefined ||
     yachtType === undefined ||
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
@@ -1168,6 +1178,7 @@ function jobPostBaseFromRow(value: unknown) {
     smokerPolicy: value.smoker_policy,
     visibleTattooPolicy: value.visible_tattoo_policy,
     requiredLanguages,
+    yachtBrand,
     yachtType,
     yachtLength,
     yachtLengthUnit,
@@ -1206,6 +1217,17 @@ function strictText(
   const text = value.trim();
   if ((!allowEmpty && !text) || text.length > maximumLength) return null;
   return text;
+}
+
+function optionalStrictText(
+  value: unknown,
+  maximumLength: number,
+): string | null | undefined {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string") return undefined;
+  const text = value.trim();
+  if (!text) return null;
+  return text.length <= maximumLength ? text : undefined;
 }
 
 function textList(
@@ -1363,6 +1385,16 @@ function databaseMoney(value: unknown): number | null | undefined {
         ? Number(value)
         : Number.NaN;
   return Number.isFinite(amount) && amount >= 0 ? amount : undefined;
+}
+
+function databaseOptionalText(
+  value: unknown,
+  maximumLength: number,
+): string | null | undefined {
+  if (value === null) return null;
+  if (typeof value !== "string") return undefined;
+  const text = value.trim();
+  return text && text.length <= maximumLength ? text : undefined;
 }
 
 function databaseJobYachtType(

@@ -225,6 +225,13 @@ function JobDetail({
                 ) : null}
 
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                  {job.yachtBrand ? (
+                    <JobFact
+                      icon={<Ship />}
+                      label={c.yachtBrand}
+                      value={job.yachtBrand}
+                    />
+                  ) : null}
                   {yachtType ? (
                     <JobFact
                       icon={<Ship />}
@@ -518,6 +525,7 @@ const copy = {
     back: "Back to jobs",
     publishedRole: "Published BlueDeck role",
     listingNumber: "Listing no.",
+    yachtBrand: "Yacht brand",
     yachtType: "Yacht type",
     yachtLength: "Yacht length",
     crewMemberCount: "Crew members",
@@ -555,6 +563,7 @@ const copy = {
     back: "İş ilanlarına dön",
     publishedRole: "Yayınlanmış BlueDeck ilanı",
     listingNumber: "İlan no:",
+    yachtBrand: "Yat markası",
     yachtType: "Yat türü",
     yachtLength: "Yat uzunluğu",
     crewMemberCount: "Mürettebat sayısı",

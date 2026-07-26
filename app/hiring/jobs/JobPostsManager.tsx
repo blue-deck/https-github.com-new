@@ -93,6 +93,7 @@ type FormState = {
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
+  yachtBrand: string;
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
@@ -174,6 +175,8 @@ const copy = {
     rotation: "Rotation",
     daywork: "Daywork",
     yachtDetails: "Yacht details",
+    yachtBrand: "Yacht brand",
+    yachtBrandPlaceholder: "Optional",
     yachtType: "Yacht type",
     yachtTypePlaceholder: "Select yacht type",
     yachtLength: "Yacht length",
@@ -307,6 +310,8 @@ const copy = {
     rotation: "Rotasyon",
     daywork: "Günlük iş",
     yachtDetails: "Yat bilgileri",
+    yachtBrand: "Yat markası",
+    yachtBrandPlaceholder: "Optional",
     yachtType: "Yat türü",
     yachtTypePlaceholder: "Yat türünü seç",
     yachtLength: "Yat uzunluğu",
@@ -610,6 +615,7 @@ export function JobPostsManager() {
       smokerPolicy: form.smokerPolicy,
       visibleTattooPolicy: form.visibleTattooPolicy,
       requiredLanguages: form.requiredLanguages,
+      yachtBrand: form.yachtBrand.trim() || null,
       yachtType: form.yachtType || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
@@ -1158,6 +1164,20 @@ export function JobPostsManager() {
                     </select>
                   </Field>
 
+                  <Field label={c.yachtBrand}>
+                    <input
+                      type="text"
+                      value={form.yachtBrand}
+                      onChange={(event) =>
+                        updateForm("yachtBrand", event.target.value.slice(0, 80))
+                      }
+                      maxLength={80}
+                      disabled={saving}
+                      className={inputClass}
+                      placeholder={c.yachtBrandPlaceholder}
+                    />
+                  </Field>
+
                   <YachtSizeField
                     label={c.yachtLength}
                     value={form.yachtLength}
@@ -1476,6 +1496,7 @@ function emptyForm(yachtId: string): FormState {
     smokerPolicy: "no_preference",
     visibleTattooPolicy: "no_preference",
     requiredLanguages: [],
+    yachtBrand: "",
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
@@ -1505,6 +1526,7 @@ function formFromJob(job: EmployerJobPost): FormState {
     smokerPolicy: job.smokerPolicy,
     visibleTattooPolicy: job.visibleTattooPolicy,
     requiredLanguages: job.requiredLanguages,
+    yachtBrand: job.yachtBrand || "",
     yachtType: job.yachtType || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
@@ -1773,6 +1795,7 @@ function JobListButton({
   onClick: () => void;
 }) {
   const yachtSpecification = [
+    job.yachtBrand || "",
     job.yachtType ? formatJobYachtType(job.yachtType, language) : "",
     job.yachtLength !== null && job.yachtLengthUnit
       ? formatJobYachtLength(
