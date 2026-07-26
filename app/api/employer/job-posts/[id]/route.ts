@@ -132,7 +132,7 @@ export async function PATCH(
           code === "42501"
             ? "Your yacht marketplace access changed before the job post was saved."
             : publishingValidationFailed
-              ? "Complete the public job details and use a future closing date before publishing."
+              ? "Complete the public job details before publishing."
             : code === "23514" || code === "22023"
               ? "This status change is not available. Refresh the job post and try again."
               : "The job post could not be updated.",

@@ -124,6 +124,7 @@ export function MyJobApplicationsPortal() {
     if (state.kind !== "ready") return null;
     const active = state.applications.filter(
       (application) =>
+        application.job.jobAvailability === "active" &&
         !["rejected", "withdrawn", "hired"].includes(application.status),
     ).length;
     const shortlisted = state.applications.filter(
@@ -288,12 +289,11 @@ function ApplicationCard({
 }) {
   const c = copy[language];
   const badge = statusPresentation(application.status, language);
-  const listingExpired = Boolean(
-    application.job.closesAt &&
-      Date.parse(application.job.closesAt) <= Date.now(),
+  const listingAvailable = application.job.jobAvailability === "active";
+  const availability = jobAvailabilityPresentation(
+    application.job.jobAvailability,
+    language,
   );
-  const listingAvailable =
-    application.job.status === "published" && !listingExpired;
 
   return (
     <article className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
@@ -313,6 +313,14 @@ function ApplicationCard({
               {badge.icon}
               {badge.label}
             </span>
+            {availability ? (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.13em] ${availability.className}`}
+              >
+                {availability.icon}
+                {availability.label}
+              </span>
+            ) : null}
           </div>
 
           <h2 data-i18n-ignore className="mt-4 text-2xl font-semibold tracking-[-0.025em] text-[#071f3c] sm:text-3xl">
@@ -368,9 +376,7 @@ function ApplicationCard({
             </Link>
           ) : (
             <div className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-5 text-center text-xs font-black uppercase tracking-[0.1em] text-slate-500">
-              {application.job.status === "closed" || listingExpired
-                ? c.jobClosed
-                : c.jobUnavailable}
+              {availability?.label ?? c.jobUnavailable}
             </div>
           )}
         </div>
@@ -507,6 +513,32 @@ function statusPresentation(status: JobApplicationStatus, language: "en" | "tr")
   return { label: c, ...presentations[status] };
 }
 
+function jobAvailabilityPresentation(
+  availability: MyJobApplication["job"]["jobAvailability"],
+  language: "en" | "tr",
+) {
+  const c = copy[language];
+  if (availability === "active") return null;
+
+  return {
+    expired: {
+      label: c.jobExpired,
+      className: "border-amber-200 bg-amber-50 text-amber-800",
+      icon: <Clock3 className="h-3.5 w-3.5" aria-hidden />,
+    },
+    cancelled: {
+      label: c.jobCancelled,
+      className: "border-rose-200 bg-rose-50 text-rose-800",
+      icon: <AlertCircle className="h-3.5 w-3.5" aria-hidden />,
+    },
+    unavailable: {
+      label: c.jobUnavailable,
+      className: "border-slate-200 bg-slate-50 text-slate-600",
+      icon: <AlertCircle className="h-3.5 w-3.5" aria-hidden />,
+    },
+  }[availability];
+}
+
 function formatDate(value: string, language: "en" | "tr") {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? new Date(`${value}T00:00:00`)
@@ -560,8 +592,17 @@ function isMyJobApplication(value: unknown): value is MyJobApplication {
     isJobEmploymentType(job.employmentType) &&
     typeof job.location === "string" &&
     (job.startDate === null || typeof job.startDate === "string") &&
-    (job.closesAt === null || typeof job.closesAt === "string") &&
-    isJobPostStatus(job.status)
+    isJobPostStatus(job.status) &&
+    isJobAvailability(job.jobAvailability)
+  );
+}
+
+function isJobAvailability(
+  value: unknown,
+): value is MyJobApplication["job"]["jobAvailability"] {
+  return (
+    typeof value === "string" &&
+    ["active", "expired", "cancelled", "unavailable"].includes(value)
   );
 }
 
@@ -604,7 +645,8 @@ const copy = {
     withdrawnHelp:
       "You withdrew this application. It remains in your history for a clear record of your activity.",
     viewJob: "View job",
-    jobClosed: "Job closed",
+    jobExpired: "Job expired",
+    jobCancelled: "Job cancelled by advertiser",
     jobUnavailable: "Listing unavailable",
     statuses: {
       submitted: "Submitted",
@@ -653,7 +695,8 @@ const copy = {
     withdrawnHelp:
       "Bu başvuruyu geri çektiniz. İşlem geçmişinizin net kalması için portalınızda gösterilmeye devam eder.",
     viewJob: "İlanı gör",
-    jobClosed: "İlan kapandı",
+    jobExpired: "İlanın süresi doldu",
+    jobCancelled: "İlan sahibi iptal etti",
     jobUnavailable: "İlan görüntülenemiyor",
     statuses: {
       submitted: "Başvuruldu",

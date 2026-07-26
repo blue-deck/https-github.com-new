@@ -422,8 +422,7 @@ begin
     responsibilities,
     requirements,
     show_yacht_name,
-    status,
-    closes_at
+    status
   )
   values (
     yacht_a,
@@ -440,8 +439,7 @@ begin
     array['Support safe daily deck operations.'],
     array['Hold valid STCW certification.'],
     false,
-    'published',
-    now() + interval '30 days'
+    'published'
   )
   returning id into job_a;
 
@@ -460,8 +458,7 @@ begin
     responsibilities,
     requirements,
     show_yacht_name,
-    status,
-    closes_at
+    status
   )
   values (
     yacht_b,
@@ -478,8 +475,7 @@ begin
     array['Support interior guest operations.'],
     array['Hold valid STCW certification.'],
     false,
-    'published',
-    now() + interval '30 days'
+    'published'
   )
   returning id into job_b;
 

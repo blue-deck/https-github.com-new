@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  isJobClosureReason,
   isJobEmploymentType,
   isJobPostStatus,
   isSupportedJobListingNumber,
@@ -13,6 +14,7 @@ import {
 } from "./jobApplicationsServer";
 import type {
   MyJobApplication,
+  MyJobAvailability,
   MyJobApplicationJob,
 } from "./myJobApplications";
 import { cleanText, isRecord, isUuid } from "./employerAccessServer";
@@ -21,7 +23,7 @@ const maximumOwnApplicationResults = 200;
 const ownPortalApplicationSelect =
   `${ownJobApplicationSelect},applicant_user_id`;
 const ownApplicationJobSelect =
-  "id,listing_number,title,position,department,employment_type,location,start_date,closes_at,status";
+  "id,listing_number,title,position,department,employment_type,location,start_date,closes_at,closure_reason,status";
 
 export async function listOwnJobApplications(
   serviceClient: SupabaseClient,
@@ -111,9 +113,10 @@ export async function listOwnJobApplications(
     };
   }
 
+  const availabilityReferenceTime = Date.now();
   const jobs = new Map<string, MyJobApplicationJob>();
   for (const row of jobRows || []) {
-    const job = ownApplicationJobFromRow(row);
+    const job = ownApplicationJobFromRow(row, availabilityReferenceTime);
     if (!job) {
       logJobApplicationError("invalid_own_application_job_summary", undefined, {
         actorUserId: authenticatedUserId,
@@ -145,7 +148,10 @@ export async function listOwnJobApplications(
   return { ok: true as const, applications: result };
 }
 
-function ownApplicationJobFromRow(value: unknown): MyJobApplicationJob | null {
+function ownApplicationJobFromRow(
+  value: unknown,
+  availabilityReferenceTime: number,
+): MyJobApplicationJob | null {
   if (!isRecord(value)) return null;
 
   const id = cleanText(value.id);
@@ -156,6 +162,7 @@ function ownApplicationJobFromRow(value: unknown): MyJobApplicationJob | null {
   const location = cleanText(value.location);
   const startDate = optionalDate(value.start_date);
   const closesAt = optionalTimestamp(value.closes_at);
+  const closureReason = optionalClosureReason(value.closure_reason);
 
   if (
     !isUuid(id) ||
@@ -167,10 +174,18 @@ function ownApplicationJobFromRow(value: unknown): MyJobApplicationJob | null {
     !location ||
     startDate === undefined ||
     closesAt === undefined ||
+    closureReason === undefined ||
     !isJobPostStatus(value.status)
   ) {
     return null;
   }
+
+  const jobAvailability = deriveJobAvailability({
+    status: value.status,
+    closesAt,
+    closureReason,
+    availabilityReferenceTime,
+  });
 
   return {
     id,
@@ -181,9 +196,30 @@ function ownApplicationJobFromRow(value: unknown): MyJobApplicationJob | null {
     employmentType: value.employment_type,
     location,
     startDate,
-    closesAt,
     status: value.status,
+    jobAvailability,
   };
+}
+
+function deriveJobAvailability({
+  status,
+  closesAt,
+  closureReason,
+  availabilityReferenceTime,
+}: {
+  status: "draft" | "published" | "closed";
+  closesAt: string | null;
+  closureReason: string | null;
+  availabilityReferenceTime: number;
+}): MyJobAvailability {
+  if (closureReason === "expired") return "expired";
+  if (closureReason === "cancelled") return "cancelled";
+
+  if (status !== "published" || !closesAt) return "unavailable";
+
+  return Date.parse(closesAt) <= availabilityReferenceTime
+    ? "expired"
+    : "active";
 }
 
 function optionalDate(value: unknown): string | null | undefined {
@@ -197,4 +233,11 @@ function optionalTimestamp(value: unknown): string | null | undefined {
   if (typeof value !== "string") return undefined;
   const timestamp = Date.parse(value);
   return Number.isNaN(timestamp) ? undefined : new Date(timestamp).toISOString();
+}
+
+function optionalClosureReason(
+  value: unknown,
+): "expired" | "cancelled" | null | undefined {
+  if (value === null || value === undefined || value === "") return null;
+  return isJobClosureReason(value) ? value : undefined;
 }

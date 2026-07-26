@@ -5,6 +5,12 @@ import type {
 } from "./jobPosts";
 import type { MarketplaceAccountRole } from "./marketplaceCapabilities";
 
+export type MyJobAvailability =
+  | "active"
+  | "expired"
+  | "cancelled"
+  | "unavailable";
+
 export type MyJobApplicationJob = {
   id: string;
   listingNumber: string;
@@ -14,8 +20,8 @@ export type MyJobApplicationJob = {
   employmentType: JobEmploymentType;
   location: string;
   startDate: string | null;
-  closesAt: string | null;
   status: JobPostStatus;
+  jobAvailability: MyJobAvailability;
 };
 
 export type MyJobApplication = OwnJobApplication & {

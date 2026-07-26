@@ -67,23 +67,27 @@ begin
 
   update public.job_posts
   set status = 'published',
-      updated_by = access_row.user_id,
-      closes_at = now() + interval '14 days'
+      updated_by = access_row.user_id
   where id = job_id
   returning * into job_row;
 
   if job_row.status is distinct from 'published'
     or job_row.published_at is null
+    or job_row.closes_at is distinct from (
+      (
+        job_row.published_at at time zone 'UTC' + interval '1 month'
+      ) at time zone 'UTC'
+    )
+    or job_row.closure_reason is not null
     or job_row.version is distinct from 2
   then
     raise exception 'Draft-to-published transition was not prepared correctly.';
   end if;
 
-  update public.employer_access
-  set status = 'suspended',
-      reviewed_by = coalesce(access_row.reviewed_by, access_row.user_id),
-      review_note = 'Transactional job-post authority smoke test.'
-  where id = access_row.id;
+  update public.job_posts
+  set status = 'closed',
+      updated_by = access_row.user_id
+  where id = job_id;
 
   select *
   into job_row
@@ -92,26 +96,10 @@ begin
 
   if job_row.status is distinct from 'closed'
     or job_row.closed_at is null
+    or job_row.closure_reason is distinct from 'cancelled'
     or job_row.version is distinct from 3
   then
-    raise exception 'Employer suspension did not close the published job post.';
-  end if;
-
-  update public.employer_access
-  set status = 'verified',
-      reviewed_by = coalesce(access_row.reviewed_by, access_row.user_id),
-      review_note = 'Transactional job-post authority restore test.'
-  where id = access_row.id;
-
-  select *
-  into job_row
-  from public.job_posts
-  where id = job_id;
-
-  if job_row.status is distinct from 'closed'
-    or job_row.version is distinct from 3
-  then
-    raise exception 'Employer restore unexpectedly republished the job post.';
+    raise exception 'Publisher cancellation did not archive the job post.';
   end if;
 
   begin

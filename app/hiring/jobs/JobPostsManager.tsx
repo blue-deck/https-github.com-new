@@ -32,6 +32,7 @@ import {
 import { useLanguage } from "../../components/LanguageProvider";
 import {
   formatJobListingNumber,
+  isEmployerJobPostExpired,
   jobEmploymentTypes,
   jobSalaryCurrencies,
   jobSalaryPeriods,
@@ -67,7 +68,6 @@ type FormState = {
   employmentType: (typeof jobEmploymentTypes)[number];
   location: string;
   startDate: string;
-  closesAt: string;
   summary: string;
   description: string;
   responsibilities: string;
@@ -86,7 +86,7 @@ const copy = {
     eyebrow: "Publisher workspace",
     title: "Job posts",
     intro:
-      "Create clear crew opportunities, control what is public and manage every role from draft to close.",
+      "Create clear crew opportunities, control what is public and manage every role throughout its lifecycle.",
     back: "Hiring workspace",
     publicBoard: "View public jobs",
     privateArea: "Private employer area",
@@ -117,6 +117,8 @@ const copy = {
     draft: "Draft",
     published: "Published",
     closedStatus: "Closed",
+    expiredStatus: "Expired",
+    cancelledStatus: "Cancelled",
     identity: "Role and yacht",
     yacht: "Hiring yacht",
     position: "Position",
@@ -133,7 +135,9 @@ const copy = {
     location: "Location",
     locationPlaceholder: "e.g. Palma, Spain · Mediterranean",
     startDate: "Job start date",
-    closesAt: "Applications close",
+    automaticExpiryTitle: "One-month publishing window",
+    automaticExpiryText:
+      "Every published listing remains open for one calendar month. BlueDeck then removes it from the public jobs board automatically.",
     narrative: "Public job brief",
     summary: "Short summary",
     summaryPlaceholder:
@@ -169,28 +173,33 @@ const copy = {
     saveDraft: "Save draft",
     publish: "Publish role",
     saveLive: "Save live changes",
-    unpublish: "Move to draft",
-    closePost: "Close role",
-    reopen: "Reopen as draft",
+    cancelPost: "Cancel listing",
+    cancelConfirm:
+      "Cancel this listing? It will be removed from the public jobs board and will no longer accept applications. Application history will be preserved.",
     saving: "Saving…",
     viewLive: "View live post",
     applications: "Applications",
     savedDraft: "Draft saved.",
     savedPublished: "Job post published.",
-    savedClosed: "Job post closed.",
-    savedReopened: "Job post reopened as a private draft.",
+    savedCancelled: "Job post cancelled.",
     saveError: "The job post could not be saved.",
     changedElsewhere:
       "This version may be out of date. Reload the workspace and try again.",
     updated: "Updated",
-    expires: "Closes",
+    terminalTitle: "This listing has ended",
+    terminalExpired:
+      "The one-month publishing period has ended. The listing is no longer public and cannot be reopened.",
+    terminalCancelled:
+      "This listing was cancelled and is no longer public. Its application history remains available.",
+    terminalClosed:
+      "This listing is closed and can no longer be edited or republished.",
     selectPost: "Select a post",
   },
   tr: {
     eyebrow: "İlan yayınlama alanı",
     title: "İş ilanları",
     intro:
-      "Net mürettebat fırsatları oluştur, hangi bilgilerin yayınlanacağını kontrol et ve her ilanı taslaktan kapanışa kadar yönet.",
+      "Net mürettebat fırsatları oluştur, hangi bilgilerin yayınlanacağını kontrol et ve her ilanı yaşam döngüsü boyunca yönet.",
     back: "İşe alım alanı",
     publicBoard: "Yayındaki ilanları gör",
     privateArea: "Özel işveren alanı",
@@ -221,6 +230,8 @@ const copy = {
     draft: "Taslak",
     published: "Yayında",
     closedStatus: "Kapalı",
+    expiredStatus: "Süresi doldu",
+    cancelledStatus: "İptal edildi",
     identity: "Pozisyon ve yat",
     yacht: "İşe alım yapılan yat",
     position: "Pozisyon",
@@ -237,7 +248,9 @@ const copy = {
     location: "Konum",
     locationPlaceholder: "Örn. Palma, İspanya · Akdeniz",
     startDate: "İşe başlama tarihi",
-    closesAt: "Başvuru kapanışı",
+    automaticExpiryTitle: "Bir aylık yayın süresi",
+    automaticExpiryText:
+      "Yayınlanan her ilan bir takvim ayı boyunca açık kalır. Bu sürenin sonunda BlueDeck ilanı herkese açık iş ilanlarından otomatik olarak kaldırır.",
     narrative: "Herkese açık ilan özeti",
     summary: "Kısa özet",
     summaryPlaceholder:
@@ -273,21 +286,26 @@ const copy = {
     saveDraft: "Taslak kaydet",
     publish: "İlanı yayınla",
     saveLive: "Yayındaki değişiklikleri kaydet",
-    unpublish: "Taslağa al",
-    closePost: "İlanı kapat",
-    reopen: "Taslak olarak yeniden aç",
+    cancelPost: "İlanı iptal et",
+    cancelConfirm:
+      "Bu ilanı iptal etmek istediğinize emin misiniz? İlan herkese açık iş ilanlarından kaldırılacak ve yeni başvuru kabul etmeyecek. Başvuru geçmişi korunacak.",
     saving: "Kaydediliyor…",
     viewLive: "Yayındaki ilanı gör",
     applications: "Başvurular",
     savedDraft: "Taslak kaydedildi.",
     savedPublished: "İş ilanı yayınlandı.",
-    savedClosed: "İş ilanı kapatıldı.",
-    savedReopened: "İlan gizli taslak olarak yeniden açıldı.",
+    savedCancelled: "İş ilanı iptal edildi.",
     saveError: "İş ilanı kaydedilemedi.",
     changedElsewhere:
       "Bu sürüm güncel olmayabilir. Alanı yenileyip tekrar dene.",
     updated: "Güncellendi",
-    expires: "Kapanış",
+    terminalTitle: "Bu ilan sona erdi",
+    terminalExpired:
+      "Bir aylık yayın süresi doldu. İlan artık herkese açık değil ve yeniden yayınlanamaz.",
+    terminalCancelled:
+      "Bu ilan iptal edildi ve artık herkese açık değil. Başvuru geçmişi korunmaya devam eder.",
+    terminalClosed:
+      "Bu ilan kapatıldı; artık düzenlenemez veya yeniden yayınlanamaz.",
     selectPost: "İlan seç",
   },
 } as const;
@@ -312,12 +330,24 @@ export function JobPostsManager() {
     () => jobs.find((job) => job.id === selectedId) || null,
     [jobs, selectedId],
   );
+  const selectedJobExpired = selectedJob
+    ? isEmployerJobPostExpired(selectedJob)
+    : false;
+  const selectedJobTerminal = Boolean(
+    selectedJob && (selectedJob.status === "closed" || selectedJobExpired),
+  );
   const counts = useMemo(
     () => ({
       total: jobs.length,
-      published: jobs.filter((job) => job.status === "published").length,
+      published: jobs.filter(
+        (job) =>
+          job.status === "published" && !isEmployerJobPostExpired(job),
+      ).length,
       draft: jobs.filter((job) => job.status === "draft").length,
-      closed: jobs.filter((job) => job.status === "closed").length,
+      closed: jobs.filter(
+        (job) =>
+          job.status === "closed" || isEmployerJobPostExpired(job),
+      ).length,
     }),
     [jobs],
   );
@@ -457,17 +487,11 @@ export function JobPostsManager() {
   }
 
   async function saveJob(targetStatus: JobPostStatus) {
-    if (saving) return;
+    if (saving || selectedJobTerminal) return;
 
     const salaryMin = inputNumber(form.salaryMin);
     const salaryMax = inputNumber(form.salaryMax);
     if (!salaryMin.ok || !salaryMax.ok) {
-      setNotice({ tone: "error", message: c.saveError });
-      return;
-    }
-
-    const closesAt = localDateTimeToIso(form.closesAt);
-    if (form.closesAt && !closesAt) {
       setNotice({ tone: "error", message: c.saveError });
       return;
     }
@@ -491,7 +515,6 @@ export function JobPostsManager() {
       employmentType: form.employmentType,
       location: form.location.trim(),
       startDate: form.startDate || null,
-      closesAt,
       summary: form.summary.trim(),
       description: form.description.trim(),
       responsibilities: lines(form.responsibilities),
@@ -556,10 +579,8 @@ export function JobPostsManager() {
           savedJob.status === "published"
             ? c.savedPublished
             : savedJob.status === "closed"
-              ? c.savedClosed
-              : selectedJob?.status === "closed"
-                ? c.savedReopened
-                : c.savedDraft,
+              ? c.savedCancelled
+              : c.savedDraft,
       });
     } catch (error) {
       setNotice({
@@ -573,9 +594,16 @@ export function JobPostsManager() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (selectedJobTerminal) return;
     const status =
       selectedJob?.status === "published" ? "published" : "draft";
     void saveJob(status);
+  }
+
+  function cancelSelectedJob() {
+    if (!selectedJob || selectedJobTerminal || saving) return;
+    if (!window.confirm(c.cancelConfirm)) return;
+    void saveJob("closed");
   }
 
   if (loading) {
@@ -766,7 +794,11 @@ export function JobPostsManager() {
             className="bd-glass-card-strong overflow-hidden rounded-[30px]"
           >
             <div className="bd-brand-rule h-1.5" />
-            <div className="p-6 sm:p-8 lg:p-10">
+            <fieldset
+              disabled={selectedJobTerminal}
+              className="m-0 min-w-0 border-0 p-0"
+            >
+              <div className="p-6 sm:p-8 lg:p-10">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <p className="bd-kicker">
@@ -788,7 +820,11 @@ export function JobPostsManager() {
                     {c.createIntro}
                   </p>
                 </div>
-                <StatusBadge status={selectedJob?.status || "draft"} c={c} />
+                <StatusBadge
+                  status={selectedJob?.status || "draft"}
+                  job={selectedJob}
+                  c={c}
+                />
               </div>
 
               <FormSection
@@ -883,8 +919,8 @@ export function JobPostsManager() {
               </FormSection>
 
               <FormSection icon={<MapPin />} title={c.logistics}>
-                <div className="grid gap-5 lg:grid-cols-3">
-                  <Field label={c.location} className="lg:col-span-1">
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Field label={c.location}>
                     <input
                       value={form.location}
                       onChange={(event) =>
@@ -908,17 +944,18 @@ export function JobPostsManager() {
                       className={inputClass}
                     />
                   </Field>
-                  <Field label={c.closesAt}>
-                    <input
-                      type="datetime-local"
-                      value={form.closesAt}
-                      onChange={(event) =>
-                        updateForm("closesAt", event.target.value)
-                      }
-                      disabled={saving}
-                      className={inputClass}
-                    />
-                  </Field>
+                </div>
+
+                <div className="mt-5 flex items-start gap-3 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-cyan-950">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
+                    <Clock3 className="h-4 w-4" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="text-sm font-black">{c.automaticExpiryTitle}</p>
+                    <p className="mt-1 text-xs font-semibold leading-5 text-cyan-900/75">
+                      {c.automaticExpiryText}
+                    </p>
+                  </div>
                 </div>
               </FormSection>
 
@@ -1098,55 +1135,61 @@ export function JobPostsManager() {
               </div>
 
               <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-7">
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  {selectedJob?.status === "closed" ? (
+                {selectedJobTerminal ? (
+                  <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm">
+                      <XCircle className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-black text-slate-900">
+                        {c.terminalTitle}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
+                        {selectedJobExpired ||
+                        selectedJob?.closureReason === "expired"
+                          ? c.terminalExpired
+                          : selectedJob?.closureReason === "cancelled"
+                            ? c.terminalCancelled
+                            : c.terminalClosed}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                     <ActionButton
-                      label={c.reopen}
-                      icon={<RefreshCw />}
+                      label={
+                        selectedJob?.status === "published"
+                          ? c.saveLive
+                          : c.publish
+                      }
+                      icon={<Send />}
                       primary
                       disabled={saving}
                       loading={saving}
-                      onClick={() => void saveJob("draft")}
+                      onClick={() => void saveJob("published")}
                     />
-                  ) : (
-                    <>
+                    {selectedJob?.status !== "published" ? (
                       <ActionButton
-                        label={
-                          selectedJob?.status === "published"
-                            ? c.saveLive
-                            : c.publish
-                        }
-                        icon={<Send />}
-                        primary
-                        disabled={saving}
-                        loading={saving}
-                        onClick={() => void saveJob("published")}
-                      />
-                      <ActionButton
-                        label={
-                          selectedJob?.status === "published"
-                            ? c.unpublish
-                            : c.saveDraft
-                        }
+                        label={c.saveDraft}
                         icon={<Save />}
                         disabled={saving}
                         loading={saving}
                         onClick={() => void saveJob("draft")}
                       />
-                    </>
-                  )}
+                    ) : null}
 
-                  {selectedJob && selectedJob.status !== "closed" ? (
-                    <ActionButton
-                      label={c.closePost}
-                      icon={<XCircle />}
-                      danger
-                      disabled={saving}
-                      loading={false}
-                      onClick={() => void saveJob("closed")}
-                    />
-                  ) : null}
-                </div>
+                    {selectedJob ? (
+                      <ActionButton
+                        label={c.cancelPost}
+                        icon={<XCircle />}
+                        danger
+                        disabled={saving}
+                        loading={false}
+                        onClick={cancelSelectedJob}
+                      />
+                    ) : null}
+                  </div>
+                )}
 
                 {selectedJob ? (
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -1162,7 +1205,8 @@ export function JobPostsManager() {
                       <ArrowUpRight className="h-4 w-4" aria-hidden />
                     </Link>
 
-                    {selectedJob.status === "published" ? (
+                    {selectedJob.status === "published" &&
+                    !selectedJobExpired ? (
                       <Link
                         href={`/jobs/${encodeURIComponent(selectedJob.id)}`}
                         className="bd-focus inline-flex min-h-11 w-fit items-center gap-2 rounded-xl text-sm font-black text-cyan-800 transition hover:text-cyan-950"
@@ -1175,7 +1219,8 @@ export function JobPostsManager() {
                   </div>
                 ) : null}
               </div>
-            </div>
+              </div>
+            </fieldset>
           </form>
         </div>
       </div>
@@ -1194,7 +1239,6 @@ function emptyForm(yachtId: string): FormState {
     employmentType: "permanent",
     location: "",
     startDate: "",
-    closesAt: "",
     summary: "",
     description: "",
     responsibilities: "",
@@ -1217,7 +1261,6 @@ function formFromJob(job: EmployerJobPost): FormState {
     employmentType: job.employmentType,
     location: job.location,
     startDate: job.startDate || "",
-    closesAt: isoToLocalDateTime(job.closesAt),
     summary: job.summary,
     description: job.description,
     responsibilities: job.responsibilities.join("\n"),
@@ -1373,28 +1416,41 @@ function Counter({ value, maximum }: { value: number; maximum: number }) {
 
 function StatusBadge({
   status,
+  job,
   c,
 }: {
   status: JobPostStatus;
+  job?: EmployerJobPost | null;
   c: (typeof copy)["en"] | (typeof copy)["tr"];
 }) {
+  const presentation = job
+    ? isEmployerJobPostExpired(job)
+      ? "expired"
+      : job.status === "closed" && job.closureReason === "cancelled"
+        ? "cancelled"
+        : status
+    : status;
   const styles = {
     draft: "border-amber-200 bg-amber-50 text-amber-800",
     published: "border-emerald-200 bg-emerald-50 text-emerald-800",
     closed: "border-slate-200 bg-slate-100 text-slate-600",
+    expired: "border-rose-200 bg-rose-50 text-rose-800",
+    cancelled: "border-slate-300 bg-slate-100 text-slate-700",
   };
   const labels = {
     draft: c.draft,
     published: c.published,
     closed: c.closedStatus,
+    expired: c.expiredStatus,
+    cancelled: c.cancelledStatus,
   };
 
   return (
     <span
-      className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] ${styles[status]}`}
+      className={`inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] ${styles[presentation]}`}
     >
       <span className="h-2 w-2 rounded-full bg-current" aria-hidden />
-      {labels[status]}
+      {labels[presentation]}
     </span>
   );
 }
@@ -1446,7 +1502,7 @@ function JobListButton({
             {formatJobListingNumber(job.listingNumber)}
           </p>
         </div>
-        <StatusBadge status={job.status} c={c} />
+        <StatusBadge status={job.status} job={job} c={c} />
       </div>
       <div className="mt-3 flex items-center gap-2 text-[10px] font-semibold text-slate-400">
         <Clock3 className="h-3.5 w-3.5" aria-hidden />
@@ -1592,20 +1648,6 @@ function inputNumber(
     return { ok: false };
   }
   return { ok: true, value: number };
-}
-
-function localDateTimeToIso(value: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
-}
-
-function isoToLocalDateTime(value: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-  return local.toISOString().slice(0, 16);
 }
 
 function formatDate(value: string, language: "en" | "tr") {

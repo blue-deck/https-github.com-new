@@ -30,7 +30,6 @@ export type PublicJob = {
   salary: PublicJobSalary | null;
   yacht: PublicJobYacht;
   publishedAt: string;
-  closesAt: string;
 };
 
 type UnknownRecord = Record<string, unknown>;
@@ -66,7 +65,6 @@ export function parsePublicJob(value: unknown): PublicJob | null {
       flag: readString(yachtValue, "flag"),
     },
     publishedAt: readString(value, "publishedAt", "published_at"),
-    closesAt: readString(value, "closesAt", "closes_at"),
   };
 }
 

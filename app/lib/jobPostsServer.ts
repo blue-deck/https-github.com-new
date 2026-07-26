@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import {
   isJobEmploymentType,
+  isJobClosureReason,
   isSupportedJobListingNumber,
   isJobPostStatus,
   isJobSalaryCurrency,
@@ -38,12 +39,12 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,closes_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
 export const employerJobPostSelect =
-  `${publicJobPostSelect},yacht_id,status,version,closed_at,created_at,updated_at`;
+  `${publicJobPostSelect},yacht_id,status,version,closes_at,closure_reason,closed_at,created_at,updated_at`;
 
 const createPayloadKeys = new Set([
   "yachtId",
@@ -63,7 +64,6 @@ const createPayloadKeys = new Set([
   "salaryCurrency",
   "salaryPeriod",
   "showYachtName",
-  "closesAt",
   "status",
 ]);
 
@@ -92,7 +92,6 @@ export type JobPostMutation = {
   salaryCurrency: JobSalaryCurrency;
   salaryPeriod: JobSalaryPeriod;
   showYachtName: boolean;
-  closesAt: string | null;
   status: JobPostStatus;
   version: number | null;
 };
@@ -279,11 +278,6 @@ export function parseJobPostMutation(
   if (!startDate.ok) {
     return { ok: false, error: "Enter a valid start date." };
   }
-  const closesAt = optionalTimestamp(value.closesAt);
-  if (!closesAt.ok) {
-    return { ok: false, error: "Enter a valid closing date and time." };
-  }
-
   const responsibilities = textList(value.responsibilities);
   const requirements = textList(value.requirements);
   const benefits = textList(value.benefits);
@@ -338,17 +332,6 @@ export function parseJobPostMutation(
     };
   }
 
-  if (
-    value.status === "published" &&
-    closesAt.value &&
-    Date.parse(closesAt.value) <= Date.now()
-  ) {
-    return {
-      ok: false,
-      error: "The closing date must be in the future before publishing.",
-    };
-  }
-
   let version: number | null = null;
   if (mode === "update") {
     if (
@@ -385,7 +368,6 @@ export function parseJobPostMutation(
       salaryCurrency: value.salaryCurrency,
       salaryPeriod: value.salaryPeriod,
       showYachtName: value.showYachtName,
-      closesAt: closesAt.value,
       status: value.status,
       version,
     },
@@ -865,7 +847,6 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
       ? base.yacht
       : { name: "Confidential yacht", model: null, flag: null },
     publishedAt: base.publishedAt,
-    closesAt: base.closesAt,
   };
 }
 
@@ -876,6 +857,13 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
   const yachtId = cleanText(value.yacht_id);
   const createdAt = timestamp(value.created_at);
   const updatedAt = timestamp(value.updated_at);
+  const expiresAt = optionalDatabaseTimestamp(value.closes_at);
+  const closureReason =
+    value.closure_reason === null
+      ? null
+      : isJobClosureReason(value.closure_reason)
+        ? value.closure_reason
+        : undefined;
   const closedAt = optionalDatabaseTimestamp(value.closed_at);
 
   if (
@@ -886,7 +874,26 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     value.version < 1 ||
     !createdAt ||
     !updatedAt ||
+    expiresAt === undefined ||
+    closureReason === undefined ||
     closedAt === undefined
+  ) {
+    return null;
+  }
+
+  if (
+    (value.status === "draft" &&
+      (base.publishedAt !== null ||
+        expiresAt !== null ||
+        closureReason !== null ||
+        closedAt !== null)) ||
+    (value.status === "published" &&
+      (base.publishedAt === null ||
+        expiresAt === null ||
+        closureReason !== null ||
+        closedAt !== null)) ||
+    (value.status === "closed" &&
+      (closureReason === null || closedAt === null))
   ) {
     return null;
   }
@@ -913,7 +920,8 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     status: value.status,
     version: value.version,
     publishedAt: base.publishedAt,
-    closesAt: base.closesAt,
+    expiresAt,
+    closureReason,
     closedAt,
     createdAt,
     updatedAt,
@@ -956,7 +964,6 @@ export function jobPostMutationColumns(
     salary_currency: mutation.salaryCurrency,
     salary_period: mutation.salaryPeriod,
     show_yacht_name: mutation.showYachtName,
-    closes_at: mutation.closesAt,
     status: mutation.status,
   };
 }
@@ -986,7 +993,6 @@ function jobPostBaseFromRow(value: unknown) {
   const description = cleanText(value.description);
   const startDate = optionalDatabaseDate(value.start_date);
   const publishedAt = optionalDatabaseTimestamp(value.published_at);
-  const closesAt = optionalDatabaseTimestamp(value.closes_at);
   const responsibilities = databaseTextList(value.responsibilities);
   const requirements = databaseTextList(value.requirements);
   const benefits = databaseTextList(value.benefits);
@@ -1004,7 +1010,6 @@ function jobPostBaseFromRow(value: unknown) {
     !location ||
     startDate === undefined ||
     publishedAt === undefined ||
-    closesAt === undefined ||
     !responsibilities ||
     !requirements ||
     !benefits ||
@@ -1047,7 +1052,6 @@ function jobPostBaseFromRow(value: unknown) {
       flag: cleanText(joinedYacht.flag) || null,
     },
     publishedAt,
-    closesAt,
   };
 }
 
@@ -1129,20 +1133,6 @@ function optionalDate(
     parsed.toISOString().slice(0, 10) === value
     ? { ok: true, value }
     : { ok: false };
-}
-
-function optionalTimestamp(
-  value: unknown,
-): { ok: true; value: string | null } | { ok: false } {
-  if (value === null) return { ok: true, value: null };
-  if (
-    typeof value !== "string" ||
-    !/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ||
-    Number.isNaN(Date.parse(value))
-  ) {
-    return { ok: false };
-  }
-  return { ok: true, value: new Date(value).toISOString() };
 }
 
 function optionalDatabaseDate(value: unknown): string | null | undefined {

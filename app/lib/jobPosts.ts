@@ -8,11 +8,13 @@ export const jobEmploymentTypes = [
 ] as const;
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
 export const jobSalaryCurrencies = ["EUR", "USD", "GBP", "AUD", "NZD"] as const;
+export const jobClosureReasons = ["expired", "cancelled"] as const;
 
 export type JobPostStatus = (typeof jobPostStatuses)[number];
 export type JobEmploymentType = (typeof jobEmploymentTypes)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
+export type JobClosureReason = (typeof jobClosureReasons)[number];
 
 export type JobSalary = {
   min: number | null;
@@ -44,7 +46,6 @@ export type PublicJobPost = {
   salary: JobSalary | null;
   yacht: JobYachtSummary;
   publishedAt: string;
-  closesAt: string | null;
 };
 
 export type EmployerJobPost = Omit<PublicJobPost, "publishedAt"> & {
@@ -54,6 +55,8 @@ export type EmployerJobPost = Omit<PublicJobPost, "publishedAt"> & {
   showYachtName: boolean;
   version: number;
   publishedAt: string | null;
+  expiresAt: string | null;
+  closureReason: JobClosureReason | null;
   closedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -103,4 +106,21 @@ export function isJobSalaryCurrency(
   value: unknown,
 ): value is JobSalaryCurrency {
   return jobSalaryCurrencies.includes(value as JobSalaryCurrency);
+}
+
+export function isJobClosureReason(
+  value: unknown,
+): value is JobClosureReason {
+  return jobClosureReasons.includes(value as JobClosureReason);
+}
+
+export function isEmployerJobPostExpired(
+  job: EmployerJobPost,
+  at = Date.now(),
+) {
+  if (job.closureReason === "expired") return true;
+  if (job.closureReason === "cancelled" || !job.expiresAt) return false;
+
+  const expiresAt = Date.parse(job.expiresAt);
+  return !Number.isNaN(expiresAt) && expiresAt <= at;
 }

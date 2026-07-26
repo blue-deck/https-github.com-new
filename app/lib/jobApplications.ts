@@ -14,10 +14,19 @@ export const employerJobApplicationStatuses = [
   "hired",
 ] as const;
 
+export const jobApplicationJobAvailabilities = [
+  "active",
+  "expired",
+  "cancelled",
+  "unavailable",
+] as const;
+
 export type JobApplicationStatus =
   (typeof jobApplicationStatuses)[number];
 export type EmployerJobApplicationStatus =
   (typeof employerJobApplicationStatuses)[number];
+export type JobApplicationJobAvailability =
+  (typeof jobApplicationJobAvailabilities)[number];
 
 export type OwnJobApplication = {
   id: string;
@@ -50,6 +59,7 @@ export type JobApplicationJobSummary = {
   position: string;
   startDate: string | null;
   status: "draft" | "published" | "closed";
+  availability: JobApplicationJobAvailability;
 };
 
 export function isJobApplicationStatus(
@@ -63,6 +73,14 @@ export function isEmployerJobApplicationStatus(
 ): value is EmployerJobApplicationStatus {
   return employerJobApplicationStatuses.includes(
     value as EmployerJobApplicationStatus,
+  );
+}
+
+export function isJobApplicationJobAvailability(
+  value: unknown,
+): value is JobApplicationJobAvailability {
+  return jobApplicationJobAvailabilities.includes(
+    value as JobApplicationJobAvailability,
   );
 }
 

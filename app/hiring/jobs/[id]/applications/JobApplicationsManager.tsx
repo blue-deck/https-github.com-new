@@ -22,8 +22,10 @@ import { useLanguage } from "../../../../components/LanguageProvider";
 import {
   employerJobApplicationStatuses,
   isJobApplicationStatus,
+  isJobApplicationJobAvailability,
   type EmployerJobApplication,
   type EmployerJobApplicationStatus,
+  type JobApplicationJobAvailability,
   type JobApplicationJobSummary,
   type JobApplicationStatus,
 } from "../../../../lib/jobApplications";
@@ -238,9 +240,15 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
               <p data-i18n-ignore className="mt-3 text-lg font-black text-cyan-800">
                 {job.position}
               </p>
-              <p data-i18n-ignore className="mt-2 font-mono text-xs font-black tracking-[0.12em] text-slate-500">
-                {formatJobListingNumber(job.listingNumber)}
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                <p data-i18n-ignore className="font-mono text-xs font-black tracking-[0.12em] text-slate-500">
+                  {formatJobListingNumber(job.listingNumber)}
+                </p>
+                <ListingAvailabilityBadge
+                  availability={job.availability}
+                  language={language}
+                />
+              </div>
             </div>
             <div className="grid min-w-[260px] grid-cols-2 gap-3">
               <Metric label={c.total} value={applications.length} />
@@ -631,6 +639,39 @@ function StatusBadge({
   );
 }
 
+function ListingAvailabilityBadge({
+  availability,
+  language,
+}: {
+  availability: JobApplicationJobAvailability;
+  language: "en" | "tr";
+}) {
+  const tones: Record<JobApplicationJobAvailability, string> = {
+    active: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    expired: "border-rose-200 bg-rose-50 text-rose-800",
+    cancelled: "border-slate-300 bg-slate-100 text-slate-700",
+    unavailable: "border-amber-200 bg-amber-50 text-amber-800",
+  };
+  const labels: Record<
+    JobApplicationJobAvailability,
+    { en: string; tr: string }
+  > = {
+    active: { en: "Active listing", tr: "Yayında" },
+    expired: { en: "Expired", tr: "Süresi doldu" },
+    cancelled: { en: "Cancelled", tr: "İptal edildi" },
+    unavailable: { en: "Unavailable", tr: "Kullanılamıyor" },
+  };
+
+  return (
+    <span
+      className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.11em] ${tones[availability]}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+      {labels[availability][language]}
+    </span>
+  );
+}
+
 function FilterButton({
   active,
   label,
@@ -717,7 +758,8 @@ function parseJob(value: unknown): JobApplicationJobSummary | null {
     !isSupportedJobListingNumber(value.listingNumber) ||
     typeof value.title !== "string" ||
     typeof value.position !== "string" ||
-    !["draft", "published", "closed"].includes(String(status))
+    !["draft", "published", "closed"].includes(String(status)) ||
+    !isJobApplicationJobAvailability(value.availability)
   ) {
     return null;
   }
@@ -728,6 +770,7 @@ function parseJob(value: unknown): JobApplicationJobSummary | null {
     position: value.position,
     startDate: typeof value.startDate === "string" ? value.startDate : null,
     status: status as JobApplicationJobSummary["status"],
+    availability: value.availability,
   };
 }
 

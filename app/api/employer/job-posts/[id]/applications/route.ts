@@ -34,7 +34,9 @@ export async function GET(
   const [jobResult, authority, applicationResult] = await Promise.all([
     clients.serviceClient
       .from("job_posts")
-      .select("id,listing_number,title,position,start_date,status")
+      .select(
+        "id,listing_number,title,position,start_date,status,closes_at,closure_reason",
+      )
       .eq("id", jobPostId)
       .maybeSingle(),
     canManageJobApplications(

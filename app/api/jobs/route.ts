@@ -22,7 +22,7 @@ export async function GET() {
     .select(publicJobPostServiceSelect)
     .eq("status", "published")
     .lte("published_at", now)
-    .or(`closes_at.is.null,closes_at.gt.${now}`)
+    .gt("closes_at", now)
     .order("published_at", { ascending: false })
     .limit(maximumPublicJobResults);
 

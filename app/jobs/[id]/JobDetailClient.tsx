@@ -262,12 +262,6 @@ function JobDetail({
                         value={formatJobDate(job.publishedAt, language)}
                       />
                     ) : null}
-                    {job.closesAt ? (
-                      <SidebarFact
-                        label={c.closes}
-                        value={formatJobDate(job.closesAt, language)}
-                      />
-                    ) : null}
                   </div>
 
                   <JobApplicationPanel jobId={job.id} language={language} />
@@ -447,7 +441,6 @@ const copy = {
     benefits: "Benefits",
     department: "Department",
     published: "Published",
-    closes: "Closes",
     secureTitle: "Apply securely",
     secureText:
       "Crew and Captain accounts can apply with a short note and their professional BlueDeck profile summary.",
@@ -477,7 +470,6 @@ const copy = {
     benefits: "Yan haklar",
     department: "Departman",
     published: "Yayınlandı",
-    closes: "Son tarih",
     secureTitle: "Güvenle başvurun",
     secureText:
       "Crew ve Captain hesapları kısa bir not ve profesyonel BlueDeck profil özetiyle başvurabilir.",

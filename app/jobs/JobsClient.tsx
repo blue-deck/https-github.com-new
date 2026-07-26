@@ -354,14 +354,6 @@ function JobCard({
         ) : null}
 
         <div className="mt-auto pt-6">
-          {job.closesAt ? (
-            <p className="mb-4 text-xs font-semibold text-slate-500">
-              {c.closes}{" "}
-              <time data-i18n-ignore dateTime={job.closesAt}>
-                {formatJobDate(job.closesAt, language)}
-              </time>
-            </p>
-          ) : null}
           <Link
             href={action.href}
             className="bd-focus flex min-h-12 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
@@ -560,7 +552,6 @@ const copy = {
     roles: "open roles",
     clear: "Clear filters",
     start: "Start",
-    closes: "Closes",
     listingNumber: "Listing no.",
     viewRole: "View role",
     loading: "Loading current opportunities…",
@@ -592,7 +583,6 @@ const copy = {
     roles: "açık pozisyon",
     clear: "Filtreleri temizle",
     start: "Başlangıç",
-    closes: "Son tarih",
     listingNumber: "İlan no:",
     viewRole: "İlanı görüntüle",
     loading: "Güncel fırsatlar yükleniyor…",

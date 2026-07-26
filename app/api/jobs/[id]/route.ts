@@ -32,7 +32,7 @@ export async function GET(
     .eq("id", id)
     .eq("status", "published")
     .lte("published_at", now)
-    .or(`closes_at.is.null,closes_at.gt.${now}`)
+    .gt("closes_at", now)
     .maybeSingle();
 
   if (error) {

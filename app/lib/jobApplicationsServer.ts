@@ -14,7 +14,11 @@ import {
   type JobApplicationJobSummary,
   type OwnJobApplication,
 } from "./jobApplications";
-import { isSupportedJobListingNumber } from "./jobPosts";
+import {
+  isJobClosureReason,
+  isJobPostStatus,
+  isSupportedJobListingNumber,
+} from "./jobPosts";
 import {
   safePublicMediaUrl,
   publicStructuredProfileField,
@@ -349,13 +353,34 @@ export function jobApplicationSummaryFromRow(
   const id = cleanText(value.id);
   const listingNumber = cleanText(value.listing_number);
   const status = cleanText(value.status);
+  const closesAt = optionalDatabaseTimestamp(value.closes_at);
+  const closureReason =
+    value.closure_reason === null
+      ? null
+      : isJobClosureReason(value.closure_reason)
+        ? value.closure_reason
+        : undefined;
   if (
     !isUuid(id) ||
     !isSupportedJobListingNumber(listingNumber) ||
-    !["draft", "published", "closed"].includes(status)
+    !isJobPostStatus(status) ||
+    closesAt === undefined ||
+    closureReason === undefined
   ) {
     return null;
   }
+
+  const availability =
+    closureReason === "expired" ||
+    (status === "published" &&
+      closesAt !== null &&
+      Date.parse(closesAt) <= Date.now())
+      ? "expired"
+      : closureReason === "cancelled"
+        ? "cancelled"
+        : status === "published" && closesAt !== null
+          ? "active"
+          : "unavailable";
 
   return {
     id,
@@ -363,7 +388,8 @@ export function jobApplicationSummaryFromRow(
     title: cleanText(value.title),
     position: cleanText(value.position),
     startDate: optionalDate(value.start_date),
-    status: status as JobApplicationJobSummary["status"],
+    status,
+    availability,
   };
 }
 
