@@ -22,7 +22,10 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
-import { formatJobListingNumber } from "./lib/jobPosts";
+import {
+  formatJobCrewMemberCount,
+  formatJobListingNumber,
+} from "./lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
@@ -588,6 +591,12 @@ function JobCard({
         ) : null}
         {minimumYachtExperience ? (
           <span><Award aria-hidden />{minimumYachtExperience}</span>
+        ) : null}
+        {job.crewMemberCount !== null ? (
+          <span>
+            <UsersRound aria-hidden />
+            {formatJobCrewMemberCount(job.crewMemberCount, language)}
+          </span>
         ) : null}
         {job.location ? (
           <span><MapPin aria-hidden />{job.location}</span>

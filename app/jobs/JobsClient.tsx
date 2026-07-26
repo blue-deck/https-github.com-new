@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Ship,
   SlidersHorizontal,
+  UsersRound,
   UserRoundPlus,
   X,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import {
   formatJobListingNumber,
+  formatJobCrewMemberCount,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
 } from "../lib/jobPosts";
@@ -145,6 +147,7 @@ export function JobsClient() {
           : job.minimumYachtExperience,
         job.yachtType || "",
         job.yachtLength === null ? "" : String(job.yachtLength),
+        job.crewMemberCount === null ? "" : String(job.crewMemberCount),
       ]
         .join(" ")
         .toLocaleLowerCase(locale);
@@ -370,6 +373,12 @@ function JobCard({
           ) : null}
           {minimumYachtExperience ? (
             <InfoLine icon={<Award />} value={minimumYachtExperience} />
+          ) : null}
+          {job.crewMemberCount !== null ? (
+            <InfoLine
+              icon={<UsersRound />}
+              value={formatJobCrewMemberCount(job.crewMemberCount, language)}
+            />
           ) : null}
           {job.location ? (
             <InfoLine icon={<MapPin />} value={job.location} />

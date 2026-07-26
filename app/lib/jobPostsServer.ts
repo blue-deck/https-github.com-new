@@ -53,7 +53,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -67,6 +67,7 @@ const createPayloadKeys = new Set([
   "yachtType",
   "yachtLength",
   "yachtLengthUnit",
+  "crewMemberCount",
   "minimumYachtExperience",
   "minimumYachtExperienceYears",
   "employmentType",
@@ -109,6 +110,7 @@ export type JobPostMutation = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
+  crewMemberCount: number | null;
   minimumYachtExperience: JobMinimumYachtExperience | null;
   location: string;
   startDate: string | null;
@@ -276,6 +278,7 @@ export function parseJobPostMutation(
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
+  const crewMemberCount = optionalCrewMemberCount(value.crewMemberCount);
   const minimumYachtExperience =
     value.minimumYachtExperience === undefined
       ? legacyJobMinimumYachtExperience(value.minimumYachtExperienceYears)
@@ -285,6 +288,7 @@ export function parseJobPostMutation(
     !yachtLength.ok ||
     yachtLengthUnit === undefined ||
     (yachtLength.value === null) !== (yachtLengthUnit === null) ||
+    !crewMemberCount.ok ||
     minimumYachtExperience === undefined
   ) {
     return {
@@ -435,6 +439,7 @@ export function parseJobPostMutation(
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
+      crewMemberCount: crewMemberCount.value,
       minimumYachtExperience,
       location,
       startDate: startDate.value,
@@ -923,6 +928,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
+    crewMemberCount: base.crewMemberCount,
     minimumYachtExperience: base.minimumYachtExperience,
     location: base.location,
     startDate: base.startDate,
@@ -1002,6 +1008,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
+    crewMemberCount: base.crewMemberCount,
     minimumYachtExperience: base.minimumYachtExperience,
     location: base.location,
     startDate: base.startDate,
@@ -1055,6 +1062,7 @@ export function jobPostMutationColumns(
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
+    crew_member_count: mutation.crewMemberCount,
     minimum_yacht_experience: mutation.minimumYachtExperience,
     location: mutation.location,
     start_date: mutation.startDate,
@@ -1096,6 +1104,7 @@ function jobPostBaseFromRow(value: unknown) {
   const yachtType = databaseJobYachtType(value.yacht_type);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
+  const crewMemberCount = databaseCrewMemberCount(value.crew_member_count);
   const minimumYachtExperience = databaseJobMinimumYachtExperience(
     value.minimum_yacht_experience,
   );
@@ -1124,6 +1133,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
     (yachtLength === null) !== (yachtLengthUnit === null) ||
+    crewMemberCount === undefined ||
     minimumYachtExperience === undefined ||
     !isJobEmploymentType(value.employment_type) ||
     !isJobCandidateType(value.candidate_type) ||
@@ -1161,6 +1171,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtType,
     yachtLength,
     yachtLengthUnit,
+    crewMemberCount,
     minimumYachtExperience,
     location,
     startDate,
@@ -1297,6 +1308,23 @@ function optionalYachtLength(
   return { ok: true, value: rounded };
 }
 
+function optionalCrewMemberCount(
+  value: unknown,
+): { ok: true; value: number | null } | { ok: false } {
+  if (value === null || value === undefined) {
+    return { ok: true, value: null };
+  }
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > 200
+  ) {
+    return { ok: false };
+  }
+  return { ok: true, value };
+}
+
 function optionalJobMinimumYachtExperience(
   value: unknown,
 ): JobMinimumYachtExperience | null | undefined {
@@ -1361,6 +1389,21 @@ function databaseYachtLength(value: unknown): number | null | undefined {
         : Number.NaN;
   return Number.isFinite(length) && length > 0 && length <= 1_000
     ? length
+    : undefined;
+}
+
+function databaseCrewMemberCount(
+  value: unknown,
+): number | null | undefined {
+  if (value === null) return null;
+  const count =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+  return Number.isSafeInteger(count) && count >= 1 && count <= 200
+    ? count
     : undefined;
 }
 

@@ -48,6 +48,7 @@ export type PublicJob = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
+  crewMemberCount: number | null;
   minimumYachtExperience: JobMinimumYachtExperience | null;
   summary: string;
   description: string;
@@ -78,6 +79,10 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     "yacht_length_unit",
   );
   const yachtLength = readPositiveNullableNumber(yachtLengthValue);
+  const crewMemberCount = readPositiveWholeNumberNullable(
+    readValue(value, "crewMemberCount", "crew_member_count"),
+    200,
+  );
   const candidateTypeValue = readValue(
     value,
     "candidateType",
@@ -140,6 +145,7 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
     yachtLengthUnit: yachtLength !== null ? yachtLengthUnit : null,
+    crewMemberCount,
     minimumYachtExperience,
     summary: readString(value, "summary"),
     description: readString(value, "description"),
@@ -352,6 +358,16 @@ function readNullableNumber(value: unknown) {
 function readPositiveNullableNumber(value: unknown) {
   const number = readNullableNumber(value);
   return number !== null && number > 0 ? number : null;
+}
+
+function readPositiveWholeNumberNullable(value: unknown, maximum: number) {
+  const number = readNullableNumber(value);
+  return number !== null &&
+    Number.isSafeInteger(number) &&
+    number >= 1 &&
+    number <= maximum
+    ? number
+    : null;
 }
 
 function legacyMinimumYachtExperience(

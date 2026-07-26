@@ -103,6 +103,7 @@ export type PublicJobPost = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
+  crewMemberCount: number | null;
   minimumYachtExperience: JobMinimumYachtExperience | null;
   location: string;
   startDate: string | null;
@@ -297,6 +298,14 @@ export function formatJobYachtLength(
     maximumFractionDigits: 2,
   }).format(value);
   return `${formatted} ${unit}`;
+}
+
+export function formatJobCrewMemberCount(
+  value: number,
+  language: "en" | "tr",
+) {
+  if (language === "tr") return `${value} mürettebat`;
+  return `${value} ${value === 1 ? "crew member" : "crew members"}`;
 }
 
 const jobMinimumYachtExperienceLabels: Record<

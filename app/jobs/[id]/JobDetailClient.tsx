@@ -26,6 +26,7 @@ import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
   formatJobMinimumYachtExperience,
+  formatJobCrewMemberCount,
   formatJobListingNumber,
   formatJobRequiredLanguage,
   formatJobSmokerPolicy,
@@ -165,6 +166,10 @@ function JobDetail({
           job.minimumYachtExperience,
           language,
         );
+  const crewMemberCount =
+    job.crewMemberCount === null
+      ? ""
+      : formatJobCrewMemberCount(job.crewMemberCount, language);
   const teamCouple = job.candidateType === "individual" ? c.no : c.yes;
   const smokerPolicy = formatJobSmokerPolicy(job.smokerPolicy, language);
   const visibleTattooPolicy = formatJobVisibleTattooPolicy(
@@ -232,6 +237,13 @@ function JobDetail({
                       icon={<Ruler />}
                       label={c.yachtLength}
                       value={yachtLength}
+                    />
+                  ) : null}
+                  {crewMemberCount ? (
+                    <JobFact
+                      icon={<UsersRound />}
+                      label={c.crewMemberCount}
+                      value={crewMemberCount}
                     />
                   ) : null}
                   {minimumYachtExperience ? (
@@ -508,6 +520,7 @@ const copy = {
     listingNumber: "Listing no.",
     yachtType: "Yacht type",
     yachtLength: "Yacht length",
+    crewMemberCount: "Crew members",
     minimumYachtExperience: "Minimum yacht experience",
     location: "Location",
     employmentType: "Employment",
@@ -544,6 +557,7 @@ const copy = {
     listingNumber: "İlan no:",
     yachtType: "Yat türü",
     yachtLength: "Yat uzunluğu",
+    crewMemberCount: "Mürettebat sayısı",
     minimumYachtExperience: "Minimum yat deneyimi",
     location: "Konum",
     employmentType: "Çalışma biçimi",

@@ -36,6 +36,7 @@ import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
 import {
   formatJobMinimumYachtExperience,
+  formatJobCrewMemberCount,
   formatJobRequiredLanguage,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
@@ -95,6 +96,7 @@ type FormState = {
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
+  crewMemberCount: string;
   minimumYachtExperience: JobMinimumYachtExperience | "";
   location: string;
   startDate: string;
@@ -178,6 +180,10 @@ const copy = {
     yachtLengthAmount: "Yacht length value",
     yachtLengthUnit: "Yacht length unit",
     yachtLengthPlaceholder: "e.g. 27",
+    crewMemberCount: "Crew member count",
+    crewMemberCountPlaceholder: "e.g. 12",
+    crewMemberCountError:
+      "Crew member count must be a whole number between 1 and 200.",
     yachtDetailsRequired:
       "Select a yacht type and enter a valid yacht length before publishing.",
     logistics: "Timing and location",
@@ -307,6 +313,10 @@ const copy = {
     yachtLengthAmount: "Yat uzunluğu değeri",
     yachtLengthUnit: "Yat uzunluğu birimi",
     yachtLengthPlaceholder: "Örn. 27",
+    crewMemberCount: "Mürettebat sayısı",
+    crewMemberCountPlaceholder: "Örn. 12",
+    crewMemberCountError:
+      "Mürettebat sayısı 1 ile 200 arasında tam sayı olmalıdır.",
     yachtDetailsRequired:
       "İlanı yayınlamadan önce yat türünü seçin ve geçerli bir yat uzunluğu girin.",
     logistics: "Tarih ve konum",
@@ -554,8 +564,13 @@ export function JobPostsManager() {
     const salaryMin = inputNumber(form.salaryMin);
     const salaryMax = inputNumber(form.salaryMax);
     const yachtLength = inputYachtLength(form.yachtLength);
+    const crewMemberCount = inputCrewMemberCount(form.crewMemberCount);
     if (!salaryMin.ok || !salaryMax.ok) {
       setNotice({ tone: "error", message: c.saveError });
+      return;
+    }
+    if (!crewMemberCount.ok) {
+      setNotice({ tone: "error", message: c.crewMemberCountError });
       return;
     }
     if (
@@ -599,6 +614,7 @@ export function JobPostsManager() {
       yachtLength: yachtLength.value,
       yachtLengthUnit:
         yachtLength.value === null ? null : form.yachtLengthUnit,
+      crewMemberCount: crewMemberCount.value,
       minimumYachtExperience: form.minimumYachtExperience || null,
       location: form.location.trim(),
       startDate: form.startDate || null,
@@ -1163,6 +1179,24 @@ export function JobPostsManager() {
                     maxLength={7}
                     labelClassName={fieldLabelClass}
                   />
+
+                  <Field label={c.crewMemberCount}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={form.crewMemberCount}
+                      onChange={(event) =>
+                        updateForm(
+                          "crewMemberCount",
+                          event.target.value.replace(/\D/g, "").slice(0, 3),
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                      placeholder={c.crewMemberCountPlaceholder}
+                    />
+                  </Field>
                 </div>
               </FormSection>
 
@@ -1445,6 +1479,7 @@ function emptyForm(yachtId: string): FormState {
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
+    crewMemberCount: "",
     minimumYachtExperience: "",
     location: "",
     startDate: "",
@@ -1474,6 +1509,8 @@ function formFromJob(job: EmployerJobPost): FormState {
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
     yachtLengthUnit: job.yachtLengthUnit || "m",
+    crewMemberCount:
+      job.crewMemberCount === null ? "" : String(job.crewMemberCount),
     minimumYachtExperience: job.minimumYachtExperience || "",
     location: job.location,
     startDate: job.startDate || "",
@@ -1754,6 +1791,10 @@ function JobListButton({
           job.minimumYachtExperience,
           language,
         );
+  const crewMemberCount =
+    job.crewMemberCount === null
+      ? ""
+      : formatJobCrewMemberCount(job.crewMemberCount, language);
   return (
     <button
       type="button"
@@ -1794,6 +1835,14 @@ function JobListButton({
               className="mt-1 truncate text-[11px] font-bold text-slate-600"
             >
               {minimumYachtExperience}
+            </p>
+          ) : null}
+          {crewMemberCount ? (
+            <p
+              data-i18n-ignore
+              className="mt-1 truncate text-[11px] font-bold text-slate-600"
+            >
+              {crewMemberCount}
             </p>
           ) : null}
           {job.candidateType !== "individual" ? (
@@ -1970,6 +2019,17 @@ function inputYachtLength(
     return { ok: false };
   }
   return { ok: true, value: rounded };
+}
+
+function inputCrewMemberCount(
+  value: string,
+): { ok: true; value: number | null } | { ok: false } {
+  if (!value.trim()) return { ok: true, value: null };
+  const count = Number(value);
+  if (!Number.isSafeInteger(count) || count < 1 || count > 200) {
+    return { ok: false };
+  }
+  return { ok: true, value: count };
 }
 
 function formatDate(value: string, language: "en" | "tr") {
