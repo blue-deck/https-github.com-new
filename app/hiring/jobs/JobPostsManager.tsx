@@ -35,6 +35,7 @@ import { useLanguage } from "../../components/LanguageProvider";
 import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
 import {
+  formatJobMinimumYachtExperience,
   formatJobYachtLength,
   formatJobYachtType,
   formatJobListingNumber,
@@ -78,6 +79,7 @@ type FormState = {
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
+  minimumYachtExperienceYears: string;
   location: string;
   startDate: string;
   description: string;
@@ -138,6 +140,13 @@ const copy = {
     titleLabel: "Public title",
     titlePlaceholder: "e.g. Rotational Chief Engineer",
     employmentType: "Employment type",
+    minimumYachtExperience: "Minimum yacht experience",
+    minimumYachtExperiencePlaceholder: "e.g. 3",
+    minimumYachtExperienceHelp:
+      "Enter whole years. Use 0 when previous yacht experience is not required.",
+    minimumYachtExperienceError:
+      "Minimum yacht experience must be a whole number between 0 and 60 years.",
+    years: "years",
     permanent: "Permanent",
     temporary: "Temporary",
     seasonal: "Seasonal",
@@ -257,6 +266,13 @@ const copy = {
     titleLabel: "İlan başlığı",
     titlePlaceholder: "Örn. Rotasyonlu Başmühendis",
     employmentType: "Çalışma biçimi",
+    minimumYachtExperience: "Minimum yat deneyimi",
+    minimumYachtExperiencePlaceholder: "Örn. 3",
+    minimumYachtExperienceHelp:
+      "Tam yıl olarak girin. Önceki yat deneyimi gerekmiyorsa 0 yazın.",
+    minimumYachtExperienceError:
+      "Minimum yat deneyimi 0 ile 60 arasında tam sayı olmalıdır.",
+    years: "yıl",
     permanent: "Sürekli",
     temporary: "Geçici",
     seasonal: "Sezonluk",
@@ -516,8 +532,18 @@ export function JobPostsManager() {
     const salaryMin = inputNumber(form.salaryMin);
     const salaryMax = inputNumber(form.salaryMax);
     const yachtLength = inputYachtLength(form.yachtLength);
+    const minimumYachtExperienceYears = inputWholeYears(
+      form.minimumYachtExperienceYears,
+    );
     if (!salaryMin.ok || !salaryMax.ok) {
       setNotice({ tone: "error", message: c.saveError });
+      return;
+    }
+    if (!minimumYachtExperienceYears.ok) {
+      setNotice({
+        tone: "error",
+        message: c.minimumYachtExperienceError,
+      });
       return;
     }
     if (
@@ -557,6 +583,7 @@ export function JobPostsManager() {
       yachtLength: yachtLength.value,
       yachtLengthUnit:
         yachtLength.value === null ? null : form.yachtLengthUnit,
+      minimumYachtExperienceYears: minimumYachtExperienceYears.value,
       location: form.location.trim(),
       startDate: form.startDate || null,
       summary: "",
@@ -974,6 +1001,36 @@ export function JobPostsManager() {
                       ))}
                     </select>
                   </Field>
+
+                  <Field label={c.minimumYachtExperience}>
+                    <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={form.minimumYachtExperienceYears}
+                        onChange={(event) =>
+                          updateForm(
+                            "minimumYachtExperienceYears",
+                            event.target.value.replace(/\D/g, "").slice(0, 2),
+                          )
+                        }
+                        disabled={saving}
+                        className="min-w-0 flex-1 border-0 bg-white px-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-65"
+                        placeholder={c.minimumYachtExperiencePlaceholder}
+                        aria-describedby="minimum-yacht-experience-help"
+                      />
+                      <span className="flex items-center border-l border-slate-200 bg-slate-50 px-4 text-xs font-black uppercase tracking-[0.08em] text-slate-500">
+                        {c.years}
+                      </span>
+                    </div>
+                    <span
+                      id="minimum-yacht-experience-help"
+                      className="mt-2 block text-xs font-semibold leading-5 text-slate-500"
+                    >
+                      {c.minimumYachtExperienceHelp}
+                    </span>
+                  </Field>
                 </div>
               </FormSection>
 
@@ -1300,6 +1357,7 @@ function emptyForm(yachtId: string): FormState {
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
+    minimumYachtExperienceYears: "",
     location: "",
     startDate: "",
     description: "",
@@ -1324,6 +1382,10 @@ function formFromJob(job: EmployerJobPost): FormState {
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
     yachtLengthUnit: job.yachtLengthUnit || "m",
+    minimumYachtExperienceYears:
+      job.minimumYachtExperienceYears === null
+        ? ""
+        : String(job.minimumYachtExperienceYears),
     location: job.location,
     startDate: job.startDate || "",
     description: job.description,
@@ -1535,6 +1597,13 @@ function JobListButton({
   ]
     .filter(Boolean)
     .join(" · ");
+  const minimumYachtExperience =
+    job.minimumYachtExperienceYears === null
+      ? ""
+      : formatJobMinimumYachtExperience(
+          job.minimumYachtExperienceYears,
+          language,
+        );
 
   return (
     <button
@@ -1568,6 +1637,14 @@ function JobListButton({
               className="mt-1 truncate text-[11px] font-bold text-slate-600"
             >
               {yachtSpecification}
+            </p>
+          ) : null}
+          {minimumYachtExperience ? (
+            <p
+              data-i18n-ignore
+              className="mt-1 truncate text-[11px] font-bold text-slate-600"
+            >
+              {minimumYachtExperience}
             </p>
           ) : null}
           <p
@@ -1736,6 +1813,17 @@ function inputYachtLength(
     return { ok: false };
   }
   return { ok: true, value: rounded };
+}
+
+function inputWholeYears(
+  value: string,
+): { ok: true; value: number | null } | { ok: false } {
+  if (!value.trim()) return { ok: true, value: null };
+  const years = Number(value);
+  if (!Number.isSafeInteger(years) || years < 0 || years > 60) {
+    return { ok: false };
+  }
+  return { ok: true, value: years };
 }
 
 function formatDate(value: string, language: "en" | "tr") {

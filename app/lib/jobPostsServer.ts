@@ -43,7 +43,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,yacht_type,yacht_length,yacht_length_unit,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience_years,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -57,6 +57,7 @@ const createPayloadKeys = new Set([
   "yachtType",
   "yachtLength",
   "yachtLengthUnit",
+  "minimumYachtExperienceYears",
   "employmentType",
   "location",
   "startDate",
@@ -89,6 +90,7 @@ export type JobPostMutation = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
+  minimumYachtExperienceYears: number | null;
   location: string;
   startDate: string | null;
   summary: string;
@@ -246,15 +248,20 @@ export function parseJobPostMutation(
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
+  const minimumYachtExperienceYears = optionalWholeYears(
+    value.minimumYachtExperienceYears,
+  );
   if (
     yachtType === undefined ||
     !yachtLength.ok ||
     yachtLengthUnit === undefined ||
-    (yachtLength.value === null) !== (yachtLengthUnit === null)
+    (yachtLength.value === null) !== (yachtLengthUnit === null) ||
+    !minimumYachtExperienceYears.ok
   ) {
     return {
       ok: false,
-      error: "Select a valid yacht type, length and measurement unit.",
+      error:
+        "Select a valid yacht type, length, measurement unit and minimum experience.",
     };
   }
   if (!isJobPostStatus(value.status)) {
@@ -384,6 +391,7 @@ export function parseJobPostMutation(
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
+      minimumYachtExperienceYears: minimumYachtExperienceYears.value,
       location,
       startDate: startDate.value,
       summary,
@@ -867,6 +875,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
+    minimumYachtExperienceYears: base.minimumYachtExperienceYears,
     location: base.location,
     startDate: base.startDate,
     summary: base.summary,
@@ -941,6 +950,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
+    minimumYachtExperienceYears: base.minimumYachtExperienceYears,
     location: base.location,
     startDate: base.startDate,
     summary: base.summary,
@@ -989,6 +999,7 @@ export function jobPostMutationColumns(
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
+    minimum_yacht_experience_years: mutation.minimumYachtExperienceYears,
     location: mutation.location,
     start_date: mutation.startDate,
     summary: mutation.summary,
@@ -1029,6 +1040,9 @@ function jobPostBaseFromRow(value: unknown) {
   const yachtType = databaseJobYachtType(value.yacht_type);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
+  const minimumYachtExperienceYears = databaseWholeYears(
+    value.minimum_yacht_experience_years,
+  );
   const location = cleanText(value.location);
   const summary = cleanText(value.summary);
   const description = cleanText(value.description);
@@ -1051,6 +1065,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
     (yachtLength === null) !== (yachtLengthUnit === null) ||
+    minimumYachtExperienceYears === undefined ||
     !isJobEmploymentType(value.employment_type) ||
     !location ||
     startDate === undefined ||
@@ -1079,6 +1094,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtType,
     yachtLength,
     yachtLengthUnit,
+    minimumYachtExperienceYears,
     location,
     startDate,
     summary,
@@ -1188,6 +1204,25 @@ function optionalYachtLength(
   return { ok: true, value: rounded };
 }
 
+function optionalWholeYears(
+  value: unknown,
+): { ok: true; value: number | null } | { ok: false } {
+  // Treat an omitted value like an empty optional field so an older browser
+  // session can still save a listing after the server rollout.
+  if (value === null || value === undefined) {
+    return { ok: true, value: null };
+  }
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < 0 ||
+    value > 60
+  ) {
+    return { ok: false };
+  }
+  return { ok: true, value };
+}
+
 function databaseMoney(value: unknown): number | null | undefined {
   if (value === null) return null;
   const amount =
@@ -1223,6 +1258,19 @@ function databaseYachtLength(value: unknown): number | null | undefined {
         : Number.NaN;
   return Number.isFinite(length) && length > 0 && length <= 1_000
     ? length
+    : undefined;
+}
+
+function databaseWholeYears(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  const years =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number(value)
+        : Number.NaN;
+  return Number.isSafeInteger(years) && years >= 0 && years <= 60
+    ? years
     : undefined;
 }
 

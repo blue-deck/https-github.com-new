@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  Award,
   BriefcaseBusiness,
   CalendarDays,
   CircleDollarSign,
@@ -25,6 +26,7 @@ import { formatJobListingNumber } from "../lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
+  minimumYachtExperienceLabel,
   parsePublicJobs,
   type PublicJob,
   yachtLabel,
@@ -110,6 +112,10 @@ export function JobsClient() {
 
     return jobs.filter((job) => {
       const yachtSpecification = yachtSpecificationLabel(job, language);
+      const minimumYachtExperience = minimumYachtExperienceLabel(
+        job,
+        language,
+      );
       const searchableText = [
         job.title,
         job.position,
@@ -119,6 +125,10 @@ export function JobsClient() {
         formatJobListingNumber(job.listingNumber),
         yachtLabel(job),
         yachtSpecification,
+        minimumYachtExperience,
+        job.minimumYachtExperienceYears === null
+          ? ""
+          : String(job.minimumYachtExperienceYears),
         job.yachtType || "",
         job.yachtLength === null ? "" : String(job.yachtLength),
       ]
@@ -302,6 +312,7 @@ function JobCard({
   const salary = formatJobSalary(job.salary, language);
   const yacht = yachtLabel(job);
   const yachtSpecification = yachtSpecificationLabel(job, language);
+  const minimumYachtExperience = minimumYachtExperienceLabel(job, language);
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
@@ -339,6 +350,9 @@ function JobCard({
         <div className="mt-5 space-y-2.5 text-sm text-slate-600">
           {yachtSpecification ? (
             <InfoLine icon={<Ruler />} value={yachtSpecification} />
+          ) : null}
+          {minimumYachtExperience ? (
+            <InfoLine icon={<Award />} value={minimumYachtExperience} />
           ) : null}
           {job.location ? (
             <InfoLine icon={<MapPin />} value={job.location} />

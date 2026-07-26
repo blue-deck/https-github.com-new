@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowLeft,
+  Award,
   BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
@@ -20,6 +21,7 @@ import {
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
+  formatJobMinimumYachtExperience,
   formatJobListingNumber,
   formatJobYachtLength,
   formatJobYachtType,
@@ -149,6 +151,13 @@ function JobDetail({
           language,
         )
       : "";
+  const minimumYachtExperience =
+    job.minimumYachtExperienceYears === null
+      ? ""
+      : formatJobMinimumYachtExperience(
+          job.minimumYachtExperienceYears,
+          language,
+        );
 
   return (
     <>
@@ -207,6 +216,13 @@ function JobDetail({
                       icon={<Ruler />}
                       label={c.yachtLength}
                       value={yachtLength}
+                    />
+                  ) : null}
+                  {minimumYachtExperience ? (
+                    <JobFact
+                      icon={<Award />}
+                      label={c.minimumYachtExperience}
+                      value={minimumYachtExperience}
                     />
                   ) : null}
                   {job.location ? (
@@ -450,6 +466,7 @@ const copy = {
     listingNumber: "Listing no.",
     yachtType: "Yacht type",
     yachtLength: "Yacht length",
+    minimumYachtExperience: "Minimum yacht experience",
     location: "Location",
     employmentType: "Employment",
     start: "Start date",
@@ -479,6 +496,7 @@ const copy = {
     listingNumber: "İlan no:",
     yachtType: "Yat türü",
     yachtLength: "Yat uzunluğu",
+    minimumYachtExperience: "Minimum yat deneyimi",
     location: "Konum",
     employmentType: "Çalışma biçimi",
     start: "Başlangıç tarihi",

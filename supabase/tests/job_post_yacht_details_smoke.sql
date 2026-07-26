@@ -25,6 +25,7 @@ declare
   missing_unit_rejected boolean := false;
   zero_length_rejected boolean := false;
   oversized_length_rejected boolean := false;
+  oversized_experience_rejected boolean := false;
 begin
   insert into auth.users (
     id,
@@ -86,6 +87,7 @@ begin
     employment_type,
     location,
     yacht_type,
+    minimum_yacht_experience_years,
     summary,
     description,
     status
@@ -100,6 +102,7 @@ begin
     'seasonal',
     'Palma, Spain',
     '  CATAMARAN  ',
+    0,
     'An intentionally incomplete private draft for yacht-detail validation.',
     'This private draft verifies that a publisher can save yacht type before entering the paired numeric length and display unit.',
     'draft'
@@ -110,6 +113,7 @@ begin
   if job_row.yacht_type <> 'catamaran'
     or job_row.yacht_length is not null
     or job_row.yacht_length_unit is not null
+    or job_row.minimum_yacht_experience_years <> 0
   then
     raise exception 'A partial draft was not stored in normalized nullable form.';
   end if;
@@ -259,6 +263,30 @@ begin
     raise exception 'An oversized yacht length was stored.';
   end if;
 
+  begin
+    insert into public.job_posts (
+      yacht_id, created_by, updated_by, title, position, department,
+      employment_type, location, yacht_type, yacht_length,
+      yacht_length_unit, minimum_yacht_experience_years,
+      summary, description, status
+    )
+    values (
+      yacht_id, owner_id, owner_id, 'Oversized Experience Draft',
+      'Deckhand', 'Deck', 'seasonal', 'Palma, Spain', 'motor_yacht', 42,
+      'm', 61,
+      'An invalid draft used to verify the yacht-experience upper bound.',
+      'This draft must fail because the requested minimum yacht experience exceeds the supported upper bound.',
+      'draft'
+    );
+  exception
+    when check_violation then
+      oversized_experience_rejected := true;
+  end;
+
+  if not oversized_experience_rejected then
+    raise exception 'An oversized minimum yacht experience was stored.';
+  end if;
+
   insert into public.job_posts (
     yacht_id,
     created_by,
@@ -271,6 +299,7 @@ begin
     yacht_type,
     yacht_length,
     yacht_length_unit,
+    minimum_yacht_experience_years,
     summary,
     description,
     status
@@ -287,6 +316,7 @@ begin
     '  MOTOR_YACHT  ',
     27.50,
     ' FT ',
+    5,
     'A complete public role used to verify normalized yacht specifications.',
     'This complete public description verifies normalized yacht type, numeric length, unit and immutable closure snapshots.',
     'published'
@@ -297,6 +327,7 @@ begin
   if job_row.yacht_type <> 'motor_yacht'
     or job_row.yacht_length <> 27.50
     or job_row.yacht_length_unit <> 'ft'
+    or job_row.minimum_yacht_experience_years <> 5
   then
     raise exception 'A valid published yacht specification was not normalized.';
   end if;
@@ -468,6 +499,7 @@ begin
     or job_row.yacht_type is not null
     or job_row.yacht_length is not null
     or job_row.yacht_length_unit is not null
+    or job_row.minimum_yacht_experience_years is not null
   then
     raise exception 'Legacy automatic closure did not preserve its nullable yacht snapshot.';
   end if;

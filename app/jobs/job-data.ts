@@ -1,4 +1,5 @@
 import {
+  formatJobMinimumYachtExperience,
   formatJobYachtLength,
   formatJobYachtType,
   isJobYachtLengthUnit,
@@ -33,6 +34,7 @@ export type PublicJob = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
+  minimumYachtExperienceYears: number | null;
   summary: string;
   description: string;
   responsibilities: string[];
@@ -62,6 +64,13 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     "yacht_length_unit",
   );
   const yachtLength = readPositiveNullableNumber(yachtLengthValue);
+  const minimumYachtExperienceYears = readWholeYearsNullable(
+    readValue(
+      value,
+      "minimumYachtExperienceYears",
+      "minimum_yacht_experience_years",
+    ),
+  );
   const yachtLengthUnit = isJobYachtLengthUnit(yachtLengthUnitValue)
     ? yachtLengthUnitValue
     : null;
@@ -79,6 +88,7 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
     yachtLengthUnit: yachtLength !== null ? yachtLengthUnit : null,
+    minimumYachtExperienceYears,
     summary: readString(value, "summary"),
     description: readString(value, "description"),
     responsibilities: readStringList(value, "responsibilities"),
@@ -193,6 +203,18 @@ export function yachtSpecificationLabel(
   return [type, length].filter(Boolean).join(" · ");
 }
 
+export function minimumYachtExperienceLabel(
+  job: PublicJob,
+  language: "en" | "tr",
+) {
+  return job.minimumYachtExperienceYears === null
+    ? ""
+    : formatJobMinimumYachtExperience(
+        job.minimumYachtExperienceYears,
+        language,
+      );
+}
+
 function parseSalary(value: unknown): PublicJobSalary | null {
   if (!isRecord(value)) return null;
 
@@ -264,6 +286,16 @@ function readNullableNumber(value: unknown) {
 function readPositiveNullableNumber(value: unknown) {
   const number = readNullableNumber(value);
   return number !== null && number > 0 ? number : null;
+}
+
+function readWholeYearsNullable(value: unknown) {
+  const number = readNullableNumber(value);
+  return number !== null &&
+    Number.isSafeInteger(number) &&
+    number >= 0 &&
+    number <= 60
+    ? number
+    : null;
 }
 
 function isRecord(value: unknown): value is UnknownRecord {

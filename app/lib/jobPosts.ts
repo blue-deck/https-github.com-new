@@ -54,6 +54,7 @@ export type PublicJobPost = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
+  minimumYachtExperienceYears: number | null;
   location: string;
   startDate: string | null;
   summary: string;
@@ -174,6 +175,20 @@ export function formatJobYachtLength(
     maximumFractionDigits: 2,
   }).format(value);
   return `${formatted} ${unit}`;
+}
+
+export function formatJobMinimumYachtExperience(
+  value: number,
+  language: "en" | "tr",
+) {
+  if (value === 0) {
+    return language === "tr"
+      ? "Yat deneyimi şartı yok"
+      : "No minimum yacht experience";
+  }
+
+  if (language === "tr") return `En az ${value} yıl yat deneyimi`;
+  return `Minimum ${value} ${value === 1 ? "year" : "years"} of yacht experience`;
 }
 
 export function isEmployerJobPostExpired(

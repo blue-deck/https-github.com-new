@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
+  Award,
   BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
@@ -25,6 +26,7 @@ import { formatJobListingNumber } from "./lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
+  minimumYachtExperienceLabel,
   parsePublicJobs,
   type PublicJob,
   yachtLabel,
@@ -561,6 +563,7 @@ function JobCard({
 }) {
   const yacht = yachtLabel(job);
   const yachtSpecification = yachtSpecificationLabel(job, language);
+  const minimumYachtExperience = minimumYachtExperienceLabel(job, language);
   const salary = formatJobSalary(job.salary, language);
   const action = getJobListingAction(job.id, viewer, language);
 
@@ -582,6 +585,9 @@ function JobCard({
       <div className={styles.jobMeta}>
         {yachtSpecification ? (
           <span><Ship aria-hidden />{yachtSpecification}</span>
+        ) : null}
+        {minimumYachtExperience ? (
+          <span><Award aria-hidden />{minimumYachtExperience}</span>
         ) : null}
         {job.location ? (
           <span><MapPin aria-hidden />{job.location}</span>
