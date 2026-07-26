@@ -5,6 +5,7 @@ import type { NextRequest } from "next/server";
 import {
   isJobEmploymentType,
   isJobCandidateType,
+  isJobRequiredLanguage,
   isJobSmokerPolicy,
   isJobVisibleTattooPolicy,
   isJobClosureReason,
@@ -18,6 +19,7 @@ import {
   type EmployerJobPost,
   type JobEmploymentType,
   type JobCandidateType,
+  type JobRequiredLanguage,
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
   type JobPostStatus,
@@ -103,7 +105,7 @@ export type JobPostMutation = {
   candidateType: JobCandidateType;
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
-  requiredLanguages: string[];
+  requiredLanguages: JobRequiredLanguage[];
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -339,17 +341,22 @@ export function parseJobPostMutation(
   const responsibilities = textList(value.responsibilities);
   const requirements = textList(value.requirements);
   const benefits = textList(value.benefits);
-  const requiredLanguages = textList(value.requiredLanguages);
+  const requiredLanguages = jobRequiredLanguageList(value.requiredLanguages);
   if (
     !responsibilities.ok ||
     !requirements.ok ||
-    !benefits.ok ||
-    !requiredLanguages.ok
+    !benefits.ok
   ) {
     return {
       ok: false,
       error:
         "Use no more than 20 concise items in each list.",
+    };
+  }
+  if (!requiredLanguages.ok) {
+    return {
+      ok: false,
+      error: "Select required languages from the available options.",
     };
   }
 
@@ -1100,7 +1107,9 @@ function jobPostBaseFromRow(value: unknown) {
   const responsibilities = databaseTextList(value.responsibilities);
   const requirements = databaseTextList(value.requirements);
   const benefits = databaseTextList(value.benefits);
-  const requiredLanguages = databaseTextList(value.required_languages);
+  const requiredLanguages = databaseJobRequiredLanguageList(
+    value.required_languages,
+  );
   const salaryMin = databaseMoney(value.salary_min);
   const salaryMax = databaseMoney(value.salary_max);
   const joinedYacht = joinedRecord(value.yacht);
@@ -1206,6 +1215,19 @@ function textList(
   return { ok: true, value: result };
 }
 
+function jobRequiredLanguageList(
+  value: unknown,
+): { ok: true; value: JobRequiredLanguage[] } | { ok: false } {
+  if (!Array.isArray(value) || value.length > 11) return { ok: false };
+
+  const result: JobRequiredLanguage[] = [];
+  for (const item of value) {
+    if (!isJobRequiredLanguage(item)) return { ok: false };
+    if (!result.includes(item)) result.push(item);
+  }
+  return { ok: true, value: result };
+}
+
 function databaseTextList(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.length > 20) return null;
   const result: string[] = [];
@@ -1213,6 +1235,19 @@ function databaseTextList(value: unknown): string[] | null {
     if (typeof item !== "string") return null;
     const text = item.trim();
     if (text) result.push(text);
+  }
+  return result;
+}
+
+function databaseJobRequiredLanguageList(
+  value: unknown,
+): JobRequiredLanguage[] | null {
+  if (!Array.isArray(value) || value.length > 20) return null;
+  const result: JobRequiredLanguage[] = [];
+  for (const item of value) {
+    if (isJobRequiredLanguage(item) && !result.includes(item)) {
+      result.push(item);
+    }
   }
   return result;
 }

@@ -36,6 +36,7 @@ import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
 import {
   formatJobMinimumYachtExperience,
+  formatJobRequiredLanguage,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
   formatJobYachtLength,
@@ -44,6 +45,7 @@ import {
   isEmployerJobPostExpired,
   jobEmploymentTypes,
   jobMinimumYachtExperiences,
+  jobRequiredLanguages,
   jobSalaryCurrencies,
   jobSalaryPeriods,
   jobSmokerPolicies,
@@ -52,6 +54,7 @@ import {
   type EmployerJobPost,
   type JobCandidateType,
   type JobMinimumYachtExperience,
+  type JobRequiredLanguage,
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
   type JobPostStatus,
@@ -88,7 +91,7 @@ type FormState = {
   candidateType: JobCandidateType;
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
-  requiredLanguages: string;
+  requiredLanguages: JobRequiredLanguage[];
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
@@ -160,8 +163,7 @@ const copy = {
     smoker: "Smoking",
     visibleTattoos: "Visible tattoos",
     requiredLanguages: "Required languages",
-    languageHint: "One language per line",
-    languagePlaceholder: "English\nFrench",
+    languageHint: "Select all languages required for the role",
     minimumYachtExperience: "Minimum yacht experience",
     minimumYachtExperiencePlaceholder: "Select experience",
     permanent: "Permanent",
@@ -290,8 +292,7 @@ const copy = {
     smoker: "Sigara",
     visibleTattoos: "Görünür dövme",
     requiredLanguages: "Gerekli diller",
-    languageHint: "Her satıra bir dil",
-    languagePlaceholder: "İngilizce\nFransızca",
+    languageHint: "Pozisyon için gerekli tüm dilleri seçin",
     minimumYachtExperience: "Minimum yat deneyimi",
     minimumYachtExperiencePlaceholder: "Deneyim seç",
     permanent: "Sürekli",
@@ -593,7 +594,7 @@ export function JobPostsManager() {
       candidateType: form.candidateType,
       smokerPolicy: form.smokerPolicy,
       visibleTattooPolicy: form.visibleTattooPolicy,
-      requiredLanguages: lines(form.requiredLanguages),
+      requiredLanguages: form.requiredLanguages,
       yachtType: form.yachtType || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
@@ -1105,15 +1106,13 @@ export function JobPostsManager() {
                   </Field>
 
                   <div className="lg:col-span-2">
-                    <ListField
+                    <LanguageSelectionField
                       label={c.requiredLanguages}
                       hint={c.languageHint}
                       value={form.requiredLanguages}
-                      placeholder={c.languagePlaceholder}
                       disabled={saving}
-                      onChange={(value) =>
-                        updateForm("requiredLanguages", value)
-                      }
+                      language={language}
+                      onChange={(value) => updateForm("requiredLanguages", value)}
                     />
                   </div>
                 </div>
@@ -1442,7 +1441,7 @@ function emptyForm(yachtId: string): FormState {
     candidateType: "individual",
     smokerPolicy: "no_preference",
     visibleTattooPolicy: "no_preference",
-    requiredLanguages: "",
+    requiredLanguages: [],
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
@@ -1470,7 +1469,7 @@ function formFromJob(job: EmployerJobPost): FormState {
     candidateType: job.candidateType,
     smokerPolicy: job.smokerPolicy,
     visibleTattooPolicy: job.visibleTattooPolicy,
-    requiredLanguages: job.requiredLanguages.join("\n"),
+    requiredLanguages: job.requiredLanguages,
     yachtType: job.yachtType || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
@@ -1528,6 +1527,67 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+function LanguageSelectionField({
+  label,
+  hint,
+  value,
+  disabled,
+  language,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: JobRequiredLanguage[];
+  disabled: boolean;
+  language: "en" | "tr";
+  onChange: (value: JobRequiredLanguage[]) => void;
+}) {
+  return (
+    <fieldset disabled={disabled}>
+      <legend className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
+        {label}
+      </legend>
+      <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
+        {hint}
+      </p>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        {jobRequiredLanguages.map((option) => {
+          const selected = value.includes(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              aria-pressed={selected}
+              onClick={() =>
+                onChange(
+                  jobRequiredLanguages.filter((languageOption) =>
+                    languageOption === option
+                      ? !selected
+                      : value.includes(languageOption),
+                  ),
+                )
+              }
+              className={`bd-focus flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-65 ${
+                selected
+                  ? "border-cyan-500 bg-cyan-50 text-cyan-950 shadow-sm"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50/50"
+              }`}
+            >
+              <CheckCircle2
+                className={`h-4 w-4 shrink-0 ${
+                  selected ? "text-cyan-700" : "text-slate-300"
+                }`}
+                aria-hidden
+              />
+              {formatJobRequiredLanguage(option, language)}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 

@@ -17,6 +17,19 @@ export const jobVisibleTattooPolicies = [
   "not_accepted",
   "accepted",
 ] as const;
+export const jobRequiredLanguages = [
+  "English",
+  "Turkish",
+  "French",
+  "Italian",
+  "Spanish",
+  "German",
+  "Greek",
+  "Portuguese",
+  "Russian",
+  "Ukrainian",
+  "Arabic",
+] as const;
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
 export const jobSalaryCurrencies = ["EUR", "USD", "GBP", "AUD", "NZD"] as const;
 export const jobClosureReasons = ["expired", "cancelled"] as const;
@@ -54,6 +67,7 @@ export type JobCandidateType = (typeof jobCandidateTypes)[number];
 export type JobSmokerPolicy = (typeof jobSmokerPolicies)[number];
 export type JobVisibleTattooPolicy =
   (typeof jobVisibleTattooPolicies)[number];
+export type JobRequiredLanguage = (typeof jobRequiredLanguages)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
@@ -85,7 +99,7 @@ export type PublicJobPost = {
   candidateType: JobCandidateType;
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
-  requiredLanguages: string[];
+  requiredLanguages: JobRequiredLanguage[];
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -164,6 +178,12 @@ export function isJobVisibleTattooPolicy(
   return jobVisibleTattooPolicies.includes(value as JobVisibleTattooPolicy);
 }
 
+export function isJobRequiredLanguage(
+  value: unknown,
+): value is JobRequiredLanguage {
+  return jobRequiredLanguages.includes(value as JobRequiredLanguage);
+}
+
 export function isJobSalaryPeriod(
   value: unknown,
 ): value is JobSalaryPeriod {
@@ -237,6 +257,26 @@ export function formatJobVisibleTattooPolicy(
     no_preference: { en: "No preference", tr: "Tercih yok" },
     not_accepted: { en: "No visible tattoos", tr: "Görünür dövme olmamalı" },
     accepted: { en: "Visible tattoos accepted", tr: "Görünür dövme kabul edilir" },
+  };
+  return labels[value][language];
+}
+
+export function formatJobRequiredLanguage(
+  value: JobRequiredLanguage,
+  language: "en" | "tr",
+) {
+  const labels: Record<JobRequiredLanguage, { en: string; tr: string }> = {
+    English: { en: "English", tr: "İngilizce" },
+    Turkish: { en: "Turkish", tr: "Türkçe" },
+    French: { en: "French", tr: "Fransızca" },
+    Italian: { en: "Italian", tr: "İtalyanca" },
+    Spanish: { en: "Spanish", tr: "İspanyolca" },
+    German: { en: "German", tr: "Almanca" },
+    Greek: { en: "Greek", tr: "Yunanca" },
+    Portuguese: { en: "Portuguese", tr: "Portekizce" },
+    Russian: { en: "Russian", tr: "Rusça" },
+    Ukrainian: { en: "Ukrainian", tr: "Ukraynaca" },
+    Arabic: { en: "Arabic", tr: "Arapça" },
   };
   return labels[value][language];
 }

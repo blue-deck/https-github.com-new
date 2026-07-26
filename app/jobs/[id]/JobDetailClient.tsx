@@ -27,6 +27,7 @@ import { useLanguage } from "../../components/LanguageProvider";
 import {
   formatJobMinimumYachtExperience,
   formatJobListingNumber,
+  formatJobRequiredLanguage,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
   formatJobYachtLength,
@@ -170,7 +171,9 @@ function JobDetail({
     job.visibleTattooPolicy,
     language,
   );
-  const requiredLanguages = job.requiredLanguages.join(", ");
+  const requiredLanguages = job.requiredLanguages
+    .map((item) => formatJobRequiredLanguage(item, language))
+    .join(", ");
 
   return (
     <>

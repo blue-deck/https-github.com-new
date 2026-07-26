@@ -6,6 +6,7 @@ import {
   isJobYachtType,
   isJobCandidateType,
   isJobMinimumYachtExperience,
+  isJobRequiredLanguage,
   isJobSmokerPolicy,
   isJobVisibleTattooPolicy,
   isSupportedJobListingNumber,
@@ -13,6 +14,7 @@ import {
   type JobYachtType,
   type JobCandidateType,
   type JobMinimumYachtExperience,
+  type JobRequiredLanguage,
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
 } from "../lib/jobPosts";
@@ -40,7 +42,7 @@ export type PublicJob = {
   candidateType: JobCandidateType;
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
-  requiredLanguages: string[];
+  requiredLanguages: JobRequiredLanguage[];
   location: string;
   startDate: string;
   yachtType: JobYachtType | null;
@@ -127,7 +129,7 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     visibleTattooPolicy: isJobVisibleTattooPolicy(visibleTattooPolicyValue)
       ? visibleTattooPolicyValue
       : "no_preference",
-    requiredLanguages: readStringList(
+    requiredLanguages: readJobRequiredLanguages(
       value,
       "requiredLanguages",
       "required_languages",
@@ -326,6 +328,16 @@ function readStringList(
     .map((item) => item.trim())
     .filter(Boolean)
     .slice(0, 50);
+}
+
+function readJobRequiredLanguages(
+  record: UnknownRecord,
+  key: string,
+  fallbackKey?: string,
+) {
+  return readStringList(record, key, fallbackKey).filter(
+    isJobRequiredLanguage,
+  );
 }
 
 function readRecord(record: UnknownRecord, key: string): UnknownRecord {
