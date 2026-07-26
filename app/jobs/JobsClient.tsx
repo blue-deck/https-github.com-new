@@ -113,7 +113,6 @@ export function JobsClient() {
       const searchableText = [
         job.title,
         job.position,
-        job.department,
         job.employmentType,
         job.location,
         job.listingNumber,
@@ -311,7 +310,6 @@ function JobCard({
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           {job.employmentType ? <StatusPill>{job.employmentType}</StatusPill> : null}
-          {job.department ? <StatusPill muted>{job.department}</StatusPill> : null}
         </div>
 
         <p
@@ -424,21 +422,11 @@ function InfoLine({ icon, value }: { icon: React.ReactNode; value: string }) {
   );
 }
 
-function StatusPill({
-  children,
-  muted = false,
-}: {
-  children: React.ReactNode;
-  muted?: boolean;
-}) {
+function StatusPill({ children }: { children: React.ReactNode }) {
   return (
     <span
       data-i18n-ignore
-      className={
-        muted
-          ? "rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black text-slate-600"
-          : "rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-black text-cyan-900"
-      }
+      className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-black text-cyan-900"
     >
       {children}
     </span>

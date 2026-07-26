@@ -274,9 +274,6 @@ function JobDetail({
                   </p>
 
                   <div className="mt-6 grid gap-3 border-t border-slate-200 pt-6">
-                    {job.department ? (
-                      <SidebarFact label={c.department} value={job.department} />
-                    ) : null}
                     {job.publishedAt ? (
                       <SidebarFact
                         label={c.published}
@@ -461,7 +458,6 @@ const copy = {
     responsibilities: "Responsibilities",
     requirements: "Requirements",
     benefits: "Benefits",
-    department: "Department",
     published: "Published",
     secureTitle: "Apply securely",
     secureText:
@@ -491,7 +487,6 @@ const copy = {
     responsibilities: "Sorumluluklar",
     requirements: "Gereksinimler",
     benefits: "Yan haklar",
-    department: "Departman",
     published: "Yayınlandı",
     secureTitle: "Güvenle başvurun",
     secureText:
