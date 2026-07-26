@@ -8,7 +8,7 @@ create extension if not exists "pgcrypto";
 create table if not exists public.job_posts (
   id uuid primary key default gen_random_uuid(),
   yacht_id uuid not null
-    references public.yachts(id) on delete cascade,
+    references public.yachts(id) on delete restrict,
   created_by uuid not null
     references auth.users(id) on delete restrict,
   updated_by uuid not null

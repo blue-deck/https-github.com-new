@@ -82,60 +82,75 @@ export default function LogbookPage() {
   }
 
   function printLog(log: any) {
-    const win = window.open("", "_blank");
-    if (!win) return;
-
-    win.document.write(`
+    const printable = (value: unknown, fallback = "") =>
+      escapeHtml(printableText(value) || fallback);
+    const printDocument = `
       <html>
         <head>
+          <meta charset="utf-8">
+          <meta
+            http-equiv="Content-Security-Policy"
+            content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+          >
           <title>Captain Logbook</title>
           <style>
             body { font-family: Arial; padding: 40px; color: #111827; }
             h1 { font-size: 34px; }
             h2 { margin-top: 28px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
-            .box { border: 1px solid #ddd; padding: 16px; margin-top: 12px; border-radius: 10px; }
+            .box {
+              border: 1px solid #ddd;
+              padding: 16px;
+              margin-top: 12px;
+              border-radius: 10px;
+              overflow-wrap: anywhere;
+              white-space: pre-wrap;
+            }
             .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
             .small { color: #6b7280; font-size: 13px; }
           </style>
         </head>
-        <body>
+        <body onload="window.print()">
           <h1>BlueDeck Captain Logbook</h1>
-          <p class="small">Generated: ${new Date().toLocaleString()}</p>
+          <p class="small">Generated: ${printable(new Date().toLocaleString())}</p>
 
-          <h2>${log.title || ""}</h2>
+          <h2>${printable(log.title)}</h2>
 
           <div class="grid">
-            <div class="box"><b>Date</b><br>${log.log_date || ""}</div>
-            <div class="box"><b>Type</b><br>${log.log_type || ""}</div>
-            <div class="box"><b>Location</b><br>${log.location || ""}</div>
-            <div class="box"><b>Weather</b><br>${log.weather || ""}</div>
-            <div class="box"><b>Sea State</b><br>${log.sea_state || ""}</div>
-            <div class="box"><b>Engine Hours</b><br>${log.engine_hours || ""}</div>
+            <div class="box"><b>Date</b><br>${printable(log.log_date)}</div>
+            <div class="box"><b>Type</b><br>${printable(log.log_type)}</div>
+            <div class="box"><b>Location</b><br>${printable(log.location)}</div>
+            <div class="box"><b>Weather</b><br>${printable(log.weather)}</div>
+            <div class="box"><b>Sea State</b><br>${printable(log.sea_state)}</div>
+            <div class="box"><b>Engine Hours</b><br>${printable(log.engine_hours)}</div>
           </div>
 
           <h2>Fuel Notes</h2>
-          <div class="box">${log.fuel_notes || "-"}</div>
+          <div class="box">${printable(log.fuel_notes, "-")}</div>
 
           <h2>Crew Notes</h2>
-          <div class="box">${log.crew_notes || "-"}</div>
+          <div class="box">${printable(log.crew_notes, "-")}</div>
 
           <h2>Guest Notes</h2>
-          <div class="box">${log.guest_notes || "-"}</div>
+          <div class="box">${printable(log.guest_notes, "-")}</div>
 
           <h2>Maintenance Notes</h2>
-          <div class="box">${log.maintenance_notes || "-"}</div>
+          <div class="box">${printable(log.maintenance_notes, "-")}</div>
 
           <h2>Captain Notes</h2>
-          <div class="box">${log.captain_notes || "-"}</div>
+          <div class="box">${printable(log.captain_notes, "-")}</div>
 
           <br><br>
           <p>Captain Signature: ___________________________</p>
         </body>
       </html>
-    `);
+    `;
+    const printBlob = new Blob([printDocument], {
+      type: "text/html;charset=utf-8",
+    });
+    const printUrl = URL.createObjectURL(printBlob);
 
-    win.document.close();
-    win.print();
+    window.open(printUrl, "_blank", "noopener,noreferrer");
+    window.setTimeout(() => URL.revokeObjectURL(printUrl), 60_000);
   }
 
   return (
@@ -253,5 +268,24 @@ export default function LogbookPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function printableText(value: unknown) {
+  if (value === null || value === undefined) return "";
+  return typeof value === "string" ? value : String(value);
+}
+
+function escapeHtml(value: string) {
+  return value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      })[character] || character,
   );
 }

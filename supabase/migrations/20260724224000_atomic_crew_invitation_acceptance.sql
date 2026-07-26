@@ -393,6 +393,16 @@ begin
   from public.yacht_crew_memberships as membership
   where membership.yacht_id = invitation.yacht_id
     and membership.crew_profile_id = resolved_profile_id
+  order by
+    case lower(coalesce(membership.status, ''))
+      when 'active' then 0
+      when 'invited' then 1
+      when 'pending' then 1
+      else 2
+    end,
+    membership.created_at nulls last,
+    membership.id
+  limit 1
   for update;
 
   select membership.id, membership.status
