@@ -6,6 +6,7 @@ export const jobEmploymentTypes = [
   "rotation",
   "daywork",
 ] as const;
+export const jobCandidateTypes = ["individual", "team", "couple"] as const;
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
 export const jobSalaryCurrencies = ["EUR", "USD", "GBP", "AUD", "NZD"] as const;
 export const jobClosureReasons = ["expired", "cancelled"] as const;
@@ -20,11 +21,13 @@ export const jobYachtTypes = [
   "support_vessel",
   "chase_boat",
   "commercial_vessel",
+  "new_build",
 ] as const;
 export const jobYachtLengthUnits = ["m", "ft"] as const;
 
 export type JobPostStatus = (typeof jobPostStatuses)[number];
 export type JobEmploymentType = (typeof jobEmploymentTypes)[number];
+export type JobCandidateType = (typeof jobCandidateTypes)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
@@ -51,6 +54,7 @@ export type PublicJobPost = {
   position: string;
   department: string;
   employmentType: JobEmploymentType;
+  candidateType: JobCandidateType;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -115,6 +119,10 @@ export function isJobEmploymentType(
   return jobEmploymentTypes.includes(value as JobEmploymentType);
 }
 
+export function isJobCandidateType(value: unknown): value is JobCandidateType {
+  return jobCandidateTypes.includes(value as JobCandidateType);
+}
+
 export function isJobSalaryPeriod(
   value: unknown,
 ): value is JobSalaryPeriod {
@@ -157,7 +165,24 @@ const jobYachtTypeLabels: Record<
   support_vessel: { en: "Support vessel", tr: "Destek teknesi" },
   chase_boat: { en: "Chase boat", tr: "Takip botu" },
   commercial_vessel: { en: "Commercial vessel", tr: "Ticari tekne" },
+  new_build: { en: "New build", tr: "Yeni inşa" },
 };
+
+const jobCandidateTypeLabels: Record<
+  JobCandidateType,
+  { en: string; tr: string }
+> = {
+  individual: { en: "Individual", tr: "Bireysel" },
+  team: { en: "Team", tr: "Ekip" },
+  couple: { en: "Couple", tr: "Çift" },
+};
+
+export function formatJobCandidateType(
+  value: JobCandidateType,
+  language: "en" | "tr",
+) {
+  return jobCandidateTypeLabels[value][language];
+}
 
 export function formatJobYachtType(
   value: JobYachtType,

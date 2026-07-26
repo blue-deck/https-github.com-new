@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import {
   isJobEmploymentType,
+  isJobCandidateType,
   isJobClosureReason,
   isSupportedJobListingNumber,
   isJobPostStatus,
@@ -13,6 +14,7 @@ import {
   isJobYachtType,
   type EmployerJobPost,
   type JobEmploymentType,
+  type JobCandidateType,
   type JobPostStatus,
   type JobSalaryCurrency,
   type JobSalaryPeriod,
@@ -43,7 +45,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience_years,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience_years,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -59,6 +61,7 @@ const createPayloadKeys = new Set([
   "yachtLengthUnit",
   "minimumYachtExperienceYears",
   "employmentType",
+  "candidateType",
   "location",
   "startDate",
   "summary",
@@ -87,6 +90,7 @@ export type JobPostMutation = {
   position: string;
   department: string;
   employmentType: JobEmploymentType;
+  candidateType: JobCandidateType;
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -245,6 +249,9 @@ export function parseJobPostMutation(
   if (!isJobEmploymentType(value.employmentType)) {
     return { ok: false, error: "Select a valid employment type." };
   }
+  if (!isJobCandidateType(value.candidateType)) {
+    return { ok: false, error: "Select individual, team or couple." };
+  }
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
@@ -388,6 +395,7 @@ export function parseJobPostMutation(
       position: position.title,
       department: position.department,
       employmentType: value.employmentType,
+      candidateType: value.candidateType,
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
@@ -872,6 +880,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     position: base.position,
     department: base.department,
     employmentType: base.employmentType,
+    candidateType: base.candidateType,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -947,6 +956,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     position: base.position,
     department: base.department,
     employmentType: base.employmentType,
+    candidateType: base.candidateType,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -996,6 +1006,7 @@ export function jobPostMutationColumns(
     position: mutation.position,
     department: mutation.department,
     employment_type: mutation.employmentType,
+    candidate_type: mutation.candidateType,
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
@@ -1067,6 +1078,7 @@ function jobPostBaseFromRow(value: unknown) {
     (yachtLength === null) !== (yachtLengthUnit === null) ||
     minimumYachtExperienceYears === undefined ||
     !isJobEmploymentType(value.employment_type) ||
+    !isJobCandidateType(value.candidate_type) ||
     !location ||
     startDate === undefined ||
     publishedAt === undefined ||
@@ -1091,6 +1103,7 @@ function jobPostBaseFromRow(value: unknown) {
     position,
     department,
     employmentType: value.employment_type,
+    candidateType: value.candidate_type,
     yachtType,
     yachtLength,
     yachtLengthUnit,

@@ -22,7 +22,10 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
-import { formatJobListingNumber } from "../lib/jobPosts";
+import {
+  formatJobCandidateType,
+  formatJobListingNumber,
+} from "../lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
@@ -116,6 +119,7 @@ export function JobsClient() {
         job,
         language,
       );
+      const candidateType = formatJobCandidateType(job.candidateType, language);
       const searchableText = [
         job.title,
         job.position,
@@ -126,6 +130,8 @@ export function JobsClient() {
         yachtLabel(job),
         yachtSpecification,
         minimumYachtExperience,
+        candidateType,
+        job.candidateType,
         job.minimumYachtExperienceYears === null
           ? ""
           : String(job.minimumYachtExperienceYears),
@@ -313,6 +319,7 @@ function JobCard({
   const yacht = yachtLabel(job);
   const yachtSpecification = yachtSpecificationLabel(job, language);
   const minimumYachtExperience = minimumYachtExperienceLabel(job, language);
+  const candidateType = formatJobCandidateType(job.candidateType, language);
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
@@ -321,6 +328,9 @@ function JobCard({
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
           {job.employmentType ? <StatusPill>{job.employmentType}</StatusPill> : null}
+          {job.candidateType !== "individual" ? (
+            <StatusPill>{candidateType}</StatusPill>
+          ) : null}
         </div>
 
         <p

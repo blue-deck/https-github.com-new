@@ -17,10 +17,12 @@ import {
   Ruler,
   ShieldCheck,
   Ship,
+  UsersRound,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
+  formatJobCandidateType,
   formatJobMinimumYachtExperience,
   formatJobListingNumber,
   formatJobYachtLength,
@@ -158,6 +160,7 @@ function JobDetail({
           job.minimumYachtExperienceYears,
           language,
         );
+  const candidateType = formatJobCandidateType(job.candidateType, language);
 
   return (
     <>
@@ -239,6 +242,11 @@ function JobDetail({
                       value={job.employmentType}
                     />
                   ) : null}
+                  <JobFact
+                    icon={<UsersRound />}
+                    label={c.candidateType}
+                    value={candidateType}
+                  />
                   {job.startDate ? (
                     <JobFact
                       icon={<CalendarDays />}
@@ -469,6 +477,7 @@ const copy = {
     minimumYachtExperience: "Minimum yacht experience",
     location: "Location",
     employmentType: "Employment",
+    candidateType: "Hiring format",
     start: "Start date",
     salary: "Salary",
     description: "About the role",
@@ -499,6 +508,7 @@ const copy = {
     minimumYachtExperience: "Minimum yat deneyimi",
     location: "Konum",
     employmentType: "Çalışma biçimi",
+    candidateType: "İşe alım biçimi",
     start: "Başlangıç tarihi",
     salary: "Maaş",
     description: "Pozisyon hakkında",

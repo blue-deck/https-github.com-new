@@ -4,9 +4,11 @@ import {
   formatJobYachtType,
   isJobYachtLengthUnit,
   isJobYachtType,
+  isJobCandidateType,
   isSupportedJobListingNumber,
   type JobYachtLengthUnit,
   type JobYachtType,
+  type JobCandidateType,
 } from "../lib/jobPosts";
 
 export type PublicJobSalary = {
@@ -29,6 +31,7 @@ export type PublicJob = {
   position: string;
   department: string;
   employmentType: string;
+  candidateType: JobCandidateType;
   location: string;
   startDate: string;
   yachtType: JobYachtType | null;
@@ -64,6 +67,11 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     "yacht_length_unit",
   );
   const yachtLength = readPositiveNullableNumber(yachtLengthValue);
+  const candidateTypeValue = readValue(
+    value,
+    "candidateType",
+    "candidate_type",
+  );
   const minimumYachtExperienceYears = readWholeYearsNullable(
     readValue(
       value,
@@ -82,6 +90,9 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     position: readString(value, "position"),
     department: readString(value, "department"),
     employmentType: readString(value, "employmentType", "employment_type"),
+    candidateType: isJobCandidateType(candidateTypeValue)
+      ? candidateTypeValue
+      : "individual",
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,

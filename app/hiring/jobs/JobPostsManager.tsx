@@ -35,16 +35,19 @@ import { useLanguage } from "../../components/LanguageProvider";
 import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
 import {
+  formatJobCandidateType,
   formatJobMinimumYachtExperience,
   formatJobYachtLength,
   formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
+  jobCandidateTypes,
   jobEmploymentTypes,
   jobSalaryCurrencies,
   jobSalaryPeriods,
   jobYachtTypes,
   type EmployerJobPost,
+  type JobCandidateType,
   type JobPostStatus,
   type JobYachtLengthUnit,
   type JobYachtType,
@@ -76,6 +79,7 @@ type FormState = {
   title: string;
   position: string;
   employmentType: (typeof jobEmploymentTypes)[number];
+  candidateType: JobCandidateType;
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
@@ -140,6 +144,10 @@ const copy = {
     titleLabel: "Public title",
     titlePlaceholder: "e.g. Rotational Chief Engineer",
     employmentType: "Employment type",
+    candidateType: "Hiring format",
+    individual: "Individual",
+    team: "Team",
+    couple: "Couple",
     minimumYachtExperience: "Minimum yacht experience",
     minimumYachtExperiencePlaceholder: "e.g. 3",
     minimumYachtExperienceHelp:
@@ -266,6 +274,10 @@ const copy = {
     titleLabel: "İlan başlığı",
     titlePlaceholder: "Örn. Rotasyonlu Başmühendis",
     employmentType: "Çalışma biçimi",
+    candidateType: "İşe alım biçimi",
+    individual: "Bireysel",
+    team: "Ekip",
+    couple: "Çift",
     minimumYachtExperience: "Minimum yat deneyimi",
     minimumYachtExperiencePlaceholder: "Örn. 3",
     minimumYachtExperienceHelp:
@@ -579,6 +591,7 @@ export function JobPostsManager() {
       title: form.title.trim(),
       position: form.position,
       employmentType: form.employmentType,
+      candidateType: form.candidateType,
       yachtType: form.yachtType || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
@@ -1002,6 +1015,26 @@ export function JobPostsManager() {
                     </select>
                   </Field>
 
+                  <Field label={c.candidateType}>
+                    <select
+                      value={form.candidateType}
+                      onChange={(event) =>
+                        updateForm(
+                          "candidateType",
+                          event.target.value as JobCandidateType,
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                    >
+                      {jobCandidateTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {c[type]}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
                   <Field label={c.minimumYachtExperience}>
                     <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15">
                       <input
@@ -1354,6 +1387,7 @@ function emptyForm(yachtId: string): FormState {
     title: "",
     position: "",
     employmentType: "permanent",
+    candidateType: "individual",
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
@@ -1378,6 +1412,7 @@ function formFromJob(job: EmployerJobPost): FormState {
     title: job.title,
     position: job.position,
     employmentType: job.employmentType,
+    candidateType: job.candidateType,
     yachtType: job.yachtType || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
@@ -1604,6 +1639,7 @@ function JobListButton({
           job.minimumYachtExperienceYears,
           language,
         );
+  const candidateType = formatJobCandidateType(job.candidateType, language);
 
   return (
     <button
@@ -1645,6 +1681,14 @@ function JobListButton({
               className="mt-1 truncate text-[11px] font-bold text-slate-600"
             >
               {minimumYachtExperience}
+            </p>
+          ) : null}
+          {job.candidateType !== "individual" ? (
+            <p
+              data-i18n-ignore
+              className="mt-1 truncate text-[11px] font-bold text-slate-600"
+            >
+              {candidateType}
             </p>
           ) : null}
           <p
