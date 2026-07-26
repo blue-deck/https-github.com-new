@@ -8,13 +8,11 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ChevronDown,
-  CircleDollarSign,
   Clock3,
   Eye,
   FilePenLine,
   LoaderCircle,
   LockKeyhole,
-  MapPin,
   Plus,
   RefreshCw,
   Save,
@@ -38,12 +36,9 @@ import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
 import {
   formatJobMinimumYachtExperience,
-  formatJobCrewMemberCount,
   formatJobRequiredLanguage,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
-  formatJobYachtLength,
-  formatJobYachtBuildYear,
   formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
@@ -82,7 +77,6 @@ import {
 } from "../../lib/jobPosts";
 import { positionSelectGroups } from "../../lib/yachtOperations";
 import { supabase } from "../../lib/supabase";
-import { formatCountryWithFlag } from "../../lib/countries";
 
 type WorkspaceResponse = {
   ok?: boolean;
@@ -171,7 +165,7 @@ const copy = {
     closedStatus: "Closed",
     expiredStatus: "Expired",
     cancelledStatus: "Cancelled",
-    identity: "Role details",
+    identity: "Job basics",
     publishingAccount: "Publishing account",
     publishingAccountHelp:
       "This private selector controls publishing authority. Public yacht identity follows the visibility setting below.",
@@ -183,7 +177,7 @@ const copy = {
     teamCouple: "Team / Couple",
     yes: "Yes",
     no: "No",
-    candidatePreferences: "Candidate preferences",
+    candidatePreferences: "Candidate requirements",
     smoker: "Smoking",
     visibleTattoos: "Visible tattoos",
     requiredLanguages: "Required languages",
@@ -227,7 +221,7 @@ const copy = {
     startDate: "Job start date",
     datePlaceholder: "DD/MM/YYYY",
     invalidDate: "Enter a valid date in DD/MM/YYYY format.",
-    narrative: "Role details",
+    narrative: "Description & salary",
     description: "Full description",
     descriptionPlaceholder:
       "Describe the yacht environment, role, schedule and what success looks like.",
@@ -321,7 +315,7 @@ const copy = {
     closedStatus: "Kapalı",
     expiredStatus: "Süresi doldu",
     cancelledStatus: "İptal edildi",
-    identity: "Pozisyon bilgileri",
+    identity: "Temel ilan bilgileri",
     publishingAccount: "Yayınlayan hesap",
     publishingAccountHelp:
       "Bu özel seçim ilan yayınlama yetkisini belirler. Yat kimliğinin görünürlüğünü aşağıdaki ayardan yönetebilirsiniz.",
@@ -333,7 +327,7 @@ const copy = {
     teamCouple: "Team / Couple",
     yes: "Evet",
     no: "Hayır",
-    candidatePreferences: "Aday tercihleri",
+    candidatePreferences: "Aday gereksinimleri",
     smoker: "Sigara",
     visibleTattoos: "Görünür dövme",
     requiredLanguages: "Gerekli diller",
@@ -378,7 +372,7 @@ const copy = {
     startDate: "İşe başlama tarihi",
     datePlaceholder: "GG/AA/YYYY",
     invalidDate: "GG/AA/YYYY biçiminde geçerli bir tarih girin.",
-    narrative: "Pozisyon detayları",
+    narrative: "Açıklama ve maaş",
     description: "Ayrıntılı açıklama",
     descriptionPlaceholder:
       "Yat ortamını, görevi, çalışma düzenini ve beklentileri açıkla.",
@@ -830,47 +824,46 @@ export function JobPostsManager() {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-5 pb-24 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
-      <div className="bd-ocean-content mx-auto w-full max-w-[1440px]">
-        <section className="bd-page-hero relative overflow-hidden rounded-[34px] border border-slate-200 bg-white p-6 sm:p-8 lg:p-10">
-          <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />
-          <div className="flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="flex flex-wrap items-center gap-3">
-                <p className="bd-kicker">{c.eyebrow}</p>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-cyan-800">
-                  <LockKeyhole className="h-3.5 w-3.5" aria-hidden />
-                  {c.privateArea}
-                </span>
-              </div>
-              <h1 className="bd-serif mt-5 text-5xl leading-none text-[#071f3c] sm:text-6xl">
-                {c.title}
-              </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-                {c.intro}
+    <main className="bd-app-page min-h-screen overflow-x-hidden bg-slate-50 px-4 pb-24 pt-6 text-slate-900 sm:px-7 sm:pt-8 lg:px-10">
+      <div className="mx-auto w-full max-w-[1280px]">
+        <header className="flex flex-col gap-5 border-b border-slate-200 pb-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                {c.eyebrow}
               </p>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-800">
+                <LockKeyhole className="h-3 w-3" aria-hidden />
+                {c.privateArea}
+              </span>
             </div>
+            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#071f3c] sm:text-4xl">
+              {c.title}
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              {c.intro}
+            </p>
+          </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-2 sm:flex-row">
               <Link
                 href="/hiring"
-                className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
+                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden />
                 {c.back}
               </Link>
               <Link
                 href="/jobs"
-                className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-bold text-white transition hover:bg-cyan-800"
               >
                 <Eye className="h-4 w-4" aria-hidden />
                 {c.publicBoard}
               </Link>
-            </div>
           </div>
-        </section>
+        </header>
 
-        <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="mt-4 flex flex-wrap gap-2">
           <Metric label={c.total} value={counts.total} tone="navy" />
           <Metric label={c.live} value={counts.published} tone="emerald" />
           <Metric label={c.drafts} value={counts.draft} tone="amber" />
@@ -896,20 +889,20 @@ export function JobPostsManager() {
           </div>
         ) : null}
 
-        <div className="mt-7 grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)] xl:items-start">
-          <aside className="bd-glass-card-strong overflow-hidden rounded-[28px] xl:sticky xl:top-28">
-            <div className="border-b border-slate-200 p-5">
+        <div className="mt-5 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-start">
+          <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white xl:sticky xl:top-24">
+            <div className="border-b border-slate-100 p-4">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="bd-kicker">{c.posts}</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                  <p className="text-sm font-black text-slate-950">{c.posts}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
                     {c.postsIntro}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={startNewPost}
-                  className="bd-focus inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071f3c] text-white transition hover:bg-cyan-800"
+                  className="bd-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071f3c] text-white transition hover:bg-cyan-800"
                   aria-label={c.newPost}
                   title={c.newPost}
                 >
@@ -918,18 +911,18 @@ export function JobPostsManager() {
               </div>
             </div>
 
-            <div className="max-h-[64vh] overflow-y-auto p-3">
+            <div className="max-h-[70vh] overflow-y-auto p-2.5">
               <button
                 type="button"
                 onClick={startNewPost}
-                className={`bd-focus flex w-full items-center gap-3 rounded-2xl border p-4 text-left transition ${
+                className={`bd-focus flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
                   !selectedId
                     ? "border-cyan-300 bg-cyan-50 text-[#071f3c]"
                     : "border-transparent bg-white text-slate-600 hover:border-slate-200"
                 }`}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071f3c] text-cyan-200">
-                  <Plus className="h-5 w-5" aria-hidden />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#071f3c] text-cyan-200">
+                  <Plus className="h-4 w-4" aria-hidden />
                 </span>
                 <span className="font-black">{c.newPost}</span>
               </button>
@@ -966,32 +959,33 @@ export function JobPostsManager() {
             ref={formRef}
             onSubmit={handleSubmit}
             noValidate
-            className="bd-glass-card-strong overflow-hidden rounded-[30px]"
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
           >
-            <div className="bd-brand-rule h-1.5" />
             <fieldset
               disabled={selectedJobTerminal}
               className="m-0 min-w-0 border-0 p-0"
             >
-              <div className="p-6 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="border-b border-slate-200 bg-white px-5 py-5 sm:px-7">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="bd-kicker">
+                  <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-3xl">
                     {selectedJob ? c.editTitle : c.createTitle}
-                  </p>
-                  <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">
-                    {selectedJob?.title || c.newPost}
                   </h2>
+                  {selectedJob ? (
+                    <p data-i18n-ignore className="mt-1.5 text-sm font-bold text-slate-700">
+                      {selectedJob.title}
+                    </p>
+                  ) : null}
                   {selectedJob ? (
                     <p
                       data-i18n-ignore
                       aria-label={`${c.listingNumber} ${formatJobListingNumber(selectedJob.listingNumber)}`}
-                      className="mt-2 font-mono text-[11px] font-black tracking-[0.14em] text-cyan-800"
+                      className="mt-1 font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
                     >
                       {formatJobListingNumber(selectedJob.listingNumber)}
                     </p>
                   ) : null}
-                  <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
                     {c.createIntro}
                   </p>
                 </div>
@@ -1001,11 +995,14 @@ export function JobPostsManager() {
                   c={c}
                 />
               </div>
+              </div>
+
+              <div className="space-y-4 bg-slate-50/70 p-4 sm:p-6">
 
               {yachts.length > 1 ? (
-                <div className="mt-8 rounded-2xl border border-cyan-100 bg-cyan-50/60 p-5">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-800">
                       <LockKeyhole className="h-4 w-4" aria-hidden />
                     </span>
                     <div className="min-w-0 flex-1">
@@ -1143,6 +1140,31 @@ export function JobPostsManager() {
                       ))}
                     </select>
                   </Field>
+
+                  <LocationSearchField
+                    label={c.location}
+                    value={form.location}
+                    onChange={(value) =>
+                      updateForm("location", value.slice(0, 120))
+                    }
+                    placeholder={c.locationPlaceholder}
+                    searchingText={c.locationSearching}
+                    noResultsText={c.locationNoResults}
+                    resultsText={c.locationResults}
+                    disabled={saving}
+                    required
+                    maxLength={120}
+                    labelClassName={fieldLabelClass}
+                  />
+                  <DateTextField
+                    label={c.startDate}
+                    value={form.startDate}
+                    onChange={(value) => updateForm("startDate", value)}
+                    placeholder={c.datePlaceholder}
+                    invalidText={c.invalidDate}
+                    disabled={saving}
+                    labelClassName={fieldLabelClass}
+                  />
                 </div>
               </FormSection>
 
@@ -1192,15 +1214,92 @@ export function JobPostsManager() {
                   </Field>
 
                   <div className="lg:col-span-2">
-                    <LanguageSelectionField
-                      label={c.requiredLanguages}
+                    <JobChoiceField
+                      title={c.requiredLanguages}
                       hint={c.languageHint}
+                      options={jobRequiredLanguages}
                       value={form.requiredLanguages}
+                      maxSelected={jobRequiredLanguages.length}
+                      selectedLabel={c.selected}
+                      maximumText={c.selectAllApplicable}
                       disabled={saving}
-                      language={language}
+                      open={openChoiceGroup === "languages"}
+                      onOpenChange={(open) =>
+                        setOpenChoiceGroup(open ? "languages" : null)
+                      }
+                      formatOption={(option) =>
+                        formatJobRequiredLanguage(option, language)
+                      }
                       onChange={(value) => updateForm("requiredLanguages", value)}
                     />
                   </div>
+                </div>
+
+                <div className="mt-6 divide-y divide-slate-200 border-t border-slate-200 pt-2">
+                  <JobChoiceField
+                    title={c.skills}
+                    hint={c.skillsHint}
+                    options={jobSkillOptions}
+                    value={form.requiredSkills}
+                    maxSelected={maximumJobSkillSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.maximumFive}
+                    disabled={saving}
+                    open={openChoiceGroup === "skills"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "skills" : null)
+                    }
+                    onChange={(value) => updateForm("requiredSkills", value)}
+                  />
+                  <JobChoiceField
+                    title={c.characteristics}
+                    hint={c.characteristicsHint}
+                    options={jobCharacteristicOptions}
+                    value={form.requiredCharacteristics}
+                    maxSelected={maximumJobCharacteristicSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.maximumFive}
+                    disabled={saving}
+                    open={openChoiceGroup === "characteristics"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "characteristics" : null)
+                    }
+                    onChange={(value) =>
+                      updateForm("requiredCharacteristics", value)
+                    }
+                  />
+                  <JobChoiceField
+                    title={c.certificatesDocuments}
+                    hint={c.certificatesDocumentsHint}
+                    options={jobCertificateOptions}
+                    value={form.requiredCertificates}
+                    maxSelected={maximumJobCertificateSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.selectAllApplicable}
+                    disabled={saving}
+                    open={openChoiceGroup === "certificates"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "certificates" : null)
+                    }
+                    onChange={(value) =>
+                      updateForm("requiredCertificates", value)
+                    }
+                  />
+                  <JobChoiceField
+                    title={c.visas}
+                    hint={c.visasHint}
+                    options={jobVisaOptions}
+                    value={form.requiredVisas}
+                    maxSelected={maximumJobVisaSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.maximumFive}
+                    disabled={saving}
+                    open={openChoiceGroup === "visas"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "visas" : null)
+                    }
+                    onChange={(value) => updateForm("requiredVisas", value)}
+                  />
                 </div>
               </FormSection>
 
@@ -1316,36 +1415,6 @@ export function JobPostsManager() {
                 </div>
               </FormSection>
 
-              <FormSection icon={<MapPin />} title={c.logistics}>
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <LocationSearchField
-                    label={c.location}
-                    value={form.location}
-                    onChange={(value) =>
-                      updateForm("location", value.slice(0, 120))
-                    }
-                    placeholder={c.locationPlaceholder}
-                    searchingText={c.locationSearching}
-                    noResultsText={c.locationNoResults}
-                    resultsText={c.locationResults}
-                    disabled={saving}
-                    required
-                    maxLength={120}
-                    labelClassName={fieldLabelClass}
-                  />
-                  <DateTextField
-                    label={c.startDate}
-                    value={form.startDate}
-                    onChange={(value) => updateForm("startDate", value)}
-                    placeholder={c.datePlaceholder}
-                    invalidText={c.invalidDate}
-                    disabled={saving}
-                    labelClassName={fieldLabelClass}
-                  />
-                </div>
-
-              </FormSection>
-
               <FormSection icon={<FilePenLine />} title={c.narrative}>
                 <div className="grid gap-5">
                   <Field label={c.description}>
@@ -1373,164 +1442,90 @@ export function JobPostsManager() {
                     disabled={saving}
                     onChange={(value) => updateForm("benefits", value)}
                   />
-                </div>
-              </FormSection>
 
-              <FormSection
-                icon={<CheckCircle2 />}
-                title={c.skillsCharacteristics}
-              >
-                <div className="divide-y divide-slate-200">
-                  <JobChoiceField
-                    title={c.skills}
-                    hint={c.skillsHint}
-                    options={jobSkillOptions}
-                    value={form.requiredSkills}
-                    maxSelected={maximumJobSkillSelections}
-                    selectedLabel={c.selected}
-                    maximumText={c.maximumFive}
-                    disabled={saving}
-                    open={openChoiceGroup === "skills"}
-                    onOpenChange={(open) =>
-                      setOpenChoiceGroup(open ? "skills" : null)
-                    }
-                    onChange={(value) => updateForm("requiredSkills", value)}
-                  />
-                  <JobChoiceField
-                    title={c.characteristics}
-                    hint={c.characteristicsHint}
-                    options={jobCharacteristicOptions}
-                    value={form.requiredCharacteristics}
-                    maxSelected={maximumJobCharacteristicSelections}
-                    selectedLabel={c.selected}
-                    maximumText={c.maximumFive}
-                    disabled={saving}
-                    open={openChoiceGroup === "characteristics"}
-                    onOpenChange={(open) =>
-                      setOpenChoiceGroup(open ? "characteristics" : null)
-                    }
-                    onChange={(value) =>
-                      updateForm("requiredCharacteristics", value)
-                    }
-                  />
-                </div>
-              </FormSection>
-
-              <FormSection icon={<ShieldCheck />} title={c.requirements}>
-                <div className="divide-y divide-slate-200">
-                  <JobChoiceField
-                    title={c.certificatesDocuments}
-                    hint={c.certificatesDocumentsHint}
-                    options={jobCertificateOptions}
-                    value={form.requiredCertificates}
-                    maxSelected={maximumJobCertificateSelections}
-                    selectedLabel={c.selected}
-                    maximumText={c.selectAllApplicable}
-                    disabled={saving}
-                    open={openChoiceGroup === "certificates"}
-                    onOpenChange={(open) =>
-                      setOpenChoiceGroup(open ? "certificates" : null)
-                    }
-                    onChange={(value) =>
-                      updateForm("requiredCertificates", value)
-                    }
-                  />
-                  <JobChoiceField
-                    title={c.visas}
-                    hint={c.visasHint}
-                    options={jobVisaOptions}
-                    value={form.requiredVisas}
-                    maxSelected={maximumJobVisaSelections}
-                    selectedLabel={c.selected}
-                    maximumText={c.maximumFive}
-                    disabled={saving}
-                    open={openChoiceGroup === "visas"}
-                    onOpenChange={(open) =>
-                      setOpenChoiceGroup(open ? "visas" : null)
-                    }
-                    onChange={(value) => updateForm("requiredVisas", value)}
-                  />
-                </div>
-              </FormSection>
-
-              <div className="mt-7">
-                <SettingsPanel
-                  icon={<CircleDollarSign />}
-                  title={c.salary}
-                >
-                  <Toggle
-                    checked={form.salaryVisible}
-                    onChange={(checked) =>
-                      updateForm("salaryVisible", checked)
-                    }
-                    disabled={saving}
-                    label={c.salaryVisible}
-                    help={c.salaryVisibleHelp}
-                  />
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <fieldset>
-                      <legend className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
-                        {c.salaryAmount}
-                      </legend>
-                      <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.01"
-                        aria-label={c.salaryAmount}
-                        value={form.salaryAmount}
-                        onChange={(event) =>
-                          updateForm("salaryAmount", event.target.value)
-                        }
-                        disabled={saving}
-                        className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
-                      />
-                      <select
-                        aria-label={c.currency}
-                        value={form.salaryCurrency}
-                        onChange={(event) =>
-                          updateForm(
-                            "salaryCurrency",
-                            event.target.value as JobSalaryCurrencyOption,
-                          )
-                        }
-                        disabled={saving}
-                        className="bd-focus min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 disabled:cursor-not-allowed"
-                      >
-                        {jobSalaryCurrencyOptions.map((currency) => (
-                          <option key={currency} value={currency}>
-                            {formatSalaryCurrencyOption(currency)}
-                          </option>
-                        ))}
-                      </select>
+                  <div className="border-t border-slate-200 pt-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-950">
+                          {c.salary}
+                        </h4>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {c.salaryVisibleHelp}
+                        </p>
                       </div>
-                    </fieldset>
-                    <Field label={c.period}>
-                      <select
-                        value={form.salaryPeriod}
-                        onChange={(event) =>
-                          updateForm(
-                            "salaryPeriod",
-                            event.target.value as FormState["salaryPeriod"],
-                          )
+                      <Toggle
+                        checked={form.salaryVisible}
+                        onChange={(checked) =>
+                          updateForm("salaryVisible", checked)
                         }
                         disabled={saving}
-                        className={inputClass}
-                      >
-                        {jobSalaryPeriods.map((period) => (
-                          <option key={period} value={period}>
-                            {c[period]}
-                          </option>
-                        ))}
-                      </select>
-                    </Field>
+                        label={c.salaryVisible}
+                      />
+                    </div>
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                      <fieldset>
+                        <legend className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
+                          {c.salaryAmount}
+                        </legend>
+                        <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0"
+                            step="0.01"
+                            aria-label={c.salaryAmount}
+                            value={form.salaryAmount}
+                            onChange={(event) =>
+                              updateForm("salaryAmount", event.target.value)
+                            }
+                            disabled={saving}
+                            className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+                          />
+                          <select
+                            aria-label={c.currency}
+                            value={form.salaryCurrency}
+                            onChange={(event) =>
+                              updateForm(
+                                "salaryCurrency",
+                                event.target.value as JobSalaryCurrencyOption,
+                              )
+                            }
+                            disabled={saving}
+                            className="bd-focus min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 disabled:cursor-not-allowed"
+                          >
+                            {jobSalaryCurrencyOptions.map((currency) => (
+                              <option key={currency} value={currency}>
+                                {formatSalaryCurrencyOption(currency)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </fieldset>
+                      <Field label={c.period}>
+                        <select
+                          value={form.salaryPeriod}
+                          onChange={(event) =>
+                            updateForm(
+                              "salaryPeriod",
+                              event.target.value as FormState["salaryPeriod"],
+                            )
+                          }
+                          disabled={saving}
+                          className={inputClass}
+                        >
+                          {jobSalaryPeriods.map((period) => (
+                            <option key={period} value={period}>
+                              {c[period]}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
                   </div>
-                </SettingsPanel>
+                </div>
+              </FormSection>
 
-              </div>
-
-              <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-7">
+              <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
                 {selectedJobTerminal ? (
                   <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-700">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm">
@@ -1625,9 +1620,9 @@ export function JobPostsManager() {
 }
 
 const inputClass =
-  "bd-focus mt-2 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 placeholder:text-slate-400 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-65";
+  "bd-focus mt-1.5 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-950 transition placeholder:text-slate-400 hover:border-slate-300 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:opacity-65";
 const fieldLabelClass =
-  "mb-2 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-600";
+  "mb-1.5 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-500";
 
 function emptyForm(yachtId: string): FormState {
   return {
@@ -1724,12 +1719,12 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="mt-8 border-t border-slate-200 pt-7">
-      <div className="mb-5 flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-800 [&>svg]:h-5 [&>svg]:w-5">
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="mb-5 flex items-center gap-2.5">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-cyan-800 [&>svg]:h-4 [&>svg]:w-4">
           {icon}
         </span>
-        <h3 className="text-xl font-black text-slate-950">{title}</h3>
+        <h3 className="text-base font-black text-slate-950 sm:text-lg">{title}</h3>
       </div>
       {children}
     </section>
@@ -1747,7 +1742,7 @@ function Field({
 }) {
   return (
     <label className={`block ${className}`}>
-      <span className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
+      <span className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
         {label}
       </span>
       {children}
@@ -1766,6 +1761,7 @@ function JobChoiceField<Option extends string>({
   disabled,
   open,
   onOpenChange,
+  formatOption,
   onChange,
 }: {
   title: string;
@@ -1778,6 +1774,7 @@ function JobChoiceField<Option extends string>({
   disabled: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  formatOption?: (option: Option) => React.ReactNode;
   onChange: (value: Option[]) => void;
 }) {
   function toggleOption(option: Option) {
@@ -1829,7 +1826,9 @@ function JobChoiceField<Option extends string>({
               onClick={() => toggleOption(item)}
               className="inline-flex min-h-10 items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-[#173f4a] transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-65"
             >
-              <span data-i18n-ignore>{item}</span>
+              <span data-i18n-ignore>
+                {formatOption ? formatOption(item) : item}
+              </span>
               <span aria-hidden className="text-xs leading-none">
                 ×
               </span>
@@ -1848,6 +1847,7 @@ function JobChoiceField<Option extends string>({
                 <button
                   key={option}
                   type="button"
+                  aria-pressed={selected}
                   disabled={disabled || locked}
                   onClick={() => toggleOption(option)}
                   data-i18n-ignore
@@ -1859,7 +1859,7 @@ function JobChoiceField<Option extends string>({
                         : "border-slate-200 bg-white text-slate-700 hover:border-cyan-400"
                   }`}
                 >
-                  {option}
+                  {formatOption ? formatOption(option) : option}
                 </button>
               );
             })}
@@ -1870,67 +1870,6 @@ function JobChoiceField<Option extends string>({
         </div>
       ) : null}
     </div>
-  );
-}
-
-function LanguageSelectionField({
-  label,
-  hint,
-  value,
-  disabled,
-  language,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  value: JobRequiredLanguage[];
-  disabled: boolean;
-  language: "en" | "tr";
-  onChange: (value: JobRequiredLanguage[]) => void;
-}) {
-  return (
-    <fieldset disabled={disabled}>
-      <legend className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
-        {label}
-      </legend>
-      <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">
-        {hint}
-      </p>
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-        {jobRequiredLanguages.map((option) => {
-          const selected = value.includes(option);
-          return (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={selected}
-              onClick={() =>
-                onChange(
-                  jobRequiredLanguages.filter((languageOption) =>
-                    languageOption === option
-                      ? !selected
-                      : value.includes(languageOption),
-                  ),
-                )
-              }
-              className={`bd-focus flex min-h-11 items-center gap-2 rounded-xl border px-3 text-left text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-65 ${
-                selected
-                  ? "border-cyan-500 bg-cyan-50 text-cyan-950 shadow-sm"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50/50"
-              }`}
-            >
-              <CheckCircle2
-                className={`h-4 w-4 shrink-0 ${
-                  selected ? "text-cyan-700" : "text-slate-300"
-                }`}
-                aria-hidden
-              />
-              {formatJobRequiredLanguage(option, language)}
-            </button>
-          );
-        })}
-      </div>
-    </fieldset>
   );
 }
 
@@ -1970,28 +1909,6 @@ function ListField({
   );
 }
 
-function SettingsPanel({
-  icon,
-  title,
-  children,
-}: {
-  icon: React.ReactElement;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 sm:p-6">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm [&>svg]:h-5 [&>svg]:w-5">
-          {icon}
-        </span>
-        <h3 className="text-lg font-black text-slate-950">{title}</h3>
-      </div>
-      <div className="mt-5">{children}</div>
-    </section>
-  );
-}
-
 function Toggle({
   checked,
   disabled,
@@ -2002,7 +1919,7 @@ function Toggle({
   checked: boolean;
   disabled: boolean;
   label: string;
-  help: string;
+  help?: string;
   onChange: (checked: boolean) => void;
 }) {
   return (
@@ -2015,10 +1932,12 @@ function Toggle({
         className="bd-focus mt-1 h-5 w-5 shrink-0 rounded border-slate-300 accent-cyan-700"
       />
       <span>
-        <span className="block text-sm font-black text-slate-950">{label}</span>
-        <span className="mt-1 block text-xs leading-5 text-slate-500">
-          {help}
-        </span>
+        <span className="block text-sm font-bold text-slate-800">{label}</span>
+        {help ? (
+          <span className="mt-1 block text-xs leading-5 text-slate-500">
+            {help}
+          </span>
+        ) : null}
       </span>
     </label>
   );
@@ -2078,42 +1997,12 @@ function JobListButton({
   c: (typeof copy)["en"] | (typeof copy)["tr"];
   onClick: () => void;
 }) {
-  const yachtSpecification = [
-    job.yachtBrand || "",
-    job.yachtFlagCountryCode
-      ? formatCountryWithFlag(job.yachtFlagCountryCode)
-      : "",
-    job.yachtBuildYear === null
-      ? ""
-      : formatJobYachtBuildYear(job.yachtBuildYear, language),
-    job.yachtType ? formatJobYachtType(job.yachtType, language) : "",
-    job.yachtLength !== null && job.yachtLengthUnit
-      ? formatJobYachtLength(
-          job.yachtLength,
-          job.yachtLengthUnit,
-          language,
-        )
-      : "",
-  ]
-    .filter(Boolean)
-    .join(" · ");
-  const minimumYachtExperience =
-    job.minimumYachtExperience === null
-      ? ""
-      : formatJobMinimumYachtExperience(
-          job.minimumYachtExperience,
-          language,
-        );
-  const crewMemberCount =
-    job.crewMemberCount === null
-      ? ""
-      : formatJobCrewMemberCount(job.crewMemberCount, language);
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label={`${c.selectPost}: ${job.title}`}
-      className={`bd-focus w-full rounded-2xl border p-4 text-left transition ${
+      className={`bd-focus w-full rounded-xl border px-3 py-3 text-left transition ${
         selected
           ? "border-cyan-300 bg-cyan-50/80 shadow-sm"
           : "border-transparent bg-white hover:border-slate-200"
@@ -2134,38 +2023,6 @@ function JobListButton({
           >
             {job.yacht.name}
           </p>
-          {yachtSpecification ? (
-            <p
-              data-i18n-ignore
-              className="mt-1 truncate text-[11px] font-bold text-slate-600"
-            >
-              {yachtSpecification}
-            </p>
-          ) : null}
-          {minimumYachtExperience ? (
-            <p
-              data-i18n-ignore
-              className="mt-1 truncate text-[11px] font-bold text-slate-600"
-            >
-              {minimumYachtExperience}
-            </p>
-          ) : null}
-          {crewMemberCount ? (
-            <p
-              data-i18n-ignore
-              className="mt-1 truncate text-[11px] font-bold text-slate-600"
-            >
-              {crewMemberCount}
-            </p>
-          ) : null}
-          {job.candidateType !== "individual" ? (
-            <p
-              data-i18n-ignore
-              className="mt-1 truncate text-[11px] font-bold text-slate-600"
-            >
-              {c.teamCouple}
-            </p>
-          ) : null}
           <p
             data-i18n-ignore
             aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
@@ -2240,11 +2097,11 @@ function Metric({
     slate: "border-slate-200 bg-slate-100 text-slate-700",
   };
   return (
-    <div className={`rounded-2xl border p-5 ${classes[tone]}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.14em] opacity-65">
+    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${classes[tone]}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.1em] opacity-65">
         {label}
       </p>
-      <p className="mt-2 text-3xl font-black">{value}</p>
+      <p className="text-sm font-black">{value}</p>
     </div>
   );
 }
