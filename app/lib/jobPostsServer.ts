@@ -877,7 +877,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     salary: base.salaryVisible ? base.salary : null,
     yacht: base.showYachtName
       ? base.yacht
-      : { name: "Confidential yacht", model: null, flag: null },
+      : { name: "", model: null, flag: null },
     publishedAt: base.publishedAt,
   };
 }

@@ -89,7 +89,6 @@ type FormState = {
   salaryMax: string;
   salaryCurrency: (typeof jobSalaryCurrencies)[number];
   salaryPeriod: (typeof jobSalaryPeriods)[number];
-  showYachtName: boolean;
 };
 
 const copy = {
@@ -187,11 +186,6 @@ const copy = {
     week: "Week",
     month: "Month",
     year: "Year",
-    privacy: "Public yacht identity",
-    publicIdentityPreview: "Public yacht identity",
-    showYachtName: "Show yacht name, model and flag",
-    showYachtNameHelp:
-      "Leave this off to publish the role as “Confidential yacht”.",
     saveDraft: "Save draft",
     publish: "Publish role",
     saveLive: "Save live changes",
@@ -312,11 +306,6 @@ const copy = {
     week: "Hafta",
     month: "Ay",
     year: "Yıl",
-    privacy: "Yat kimliği",
-    publicIdentityPreview: "İlanda görünecek yat adı",
-    showYachtName: "Yat adını, modelini ve bayrağını göster",
-    showYachtNameHelp:
-      "Kapalı bırakırsan ilan “Gizli yat” olarak yayınlanır.",
     saveDraft: "Taslak kaydet",
     publish: "İlanı yayınla",
     saveLive: "Yayındaki değişiklikleri kaydet",
@@ -580,7 +569,7 @@ export function JobPostsManager() {
       salaryMax: salaryMax.value,
       salaryCurrency: form.salaryCurrency,
       salaryPeriod: form.salaryPeriod,
-      showYachtName: form.showYachtName,
+      showYachtName: true,
       status: targetStatus,
     };
 
@@ -1116,7 +1105,7 @@ export function JobPostsManager() {
                 </div>
               </FormSection>
 
-              <div className="mt-7 grid gap-5 lg:grid-cols-2">
+              <div className="mt-7">
                 <SettingsPanel
                   icon={<CircleDollarSign />}
                   title={c.compensation}
@@ -1201,30 +1190,6 @@ export function JobPostsManager() {
                   </div>
                 </SettingsPanel>
 
-                <SettingsPanel icon={<LockKeyhole />} title={c.privacy}>
-                  <Toggle
-                    checked={form.showYachtName}
-                    onChange={(checked) =>
-                      updateForm("showYachtName", checked)
-                    }
-                    disabled={saving}
-                    label={c.showYachtName}
-                    help={c.showYachtNameHelp}
-                  />
-                  <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
-                      {c.publicIdentityPreview}
-                    </p>
-                    <p className="mt-2 font-black text-slate-950">
-                      {form.showYachtName
-                        ? yachts.find((yacht) => yacht.id === form.yachtId)
-                            ?.name || "BlueDeck"
-                        : language === "tr"
-                          ? "Gizli yat"
-                          : "Confidential yacht"}
-                    </p>
-                  </div>
-                </SettingsPanel>
               </div>
 
               <div className="mt-8 flex flex-col gap-3 border-t border-slate-200 pt-7">
@@ -1346,7 +1311,6 @@ function emptyForm(yachtId: string): FormState {
     salaryMax: "",
     salaryCurrency: "EUR",
     salaryPeriod: "month",
-    showYachtName: false,
   };
 }
 
@@ -1371,7 +1335,6 @@ function formFromJob(job: EmployerJobPost): FormState {
     salaryMax: job.salary?.max === null ? "" : String(job.salary?.max ?? ""),
     salaryCurrency: job.salary?.currency || "EUR",
     salaryPeriod: job.salary?.period || "month",
-    showYachtName: job.showYachtName,
   };
 }
 
