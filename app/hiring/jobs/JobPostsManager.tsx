@@ -46,10 +46,11 @@ import {
   formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
+  isJobSalaryCurrencyOption,
   jobEmploymentTypes,
   jobMinimumYachtExperiences,
   jobRequiredLanguages,
-  jobSalaryCurrencies,
+  jobSalaryCurrencyOptions,
   jobSalaryPeriods,
   jobSmokerPolicies,
   jobVisibleTattooPolicies,
@@ -58,6 +59,7 @@ import {
   type JobCandidateType,
   type JobMinimumYachtExperience,
   type JobRequiredLanguage,
+  type JobSalaryCurrencyOption,
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
   type JobPostStatus,
@@ -111,9 +113,8 @@ type FormState = {
   requirements: string;
   benefits: string;
   salaryVisible: boolean;
-  salaryMin: string;
-  salaryMax: string;
-  salaryCurrency: (typeof jobSalaryCurrencies)[number];
+  salaryAmount: string;
+  salaryCurrency: JobSalaryCurrencyOption;
   salaryPeriod: (typeof jobSalaryPeriods)[number];
 };
 
@@ -224,12 +225,11 @@ const copy = {
     requirementsPlaceholder:
       "Valid STCW certificates\nPrevious yacht experience",
     benefitsPlaceholder: "Rotation schedule\nTravel covered",
-    compensation: "Compensation",
+    salary: "Salary",
     salaryVisible: "Show salary publicly",
     salaryVisibleHelp:
       "When disabled, amounts remain private in this employer workspace.",
-    salaryMin: "Minimum",
-    salaryMax: "Maximum",
+    salaryAmount: "Salary",
     currency: "Currency",
     period: "Period",
     day: "Day",
@@ -368,12 +368,11 @@ const copy = {
     requirementsPlaceholder:
       "Geçerli STCW sertifikaları\nÖnceki yat deneyimi",
     benefitsPlaceholder: "Rotasyon programı\nSeyahat masrafları",
-    compensation: "Ücret",
+    salary: "Maaş",
     salaryVisible: "Ücreti herkese açık göster",
     salaryVisibleHelp:
       "Kapalı olduğunda tutarlar yalnız bu özel işveren alanında kalır.",
-    salaryMin: "En az",
-    salaryMax: "En çok",
+    salaryAmount: "Maaş",
     currency: "Para birimi",
     period: "Dönem",
     day: "Gün",
@@ -587,12 +586,11 @@ export function JobPostsManager() {
   async function saveJob(targetStatus: JobPostStatus) {
     if (saving || selectedJobTerminal) return;
 
-    const salaryMin = inputNumber(form.salaryMin);
-    const salaryMax = inputNumber(form.salaryMax);
+    const salaryAmount = inputNumber(form.salaryAmount);
     const yachtLength = inputYachtLength(form.yachtLength);
     const crewMemberCount = inputCrewMemberCount(form.crewMemberCount);
     const yachtBuildYear = inputYachtBuildYear(form.yachtBuildYear);
-    if (!salaryMin.ok || !salaryMax.ok) {
+    if (!salaryAmount.ok) {
       setNotice({ tone: "error", message: c.saveError });
       return;
     }
@@ -658,8 +656,8 @@ export function JobPostsManager() {
       requirements: lines(form.requirements),
       benefits: lines(form.benefits),
       salaryVisible: form.salaryVisible,
-      salaryMin: salaryMin.value,
-      salaryMax: salaryMax.value,
+      salaryMin: salaryAmount.value,
+      salaryMax: salaryAmount.value,
       salaryCurrency: form.salaryCurrency,
       salaryPeriod: form.salaryPeriod,
       showYachtName: true,
@@ -1363,7 +1361,7 @@ export function JobPostsManager() {
               <div className="mt-7">
                 <SettingsPanel
                   icon={<CircleDollarSign />}
-                  title={c.compensation}
+                  title={c.salary}
                 >
                   <Toggle
                     checked={form.salaryVisible}
@@ -1374,55 +1372,45 @@ export function JobPostsManager() {
                     label={c.salaryVisible}
                     help={c.salaryVisibleHelp}
                   />
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    <Field label={c.salaryMin}>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <fieldset>
+                      <legend className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
+                        {c.salaryAmount}
+                      </legend>
+                      <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
                       <input
                         type="number"
                         inputMode="decimal"
                         min="0"
                         step="0.01"
-                        value={form.salaryMin}
+                        aria-label={c.salaryAmount}
+                        value={form.salaryAmount}
                         onChange={(event) =>
-                          updateForm("salaryMin", event.target.value)
+                          updateForm("salaryAmount", event.target.value)
                         }
                         disabled={saving}
-                        className={inputClass}
+                        className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
                       />
-                    </Field>
-                    <Field label={c.salaryMax}>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.01"
-                        value={form.salaryMax}
-                        onChange={(event) =>
-                          updateForm("salaryMax", event.target.value)
-                        }
-                        disabled={saving}
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label={c.currency}>
                       <select
+                        aria-label={c.currency}
                         value={form.salaryCurrency}
                         onChange={(event) =>
                           updateForm(
                             "salaryCurrency",
-                            event.target
-                              .value as FormState["salaryCurrency"],
+                            event.target.value as JobSalaryCurrencyOption,
                           )
                         }
                         disabled={saving}
-                        className={inputClass}
+                        className="bd-focus min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 disabled:cursor-not-allowed"
                       >
-                        {jobSalaryCurrencies.map((currency) => (
+                        {jobSalaryCurrencyOptions.map((currency) => (
                           <option key={currency} value={currency}>
-                            {currency}
+                            {formatSalaryCurrencyOption(currency)}
                           </option>
                         ))}
                       </select>
-                    </Field>
+                      </div>
+                    </fieldset>
                     <Field label={c.period}>
                       <select
                         value={form.salaryPeriod}
@@ -1571,8 +1559,7 @@ function emptyForm(yachtId: string): FormState {
     requirements: "",
     benefits: "",
     salaryVisible: false,
-    salaryMin: "",
-    salaryMax: "",
+    salaryAmount: "",
     salaryCurrency: "EUR",
     salaryPeriod: "month",
   };
@@ -1606,11 +1593,26 @@ function formFromJob(job: EmployerJobPost): FormState {
     requirements: job.requirements.join("\n"),
     benefits: job.benefits.join("\n"),
     salaryVisible: job.salaryVisible,
-    salaryMin: job.salary?.min === null ? "" : String(job.salary?.min ?? ""),
-    salaryMax: job.salary?.max === null ? "" : String(job.salary?.max ?? ""),
-    salaryCurrency: job.salary?.currency || "EUR",
+    salaryAmount:
+      job.salary?.min === null && job.salary?.max === null
+        ? ""
+        : String(job.salary?.min ?? job.salary?.max ?? ""),
+    salaryCurrency: isJobSalaryCurrencyOption(job.salary?.currency)
+      ? job.salary.currency
+      : "EUR",
     salaryPeriod: job.salary?.period || "month",
   };
+}
+
+function formatSalaryCurrencyOption(currency: JobSalaryCurrencyOption) {
+  const labels: Record<JobSalaryCurrencyOption, string> = {
+    EUR: "EUR (€)",
+    USD: "USD ($)",
+    GBP: "GBP (£)",
+    AUD: "AUD (A$)",
+    TRY: "TL (TRY)",
+  };
+  return labels[currency];
 }
 
 function FormSection({

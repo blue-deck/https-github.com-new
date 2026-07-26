@@ -31,7 +31,18 @@ export const jobRequiredLanguages = [
   "Arabic",
 ] as const;
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
-export const jobSalaryCurrencies = ["EUR", "USD", "GBP", "AUD", "NZD"] as const;
+export const jobSalaryCurrencyOptions = [
+  "EUR",
+  "USD",
+  "GBP",
+  "AUD",
+  "TRY",
+] as const;
+// Keep NZD readable for listings created before the five-option salary picker.
+export const jobSalaryCurrencies = [
+  ...jobSalaryCurrencyOptions,
+  "NZD",
+] as const;
 export const jobClosureReasons = ["expired", "cancelled"] as const;
 export const jobYachtTypes = [
   "motor_yacht",
@@ -69,6 +80,8 @@ export type JobVisibleTattooPolicy =
   (typeof jobVisibleTattooPolicies)[number];
 export type JobRequiredLanguage = (typeof jobRequiredLanguages)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
+export type JobSalaryCurrencyOption =
+  (typeof jobSalaryCurrencyOptions)[number];
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
 export type JobYachtType = (typeof jobYachtTypes)[number];
@@ -198,6 +211,12 @@ export function isJobSalaryCurrency(
   value: unknown,
 ): value is JobSalaryCurrency {
   return jobSalaryCurrencies.includes(value as JobSalaryCurrency);
+}
+
+export function isJobSalaryCurrencyOption(
+  value: unknown,
+): value is JobSalaryCurrencyOption {
+  return jobSalaryCurrencyOptions.includes(value as JobSalaryCurrencyOption);
 }
 
 export function isJobClosureReason(

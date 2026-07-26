@@ -404,7 +404,7 @@ export function parseJobPostMutation(
   ) {
     return {
       ok: false,
-      error: "Add a salary amount before making compensation public.",
+      error: "Add a salary amount before making the salary public.",
     };
   }
 
