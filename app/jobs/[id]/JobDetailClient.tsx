@@ -349,8 +349,16 @@ function JobDetail({
                 ) : null}
 
                 <div className="mt-9 grid gap-8 border-t border-slate-200 pt-8 md:grid-cols-2">
-                  <JobList title={c.responsibilities} items={job.responsibilities} />
-                  <JobList title={c.requirements} items={job.requirements} />
+                  <JobTagList title={c.skills} items={job.requiredSkills} />
+                  <JobTagList
+                    title={c.characteristics}
+                    items={job.requiredCharacteristics}
+                  />
+                  <JobList
+                    title={c.certificatesDocuments}
+                    items={job.requiredCertificates}
+                  />
+                  <JobList title={c.visas} items={job.requiredVisas} />
                   <JobList title={c.benefits} items={job.benefits} />
                 </div>
               </div>
@@ -453,6 +461,27 @@ function JobList({ title, items }: { title: string; items: string[] }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function JobTagList({ title, items }: { title: string; items: string[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <section>
+      <SectionLabel>{title}</SectionLabel>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {items.map((item) => (
+          <span
+            data-i18n-ignore
+            key={item}
+            className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-black text-[#173f4a]"
+          >
+            {item}
+          </span>
+        ))}
+      </div>
     </section>
   );
 }
@@ -566,8 +595,10 @@ const copy = {
     start: "Start date",
     salary: "Salary",
     description: "About the role",
-    responsibilities: "Responsibilities",
-    requirements: "Requirements",
+    skills: "Skills",
+    characteristics: "Characteristics",
+    certificatesDocuments: "Certificates & documents",
+    visas: "Required visas",
     benefits: "Benefits",
     published: "Published",
     secureTitle: "Apply securely",
@@ -606,8 +637,10 @@ const copy = {
     start: "Başlangıç tarihi",
     salary: "Maaş",
     description: "Pozisyon hakkında",
-    responsibilities: "Sorumluluklar",
-    requirements: "Gereksinimler",
+    skills: "Beceriler",
+    characteristics: "Karakter özellikleri",
+    certificatesDocuments: "Sertifikalar ve evraklar",
+    visas: "Gerekli vizeler",
     benefits: "Yan haklar",
     published: "Yayınlandı",
     secureTitle: "Güvenle başvurun",

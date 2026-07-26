@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   BriefcaseBusiness,
   CheckCircle2,
+  ChevronDown,
   CircleDollarSign,
   Clock3,
   Eye,
@@ -47,21 +48,33 @@ import {
   formatJobListingNumber,
   isEmployerJobPostExpired,
   isJobSalaryCurrencyOption,
+  jobCertificateOptions,
+  jobCharacteristicOptions,
   jobEmploymentTypes,
   jobMinimumYachtExperiences,
   jobRequiredLanguages,
   jobSalaryCurrencyOptions,
   jobSalaryPeriods,
+  jobSkillOptions,
   jobSmokerPolicies,
   jobVisibleTattooPolicies,
+  jobVisaOptions,
   jobYachtTypes,
+  maximumJobCertificateSelections,
+  maximumJobCharacteristicSelections,
+  maximumJobSkillSelections,
+  maximumJobVisaSelections,
   type EmployerJobPost,
   type JobCandidateType,
+  type JobCertificate,
+  type JobCharacteristic,
   type JobMinimumYachtExperience,
   type JobRequiredLanguage,
   type JobSalaryCurrencyOption,
+  type JobSkill,
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
+  type JobVisa,
   type JobPostStatus,
   type JobYachtLengthUnit,
   type JobYachtType,
@@ -109,8 +122,10 @@ type FormState = {
   location: string;
   startDate: string;
   description: string;
-  responsibilities: string;
-  requirements: string;
+  requiredSkills: JobSkill[];
+  requiredCharacteristics: JobCharacteristic[];
+  requiredCertificates: JobCertificate[];
+  requiredVisas: JobVisa[];
   benefits: string;
   salaryVisible: boolean;
   salaryAmount: string;
@@ -216,14 +231,22 @@ const copy = {
     description: "Full description",
     descriptionPlaceholder:
       "Describe the yacht environment, role, schedule and what success looks like.",
-    responsibilities: "Responsibilities",
+    skillsCharacteristics: "Skills & characteristics",
+    skills: "Skills",
+    skillsHint: "Select up to 5 skills required for the role.",
+    characteristics: "Characteristics",
+    characteristicsHint: "Select up to 5 characteristics for the ideal candidate.",
     requirements: "Requirements",
+    certificatesDocuments: "Certificates & documents",
+    certificatesDocumentsHint:
+      "Select the maritime and yachting documents required for the role.",
+    visas: "Required visas",
+    visasHint: "Select every visa candidates must already hold.",
+    selected: "selected",
+    maximumFive: "Maximum 5 selections.",
+    selectAllApplicable: "Select all that apply.",
     benefits: "Benefits",
     listHint: "One item per line",
-    responsibilitiesPlaceholder:
-      "Lead planned maintenance\nMaintain engine-room records",
-    requirementsPlaceholder:
-      "Valid STCW certificates\nPrevious yacht experience",
     benefitsPlaceholder: "Rotation schedule\nTravel covered",
     salary: "Salary",
     salaryVisible: "Show salary publicly",
@@ -359,14 +382,22 @@ const copy = {
     description: "Ayrıntılı açıklama",
     descriptionPlaceholder:
       "Yat ortamını, görevi, çalışma düzenini ve beklentileri açıkla.",
-    responsibilities: "Sorumluluklar",
-    requirements: "Aranan nitelikler",
+    skillsCharacteristics: "Beceri ve karakter özellikleri",
+    skills: "Beceriler",
+    skillsHint: "Pozisyon için gerekli en fazla 5 beceri seçin.",
+    characteristics: "Karakter özellikleri",
+    characteristicsHint: "İdeal aday için en fazla 5 özellik seçin.",
+    requirements: "Gereksinimler",
+    certificatesDocuments: "Sertifikalar ve evraklar",
+    certificatesDocumentsHint:
+      "Pozisyon için gerekli denizcilik ve yatçılık evraklarını seçin.",
+    visas: "Gerekli vizeler",
+    visasHint: "Adayın sahip olması gereken vizeleri seçin.",
+    selected: "seçili",
+    maximumFive: "En fazla 5 seçim.",
+    selectAllApplicable: "Uygun olanların tümünü seçebilirsiniz.",
     benefits: "Sunulan olanaklar",
     listHint: "Her satıra bir madde",
-    responsibilitiesPlaceholder:
-      "Planlı bakımı yönetmek\nMakine dairesi kayıtlarını tutmak",
-    requirementsPlaceholder:
-      "Geçerli STCW sertifikaları\nÖnceki yat deneyimi",
     benefitsPlaceholder: "Rotasyon programı\nSeyahat masrafları",
     salary: "Maaş",
     salaryVisible: "Ücreti herkese açık göster",
@@ -417,6 +448,7 @@ export function JobPostsManager() {
   const [jobs, setJobs] = useState<EmployerJobPost[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [form, setForm] = useState<FormState>(() => emptyForm(""));
+  const [openChoiceGroup, setOpenChoiceGroup] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [applicationCounts, setApplicationCounts] = useState<
@@ -565,6 +597,7 @@ export function JobPostsManager() {
   function startNewPost() {
     setSelectedId("");
     setForm(emptyForm(yachts[0]?.id || ""));
+    setOpenChoiceGroup(null);
     setNotice(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -572,6 +605,7 @@ export function JobPostsManager() {
   function selectJob(job: EmployerJobPost) {
     setSelectedId(job.id);
     setForm(formFromJob(job));
+    setOpenChoiceGroup(null);
     setNotice(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -652,8 +686,12 @@ export function JobPostsManager() {
       startDate: form.startDate || null,
       summary: "",
       description: form.description.trim(),
-      responsibilities: lines(form.responsibilities),
-      requirements: lines(form.requirements),
+      responsibilities: [],
+      requirements: [],
+      requiredSkills: form.requiredSkills,
+      requiredCharacteristics: form.requiredCharacteristics,
+      requiredCertificates: form.requiredCertificates,
+      requiredVisas: form.requiredVisas,
       benefits: lines(form.benefits),
       salaryVisible: form.salaryVisible,
       salaryMin: salaryAmount.value,
@@ -1327,34 +1365,91 @@ export function JobPostsManager() {
                     />
                   </Field>
 
-                  <div className="grid gap-5 lg:grid-cols-3">
-                    <ListField
-                      label={c.responsibilities}
-                      hint={c.listHint}
-                      value={form.responsibilities}
-                      placeholder={c.responsibilitiesPlaceholder}
-                      disabled={saving}
-                      onChange={(value) =>
-                        updateForm("responsibilities", value)
-                      }
-                    />
-                    <ListField
-                      label={c.requirements}
-                      hint={c.listHint}
-                      value={form.requirements}
-                      placeholder={c.requirementsPlaceholder}
-                      disabled={saving}
-                      onChange={(value) => updateForm("requirements", value)}
-                    />
-                    <ListField
-                      label={c.benefits}
-                      hint={c.listHint}
-                      value={form.benefits}
-                      placeholder={c.benefitsPlaceholder}
-                      disabled={saving}
-                      onChange={(value) => updateForm("benefits", value)}
-                    />
-                  </div>
+                  <ListField
+                    label={c.benefits}
+                    hint={c.listHint}
+                    value={form.benefits}
+                    placeholder={c.benefitsPlaceholder}
+                    disabled={saving}
+                    onChange={(value) => updateForm("benefits", value)}
+                  />
+                </div>
+              </FormSection>
+
+              <FormSection
+                icon={<CheckCircle2 />}
+                title={c.skillsCharacteristics}
+              >
+                <div className="divide-y divide-slate-200">
+                  <JobChoiceField
+                    title={c.skills}
+                    hint={c.skillsHint}
+                    options={jobSkillOptions}
+                    value={form.requiredSkills}
+                    maxSelected={maximumJobSkillSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.maximumFive}
+                    disabled={saving}
+                    open={openChoiceGroup === "skills"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "skills" : null)
+                    }
+                    onChange={(value) => updateForm("requiredSkills", value)}
+                  />
+                  <JobChoiceField
+                    title={c.characteristics}
+                    hint={c.characteristicsHint}
+                    options={jobCharacteristicOptions}
+                    value={form.requiredCharacteristics}
+                    maxSelected={maximumJobCharacteristicSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.maximumFive}
+                    disabled={saving}
+                    open={openChoiceGroup === "characteristics"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "characteristics" : null)
+                    }
+                    onChange={(value) =>
+                      updateForm("requiredCharacteristics", value)
+                    }
+                  />
+                </div>
+              </FormSection>
+
+              <FormSection icon={<ShieldCheck />} title={c.requirements}>
+                <div className="divide-y divide-slate-200">
+                  <JobChoiceField
+                    title={c.certificatesDocuments}
+                    hint={c.certificatesDocumentsHint}
+                    options={jobCertificateOptions}
+                    value={form.requiredCertificates}
+                    maxSelected={maximumJobCertificateSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.selectAllApplicable}
+                    disabled={saving}
+                    open={openChoiceGroup === "certificates"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "certificates" : null)
+                    }
+                    onChange={(value) =>
+                      updateForm("requiredCertificates", value)
+                    }
+                  />
+                  <JobChoiceField
+                    title={c.visas}
+                    hint={c.visasHint}
+                    options={jobVisaOptions}
+                    value={form.requiredVisas}
+                    maxSelected={maximumJobVisaSelections}
+                    selectedLabel={c.selected}
+                    maximumText={c.maximumFive}
+                    disabled={saving}
+                    open={openChoiceGroup === "visas"}
+                    onOpenChange={(open) =>
+                      setOpenChoiceGroup(open ? "visas" : null)
+                    }
+                    onChange={(value) => updateForm("requiredVisas", value)}
+                  />
                 </div>
               </FormSection>
 
@@ -1555,8 +1650,10 @@ function emptyForm(yachtId: string): FormState {
     location: "",
     startDate: "",
     description: "",
-    responsibilities: "",
-    requirements: "",
+    requiredSkills: [],
+    requiredCharacteristics: [],
+    requiredCertificates: [],
+    requiredVisas: [],
     benefits: "",
     salaryVisible: false,
     salaryAmount: "",
@@ -1589,8 +1686,10 @@ function formFromJob(job: EmployerJobPost): FormState {
     location: job.location,
     startDate: job.startDate || "",
     description: job.description,
-    responsibilities: job.responsibilities.join("\n"),
-    requirements: job.requirements.join("\n"),
+    requiredSkills: job.requiredSkills,
+    requiredCharacteristics: job.requiredCharacteristics,
+    requiredCertificates: job.requiredCertificates,
+    requiredVisas: job.requiredVisas,
     benefits: job.benefits.join("\n"),
     salaryVisible: job.salaryVisible,
     salaryAmount:
@@ -1653,6 +1752,124 @@ function Field({
       </span>
       {children}
     </label>
+  );
+}
+
+function JobChoiceField<Option extends string>({
+  title,
+  hint,
+  options,
+  value,
+  maxSelected,
+  selectedLabel,
+  maximumText,
+  disabled,
+  open,
+  onOpenChange,
+  onChange,
+}: {
+  title: string;
+  hint: string;
+  options: readonly Option[];
+  value: Option[];
+  maxSelected: number;
+  selectedLabel: string;
+  maximumText: string;
+  disabled: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChange: (value: Option[]) => void;
+}) {
+  function toggleOption(option: Option) {
+    const selected = value.includes(option);
+    if (!selected && value.length >= maxSelected) return;
+
+    const nextValue = selected
+      ? value.filter((item) => item !== option)
+      : [...value, option];
+    onChange(nextValue);
+    if (!selected && nextValue.length >= maxSelected) onOpenChange(false);
+  }
+
+  return (
+    <div className="py-4 first:pt-0 last:pb-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => onOpenChange(!open)}
+        disabled={disabled}
+        className="bd-focus flex min-h-14 w-full items-center justify-between gap-4 rounded-xl px-3 py-2.5 text-left transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-65"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm font-black text-slate-950">
+            {title}
+          </span>
+          <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">
+            {hint}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-black text-cyan-800">
+            {value.length}/{maxSelected} {selectedLabel}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 text-slate-400 transition ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </span>
+      </button>
+
+      {value.length > 0 ? (
+        <div className="mt-1 flex flex-wrap gap-1.5 px-3 pb-1">
+          {value.map((item) => (
+            <button
+              key={item}
+              type="button"
+              disabled={disabled}
+              onClick={() => toggleOption(item)}
+              className="inline-flex min-h-10 items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-[#173f4a] transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-65"
+            >
+              <span data-i18n-ignore>{item}</span>
+              <span aria-hidden className="text-xs leading-none">
+                ×
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {open ? (
+        <div className="mt-2 max-h-[min(55vh,28rem)] overflow-y-auto overscroll-contain rounded-xl bg-slate-50 p-2.5">
+          <div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 lg:grid-cols-3">
+            {options.map((option) => {
+              const selected = value.includes(option);
+              const locked = !selected && value.length >= maxSelected;
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  disabled={disabled || locked}
+                  onClick={() => toggleOption(option)}
+                  data-i18n-ignore
+                  className={`min-h-11 rounded-lg border px-2.5 py-2 text-left text-xs font-semibold transition sm:text-sm ${
+                    selected
+                      ? "border-cyan-600 bg-cyan-600 text-white"
+                      : locked
+                        ? "cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-cyan-400"
+                  }`}
+                >
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 px-1 text-xs font-semibold text-slate-500">
+            {maximumText}
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

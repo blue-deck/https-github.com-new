@@ -30,6 +30,75 @@ export const jobRequiredLanguages = [
   "Ukrainian",
   "Arabic",
 ] as const;
+export const jobSkillOptions = [
+  "Navigation",
+  "Cruise planning",
+  "COLREG",
+  "Crew management",
+  "Guest service",
+  "Tender driving",
+  "Water sports",
+  "Deck maintenance",
+  "Line handling",
+  "Mooring operations",
+  "Watchkeeping",
+  "Safety management",
+  "Refit and repair",
+  "Engine room checks",
+  "Administration",
+  "Budgeting",
+  "Interior service",
+  "Table service",
+  "Laundry",
+  "Galley support",
+] as const;
+export const jobCharacteristicOptions = [
+  "Calm under pressure",
+  "Reliable",
+  "Safety-focused",
+  "Discreet",
+  "Guest-oriented",
+  "Team player",
+  "Leadership",
+  "Adaptable",
+  "Organized",
+  "Hard-working",
+  "Positive attitude",
+  "Detail-oriented",
+  "Stress-resistant",
+  "Communicative",
+  "Motivated",
+] as const;
+export const jobCertificateOptions = [
+  "Valid Passport",
+  "Seafarer's Book",
+  "STCW Basic Safety Training",
+  "ENG1 Medical Certificate",
+  "Security Awareness",
+  "Designated Security Duties (PDSD)",
+  "RYA Powerboat Level 2",
+  "RYA Yachtmaster Offshore",
+  "RYA Yachtmaster Ocean",
+  "Certificate of Competency (CoC)",
+  "GMDSS GOC",
+  "AEC 1",
+  "AEC 2",
+  "Advanced Fire Fighting",
+  "Medical First Aid",
+  "Food Safety Level 2",
+  "PWC Instructor",
+] as const;
+export const jobVisaOptions = [
+  "Schengen Visa",
+  "US B1/B2 Visa",
+  "US C1/D Visa",
+  "UK Visa",
+  "Australian Maritime Crew Visa (Subclass 988)",
+] as const;
+export const maximumJobSkillSelections = 5;
+export const maximumJobCharacteristicSelections = 5;
+export const maximumJobCertificateSelections = jobCertificateOptions.length;
+export const maximumJobVisaSelections = jobVisaOptions.length;
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
 export const jobSalaryCurrencyOptions = [
   "EUR",
@@ -79,6 +148,10 @@ export type JobSmokerPolicy = (typeof jobSmokerPolicies)[number];
 export type JobVisibleTattooPolicy =
   (typeof jobVisibleTattooPolicies)[number];
 export type JobRequiredLanguage = (typeof jobRequiredLanguages)[number];
+export type JobSkill = (typeof jobSkillOptions)[number];
+export type JobCharacteristic = (typeof jobCharacteristicOptions)[number];
+export type JobCertificate = (typeof jobCertificateOptions)[number];
+export type JobVisa = (typeof jobVisaOptions)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
 export type JobSalaryCurrencyOption =
   (typeof jobSalaryCurrencyOptions)[number];
@@ -113,6 +186,10 @@ export type PublicJobPost = {
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
+  requiredSkills: JobSkill[];
+  requiredCharacteristics: JobCharacteristic[];
+  requiredCertificates: JobCertificate[];
+  requiredVisas: JobVisa[];
   yachtBrand: string | null;
   yachtFlagCountryCode: string | null;
   yachtBuildYear: number | null;
@@ -199,6 +276,24 @@ export function isJobRequiredLanguage(
   value: unknown,
 ): value is JobRequiredLanguage {
   return jobRequiredLanguages.includes(value as JobRequiredLanguage);
+}
+
+export function isJobSkill(value: unknown): value is JobSkill {
+  return jobSkillOptions.includes(value as JobSkill);
+}
+
+export function isJobCharacteristic(
+  value: unknown,
+): value is JobCharacteristic {
+  return jobCharacteristicOptions.includes(value as JobCharacteristic);
+}
+
+export function isJobCertificate(value: unknown): value is JobCertificate {
+  return jobCertificateOptions.includes(value as JobCertificate);
+}
+
+export function isJobVisa(value: unknown): value is JobVisa {
+  return jobVisaOptions.includes(value as JobVisa);
 }
 
 export function isJobSalaryPeriod(

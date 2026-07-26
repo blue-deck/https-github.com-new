@@ -5,8 +5,12 @@ import type { NextRequest } from "next/server";
 import {
   isJobEmploymentType,
   isJobCandidateType,
+  isJobCertificate,
+  isJobCharacteristic,
   isJobRequiredLanguage,
+  isJobSkill,
   isJobSmokerPolicy,
+  isJobVisa,
   isJobVisibleTattooPolicy,
   isJobClosureReason,
   isSupportedJobListingNumber,
@@ -16,11 +20,19 @@ import {
   isJobMinimumYachtExperience,
   isJobYachtLengthUnit,
   isJobYachtType,
+  maximumJobCertificateSelections,
+  maximumJobCharacteristicSelections,
+  maximumJobSkillSelections,
+  maximumJobVisaSelections,
   type EmployerJobPost,
   type JobEmploymentType,
   type JobCandidateType,
+  type JobCertificate,
+  type JobCharacteristic,
   type JobRequiredLanguage,
+  type JobSkill,
   type JobSmokerPolicy,
+  type JobVisa,
   type JobVisibleTattooPolicy,
   type JobPostStatus,
   type JobSalaryCurrency,
@@ -54,7 +66,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_brand,yacht_flag_country_code,yacht_build_year,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,required_skills,required_characteristics,required_certificates,required_visas,yacht_brand,yacht_flag_country_code,yacht_build_year,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -79,6 +91,10 @@ const createPayloadKeys = new Set([
   "smokerPolicy",
   "visibleTattooPolicy",
   "requiredLanguages",
+  "requiredSkills",
+  "requiredCharacteristics",
+  "requiredCertificates",
+  "requiredVisas",
   "location",
   "startDate",
   "summary",
@@ -111,6 +127,10 @@ export type JobPostMutation = {
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
+  requiredSkills: JobSkill[];
+  requiredCharacteristics: JobCharacteristic[];
+  requiredCertificates: JobCertificate[];
+  requiredVisas: JobVisa[];
   yachtBrand: string | null;
   yachtFlagCountryCode: string | null;
   yachtBuildYear: number | null;
@@ -361,6 +381,26 @@ export function parseJobPostMutation(
   const requirements = textList(value.requirements);
   const benefits = textList(value.benefits);
   const requiredLanguages = jobRequiredLanguageList(value.requiredLanguages);
+  const requiredSkills = jobOptionList(
+    value.requiredSkills,
+    maximumJobSkillSelections,
+    isJobSkill,
+  );
+  const requiredCharacteristics = jobOptionList(
+    value.requiredCharacteristics,
+    maximumJobCharacteristicSelections,
+    isJobCharacteristic,
+  );
+  const requiredCertificates = jobOptionList(
+    value.requiredCertificates,
+    maximumJobCertificateSelections,
+    isJobCertificate,
+  );
+  const requiredVisas = jobOptionList(
+    value.requiredVisas,
+    maximumJobVisaSelections,
+    isJobVisa,
+  );
   if (
     !responsibilities.ok ||
     !requirements.ok ||
@@ -376,6 +416,17 @@ export function parseJobPostMutation(
     return {
       ok: false,
       error: "Select required languages from the available options.",
+    };
+  }
+  if (
+    !requiredSkills.ok ||
+    !requiredCharacteristics.ok ||
+    !requiredCertificates.ok ||
+    !requiredVisas.ok
+  ) {
+    return {
+      ok: false,
+      error: "Select skills, characteristics, documents and visas from the available options.",
     };
   }
 
@@ -451,6 +502,10 @@ export function parseJobPostMutation(
       smokerPolicy: value.smokerPolicy,
       visibleTattooPolicy: value.visibleTattooPolicy,
       requiredLanguages: requiredLanguages.value,
+      requiredSkills: requiredSkills.value,
+      requiredCharacteristics: requiredCharacteristics.value,
+      requiredCertificates: requiredCertificates.value,
+      requiredVisas: requiredVisas.value,
       yachtBrand,
       yachtFlagCountryCode,
       yachtBuildYear: yachtBuildYear.value,
@@ -943,6 +998,10 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     smokerPolicy: base.smokerPolicy,
     visibleTattooPolicy: base.visibleTattooPolicy,
     requiredLanguages: base.requiredLanguages,
+    requiredSkills: base.requiredSkills,
+    requiredCharacteristics: base.requiredCharacteristics,
+    requiredCertificates: base.requiredCertificates,
+    requiredVisas: base.requiredVisas,
     yachtBrand: base.yachtBrand,
     yachtFlagCountryCode: base.yachtFlagCountryCode,
     yachtBuildYear: base.yachtBuildYear,
@@ -1026,6 +1085,10 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     smokerPolicy: base.smokerPolicy,
     visibleTattooPolicy: base.visibleTattooPolicy,
     requiredLanguages: base.requiredLanguages,
+    requiredSkills: base.requiredSkills,
+    requiredCharacteristics: base.requiredCharacteristics,
+    requiredCertificates: base.requiredCertificates,
+    requiredVisas: base.requiredVisas,
     yachtBrand: base.yachtBrand,
     yachtFlagCountryCode: base.yachtFlagCountryCode,
     yachtBuildYear: base.yachtBuildYear,
@@ -1083,6 +1146,10 @@ export function jobPostMutationColumns(
     smoker_policy: mutation.smokerPolicy,
     visible_tattoo_policy: mutation.visibleTattooPolicy,
     required_languages: mutation.requiredLanguages,
+    required_skills: mutation.requiredSkills,
+    required_characteristics: mutation.requiredCharacteristics,
+    required_certificates: mutation.requiredCertificates,
+    required_visas: mutation.requiredVisas,
     yacht_brand: mutation.yachtBrand,
     yacht_flag_country_code: mutation.yachtFlagCountryCode,
     yacht_build_year: mutation.yachtBuildYear,
@@ -1151,6 +1218,26 @@ function jobPostBaseFromRow(value: unknown) {
   const requiredLanguages = databaseJobRequiredLanguageList(
     value.required_languages,
   );
+  const requiredSkills = databaseJobOptionList(
+    value.required_skills,
+    maximumJobSkillSelections,
+    isJobSkill,
+  );
+  const requiredCharacteristics = databaseJobOptionList(
+    value.required_characteristics,
+    maximumJobCharacteristicSelections,
+    isJobCharacteristic,
+  );
+  const requiredCertificates = databaseJobOptionList(
+    value.required_certificates,
+    maximumJobCertificateSelections,
+    isJobCertificate,
+  );
+  const requiredVisas = databaseJobOptionList(
+    value.required_visas,
+    maximumJobVisaSelections,
+    isJobVisa,
+  );
   const salaryMin = databaseMoney(value.salary_min);
   const salaryMax = databaseMoney(value.salary_max);
   const joinedYacht = joinedRecord(value.yacht);
@@ -1181,6 +1268,10 @@ function jobPostBaseFromRow(value: unknown) {
     !requirements ||
     !benefits ||
     !requiredLanguages ||
+    !requiredSkills ||
+    !requiredCharacteristics ||
+    !requiredCertificates ||
+    !requiredVisas ||
     typeof value.salary_visible !== "boolean" ||
     salaryMin === undefined ||
     salaryMax === undefined ||
@@ -1203,6 +1294,10 @@ function jobPostBaseFromRow(value: unknown) {
     smokerPolicy: value.smoker_policy,
     visibleTattooPolicy: value.visible_tattoo_policy,
     requiredLanguages,
+    requiredSkills,
+    requiredCharacteristics,
+    requiredCertificates,
+    requiredVisas,
     yachtBrand,
     yachtFlagCountryCode,
     yachtBuildYear,
@@ -1295,6 +1390,26 @@ function jobRequiredLanguageList(
   return { ok: true, value: result };
 }
 
+function jobOptionList<Option extends string>(
+  value: unknown,
+  maximumCount: number,
+  isOption: (item: unknown) => item is Option,
+): { ok: true; value: Option[] } | { ok: false } {
+  // An omitted value remains compatible with a browser tab opened before the
+  // new selectors were deployed.
+  if (value === undefined) return { ok: true, value: [] };
+  if (!Array.isArray(value) || value.length > maximumCount) {
+    return { ok: false };
+  }
+
+  const result: Option[] = [];
+  for (const item of value) {
+    if (!isOption(item)) return { ok: false };
+    if (!result.includes(item)) result.push(item);
+  }
+  return { ok: true, value: result };
+}
+
 function databaseTextList(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.length > 20) return null;
   const result: string[] = [];
@@ -1315,6 +1430,20 @@ function databaseJobRequiredLanguageList(
     if (isJobRequiredLanguage(item) && !result.includes(item)) {
       result.push(item);
     }
+  }
+  return result;
+}
+
+function databaseJobOptionList<Option extends string>(
+  value: unknown,
+  maximumCount: number,
+  isOption: (item: unknown) => item is Option,
+): Option[] | null {
+  if (!Array.isArray(value) || value.length > maximumCount) return null;
+  const result: Option[] = [];
+  for (const item of value) {
+    if (!isOption(item)) return null;
+    if (!result.includes(item)) result.push(item);
   }
   return result;
 }

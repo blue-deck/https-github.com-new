@@ -6,17 +6,29 @@ import {
   isJobYachtLengthUnit,
   isJobYachtType,
   isJobCandidateType,
+  isJobCertificate,
+  isJobCharacteristic,
   isJobMinimumYachtExperience,
   isJobRequiredLanguage,
+  isJobSkill,
   isJobSmokerPolicy,
+  isJobVisa,
   isJobVisibleTattooPolicy,
   isSupportedJobListingNumber,
+  maximumJobCertificateSelections,
+  maximumJobCharacteristicSelections,
+  maximumJobSkillSelections,
+  maximumJobVisaSelections,
   type JobYachtLengthUnit,
   type JobYachtType,
   type JobCandidateType,
+  type JobCertificate,
+  type JobCharacteristic,
   type JobMinimumYachtExperience,
   type JobRequiredLanguage,
+  type JobSkill,
   type JobSmokerPolicy,
+  type JobVisa,
   type JobVisibleTattooPolicy,
 } from "../lib/jobPosts";
 import {
@@ -48,6 +60,10 @@ export type PublicJob = {
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
   requiredLanguages: JobRequiredLanguage[];
+  requiredSkills: JobSkill[];
+  requiredCharacteristics: JobCharacteristic[];
+  requiredCertificates: JobCertificate[];
+  requiredVisas: JobVisa[];
   location: string;
   startDate: string;
   yachtBrand: string | null;
@@ -146,6 +162,30 @@ export function parsePublicJob(value: unknown): PublicJob | null {
       value,
       "requiredLanguages",
       "required_languages",
+    ),
+    requiredSkills: readJobOptions(
+      readValue(value, "requiredSkills", "required_skills"),
+      maximumJobSkillSelections,
+      isJobSkill,
+    ),
+    requiredCharacteristics: readJobOptions(
+      readValue(
+        value,
+        "requiredCharacteristics",
+        "required_characteristics",
+      ),
+      maximumJobCharacteristicSelections,
+      isJobCharacteristic,
+    ),
+    requiredCertificates: readJobOptions(
+      readValue(value, "requiredCertificates", "required_certificates"),
+      maximumJobCertificateSelections,
+      isJobCertificate,
+    ),
+    requiredVisas: readJobOptions(
+      readValue(value, "requiredVisas", "required_visas"),
+      maximumJobVisaSelections,
+      isJobVisa,
     ),
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
@@ -375,6 +415,19 @@ function readJobRequiredLanguages(
   return readStringList(record, key, fallbackKey).filter(
     isJobRequiredLanguage,
   );
+}
+
+function readJobOptions<Option extends string>(
+  value: unknown,
+  maximumCount: number,
+  isOption: (item: unknown) => item is Option,
+) {
+  if (!Array.isArray(value)) return [];
+  const result: Option[] = [];
+  for (const item of value) {
+    if (isOption(item) && !result.includes(item)) result.push(item);
+  }
+  return result.slice(0, maximumCount);
 }
 
 function readRecord(record: UnknownRecord, key: string): UnknownRecord {
