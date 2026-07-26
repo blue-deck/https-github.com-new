@@ -140,9 +140,9 @@ export function JobsClient() {
         smokerPolicy,
         visibleTattooPolicy,
         job.requiredLanguages.join(" "),
-        job.minimumYachtExperienceYears === null
+        job.minimumYachtExperience === null
           ? ""
-          : String(job.minimumYachtExperienceYears),
+          : job.minimumYachtExperience,
         job.yachtType || "",
         job.yachtLength === null ? "" : String(job.yachtLength),
       ]

@@ -158,10 +158,10 @@ function JobDetail({
         )
       : "";
   const minimumYachtExperience =
-    job.minimumYachtExperienceYears === null
+    job.minimumYachtExperience === null
       ? ""
       : formatJobMinimumYachtExperience(
-          job.minimumYachtExperienceYears,
+          job.minimumYachtExperience,
           language,
         );
   const teamCouple = job.candidateType === "individual" ? c.no : c.yes;

@@ -5,12 +5,14 @@ import {
   isJobYachtLengthUnit,
   isJobYachtType,
   isJobCandidateType,
+  isJobMinimumYachtExperience,
   isJobSmokerPolicy,
   isJobVisibleTattooPolicy,
   isSupportedJobListingNumber,
   type JobYachtLengthUnit,
   type JobYachtType,
   type JobCandidateType,
+  type JobMinimumYachtExperience,
   type JobSmokerPolicy,
   type JobVisibleTattooPolicy,
 } from "../lib/jobPosts";
@@ -44,7 +46,7 @@ export type PublicJob = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
-  minimumYachtExperienceYears: number | null;
+  minimumYachtExperience: JobMinimumYachtExperience | null;
   summary: string;
   description: string;
   responsibilities: string[];
@@ -89,13 +91,22 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     "visibleTattooPolicy",
     "visible_tattoo_policy",
   );
-  const minimumYachtExperienceYears = readWholeYearsNullable(
-    readValue(
-      value,
-      "minimumYachtExperienceYears",
-      "minimum_yacht_experience_years",
-    ),
+  const minimumYachtExperienceValue = readValue(
+    value,
+    "minimumYachtExperience",
+    "minimum_yacht_experience",
   );
+  const minimumYachtExperience = isJobMinimumYachtExperience(
+    minimumYachtExperienceValue,
+  )
+    ? minimumYachtExperienceValue
+    : legacyMinimumYachtExperience(
+        readValue(
+          value,
+          "minimumYachtExperienceYears",
+          "minimum_yacht_experience_years",
+        ),
+      );
   const yachtLengthUnit = isJobYachtLengthUnit(yachtLengthUnitValue)
     ? yachtLengthUnitValue
     : null;
@@ -127,7 +138,7 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
     yachtLengthUnit: yachtLength !== null ? yachtLengthUnit : null,
-    minimumYachtExperienceYears,
+    minimumYachtExperience,
     summary: readString(value, "summary"),
     description: readString(value, "description"),
     responsibilities: readStringList(value, "responsibilities"),
@@ -246,10 +257,10 @@ export function minimumYachtExperienceLabel(
   job: PublicJob,
   language: "en" | "tr",
 ) {
-  return job.minimumYachtExperienceYears === null
+  return job.minimumYachtExperience === null
     ? ""
     : formatJobMinimumYachtExperience(
-        job.minimumYachtExperienceYears,
+        job.minimumYachtExperience,
         language,
       );
 }
@@ -331,14 +342,22 @@ function readPositiveNullableNumber(value: unknown) {
   return number !== null && number > 0 ? number : null;
 }
 
-function readWholeYearsNullable(value: unknown) {
+function legacyMinimumYachtExperience(
+  value: unknown,
+): JobMinimumYachtExperience | null {
   const number = readNullableNumber(value);
-  return number !== null &&
-    Number.isSafeInteger(number) &&
-    number >= 0 &&
-    number <= 60
-    ? number
-    : null;
+  if (number === null || !Number.isSafeInteger(number) || number < 0) {
+    return null;
+  }
+  if (number === 0) return "0_6_months";
+  if (number === 1) return "1_year";
+  if (number === 2) return "2_years";
+  if (number === 3) return "3_years";
+  if (number <= 5) return "3_5_years";
+  if (number <= 10) return "5_10_years";
+  if (number < 15) return "10_plus_years";
+  if (number < 20) return "15_plus_years";
+  return "20_plus_years";
 }
 
 function isRecord(value: unknown): value is UnknownRecord {

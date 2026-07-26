@@ -12,6 +12,7 @@ import {
   isJobPostStatus,
   isJobSalaryCurrency,
   isJobSalaryPeriod,
+  isJobMinimumYachtExperience,
   isJobYachtLengthUnit,
   isJobYachtType,
   type EmployerJobPost,
@@ -22,6 +23,7 @@ import {
   type JobPostStatus,
   type JobSalaryCurrency,
   type JobSalaryPeriod,
+  type JobMinimumYachtExperience,
   type JobYachtLengthUnit,
   type JobYachtType,
   type PublicJobPost,
@@ -49,7 +51,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience_years,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -63,6 +65,7 @@ const createPayloadKeys = new Set([
   "yachtType",
   "yachtLength",
   "yachtLengthUnit",
+  "minimumYachtExperience",
   "minimumYachtExperienceYears",
   "employmentType",
   "candidateType",
@@ -104,7 +107,7 @@ export type JobPostMutation = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
-  minimumYachtExperienceYears: number | null;
+  minimumYachtExperience: JobMinimumYachtExperience | null;
   location: string;
   startDate: string | null;
   summary: string;
@@ -271,15 +274,16 @@ export function parseJobPostMutation(
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
-  const minimumYachtExperienceYears = optionalWholeYears(
-    value.minimumYachtExperienceYears,
-  );
+  const minimumYachtExperience =
+    value.minimumYachtExperience === undefined
+      ? legacyJobMinimumYachtExperience(value.minimumYachtExperienceYears)
+      : optionalJobMinimumYachtExperience(value.minimumYachtExperience);
   if (
     yachtType === undefined ||
     !yachtLength.ok ||
     yachtLengthUnit === undefined ||
     (yachtLength.value === null) !== (yachtLengthUnit === null) ||
-    !minimumYachtExperienceYears.ok
+    minimumYachtExperience === undefined
   ) {
     return {
       ok: false,
@@ -424,7 +428,7 @@ export function parseJobPostMutation(
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
-      minimumYachtExperienceYears: minimumYachtExperienceYears.value,
+      minimumYachtExperience,
       location,
       startDate: startDate.value,
       summary,
@@ -912,7 +916,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
-    minimumYachtExperienceYears: base.minimumYachtExperienceYears,
+    minimumYachtExperience: base.minimumYachtExperience,
     location: base.location,
     startDate: base.startDate,
     summary: base.summary,
@@ -991,7 +995,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
-    minimumYachtExperienceYears: base.minimumYachtExperienceYears,
+    minimumYachtExperience: base.minimumYachtExperience,
     location: base.location,
     startDate: base.startDate,
     summary: base.summary,
@@ -1044,7 +1048,7 @@ export function jobPostMutationColumns(
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
-    minimum_yacht_experience_years: mutation.minimumYachtExperienceYears,
+    minimum_yacht_experience: mutation.minimumYachtExperience,
     location: mutation.location,
     start_date: mutation.startDate,
     summary: mutation.summary,
@@ -1085,8 +1089,8 @@ function jobPostBaseFromRow(value: unknown) {
   const yachtType = databaseJobYachtType(value.yacht_type);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
-  const minimumYachtExperienceYears = databaseWholeYears(
-    value.minimum_yacht_experience_years,
+  const minimumYachtExperience = databaseJobMinimumYachtExperience(
+    value.minimum_yacht_experience,
   );
   const location = cleanText(value.location);
   const summary = cleanText(value.summary);
@@ -1111,7 +1115,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
     (yachtLength === null) !== (yachtLengthUnit === null) ||
-    minimumYachtExperienceYears === undefined ||
+    minimumYachtExperience === undefined ||
     !isJobEmploymentType(value.employment_type) ||
     !isJobCandidateType(value.candidate_type) ||
     !isJobSmokerPolicy(value.smoker_policy) ||
@@ -1148,7 +1152,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtType,
     yachtLength,
     yachtLengthUnit,
-    minimumYachtExperienceYears,
+    minimumYachtExperience,
     location,
     startDate,
     summary,
@@ -1258,23 +1262,33 @@ function optionalYachtLength(
   return { ok: true, value: rounded };
 }
 
-function optionalWholeYears(
+function optionalJobMinimumYachtExperience(
   value: unknown,
-): { ok: true; value: number | null } | { ok: false } {
+): JobMinimumYachtExperience | null | undefined {
   // Treat an omitted value like an empty optional field so an older browser
   // session can still save a listing after the server rollout.
   if (value === null || value === undefined) {
-    return { ok: true, value: null };
+    return null;
   }
-  if (
-    typeof value !== "number" ||
-    !Number.isSafeInteger(value) ||
-    value < 0 ||
-    value > 60
-  ) {
-    return { ok: false };
+  return isJobMinimumYachtExperience(value) ? value : undefined;
+}
+
+function legacyJobMinimumYachtExperience(
+  value: unknown,
+): JobMinimumYachtExperience | null | undefined {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    return undefined;
   }
-  return { ok: true, value };
+  if (value === 0) return "0_6_months";
+  if (value === 1) return "1_year";
+  if (value === 2) return "2_years";
+  if (value === 3) return "3_years";
+  if (value <= 5) return "3_5_years";
+  if (value <= 10) return "5_10_years";
+  if (value < 15) return "10_plus_years";
+  if (value < 20) return "15_plus_years";
+  return "20_plus_years";
 }
 
 function databaseMoney(value: unknown): number | null | undefined {
@@ -1315,17 +1329,11 @@ function databaseYachtLength(value: unknown): number | null | undefined {
     : undefined;
 }
 
-function databaseWholeYears(value: unknown): number | null | undefined {
+function databaseJobMinimumYachtExperience(
+  value: unknown,
+): JobMinimumYachtExperience | null | undefined {
   if (value === null) return null;
-  const years =
-    typeof value === "number"
-      ? value
-      : typeof value === "string"
-        ? Number(value)
-        : Number.NaN;
-  return Number.isSafeInteger(years) && years >= 0 && years <= 60
-    ? years
-    : undefined;
+  return isJobMinimumYachtExperience(value) ? value : undefined;
 }
 
 function optionalDate(

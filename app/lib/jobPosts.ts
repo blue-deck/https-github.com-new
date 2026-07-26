@@ -34,6 +34,19 @@ export const jobYachtTypes = [
   "new_build",
 ] as const;
 export const jobYachtLengthUnits = ["m", "ft"] as const;
+export const jobMinimumYachtExperiences = [
+  "0_6_months",
+  "1_year",
+  "2_years",
+  "3_years",
+  "1_3_years",
+  "3_5_years",
+  "5_plus_years",
+  "5_10_years",
+  "10_plus_years",
+  "15_plus_years",
+  "20_plus_years",
+] as const;
 
 export type JobPostStatus = (typeof jobPostStatuses)[number];
 export type JobEmploymentType = (typeof jobEmploymentTypes)[number];
@@ -46,6 +59,8 @@ export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
 export type JobYachtType = (typeof jobYachtTypes)[number];
 export type JobYachtLengthUnit = (typeof jobYachtLengthUnits)[number];
+export type JobMinimumYachtExperience =
+  (typeof jobMinimumYachtExperiences)[number];
 
 export type JobSalary = {
   min: number | null;
@@ -74,7 +89,7 @@ export type PublicJobPost = {
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
-  minimumYachtExperienceYears: number | null;
+  minimumYachtExperience: JobMinimumYachtExperience | null;
   location: string;
   startDate: string | null;
   summary: string;
@@ -177,6 +192,14 @@ export function isJobYachtLengthUnit(
   return jobYachtLengthUnits.includes(value as JobYachtLengthUnit);
 }
 
+export function isJobMinimumYachtExperience(
+  value: unknown,
+): value is JobMinimumYachtExperience {
+  return jobMinimumYachtExperiences.includes(
+    value as JobMinimumYachtExperience,
+  );
+}
+
 const jobYachtTypeLabels: Record<
   JobYachtType,
   { en: string; tr: string }
@@ -236,18 +259,28 @@ export function formatJobYachtLength(
   return `${formatted} ${unit}`;
 }
 
+const jobMinimumYachtExperienceLabels: Record<
+  JobMinimumYachtExperience,
+  { en: string; tr: string }
+> = {
+  "0_6_months": { en: "0–6 months", tr: "0–6 ay" },
+  "1_year": { en: "1 year", tr: "1 yıl" },
+  "2_years": { en: "2 years", tr: "2 yıl" },
+  "3_years": { en: "3 years", tr: "3 yıl" },
+  "1_3_years": { en: "1–3 years", tr: "1–3 yıl" },
+  "3_5_years": { en: "3–5 years", tr: "3–5 yıl" },
+  "5_plus_years": { en: "5+ years", tr: "5+ yıl" },
+  "5_10_years": { en: "5–10 years", tr: "5–10 yıl" },
+  "10_plus_years": { en: "10+ years", tr: "10+ yıl" },
+  "15_plus_years": { en: "15+ years", tr: "15+ yıl" },
+  "20_plus_years": { en: "20+ years", tr: "20+ yıl" },
+};
+
 export function formatJobMinimumYachtExperience(
-  value: number,
+  value: JobMinimumYachtExperience,
   language: "en" | "tr",
 ) {
-  if (value === 0) {
-    return language === "tr"
-      ? "Yat deneyimi şartı yok"
-      : "No minimum yacht experience";
-  }
-
-  if (language === "tr") return `En az ${value} yıl yat deneyimi`;
-  return `Minimum ${value} ${value === 1 ? "year" : "years"} of yacht experience`;
+  return jobMinimumYachtExperienceLabels[value][language];
 }
 
 export function isEmployerJobPostExpired(
