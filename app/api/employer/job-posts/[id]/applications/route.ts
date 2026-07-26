@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { isUuid } from "../../../../../lib/employerAccessServer";
 import {
+  applicationApplicantUserId,
   applicationResponse,
   authenticatedApplicationClients,
   canManageJobApplications,
   employerJobApplicationFromRow,
   jobApplicationSummaryFromRow,
   listAuthorizedJobApplications,
+  loadApplicationCandidatePreviews,
   logJobApplicationError,
 } from "../../../../../lib/jobApplicationsServer";
 
@@ -32,7 +34,7 @@ export async function GET(
   const [jobResult, authority, applicationResult] = await Promise.all([
     clients.serviceClient
       .from("job_posts")
-      .select("id,title,position,start_date,status")
+      .select("id,listing_number,title,position,start_date,status")
       .eq("id", jobPostId)
       .maybeSingle(),
     canManageJobApplications(
@@ -76,8 +78,32 @@ export async function GET(
     );
   }
 
+  if (request.nextUrl.searchParams.get("summary") === "1") {
+    return applicationResponse({
+      ok: true,
+      job,
+      total: applicationResult.rows.length,
+    });
+  }
+
+  const candidatePreviews = await loadApplicationCandidatePreviews(
+    clients.serviceClient,
+    applicationResult.rows,
+  );
+  if (!candidatePreviews.ok) {
+    return applicationResponse(
+      { ok: false, error: candidatePreviews.error },
+      500,
+    );
+  }
+
   const applications = applicationResult.rows
-    .map(employerJobApplicationFromRow)
+    .map((row) =>
+      employerJobApplicationFromRow(
+        row,
+        candidatePreviews.previews.get(applicationApplicantUserId(row)),
+      ),
+    )
     .filter((application) => application !== null)
     .sort(
       (left, right) =>
@@ -94,14 +120,16 @@ export async function GET(
     );
   }
 
-  if (request.nextUrl.searchParams.get("summary") === "1") {
-    return applicationResponse({ ok: true, job, total: applications.length });
-  }
-
   return applicationResponse({
     ok: true,
     job,
     total: applications.length,
+    candidateAccess: {
+      level: "preview",
+      contactDetails: "locked",
+      applicationNote: "locked",
+      freeTextProfile: "locked",
+    },
     applications,
   });
 }

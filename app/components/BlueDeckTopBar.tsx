@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import {
   BriefcaseBusiness,
   Camera,
+  ClipboardCheck,
   FileText,
   Languages,
   LayoutDashboard,
@@ -206,6 +207,15 @@ export function BlueDeckTopBar() {
     { href: "/crew/tasks", label: t("topbar.myDeck"), icon: Ship },
     ...(canApplyToJobs
       ? [{ href: "/jobs", label: t("nav.findJob"), icon: BriefcaseBusiness }]
+      : []),
+    ...(canApplyToJobs
+      ? [
+          {
+            href: "/portal/applications",
+            label: language === "tr" ? "Başvurularım" : "My Applications",
+            icon: ClipboardCheck,
+          },
+        ]
       : []),
     ...(canManageYachts
       ? [{ href: "/hiring", label: t("topbar.hiring"), icon: BriefcaseBusiness }]

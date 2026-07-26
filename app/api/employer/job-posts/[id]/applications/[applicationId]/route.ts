@@ -5,10 +5,12 @@ import {
 } from "../../../../../../lib/employerAccessServer";
 import { isEmployerJobApplicationStatus } from "../../../../../../lib/jobApplications";
 import {
+  applicationApplicantUserId,
   applicationResponse,
   authenticatedApplicationClients,
   canManageJobApplications,
   employerJobApplicationFromRow,
+  loadApplicationCandidatePreviews,
   logJobApplicationError,
   readApplicationBody,
 } from "../../../../../../lib/jobApplicationsServer";
@@ -136,8 +138,18 @@ export async function PATCH(
     );
   }
 
+  const updatedRows = Array.isArray(data) ? data : [];
+  const candidatePreviews = await loadApplicationCandidatePreviews(
+    clients.serviceClient,
+    updatedRows,
+  );
+
+  const updatedRow = updatedRows[0] || null;
   const application = employerJobApplicationFromRow(
-    Array.isArray(data) ? data[0] : null,
+    updatedRow,
+    candidatePreviews.ok
+      ? candidatePreviews.previews.get(applicationApplicantUserId(updatedRow))
+      : undefined,
   );
   if (!application) {
     logJobApplicationError(

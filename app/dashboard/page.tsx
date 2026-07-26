@@ -6,6 +6,7 @@ import {
   BriefcaseBusiness,
   Camera,
   CheckCircle2,
+  ClipboardCheck,
   FileText,
   LoaderCircle,
   LogOut,
@@ -182,7 +183,7 @@ function DashboardPhotoControl({
 }
 
 export default function DashboardPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -678,6 +679,23 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
                 {t("dashboard.findJobText")}
+              </p>
+            </Link>
+          ) : null}
+
+          {canApplyToJobs ? (
+            <Link
+              href="/portal/applications"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <ClipboardCheck className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {language === "tr" ? "Başvurularım" : "My Applications"}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {language === "tr"
+                  ? "Başvurduğunuz ilanları ve güncel durumlarını tek ekrandan takip edin."
+                  : "Track the jobs you applied for and their latest status in one place."}
               </p>
             </Link>
           ) : null}

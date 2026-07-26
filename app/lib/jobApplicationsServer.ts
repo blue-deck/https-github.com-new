@@ -14,11 +14,28 @@ import {
   type JobApplicationJobSummary,
   type OwnJobApplication,
 } from "./jobApplications";
+import {
+  safePublicMediaUrl,
+  publicStructuredProfileField,
+  publicStructuredStringArray,
+} from "./publicCrewSafety";
 
 export const maximumApplicationRequestBytes = 8_192;
 export const maximumCoverNoteLength = 2_000;
 export const ownJobApplicationSelect =
   "id,job_post_id,status,cover_note,submitted_at,status_changed_at,withdrawn_at,updated_at,version";
+
+export type ApplicationCandidatePreview = {
+  profilePhotoUrl: string;
+  currentPosition: string;
+  location: string;
+  nationality: string;
+  seekingPositions: string[];
+};
+
+type CandidatePreviewResult =
+  | { ok: true; previews: Map<string, ApplicationCandidatePreview> }
+  | { ok: false; error: string };
 
 export function authenticatedApplicationClients(request: NextRequest) {
   return authenticatedEmployerClients(request);
@@ -180,6 +197,72 @@ export async function listAuthorizedJobApplications(
   };
 }
 
+export async function loadApplicationCandidatePreviews(
+  serviceClient: SupabaseClient,
+  rows: unknown[],
+): Promise<CandidatePreviewResult> {
+  const applicantUserIds = new Set<string>();
+
+  for (const value of rows) {
+    if (!isRecord(value)) {
+      return { ok: false, error: "Candidate profiles could not be loaded." };
+    }
+    const applicantUserId = cleanText(value.applicant_user_id);
+    if (!isUuid(applicantUserId)) {
+      return { ok: false, error: "Candidate profiles could not be loaded." };
+    }
+    applicantUserIds.add(applicantUserId);
+  }
+
+  const previews = new Map<string, ApplicationCandidatePreview>();
+  const userIds = [...applicantUserIds];
+
+  for (let index = 0; index < userIds.length; index += 100) {
+    const batch = userIds.slice(index, index + 100);
+    const { data, error } = await serviceClient
+      .from("crew_profiles")
+      .select(
+        "user_id,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,created_at",
+      )
+      .in("user_id", batch)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      logJobApplicationError("candidate_preview_load_failed", error, {
+        candidateCount: batch.length,
+      });
+      return { ok: false, error: "Candidate profiles could not be loaded." };
+    }
+
+    for (const row of data || []) {
+      const userId = cleanText(row.user_id);
+      if (!isUuid(userId) || previews.has(userId)) continue;
+
+      previews.set(userId, {
+        profilePhotoUrl: safePublicMediaUrl(row.profile_photo_url),
+        currentPosition:
+          publicStructuredStringArray(row.current_positions, 1, 120)[0] ||
+          publicStructuredProfileField(row.current_position, 120),
+        location: publicStructuredProfileField(row.location, 120),
+        nationality: publicStructuredProfileField(row.nationality, 80),
+        seekingPositions: publicStructuredStringArray(
+          row.seeking_positions,
+          3,
+          120,
+        ),
+      });
+    }
+  }
+
+  return { ok: true, previews };
+}
+
+export function applicationApplicantUserId(value: unknown) {
+  if (!isRecord(value)) return "";
+  const applicantUserId = cleanText(value.applicant_user_id);
+  return isUuid(applicantUserId) ? applicantUserId : "";
+}
+
 export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | null {
   if (!isRecord(value)) return null;
 
@@ -219,24 +302,40 @@ export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | nu
 
 export function employerJobApplicationFromRow(
   value: unknown,
+  preview?: ApplicationCandidatePreview,
 ): EmployerJobApplication | null {
   const application = ownJobApplicationFromRow(value);
   if (!application || !isRecord(value)) return null;
 
   const applicantRole = cleanText(value.applicant_role).toLowerCase();
-  if (applicantRole !== "crew" && applicantRole !== "captain") return null;
+  const applicantUserId = cleanText(value.applicant_user_id);
+  if (
+    (applicantRole !== "crew" && applicantRole !== "captain") ||
+    !isUuid(applicantUserId)
+  ) {
+    return null;
+  }
 
   const fullName =
-    cleanText(value.applicant_name_snapshot) || "BlueDeck candidate";
-  const currentPosition = cleanText(value.applicant_position_snapshot);
+    publicStructuredProfileField(value.applicant_name_snapshot, 120) ||
+    "BlueDeck candidate";
+  const currentPosition = publicStructuredProfileField(
+    value.applicant_position_snapshot,
+    120,
+  );
 
   return {
     ...application,
+    coverNote: "",
     applicantRole,
+    privateNoteAvailable: Boolean(application.coverNote),
     candidate: {
       fullName,
-      email: cleanText(value.applicant_email_snapshot).toLowerCase(),
-      currentPosition,
+      profilePhotoUrl: preview?.profilePhotoUrl || "",
+      currentPosition: preview?.currentPosition || currentPosition,
+      location: preview?.location || "",
+      nationality: preview?.nationality || "",
+      seekingPositions: preview?.seekingPositions || [],
     },
   };
 }
@@ -247,13 +346,20 @@ export function jobApplicationSummaryFromRow(
   if (!isRecord(value)) return null;
 
   const id = cleanText(value.id);
+  const listingNumber = cleanText(value.listing_number);
   const status = cleanText(value.status);
-  if (!isUuid(id) || !["draft", "published", "closed"].includes(status)) {
+  if (
+    !isUuid(id) ||
+    !listingNumber ||
+    listingNumber.length > 40 ||
+    !["draft", "published", "closed"].includes(status)
+  ) {
     return null;
   }
 
   return {
     id,
+    listingNumber,
     title: cleanText(value.title),
     position: cleanText(value.position),
     startDate: optionalDate(value.start_date),

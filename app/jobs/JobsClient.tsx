@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Ship,
   SlidersHorizontal,
+  UserRoundPlus,
   X,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
@@ -26,6 +27,11 @@ import {
   type PublicJob,
   yachtLabel,
 } from "./job-data";
+import {
+  getJobListingAction,
+  useJobListingViewer,
+  type JobListingViewer,
+} from "./JobListingAction";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -39,6 +45,7 @@ export function JobsClient() {
   const [position, setPosition] = useState("");
   const [location, setLocation] = useState("");
   const [employmentType, setEmploymentType] = useState("");
+  const viewer = useJobListingViewer();
 
   useEffect(() => {
     const controller = new AbortController();
@@ -106,6 +113,7 @@ export function JobsClient() {
         job.employmentType,
         job.location,
         job.summary,
+        job.listingNumber,
         yachtLabel(job),
       ]
         .join(" ")
@@ -240,7 +248,12 @@ export function JobsClient() {
             {filteredJobs.length > 0 ? (
               <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredJobs.map((job) => (
-                  <JobCard key={job.id} job={job} language={language} />
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    language={language}
+                    viewer={viewer}
+                  />
                 ))}
               </div>
             ) : (
@@ -273,13 +286,16 @@ export function JobsClient() {
 function JobCard({
   job,
   language,
+  viewer,
 }: {
   job: PublicJob;
   language: "en" | "tr";
+  viewer: JobListingViewer;
 }) {
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
   const yacht = yachtLabel(job);
+  const action = getJobListingAction(job.id, viewer, language);
 
   return (
     <article className="group flex min-h-full flex-col overflow-hidden rounded-[28px] border border-[#071f3c]/10 bg-white shadow-xl shadow-[#071f3c]/5 transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#071f3c]/9">
@@ -290,7 +306,14 @@ function JobCard({
           {job.department ? <StatusPill muted>{job.department}</StatusPill> : null}
         </div>
 
-        <h3 data-i18n-ignore className="mt-5 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+        <p className="mt-4 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+          {c.listingNumber}{" "}
+          <span data-i18n-ignore className="text-cyan-800">
+            {job.listingNumber}
+          </span>
+        </p>
+
+        <h3 data-i18n-ignore className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
           {job.title}
         </h3>
         {job.position && job.position !== job.title ? (
@@ -337,12 +360,25 @@ function JobCard({
             </p>
           ) : null}
           <Link
-            href={`/jobs/${encodeURIComponent(job.id)}`}
+            href={action.href}
             className="bd-focus flex min-h-12 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
           >
-            {c.viewRole}
+            <span className="inline-flex items-center gap-2">
+              {viewer.kind === "signed-out" ? (
+                <UserRoundPlus className="h-4 w-4" aria-hidden />
+              ) : null}
+              {action.label}
+            </span>
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
+          {viewer.kind === "signed-out" ? (
+            <Link
+              href={action.detailHref}
+              className="bd-focus mt-2 flex min-h-10 items-center justify-center rounded-xl text-xs font-black text-cyan-800 transition hover:bg-cyan-50 hover:text-cyan-950"
+            >
+              {c.viewRole}
+            </Link>
+          ) : null}
         </div>
       </div>
     </article>
@@ -522,6 +558,7 @@ const copy = {
     clear: "Clear filters",
     start: "Start",
     closes: "Closes",
+    listingNumber: "Listing no.",
     viewRole: "View role",
     loading: "Loading current opportunities…",
     errorTitle: "The job board could not be loaded",
@@ -553,6 +590,7 @@ const copy = {
     clear: "Filtreleri temizle",
     start: "Başlangıç",
     closes: "Son tarih",
+    listingNumber: "İlan no:",
     viewRole: "İlanı görüntüle",
     loading: "Güncel fırsatlar yükleniyor…",
     errorTitle: "İş ilanları yüklenemedi",

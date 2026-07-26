@@ -32,15 +32,20 @@ export type OwnJobApplication = {
 
 export type EmployerJobApplication = OwnJobApplication & {
   applicantRole: "crew" | "captain";
+  privateNoteAvailable: boolean;
   candidate: {
     fullName: string;
-    email: string;
+    profilePhotoUrl: string;
     currentPosition: string;
+    location: string;
+    nationality: string;
+    seekingPositions: string[];
   };
 };
 
 export type JobApplicationJobSummary = {
   id: string;
+  listingNumber: string;
   title: string;
   position: string;
   startDate: string | null;

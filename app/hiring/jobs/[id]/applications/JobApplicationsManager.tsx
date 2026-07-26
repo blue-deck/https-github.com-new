@@ -8,8 +8,10 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Flag,
   LoaderCircle,
-  Mail,
+  LockKeyhole,
+  MapPin,
   RefreshCw,
   Send,
   UserRound,
@@ -232,6 +234,9 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
               <p data-i18n-ignore className="mt-3 text-lg font-black text-cyan-800">
                 {job.position}
               </p>
+              <p data-i18n-ignore className="mt-2 font-mono text-xs font-black tracking-[0.12em] text-slate-500">
+                {job.listingNumber}
+              </p>
             </div>
             <div className="grid min-w-[260px] grid-cols-2 gap-3">
               <Metric label={c.total} value={applications.length} />
@@ -380,24 +385,49 @@ function CandidateDetail({
             label={c.applied}
             value={formatDateTime(application.submittedAt, language)}
           />
+          {application.candidate.location ? (
+            <CandidateFact
+              icon={<MapPin />}
+              label={c.location}
+              value={application.candidate.location}
+            />
+          ) : null}
+          {application.candidate.nationality ? (
+            <CandidateFact
+              icon={<Flag />}
+              label={c.nationality}
+              value={application.candidate.nationality}
+            />
+          ) : null}
         </div>
 
-        {application.candidate.email ? (
-          <a
-            href={`mailto:${application.candidate.email}`}
-            data-i18n-ignore
-            className="bd-focus mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
-          >
-            <Mail className="h-4 w-4" aria-hidden />
-            {application.candidate.email}
-          </a>
-        ) : null}
+        <section className="mt-8 border-t border-slate-200 pt-7">
+          <p className="bd-kicker">{c.profilePreview}</p>
+          {application.candidate.seekingPositions.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {application.candidate.seekingPositions.map((position) => (
+                <span
+                  key={position}
+                  data-i18n-ignore
+                  className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-black text-cyan-900"
+                >
+                  {position}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm italic text-slate-500">
+              {c.noProfileSummary}
+            </p>
+          )}
+        </section>
 
         <section className="mt-8 border-t border-slate-200 pt-7">
           <p className="bd-kicker">{c.candidateNote}</p>
-          {application.coverNote ? (
-            <p data-i18n-ignore className="mt-4 whitespace-pre-line text-base leading-8 text-slate-600">
-              {application.coverNote}
+          {application.privateNoteAvailable ? (
+            <p className="mt-4 inline-flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
+              <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-cyan-800" aria-hidden />
+              {c.privateNoteReserved}
             </p>
           ) : (
             <p className="mt-4 text-sm italic text-slate-500">{c.noNote}</p>
@@ -457,6 +487,20 @@ function CandidateDetail({
           ) : null}
         </section>
 
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#f8fafc,#eef7fa)] p-5">
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071f3c] text-cyan-100">
+              <LockKeyhole className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <h3 className="font-black text-slate-950">{c.fullProfileLocked}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {c.fullProfileLockedText}
+              </p>
+            </div>
+          </div>
+        </section>
+
         <div className="mt-8 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-xs leading-5 text-cyan-950">
           {c.privacyNote}
         </div>
@@ -480,6 +524,7 @@ function CandidateButton({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={selected}
       className={`bd-focus w-full rounded-2xl border p-4 text-left transition ${
         selected
           ? "border-cyan-300 bg-cyan-50/80 shadow-sm"
@@ -515,6 +560,20 @@ function CandidateAvatar({
   large?: boolean;
 }) {
   const classes = large ? "h-16 w-16 text-xl" : "h-11 w-11 text-sm";
+  if (application.candidate.profilePhotoUrl) {
+    return (
+      <span className={`${classes} relative flex shrink-0 overflow-hidden rounded-2xl bg-slate-100`}>
+        <img
+          src={application.candidate.profilePhotoUrl}
+          alt={application.candidate.fullName}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      </span>
+    );
+  }
+
   return (
     <span className={`${classes} flex shrink-0 items-center justify-center rounded-2xl bg-[#071f3c] font-black text-cyan-100`}>
       {initials(application.candidate.fullName)}
@@ -651,6 +710,7 @@ function parseJob(value: unknown): JobApplicationJobSummary | null {
   const status = value.status;
   if (
     typeof value.id !== "string" ||
+    typeof value.listingNumber !== "string" ||
     typeof value.title !== "string" ||
     typeof value.position !== "string" ||
     !["draft", "published", "closed"].includes(String(status))
@@ -659,6 +719,7 @@ function parseJob(value: unknown): JobApplicationJobSummary | null {
   }
   return {
     id: value.id,
+    listingNumber: value.listingNumber,
     title: value.title,
     position: value.position,
     startDate: typeof value.startDate === "string" ? value.startDate : null,
@@ -678,6 +739,7 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
     typeof value.submittedAt !== "string" ||
     typeof value.updatedAt !== "string" ||
     typeof value.version !== "number" ||
+    typeof value.privateNoteAvailable !== "boolean" ||
     typeof value.candidate.fullName !== "string"
   ) {
     return null;
@@ -692,13 +754,30 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
     withdrawnAt: typeof value.withdrawnAt === "string" ? value.withdrawnAt : null,
     version: value.version,
     applicantRole,
+    privateNoteAvailable: value.privateNoteAvailable,
     candidate: {
       fullName: value.candidate.fullName,
-      email: typeof value.candidate.email === "string" ? value.candidate.email : "",
+      profilePhotoUrl:
+        typeof value.candidate.profilePhotoUrl === "string"
+          ? value.candidate.profilePhotoUrl
+          : "",
       currentPosition:
         typeof value.candidate.currentPosition === "string"
           ? value.candidate.currentPosition
           : "",
+      location:
+        typeof value.candidate.location === "string"
+          ? value.candidate.location
+          : "",
+      nationality:
+        typeof value.candidate.nationality === "string"
+          ? value.candidate.nationality
+          : "",
+      seekingPositions: Array.isArray(value.candidate.seekingPositions)
+        ? value.candidate.seekingPositions
+            .filter((position): position is string => typeof position === "string")
+            .slice(0, 3)
+        : [],
     },
   };
 }
@@ -777,13 +856,22 @@ const copy = {
     captain: "Captain",
     crew: "Crew",
     applied: "Applied",
+    location: "Location",
+    nationality: "Nationality",
+    profilePreview: "Professional profile preview",
+    noProfileSummary: "This candidate has not added preferred positions yet.",
     candidateNote: "Candidate note",
     noNote: "The candidate applied without an additional note.",
+    privateNoteReserved:
+      "A private application note is saved. Its free-text content is reserved with the full candidate profile.",
     decision: "Application status",
     decisionHelp: "Move the candidate through a clear, private hiring pipeline.",
     finalStatus: "This application has reached a final status.",
+    fullProfileLocked: "Full candidate profile is reserved",
+    fullProfileLockedText:
+      "Contact details, the private application note, documents, references and the detailed CV remain private. This access layer is ready for a future BlueDeck Hiring plan; no payment is required today.",
     privacyNote:
-      "Only the candidate’s application and professional profile summary are shown here. Private documents and references are not included.",
+      "Only structured professional preview fields are shown here. Free-text profile content, private documents and references are not included.",
   },
   tr: {
     loading: "Başvurular yükleniyor…",
@@ -809,12 +897,21 @@ const copy = {
     captain: "Captain",
     crew: "Crew",
     applied: "Başvuru tarihi",
+    location: "Konum",
+    nationality: "Uyruk",
+    profilePreview: "Profesyonel profil özeti",
+    noProfileSummary: "Aday henüz tercih ettiği pozisyonları eklememiş.",
     candidateNote: "Aday notu",
     noNote: "Aday ek bir not yazmadan başvurdu.",
+    privateNoteReserved:
+      "Özel başvuru notu kaydedildi. Serbest metin içeriği ayrıntılı aday profiliyle birlikte kilitli tutulur.",
     decision: "Başvuru durumu",
     decisionHelp: "Adayı sade ve özel işe alım sürecinde ilerletin.",
     finalStatus: "Bu başvuru nihai duruma ulaştı.",
+    fullProfileLocked: "Ayrıntılı aday profili kilitli",
+    fullProfileLockedText:
+      "İletişim bilgileri, özel başvuru notu, belgeler, referanslar ve ayrıntılı CV gizli kalır. Bu erişim katmanı gelecekteki BlueDeck Hiring planı için hazırdır; bugün herhangi bir ödeme gerekmez.",
     privacyNote:
-      "Burada yalnız adayın başvurusu ve profesyonel profil özeti gösterilir. Özel belgeler ve referanslar başvuruya dahil edilmez.",
+      "Burada yalnız yapılandırılmış profesyonel önizleme alanları gösterilir. Serbest profil metni, özel belgeler ve referanslar dahil edilmez.",
   },
 } as const;

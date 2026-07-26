@@ -37,7 +37,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,title,position,department,employment_type,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,closes_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,closes_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -847,6 +847,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
 
   return {
     id: base.id,
+    listingNumber: base.listingNumber,
     title: base.title,
     position: base.position,
     department: base.department,
@@ -891,6 +892,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
 
   return {
     id: base.id,
+    listingNumber: base.listingNumber,
     yachtId,
     title: base.title,
     position: base.position,
@@ -974,6 +976,7 @@ function jobPostBaseFromRow(value: unknown) {
   if (!isRecord(value)) return null;
 
   const id = cleanText(value.id);
+  const listingNumber = cleanText(value.listing_number);
   const title = cleanText(value.title);
   const position = cleanText(value.position);
   const department = cleanText(value.department);
@@ -992,6 +995,7 @@ function jobPostBaseFromRow(value: unknown) {
 
   if (
     !isUuid(id) ||
+    !/^BDJ-[0-9]{4}-[1-9][0-9]{5,}$/.test(listingNumber) ||
     !title ||
     !position ||
     !department ||
@@ -1016,6 +1020,7 @@ function jobPostBaseFromRow(value: unknown) {
 
   return {
     id,
+    listingNumber,
     title,
     position,
     department,

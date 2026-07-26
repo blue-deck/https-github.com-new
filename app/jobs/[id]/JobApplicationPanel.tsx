@@ -44,7 +44,7 @@ export function JobApplicationPanel({
   language: Language;
 }) {
   const c = copy[language];
-  const returnPath = `/jobs/${encodeURIComponent(jobId)}`;
+  const returnPath = `/jobs/${encodeURIComponent(jobId)}#apply`;
   const loginHref = `/login?next=${encodeURIComponent(returnPath)}`;
   const signupHref = `/login?mode=signup&role=crew&next=${encodeURIComponent(returnPath)}`;
   const [session, setSession] = useState<Session | null>(null);

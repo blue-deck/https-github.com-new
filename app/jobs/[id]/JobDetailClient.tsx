@@ -81,6 +81,17 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
     return () => controller.abort();
   }, [jobId, requestVersion]);
 
+  useEffect(() => {
+    if (loadState !== "ready" || !job || window.location.hash !== "#apply") {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("apply")?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [job, loadState]);
+
   return (
     <main className="bd-site-shell min-h-screen text-[#071f3c]">
       <PublicHeader />
@@ -138,9 +149,17 @@ function JobDetail({
             <article className="overflow-hidden rounded-[32px] border border-[#071f3c]/10 bg-white shadow-2xl shadow-[#071f3c]/7">
               <div className="h-2 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
               <div className="p-6 sm:p-9">
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                  <BadgeCheck className="h-4 w-4" aria-hidden />
-                  {c.publishedRole}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                    <BadgeCheck className="h-4 w-4" aria-hidden />
+                    {c.publishedRole}
+                  </div>
+                  <p className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-slate-600">
+                    {c.listingNumber}{" "}
+                    <span data-i18n-ignore className="text-cyan-800">
+                      {job.listingNumber}
+                    </span>
+                  </p>
                 </div>
                 <h1 data-i18n-ignore className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">
                   {job.title}
@@ -215,7 +234,10 @@ function JobDetail({
             </article>
 
             <aside className="space-y-5 lg:sticky lg:top-[calc(var(--public-header-height)+2rem)]">
-              <div className="overflow-hidden rounded-[28px] border border-[#071f3c]/10 bg-white shadow-2xl shadow-[#071f3c]/7">
+              <div
+                id="apply"
+                className="scroll-mt-28 overflow-hidden rounded-[28px] border border-[#071f3c]/10 bg-white shadow-2xl shadow-[#071f3c]/7"
+              >
                 <div className="h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
                 <div className="p-6">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#071f3c] text-cyan-200">
@@ -411,6 +433,7 @@ const copy = {
   en: {
     back: "Back to jobs",
     publishedRole: "Published BlueDeck role",
+    listingNumber: "Listing no.",
     location: "Location",
     employmentType: "Employment",
     start: "Start date",
@@ -440,6 +463,7 @@ const copy = {
   tr: {
     back: "İş ilanlarına dön",
     publishedRole: "Yayınlanmış BlueDeck ilanı",
+    listingNumber: "İlan no:",
     location: "Konum",
     employmentType: "Çalışma biçimi",
     start: "Başlangıç tarihi",

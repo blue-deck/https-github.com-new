@@ -29,6 +29,7 @@ export type JobYachtSummary = {
 
 export type PublicJobPost = {
   id: string;
+  listingNumber: string;
   title: string;
   position: string;
   department: string;

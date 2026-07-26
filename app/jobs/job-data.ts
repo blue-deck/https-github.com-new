@@ -13,6 +13,7 @@ export type PublicJobYacht = {
 
 export type PublicJob = {
   id: string;
+  listingNumber: string;
   title: string;
   position: string;
   department: string;
@@ -36,13 +37,15 @@ export function parsePublicJob(value: unknown): PublicJob | null {
   if (!isRecord(value)) return null;
 
   const id = readString(value, "id");
+  const listingNumber = readString(value, "listingNumber", "listing_number");
   const title = readString(value, "title");
-  if (!id || !title) return null;
+  if (!id || !listingNumber || !title) return null;
 
   const yachtValue = readRecord(value, "yacht");
 
   return {
     id,
+    listingNumber,
     title,
     position: readString(value, "position"),
     department: readString(value, "department"),

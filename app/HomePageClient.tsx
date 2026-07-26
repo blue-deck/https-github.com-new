@@ -1,168 +1,512 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  CheckCircle2,
+  ArrowUpRight,
+  BadgeCheck,
+  BriefcaseBusiness,
+  CalendarDays,
+  Check,
   ClipboardCheck,
-  Crown,
-  FileText,
-  Radio,
+  Compass,
+  FileCheck2,
+  MapPin,
+  Search,
   ShieldCheck,
   Ship,
-  Users,
+  UsersRound,
 } from "lucide-react";
-import { type TranslationKey } from "./lib/i18n";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
+import {
+  formatJobDate,
+  formatJobSalary,
+  parsePublicJobs,
+  type PublicJob,
+  yachtLabel,
+} from "./jobs/job-data";
+import {
+  getJobListingAction,
+  useJobListingViewer,
+  type JobListingViewer,
+} from "./jobs/JobListingAction";
+import styles from "./homepage.module.css";
 
-const servicePillars = [
-  {
-    icon: Ship,
-    titleKey: "home.pillar1.title",
-    textKey: "home.pillar1.text",
-  },
-  {
-    icon: Users,
-    titleKey: "home.pillar2.title",
-    textKey: "home.pillar2.text",
-  },
-  {
-    icon: Crown,
-    titleKey: "home.pillar3.title",
-    textKey: "home.pillar3.text",
-  },
-  {
-    icon: Radio,
-    titleKey: "home.pillar4.title",
-    textKey: "home.pillar4.text",
-  },
-] satisfies Array<{ icon: typeof Ship; titleKey: TranslationKey; textKey: TranslationKey }>;
+type LoadState = "loading" | "ready" | "error";
 
-const websiteSections = [
-  "home.section1",
-  "home.section2",
-  "home.section3",
-  "home.section4",
-  "home.section5",
-  "home.section6",
-] satisfies TranslationKey[];
+const copy = {
+  en: {
+    eyebrow: "Yacht careers · crew network · private Yacht-OS",
+    titleLine1: "Careers at sea.",
+    titleLine2: "Operations in sync.",
+    intro:
+      "Find trusted yacht roles, hire the right professionals and keep every critical onboard workflow connected in one refined platform.",
+    browseJobs: "Explore open roles",
+    findCrew: "Find crew",
+    explorePlatform: "Discover Yacht-OS",
+    trustLine: "Private by design",
+    trustSubline: "Role-based access for crew, captains, managers and owners",
+    audienceEyebrow: "Start with what you need",
+    crewLabel: "For crew",
+    crewTitle: "Move your career forward.",
+    crewText:
+      "Explore opportunities, build a professional profile and keep certificates ready for your next yacht.",
+    crewAction: "Browse yacht jobs",
+    yachtLabel: "For yachts",
+    yachtTitle: "Build a crew you can trust.",
+    yachtText:
+      "Discover professionals, publish roles and bring your crew into one secure operating environment.",
+    yachtAction: "Search crew",
+    jobsEyebrow: "Live opportunities",
+    jobsTitle: "Your next role could start here.",
+    jobsIntro:
+      "A focused view of the latest opportunities published through BlueDeck.",
+    allJobs: "View all roles",
+    loadingJobs: "Loading the latest roles",
+    noJobsTitle: "New opportunities are on the horizon.",
+    noJobsText:
+      "Create your crew profile now and be ready when the next verified role is published.",
+    createProfile: "Create crew profile",
+    jobsErrorTitle: "Roles are temporarily unavailable.",
+    jobsErrorText: "You can still open the full jobs board and try again there.",
+    openJobs: "Open jobs board",
+    viewRole: "View role",
+    listingNumber: "Listing no.",
+    start: "Start",
+    profilePromptEyebrow: "Stay ready",
+    profilePromptTitle: "Let the right yacht discover you.",
+    profilePromptText:
+      "Build one credible crew profile for your experience, availability and essential documents.",
+    platformEyebrow: "One connected platform",
+    platformTitle: "Less admin. More confidence on board.",
+    platformIntro:
+      "BlueDeck connects recruitment, crew records and daily yacht operations without turning the experience into another complicated dashboard.",
+    feature1Title: "Hire with context",
+    feature1Text:
+      "Review professional profiles, documents and role fit before you invite someone on board.",
+    feature2Title: "Keep records ready",
+    feature2Text:
+      "Contracts, certificates, expiry dates and crew information stay attached to the right account and yacht.",
+    feature3Title: "Run daily operations",
+    feature3Text:
+      "Checklists, readiness and yacht workflows remain visible to the people who are responsible for them.",
+    exploreServices: "Explore the platform",
+    visualStatus: "Yacht workspace",
+    visualReady: "Operational readiness",
+    visualCrew: "Crew records",
+    visualDocs: "Documents",
+    visualChecklists: "Checklists",
+    systemEyebrow: "A clearer way to work",
+    systemTitle: "One professional identity, from first contact to life on board.",
+    systemIntro:
+      "Every part of BlueDeck is designed to keep the next decision simple, secure and traceable.",
+    system1Title: "Professional crew profile",
+    system1Text:
+      "Experience, role, documents and availability presented in one credible profile.",
+    system2Title: "Focused recruitment",
+    system2Text:
+      "The right information for faster shortlists and better hiring conversations.",
+    system3Title: "Private Yacht-OS",
+    system3Text:
+      "A role-aware workspace for crew, vessel records and operational readiness.",
+    trustEyebrow: "Built for trust",
+    trustTitle: "The calm behind a well-run yacht.",
+    trustText:
+      "BlueDeck keeps access controlled, responsibilities clear and essential records organized—so teams can focus on the work that matters.",
+    trust1: "Role-based private access",
+    trust2: "Structured crew and yacht records",
+    trust3: "Traceable operational workflows",
+    getStarted: "Join BlueDeck",
+  },
+  tr: {
+    eyebrow: "Yat kariyerleri · mürettebat ağı · private Yacht-OS",
+    titleLine1: "Denizde kariyer.",
+    titleLine2: "Operasyonda uyum.",
+    intro:
+      "Güvenilir yat ilanlarını keşfedin, doğru profesyonelleri işe alın ve kritik onboard iş akışlarını tek, rafine platformda bir araya getirin.",
+    browseJobs: "Açık ilanları keşfet",
+    findCrew: "Mürettebat bul",
+    explorePlatform: "Yacht-OS’u keşfet",
+    trustLine: "Gizlilik temelden tasarlandı",
+    trustSubline: "Mürettebat, kaptan, yönetici ve sahipler için rol bazlı erişim",
+    audienceEyebrow: "İhtiyacınızla başlayın",
+    crewLabel: "Mürettebat için",
+    crewTitle: "Kariyerinizi ileri taşıyın.",
+    crewText:
+      "İlanları keşfedin, profesyonel profilinizi oluşturun ve sertifikalarınızı bir sonraki yatınız için hazır tutun.",
+    crewAction: "Yat ilanlarına göz at",
+    yachtLabel: "Yatlar için",
+    yachtTitle: "Güvenebileceğiniz ekibi kurun.",
+    yachtText:
+      "Profesyonelleri keşfedin, ilan yayınlayın ve mürettebatınızı güvenli bir operasyon ortamında bir araya getirin.",
+    yachtAction: "Mürettebat ara",
+    jobsEyebrow: "Güncel fırsatlar",
+    jobsTitle: "Sıradaki göreviniz burada başlayabilir.",
+    jobsIntro:
+      "BlueDeck üzerinden yayınlanan en güncel fırsatların odaklı bir görünümü.",
+    allJobs: "Tüm ilanları gör",
+    loadingJobs: "Güncel ilanlar yükleniyor",
+    noJobsTitle: "Yeni fırsatlar ufukta.",
+    noJobsText:
+      "Mürettebat profilinizi şimdi oluşturun ve sıradaki doğrulanmış ilan için hazır olun.",
+    createProfile: "Mürettebat profili oluştur",
+    jobsErrorTitle: "İlanlara şu anda ulaşılamıyor.",
+    jobsErrorText: "Yine de tam ilan panosunu açıp oradan tekrar deneyebilirsiniz.",
+    openJobs: "İlan panosunu aç",
+    viewRole: "İlanı gör",
+    listingNumber: "İlan no:",
+    start: "Başlangıç",
+    profilePromptEyebrow: "Hazır kalın",
+    profilePromptTitle: "Doğru yatın sizi keşfetmesini sağlayın.",
+    profilePromptText:
+      "Deneyiminiz, müsaitliğiniz ve temel belgeleriniz için tek ve güvenilir mürettebat profili oluşturun.",
+    platformEyebrow: "Tek ve bağlantılı platform",
+    platformTitle: "Daha az takip. Teknede daha çok güven.",
+    platformIntro:
+      "BlueDeck; işe alım, mürettebat kayıtları ve günlük yat operasyonlarını yeni bir karmaşık panel yaratmadan birbirine bağlar.",
+    feature1Title: "Doğru bilgiyle işe alın",
+    feature1Text:
+      "Birini onboard davet etmeden önce profesyonel profilini, belgelerini ve role uygunluğunu değerlendirin.",
+    feature2Title: "Kayıtları hazır tutun",
+    feature2Text:
+      "Kontratlar, sertifikalar, bitiş tarihleri ve mürettebat bilgileri doğru hesap ve yatla bağlı kalır.",
+    feature3Title: "Günlük operasyonu yönetin",
+    feature3Text:
+      "Checklist, hazırlık ve yat iş akışları sorumlu kişilerin görebileceği şekilde düzenli kalır.",
+    exploreServices: "Platformu keşfet",
+    visualStatus: "Yat çalışma alanı",
+    visualReady: "Operasyonel hazırlık",
+    visualCrew: "Mürettebat kayıtları",
+    visualDocs: "Belgeler",
+    visualChecklists: "Checklist’ler",
+    systemEyebrow: "Daha net bir çalışma yolu",
+    systemTitle: "İlk temastan onboard yaşama kadar tek profesyonel kimlik.",
+    systemIntro:
+      "BlueDeck’in her parçası sıradaki kararı sade, güvenli ve izlenebilir tutmak için tasarlandı.",
+    system1Title: "Profesyonel mürettebat profili",
+    system1Text:
+      "Deneyim, pozisyon, belgeler ve müsaitlik tek güvenilir profilde sunulur.",
+    system2Title: "Odaklı işe alım",
+    system2Text:
+      "Daha hızlı kısa listeler ve daha iyi işe alım görüşmeleri için doğru bilgi.",
+    system3Title: "Private Yacht-OS",
+    system3Text:
+      "Mürettebat, tekne kayıtları ve operasyonel hazırlık için role duyarlı çalışma alanı.",
+    trustEyebrow: "Güven için tasarlandı",
+    trustTitle: "İyi yönetilen bir yatın arkasındaki sakinlik.",
+    trustText:
+      "BlueDeck erişimi kontrollü, sorumlulukları net ve kritik kayıtları düzenli tutar; ekipler gerçekten önemli işe odaklanır.",
+    trust1: "Rol bazlı özel erişim",
+    trust2: "Yapılandırılmış mürettebat ve yat kayıtları",
+    trust3: "İzlenebilir operasyon iş akışları",
+    getStarted: "BlueDeck’e katıl",
+  },
+} as const;
 
 export default function HomePageClient() {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  const c = copy[language];
+  const jobViewer = useJobListingViewer();
+  const [loadState, setLoadState] = useState<LoadState>("loading");
+  const [jobs, setJobs] = useState<PublicJob[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadJobs() {
+      try {
+        const response = await fetch("/api/jobs", {
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: controller.signal,
+        });
+        const payload: unknown = await response.json().catch(() => null);
+
+        if (!response.ok || !isRecord(payload) || payload.ok !== true) {
+          throw new Error("jobs_request_failed");
+        }
+
+        const parsedJobs = parsePublicJobs(payload.jobs);
+        if (!parsedJobs) throw new Error("jobs_response_invalid");
+
+        setJobs(parsedJobs.slice(0, 3));
+        setLoadState("ready");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setLoadState("error");
+      }
+    }
+
+    void loadJobs();
+    return () => controller.abort();
+  }, []);
 
   return (
-    <main className="bd-site-shell min-h-screen overflow-hidden text-[#071f3c]">
+    <main className={`bd-site-shell min-h-screen ${styles.page}`}>
       <PublicHeader homepageNavigation />
 
-      <section className="bd-home-hero">
-        <div className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-[1500px] items-center px-5 py-16 sm:px-8 lg:px-12">
-          <div className="max-w-4xl">
-            <p className="text-xs font-black uppercase tracking-[0.42em] text-[#58718c]">
-              {t("home.eyebrow")}
+      <section className={styles.hero}>
+        <Image
+          src="/bluedeck-hero-home.webp"
+          alt="Superyacht at a Mediterranean marina at blue hour"
+          fill
+          priority
+          unoptimized
+          sizes="100vw"
+          className={styles.heroImage}
+        />
+        <div className={styles.heroOverlay} />
+        <div className={`${styles.container} ${styles.heroInner}`}>
+          <div className={styles.heroCopy}>
+            <p className={styles.heroEyebrow}>
+              <Compass aria-hidden />
+              {c.eyebrow}
             </p>
-            <h1 className="bd-serif mt-7 text-5xl leading-[1.02] text-[#071f3c] sm:text-7xl lg:text-8xl">
-              {t("home.title1")}
-              <br />
-              {t("home.title2")}
+            <h1 className={styles.heroTitle}>
+              <span>{c.titleLine1}</span>
+              <span>{c.titleLine2}</span>
             </h1>
-            <p className="mt-8 max-w-2xl text-lg leading-8 text-[#526b83]">
-              {t("home.intro")}
-            </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-              <Link href="/login?mode=signup" className="bd-primary-cta">
-                {t("home.createAccount")}
-                <ArrowRight className="h-5 w-5" />
+            <p className={styles.heroIntro}>{c.intro}</p>
+            <div className={styles.heroActions}>
+              <Link href="/jobs" className={styles.primaryButton}>
+                {c.browseJobs}
+                <ArrowRight aria-hidden />
               </Link>
-              <Link href="/services" className="bd-secondary-cta">
-                {t("home.exploreServices")}
+              <Link href="/find-crew" className={styles.secondaryButtonDark}>
+                {c.findCrew}
               </Link>
+              <Link href="/management" className={styles.textButtonDark}>
+                {c.explorePlatform}
+                <ArrowUpRight aria-hidden />
+              </Link>
+            </div>
+            <div className={styles.heroTrust}>
+              <ShieldCheck aria-hidden />
+              <div>
+                <strong>{c.trustLine}</strong>
+                <span>{c.trustSubline}</span>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="yacht-platform" className="bd-section">
-        <div className="grid gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:items-end">
-          <div>
-            <p className="bd-kicker">{t("home.platformEyebrow")}</p>
-            <h2 className="bd-serif mt-4 text-4xl leading-tight text-[#071f3c] sm:text-6xl">
-              {t("home.platformTitle")}
-            </h2>
+      <section className={styles.audienceSection} aria-labelledby="audience-heading">
+        <div className={styles.container}>
+          <div className={styles.audiencePanel}>
+            <p id="audience-heading" className={styles.panelEyebrow}>
+              {c.audienceEyebrow}
+            </p>
+            <div className={styles.audienceGrid}>
+              <AudienceCard
+                icon={<BriefcaseBusiness aria-hidden />}
+                label={c.crewLabel}
+                title={c.crewTitle}
+                text={c.crewText}
+                action={c.crewAction}
+                href="/jobs"
+              />
+              <AudienceCard
+                icon={<UsersRound aria-hidden />}
+                label={c.yachtLabel}
+                title={c.yachtTitle}
+                text={c.yachtText}
+                action={c.yachtAction}
+                href="/find-crew"
+              />
+            </div>
           </div>
-          <p className="text-lg leading-8 text-[#5b7088]">
-            {t("home.platformIntro")}
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {servicePillars.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article key={item.titleKey} className="bd-editorial-card">
-                <Icon className="h-7 w-7 text-cyan-700" />
-                <h3 className="mt-7 text-2xl font-semibold text-[#071f3c]">{t(item.titleKey)}</h3>
-                <p className="mt-4 leading-7 text-[#5b7088]">{t(item.textKey)}</p>
-              </article>
-            );
-          })}
         </div>
       </section>
 
-      <section className="bd-deep-band">
-        <div className="mx-auto grid max-w-[1500px] gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.36em] text-cyan-200">{t("home.deepEyebrow")}</p>
-            <h2 className="bd-serif mt-5 text-4xl leading-tight text-white sm:text-6xl">
-              {t("home.deepTitle")}
-            </h2>
+      <section className={styles.jobsSection} aria-labelledby="jobs-heading">
+        <div className={styles.container}>
+          <div className={styles.sectionHeadingRow}>
+            <div>
+              <p className={styles.kicker}>{c.jobsEyebrow}</p>
+              <h2 id="jobs-heading" className={styles.sectionTitle}>
+                {c.jobsTitle}
+              </h2>
+              <p className={styles.sectionIntro}>{c.jobsIntro}</p>
+            </div>
+            <Link href="/jobs" className={styles.sectionLink}>
+              {c.allJobs}
+              <ArrowRight aria-hidden />
+            </Link>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {websiteSections.map((itemKey) => (
-              <div key={itemKey} className="flex items-start gap-3 border-b border-white/12 pb-4 text-white/78">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-cyan-200" />
-                <span className="leading-7">{t(itemKey)}</span>
+
+          <div className={styles.jobsGrid} aria-live="polite">
+            {loadState === "loading" ? (
+              <>
+                {[0, 1, 2].map((item) => (
+                  <div key={item} className={styles.jobSkeleton}>
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                ))}
+                <span className="sr-only">{c.loadingJobs}</span>
+              </>
+            ) : loadState === "ready" && jobs.length > 0 ? (
+              <>
+                {jobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    language={language}
+                    viewer={jobViewer}
+                    copy={c}
+                  />
+                ))}
+                {jobs.length < 3 ? (
+                  <ProfilePrompt span={3 - jobs.length} copy={c} />
+                ) : null}
+              </>
+            ) : (
+              <div className={styles.jobsEmpty}>
+                <div className={styles.emptyIcon}>
+                  <Search aria-hidden />
+                </div>
+                <div>
+                  <h3>{loadState === "error" ? c.jobsErrorTitle : c.noJobsTitle}</h3>
+                  <p>{loadState === "error" ? c.jobsErrorText : c.noJobsText}</p>
+                </div>
+                <Link href={loadState === "error" ? "/jobs" : "/login?mode=signup"}>
+                  {loadState === "error" ? c.openJobs : c.createProfile}
+                  <ArrowRight aria-hidden />
+                </Link>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </section>
 
-      <section className="bd-section">
-        <div className="grid gap-6 lg:grid-cols-3">
-          <FeaturePanel
-            icon={<ClipboardCheck className="h-7 w-7" />}
-            titleKey="home.feature1.title"
-            textKey="home.feature1.text"
-            href="/login"
-          />
-          <FeaturePanel
-            icon={<FileText className="h-7 w-7" />}
-            titleKey="home.feature2.title"
-            textKey="home.feature2.text"
-            href="/services"
-          />
-          <FeaturePanel
-            icon={<ShieldCheck className="h-7 w-7" />}
-            titleKey="home.feature3.title"
-            textKey="home.feature3.text"
-            href="/trust"
-          />
-        </div>
-      </section>
+      <section id="yacht-platform" className={styles.platformSection} aria-labelledby="platform-heading">
+        <div className={`${styles.container} ${styles.platformGrid}`}>
+          <div className={styles.platformVisual}>
+            <Image
+              src="/bluedeck-platform-home.webp"
+              alt="A clear yacht deck looking toward open water"
+              fill
+              unoptimized
+              sizes="(max-width: 1024px) 100vw, 48vw"
+              className={styles.platformImage}
+            />
+            <div className={styles.platformShade} />
+            <div className={styles.workspaceCard}>
+              <div className={styles.workspaceHeader}>
+                <span>
+                  <Ship aria-hidden />
+                  {c.visualStatus}
+                </span>
+                <BadgeCheck aria-label="Verified" />
+              </div>
+              <div className={styles.readinessRow}>
+                <span>{c.visualReady}</span>
+                <strong>92%</strong>
+              </div>
+              <div className={styles.progressTrack}>
+                <span />
+              </div>
+              <div className={styles.workspaceStats}>
+                <span><UsersRound aria-hidden />{c.visualCrew}</span>
+                <span><FileCheck2 aria-hidden />{c.visualDocs}</span>
+                <span><ClipboardCheck aria-hidden />{c.visualChecklists}</span>
+              </div>
+            </div>
+          </div>
 
-      <section className="mx-auto max-w-[1500px] px-5 pb-20 sm:px-8 lg:px-12">
-        <div className="bd-cta-band">
-          <div>
-            <p className="bd-kicker">{t("home.startEyebrow")}</p>
-            <h2 className="bd-serif mt-4 text-4xl leading-tight text-[#071f3c] sm:text-6xl">
-              {t("home.startTitle")}
+          <div className={styles.platformCopy}>
+            <p className={styles.kicker}>{c.platformEyebrow}</p>
+            <h2 id="platform-heading" className={styles.sectionTitle}>
+              {c.platformTitle}
             </h2>
+            <p className={styles.sectionIntro}>{c.platformIntro}</p>
+
+            <div className={styles.featureList}>
+              <FeatureRow
+                icon={<UsersRound aria-hidden />}
+                title={c.feature1Title}
+                text={c.feature1Text}
+              />
+              <FeatureRow
+                icon={<FileCheck2 aria-hidden />}
+                title={c.feature2Title}
+                text={c.feature2Text}
+              />
+              <FeatureRow
+                icon={<ClipboardCheck aria-hidden />}
+                title={c.feature3Title}
+                text={c.feature3Text}
+              />
+            </div>
+
+            <Link href="/services" className={styles.darkButton}>
+              {c.exploreServices}
+              <ArrowRight aria-hidden />
+            </Link>
           </div>
-          <Link href="/login?mode=signup" className="bd-primary-cta shrink-0">
-            {t("auth.signUp")}
-            <ArrowRight className="h-5 w-5" />
-          </Link>
+        </div>
+      </section>
+
+      <section className={styles.systemSection} aria-labelledby="system-heading">
+        <div className={styles.container}>
+          <div className={styles.systemHeading}>
+            <p className={styles.kicker}>{c.systemEyebrow}</p>
+            <h2 id="system-heading" className={styles.sectionTitle}>
+              {c.systemTitle}
+            </h2>
+            <p className={styles.sectionIntro}>{c.systemIntro}</p>
+          </div>
+          <div className={styles.systemGrid}>
+            <SystemCard
+              number="01"
+              icon={<BadgeCheck aria-hidden />}
+              title={c.system1Title}
+              text={c.system1Text}
+            />
+            <SystemCard
+              number="02"
+              icon={<UsersRound aria-hidden />}
+              title={c.system2Title}
+              text={c.system2Text}
+            />
+            <SystemCard
+              number="03"
+              icon={<Ship aria-hidden />}
+              title={c.system3Title}
+              text={c.system3Text}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.trustSection} aria-labelledby="trust-heading">
+        <div className={`${styles.container} ${styles.trustGrid}`}>
+          <div>
+            <p className={styles.trustKicker}>{c.trustEyebrow}</p>
+            <h2 id="trust-heading" className={styles.trustTitle}>
+              {c.trustTitle}
+            </h2>
+            <p className={styles.trustIntro}>{c.trustText}</p>
+          </div>
+          <div className={styles.trustActions}>
+            <ul>
+              {[c.trust1, c.trust2, c.trust3].map((item) => (
+                <li key={item}>
+                  <Check aria-hidden />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Link href="/login?mode=signup" className={styles.primaryButton}>
+              {c.getStarted}
+              <ArrowRight aria-hidden />
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -171,28 +515,160 @@ export default function HomePageClient() {
   );
 }
 
-function FeaturePanel({
+function AudienceCard({
   icon,
-  titleKey,
-  textKey,
+  label,
+  title,
+  text,
+  action,
   href,
 }: {
   icon: React.ReactNode;
-  titleKey: TranslationKey;
-  textKey: TranslationKey;
+  label: string;
+  title: string;
+  text: string;
+  action: string;
   href: string;
 }) {
-  const { t } = useLanguage();
-
   return (
-    <Link href={href} className="bd-feature-panel">
-      <span className="text-cyan-700">{icon}</span>
-      <h3 className="mt-6 text-3xl font-semibold text-[#071f3c]">{t(titleKey)}</h3>
-      <p className="mt-4 leading-7 text-[#5b7088]">{t(textKey)}</p>
-      <span className="mt-8 inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-cyan-800">
-        {t("home.viewDetails")}
-        <ArrowRight className="h-4 w-4" />
+    <Link href={href} className={styles.audienceCard}>
+      <span className={styles.audienceIcon}>{icon}</span>
+      <span className={styles.audienceContent}>
+        <small>{label}</small>
+        <strong>{title}</strong>
+        <span>{text}</span>
+      </span>
+      <span className={styles.audienceAction}>
+        {action}
+        <ArrowRight aria-hidden />
       </span>
     </Link>
   );
+}
+
+function JobCard({
+  job,
+  language,
+  viewer,
+  copy: c,
+}: {
+  job: PublicJob;
+  language: "en" | "tr";
+  viewer: JobListingViewer;
+  copy: (typeof copy)["en"] | (typeof copy)["tr"];
+}) {
+  const yacht = yachtLabel(job);
+  const salary = formatJobSalary(job.salary, language);
+  const action = getJobListingAction(job.id, viewer, language);
+
+  return (
+    <article className={styles.jobCard}>
+      <div className={styles.jobTopline}>
+        <span>{job.department || job.position}</span>
+        <span className={styles.jobReference}>
+          <span>{c.listingNumber}</span>
+          <code data-i18n-ignore>{job.listingNumber}</code>
+        </span>
+      </div>
+      <h3>{job.title}</h3>
+      {yacht ? <p className={styles.yachtName}>{yacht}</p> : null}
+      <div className={styles.jobMeta}>
+        {job.location ? (
+          <span><MapPin aria-hidden />{job.location}</span>
+        ) : null}
+        {job.startDate ? (
+          <span>
+            <CalendarDays aria-hidden />
+            {c.start}: {formatJobDate(job.startDate, language, { day: "numeric", month: "short" })}
+          </span>
+        ) : null}
+      </div>
+      <div className={styles.jobFooter}>
+        <strong>{salary || job.employmentType}</strong>
+        <div className={styles.jobActions}>
+          <Link href={action.href} className={styles.jobPrimaryAction}>
+            {action.label}
+            <ArrowRight aria-hidden />
+          </Link>
+          {action.intent === "signup" ? (
+            <Link href={action.detailHref} className={styles.jobSecondaryAction}>
+              {c.viewRole}
+            </Link>
+          ) : null}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function FeatureRow({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className={styles.featureRow}>
+      <span>{icon}</span>
+      <div>
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProfilePrompt({
+  span,
+  copy: c,
+}: {
+  span: number;
+  copy: (typeof copy)["en"] | (typeof copy)["tr"];
+}) {
+  return (
+    <aside className={styles.profilePrompt} data-span={span}>
+      <div className={styles.profilePromptIcon}>
+        <BadgeCheck aria-hidden />
+      </div>
+      <div>
+        <p>{c.profilePromptEyebrow}</p>
+        <h3>{c.profilePromptTitle}</h3>
+        <span>{c.profilePromptText}</span>
+      </div>
+      <Link href="/login?mode=signup">
+        {c.createProfile}
+        <ArrowRight aria-hidden />
+      </Link>
+    </aside>
+  );
+}
+
+function SystemCard({
+  number,
+  icon,
+  title,
+  text,
+}: {
+  number: string;
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <article className={styles.systemCard}>
+      <div className={styles.systemCardTop}>
+        <span>{icon}</span>
+        <small>{number}</small>
+      </div>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </article>
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

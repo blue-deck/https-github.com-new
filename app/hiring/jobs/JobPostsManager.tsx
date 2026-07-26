@@ -109,6 +109,7 @@ const copy = {
     createFirst: "Create first post",
     createTitle: "Create a job post",
     editTitle: "Edit job post",
+    listingNumber: "Listing no.",
     createIntro:
       "Drafts stay private. Publishing makes only the fields in this form visible on the public Jobs board.",
     status: "Status",
@@ -212,6 +213,7 @@ const copy = {
     createFirst: "İlk ilanı oluştur",
     createTitle: "İş ilanı oluştur",
     editTitle: "İş ilanını düzenle",
+    listingNumber: "İlan no:",
     createIntro:
       "Taslaklar gizli kalır. Yayınladığında yalnız bu formdaki alanlar herkese açık İş İlanları sayfasında görünür.",
     status: "Durum",
@@ -772,6 +774,14 @@ export function JobPostsManager() {
                   <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">
                     {selectedJob?.title || c.newPost}
                   </h2>
+                  {selectedJob ? (
+                    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
+                      {c.listingNumber}{" "}
+                      <span data-i18n-ignore className="text-cyan-800">
+                        {selectedJob.listingNumber}
+                      </span>
+                    </p>
+                  ) : null}
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
                     {c.createIntro}
                   </p>
@@ -1425,6 +1435,12 @@ function JobListButton({
             className="mt-1 truncate text-xs font-semibold text-slate-500"
           >
             {job.yacht.name}
+          </p>
+          <p className="mt-2 truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+            {c.listingNumber}{" "}
+            <span data-i18n-ignore className="text-cyan-800">
+              {job.listingNumber}
+            </span>
           </p>
         </div>
         <StatusBadge status={job.status} c={c} />
