@@ -26,8 +26,10 @@ import {
   type JobApplicationStatus,
 } from "../../lib/jobApplications";
 import {
+  formatJobListingNumber,
   isJobEmploymentType,
   isJobPostStatus,
+  isSupportedJobListingNumber,
 } from "../../lib/jobPosts";
 import type {
   MyJobApplication,
@@ -299,10 +301,11 @@ function ApplicationCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2.5">
             <span
+              data-i18n-ignore
+              aria-label={`${c.listingNumber} ${formatJobListingNumber(application.job.listingNumber)}`}
               className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-600"
             >
-              {c.listingNumber}: {" "}
-              <span data-i18n-ignore>{application.job.listingNumber}</span>
+              {formatJobListingNumber(application.job.listingNumber)}
             </span>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.13em] ${badge.className}`}
@@ -550,7 +553,7 @@ function isMyJobApplication(value: unknown): value is MyJobApplication {
   const job = application.job as Record<string, unknown>;
   return (
     typeof job.id === "string" &&
-    typeof job.listingNumber === "string" &&
+    isSupportedJobListingNumber(job.listingNumber) &&
     typeof job.title === "string" &&
     typeof job.position === "string" &&
     typeof job.department === "string" &&

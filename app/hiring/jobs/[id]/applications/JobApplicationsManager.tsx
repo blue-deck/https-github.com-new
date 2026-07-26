@@ -27,6 +27,10 @@ import {
   type JobApplicationJobSummary,
   type JobApplicationStatus,
 } from "../../../../lib/jobApplications";
+import {
+  formatJobListingNumber,
+  isSupportedJobListingNumber,
+} from "../../../../lib/jobPosts";
 import { supabase } from "../../../../lib/supabase";
 
 type WorkspaceResponse = {
@@ -235,7 +239,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
                 {job.position}
               </p>
               <p data-i18n-ignore className="mt-2 font-mono text-xs font-black tracking-[0.12em] text-slate-500">
-                {job.listingNumber}
+                {formatJobListingNumber(job.listingNumber)}
               </p>
             </div>
             <div className="grid min-w-[260px] grid-cols-2 gap-3">
@@ -710,7 +714,7 @@ function parseJob(value: unknown): JobApplicationJobSummary | null {
   const status = value.status;
   if (
     typeof value.id !== "string" ||
-    typeof value.listingNumber !== "string" ||
+    !isSupportedJobListingNumber(value.listingNumber) ||
     typeof value.title !== "string" ||
     typeof value.position !== "string" ||
     !["draft", "published", "closed"].includes(String(status))

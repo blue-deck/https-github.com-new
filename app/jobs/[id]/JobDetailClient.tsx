@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
+import { formatJobListingNumber } from "../../lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
@@ -154,11 +155,12 @@ function JobDetail({
                     <BadgeCheck className="h-4 w-4" aria-hidden />
                     {c.publishedRole}
                   </div>
-                  <p className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.12em] text-slate-600">
-                    {c.listingNumber}{" "}
-                    <span data-i18n-ignore className="text-cyan-800">
-                      {job.listingNumber}
-                    </span>
+                  <p
+                    data-i18n-ignore
+                    aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-mono text-xs font-black tracking-[0.12em] text-cyan-800"
+                  >
+                    {formatJobListingNumber(job.listingNumber)}
                   </p>
                 </div>
                 <h1 data-i18n-ignore className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">

@@ -63,6 +63,26 @@ export type VerifiedEmployerYacht = JobYachtSummary & {
   id: string;
 };
 
+const jobListingNumberPattern = /^[1-9][0-9]{4}$/;
+const legacyJobListingNumberPattern = /^BDJ-[0-9]{4}-[1-9][0-9]{5,}$/;
+
+export function isJobListingNumber(value: unknown): value is string {
+  return typeof value === "string" && jobListingNumberPattern.test(value);
+}
+
+// Keep legacy references readable during a zero-downtime database migration.
+// The database only issues five-digit values after the migration is applied.
+export function isSupportedJobListingNumber(value: unknown): value is string {
+  return (
+    isJobListingNumber(value) ||
+    (typeof value === "string" && legacyJobListingNumberPattern.test(value))
+  );
+}
+
+export function formatJobListingNumber(value: string) {
+  return isJobListingNumber(value) ? `#${value}` : value;
+}
+
 export function isJobPostStatus(value: unknown): value is JobPostStatus {
   return jobPostStatuses.includes(value as JobPostStatus);
 }

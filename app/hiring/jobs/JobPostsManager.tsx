@@ -31,6 +31,7 @@ import {
 } from "react";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
+  formatJobListingNumber,
   jobEmploymentTypes,
   jobSalaryCurrencies,
   jobSalaryPeriods,
@@ -775,11 +776,12 @@ export function JobPostsManager() {
                     {selectedJob?.title || c.newPost}
                   </h2>
                   {selectedJob ? (
-                    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
-                      {c.listingNumber}{" "}
-                      <span data-i18n-ignore className="text-cyan-800">
-                        {selectedJob.listingNumber}
-                      </span>
+                    <p
+                      data-i18n-ignore
+                      aria-label={`${c.listingNumber} ${formatJobListingNumber(selectedJob.listingNumber)}`}
+                      className="mt-2 font-mono text-[11px] font-black tracking-[0.14em] text-cyan-800"
+                    >
+                      {formatJobListingNumber(selectedJob.listingNumber)}
                     </p>
                   ) : null}
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
@@ -1436,11 +1438,12 @@ function JobListButton({
           >
             {job.yacht.name}
           </p>
-          <p className="mt-2 truncate text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
-            {c.listingNumber}{" "}
-            <span data-i18n-ignore className="text-cyan-800">
-              {job.listingNumber}
-            </span>
+          <p
+            data-i18n-ignore
+            aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
+            className="mt-2 truncate font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
+          >
+            {formatJobListingNumber(job.listingNumber)}
           </p>
         </div>
         <StatusBadge status={job.status} c={c} />

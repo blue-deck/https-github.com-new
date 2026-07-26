@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
 import {
   isJobEmploymentType,
+  isSupportedJobListingNumber,
   isJobPostStatus,
   isJobSalaryCurrency,
   isJobSalaryPeriod,
@@ -995,7 +996,7 @@ function jobPostBaseFromRow(value: unknown) {
 
   if (
     !isUuid(id) ||
-    !/^BDJ-[0-9]{4}-[1-9][0-9]{5,}$/.test(listingNumber) ||
+    !isSupportedJobListingNumber(listingNumber) ||
     !title ||
     !position ||
     !department ||

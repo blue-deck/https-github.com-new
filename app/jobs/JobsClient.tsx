@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
+import { formatJobListingNumber } from "../lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
@@ -114,6 +115,7 @@ export function JobsClient() {
         job.location,
         job.summary,
         job.listingNumber,
+        formatJobListingNumber(job.listingNumber),
         yachtLabel(job),
       ]
         .join(" ")
@@ -306,11 +308,12 @@ function JobCard({
           {job.department ? <StatusPill muted>{job.department}</StatusPill> : null}
         </div>
 
-        <p className="mt-4 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">
-          {c.listingNumber}{" "}
-          <span data-i18n-ignore className="text-cyan-800">
-            {job.listingNumber}
-          </span>
+        <p
+          data-i18n-ignore
+          aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
+          className="mt-4 font-mono text-[11px] font-black tracking-[0.14em] text-cyan-800"
+        >
+          {formatJobListingNumber(job.listingNumber)}
         </p>
 
         <h3 data-i18n-ignore className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">

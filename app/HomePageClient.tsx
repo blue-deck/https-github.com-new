@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
+import { formatJobListingNumber } from "./lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
@@ -566,8 +567,12 @@ function JobCard({
       <div className={styles.jobTopline}>
         <span>{job.department || job.position}</span>
         <span className={styles.jobReference}>
-          <span>{c.listingNumber}</span>
-          <code data-i18n-ignore>{job.listingNumber}</code>
+          <code
+            data-i18n-ignore
+            aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
+          >
+            {formatJobListingNumber(job.listingNumber)}
+          </code>
         </span>
       </div>
       <h3>{job.title}</h3>

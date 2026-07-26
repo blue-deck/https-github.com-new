@@ -1,3 +1,5 @@
+import { isSupportedJobListingNumber } from "../lib/jobPosts";
+
 export type PublicJobSalary = {
   min: number | null;
   max: number | null;
@@ -39,7 +41,7 @@ export function parsePublicJob(value: unknown): PublicJob | null {
   const id = readString(value, "id");
   const listingNumber = readString(value, "listingNumber", "listing_number");
   const title = readString(value, "title");
-  if (!id || !listingNumber || !title) return null;
+  if (!id || !isSupportedJobListingNumber(listingNumber) || !title) return null;
 
   const yachtValue = readRecord(value, "yacht");
 

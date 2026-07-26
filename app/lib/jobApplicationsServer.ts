@@ -14,6 +14,7 @@ import {
   type JobApplicationJobSummary,
   type OwnJobApplication,
 } from "./jobApplications";
+import { isSupportedJobListingNumber } from "./jobPosts";
 import {
   safePublicMediaUrl,
   publicStructuredProfileField,
@@ -350,8 +351,7 @@ export function jobApplicationSummaryFromRow(
   const status = cleanText(value.status);
   if (
     !isUuid(id) ||
-    !listingNumber ||
-    listingNumber.length > 40 ||
+    !isSupportedJobListingNumber(listingNumber) ||
     !["draft", "published", "closed"].includes(status)
   ) {
     return null;

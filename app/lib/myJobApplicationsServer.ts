@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   isJobEmploymentType,
   isJobPostStatus,
+  isSupportedJobListingNumber,
 } from "./jobPosts";
 import {
   logJobApplicationError,
@@ -158,7 +159,7 @@ function ownApplicationJobFromRow(value: unknown): MyJobApplicationJob | null {
 
   if (
     !isUuid(id) ||
-    !listingNumber ||
+    !isSupportedJobListingNumber(listingNumber) ||
     !title ||
     !position ||
     !department ||
