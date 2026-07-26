@@ -80,7 +80,6 @@ type FormState = {
   yachtLengthUnit: JobYachtLengthUnit;
   location: string;
   startDate: string;
-  summary: string;
   description: string;
   responsibilities: string;
   requirements: string;
@@ -163,10 +162,7 @@ const copy = {
     startDate: "Job start date",
     datePlaceholder: "DD/MM/YYYY",
     invalidDate: "Enter a valid date in DD/MM/YYYY format.",
-    narrative: "Public job brief",
-    summary: "Short summary",
-    summaryPlaceholder:
-      "A concise overview shown on the job card (20–320 characters when published).",
+    narrative: "Role details",
     description: "Full description",
     descriptionPlaceholder:
       "Describe the yacht environment, role, schedule and what success looks like.",
@@ -291,10 +287,7 @@ const copy = {
     startDate: "İşe başlama tarihi",
     datePlaceholder: "GG/AA/YYYY",
     invalidDate: "GG/AA/YYYY biçiminde geçerli bir tarih girin.",
-    narrative: "Herkese açık ilan özeti",
-    summary: "Kısa özet",
-    summaryPlaceholder:
-      "İlan kartında gösterilecek kısa özet (yayın için 20–320 karakter).",
+    narrative: "Pozisyon detayları",
     description: "Ayrıntılı açıklama",
     descriptionPlaceholder:
       "Yat ortamını, görevi, çalışma düzenini ve beklentileri açıkla.",
@@ -577,7 +570,7 @@ export function JobPostsManager() {
         yachtLength.value === null ? null : form.yachtLengthUnit,
       location: form.location.trim(),
       startDate: form.startDate || null,
-      summary: form.summary.trim(),
+      summary: "",
       description: form.description.trim(),
       responsibilities: lines(form.responsibilities),
       requirements: lines(form.requirements),
@@ -1075,20 +1068,6 @@ export function JobPostsManager() {
 
               <FormSection icon={<FilePenLine />} title={c.narrative}>
                 <div className="grid gap-5">
-                  <Field label={c.summary}>
-                    <textarea
-                      value={form.summary}
-                      onChange={(event) =>
-                        updateForm("summary", event.target.value.slice(0, 320))
-                      }
-                      maxLength={320}
-                      rows={3}
-                      disabled={saving}
-                      className={`${inputClass} py-3`}
-                      placeholder={c.summaryPlaceholder}
-                    />
-                    <Counter value={form.summary.length} maximum={320} />
-                  </Field>
                   <Field label={c.description}>
                     <textarea
                       value={form.description}
@@ -1358,7 +1337,6 @@ function emptyForm(yachtId: string): FormState {
     yachtLengthUnit: "m",
     location: "",
     startDate: "",
-    summary: "",
     description: "",
     responsibilities: "",
     requirements: "",
@@ -1384,7 +1362,6 @@ function formFromJob(job: EmployerJobPost): FormState {
     yachtLengthUnit: job.yachtLengthUnit || "m",
     location: job.location,
     startDate: job.startDate || "",
-    summary: job.summary,
     description: job.description,
     responsibilities: job.responsibilities.join("\n"),
     requirements: job.requirements.join("\n"),
@@ -1526,14 +1503,6 @@ function Toggle({
         </span>
       </span>
     </label>
-  );
-}
-
-function Counter({ value, maximum }: { value: number; maximum: number }) {
-  return (
-    <span className="mt-1 block text-right text-[10px] font-semibold text-slate-400">
-      {value}/{maximum}
-    </span>
   );
 }
 

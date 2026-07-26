@@ -349,13 +349,12 @@ export function parseJobPostMutation(
       yachtLengthUnit === null ||
       title.length < 3 ||
       location.length < 2 ||
-      summary.length < 20 ||
       description.length < 60)
   ) {
     return {
       ok: false,
       error:
-        "Complete the yacht type, yacht length, title, location, summary and description before publishing.",
+        "Complete the yacht type, yacht length, title, location and description before publishing.",
     };
   }
 

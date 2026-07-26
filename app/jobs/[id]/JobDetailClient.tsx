@@ -239,15 +239,6 @@ function JobDetail({
                   ) : null}
                 </div>
 
-                {job.summary ? (
-                  <section className="mt-9 border-t border-slate-200 pt-8">
-                    <SectionLabel>{c.summary}</SectionLabel>
-                    <p data-i18n-ignore className="mt-4 text-lg leading-8 text-slate-600">
-                      {job.summary}
-                    </p>
-                  </section>
-                ) : null}
-
                 {job.description ? (
                   <section className="mt-9 border-t border-slate-200 pt-8">
                     <SectionLabel>{c.description}</SectionLabel>
@@ -466,7 +457,6 @@ const copy = {
     employmentType: "Employment",
     start: "Start date",
     salary: "Salary",
-    summary: "Role summary",
     description: "About the role",
     responsibilities: "Responsibilities",
     requirements: "Requirements",
@@ -497,7 +487,6 @@ const copy = {
     employmentType: "Çalışma biçimi",
     start: "Başlangıç tarihi",
     salary: "Maaş",
-    summary: "Pozisyon özeti",
     description: "Pozisyon hakkında",
     responsibilities: "Sorumluluklar",
     requirements: "Gereksinimler",

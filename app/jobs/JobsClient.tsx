@@ -116,7 +116,6 @@ export function JobsClient() {
         job.department,
         job.employmentType,
         job.location,
-        job.summary,
         job.listingNumber,
         formatJobListingNumber(job.listingNumber),
         yachtLabel(job),
@@ -356,12 +355,6 @@ function JobCard({
             <InfoLine icon={<CircleDollarSign />} value={salary} />
           ) : null}
         </div>
-
-        {job.summary ? (
-          <p data-i18n-ignore className="mt-5 line-clamp-3 text-sm leading-6 text-slate-600">
-            {job.summary}
-          </p>
-        ) : null}
 
         <div className="mt-auto pt-6">
           <Link
