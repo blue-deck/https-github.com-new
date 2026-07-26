@@ -37,6 +37,8 @@ import { YachtSizeField } from "../../components/YachtSizeField";
 import {
   formatJobCandidateType,
   formatJobMinimumYachtExperience,
+  formatJobSmokerPolicy,
+  formatJobVisibleTattooPolicy,
   formatJobYachtLength,
   formatJobYachtType,
   formatJobListingNumber,
@@ -45,9 +47,13 @@ import {
   jobEmploymentTypes,
   jobSalaryCurrencies,
   jobSalaryPeriods,
+  jobSmokerPolicies,
+  jobVisibleTattooPolicies,
   jobYachtTypes,
   type EmployerJobPost,
   type JobCandidateType,
+  type JobSmokerPolicy,
+  type JobVisibleTattooPolicy,
   type JobPostStatus,
   type JobYachtLengthUnit,
   type JobYachtType,
@@ -80,6 +86,9 @@ type FormState = {
   position: string;
   employmentType: (typeof jobEmploymentTypes)[number];
   candidateType: JobCandidateType;
+  smokerPolicy: JobSmokerPolicy;
+  visibleTattooPolicy: JobVisibleTattooPolicy;
+  requiredLanguages: string;
   yachtType: JobYachtType | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
@@ -148,6 +157,12 @@ const copy = {
     individual: "Individual",
     team: "Team",
     couple: "Couple",
+    candidatePreferences: "Candidate preferences",
+    smoker: "Smoking",
+    visibleTattoos: "Visible tattoos",
+    requiredLanguages: "Required languages",
+    languageHint: "One language per line",
+    languagePlaceholder: "English\nFrench",
     minimumYachtExperience: "Minimum yacht experience",
     minimumYachtExperiencePlaceholder: "e.g. 3",
     minimumYachtExperienceHelp:
@@ -278,6 +293,12 @@ const copy = {
     individual: "Bireysel",
     team: "Ekip",
     couple: "Çift",
+    candidatePreferences: "Aday tercihleri",
+    smoker: "Sigara",
+    visibleTattoos: "Görünür dövme",
+    requiredLanguages: "Gerekli diller",
+    languageHint: "Her satıra bir dil",
+    languagePlaceholder: "İngilizce\nFransızca",
     minimumYachtExperience: "Minimum yat deneyimi",
     minimumYachtExperiencePlaceholder: "Örn. 3",
     minimumYachtExperienceHelp:
@@ -592,6 +613,9 @@ export function JobPostsManager() {
       position: form.position,
       employmentType: form.employmentType,
       candidateType: form.candidateType,
+      smokerPolicy: form.smokerPolicy,
+      visibleTattooPolicy: form.visibleTattooPolicy,
+      requiredLanguages: lines(form.requiredLanguages),
       yachtType: form.yachtType || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
@@ -1067,6 +1091,66 @@ export function JobPostsManager() {
                 </div>
               </FormSection>
 
+              <FormSection
+                icon={<UsersRound />}
+                title={c.candidatePreferences}
+              >
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Field label={c.smoker}>
+                    <select
+                      value={form.smokerPolicy}
+                      onChange={(event) =>
+                        updateForm(
+                          "smokerPolicy",
+                          event.target.value as JobSmokerPolicy,
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                    >
+                      {jobSmokerPolicies.map((policy) => (
+                        <option key={policy} value={policy}>
+                          {formatJobSmokerPolicy(policy, language)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field label={c.visibleTattoos}>
+                    <select
+                      value={form.visibleTattooPolicy}
+                      onChange={(event) =>
+                        updateForm(
+                          "visibleTattooPolicy",
+                          event.target.value as JobVisibleTattooPolicy,
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                    >
+                      {jobVisibleTattooPolicies.map((policy) => (
+                        <option key={policy} value={policy}>
+                          {formatJobVisibleTattooPolicy(policy, language)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <div className="lg:col-span-2">
+                    <ListField
+                      label={c.requiredLanguages}
+                      hint={c.languageHint}
+                      value={form.requiredLanguages}
+                      placeholder={c.languagePlaceholder}
+                      disabled={saving}
+                      onChange={(value) =>
+                        updateForm("requiredLanguages", value)
+                      }
+                    />
+                  </div>
+                </div>
+              </FormSection>
+
               <FormSection icon={<Ship />} title={c.yachtDetails}>
                 <div className="grid gap-5 lg:grid-cols-2">
                   <Field label={c.yachtType}>
@@ -1388,6 +1472,9 @@ function emptyForm(yachtId: string): FormState {
     position: "",
     employmentType: "permanent",
     candidateType: "individual",
+    smokerPolicy: "no_preference",
+    visibleTattooPolicy: "no_preference",
+    requiredLanguages: "",
     yachtType: "",
     yachtLength: "",
     yachtLengthUnit: "m",
@@ -1413,6 +1500,9 @@ function formFromJob(job: EmployerJobPost): FormState {
     position: job.position,
     employmentType: job.employmentType,
     candidateType: job.candidateType,
+    smokerPolicy: job.smokerPolicy,
+    visibleTattooPolicy: job.visibleTattooPolicy,
+    requiredLanguages: job.requiredLanguages.join("\n"),
     yachtType: job.yachtType || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),

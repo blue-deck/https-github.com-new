@@ -5,10 +5,14 @@ import {
   isJobYachtLengthUnit,
   isJobYachtType,
   isJobCandidateType,
+  isJobSmokerPolicy,
+  isJobVisibleTattooPolicy,
   isSupportedJobListingNumber,
   type JobYachtLengthUnit,
   type JobYachtType,
   type JobCandidateType,
+  type JobSmokerPolicy,
+  type JobVisibleTattooPolicy,
 } from "../lib/jobPosts";
 
 export type PublicJobSalary = {
@@ -32,6 +36,9 @@ export type PublicJob = {
   department: string;
   employmentType: string;
   candidateType: JobCandidateType;
+  smokerPolicy: JobSmokerPolicy;
+  visibleTattooPolicy: JobVisibleTattooPolicy;
+  requiredLanguages: string[];
   location: string;
   startDate: string;
   yachtType: JobYachtType | null;
@@ -72,6 +79,16 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     "candidateType",
     "candidate_type",
   );
+  const smokerPolicyValue = readValue(
+    value,
+    "smokerPolicy",
+    "smoker_policy",
+  );
+  const visibleTattooPolicyValue = readValue(
+    value,
+    "visibleTattooPolicy",
+    "visible_tattoo_policy",
+  );
   const minimumYachtExperienceYears = readWholeYearsNullable(
     readValue(
       value,
@@ -93,6 +110,17 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     candidateType: isJobCandidateType(candidateTypeValue)
       ? candidateTypeValue
       : "individual",
+    smokerPolicy: isJobSmokerPolicy(smokerPolicyValue)
+      ? smokerPolicyValue
+      : "no_preference",
+    visibleTattooPolicy: isJobVisibleTattooPolicy(visibleTattooPolicyValue)
+      ? visibleTattooPolicyValue
+      : "no_preference",
+    requiredLanguages: readStringList(
+      value,
+      "requiredLanguages",
+      "required_languages",
+    ),
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
@@ -274,8 +302,12 @@ function readValue(record: UnknownRecord, ...keys: string[]) {
   return undefined;
 }
 
-function readStringList(record: UnknownRecord, key: string) {
-  const value = record[key];
+function readStringList(
+  record: UnknownRecord,
+  key: string,
+  fallbackKey?: string,
+) {
+  const value = record[key] ?? (fallbackKey ? record[fallbackKey] : undefined);
   if (!Array.isArray(value)) return [];
 
   return value

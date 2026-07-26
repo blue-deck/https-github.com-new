@@ -7,6 +7,16 @@ export const jobEmploymentTypes = [
   "daywork",
 ] as const;
 export const jobCandidateTypes = ["individual", "team", "couple"] as const;
+export const jobSmokerPolicies = [
+  "no_preference",
+  "non_smoker",
+  "smoker_accepted",
+] as const;
+export const jobVisibleTattooPolicies = [
+  "no_preference",
+  "not_accepted",
+  "accepted",
+] as const;
 export const jobSalaryPeriods = ["day", "week", "month", "year"] as const;
 export const jobSalaryCurrencies = ["EUR", "USD", "GBP", "AUD", "NZD"] as const;
 export const jobClosureReasons = ["expired", "cancelled"] as const;
@@ -28,6 +38,9 @@ export const jobYachtLengthUnits = ["m", "ft"] as const;
 export type JobPostStatus = (typeof jobPostStatuses)[number];
 export type JobEmploymentType = (typeof jobEmploymentTypes)[number];
 export type JobCandidateType = (typeof jobCandidateTypes)[number];
+export type JobSmokerPolicy = (typeof jobSmokerPolicies)[number];
+export type JobVisibleTattooPolicy =
+  (typeof jobVisibleTattooPolicies)[number];
 export type JobSalaryPeriod = (typeof jobSalaryPeriods)[number];
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
@@ -55,6 +68,9 @@ export type PublicJobPost = {
   department: string;
   employmentType: JobEmploymentType;
   candidateType: JobCandidateType;
+  smokerPolicy: JobSmokerPolicy;
+  visibleTattooPolicy: JobVisibleTattooPolicy;
+  requiredLanguages: string[];
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -123,6 +139,16 @@ export function isJobCandidateType(value: unknown): value is JobCandidateType {
   return jobCandidateTypes.includes(value as JobCandidateType);
 }
 
+export function isJobSmokerPolicy(value: unknown): value is JobSmokerPolicy {
+  return jobSmokerPolicies.includes(value as JobSmokerPolicy);
+}
+
+export function isJobVisibleTattooPolicy(
+  value: unknown,
+): value is JobVisibleTattooPolicy {
+  return jobVisibleTattooPolicies.includes(value as JobVisibleTattooPolicy);
+}
+
 export function isJobSalaryPeriod(
   value: unknown,
 ): value is JobSalaryPeriod {
@@ -182,6 +208,30 @@ export function formatJobCandidateType(
   language: "en" | "tr",
 ) {
   return jobCandidateTypeLabels[value][language];
+}
+
+export function formatJobSmokerPolicy(
+  value: JobSmokerPolicy,
+  language: "en" | "tr",
+) {
+  const labels: Record<JobSmokerPolicy, { en: string; tr: string }> = {
+    no_preference: { en: "No preference", tr: "Tercih yok" },
+    non_smoker: { en: "Non-smoker required", tr: "Sigara içmeyen" },
+    smoker_accepted: { en: "Smokers accepted", tr: "Sigara içen kabul edilir" },
+  };
+  return labels[value][language];
+}
+
+export function formatJobVisibleTattooPolicy(
+  value: JobVisibleTattooPolicy,
+  language: "en" | "tr",
+) {
+  const labels: Record<JobVisibleTattooPolicy, { en: string; tr: string }> = {
+    no_preference: { en: "No preference", tr: "Tercih yok" },
+    not_accepted: { en: "No visible tattoos", tr: "Görünür dövme olmamalı" },
+    accepted: { en: "Visible tattoos accepted", tr: "Görünür dövme kabul edilir" },
+  };
+  return labels[value][language];
 }
 
 export function formatJobYachtType(

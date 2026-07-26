@@ -5,6 +5,8 @@ import type { NextRequest } from "next/server";
 import {
   isJobEmploymentType,
   isJobCandidateType,
+  isJobSmokerPolicy,
+  isJobVisibleTattooPolicy,
   isJobClosureReason,
   isSupportedJobListingNumber,
   isJobPostStatus,
@@ -15,6 +17,8 @@ import {
   type EmployerJobPost,
   type JobEmploymentType,
   type JobCandidateType,
+  type JobSmokerPolicy,
+  type JobVisibleTattooPolicy,
   type JobPostStatus,
   type JobSalaryCurrency,
   type JobSalaryPeriod,
@@ -45,7 +49,7 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience_years,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,yacht_type,yacht_length,yacht_length_unit,minimum_yacht_experience_years,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},yacht_id,created_by`;
 
@@ -62,6 +66,9 @@ const createPayloadKeys = new Set([
   "minimumYachtExperienceYears",
   "employmentType",
   "candidateType",
+  "smokerPolicy",
+  "visibleTattooPolicy",
+  "requiredLanguages",
   "location",
   "startDate",
   "summary",
@@ -91,6 +98,9 @@ export type JobPostMutation = {
   department: string;
   employmentType: JobEmploymentType;
   candidateType: JobCandidateType;
+  smokerPolicy: JobSmokerPolicy;
+  visibleTattooPolicy: JobVisibleTattooPolicy;
+  requiredLanguages: string[];
   yachtType: JobYachtType | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
@@ -252,6 +262,12 @@ export function parseJobPostMutation(
   if (!isJobCandidateType(value.candidateType)) {
     return { ok: false, error: "Select individual, team or couple." };
   }
+  if (!isJobSmokerPolicy(value.smokerPolicy)) {
+    return { ok: false, error: "Select a valid smoking preference." };
+  }
+  if (!isJobVisibleTattooPolicy(value.visibleTattooPolicy)) {
+    return { ok: false, error: "Select a valid visible tattoo preference." };
+  }
   const yachtType = optionalJobYachtType(value.yachtType);
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
@@ -319,11 +335,17 @@ export function parseJobPostMutation(
   const responsibilities = textList(value.responsibilities);
   const requirements = textList(value.requirements);
   const benefits = textList(value.benefits);
-  if (!responsibilities.ok || !requirements.ok || !benefits.ok) {
+  const requiredLanguages = textList(value.requiredLanguages);
+  if (
+    !responsibilities.ok ||
+    !requirements.ok ||
+    !benefits.ok ||
+    !requiredLanguages.ok
+  ) {
     return {
       ok: false,
       error:
-        "Use no more than 20 concise items in each responsibilities, requirements and benefits list.",
+        "Use no more than 20 concise items in each list.",
     };
   }
 
@@ -396,6 +418,9 @@ export function parseJobPostMutation(
       department: position.department,
       employmentType: value.employmentType,
       candidateType: value.candidateType,
+      smokerPolicy: value.smokerPolicy,
+      visibleTattooPolicy: value.visibleTattooPolicy,
+      requiredLanguages: requiredLanguages.value,
       yachtType,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
@@ -881,6 +906,9 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     department: base.department,
     employmentType: base.employmentType,
     candidateType: base.candidateType,
+    smokerPolicy: base.smokerPolicy,
+    visibleTattooPolicy: base.visibleTattooPolicy,
+    requiredLanguages: base.requiredLanguages,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -957,6 +985,9 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     department: base.department,
     employmentType: base.employmentType,
     candidateType: base.candidateType,
+    smokerPolicy: base.smokerPolicy,
+    visibleTattooPolicy: base.visibleTattooPolicy,
+    requiredLanguages: base.requiredLanguages,
     yachtType: base.yachtType,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
@@ -1007,6 +1038,9 @@ export function jobPostMutationColumns(
     department: mutation.department,
     employment_type: mutation.employmentType,
     candidate_type: mutation.candidateType,
+    smoker_policy: mutation.smokerPolicy,
+    visible_tattoo_policy: mutation.visibleTattooPolicy,
+    required_languages: mutation.requiredLanguages,
     yacht_type: mutation.yachtType,
     yacht_length: mutation.yachtLength,
     yacht_length_unit: mutation.yachtLengthUnit,
@@ -1062,6 +1096,7 @@ function jobPostBaseFromRow(value: unknown) {
   const responsibilities = databaseTextList(value.responsibilities);
   const requirements = databaseTextList(value.requirements);
   const benefits = databaseTextList(value.benefits);
+  const requiredLanguages = databaseTextList(value.required_languages);
   const salaryMin = databaseMoney(value.salary_min);
   const salaryMax = databaseMoney(value.salary_max);
   const joinedYacht = joinedRecord(value.yacht);
@@ -1079,12 +1114,15 @@ function jobPostBaseFromRow(value: unknown) {
     minimumYachtExperienceYears === undefined ||
     !isJobEmploymentType(value.employment_type) ||
     !isJobCandidateType(value.candidate_type) ||
+    !isJobSmokerPolicy(value.smoker_policy) ||
+    !isJobVisibleTattooPolicy(value.visible_tattoo_policy) ||
     !location ||
     startDate === undefined ||
     publishedAt === undefined ||
     !responsibilities ||
     !requirements ||
     !benefits ||
+    !requiredLanguages ||
     typeof value.salary_visible !== "boolean" ||
     salaryMin === undefined ||
     salaryMax === undefined ||
@@ -1104,6 +1142,9 @@ function jobPostBaseFromRow(value: unknown) {
     department,
     employmentType: value.employment_type,
     candidateType: value.candidate_type,
+    smokerPolicy: value.smoker_policy,
+    visibleTattooPolicy: value.visible_tattoo_policy,
+    requiredLanguages,
     yachtType,
     yachtLength,
     yachtLengthUnit,

@@ -10,7 +10,10 @@ import {
   CalendarDays,
   Check,
   CircleDollarSign,
+  Cigarette,
   Clock3,
+  Fingerprint,
+  Languages,
   LoaderCircle,
   MapPin,
   RefreshCw,
@@ -25,6 +28,8 @@ import {
   formatJobCandidateType,
   formatJobMinimumYachtExperience,
   formatJobListingNumber,
+  formatJobSmokerPolicy,
+  formatJobVisibleTattooPolicy,
   formatJobYachtLength,
   formatJobYachtType,
 } from "../../lib/jobPosts";
@@ -161,6 +166,12 @@ function JobDetail({
           language,
         );
   const candidateType = formatJobCandidateType(job.candidateType, language);
+  const smokerPolicy = formatJobSmokerPolicy(job.smokerPolicy, language);
+  const visibleTattooPolicy = formatJobVisibleTattooPolicy(
+    job.visibleTattooPolicy,
+    language,
+  );
+  const requiredLanguages = job.requiredLanguages.join(", ");
 
   return (
     <>
@@ -247,6 +258,27 @@ function JobDetail({
                     label={c.candidateType}
                     value={candidateType}
                   />
+                  {job.smokerPolicy !== "no_preference" ? (
+                    <JobFact
+                      icon={<Cigarette />}
+                      label={c.smoker}
+                      value={smokerPolicy}
+                    />
+                  ) : null}
+                  {job.visibleTattooPolicy !== "no_preference" ? (
+                    <JobFact
+                      icon={<Fingerprint />}
+                      label={c.visibleTattoos}
+                      value={visibleTattooPolicy}
+                    />
+                  ) : null}
+                  {requiredLanguages ? (
+                    <JobFact
+                      icon={<Languages />}
+                      label={c.languages}
+                      value={requiredLanguages}
+                    />
+                  ) : null}
                   {job.startDate ? (
                     <JobFact
                       icon={<CalendarDays />}
@@ -478,6 +510,9 @@ const copy = {
     location: "Location",
     employmentType: "Employment",
     candidateType: "Hiring format",
+    smoker: "Smoking",
+    visibleTattoos: "Visible tattoos",
+    languages: "Required languages",
     start: "Start date",
     salary: "Salary",
     description: "About the role",
@@ -509,6 +544,9 @@ const copy = {
     location: "Konum",
     employmentType: "Çalışma biçimi",
     candidateType: "İşe alım biçimi",
+    smoker: "Sigara",
+    visibleTattoos: "Görünür dövme",
+    languages: "Gerekli diller",
     start: "Başlangıç tarihi",
     salary: "Maaş",
     description: "Pozisyon hakkında",

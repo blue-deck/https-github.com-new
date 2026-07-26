@@ -25,6 +25,8 @@ import { useLanguage } from "../components/LanguageProvider";
 import {
   formatJobCandidateType,
   formatJobListingNumber,
+  formatJobSmokerPolicy,
+  formatJobVisibleTattooPolicy,
 } from "../lib/jobPosts";
 import {
   formatJobDate,
@@ -120,6 +122,11 @@ export function JobsClient() {
         language,
       );
       const candidateType = formatJobCandidateType(job.candidateType, language);
+      const smokerPolicy = formatJobSmokerPolicy(job.smokerPolicy, language);
+      const visibleTattooPolicy = formatJobVisibleTattooPolicy(
+        job.visibleTattooPolicy,
+        language,
+      );
       const searchableText = [
         job.title,
         job.position,
@@ -132,6 +139,9 @@ export function JobsClient() {
         minimumYachtExperience,
         candidateType,
         job.candidateType,
+        smokerPolicy,
+        visibleTattooPolicy,
+        job.requiredLanguages.join(" "),
         job.minimumYachtExperienceYears === null
           ? ""
           : String(job.minimumYachtExperienceYears),
