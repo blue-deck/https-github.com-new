@@ -83,6 +83,24 @@ export async function POST(request: NextRequest) {
     });
 
     try {
+      const trustedMetadataResult =
+        await adminSupabase.auth.admin.updateUserById(data.user.id, {
+          app_metadata: {
+            ...(data.user.app_metadata || {}),
+            role,
+            position,
+            bluedeck_account_role: role,
+            bluedeck_signup_position: position,
+          },
+        });
+
+      if (trustedMetadataResult.error) {
+        console.error("BlueDeck trusted account metadata sync failed after signup", {
+          userId: data.user.id,
+          message: trustedMetadataResult.error.message,
+        });
+      }
+
       const profileResults = await Promise.all([
         saveBaseProfileById(adminSupabase, {
           id: data.user.id,
@@ -97,6 +115,7 @@ export async function POST(request: NextRequest) {
             email,
             full_name: fullName,
             current_position: position,
+            current_positions: [position],
             public_crew_id: data.user.id.slice(0, 8).toUpperCase(),
           }
         ),

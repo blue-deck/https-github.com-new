@@ -19,22 +19,9 @@ export async function saveBaseProfileById(
   payload: BaseProfilePayload
 ) {
   const clean = cleanPayload(payload);
-  const existing = await supabase
+  return supabase
     .from("profiles")
-    .select("id")
-    .eq("id", payload.id)
+    .upsert(clean, { onConflict: "id" })
+    .select()
     .limit(1);
-
-  if (existing.error) return { data: null, error: existing.error };
-
-  if (existing.data?.[0]?.id) {
-    return supabase
-      .from("profiles")
-      .update(clean)
-      .eq("id", payload.id)
-      .select()
-      .limit(1);
-  }
-
-  return supabase.from("profiles").insert(clean).select().limit(1);
 }

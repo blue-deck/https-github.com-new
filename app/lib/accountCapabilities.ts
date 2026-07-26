@@ -9,6 +9,7 @@ import { supabase } from "./supabase";
 
 export type AccountCapabilities = {
   role: MarketplaceAccountRole;
+  position: string;
   canManageYachts: boolean;
   canApplyToJobs: boolean;
 };
@@ -32,6 +33,7 @@ export async function loadAccountCapabilities(
 
   return {
     role: value.role,
+    position: value.position,
     canManageYachts: value.canManageYachts,
     canApplyToJobs: value.canApplyToJobs,
   };
@@ -46,6 +48,7 @@ function isAccountCapabilitiesResponse(
   return (
     candidate.ok === true &&
     isMarketplaceAccountRole(candidate.role) &&
+    typeof candidate.position === "string" &&
     typeof candidate.canManageYachts === "boolean" &&
     typeof candidate.canApplyToJobs === "boolean"
   );

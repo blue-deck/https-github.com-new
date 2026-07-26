@@ -4,7 +4,16 @@ import {
   cleanText,
 } from "../../../lib/employerAccessServer";
 import { saveBaseProfileById } from "../../../lib/baseProfiles";
+import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
+import {
+  isMarketplaceAccountRole,
+  marketplaceCapabilitiesForRole,
+} from "../../../lib/marketplaceCapabilities";
 import { loadOrEnsureMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
+import {
+  getDefaultPositionForAccountType,
+  yachtPositionTitles,
+} from "../../../lib/yachtOperations";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +44,47 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const entitlement = entitlementResult.entitlement;
+  let entitlement = entitlementResult.entitlement;
+  const appMetadata = clients.user.app_metadata as
+    | Record<string, unknown>
+    | undefined;
+  const trustedRoleCandidate =
+    cleanText(appMetadata?.bluedeck_account_role).toLowerCase() ||
+    cleanText(appMetadata?.role).toLowerCase();
+  const trustedRole = isMarketplaceAccountRole(trustedRoleCandidate)
+    ? trustedRoleCandidate
+    : null;
+
+  if (trustedRole && entitlement.role !== trustedRole) {
+    const { error: roleSyncError } = await clients.serviceClient
+      .from("marketplace_entitlements")
+      .update({ account_role: trustedRole })
+      .eq("user_id", clients.user.id);
+
+    if (roleSyncError) {
+      console.error("[account-capabilities]", {
+        event: "entitlement_role_sync_failed",
+        userId: clients.user.id,
+        code: cleanText(roleSyncError.code) || undefined,
+        message: cleanText(roleSyncError.message) || "Unknown database error",
+      });
+      return accountResponse(
+        { ok: false, error: "Your account role could not be synchronized." },
+        503,
+      );
+    }
+
+    const trustedCapabilities = marketplaceCapabilitiesForRole(trustedRole);
+    entitlement = {
+      ...entitlement,
+      ...trustedCapabilities,
+      role: trustedRole,
+      canPostJobs:
+        entitlement.postingStatus === "enabled" &&
+        trustedCapabilities.canPostJobs,
+    };
+  }
+
   const profileResult = await saveBaseProfileById(clients.serviceClient, {
     id: clients.user.id,
     email: clients.user.email,
@@ -52,9 +101,63 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  const trustedPositionCandidate =
+    cleanText(appMetadata?.bluedeck_signup_position) ||
+    cleanText(appMetadata?.position);
+  const trustedPosition = yachtPositionTitles.includes(trustedPositionCandidate)
+    ? trustedPositionCandidate
+    : getDefaultPositionForAccountType(entitlement.role);
+  const { data: crewProfile, error: crewProfileError } = await clients.serviceClient
+    .from("crew_profiles")
+    .select("id,current_position,current_positions")
+    .eq("user_id", clients.user.id)
+    .maybeSingle();
+
+  if (crewProfileError) {
+    console.error("[account-capabilities]", {
+      event: "crew_position_load_failed",
+      userId: clients.user.id,
+      code: cleanText(crewProfileError.code) || undefined,
+      message: cleanText(crewProfileError.message) || "Unknown database error",
+    });
+  }
+
+  const savedPosition =
+    cleanText(crewProfile?.current_position) ||
+    (Array.isArray(crewProfile?.current_positions)
+      ? cleanText(crewProfile.current_positions[0])
+      : "");
+  const position = savedPosition || trustedPosition;
+
+  if (!crewProfileError && position && !savedPosition) {
+    const crewProfileResult = await saveCrewProfileByUserId(
+      clients.serviceClient,
+      clients.user.id,
+      {
+        email: clients.user.email,
+        full_name:
+          cleanText(clients.user.user_metadata?.full_name) ||
+          clients.user.email,
+        current_position: position,
+        current_positions: [position],
+        public_crew_id: clients.user.id.slice(0, 8).toUpperCase(),
+      },
+      "id,current_position,current_positions",
+    );
+
+    if (crewProfileResult.error) {
+      console.error("[account-capabilities]", {
+        event: "crew_position_sync_failed",
+        userId: clients.user.id,
+        message: cleanText(crewProfileResult.error.message),
+      });
+    }
+  }
+
   return accountResponse({
     ok: true,
     role: entitlement.role,
+    position,
     canManageYachts: ["captain", "owner", "management"].includes(
       entitlement.role,
     ),

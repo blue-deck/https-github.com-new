@@ -18,6 +18,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
+import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { languages } from "../lib/i18n";
@@ -94,6 +95,7 @@ export default function SettingsPage() {
       const [
         { data: baseProfile, error: baseProfileError },
         { data: crewProfile, error: crewProfileError },
+        capabilities,
       ] = await Promise.all([
         supabase
           .from("profiles")
@@ -105,6 +107,7 @@ export default function SettingsPage() {
           .select("full_name, email, current_position, current_positions")
           .eq("user_id", user.id)
           .maybeSingle(),
+        loadAccountCapabilities(),
       ]);
 
       if (baseProfileError || crewProfileError) {
@@ -120,8 +123,12 @@ export default function SettingsPage() {
       const currentPosition =
         cleanText(crewProfile?.current_position) ||
         cleanStringList(crewProfile?.current_positions)[0] ||
+        cleanText(capabilities?.position) ||
         "";
-      const role = normalizeRole(baseProfile?.role) || "crew";
+      const role =
+        normalizeRole(capabilities?.role) ||
+        normalizeRole(baseProfile?.role) ||
+        "crew";
       const nextProfile: SettingsProfile = {
         id: user.id,
         email,

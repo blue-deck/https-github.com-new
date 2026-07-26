@@ -37,5 +37,27 @@ export async function saveCrewProfileByUserId<T = Record<string, unknown>>(
     .select(selectColumns)
     .single();
 
+  if (error?.code === "23505") {
+    const { data: concurrentProfile, error: concurrentLookupError } = await client
+      .from("crew_profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (concurrentLookupError || !concurrentProfile?.id) {
+      return { data: null, error: concurrentLookupError || error };
+    }
+
+    const { data: updatedData, error: updateError } = await client
+      .from("crew_profiles")
+      .update(profilePayload)
+      .eq("id", concurrentProfile.id)
+      .select(selectColumns)
+      .single();
+
+    return { data: (updatedData as T) || null, error: updateError };
+  }
+
   return { data: (data as T) || null, error };
 }
