@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Ship,
   UserRound,
+  UsersRound,
   X,
 } from "lucide-react";
 import {
@@ -192,6 +193,7 @@ export function BlueDeckTopBar() {
   const canManageYachts = ["captain", "owner", "management"].includes(
     normalizedRole,
   );
+  const canApplyToJobs = ["crew", "captain"].includes(normalizedRole);
   const roleLabel =
     normalizedRole === "captain"
       ? t("login.roleCaptain")
@@ -207,11 +209,17 @@ export function BlueDeckTopBar() {
     { href: "/profile", label: t("topbar.myProfile"), icon: UserRound },
     { href: "/my-blue", label: t("topbar.myBlue"), icon: Camera },
     { href: "/crew/tasks", label: t("topbar.myDeck"), icon: Ship },
-    ...(canManageYachts
-      ? [{ href: "/yachts", label: t("topbar.captainWorkspace"), icon: Ship }]
+    ...(canApplyToJobs
+      ? [{ href: "/jobs", label: t("nav.findJob"), icon: BriefcaseBusiness }]
       : []),
     ...(canManageYachts
       ? [{ href: "/hiring", label: t("topbar.hiring"), icon: BriefcaseBusiness }]
+      : []),
+    ...(canManageYachts
+      ? [{ href: "/find-crew", label: t("nav.findCrew"), icon: UsersRound }]
+      : []),
+    ...(canManageYachts
+      ? [{ href: "/yachts", label: t("topbar.captainWorkspace"), icon: Ship }]
       : []),
     ...(identity?.isAdmin
       ? [

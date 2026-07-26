@@ -1588,7 +1588,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     display: none;
   }
 
-  .bd-public-header-home .bd-public-actions > a[href="/login?mode=signup"] {
+  .bd-public-header .bd-public-actions > a[href="/login?mode=signup"] {
     display: none;
   }
 

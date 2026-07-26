@@ -9,10 +9,13 @@ import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
 
-const publicNavigation = [
-  { labelKey: "nav.findJob", href: "/jobs" },
-  { labelKey: "nav.findCrew", href: "/find-crew" },
-  { labelKey: "nav.yachts", href: "/#yacht-platform" },
+const publicPrimaryNavigation = [
+  { labelKey: "nav.findJob", href: "/jobs", featured: true },
+  { labelKey: "nav.findCrew", href: "/find-crew", featured: true },
+  { labelKey: "nav.forYachts", href: "/#yacht-platform" },
+] satisfies Array<{ labelKey: TranslationKey; href: string; featured?: boolean }>;
+
+const publicMoreNavigation = [
   { labelKey: "nav.services", href: "/services" },
   { labelKey: "nav.management", href: "/management" },
   { labelKey: "nav.trust", href: "/trust" },
@@ -20,22 +23,10 @@ const publicNavigation = [
   { labelKey: "nav.contact", href: "/contact" },
 ] satisfies Array<{ labelKey: TranslationKey; href: string }>;
 
-const homepagePrimaryNavigation = [
-  { labelKey: "nav.findJob", href: "/jobs" },
-  { labelKey: "nav.findCrew", href: "/find-crew" },
-] satisfies Array<{ labelKey: TranslationKey; href: string }>;
-
-const homepageMoreNavigation = [
-  { labelKey: "nav.yachts", href: "/#yacht-platform" },
-  { labelKey: "nav.services", href: "/services" },
-  { labelKey: "nav.management", href: "/management" },
-  { labelKey: "nav.trust", href: "/trust" },
-] satisfies Array<{ labelKey: TranslationKey; href: string }>;
-
-const homepageTrailingNavigation = [
-  { labelKey: "nav.about", href: "/about" },
-  { labelKey: "nav.contact", href: "/contact" },
-] satisfies Array<{ labelKey: TranslationKey; href: string }>;
+const publicMobileNavigation = [
+  ...publicPrimaryNavigation,
+  ...publicMoreNavigation,
+];
 
 export function PublicHeader({ homepageNavigation = false }: { homepageNavigation?: boolean }) {
   const { t } = useLanguage();
@@ -83,39 +74,25 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
         />
 
         <nav className="bd-public-shortcuts" aria-label="BlueDeck public navigation">
-          {homepageNavigation ? (
-            <>
-              {homepagePrimaryNavigation.map((item) => (
-                <Link key={item.href} href={item.href} className="bd-focus bd-public-shortcut-button">
-                  {t(item.labelKey)}
-                </Link>
-              ))}
-              <HomepageMoreMenu items={homepageMoreNavigation} />
-              {homepageTrailingNavigation.map((item) => (
-                <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
-                  {t(item.labelKey)}
-                </Link>
-              ))}
-            </>
-          ) : (
-            publicNavigation.map((item) => (
-              <Link key={item.href} href={item.href} className="bd-focus transition hover:text-cyan-200">
-                {t(item.labelKey)}
-              </Link>
-            ))
-          )}
+          {publicPrimaryNavigation.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={
+                item.featured
+                  ? "bd-focus bd-public-shortcut-button"
+                  : "bd-focus transition hover:text-cyan-200"
+              }
+            >
+              {t(item.labelKey)}
+            </Link>
+          ))}
+          <PublicMoreMenu items={publicMoreNavigation} />
         </nav>
 
         <div className="bd-public-actions">
-          {homepageNavigation && !sessionEmail ? (
-            <HomepageMoreMenu
-              items={[
-                ...homepagePrimaryNavigation,
-                ...homepageMoreNavigation,
-                ...homepageTrailingNavigation,
-              ]}
-              mobile
-            />
+          {!sessionEmail ? (
+            <PublicMoreMenu items={publicMobileNavigation} mobile />
           ) : null}
           {sessionEmail ? (
             <>
@@ -170,7 +147,7 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
   );
 }
 
-function HomepageMoreMenu({
+function PublicMoreMenu({
   items,
   mobile = false,
 }: {
