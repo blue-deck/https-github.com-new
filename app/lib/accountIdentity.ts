@@ -1,6 +1,7 @@
 "use client";
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
+import { loadAccountCapabilities } from "./accountCapabilities";
 import { isPlatformAdmin } from "./employerAccess";
 import { createSafeStoragePath } from "./storage";
 import { supabase } from "./supabase";
@@ -112,7 +113,7 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
   if (userError) throw userError;
   if (!user) return null;
 
-  const [baseProfileResult, crewProfileResult] = await Promise.all([
+  const [baseProfileResult, crewProfileResult, capabilities] = await Promise.all([
     client
       .from("profiles")
       .select("id, email, full_name, role")
@@ -123,6 +124,7 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
       .select("id, email, full_name, profile_photo_url")
       .eq("user_id", user.id)
       .maybeSingle<CrewProfileRow>(),
+    loadAccountCapabilities(client),
   ]);
 
   const metadata = user.user_metadata as Record<string, unknown> | undefined;
@@ -135,7 +137,7 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
     metadata?.full_name,
     email
   );
-  const role = firstText(baseProfile?.role, "crew");
+  const role = firstText(capabilities?.role, baseProfile?.role, "crew");
   const profilePhotoUrl = firstText(crewProfile?.profile_photo_url);
 
   return {

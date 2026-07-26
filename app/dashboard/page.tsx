@@ -25,6 +25,10 @@ import {
   saveDashboardPhoto as persistDashboardPhoto,
   subscribeDashboardPhotoUpdates,
 } from "../lib/accountIdentity";
+import {
+  loadAccountCapabilities,
+  type AccountCapabilities,
+} from "../lib/accountCapabilities";
 import { supabase } from "../lib/supabase";
 
 type DashboardProfile = {
@@ -185,6 +189,8 @@ function DashboardPhotoControl({
 export default function DashboardPage() {
   const { language, t } = useLanguage();
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
+  const [accountCapabilities, setAccountCapabilities] =
+    useState<AccountCapabilities | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [deckInvites, setDeckInvites] = useState<DashboardYachtInvite[]>([]);
@@ -310,17 +316,21 @@ export default function DashboardPage() {
       }
     }
 
-    let { data: profileData } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    const { data: crewProfile } = await supabase
-      .from("crew_profiles")
-      .select("id, full_name, phone, email, profile_photo_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const [profileResult, crewProfileResult, capabilities] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("crew_profiles")
+        .select("id, full_name, phone, email, profile_photo_url")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      loadAccountCapabilities(),
+    ]);
+    let profileData = profileResult.data;
+    const crewProfile = crewProfileResult.data;
 
     const preferredName =
       cleanDisplayName(profileData) ||
@@ -336,7 +346,7 @@ export default function DashboardPage() {
           email: user.email,
           full_name: preferredName,
           phone: crewProfile?.phone || user.user_metadata?.phone || "",
-          role: "crew",
+          role: capabilities?.role || "crew",
         })
         .select()
         .single();
@@ -354,6 +364,7 @@ export default function DashboardPage() {
 
     setProfile({
       ...profileData,
+      role: capabilities?.role || profileData?.role || "crew",
       crew_profile_id: crewProfile?.id,
       full_name: preferredName,
       email: profileData?.email || crewProfile?.email || user.email,
@@ -362,6 +373,7 @@ export default function DashboardPage() {
       profile_photo_url: crewProfile?.profile_photo_url || "",
       dashboard_photo_url: dashboardPhotoUrl,
     });
+    setAccountCapabilities(capabilities);
     await hydrateDeckAccess(crewProfile, profileData?.email || crewProfile?.email || user.email);
     setLoading(false);
   }
@@ -509,10 +521,12 @@ export default function DashboardPage() {
   }
 
   const normalizedRole = profile?.role?.trim().toLowerCase() || "crew";
-  const canManageYachts = ["captain", "owner", "management"].includes(
-    normalizedRole,
-  );
-  const canApplyToJobs = ["crew", "captain"].includes(normalizedRole);
+  const canManageYachts =
+    accountCapabilities?.canManageYachts ??
+    ["captain", "owner", "management"].includes(normalizedRole);
+  const canApplyToJobs =
+    accountCapabilities?.canApplyToJobs ??
+    ["crew", "captain"].includes(normalizedRole);
   const roleLabel =
     normalizedRole === "captain"
       ? t("login.roleCaptain")
