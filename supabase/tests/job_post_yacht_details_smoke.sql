@@ -249,7 +249,7 @@ begin
     values (
       yacht_id, owner_id, owner_id, 'Oversized Yacht Length Draft',
       'Deckhand', 'Deck', 'seasonal', 'Palma, Spain', 'commercial_vessel',
-      1000.01, 'ft',
+      999.01, 'ft',
       'An invalid private draft used to verify the yacht-length upper bound.',
       'This draft must fail because the numeric yacht length exceeds the supported upper bound.',
       'draft'

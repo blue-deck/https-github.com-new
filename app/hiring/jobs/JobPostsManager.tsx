@@ -1220,7 +1220,8 @@ export function JobPostsManager() {
                     metresOptionLabel="m"
                     disabled={saving}
                     required
-                    maxLength={7}
+                    maxLength={6}
+                    maxIntegerDigits={3}
                     labelClassName={fieldLabelClass}
                   />
 
@@ -2067,7 +2068,7 @@ function inputYachtLength(
   if (!value.trim()) return { ok: true, value: null };
   const number = Number(value.replace(",", "."));
   const rounded = Math.round(number * 100) / 100;
-  if (!Number.isFinite(number) || rounded <= 0 || rounded > 1_000) {
+  if (!Number.isFinite(number) || rounded <= 0 || rounded > 999) {
     return { ok: false };
   }
   return { ok: true, value: rounded };

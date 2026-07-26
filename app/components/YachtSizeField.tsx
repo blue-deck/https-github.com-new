@@ -18,6 +18,7 @@ export type YachtSizeFieldProps = {
   required?: boolean;
   allowDecimal?: boolean;
   maxLength?: number;
+  maxIntegerDigits?: number;
   className?: string;
   labelClassName?: string;
 };
@@ -39,6 +40,7 @@ export function YachtSizeField({
   required = false,
   allowDecimal = true,
   maxLength,
+  maxIntegerDigits,
   className = "",
   labelClassName = defaultLabelClassName,
 }: YachtSizeFieldProps) {
@@ -64,7 +66,11 @@ export function YachtSizeField({
           maxLength={maxLength}
           onChange={(event) =>
             onChange(
-              normalizeYachtSizeValue(event.target.value, allowDecimal),
+              normalizeYachtSizeValue(
+                event.target.value,
+                allowDecimal,
+                maxIntegerDigits,
+              ),
               unit,
             )
           }
@@ -88,14 +94,29 @@ export function YachtSizeField({
   );
 }
 
-export function normalizeYachtSizeValue(value: string, allowDecimal = true) {
-  if (!allowDecimal) return value.replace(/\D/g, "");
+export function normalizeYachtSizeValue(
+  value: string,
+  allowDecimal = true,
+  maxIntegerDigits?: number,
+) {
+  if (!allowDecimal) {
+    const digits = value.replace(/\D/g, "");
+    return maxIntegerDigits ? digits.slice(0, maxIntegerDigits) : digits;
+  }
 
   const cleanValue = value.replace(/,/g, ".").replace(/[^\d.]/g, "");
   const decimalIndex = cleanValue.indexOf(".");
-  if (decimalIndex === -1) return cleanValue;
+  if (decimalIndex === -1) {
+    return maxIntegerDigits
+      ? cleanValue.slice(0, maxIntegerDigits)
+      : cleanValue;
+  }
 
-  return `${cleanValue.slice(0, decimalIndex)}.${cleanValue
+  const integerPart = maxIntegerDigits
+    ? cleanValue.slice(0, decimalIndex).slice(0, maxIntegerDigits)
+    : cleanValue.slice(0, decimalIndex);
+
+  return `${integerPart}.${cleanValue
     .slice(decimalIndex + 1)
     .replace(/\./g, "")
     .slice(0, 2)}`;

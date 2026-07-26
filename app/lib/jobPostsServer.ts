@@ -1346,7 +1346,7 @@ function optionalYachtLength(
   if (
     !Number.isFinite(rounded) ||
     rounded <= 0 ||
-    rounded > 1_000
+    rounded > 999
   ) {
     return { ok: false };
   }
@@ -1449,7 +1449,7 @@ function databaseYachtLength(value: unknown): number | null | undefined {
       : typeof value === "string"
         ? Number(value)
         : Number.NaN;
-  return Number.isFinite(length) && length > 0 && length <= 1_000
+  return Number.isFinite(length) && length > 0 && length <= 999
     ? length
     : undefined;
 }
