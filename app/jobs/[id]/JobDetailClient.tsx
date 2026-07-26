@@ -25,7 +25,6 @@ import {
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
-  formatJobCandidateType,
   formatJobMinimumYachtExperience,
   formatJobListingNumber,
   formatJobSmokerPolicy,
@@ -165,7 +164,7 @@ function JobDetail({
           job.minimumYachtExperienceYears,
           language,
         );
-  const candidateType = formatJobCandidateType(job.candidateType, language);
+  const teamCouple = job.candidateType === "individual" ? c.no : c.yes;
   const smokerPolicy = formatJobSmokerPolicy(job.smokerPolicy, language);
   const visibleTattooPolicy = formatJobVisibleTattooPolicy(
     job.visibleTattooPolicy,
@@ -255,8 +254,8 @@ function JobDetail({
                   ) : null}
                   <JobFact
                     icon={<UsersRound />}
-                    label={c.candidateType}
-                    value={candidateType}
+                    label={c.teamCouple}
+                    value={teamCouple}
                   />
                   {job.smokerPolicy !== "no_preference" ? (
                     <JobFact
@@ -509,7 +508,9 @@ const copy = {
     minimumYachtExperience: "Minimum yacht experience",
     location: "Location",
     employmentType: "Employment",
-    candidateType: "Hiring format",
+    teamCouple: "Team / Couple",
+    yes: "Yes",
+    no: "No",
     smoker: "Smoking",
     visibleTattoos: "Visible tattoos",
     languages: "Required languages",
@@ -543,7 +544,9 @@ const copy = {
     minimumYachtExperience: "Minimum yat deneyimi",
     location: "Konum",
     employmentType: "Çalışma biçimi",
-    candidateType: "İşe alım biçimi",
+    teamCouple: "Team / Couple",
+    yes: "Evet",
+    no: "Hayır",
     smoker: "Sigara",
     visibleTattoos: "Görünür dövme",
     languages: "Gerekli diller",

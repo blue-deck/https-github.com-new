@@ -194,22 +194,6 @@ const jobYachtTypeLabels: Record<
   new_build: { en: "New build", tr: "Yeni inşa" },
 };
 
-const jobCandidateTypeLabels: Record<
-  JobCandidateType,
-  { en: string; tr: string }
-> = {
-  individual: { en: "Individual", tr: "Bireysel" },
-  team: { en: "Team", tr: "Ekip" },
-  couple: { en: "Couple", tr: "Çift" },
-};
-
-export function formatJobCandidateType(
-  value: JobCandidateType,
-  language: "en" | "tr",
-) {
-  return jobCandidateTypeLabels[value][language];
-}
-
 export function formatJobSmokerPolicy(
   value: JobSmokerPolicy,
   language: "en" | "tr",

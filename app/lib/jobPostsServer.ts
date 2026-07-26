@@ -260,7 +260,7 @@ export function parseJobPostMutation(
     return { ok: false, error: "Select a valid employment type." };
   }
   if (!isJobCandidateType(value.candidateType)) {
-    return { ok: false, error: "Select individual, team or couple." };
+    return { ok: false, error: "Select a valid Team / Couple option." };
   }
   if (!isJobSmokerPolicy(value.smokerPolicy)) {
     return { ok: false, error: "Select a valid smoking preference." };

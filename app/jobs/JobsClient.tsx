@@ -23,7 +23,6 @@ import {
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import {
-  formatJobCandidateType,
   formatJobListingNumber,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
@@ -121,7 +120,6 @@ export function JobsClient() {
         job,
         language,
       );
-      const candidateType = formatJobCandidateType(job.candidateType, language);
       const smokerPolicy = formatJobSmokerPolicy(job.smokerPolicy, language);
       const visibleTattooPolicy = formatJobVisibleTattooPolicy(
         job.visibleTattooPolicy,
@@ -137,7 +135,7 @@ export function JobsClient() {
         yachtLabel(job),
         yachtSpecification,
         minimumYachtExperience,
-        candidateType,
+        job.candidateType === "individual" ? c.no : c.teamCouple,
         job.candidateType,
         smokerPolicy,
         visibleTattooPolicy,
@@ -329,7 +327,6 @@ function JobCard({
   const yacht = yachtLabel(job);
   const yachtSpecification = yachtSpecificationLabel(job, language);
   const minimumYachtExperience = minimumYachtExperienceLabel(job, language);
-  const candidateType = formatJobCandidateType(job.candidateType, language);
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
@@ -339,7 +336,7 @@ function JobCard({
         <div className="flex flex-wrap items-center gap-2">
           {job.employmentType ? <StatusPill>{job.employmentType}</StatusPill> : null}
           {job.candidateType !== "individual" ? (
-            <StatusPill>{candidateType}</StatusPill>
+            <StatusPill>{c.teamCouple}</StatusPill>
           ) : null}
         </div>
 
@@ -573,6 +570,9 @@ const copy = {
     position: "All positions",
     location: "All locations",
     employmentType: "All employment types",
+    teamCouple: "Team / Couple",
+    yes: "Yes",
+    no: "No",
     results: "Current opportunities",
     roles: "open roles",
     clear: "Clear filters",
@@ -604,6 +604,9 @@ const copy = {
     position: "Tüm pozisyonlar",
     location: "Tüm konumlar",
     employmentType: "Tüm çalışma biçimleri",
+    teamCouple: "Team / Couple",
+    yes: "Evet",
+    no: "Hayır",
     results: "Güncel fırsatlar",
     roles: "açık pozisyon",
     clear: "Filtreleri temizle",

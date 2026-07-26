@@ -35,7 +35,6 @@ import { useLanguage } from "../../components/LanguageProvider";
 import { LocationSearchField } from "../../components/LocationSearchField";
 import { YachtSizeField } from "../../components/YachtSizeField";
 import {
-  formatJobCandidateType,
   formatJobMinimumYachtExperience,
   formatJobSmokerPolicy,
   formatJobVisibleTattooPolicy,
@@ -43,7 +42,6 @@ import {
   formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
-  jobCandidateTypes,
   jobEmploymentTypes,
   jobSalaryCurrencies,
   jobSalaryPeriods,
@@ -153,10 +151,9 @@ const copy = {
     titleLabel: "Public title",
     titlePlaceholder: "e.g. Rotational Chief Engineer",
     employmentType: "Employment type",
-    candidateType: "Hiring format",
-    individual: "Individual",
-    team: "Team",
-    couple: "Couple",
+    teamCouple: "Team / Couple",
+    yes: "Yes",
+    no: "No",
     candidatePreferences: "Candidate preferences",
     smoker: "Smoking",
     visibleTattoos: "Visible tattoos",
@@ -289,10 +286,9 @@ const copy = {
     titleLabel: "İlan başlığı",
     titlePlaceholder: "Örn. Rotasyonlu Başmühendis",
     employmentType: "Çalışma biçimi",
-    candidateType: "İşe alım biçimi",
-    individual: "Bireysel",
-    team: "Ekip",
-    couple: "Çift",
+    teamCouple: "Team / Couple",
+    yes: "Evet",
+    no: "Hayır",
     candidatePreferences: "Aday tercihleri",
     smoker: "Sigara",
     visibleTattoos: "Görünür dövme",
@@ -1039,23 +1035,22 @@ export function JobPostsManager() {
                     </select>
                   </Field>
 
-                  <Field label={c.candidateType}>
+                  <Field label={c.teamCouple}>
                     <select
-                      value={form.candidateType}
+                      value={
+                        form.candidateType === "individual" ? "no" : "yes"
+                      }
                       onChange={(event) =>
                         updateForm(
                           "candidateType",
-                          event.target.value as JobCandidateType,
+                          event.target.value === "yes" ? "team" : "individual",
                         )
                       }
                       disabled={saving}
                       className={inputClass}
                     >
-                      {jobCandidateTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {c[type]}
-                        </option>
-                      ))}
+                      <option value="no">{c.no}</option>
+                      <option value="yes">{c.yes}</option>
                     </select>
                   </Field>
 
@@ -1729,8 +1724,6 @@ function JobListButton({
           job.minimumYachtExperienceYears,
           language,
         );
-  const candidateType = formatJobCandidateType(job.candidateType, language);
-
   return (
     <button
       type="button"
@@ -1778,7 +1771,7 @@ function JobListButton({
               data-i18n-ignore
               className="mt-1 truncate text-[11px] font-bold text-slate-600"
             >
-              {candidateType}
+              {c.teamCouple}
             </p>
           ) : null}
           <p
