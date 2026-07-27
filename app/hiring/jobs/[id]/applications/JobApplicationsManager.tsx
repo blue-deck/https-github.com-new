@@ -569,15 +569,24 @@ function CandidateAvatar({
   large?: boolean;
 }) {
   const classes = large ? "h-16 w-16 text-xl" : "h-11 w-11 text-sm";
-  if (application.candidate.profilePhotoUrl) {
+  const profilePhotoUrl = application.candidate.profilePhotoUrl;
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [profilePhotoUrl]);
+
+  if (profilePhotoUrl && !imageFailed) {
     return (
       <span className={`${classes} relative flex shrink-0 overflow-hidden rounded-2xl bg-slate-100`}>
         <img
-          src={application.candidate.profilePhotoUrl}
+          src={candidateProfilePhotoSource(profilePhotoUrl)}
           alt={application.candidate.fullName}
           className="h-full w-full object-cover"
           loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
+          onError={() => setImageFailed(true)}
         />
       </span>
     );
@@ -588,6 +597,16 @@ function CandidateAvatar({
       {initials(application.candidate.fullName)}
     </span>
   );
+}
+
+function candidateProfilePhotoSource(source: string) {
+  const search = new URLSearchParams({
+    src: source,
+    w: "160",
+    h: "160",
+    fit: "cover",
+  });
+  return `/api/cv-image?${search.toString()}`;
 }
 
 function CandidateFact({
