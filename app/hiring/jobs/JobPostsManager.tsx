@@ -131,6 +131,7 @@ const copy = {
     publicBoard: "View public jobs",
     live: "Published",
     drafts: "Drafts",
+    managePosts: "Manage job posts",
     newPost: "New job post",
     loading: "Loading your job posting workspace…",
     loadError: "Your job posting workspace could not be loaded.",
@@ -263,6 +264,7 @@ const copy = {
     publicBoard: "Yayındaki ilanları gör",
     live: "Yayında",
     drafts: "Taslak",
+    managePosts: "İlanları yönet",
     newPost: "Yeni iş ilanı",
     loading: "İş ilanı alanın yükleniyor…",
     loadError: "İş ilanı alanın yüklenemedi.",
@@ -825,6 +827,48 @@ export function JobPostsManager() {
           </div>
         ) : null}
 
+        {jobs.length > 0 ? (
+          <div className="mt-4 flex flex-col gap-3 border-y border-slate-200 py-3 sm:flex-row sm:items-end sm:justify-between">
+            <label className="block w-full sm:max-w-sm">
+              <span className="mb-1.5 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
+                {c.managePosts}
+              </span>
+              <select
+                value={selectedId}
+                onChange={(event) => {
+                  const jobId = event.target.value;
+                  if (!jobId) {
+                    startNewPost();
+                    return;
+                  }
+                  const job = jobs.find((item) => item.id === jobId);
+                  if (job) selectJob(job);
+                }}
+                disabled={saving}
+                aria-label={c.selectPost}
+                className="bd-focus min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800"
+              >
+                <option value="">
+                  {c.selectPost} ({jobs.length})
+                </option>
+                {jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.position} · {formatJobListingNumber(job.listingNumber)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={startNewPost}
+              disabled={saving || !selectedId}
+              className="bd-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-default disabled:opacity-45"
+            >
+              {c.newPost}
+            </button>
+          </div>
+        ) : null}
+
         <div className="mt-4">
           <form
             ref={formRef}
@@ -832,57 +876,26 @@ export function JobPostsManager() {
             noValidate
             className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
           >
-            {jobs.length > 0 ? (
+            {selectedJob ? (
               <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  {selectedJob ? (
-                    <div>
-                      <p data-i18n-ignore className="text-sm font-bold text-slate-800">
-                        {selectedJob.position || selectedJob.title}
-                      </p>
-                      <p
-                        data-i18n-ignore
-                        aria-label={`${c.listingNumber} ${formatJobListingNumber(selectedJob.listingNumber)}`}
-                        className="mt-1 font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
-                      >
-                        {formatJobListingNumber(selectedJob.listingNumber)}
-                      </p>
-                    </div>
-                  ) : (
-                    <span />
-                  )}
-                <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
-                  <select
-                    value={selectedId}
-                    onChange={(event) => {
-                      const jobId = event.target.value;
-                      if (!jobId) {
-                        startNewPost();
-                        return;
-                      }
-                      const job = jobs.find((item) => item.id === jobId);
-                      if (job) selectJob(job);
-                    }}
-                    disabled={saving}
-                    aria-label={c.selectPost}
-                    className="bd-focus min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 sm:w-64"
-                  >
-                    <option value="">{c.newPost}</option>
-                    {jobs.map((job) => (
-                      <option key={job.id} value={job.id}>
-                        {job.position} ·{" "}
-                        {formatJobListingNumber(job.listingNumber)}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedJob ? (
-                    <StatusBadge
-                      status={selectedJob.status}
-                      job={selectedJob}
-                      c={c}
-                    />
-                  ) : null}
-                </div>
+                  <div>
+                    <p data-i18n-ignore className="text-sm font-bold text-slate-800">
+                      {selectedJob.position || selectedJob.title}
+                    </p>
+                    <p
+                      data-i18n-ignore
+                      aria-label={`${c.listingNumber} ${formatJobListingNumber(selectedJob.listingNumber)}`}
+                      className="mt-1 font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
+                    >
+                      {formatJobListingNumber(selectedJob.listingNumber)}
+                    </p>
+                  </div>
+                  <StatusBadge
+                    status={selectedJob.status}
+                    job={selectedJob}
+                    c={c}
+                  />
                 </div>
               </div>
             ) : null}
