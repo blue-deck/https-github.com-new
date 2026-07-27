@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
-  Award,
   BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
@@ -15,6 +14,7 @@ import {
   Compass,
   FileCheck2,
   MapPin,
+  Ruler,
   Search,
   ShieldCheck,
   Ship,
@@ -23,17 +23,16 @@ import {
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
 import {
-  formatJobCrewMemberCount,
-  formatJobListingNumber,
+  formatJobCandidateType,
+  formatJobEmploymentType,
+  formatJobYachtLength,
+  formatJobYachtType,
 } from "./lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
-  minimumYachtExperienceLabel,
-  parsePublicJobs,
-  type PublicJob,
-  yachtLabel,
-  yachtSpecificationLabel,
+  parsePublicJobCards,
+  type PublicJobCard,
 } from "./jobs/job-data";
 import {
   getJobListingAction,
@@ -88,6 +87,8 @@ const copy = {
     viewRole: "View role",
     listingNumber: "Listing no.",
     start: "Start",
+    notSpecified: "Not specified",
+    salaryNotSpecified: "Salary not specified",
     profilePromptEyebrow: "Stay ready",
     profilePromptTitle: "Let the right yacht discover you.",
     profilePromptText:
@@ -180,6 +181,8 @@ const copy = {
     viewRole: "İlanı gör",
     listingNumber: "İlan no:",
     start: "Başlangıç",
+    notSpecified: "Belirtilmedi",
+    salaryNotSpecified: "Maaş belirtilmedi",
     profilePromptEyebrow: "Hazır kalın",
     profilePromptTitle: "Doğru yatın sizi keşfetmesini sağlayın.",
     profilePromptText:
@@ -236,7 +239,7 @@ export default function HomePageClient() {
   const c = copy[language];
   const jobViewer = useJobListingViewer();
   const [loadState, setLoadState] = useState<LoadState>("loading");
-  const [jobs, setJobs] = useState<PublicJob[]>([]);
+  const [jobs, setJobs] = useState<PublicJobCard[]>([]);
   const isEmployerViewer =
     jobViewer.kind === "signed-in" &&
     (jobViewer.role === "owner" || jobViewer.role === "management");
@@ -296,7 +299,7 @@ export default function HomePageClient() {
           throw new Error("jobs_request_failed");
         }
 
-        const parsedJobs = parsePublicJobs(payload.jobs);
+        const parsedJobs = parsePublicJobCards(payload.jobs);
         if (!parsedJobs) throw new Error("jobs_response_invalid");
 
         setJobs(parsedJobs.slice(0, 3));
@@ -627,57 +630,49 @@ function JobCard({
   viewer,
   copy: c,
 }: {
-  job: PublicJob;
+  job: PublicJobCard;
   language: "en" | "tr";
   viewer: JobListingViewer;
   copy: (typeof copy)["en"] | (typeof copy)["tr"];
 }) {
-  const yacht = yachtLabel(job);
-  const yachtSpecification = yachtSpecificationLabel(job, language);
-  const minimumYachtExperience = minimumYachtExperienceLabel(job, language);
+  const yachtType = job.yachtType
+    ? formatJobYachtType(job.yachtType, language)
+    : "";
+  const yachtLength =
+    job.yachtLength !== null && job.yachtLengthUnit
+      ? formatJobYachtLength(job.yachtLength, job.yachtLengthUnit, language)
+      : "";
   const salary = formatJobSalary(job.salary, language);
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
     <article className={styles.jobCard}>
       <div className={styles.jobTopline}>
-        <span>{job.department || job.position}</span>
-        <span className={styles.jobReference}>
-          <code
-            data-i18n-ignore
-            aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
-          >
-            {formatJobListingNumber(job.listingNumber)}
-          </code>
+        <span>{formatJobEmploymentType(job.employmentType, language)}</span>
+        {job.candidateType !== "individual" ? (
+          <span>
+            {formatJobCandidateType(job.candidateType, language)}
+          </span>
+        ) : null}
+      </div>
+      <h3>{job.position}</h3>
+      <div className={styles.jobMeta}>
+        <span><Ship aria-hidden />{yachtType || c.notSpecified}</span>
+        <span><Ruler aria-hidden />{yachtLength || c.notSpecified}</span>
+        <span><MapPin aria-hidden />{job.location}</span>
+        <span>
+          <CalendarDays aria-hidden />
+          {c.start}:{" "}
+          {job.startDate
+            ? formatJobDate(job.startDate, language, {
+                day: "numeric",
+                month: "short",
+              })
+            : c.notSpecified}
         </span>
       </div>
-      <h3>{job.title}</h3>
-      {yacht ? <p className={styles.yachtName}>{yacht}</p> : null}
-      <div className={styles.jobMeta}>
-        {yachtSpecification ? (
-          <span><Ship aria-hidden />{yachtSpecification}</span>
-        ) : null}
-        {minimumYachtExperience ? (
-          <span><Award aria-hidden />{minimumYachtExperience}</span>
-        ) : null}
-        {job.crewMemberCount !== null ? (
-          <span>
-            <UsersRound aria-hidden />
-            {formatJobCrewMemberCount(job.crewMemberCount, language)}
-          </span>
-        ) : null}
-        {job.location ? (
-          <span><MapPin aria-hidden />{job.location}</span>
-        ) : null}
-        {job.startDate ? (
-          <span>
-            <CalendarDays aria-hidden />
-            {c.start}: {formatJobDate(job.startDate, language, { day: "numeric", month: "short" })}
-          </span>
-        ) : null}
-      </div>
       <div className={styles.jobFooter}>
-        <strong>{salary || job.employmentType}</strong>
+        <strong>{salary || c.salaryNotSpecified}</strong>
         <div className={styles.jobActions}>
           <Link href={action.href} className={styles.jobPrimaryAction}>
             {action.label}

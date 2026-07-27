@@ -36,26 +36,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { yachts, capabilities } = authority;
-
-  if (yachts.length === 0) {
-    return employerResponse({
-      ok: true,
-      capabilities,
-      yachts: [],
-      jobs: [],
-      applicationCounts: {},
-      applicationCountsAvailable: true,
-    });
-  }
+  const { capabilities } = authority;
 
   const { data, error } = await clients.serviceClient
     .from("job_posts")
     .select(employerJobPostSelect)
-    .in(
-      "yacht_id",
-      yachts.map((yacht) => yacht.id),
-    )
+    .eq("created_by", clients.user.id)
     .order("updated_at", { ascending: false })
     .limit(250);
 
@@ -143,7 +129,6 @@ export async function GET(request: NextRequest) {
   return employerResponse({
     ok: true,
     capabilities,
-    yachts,
     jobs,
     applicationCounts,
     applicationCountsAvailable,
@@ -175,7 +160,6 @@ export async function POST(request: NextRequest) {
   const authority = await verifyJobPostingAuthority(
     clients.serviceClient,
     clients.user.id,
-    parsed.data.yachtId,
   );
   if (!authority.ok) {
     return employerResponse(
@@ -188,7 +172,6 @@ export async function POST(request: NextRequest) {
     .from("job_posts")
     .insert({
       id: crypto.randomUUID(),
-      yacht_id: parsed.data.yachtId,
       created_by: clients.user.id,
       updated_by: clients.user.id,
       ...jobPostMutationColumns(parsed.data),
@@ -200,7 +183,6 @@ export async function POST(request: NextRequest) {
     const code = cleanText(error.code);
     logJobPostError("job_post_create_failed", error, {
       actorUserId: clients.user.id,
-      yachtId: parsed.data.yachtId,
       forbidden: code === "42501",
     });
     return employerResponse(
@@ -208,7 +190,7 @@ export async function POST(request: NextRequest) {
         ok: false,
         error:
           code === "42501"
-            ? "Your yacht marketplace access changed before the job post was saved."
+            ? "Your job-posting access changed before the post was saved."
             : code === "23514"
               ? "The job post does not meet the publishing requirements."
               : "The job post could not be created.",
@@ -221,7 +203,6 @@ export async function POST(request: NextRequest) {
   if (!job) {
     logJobPostError("invalid_created_job_record", undefined, {
       actorUserId: clients.user.id,
-      yachtId: parsed.data.yachtId,
     });
     return employerResponse(
       { ok: false, error: "The saved job post could not be loaded." },

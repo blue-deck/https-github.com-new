@@ -40,19 +40,15 @@ import {
   type JobMinimumYachtExperience,
   type JobYachtLengthUnit,
   type JobYachtType,
+  type PublicJobCard,
   type PublicJobPost,
-  type VerifiedEmployerYacht,
 } from "./jobPosts";
 import {
   cleanText,
   isRecord,
   isUuid,
 } from "./employerAccessServer";
-import {
-  marketplaceCapabilitiesForRole,
-  type MarketplaceAccountRole,
-  type MarketplaceCapabilities,
-} from "./marketplaceCapabilities";
+import type { MarketplaceCapabilities } from "./marketplaceCapabilities";
 import {
   isMarketplaceSchemaUnavailable,
   loadOrEnsureMarketplaceEntitlement,
@@ -66,15 +62,18 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,required_skills,required_characteristics,required_certificates,required_visas,yacht_brand,yacht_flag_country_code,yacht_build_year,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,show_yacht_name,published_at,yacht:yachts(name,model,flag)";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,required_skills,required_characteristics,required_certificates,required_visas,yacht_brand,yacht_flag_country_code,yacht_build_year,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,published_at";
 export const publicJobPostServiceSelect =
-  `${publicJobPostSelect},yacht_id,created_by`;
+  `${publicJobPostSelect},created_by`;
+
+export const publicJobCardSelect =
+  "id,position,employment_type,candidate_type,yacht_type,yacht_length,yacht_length_unit,location,start_date,salary_visible,salary_min,salary_max,salary_currency,salary_period";
+export const publicJobCardServiceSelect = `${publicJobCardSelect},created_by`;
 
 export const employerJobPostSelect =
-  `${publicJobPostSelect},yacht_id,status,version,closes_at,closure_reason,closed_at,created_at,updated_at`;
+  `${publicJobPostSelect},status,version,closes_at,closure_reason,closed_at,created_at,updated_at`;
 
 const createPayloadKeys = new Set([
-  "yachtId",
   "title",
   "position",
   "yachtBrand",
@@ -102,12 +101,10 @@ const createPayloadKeys = new Set([
   "responsibilities",
   "requirements",
   "benefits",
-  "salaryVisible",
   "salaryMin",
   "salaryMax",
   "salaryCurrency",
   "salaryPeriod",
-  "showYachtName",
   "status",
 ]);
 
@@ -115,10 +112,8 @@ const updatePayloadKeys = new Set([
   ...createPayloadKeys,
   "version",
 ]);
-updatePayloadKeys.delete("yachtId");
 
 export type JobPostMutation = {
-  yachtId: string;
   title: string;
   position: string;
   department: string;
@@ -146,12 +141,10 @@ export type JobPostMutation = {
   responsibilities: string[];
   requirements: string[];
   benefits: string[];
-  salaryVisible: boolean;
   salaryMin: number | null;
   salaryMax: number | null;
   salaryCurrency: JobSalaryCurrency;
   salaryPeriod: JobSalaryPeriod;
-  showYachtName: boolean;
   status: JobPostStatus;
   version: number | null;
 };
@@ -169,7 +162,7 @@ type ReadBodyResult =
   | { ok: false; error: string; status: number };
 
 type AuthorityResult =
-  | { ok: true; yacht: VerifiedEmployerYacht }
+  | { ok: true }
   | { ok: false; error: string; status: number };
 
 type JobManagementAuthorityResult =
@@ -185,7 +178,6 @@ export type JobPostingWorkspaceAuthority =
   | {
       ok: true;
       capabilities: JobPostingWorkspaceCapabilities;
-      yachts: VerifiedEmployerYacht[];
     }
   | { ok: false; error: string; status: number };
 
@@ -271,17 +263,10 @@ export async function readJobPostBody(
 export function parseJobPostMutation(
   value: Record<string, unknown>,
   mode: "create" | "update",
-  yachtIdFallback = "",
 ): ParsedMutation {
   const allowedKeys = mode === "create" ? createPayloadKeys : updatePayloadKeys;
   if (Object.keys(value).some((key) => !allowedKeys.has(key))) {
     return { ok: false, error: "The request contains unsupported fields." };
-  }
-
-  const yachtId =
-    mode === "create" ? cleanText(value.yachtId) : yachtIdFallback;
-  if (!isUuid(yachtId)) {
-    return { ok: false, error: "Select a valid yacht." };
   }
 
   const positionValue = strictText(value.position, 80);
@@ -341,16 +326,6 @@ export function parseJobPostMutation(
   if (!isJobSalaryPeriod(value.salaryPeriod)) {
     return { ok: false, error: "Select a valid salary period." };
   }
-  if (
-    typeof value.salaryVisible !== "boolean" ||
-    typeof value.showYachtName !== "boolean"
-  ) {
-    return {
-      ok: false,
-      error: "Salary and yacht visibility settings are invalid.",
-    };
-  }
-
   const title = position.title;
   const location = strictText(value.location, 120, true);
   const summary = strictText(value.summary, 320, true);
@@ -444,28 +419,19 @@ export function parseJobPostMutation(
     };
   }
   if (
-    value.salaryVisible &&
-    salaryMin.value === null &&
-    salaryMax.value === null
-  ) {
-    return {
-      ok: false,
-      error: "Add a salary amount before making the salary public.",
-    };
-  }
-
-  if (
     value.status === "published" &&
     (yachtType === null ||
       yachtLength.value === null ||
       yachtLengthUnit === null ||
       location.length < 2 ||
+      startDate.value === null ||
+      Math.max(salaryMin.value || 0, salaryMax.value || 0) <= 0 ||
       description.length < 60)
   ) {
     return {
       ok: false,
       error:
-        "Complete the yacht type, yacht length, location and description before publishing.",
+        "Complete the position, employment type, location, start date, salary, yacht type, yacht length and description before publishing.",
     };
   }
 
@@ -487,7 +453,6 @@ export function parseJobPostMutation(
   return {
     ok: true,
     data: {
-      yachtId,
       title,
       position: position.title,
       department: position.department,
@@ -515,12 +480,10 @@ export function parseJobPostMutation(
       responsibilities: responsibilities.value,
       requirements: requirements.value,
       benefits: benefits.value,
-      salaryVisible: value.salaryVisible,
       salaryMin: salaryMin.value,
       salaryMax: salaryMax.value,
       salaryCurrency: value.salaryCurrency,
       salaryPeriod: value.salaryPeriod,
-      showYachtName: value.showYachtName,
       status: value.status,
       version,
     },
@@ -530,31 +493,31 @@ export function parseJobPostMutation(
 export async function verifyJobPostingAuthority(
   client: SupabaseClient,
   userId: string,
-  yachtId: string,
 ): Promise<AuthorityResult> {
   const workspace = await loadJobPostingWorkspaceAuthority(client, userId);
   if (!workspace.ok) return workspace;
 
-  const yacht = workspace.yachts.find((candidate) => candidate.id === yachtId);
-  if (!workspace.capabilities.canPostJobs || !yacht) {
+  if (
+    !workspace.capabilities.canPostJobs ||
+    workspace.capabilities.postingStatus !== "enabled"
+  ) {
     return {
       ok: false,
       error:
         workspace.capabilities.postingStatus === "suspended"
           ? "Job posting is paused for this account."
-          : "A current owner, captain or management relationship to the selected yacht is required.",
+          : "This account is not eligible to publish job posts.",
       status: 403,
     };
   }
 
-  return { ok: true, yacht };
+  return { ok: true };
 }
 
 export async function verifyJobManagementAuthority(
   client: SupabaseClient,
   userId: string,
   jobPostId: string,
-  yachtId: string,
 ): Promise<JobManagementAuthorityResult> {
   const response = await client.rpc("bluedeck_can_manage_job", {
     p_actor_user_id: userId,
@@ -563,18 +526,27 @@ export async function verifyJobManagementAuthority(
 
   if (response.error) {
     if (isMarketplaceSchemaUnavailable(response.error)) {
-      const legacyAuthority = await verifyJobPostingAuthority(
-        client,
-        userId,
-        yachtId,
-      );
-      return legacyAuthority.ok ? { ok: true } : legacyAuthority;
+      const [postingAuthority, jobResponse] = await Promise.all([
+        verifyJobPostingAuthority(client, userId),
+        client
+          .from("job_posts")
+          .select("created_by")
+          .eq("id", jobPostId)
+          .maybeSingle(),
+      ]);
+      if (!postingAuthority.ok) return postingAuthority;
+      return cleanText(jobResponse.data?.created_by) === userId
+        ? { ok: true }
+        : {
+            ok: false,
+            error: "Only the account that created this job post may manage it.",
+            status: 403,
+          };
     }
 
     logJobPostError("job_management_authority_failed", response.error, {
       actorUserId: userId,
       jobPostId,
-      yachtId,
     });
     return {
       ok: false,
@@ -586,8 +558,7 @@ export async function verifyJobManagementAuthority(
   if (response.data !== true) {
     return {
       ok: false,
-      error:
-        "A current owner, captain or management relationship is required to manage this job post.",
+      error: "Only the account that created this job post may manage it.",
       status: 403,
     };
   }
@@ -599,36 +570,12 @@ export async function loadJobPostingWorkspaceAuthority(
   client: SupabaseClient,
   userId: string,
 ): Promise<JobPostingWorkspaceAuthority> {
-  const [entitlementResult, ownedYachtsResponse, legacyAccessResponse] =
-    await Promise.all([
-      loadOrEnsureMarketplaceEntitlement(client, userId),
-      client
-        .from("yachts")
-        .select("id,name,model,flag,owner_id,created_at")
-        .eq("owner_id", userId)
-        .order("created_at", { ascending: false }),
-      client
-        .from("employer_access")
-        .select("yacht_id,requested_role,status,can_post_jobs")
-        .eq("user_id", userId)
-        .eq("status", "verified")
-        .eq("can_post_jobs", true),
-    ]);
+  const entitlementResult = await loadOrEnsureMarketplaceEntitlement(
+    client,
+    userId,
+  );
 
-  if (ownedYachtsResponse.error || legacyAccessResponse.error) {
-    logJobPostError(
-      "workspace_authority_lookup_failed",
-      ownedYachtsResponse.error || legacyAccessResponse.error,
-      { actorUserId: userId },
-    );
-    return {
-      ok: false,
-      error: "Your job posting workspace could not be loaded.",
-      status: 500,
-    };
-  }
-
-  if (!entitlementResult.ok && !entitlementResult.schemaUnavailable) {
+  if (!entitlementResult.ok) {
     logJobPostError("marketplace_entitlement_lookup_failed", entitlementResult.error, {
       actorUserId: userId,
     });
@@ -639,173 +586,17 @@ export async function loadJobPostingWorkspaceAuthority(
     };
   }
 
-  const ownedYachts = (ownedYachtsResponse.data || [])
-    .map(verifiedYachtFromRow)
-    .filter((yacht): yacht is VerifiedEmployerYacht => Boolean(yacht));
-  const ownedYachtsById = new Map(ownedYachts.map((yacht) => [yacht.id, yacht]));
-  const legacyAccessRows = legacyAccessResponse.data || [];
-  const legacyYachtIds = new Set(
-    legacyAccessRows
-      .map((row) => cleanText(row.yacht_id))
-      .filter((id) => isUuid(id)),
-  );
-
-  if (!entitlementResult.ok || !entitlementResult.entitlement) {
-    const yachts = ownedYachts.filter((yacht) => legacyYachtIds.has(yacht.id));
-    const legacyRole = legacyMarketplaceRole(legacyAccessRows);
-    const roleCapabilities = marketplaceCapabilitiesForRole(legacyRole);
-    return {
-      ok: true,
-      capabilities: {
-        ...roleCapabilities,
-        canPostJobs: yachts.length > 0 && roleCapabilities.canPostJobs,
-        postingStatus: yachts.length > 0 ? "enabled" : "unavailable",
-        planCode: "legacy",
-      },
-      yachts,
-    };
-  }
-
   const entitlement = entitlementResult.entitlement;
-  if (!entitlement.canPostJobs) {
-    return {
-      ok: true,
-      capabilities: workspaceCapabilities(entitlement),
-      yachts: [],
-    };
-  }
-
-  const yachtsById = new Map(ownedYachtsById);
-  if (entitlement.role === "captain" || entitlement.role === "management") {
-    const memberYachtsResult = await loadActiveMembershipYachts(client, userId);
-    if (!memberYachtsResult.ok) {
-      logJobPostError("membership_yacht_authority_load_failed", memberYachtsResult.error, {
-        actorUserId: userId,
-      });
-      return {
-        ok: false,
-        error: "Your connected yachts could not be loaded.",
-        status: 500,
-      };
-    }
-    for (const yacht of memberYachtsResult.yachts) {
-      yachtsById.set(yacht.id, yacht);
-    }
-  }
-
-  const authorizedYachts = await filterYachtsByMarketplaceAuthority(
-    client,
-    userId,
-    [...yachtsById.values()],
-  );
-  if (!authorizedYachts.ok) {
-    logJobPostError("database_marketplace_authority_load_failed", authorizedYachts.error, {
-      actorUserId: userId,
-    });
+  if (!entitlement) {
     return {
       ok: false,
-      error: "Your yacht marketplace authority could not be verified.",
+      error: "Your marketplace access could not be verified.",
       status: 500,
     };
   }
-
   return {
     ok: true,
     capabilities: workspaceCapabilities(entitlement),
-    yachts: authorizedYachts.yachts,
-  };
-}
-
-async function filterYachtsByMarketplaceAuthority(
-  client: SupabaseClient,
-  userId: string,
-  yachts: VerifiedEmployerYacht[],
-): Promise<
-  | { ok: true; yachts: VerifiedEmployerYacht[] }
-  | { ok: false; error: unknown }
-> {
-  const allowed = new Set<string>();
-
-  for (let index = 0; index < yachts.length; index += 12) {
-    const batch = yachts.slice(index, index + 12);
-    const results = await Promise.all(
-      batch.map(async (yacht) => ({
-        yacht,
-        response: await client.rpc("bluedeck_can_manage_yacht_marketplace", {
-          p_actor_user_id: userId,
-          p_yacht_id: yacht.id,
-        }),
-      })),
-    );
-
-    for (const result of results) {
-      if (result.response.error) {
-        return { ok: false, error: result.response.error };
-      }
-      if (result.response.data === true) allowed.add(result.yacht.id);
-    }
-  }
-
-  return {
-    ok: true,
-    yachts: yachts.filter((yacht) => allowed.has(yacht.id)),
-  };
-}
-
-async function loadActiveMembershipYachts(
-  client: SupabaseClient,
-  userId: string,
-): Promise<
-  | { ok: true; yachts: VerifiedEmployerYacht[] }
-  | { ok: false; error: unknown }
-> {
-  const profilesResponse = await client
-    .from("crew_profiles")
-    .select("id")
-    .eq("user_id", userId);
-
-  if (profilesResponse.error) {
-    return { ok: false, error: profilesResponse.error };
-  }
-
-  const profileIds = (profilesResponse.data || [])
-    .map((row) => cleanText(row.id))
-    .filter((id) => isUuid(id));
-  if (profileIds.length === 0) return { ok: true, yachts: [] };
-
-  const membershipsResponse = await client
-    .from("yacht_crew_memberships")
-    .select("yacht_id")
-    .in("crew_profile_id", profileIds)
-    .eq("status", "active");
-
-  if (membershipsResponse.error) {
-    return { ok: false, error: membershipsResponse.error };
-  }
-
-  const yachtIds = [
-    ...new Set(
-      (membershipsResponse.data || [])
-        .map((row) => cleanText(row.yacht_id))
-        .filter((id) => isUuid(id)),
-    ),
-  ];
-  if (yachtIds.length === 0) return { ok: true, yachts: [] };
-
-  const yachtsResponse = await client
-    .from("yachts")
-    .select("id,name,model,flag")
-    .in("id", yachtIds);
-
-  if (yachtsResponse.error) {
-    return { ok: false, error: yachtsResponse.error };
-  }
-
-  return {
-    ok: true,
-    yachts: (yachtsResponse.data || [])
-      .map(verifiedYachtFromRow)
-      .filter((yacht): yacht is VerifiedEmployerYacht => Boolean(yacht)),
   };
 }
 
@@ -823,28 +614,12 @@ function workspaceCapabilities(
   };
 }
 
-function legacyMarketplaceRole(rows: unknown[]): MarketplaceAccountRole {
-  for (const row of rows) {
-    if (!isRecord(row)) continue;
-    const requestedRole = cleanText(row.requested_role).toLowerCase();
-    if (
-      requestedRole === "captain" ||
-      requestedRole === "owner" ||
-      requestedRole === "management"
-    ) {
-      return requestedRole;
-    }
-  }
-  return "crew";
-}
-
 export async function currentPublicJobPostIds(
   client: SupabaseClient,
   rows: unknown[],
 ): Promise<CurrentPublicAuthorityResult> {
   const authorityRows: Array<{
     jobPostId: string;
-    yachtId: string;
     createdBy: string;
   }> = [];
 
@@ -853,87 +628,28 @@ export async function currentPublicJobPostIds(
       return { ok: false, error: "Invalid job post authority record." };
     }
     const jobPostId = cleanText(value.id);
-    const yachtId = cleanText(value.yacht_id);
     const createdBy = cleanText(value.created_by);
-    if (!isUuid(jobPostId) || !isUuid(yachtId) || !isUuid(createdBy)) {
+    if (!isUuid(jobPostId) || !isUuid(createdBy)) {
       return { ok: false, error: "Invalid job post authority record." };
     }
-    authorityRows.push({ jobPostId, yachtId, createdBy });
+    authorityRows.push({ jobPostId, createdBy });
   }
 
   if (authorityRows.length === 0) {
     return { ok: true, jobPostIds: new Set() };
   }
 
-  const yachtIds = [...new Set(authorityRows.map((row) => row.yachtId))];
   const creatorIds = [...new Set(authorityRows.map((row) => row.createdBy))];
-  const [yachtsResponse, accessResponse] = await Promise.all([
-    client
-      .from("yachts")
-      .select("id,owner_id")
-      .in("id", yachtIds),
-    client
-      .from("employer_access")
-      .select("user_id,yacht_id,status,can_post_jobs")
-      .in("yacht_id", yachtIds)
-      .in("user_id", creatorIds)
-      .eq("status", "verified")
-      .eq("can_post_jobs", true),
-  ]);
+  const authorizedCreators = new Set<string>();
+  let publisherFunctionUnavailable = false;
 
-  if (yachtsResponse.error || accessResponse.error) {
-    logJobPostError(
-      "current_public_authority_load_failed",
-      yachtsResponse.error || accessResponse.error,
-    );
-    return {
-      ok: false,
-      error: "Current employer authority could not be verified.",
-    };
-  }
-
-  const ownerPairs = new Set<string>();
-  for (const yacht of yachtsResponse.data || []) {
-    const yachtId = cleanText(yacht.id);
-    const ownerId = cleanText(yacht.owner_id);
-    if (isUuid(yachtId) && isUuid(ownerId)) {
-      ownerPairs.add(authorityPair(yachtId, ownerId));
-    }
-  }
-
-  const accessPairs = new Set<string>();
-  for (const access of accessResponse.data || []) {
-    const yachtId = cleanText(access.yacht_id);
-    const userId = cleanText(access.user_id);
-    if (
-      isUuid(yachtId) &&
-      isUuid(userId) &&
-      access.status === "verified" &&
-      access.can_post_jobs === true
-    ) {
-      accessPairs.add(authorityPair(yachtId, userId));
-    }
-  }
-
-  const authorityPairs = [
-    ...new Map(
-      authorityRows.map((row) => [
-        authorityPair(row.yachtId, row.createdBy),
-        { yachtId: row.yachtId, userId: row.createdBy },
-      ]),
-    ).values(),
-  ];
-  const marketplacePairs = new Set<string>();
-  let marketplaceFunctionUnavailable = false;
-
-  for (let index = 0; index < authorityPairs.length; index += 12) {
-    const batch = authorityPairs.slice(index, index + 12);
+  for (let index = 0; index < creatorIds.length; index += 12) {
+    const batch = creatorIds.slice(index, index + 12);
     const results = await Promise.all(
-      batch.map(async (pair) => ({
-        pair,
-        response: await client.rpc("bluedeck_can_manage_yacht_marketplace", {
-          p_actor_user_id: pair.userId,
-          p_yacht_id: pair.yachtId,
+      batch.map(async (userId) => ({
+        userId,
+        response: await client.rpc("bluedeck_can_publish_jobs", {
+          p_actor_user_id: userId,
         }),
       })),
     );
@@ -941,7 +657,7 @@ export async function currentPublicJobPostIds(
     for (const result of results) {
       if (result.response.error) {
         if (isMarketplaceSchemaUnavailable(result.response.error)) {
-          marketplaceFunctionUnavailable = true;
+          publisherFunctionUnavailable = true;
           break;
         }
         logJobPostError(
@@ -954,23 +670,35 @@ export async function currentPublicJobPostIds(
         };
       }
       if (result.response.data === true) {
-        marketplacePairs.add(
-          authorityPair(result.pair.yachtId, result.pair.userId),
-        );
+        authorizedCreators.add(result.userId);
       }
     }
 
-    if (marketplaceFunctionUnavailable) break;
+    if (publisherFunctionUnavailable) break;
+  }
+
+  if (publisherFunctionUnavailable) {
+    const entitlementResponse = await client
+      .from("marketplace_entitlements")
+      .select("user_id,account_role,posting_status")
+      .in("user_id", creatorIds)
+      .in("account_role", ["captain", "owner", "management"])
+      .eq("posting_status", "enabled");
+    if (entitlementResponse.error) {
+      return {
+        ok: false,
+        error: "Current employer authority could not be verified.",
+      };
+    }
+    for (const row of entitlementResponse.data || []) {
+      const userId = cleanText(row.user_id);
+      if (isUuid(userId)) authorizedCreators.add(userId);
+    }
   }
 
   const jobPostIds = new Set<string>();
   for (const row of authorityRows) {
-    const pair = authorityPair(row.yachtId, row.createdBy);
-    const currentlyAuthorized = marketplaceFunctionUnavailable
-      ? ownerPairs.has(pair) && accessPairs.has(pair)
-      : marketplacePairs.has(pair);
-
-    if (currentlyAuthorized) {
+    if (authorizedCreators.has(row.createdBy)) {
       jobPostIds.add(row.jobPostId);
     }
   }
@@ -1013,10 +741,59 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     requirements: base.requirements,
     benefits: base.benefits,
     salary: base.salaryVisible ? base.salary : null,
-    yacht: base.showYachtName
-      ? base.yacht
-      : { name: "", model: null, flag: null },
     publishedAt: base.publishedAt,
+  };
+}
+
+export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
+  if (!isRecord(value)) return null;
+  const id = cleanText(value.id);
+  const position = cleanText(value.position);
+  const yachtType = databaseJobYachtType(value.yacht_type);
+  const yachtLength = databaseYachtLength(value.yacht_length);
+  const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
+  const startDate = optionalDatabaseDate(value.start_date);
+  const salaryMin = databaseMoney(value.salary_min);
+  const salaryMax = databaseMoney(value.salary_max);
+
+  if (
+    !isUuid(id) ||
+    !position ||
+    !isJobEmploymentType(value.employment_type) ||
+    !isJobCandidateType(value.candidate_type) ||
+    yachtType === undefined ||
+    yachtLength === undefined ||
+    yachtLengthUnit === undefined ||
+    (yachtLength === null) !== (yachtLengthUnit === null) ||
+    !cleanText(value.location) ||
+    startDate === undefined ||
+    typeof value.salary_visible !== "boolean" ||
+    salaryMin === undefined ||
+    salaryMax === undefined ||
+    !isJobSalaryCurrency(value.salary_currency) ||
+    !isJobSalaryPeriod(value.salary_period)
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    position,
+    employmentType: value.employment_type,
+    candidateType: value.candidate_type,
+    yachtType,
+    yachtLength,
+    yachtLengthUnit,
+    location: cleanText(value.location),
+    startDate,
+    salary: value.salary_visible
+      ? {
+          min: salaryMin,
+          max: salaryMax,
+          currency: value.salary_currency,
+          period: value.salary_period,
+        }
+      : null,
   };
 }
 
@@ -1024,7 +801,6 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
   const base = jobPostBaseFromRow(value);
   if (!base || !isRecord(value)) return null;
 
-  const yachtId = cleanText(value.yacht_id);
   const createdAt = timestamp(value.created_at);
   const updatedAt = timestamp(value.updated_at);
   const expiresAt = optionalDatabaseTimestamp(value.closes_at);
@@ -1037,7 +813,6 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
   const closedAt = optionalDatabaseTimestamp(value.closed_at);
 
   if (
-    !isUuid(yachtId) ||
     !isJobPostStatus(value.status) ||
     typeof value.version !== "number" ||
     !Number.isSafeInteger(value.version) ||
@@ -1071,7 +846,6 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
   return {
     id: base.id,
     listingNumber: base.listingNumber,
-    yachtId,
     title: base.title,
     position: base.position,
     department: base.department,
@@ -1100,9 +874,6 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     requirements: base.requirements,
     benefits: base.benefits,
     salary: base.salary,
-    salaryVisible: base.salaryVisible,
-    showYachtName: base.showYachtName,
-    yacht: base.yacht,
     status: value.status,
     version: value.version,
     publishedAt: base.publishedAt,
@@ -1111,21 +882,6 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     closedAt,
     createdAt,
     updatedAt,
-  };
-}
-
-export function verifiedYachtFromRow(
-  value: unknown,
-): VerifiedEmployerYacht | null {
-  if (!isRecord(value)) return null;
-  const id = cleanText(value.id);
-  if (!isUuid(id)) return null;
-
-  return {
-    id,
-    name: cleanText(value.name) || "BlueDeck yacht",
-    model: cleanText(value.model) || null,
-    flag: cleanText(value.flag) || null,
   };
 }
 
@@ -1160,12 +916,12 @@ export function jobPostMutationColumns(
     responsibilities: mutation.responsibilities,
     requirements: mutation.requirements,
     benefits: mutation.benefits,
-    salary_visible: mutation.salaryVisible,
+    salary_visible:
+      mutation.salaryMin !== null || mutation.salaryMax !== null,
     salary_min: mutation.salaryMin,
     salary_max: mutation.salaryMax,
     salary_currency: mutation.salaryCurrency,
     salary_period: mutation.salaryPeriod,
-    show_yacht_name: mutation.showYachtName,
     status: mutation.status,
   };
 }
@@ -1235,8 +991,6 @@ function jobPostBaseFromRow(value: unknown) {
   );
   const salaryMin = databaseMoney(value.salary_min);
   const salaryMax = databaseMoney(value.salary_max);
-  const joinedYacht = joinedRecord(value.yacht);
-
   if (
     !isUuid(id) ||
     !isSupportedJobListingNumber(listingNumber) ||
@@ -1271,9 +1025,7 @@ function jobPostBaseFromRow(value: unknown) {
     salaryMin === undefined ||
     salaryMax === undefined ||
     !isJobSalaryCurrency(value.salary_currency) ||
-    !isJobSalaryPeriod(value.salary_period) ||
-    typeof value.show_yacht_name !== "boolean" ||
-    !joinedYacht
+    !isJobSalaryPeriod(value.salary_period)
   ) {
     return null;
   }
@@ -1314,12 +1066,6 @@ function jobPostBaseFromRow(value: unknown) {
       max: salaryMax,
       currency: value.salary_currency,
       period: value.salary_period,
-    },
-    showYachtName: value.show_yacht_name,
-    yacht: {
-      name: cleanText(joinedYacht.name) || "BlueDeck yacht",
-      model: cleanText(joinedYacht.model) || null,
-      flag: cleanText(joinedYacht.flag) || null,
     },
     publishedAt,
   };
@@ -1674,15 +1420,6 @@ function optionalDatabaseTimestamp(
 function timestamp(value: unknown) {
   const result = cleanText(value);
   return result && !Number.isNaN(Date.parse(result)) ? result : "";
-}
-
-function joinedRecord(value: unknown) {
-  const candidate = Array.isArray(value) ? value[0] : value;
-  return isRecord(candidate) ? candidate : null;
-}
-
-function authorityPair(yachtId: string, userId: string) {
-  return `${yachtId}:${userId}`;
 }
 
 function safeError(error: unknown) {

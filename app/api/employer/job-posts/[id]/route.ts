@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   authenticatedEmployerClients,
   cleanText,
-  isRecord,
   isUuid,
 } from "../../../../lib/employerAccessServer";
 import {
@@ -37,7 +36,7 @@ export async function PATCH(
   const { data: existingData, error: existingError } =
     await clients.serviceClient
       .from("job_posts")
-      .select("id,yacht_id")
+      .select("id,created_by")
       .eq("id", jobPostId)
       .maybeSingle();
 
@@ -52,27 +51,14 @@ export async function PATCH(
     );
   }
 
-  if (!isRecord(existingData)) {
+  if (!existingData) {
     return employerResponse({ ok: false, error: "Job post not found." }, 404);
-  }
-
-  const yachtId = cleanText(existingData.yacht_id);
-  if (!isUuid(yachtId)) {
-    logJobPostError("invalid_job_post_authority_record", undefined, {
-      actorUserId: clients.user.id,
-      jobPostId,
-    });
-    return employerResponse(
-      { ok: false, error: "The job post could not be loaded." },
-      500,
-    );
   }
 
   const authority = await verifyJobManagementAuthority(
     clients.serviceClient,
     clients.user.id,
     jobPostId,
-    yachtId,
   );
   if (!authority.ok) {
     return employerResponse(
@@ -89,7 +75,7 @@ export async function PATCH(
     );
   }
 
-  const parsed = parseJobPostMutation(body.value, "update", yachtId);
+  const parsed = parseJobPostMutation(body.value, "update");
   if (!parsed.ok || parsed.data.version === null) {
     return employerResponse(
       {
@@ -109,7 +95,7 @@ export async function PATCH(
       updated_by: clients.user.id,
     })
     .eq("id", jobPostId)
-    .eq("yacht_id", yachtId)
+    .eq("created_by", clients.user.id)
     .eq("version", parsed.data.version)
     .select(employerJobPostSelect)
     .maybeSingle();
@@ -130,7 +116,7 @@ export async function PATCH(
         ok: false,
         error:
           code === "42501"
-            ? "Your yacht marketplace access changed before the job post was saved."
+            ? "Your job-posting access changed before the post was saved."
             : publishingValidationFailed
               ? "Complete the public job details before publishing."
             : code === "23514" || code === "22023"

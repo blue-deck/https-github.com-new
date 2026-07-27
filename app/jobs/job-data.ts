@@ -3,6 +3,7 @@ import {
   formatJobYachtLength,
   formatJobYachtBuildYear,
   formatJobYachtType,
+  isJobEmploymentType,
   isJobYachtLengthUnit,
   isJobYachtType,
   isJobCandidateType,
@@ -21,6 +22,7 @@ import {
   maximumJobVisaSelections,
   type JobYachtLengthUnit,
   type JobYachtType,
+  type JobEmploymentType,
   type JobCandidateType,
   type JobCertificate,
   type JobCharacteristic,
@@ -43,19 +45,13 @@ export type PublicJobSalary = {
   period: string;
 };
 
-export type PublicJobYacht = {
-  name: string;
-  model: string;
-  flag: string;
-};
-
 export type PublicJob = {
   id: string;
   listingNumber: string;
   title: string;
   position: string;
   department: string;
-  employmentType: string;
+  employmentType: JobEmploymentType;
   candidateType: JobCandidateType;
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
@@ -80,9 +76,22 @@ export type PublicJob = {
   requirements: string[];
   benefits: string[];
   salary: PublicJobSalary | null;
-  yacht: PublicJobYacht;
   publishedAt: string;
 };
+
+export type PublicJobCard = Pick<
+  PublicJob,
+  | "id"
+  | "position"
+  | "employmentType"
+  | "candidateType"
+  | "location"
+  | "startDate"
+  | "yachtType"
+  | "yachtLength"
+  | "yachtLengthUnit"
+  | "salary"
+>;
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -94,7 +103,6 @@ export function parsePublicJob(value: unknown): PublicJob | null {
   const title = readString(value, "title");
   if (!id || !isSupportedJobListingNumber(listingNumber) || !title) return null;
 
-  const yachtValue = readRecord(value, "yacht");
   const yachtTypeValue = readValue(value, "yachtType", "yacht_type");
   const yachtLengthValue = readValue(value, "yachtLength", "yacht_length");
   const yachtLengthUnitValue = readValue(
@@ -148,7 +156,11 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     title,
     position: readString(value, "position"),
     department: readString(value, "department"),
-    employmentType: readString(value, "employmentType", "employment_type"),
+    employmentType: isJobEmploymentType(
+      readValue(value, "employmentType", "employment_type"),
+    )
+      ? readValue(value, "employmentType", "employment_type") as JobEmploymentType
+      : "permanent",
     candidateType: isJobCandidateType(candidateTypeValue)
       ? candidateTypeValue
       : "individual",
@@ -209,11 +221,6 @@ export function parsePublicJob(value: unknown): PublicJob | null {
     requirements: readStringList(value, "requirements"),
     benefits: readStringList(value, "benefits"),
     salary: parseSalary(value.salary),
-    yacht: {
-      name: readString(yachtValue, "name"),
-      model: readString(yachtValue, "model"),
-      flag: readString(yachtValue, "flag"),
-    },
     publishedAt: readString(value, "publishedAt", "published_at"),
   };
 }
@@ -223,6 +230,69 @@ export function parsePublicJobs(value: unknown) {
   return value
     .map(parsePublicJob)
     .filter((job): job is PublicJob => Boolean(job));
+}
+
+export function parsePublicJobCard(value: unknown): PublicJobCard | null {
+  if (!isRecord(value)) return null;
+  const id = readString(value, "id");
+  const position = readString(value, "position");
+  const employmentTypeValue = readValue(
+    value,
+    "employmentType",
+    "employment_type",
+  );
+  const candidateTypeValue = readValue(
+    value,
+    "candidateType",
+    "candidate_type",
+  );
+  const yachtTypeValue = readValue(value, "yachtType", "yacht_type");
+  const yachtLengthValue = readPositiveNullableNumber(
+    readValue(value, "yachtLength", "yacht_length"),
+  );
+  const yachtLengthUnitValue = readValue(
+    value,
+    "yachtLengthUnit",
+    "yacht_length_unit",
+  );
+  const yachtLengthUnit = isJobYachtLengthUnit(yachtLengthUnitValue)
+    ? yachtLengthUnitValue
+    : null;
+
+  if (
+    !id ||
+    !position ||
+    !isJobEmploymentType(employmentTypeValue) ||
+    !isJobCandidateType(candidateTypeValue)
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    position,
+    employmentType: employmentTypeValue,
+    candidateType: candidateTypeValue,
+    location: readString(value, "location"),
+    startDate: readString(value, "startDate", "start_date"),
+    yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
+    yachtLength:
+      yachtLengthValue !== null && yachtLengthUnit !== null
+        ? yachtLengthValue
+        : null,
+    yachtLengthUnit:
+      yachtLengthValue !== null && yachtLengthUnit !== null
+        ? yachtLengthUnit
+        : null,
+    salary: parseSalary(value.salary),
+  };
+}
+
+export function parsePublicJobCards(value: unknown) {
+  if (!Array.isArray(value)) return null;
+  return value
+    .map(parsePublicJobCard)
+    .filter((job): job is PublicJobCard => Boolean(job));
 }
 
 export function formatJobDate(
@@ -289,13 +359,6 @@ export function formatJobSalary(
 
   const period = formatSalaryPeriod(salary.period, language);
   return period ? `${amount} / ${period}` : amount;
-}
-
-export function yachtLabel(job: PublicJob) {
-  return [job.yacht.name, job.yacht.model, job.yacht.flag]
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .join(" · ");
 }
 
 export function yachtSpecificationLabel(
@@ -428,11 +491,6 @@ function readJobOptions<Option extends string>(
     if (isOption(item) && !result.includes(item)) result.push(item);
   }
   return result.slice(0, maximumCount);
-}
-
-function readRecord(record: UnknownRecord, key: string): UnknownRecord {
-  const value = record[key];
-  return isRecord(value) ? value : {};
 }
 
 function readNullableNumber(value: unknown) {

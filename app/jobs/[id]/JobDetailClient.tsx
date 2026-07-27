@@ -42,7 +42,6 @@ import {
   formatJobSalary,
   parsePublicJob,
   type PublicJob,
-  yachtLabel,
 } from "../job-data";
 import { JobApplicationPanel } from "./JobApplicationPanel";
 
@@ -150,7 +149,6 @@ function JobDetail({
 }) {
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
-  const yacht = yachtLabel(job);
   const yachtType = job.yachtType
     ? formatJobYachtType(job.yachtType, language)
     : "";
@@ -222,13 +220,6 @@ function JobDetail({
                 <h1 data-i18n-ignore className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">
                   {job.position || job.title}
                 </h1>
-                {yacht ? (
-                  <p data-i18n-ignore className="mt-5 flex items-start gap-2.5 text-base font-semibold text-slate-600">
-                    <Ship className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700" aria-hidden />
-                    <span>{yacht}</span>
-                  </p>
-                ) : null}
-
                 <div className="mt-8 grid gap-3 sm:grid-cols-2">
                   {job.yachtBrand ? (
                     <JobFact

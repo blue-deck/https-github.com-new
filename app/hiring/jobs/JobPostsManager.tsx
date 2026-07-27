@@ -10,7 +10,6 @@ import {
   ChevronDown,
   FilePenLine,
   LoaderCircle,
-  LockKeyhole,
   RefreshCw,
   Save,
   Send,
@@ -70,7 +69,6 @@ import {
   type JobPostStatus,
   type JobYachtLengthUnit,
   type JobYachtType,
-  type VerifiedEmployerYacht,
 } from "../../lib/jobPosts";
 import { positionSelectGroups } from "../../lib/yachtOperations";
 import { supabase } from "../../lib/supabase";
@@ -81,7 +79,6 @@ type WorkspaceResponse = {
   capabilities?: {
     canPostJobs?: boolean;
   };
-  yachts?: VerifiedEmployerYacht[];
   jobs?: EmployerJobPost[];
 };
 
@@ -97,7 +94,6 @@ type Notice = {
 };
 
 type FormState = {
-  yachtId: string;
   position: string;
   employmentType: (typeof jobEmploymentTypes)[number];
   candidateType: JobCandidateType;
@@ -120,7 +116,6 @@ type FormState = {
   requiredCertificates: JobCertificate[];
   requiredVisas: JobVisa[];
   benefits: string;
-  salaryVisible: boolean;
   salaryAmount: string;
   salaryCurrency: JobSalaryCurrencyOption;
   salaryPeriod: (typeof jobSalaryPeriods)[number];
@@ -134,9 +129,9 @@ const copy = {
     jobNotFound:
       "This job post is not available in your hiring workspace.",
     retry: "Try again",
-    accessRequired: "Connect a yacht to publish roles",
+    accessRequired: "Job posting is not available",
     accessRequiredText:
-      "Captain, Owner and Management accounts can publish for a yacht they own or actively manage. Add or connect your yacht first.",
+      "Job posts are available to eligible Captain, Owner and Management accounts. Review your account access and try again.",
     reviewAccess: "My Job Postings & Hiring",
     createTitle: "Create a job post",
     editTitle: "Edit job post",
@@ -147,10 +142,9 @@ const copy = {
     closedStatus: "Closed",
     expiredStatus: "Expired",
     cancelledStatus: "Cancelled",
+    required: "Required",
+    requiredLegend: "Fields marked Required must be completed before publishing.",
     identity: "Job basics",
-    publishingAccount: "Publishing account",
-    publishingAccountHelp:
-      "This private selector controls publishing authority. Public yacht identity follows the visibility setting below.",
     position: "Position",
     positionPlaceholder: "Select a position",
     employmentType: "Employment type",
@@ -191,7 +185,7 @@ const copy = {
     crewMemberCountError:
       "Crew member count must be a whole number between 1 and 200.",
     yachtDetailsRequired:
-      "Select a yacht type and enter a valid yacht length before publishing.",
+      "Complete the start date, salary, yacht type and yacht length before publishing.",
     logistics: "Timing and location",
     location: "Location",
     locationPlaceholder: "Search city or port",
@@ -223,9 +217,7 @@ const copy = {
     listHint: "One item per line",
     benefitsPlaceholder: "Rotation schedule\nTravel covered",
     salary: "Salary",
-    salaryVisible: "Show salary publicly",
-    salaryVisibleHelp:
-      "When disabled, amounts remain private in this employer workspace.",
+    salaryHelp: "Salary is shown on the public job card.",
     salaryAmount: "Salary",
     currency: "Currency",
     period: "Period",
@@ -258,9 +250,9 @@ const copy = {
     jobNotFound:
       "Bu iş ilanı, işe alım alanınızda bulunamadı.",
     retry: "Tekrar dene",
-    accessRequired: "İlan vermek için bir yat bağlayın",
+    accessRequired: "İlan yayınlama kullanılamıyor",
     accessRequiredText:
-      "Captain, Owner ve Management hesapları sahibi oldukları veya aktif olarak yönettikleri yat için ilan verebilir. Önce yatınızı ekleyin ya da hesabınıza bağlayın.",
+      "İş ilanları uygun Captain, Owner ve Management hesapları tarafından yayınlanabilir. Hesap erişiminizi kontrol edip yeniden deneyin.",
     reviewAccess: "İş İlanlarım ve İşe Alım",
     createTitle: "İş ilanı oluştur",
     editTitle: "İş ilanını düzenle",
@@ -271,10 +263,9 @@ const copy = {
     closedStatus: "Kapalı",
     expiredStatus: "Süresi doldu",
     cancelledStatus: "İptal edildi",
+    required: "Zorunlu",
+    requiredLegend: "Zorunlu olarak işaretlenen alanlar yayınlamadan önce doldurulmalıdır.",
     identity: "Temel ilan bilgileri",
-    publishingAccount: "Yayınlayan hesap",
-    publishingAccountHelp:
-      "Bu özel seçim ilan yayınlama yetkisini belirler. Yat kimliğinin görünürlüğünü aşağıdaki ayardan yönetebilirsiniz.",
     position: "Pozisyon",
     positionPlaceholder: "Pozisyon seç",
     employmentType: "Çalışma biçimi",
@@ -315,7 +306,7 @@ const copy = {
     crewMemberCountError:
       "Mürettebat sayısı 1 ile 200 arasında tam sayı olmalıdır.",
     yachtDetailsRequired:
-      "İlanı yayınlamadan önce yat türünü seçin ve geçerli bir yat uzunluğu girin.",
+      "Yayınlamadan önce başlangıç tarihi, maaş, yat türü ve yat uzunluğunu tamamlayın.",
     logistics: "Tarih ve konum",
     location: "Konum",
     locationPlaceholder: "Şehir veya liman ara",
@@ -348,9 +339,7 @@ const copy = {
     listHint: "Her satıra bir madde",
     benefitsPlaceholder: "Rotasyon programı\nSeyahat masrafları",
     salary: "Maaş",
-    salaryVisible: "Ücreti herkese açık göster",
-    salaryVisibleHelp:
-      "Kapalı olduğunda tutarlar yalnız bu özel işveren alanında kalır.",
+    salaryHelp: "Maaş public ilan kartında gösterilir.",
     salaryAmount: "Maaş",
     currency: "Para birimi",
     period: "Dönem",
@@ -390,9 +379,9 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reloadVersion, setReloadVersion] = useState(0);
-  const [yachts, setYachts] = useState<VerifiedEmployerYacht[]>([]);
+  const [canPostJobs, setCanPostJobs] = useState(false);
   const [selectedJob, setSelectedJob] = useState<EmployerJobPost | null>(null);
-  const [form, setForm] = useState<FormState>(() => emptyForm(""));
+  const [form, setForm] = useState<FormState>(() => emptyForm());
   const [openChoiceGroup, setOpenChoiceGroup] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -442,7 +431,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
         if (
           !response.ok ||
           !result?.ok ||
-          !Array.isArray(result.yachts) ||
+          typeof result.capabilities?.canPostJobs !== "boolean" ||
           !Array.isArray(result.jobs)
         ) {
           throw new Error(result?.error || "workspace_load_failed");
@@ -453,7 +442,6 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
           return;
         }
 
-        const nextYachts = result.yachts;
         const nextJobs = result.jobs;
         const requestedJob = requestedJobId
           ? nextJobs.find((job) => job.id.toLowerCase() === requestedJobId) || null
@@ -462,14 +450,14 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
           throw new Error("job_not_found");
         }
 
-        setYachts(nextYachts);
+        setCanPostJobs(result.capabilities.canPostJobs);
         setSelectedJob(requestedJob);
         setNotice(null);
         setOpenChoiceGroup(null);
         setForm(
           requestedJob
             ? formFromJob(requestedJob)
-            : emptyForm(nextYachts[0]?.id || ""),
+            : emptyForm(),
         );
       } catch (error) {
         if (!active) return;
@@ -516,7 +504,11 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
     if (
       !yachtLength.ok ||
       (targetStatus === "published" &&
-        (!form.yachtType || yachtLength.value === null))
+        (!form.yachtType ||
+          yachtLength.value === null ||
+          !form.startDate ||
+          salaryAmount.value === null ||
+          salaryAmount.value <= 0))
     ) {
       setNotice({ tone: "error", message: c.yachtDetailsRequired });
       return;
@@ -569,12 +561,10 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
       requiredCertificates: form.requiredCertificates,
       requiredVisas: form.requiredVisas,
       benefits: lines(form.benefits),
-      salaryVisible: form.salaryVisible,
       salaryMin: salaryAmount.value,
       salaryMax: salaryAmount.value,
       salaryCurrency: form.salaryCurrency,
       salaryPeriod: form.salaryPeriod,
-      showYachtName: true,
       status: targetStatus,
     };
 
@@ -592,7 +582,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
         body: JSON.stringify(
           selectedJob
             ? { ...payload, version: selectedJob.version }
-            : { ...payload, yachtId: form.yachtId },
+            : payload,
         ),
       });
       const result = (await response
@@ -666,7 +656,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
     );
   }
 
-  if (yachts.length === 0) {
+  if (!canPostJobs) {
     return (
       <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
         <div className="bd-ocean-content mx-auto max-w-4xl">
@@ -771,43 +761,13 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
             >
               <div className="space-y-4 bg-slate-50/70 p-4 sm:p-6">
 
-              {yachts.length > 1 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-800">
-                      <LockKeyhole className="h-4 w-4" aria-hidden />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <Field label={c.publishingAccount}>
-                        <select
-                          value={form.yachtId}
-                          onChange={(event) =>
-                            updateForm("yachtId", event.target.value)
-                          }
-                          disabled={saving || Boolean(selectedJob)}
-                          className={inputClass}
-                          required
-                        >
-                          {yachts.map((yacht) => (
-                            <option key={yacht.id} value={yacht.id}>
-                              {[yacht.name, yacht.model]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
-                      <p className="mt-2 text-xs font-semibold leading-5 text-cyan-950/70">
-                        {c.publishingAccountHelp}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              <p className="px-1 text-xs font-semibold text-slate-500">
+                {c.requiredLegend}
+              </p>
 
               <FormSection icon={<BriefcaseBusiness />} title={c.identity}>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={c.position}>
+                  <Field label={requiredFieldLabel(c.position, c.required)}>
                     <select
                       value={form.position}
                       onChange={(event) =>
@@ -833,7 +793,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     </select>
                   </Field>
 
-                  <Field label={c.employmentType}>
+                  <Field label={requiredFieldLabel(c.employmentType, c.required)}>
                     <select
                       value={form.employmentType}
                       onChange={(event) =>
@@ -845,6 +805,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                       }
                       disabled={saving}
                       className={inputClass}
+                      required
                     >
                       {jobEmploymentTypes.map((type) => (
                         <option key={type} value={type}>
@@ -895,7 +856,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                   </Field>
 
                   <LocationSearchField
-                    label={c.location}
+                    label={requiredFieldLabel(c.location, c.required)}
                     value={form.location}
                     onChange={(value) =>
                       updateForm("location", value.slice(0, 120))
@@ -910,12 +871,13 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     labelClassName={fieldLabelClass}
                   />
                   <DateTextField
-                    label={c.startDate}
+                    label={requiredFieldLabel(c.startDate, c.required)}
                     value={form.startDate}
                     onChange={(value) => updateForm("startDate", value)}
                     placeholder={c.datePlaceholder}
                     invalidText={c.invalidDate}
                     disabled={saving}
+                    required
                     labelClassName={fieldLabelClass}
                   />
                 </div>
@@ -1059,7 +1021,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
               <FormSection icon={<Ship />} title={c.yachtDetails}>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={c.yachtType}>
+                  <Field label={requiredFieldLabel(c.yachtType, c.required)}>
                     <select
                       value={form.yachtType}
                       onChange={(event) =>
@@ -1127,7 +1089,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                   </Field>
 
                   <YachtSizeField
-                    label={c.yachtLength}
+                    label={requiredFieldLabel(c.yachtLength, c.required)}
                     value={form.yachtLength}
                     unit={form.yachtLengthUnit}
                     onChange={(value, unit) =>
@@ -1171,7 +1133,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
               <FormSection icon={<FilePenLine />} title={c.narrative}>
                 <div className="grid gap-5">
-                  <Field label={c.description}>
+                  <Field label={requiredFieldLabel(c.description, c.required)}>
                     <textarea
                       value={form.description}
                       onChange={(event) =>
@@ -1183,6 +1145,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                       maxLength={8000}
                       rows={7}
                       disabled={saving}
+                      required
                       className={`${inputClass} py-3`}
                       placeholder={c.descriptionPlaceholder}
                     />
@@ -1204,28 +1167,20 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                           {c.salary}
                         </h4>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          {c.salaryVisibleHelp}
+                          {c.salaryHelp}
                         </p>
                       </div>
-                      <Toggle
-                        checked={form.salaryVisible}
-                        onChange={(checked) =>
-                          updateForm("salaryVisible", checked)
-                        }
-                        disabled={saving}
-                        label={c.salaryVisible}
-                      />
                     </div>
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
                       <fieldset>
                         <legend className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
-                          {c.salaryAmount}
+                          {requiredFieldLabel(c.salaryAmount, c.required)}
                         </legend>
                         <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
                           <input
                             type="number"
                             inputMode="decimal"
-                            min="0"
+                            min="0.01"
                             step="0.01"
                             aria-label={c.salaryAmount}
                             value={form.salaryAmount}
@@ -1233,6 +1188,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                               updateForm("salaryAmount", event.target.value)
                             }
                             disabled={saving}
+                            required
                             className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
                           />
                           <select
@@ -1350,9 +1306,8 @@ const inputClass =
 const fieldLabelClass =
   "mb-1.5 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-500";
 
-function emptyForm(yachtId: string): FormState {
+function emptyForm(): FormState {
   return {
-    yachtId,
     position: "",
     employmentType: "permanent",
     candidateType: "individual",
@@ -1375,7 +1330,6 @@ function emptyForm(yachtId: string): FormState {
     requiredCertificates: [],
     requiredVisas: [],
     benefits: "",
-    salaryVisible: false,
     salaryAmount: "",
     salaryCurrency: "EUR",
     salaryPeriod: "month",
@@ -1384,7 +1338,6 @@ function emptyForm(yachtId: string): FormState {
 
 function formFromJob(job: EmployerJobPost): FormState {
   return {
-    yachtId: job.yachtId,
     position: job.position,
     employmentType: job.employmentType,
     candidateType: job.candidateType,
@@ -1410,7 +1363,6 @@ function formFromJob(job: EmployerJobPost): FormState {
     requiredCertificates: job.requiredCertificates,
     requiredVisas: job.requiredVisas,
     benefits: job.benefits.join("\n"),
-    salaryVisible: job.salaryVisible,
     salaryAmount:
       job.salary?.min === null && job.salary?.max === null
         ? ""
@@ -1431,6 +1383,10 @@ function formatSalaryCurrencyOption(currency: JobSalaryCurrencyOption) {
     TRY: "TL (TRY)",
   };
   return labels[currency];
+}
+
+function requiredFieldLabel(label: string, required: string) {
+  return `${label} · ${required}`;
 }
 
 function FormSection({
@@ -1629,40 +1585,6 @@ function ListField({
         className={`${inputClass} py-3`}
         placeholder={placeholder}
       />
-    </label>
-  );
-}
-
-function Toggle({
-  checked,
-  disabled,
-  label,
-  help,
-  onChange,
-}: {
-  checked: boolean;
-  disabled: boolean;
-  label: string;
-  help?: string;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label className="flex cursor-pointer items-start gap-3">
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
-        className="bd-focus mt-1 h-5 w-5 shrink-0 rounded border-slate-300 accent-cyan-700"
-      />
-      <span>
-        <span className="block text-sm font-bold text-slate-800">{label}</span>
-        {help ? (
-          <span className="mt-1 block text-xs leading-5 text-slate-500">
-            {help}
-          </span>
-        ) : null}
-      </span>
     </label>
   );
 }

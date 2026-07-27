@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
-  Award,
   BriefcaseBusiness,
   CalendarDays,
   CircleDollarSign,
@@ -17,26 +16,22 @@ import {
   ShieldCheck,
   Ship,
   SlidersHorizontal,
-  UsersRound,
   UserRoundPlus,
   X,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import {
-  formatJobListingNumber,
-  formatJobCrewMemberCount,
-  formatJobSmokerPolicy,
-  formatJobVisibleTattooPolicy,
+  formatJobCandidateType,
+  formatJobEmploymentType,
+  formatJobYachtLength,
+  formatJobYachtType,
 } from "../lib/jobPosts";
 import {
   formatJobDate,
   formatJobSalary,
-  minimumYachtExperienceLabel,
-  parsePublicJobs,
-  type PublicJob,
-  yachtLabel,
-  yachtSpecificationLabel,
+  parsePublicJobCards,
+  type PublicJobCard,
 } from "./job-data";
 import {
   getJobListingAction,
@@ -50,7 +45,7 @@ export function JobsClient() {
   const { language } = useLanguage();
   const c = copy[language];
   const [loadState, setLoadState] = useState<LoadState>("loading");
-  const [jobs, setJobs] = useState<PublicJob[]>([]);
+  const [jobs, setJobs] = useState<PublicJobCard[]>([]);
   const [requestVersion, setRequestVersion] = useState(0);
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState("");
@@ -80,7 +75,7 @@ export function JobsClient() {
           throw new Error("jobs_request_failed");
         }
 
-        const parsedJobs = parsePublicJobs(payload.jobs);
+        const parsedJobs = parsePublicJobCards(payload.jobs);
         if (!parsedJobs) throw new Error("jobs_response_invalid");
 
         setJobs(parsedJobs);
@@ -98,7 +93,7 @@ export function JobsClient() {
   const positions = useMemo(
     () =>
       uniqueSorted(
-        jobs.map((job) => job.position || job.title),
+        jobs.map((job) => job.position),
         language,
       ),
     [jobs, language],
@@ -117,37 +112,27 @@ export function JobsClient() {
     const normalizedQuery = query.trim().toLocaleLowerCase(locale);
 
     return jobs.filter((job) => {
-      const yachtSpecification = yachtSpecificationLabel(job, language);
-      const minimumYachtExperience = minimumYachtExperienceLabel(
-        job,
-        language,
-      );
-      const smokerPolicy = formatJobSmokerPolicy(job.smokerPolicy, language);
-      const visibleTattooPolicy = formatJobVisibleTattooPolicy(
-        job.visibleTattooPolicy,
-        language,
-      );
+      const yachtType = job.yachtType
+        ? formatJobYachtType(job.yachtType, language)
+        : "";
+      const yachtLength =
+        job.yachtLength !== null && job.yachtLengthUnit
+          ? formatJobYachtLength(
+              job.yachtLength,
+              job.yachtLengthUnit,
+              language,
+            )
+          : "";
       const searchableText = [
-        job.title,
         job.position,
-        job.employmentType,
+        formatJobEmploymentType(job.employmentType, language),
         job.location,
-        job.listingNumber,
-        formatJobListingNumber(job.listingNumber),
-        yachtLabel(job),
-        yachtSpecification,
-        minimumYachtExperience,
-        job.candidateType === "individual" ? c.no : c.teamCouple,
-        job.candidateType,
-        smokerPolicy,
-        visibleTattooPolicy,
-        job.requiredLanguages.join(" "),
-        job.minimumYachtExperience === null
+        yachtType,
+        yachtLength,
+        job.candidateType === "individual"
           ? ""
-          : job.minimumYachtExperience,
-        job.yachtType || "",
-        job.yachtLength === null ? "" : String(job.yachtLength),
-        job.crewMemberCount === null ? "" : String(job.crewMemberCount),
+          : formatJobCandidateType(job.candidateType, language),
+        formatJobSalary(job.salary, language),
       ]
         .join(" ")
         .toLocaleLowerCase(locale);
@@ -155,7 +140,7 @@ export function JobsClient() {
       if (normalizedQuery && !searchableText.includes(normalizedQuery)) {
         return false;
       }
-      if (position && (job.position || job.title) !== position) return false;
+      if (position && job.position !== position) return false;
       if (location && job.location !== location) return false;
       if (employmentType && job.employmentType !== employmentType) return false;
       return true;
@@ -337,15 +322,19 @@ function JobCard({
   language,
   viewer,
 }: {
-  job: PublicJob;
+  job: PublicJobCard;
   language: "en" | "tr";
   viewer: JobListingViewer;
 }) {
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
-  const yacht = yachtLabel(job);
-  const yachtSpecification = yachtSpecificationLabel(job, language);
-  const minimumYachtExperience = minimumYachtExperienceLabel(job, language);
+  const yachtType = job.yachtType
+    ? formatJobYachtType(job.yachtType, language)
+    : "";
+  const yachtLength =
+    job.yachtLength !== null && job.yachtLengthUnit
+      ? formatJobYachtLength(job.yachtLength, job.yachtLengthUnit, language)
+      : "";
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
@@ -353,56 +342,36 @@ function JobCard({
       <div className="h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex flex-wrap items-center gap-2">
-          {job.employmentType ? <StatusPill>{job.employmentType}</StatusPill> : null}
+          <StatusPill>
+            {formatJobEmploymentType(job.employmentType, language)}
+          </StatusPill>
           {job.candidateType !== "individual" ? (
-            <StatusPill>{c.teamCouple}</StatusPill>
+            <StatusPill>
+              {formatJobCandidateType(job.candidateType, language)}
+            </StatusPill>
           ) : null}
         </div>
 
-        <p
-          data-i18n-ignore
-          aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
-          className="mt-4 font-mono text-[11px] font-black tracking-[0.14em] text-cyan-800"
-        >
-          {formatJobListingNumber(job.listingNumber)}
-        </p>
-
         <h3 data-i18n-ignore className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-          {job.position || job.title}
+          {job.position}
         </h3>
 
-        {yacht ? (
-          <p data-i18n-ignore className="mt-4 flex items-start gap-2.5 text-sm font-semibold text-slate-600">
-            <Ship className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
-            <span>{yacht}</span>
-          </p>
-        ) : null}
-
         <div className="mt-5 space-y-2.5 text-sm text-slate-600">
-          {yachtSpecification ? (
-            <InfoLine icon={<Ruler />} value={yachtSpecification} />
-          ) : null}
-          {minimumYachtExperience ? (
-            <InfoLine icon={<Award />} value={minimumYachtExperience} />
-          ) : null}
-          {job.crewMemberCount !== null ? (
-            <InfoLine
-              icon={<UsersRound />}
-              value={formatJobCrewMemberCount(job.crewMemberCount, language)}
-            />
-          ) : null}
-          {job.location ? (
-            <InfoLine icon={<MapPin />} value={job.location} />
-          ) : null}
-          {job.startDate ? (
-            <InfoLine
-              icon={<CalendarDays />}
-              value={`${c.start}: ${formatJobDate(job.startDate, language)}`}
-            />
-          ) : null}
-          {salary ? (
-            <InfoLine icon={<CircleDollarSign />} value={salary} />
-          ) : null}
+          <InfoLine icon={<Ship />} value={yachtType || c.notSpecified} />
+          <InfoLine icon={<Ruler />} value={yachtLength || c.notSpecified} />
+          <InfoLine icon={<MapPin />} value={job.location} />
+          <InfoLine
+            icon={<CalendarDays />}
+            value={`${c.start}: ${
+              job.startDate
+                ? formatJobDate(job.startDate, language)
+                : c.notSpecified
+            }`}
+          />
+          <InfoLine
+            icon={<CircleDollarSign />}
+            value={salary || c.salaryNotSpecified}
+          />
         </div>
 
         <div className="mt-auto pt-6">
@@ -592,14 +561,12 @@ const copy = {
     position: "All positions",
     location: "All locations",
     employmentType: "All employment types",
-    teamCouple: "Team / Couple",
-    yes: "Yes",
-    no: "No",
     results: "Current opportunities",
     roles: "open roles",
     clear: "Clear filters",
     start: "Start",
-    listingNumber: "Listing no.",
+    notSpecified: "Not specified",
+    salaryNotSpecified: "Salary not specified",
     viewRole: "View role",
     loading: "Loading current opportunities…",
     errorTitle: "The job board could not be loaded",
@@ -631,14 +598,12 @@ const copy = {
     position: "Tüm pozisyonlar",
     location: "Tüm konumlar",
     employmentType: "Tüm çalışma biçimleri",
-    teamCouple: "Team / Couple",
-    yes: "Evet",
-    no: "Hayır",
     results: "Güncel fırsatlar",
     roles: "açık pozisyon",
     clear: "Filtreleri temizle",
     start: "Başlangıç",
-    listingNumber: "İlan no:",
+    notSpecified: "Belirtilmedi",
+    salaryNotSpecified: "Maaş belirtilmedi",
     viewRole: "İlanı görüntüle",
     loading: "Güncel fırsatlar yükleniyor…",
     errorTitle: "İş ilanları yüklenemedi",

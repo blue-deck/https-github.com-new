@@ -4,8 +4,8 @@ import {
   jobPostServiceClient,
   logJobPostError,
   maximumPublicJobResults,
-  publicJobPostFromRow,
-  publicJobPostServiceSelect,
+  publicJobCardFromRow,
+  publicJobCardServiceSelect,
 } from "../../lib/jobPostsServer";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export async function GET() {
   const now = new Date().toISOString();
   const { data, error } = await service.client
     .from("job_posts")
-    .select(publicJobPostServiceSelect)
+    .select(publicJobCardServiceSelect)
     .eq("status", "published")
     .lte("published_at", now)
     .gt("closes_at", now)
@@ -53,7 +53,7 @@ export async function GET() {
     ) {
       continue;
     }
-    const job = publicJobPostFromRow(row);
+    const job = publicJobCardFromRow(row);
     if (!job) {
       logJobPostError("invalid_public_job_record", undefined, {
         recordId:

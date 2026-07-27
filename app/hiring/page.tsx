@@ -15,7 +15,6 @@ import {
   MapPin,
   Plus,
   RefreshCw,
-  Ship,
   UsersRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -27,10 +26,10 @@ import {
   type MarketplaceCapabilities,
 } from "../lib/marketplaceCapabilities";
 import {
+  formatJobEmploymentType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
   type EmployerJobPost,
-  type VerifiedEmployerYacht,
 } from "../lib/jobPosts";
 import { supabase } from "../lib/supabase";
 
@@ -41,7 +40,6 @@ type JobWorkspaceResponse = {
     postingStatus?: "enabled" | "suspended" | "unavailable";
     planCode?: string;
   };
-  yachts?: VerifiedEmployerYacht[];
   jobs?: EmployerJobPost[];
   applicationCounts?: Record<string, number>;
   applicationCountsAvailable?: boolean;
@@ -58,7 +56,6 @@ const copy = {
     loadError: "Your hiring workspace could not be loaded.",
     retry: "Try again",
     createPost: "Create Job Post",
-    connectYacht: "Connect a yacht",
     browseJobs: "Browse jobs",
     totalPosts: "Job postings",
     livePosts: "Published",
@@ -73,9 +70,6 @@ const copy = {
     crewTitle: "This is an employer workspace",
     crewText:
       "Crew accounts can browse and apply to roles. Captain, Owner / Employer and Management accounts can publish job posts.",
-    yachtRequiredTitle: "Connect a yacht before creating a role",
-    yachtRequiredText:
-      "Add a yacht you own or connect an active Captain or Management relationship to start publishing.",
     emptyTitle: "No job postings yet",
     emptyCreateText:
       "Create your first role and BlueDeck will keep its applicants and hiring activity organized here.",
@@ -89,8 +83,7 @@ const copy = {
     location: "Location",
     startDate: "Start date",
     updated: "Updated",
-    yacht: "Yacht",
-    privateYacht: "Private yacht",
+    employmentType: "Employment",
     notSpecified: "Not specified",
     countsUnavailable:
       "Application totals are temporarily unavailable. You can still open each listing to review its applicants.",
@@ -110,7 +103,6 @@ const copy = {
     loadError: "İşe alım alanınız yüklenemedi.",
     retry: "Tekrar dene",
     createPost: "İş İlanı Oluştur",
-    connectYacht: "Yat bağla",
     browseJobs: "İş ilanlarına göz at",
     totalPosts: "İş ilanı",
     livePosts: "Yayında",
@@ -125,9 +117,6 @@ const copy = {
     crewTitle: "Bu alan işveren hesapları içindir",
     crewText:
       "Crew hesapları ilanları görüntüleyip başvurabilir. Captain, Owner / Employer ve Management hesapları iş ilanı yayınlayabilir.",
-    yachtRequiredTitle: "İlan oluşturmadan önce bir yat bağlayın",
-    yachtRequiredText:
-      "İlan yayınlamak için sahibi olduğunuz bir yatı ekleyin veya aktif Captain ya da Management bağlantısı kurun.",
     emptyTitle: "Henüz iş ilanı yok",
     emptyCreateText:
       "İlk ilanınızı oluşturun; BlueDeck başvuruları ve işe alım hareketlerini burada düzenli tutsun.",
@@ -141,8 +130,7 @@ const copy = {
     location: "Konum",
     startDate: "Başlangıç",
     updated: "Güncellendi",
-    yacht: "Yat",
-    privateYacht: "Gizli yat",
+    employmentType: "Çalışma biçimi",
     notSpecified: "Belirtilmedi",
     countsUnavailable:
       "Başvuru sayıları geçici olarak görüntülenemiyor. Başvuranları incelemek için ilanı açmaya devam edebilirsiniz.",
@@ -162,7 +150,6 @@ export default function HiringPage() {
   const [capabilities, setCapabilities] = useState<
     JobWorkspaceResponse["capabilities"]
   >(marketplaceCapabilitiesForRole("crew"));
-  const [yachtCount, setYachtCount] = useState(0);
   const [jobs, setJobs] = useState<EmployerJobPost[]>([]);
   const [applicationCounts, setApplicationCounts] = useState<
     Record<string, number>
@@ -208,7 +195,6 @@ export default function HiringPage() {
         !response.ok ||
         !workspace?.ok ||
         !workspace.capabilities ||
-        !Array.isArray(workspace.yachts) ||
         !Array.isArray(workspace.jobs)
       ) {
         throw new Error(workspace?.error || c.loadError);
@@ -235,7 +221,6 @@ export default function HiringPage() {
         role: canonicalRole,
         requiresAdminApproval: false,
       });
-      setYachtCount(workspace.yachts.length);
       setJobs(nextJobs);
       setApplicationCounts(nextCounts);
       setApplicationCountsAvailable(countsAvailable);
@@ -297,7 +282,7 @@ export default function HiringPage() {
 
   const role = normalizeMarketplaceAccountRole(capabilities?.role);
   const canPostJobs = capabilities?.canPostJobs === true;
-  const canCreateJob = canPostJobs && yachtCount > 0;
+  const canCreateJob = canPostJobs;
   const isPublisherRole = role !== "crew";
 
   return (
@@ -377,21 +362,6 @@ export default function HiringPage() {
                   <ArrowRight className="h-4 w-4" aria-hidden />
                 </Link>
               ) : null
-            }
-          />
-        ) : yachtCount === 0 ? (
-          <WorkspaceNotice
-            icon={<Ship className="h-5 w-5" aria-hidden />}
-            title={c.yachtRequiredTitle}
-            text={c.yachtRequiredText}
-            action={
-              <Link
-                href="/yachts"
-                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 text-sm font-black text-cyan-900 transition hover:bg-cyan-50"
-              >
-                {c.connectYacht}
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
             }
           />
         ) : null}
@@ -490,10 +460,6 @@ function JobPostCard({
   const status = jobStatus(job, language);
   const expired = isEmployerJobPostExpired(job);
   const terminal = expired || job.status === "closed";
-  const yachtName = [job.yacht?.name, job.yacht?.model]
-    .filter(Boolean)
-    .join(" · ");
-
   return (
     <article className="bd-glass-card-strong overflow-hidden rounded-[28px] border border-white/80">
       <div className="p-6 sm:p-7">
@@ -522,9 +488,9 @@ function JobPostCard({
 
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
           <JobDetail
-            icon={<Ship className="h-4 w-4" aria-hidden />}
-            label={c.yacht}
-            value={yachtName || job.yachtBrand || c.privateYacht}
+            icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden />}
+            label={c.employmentType}
+            value={formatJobEmploymentType(job.employmentType, language)}
           />
           <JobDetail
             icon={<MapPin className="h-4 w-4" aria-hidden />}

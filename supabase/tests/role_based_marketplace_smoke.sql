@@ -26,8 +26,10 @@ declare
   ownership_job uuid;
   management_role_job uuid;
   management_delete_job uuid;
+  incomplete_job uuid;
   application_a public.job_applications%rowtype;
   application_b public.job_applications%rowtype;
+  captain_application public.job_applications%rowtype;
   stored_job public.job_posts%rowtype;
   event_count integer;
   result_count integer;
@@ -40,7 +42,9 @@ declare
   isolated_publisher_rejected boolean := false;
   isolated_list_rejected boolean := false;
   profile_escalation_rejected boolean := false;
-  captain_managed_apply_rejected boolean := false;
+  creator_apply_rejected boolean := false;
+  noncreator_update_rejected boolean := false;
+  incomplete_publish_rejected boolean := false;
   suspended_publisher_list_rejected boolean := false;
 begin
   if has_table_privilege('anon', 'public.marketplace_entitlements', 'select')
@@ -69,9 +73,39 @@ begin
       'public.bluedeck_submit_job_application(uuid,uuid,text)',
       'execute'
     )
+    or has_function_privilege(
+      'authenticated',
+      'public.bluedeck_can_publish_jobs(uuid)',
+      'execute'
+    )
+    or has_function_privilege(
+      'authenticated',
+      'public.bluedeck_can_manage_job(uuid,uuid)',
+      'execute'
+    )
+    or has_function_privilege(
+      'authenticated',
+      'public.bluedeck_can_apply_to_job(uuid,uuid)',
+      'execute'
+    )
     or not has_function_privilege(
       'service_role',
       'public.bluedeck_submit_job_application(uuid,uuid,text)',
+      'execute'
+    )
+    or not has_function_privilege(
+      'service_role',
+      'public.bluedeck_can_publish_jobs(uuid)',
+      'execute'
+    )
+    or not has_function_privilege(
+      'service_role',
+      'public.bluedeck_can_manage_job(uuid,uuid)',
+      'execute'
+    )
+    or not has_function_privilege(
+      'service_role',
+      'public.bluedeck_can_apply_to_job(uuid,uuid)',
       'execute'
     )
   then
@@ -397,18 +431,29 @@ begin
     'self_service'
   );
 
-  -- Exact role capability matrix.
+  -- Captain Workspace yacht authority remains its own capability and must not
+  -- grant authority over recruitment listings.
   if not public.bluedeck_can_manage_yacht_marketplace(owner_a, yacht_a)
     or not public.bluedeck_can_manage_yacht_marketplace(captain_a, yacht_a)
     or not public.bluedeck_can_manage_yacht_marketplace(management_a, yacht_a)
     or public.bluedeck_can_manage_yacht_marketplace(crew_a, yacht_a)
     or public.bluedeck_can_manage_yacht_marketplace(owner_b, yacht_a)
   then
-    raise exception 'Publisher role/yacht authority matrix failed.';
+    raise exception 'Captain Workspace yacht authority matrix failed.';
+  end if;
+
+  -- Job publishing is account-level and independent from every yacht record.
+  if not public.bluedeck_can_publish_jobs(owner_a)
+    or not public.bluedeck_can_publish_jobs(owner_b)
+    or not public.bluedeck_can_publish_jobs(captain_a)
+    or not public.bluedeck_can_publish_jobs(management_a)
+    or public.bluedeck_can_publish_jobs(crew_a)
+    or public.bluedeck_can_publish_jobs(crew_b)
+  then
+    raise exception 'Account-level job publishing role matrix failed.';
   end if;
 
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -424,11 +469,13 @@ begin
     description,
     responsibilities,
     requirements,
-    show_yacht_name,
+    candidate_type,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
-    yacht_a,
     owner_a,
     owner_a,
     'Marketplace Smoke Deckhand',
@@ -444,13 +491,15 @@ begin
     'This temporary posting validates self-service publishing, start dates, applications, authorization and lifecycle transitions.',
     array['Support safe daily deck operations.'],
     array['Hold valid STCW certification.'],
-    false,
+    'team',
+    5200,
+    'EUR',
+    'month',
     'published'
   )
   returning id into job_a;
 
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -466,11 +515,12 @@ begin
     description,
     responsibilities,
     requirements,
-    show_yacht_name,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
-    yacht_b,
     owner_b,
     owner_b,
     'Isolated Marketplace Smoke Stewardess',
@@ -483,16 +533,100 @@ begin
     172,
     'ft',
     'A second complete temporary role used to verify publisher isolation.',
-    'This separate temporary posting ensures one yacht publisher cannot review or mutate applications belonging to another yacht.',
+    'This separate temporary posting ensures one publisher account cannot review or mutate applications belonging to another creator.',
     array['Support interior guest operations.'],
     array['Hold valid STCW certification.'],
-    false,
+    4500,
+    'USD',
+    'month',
     'published'
   )
   returning id into job_b;
 
+  if not public.bluedeck_can_manage_job(owner_a, job_a)
+    or public.bluedeck_can_manage_job(owner_b, job_a)
+    or public.bluedeck_can_manage_job(captain_a, job_a)
+    or not public.bluedeck_can_manage_job(owner_b, job_b)
+  then
+    raise exception 'Immutable creator ownership did not isolate job management.';
+  end if;
+
+  if not exists (
+    select 1
+    from public.job_posts as post
+    where post.id = job_a
+      and post.yacht_id is null
+      and post.position = 'Deckhand'
+      and post.employment_type = 'seasonal'
+      and post.location = 'Palma, Spain'
+      and post.start_date = current_date + 14
+      and post.salary_visible = true
+      and post.salary_min = 5200
+      and post.salary_currency = 'EUR'
+      and post.salary_period = 'month'
+      and post.yacht_type = 'motor_yacht'
+      and post.yacht_length = 52.4
+      and post.yacht_length_unit = 'm'
+      and post.candidate_type = 'team'
+  ) or exists (
+    select 1
+    from public.job_posts as post
+    where post.id in (job_a, job_b)
+      and post.yacht_id is not null
+  ) then
+    raise exception 'Required public-card fields or yacht independence were not persisted.';
+  end if;
+
+  begin
+    update public.job_posts
+    set summary = 'A non-creator attempted to mutate this listing.',
+        updated_by = owner_b
+    where id = job_a;
+  exception
+    when insufficient_privilege then
+      noncreator_update_rejected := true;
+  end;
+  if not noncreator_update_rejected then
+    raise exception 'A non-creator publisher mutated another account''s job.';
+  end if;
+
+  insert into public.job_posts (
+    created_by,
+    updated_by,
+    title,
+    position,
+    department,
+    employment_type,
+    description,
+    status
+  )
+  values (
+    owner_a,
+    owner_a,
+    'Incomplete Public Card Smoke',
+    'Deckhand',
+    'Deck',
+    'seasonal',
+    'This draft intentionally omits required public-card fields so publishing must be rejected by the database boundary.',
+    'draft'
+  )
+  returning id into incomplete_job;
+
+  begin
+    update public.job_posts
+    set status = 'published',
+        updated_by = owner_a
+    where id = incomplete_job;
+  exception
+    when check_violation then
+      incomplete_publish_rejected := true;
+  end;
+  if not incomplete_publish_rejected then
+    raise exception 'A listing missing required public-card fields was published.';
+  end if;
+
   if not public.bluedeck_can_apply_to_job(crew_a, job_a)
-    or public.bluedeck_can_apply_to_job(captain_a, job_a)
+    or not public.bluedeck_can_apply_to_job(captain_a, job_a)
     or not public.bluedeck_can_apply_to_job(captain_a, job_b)
     or public.bluedeck_can_apply_to_job(owner_a, job_a)
     or public.bluedeck_can_apply_to_job(management_a, job_a)
@@ -500,13 +634,18 @@ begin
     raise exception 'Applicant role matrix failed.';
   end if;
 
-  if not exists (
-    select 1
-    from public.job_posts as post
-    where post.id = job_a
-      and post.start_date = current_date + 14
-  ) then
-    raise exception 'Job start_date was not persisted.';
+  select *
+  into captain_application
+  from public.bluedeck_submit_job_application(
+    job_a,
+    captain_a,
+    'Captain Workspace membership must not block this independent application.'
+  );
+
+  if captain_application.status <> 'submitted'
+    or captain_application.applicant_role <> 'captain'
+  then
+    raise exception 'Captain Workspace state leaked into job application authority.';
   end if;
 
   select *
@@ -567,20 +706,6 @@ begin
   begin
     perform public.bluedeck_submit_job_application(
       job_a,
-      captain_a,
-      'A captain must not apply to a yacht they currently manage.'
-    );
-  exception
-    when insufficient_privilege then
-      captain_managed_apply_rejected := true;
-  end;
-  if not captain_managed_apply_rejected then
-    raise exception 'Captain applied to a job on their managed yacht.';
-  end if;
-
-  begin
-    perform public.bluedeck_submit_job_application(
-      job_a,
       crew_b,
       repeat('x', 2001)
     );
@@ -632,7 +757,7 @@ begin
       isolated_publisher_rejected := true;
   end;
   if not isolated_publisher_rejected then
-    raise exception 'A publisher from another yacht changed the application.';
+    raise exception 'A non-creator publisher changed the application.';
   end if;
 
   begin
@@ -642,7 +767,7 @@ begin
       isolated_list_rejected := true;
   end;
   if not isolated_list_rejected then
-    raise exception 'A publisher from another yacht listed private applications.';
+    raise exception 'A non-creator publisher listed private applications.';
   end if;
 
   select count(*)
@@ -721,9 +846,8 @@ begin
     raise exception 'Publisher hire lifecycle failed.';
   end if;
 
-  -- Membership authority loss automatically closes captain-created posts.
+  -- Captain Workspace membership changes must not mutate creator-owned posts.
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -731,15 +855,18 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
-    yacht_a,
     captain_a,
     captain_a,
     'Captain Authority Loss Smoke',
@@ -747,14 +874,32 @@ begin
     'Deck',
     'temporary',
     'Palma, Spain',
+    current_date + 28,
     'motor_yacht',
     52.4,
     'm',
-    'A complete temporary role used to verify membership authority loss.',
-    'This temporary posting must close atomically when the captain membership that supplies yacht authority becomes inactive.',
+    'A complete temporary role used to verify workspace independence.',
+    'This temporary posting must remain published when an unrelated Captain Workspace membership becomes inactive.',
+    6500,
+    'EUR',
+    'month',
     'published'
   )
   returning id into captain_job;
+
+  begin
+    perform public.bluedeck_submit_job_application(
+      captain_job,
+      captain_a,
+      'A creator must not apply to their own independently owned listing.'
+    );
+  exception
+    when insufficient_privilege then
+      creator_apply_rejected := true;
+  end;
+  if not creator_apply_rejected then
+    raise exception 'A publisher applied to their own job post.';
+  end if;
 
   update public.yacht_crew_memberships
   set status = 'inactive'
@@ -763,14 +908,16 @@ begin
   select * into stored_job
   from public.job_posts
   where id = captain_job;
-  if stored_job.status <> 'closed' then
-    raise exception 'Captain membership loss did not close the job.';
+  if stored_job.status <> 'published'
+    or stored_job.yacht_id is not null
+    or not public.bluedeck_can_manage_job(captain_a, captain_job)
+  then
+    raise exception 'Captain Workspace membership state changed an independent job.';
   end if;
 
-  -- A posting-role switch must re-evaluate the position-specific membership,
-  -- even when both the old and new account roles can normally publish.
+  -- Switching between two publisher roles preserves creator ownership without
+  -- consulting the account's Captain Workspace position.
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -778,15 +925,18 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
-    yacht_a,
     management_a,
     management_a,
     'Management Role Switch Smoke',
@@ -794,11 +944,15 @@ begin
     'Purser',
     'temporary',
     'Palma, Spain',
+    current_date + 35,
     'motor_yacht',
     52.4,
     'm',
-    'A complete temporary role used to verify role-position revalidation.',
-    'This temporary posting must close when a Yacht Manager entitlement changes to captain without a Captain membership position.',
+    'A complete temporary role used to verify publisher-role continuity.',
+    'This temporary posting must remain published when its creator changes between two account roles that can publish jobs.',
+    6100,
+    'EUR',
+    'month',
     'published'
   )
   returning id into management_role_job;
@@ -810,8 +964,10 @@ begin
   select * into stored_job
   from public.job_posts
   where id = management_role_job;
-  if stored_job.status <> 'closed' then
-    raise exception 'Role-to-role membership invalidation did not close the job.';
+  if stored_job.status <> 'published'
+    or not public.bluedeck_can_manage_job(management_a, management_role_job)
+  then
+    raise exception 'Publisher-role switch incorrectly invalidated creator ownership.';
   end if;
 
   update public.marketplace_entitlements
@@ -819,7 +975,6 @@ begin
   where user_id = management_a;
 
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -827,15 +982,18 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
-    yacht_a,
     management_a,
     management_a,
     'Entitlement Delete Smoke',
@@ -843,11 +1001,15 @@ begin
     'Purser',
     'temporary',
     'Palma, Spain',
+    current_date + 42,
     'motor_yacht',
     52.4,
     'm',
     'A complete temporary role used to verify entitlement deletion cleanup.',
     'This temporary posting must close when its durable marketplace entitlement is removed from the publisher account.',
+    6200,
+    'EUR',
+    'month',
     'published'
   )
   returning id into management_delete_job;
@@ -892,10 +1054,8 @@ begin
     raise exception 'Suspended publisher could still list applicant PII.';
   end if;
 
-  -- Existing yacht owner-change protection remains effective under the new
-  -- prepare_job_post_write authorization gate.
+  -- Yacht ownership changes must never close or transfer a recruitment post.
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -903,15 +1063,18 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
-    yacht_b,
     owner_b,
     owner_b,
     'Ownership Authority Loss Smoke',
@@ -919,11 +1082,15 @@ begin
     'Engineering',
     'temporary',
     'Antibes, France',
+    current_date + 49,
     'sailing_yacht',
     172,
     'ft',
-    'A complete temporary role used to verify yacht ownership authority loss.',
-    'This temporary posting must close atomically before the yacht ownership relationship is transferred to another account.',
+    'A complete temporary role used to verify yacht ownership independence.',
+    'This temporary posting must remain owned by its creator when an unrelated Captain Workspace yacht is transferred.',
+    7000,
+    'USD',
+    'month',
     'published'
   )
   returning id into ownership_job;
@@ -935,8 +1102,12 @@ begin
   select * into stored_job
   from public.job_posts
   where id = ownership_job;
-  if stored_job.status <> 'closed' then
-    raise exception 'Yacht ownership loss did not close the job.';
+  if stored_job.status <> 'published'
+    or stored_job.yacht_id is not null
+    or not public.bluedeck_can_manage_job(owner_b, ownership_job)
+    or public.bluedeck_can_manage_job(captain_a, ownership_job)
+  then
+    raise exception 'Yacht ownership change leaked into creator-owned job authority.';
   end if;
 end;
 $test$;
