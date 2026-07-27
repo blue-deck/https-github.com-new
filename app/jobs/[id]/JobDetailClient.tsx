@@ -219,13 +219,8 @@ function JobDetail({
                   </p>
                 </div>
                 <h1 data-i18n-ignore className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">
-                  {job.title}
+                  {job.position || job.title}
                 </h1>
-                {job.position && job.position !== job.title ? (
-                  <p data-i18n-ignore className="mt-3 text-xl font-black text-cyan-800">
-                    {job.position}
-                  </p>
-                ) : null}
                 {yacht ? (
                   <p data-i18n-ignore className="mt-5 flex items-start gap-2.5 text-base font-semibold text-slate-600">
                     <Ship className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700" aria-hidden />

@@ -351,25 +351,20 @@ export function parseJobPostMutation(
     };
   }
 
-  const title = strictText(value.title, 120, true);
+  const title = position.title;
   const location = strictText(value.location, 120, true);
   const summary = strictText(value.summary, 320, true);
   const description = strictText(value.description, 8000, true);
-  if (
-    title === null ||
-    location === null ||
-    summary === null ||
-    description === null
-  ) {
+  if (location === null || summary === null || description === null) {
     return {
       ok: false,
       error: "One or more job post fields exceed the allowed length.",
     };
   }
-  if (!title || !location) {
+  if (!location) {
     return {
       ok: false,
-      error: "Add a public title and location before saving the job post.",
+      error: "Add a location before saving the job post.",
     };
   }
 
@@ -464,14 +459,13 @@ export function parseJobPostMutation(
     (yachtType === null ||
       yachtLength.value === null ||
       yachtLengthUnit === null ||
-      title.length < 3 ||
       location.length < 2 ||
       description.length < 60)
   ) {
     return {
       ok: false,
       error:
-        "Complete the yacht type, yacht length, title, location and description before publishing.",
+        "Complete the yacht type, yacht length, location and description before publishing.",
     };
   }
 

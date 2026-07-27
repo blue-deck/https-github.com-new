@@ -352,13 +352,8 @@ function JobCard({
         </p>
 
         <h3 data-i18n-ignore className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-          {job.title}
+          {job.position || job.title}
         </h3>
-        {job.position && job.position !== job.title ? (
-          <p data-i18n-ignore className="mt-2 text-sm font-black text-cyan-800">
-            {job.position}
-          </p>
-        ) : null}
 
         {yacht ? (
           <p data-i18n-ignore className="mt-4 flex items-start gap-2.5 text-sm font-semibold text-slate-600">

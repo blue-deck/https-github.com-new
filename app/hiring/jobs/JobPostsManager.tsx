@@ -98,7 +98,6 @@ type Notice = {
 
 type FormState = {
   yachtId: string;
-  title: string;
   position: string;
   employmentType: (typeof jobEmploymentTypes)[number];
   candidateType: JobCandidateType;
@@ -171,8 +170,6 @@ const copy = {
       "This private selector controls publishing authority. Public yacht identity follows the visibility setting below.",
     position: "Position",
     positionPlaceholder: "Select a position",
-    titleLabel: "Public title",
-    titlePlaceholder: "e.g. Rotational Chief Engineer",
     employmentType: "Employment type",
     teamCouple: "Team / Couple",
     yes: "Yes",
@@ -321,8 +318,6 @@ const copy = {
       "Bu özel seçim ilan yayınlama yetkisini belirler. Yat kimliğinin görünürlüğünü aşağıdaki ayardan yönetebilirsiniz.",
     position: "Pozisyon",
     positionPlaceholder: "Pozisyon seç",
-    titleLabel: "İlan başlığı",
-    titlePlaceholder: "Örn. Rotasyonlu Başmühendis",
     employmentType: "Çalışma biçimi",
     teamCouple: "Team / Couple",
     yes: "Evet",
@@ -660,7 +655,6 @@ export function JobPostsManager() {
     setNotice(null);
 
     const payload = {
-      title: form.title.trim(),
       position: form.position,
       employmentType: form.employmentType,
       candidateType: form.candidateType,
@@ -973,7 +967,7 @@ export function JobPostsManager() {
                   </h2>
                   {selectedJob ? (
                     <p data-i18n-ignore className="mt-1.5 text-sm font-bold text-slate-700">
-                      {selectedJob.title}
+                      {selectedJob.position || selectedJob.title}
                     </p>
                   ) : null}
                   {selectedJob ? (
@@ -1038,14 +1032,9 @@ export function JobPostsManager() {
                   <Field label={c.position}>
                     <select
                       value={form.position}
-                      onChange={(event) => {
-                        const position = event.target.value;
-                        setForm((current) => ({
-                          ...current,
-                          position,
-                          title: current.title || position,
-                        }));
-                      }}
+                      onChange={(event) =>
+                        updateForm("position", event.target.value)
+                      }
                       disabled={saving}
                       className={inputClass}
                       required
@@ -1064,20 +1053,6 @@ export function JobPostsManager() {
                         </optgroup>
                       ))}
                     </select>
-                  </Field>
-
-                  <Field label={c.titleLabel}>
-                    <input
-                      value={form.title}
-                      onChange={(event) =>
-                        updateForm("title", event.target.value.slice(0, 120))
-                      }
-                      maxLength={120}
-                      disabled={saving}
-                      className={inputClass}
-                      placeholder={c.titlePlaceholder}
-                      required
-                    />
                   </Field>
 
                   <Field label={c.employmentType}>
@@ -1627,7 +1602,6 @@ const fieldLabelClass =
 function emptyForm(yachtId: string): FormState {
   return {
     yachtId,
-    title: "",
     position: "",
     employmentType: "permanent",
     candidateType: "individual",
@@ -1660,7 +1634,6 @@ function emptyForm(yachtId: string): FormState {
 function formFromJob(job: EmployerJobPost): FormState {
   return {
     yachtId: job.yachtId,
-    title: job.title,
     position: job.position,
     employmentType: job.employmentType,
     candidateType: job.candidateType,
@@ -2001,7 +1974,7 @@ function JobListButton({
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${c.selectPost}: ${job.title}`}
+      aria-label={`${c.selectPost}: ${job.position}`}
       className={`bd-focus w-full rounded-xl border px-3 py-3 text-left transition ${
         selected
           ? "border-cyan-300 bg-cyan-50/80 shadow-sm"
@@ -2013,9 +1986,9 @@ function JobListButton({
           <p
             data-i18n-ignore
             className="truncate font-black text-slate-950"
-            title={job.title}
+            title={job.position}
           >
-            {job.title}
+            {job.position}
           </p>
           <p
             data-i18n-ignore

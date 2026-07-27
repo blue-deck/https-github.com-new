@@ -235,11 +235,8 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
               </Link>
               <p className="bd-kicker mt-6">{c.eyebrow}</p>
               <h1 data-i18n-ignore className="bd-serif mt-4 text-4xl leading-none text-[#071f3c] sm:text-6xl">
-                {job.title}
+                {job.position || job.title}
               </h1>
-              <p data-i18n-ignore className="mt-3 text-lg font-black text-cyan-800">
-                {job.position}
-              </p>
               <div className="mt-3 flex flex-wrap items-center gap-2.5">
                 <p data-i18n-ignore className="font-mono text-xs font-black tracking-[0.12em] text-slate-500">
                   {formatJobListingNumber(job.listingNumber)}
