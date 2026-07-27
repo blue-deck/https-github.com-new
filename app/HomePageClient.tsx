@@ -648,15 +648,18 @@ function JobCard({
 
   return (
     <article className={styles.jobCard}>
-      <div className={styles.jobTopline}>
-        <span>{formatJobEmploymentType(job.employmentType, language)}</span>
-        {job.candidateType !== "individual" ? (
+      {job.candidateType !== "individual" ? (
+        <div className={styles.jobTopline}>
           <span>
             {formatJobCandidateType(job.candidateType, language)}
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <h3>{job.position}</h3>
+      <div className={styles.jobEmployment}>
+        <BriefcaseBusiness aria-hidden />
+        <span>{formatJobEmploymentType(job.employmentType, language)}</span>
+      </div>
       <div className={styles.jobMeta}>
         <span><Ship aria-hidden />{yachtType || c.notSpecified}</span>
         <span><Ruler aria-hidden />{yachtLength || c.notSpecified}</span>

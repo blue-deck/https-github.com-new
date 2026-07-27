@@ -341,20 +341,27 @@ function JobCard({
     <article className="group flex min-h-full flex-col overflow-hidden rounded-[28px] border border-[#071f3c]/10 bg-white shadow-xl shadow-[#071f3c]/5 transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#071f3c]/9">
       <div className="h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
       <div className="flex flex-1 flex-col p-5 sm:p-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusPill>
-            {formatJobEmploymentType(job.employmentType, language)}
-          </StatusPill>
-          {job.candidateType !== "individual" ? (
+        {job.candidateType !== "individual" ? (
+          <div className="flex flex-wrap items-center gap-2">
             <StatusPill>
               {formatJobCandidateType(job.candidateType, language)}
             </StatusPill>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
-        <h3 data-i18n-ignore className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+        <h3
+          data-i18n-ignore
+          className={`${job.candidateType !== "individual" ? "mt-3" : ""} text-2xl font-semibold tracking-[-0.03em] text-slate-950`}
+        >
           {job.position}
         </h3>
+        <p
+          data-i18n-ignore
+          className="mt-2 flex items-center gap-2 text-sm font-bold text-cyan-800"
+        >
+          <BriefcaseBusiness className="h-4 w-4 shrink-0" aria-hidden />
+          <span>{formatJobEmploymentType(job.employmentType, language)}</span>
+        </p>
 
         <div className="mt-5 space-y-2.5 text-sm text-slate-600">
           <InfoLine icon={<Ship />} value={yachtType || c.notSpecified} />

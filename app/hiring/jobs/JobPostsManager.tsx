@@ -142,8 +142,7 @@ const copy = {
     closedStatus: "Closed",
     expiredStatus: "Expired",
     cancelledStatus: "Cancelled",
-    required: "Required",
-    requiredLegend: "Fields marked Required must be completed before publishing.",
+    requiredLegend: "Marked fields must be completed before publishing.",
     identity: "Job basics",
     position: "Position",
     positionPlaceholder: "Select a position",
@@ -184,8 +183,8 @@ const copy = {
     crewMemberCountPlaceholder: "e.g. 12",
     crewMemberCountError:
       "Crew member count must be a whole number between 1 and 200.",
-    yachtDetailsRequired:
-      "Complete the start date, salary, yacht type and yacht length before publishing.",
+    publishRequirements:
+      "Complete every field marked with * before publishing.",
     logistics: "Timing and location",
     location: "Location",
     locationPlaceholder: "Search city or port",
@@ -263,8 +262,7 @@ const copy = {
     closedStatus: "Kapalı",
     expiredStatus: "Süresi doldu",
     cancelledStatus: "İptal edildi",
-    required: "Zorunlu",
-    requiredLegend: "Zorunlu olarak işaretlenen alanlar yayınlamadan önce doldurulmalıdır.",
+    requiredLegend: "İşaretli alanlar yayınlamadan önce doldurulmalıdır.",
     identity: "Temel ilan bilgileri",
     position: "Pozisyon",
     positionPlaceholder: "Pozisyon seç",
@@ -305,8 +303,8 @@ const copy = {
     crewMemberCountPlaceholder: "Örn. 12",
     crewMemberCountError:
       "Mürettebat sayısı 1 ile 200 arasında tam sayı olmalıdır.",
-    yachtDetailsRequired:
-      "Yayınlamadan önce başlangıç tarihi, maaş, yat türü ve yat uzunluğunu tamamlayın.",
+    publishRequirements:
+      "Yayınlamadan önce * ile işaretlenen tüm alanları doldurun.",
     logistics: "Tarih ve konum",
     location: "Konum",
     locationPlaceholder: "Şehir veya liman ara",
@@ -501,16 +499,23 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
       setNotice({ tone: "error", message: c.yachtBuildYearError });
       return;
     }
-    if (
-      !yachtLength.ok ||
-      (targetStatus === "published" &&
-        (!form.yachtType ||
-          yachtLength.value === null ||
-          !form.startDate ||
-          salaryAmount.value === null ||
-          salaryAmount.value <= 0))
-    ) {
-      setNotice({ tone: "error", message: c.yachtDetailsRequired });
+    if (!yachtLength.ok) {
+      setNotice({ tone: "error", message: c.publishRequirements });
+      return;
+    }
+    const publishFieldsComplete =
+      Boolean(form.position) &&
+      Boolean(form.employmentType) &&
+      form.location.trim().length >= 2 &&
+      Boolean(form.startDate) &&
+      Boolean(form.yachtType) &&
+      yachtLength.value !== null &&
+      salaryAmount.value !== null &&
+      salaryAmount.value > 0 &&
+      form.description.trim().length >= 60;
+    if (targetStatus === "published" && !publishFieldsComplete) {
+      setNotice({ tone: "error", message: c.publishRequirements });
+      formRef.current?.reportValidity();
       return;
     }
     if (
@@ -761,13 +766,14 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
             >
               <div className="space-y-4 bg-slate-50/70 p-4 sm:p-6">
 
-              <p className="px-1 text-xs font-semibold text-slate-500">
-                {c.requiredLegend}
+              <p className="flex items-center gap-1.5 px-1 text-xs font-semibold text-slate-500">
+                <span aria-hidden className="text-sm font-black text-rose-600">*</span>
+                <span>{c.requiredLegend}</span>
               </p>
 
               <FormSection icon={<BriefcaseBusiness />} title={c.identity}>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={requiredFieldLabel(c.position, c.required)}>
+                  <Field label={<RequiredFieldLabel label={c.position} />}>
                     <select
                       value={form.position}
                       onChange={(event) =>
@@ -793,7 +799,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     </select>
                   </Field>
 
-                  <Field label={requiredFieldLabel(c.employmentType, c.required)}>
+                  <Field label={<RequiredFieldLabel label={c.employmentType} />}>
                     <select
                       value={form.employmentType}
                       onChange={(event) =>
@@ -856,7 +862,8 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                   </Field>
 
                   <LocationSearchField
-                    label={requiredFieldLabel(c.location, c.required)}
+                    label={<RequiredFieldLabel label={c.location} />}
+                    ariaLabel={c.location}
                     value={form.location}
                     onChange={(value) =>
                       updateForm("location", value.slice(0, 120))
@@ -871,7 +878,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     labelClassName={fieldLabelClass}
                   />
                   <DateTextField
-                    label={requiredFieldLabel(c.startDate, c.required)}
+                    label={<RequiredFieldLabel label={c.startDate} />}
                     value={form.startDate}
                     onChange={(value) => updateForm("startDate", value)}
                     placeholder={c.datePlaceholder}
@@ -1021,7 +1028,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
               <FormSection icon={<Ship />} title={c.yachtDetails}>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={requiredFieldLabel(c.yachtType, c.required)}>
+                  <Field label={<RequiredFieldLabel label={c.yachtType} />}>
                     <select
                       value={form.yachtType}
                       onChange={(event) =>
@@ -1089,7 +1096,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                   </Field>
 
                   <YachtSizeField
-                    label={requiredFieldLabel(c.yachtLength, c.required)}
+                    label={<RequiredFieldLabel label={c.yachtLength} />}
                     value={form.yachtLength}
                     unit={form.yachtLengthUnit}
                     onChange={(value, unit) =>
@@ -1133,7 +1140,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
               <FormSection icon={<FilePenLine />} title={c.narrative}>
                 <div className="grid gap-5">
-                  <Field label={requiredFieldLabel(c.description, c.required)}>
+                  <Field label={<RequiredFieldLabel label={c.description} />}>
                     <textarea
                       value={form.description}
                       onChange={(event) =>
@@ -1143,6 +1150,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                         )
                       }
                       maxLength={8000}
+                      minLength={60}
                       rows={7}
                       disabled={saving}
                       required
@@ -1174,7 +1182,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
                       <fieldset>
                         <legend className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
-                          {requiredFieldLabel(c.salaryAmount, c.required)}
+                          <RequiredFieldLabel label={c.salaryAmount} />
                         </legend>
                         <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
                           <input
@@ -1385,8 +1393,15 @@ function formatSalaryCurrencyOption(currency: JobSalaryCurrencyOption) {
   return labels[currency];
 }
 
-function requiredFieldLabel(label: string, required: string) {
-  return `${label} · ${required}`;
+function RequiredFieldLabel({ label }: { label: string }) {
+  return (
+    <>
+      {label}
+      <span aria-hidden className="ml-1 text-rose-600">
+        *
+      </span>
+    </>
+  );
 }
 
 function FormSection({
@@ -1416,7 +1431,7 @@ function Field({
   className = "",
   children,
 }: {
-  label: string;
+  label: React.ReactNode;
   className?: string;
   children: React.ReactNode;
 }) {

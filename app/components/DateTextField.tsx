@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 export type DateTextFieldProps = {
-  label: string;
+  label: ReactNode;
   value?: string;
   onChange: (value: string) => void;
   placeholder: string;

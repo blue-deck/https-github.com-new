@@ -1,11 +1,11 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 
 export type YachtSizeUnit = "ft" | "m";
 
 export type YachtSizeFieldProps = {
-  label: string;
+  label: ReactNode;
   value: string;
   unit: YachtSizeUnit;
   onChange: (value: string, unit: YachtSizeUnit) => void;

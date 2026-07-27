@@ -9,6 +9,7 @@ import {
   useState,
   type FocusEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 
 type LocationSuggestion = {
@@ -28,7 +29,8 @@ type OpenMeteoSearchResponse = {
 };
 
 export type LocationSearchFieldProps = {
-  label: string;
+  label: ReactNode;
+  ariaLabel?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
@@ -50,6 +52,7 @@ const defaultInputClassName =
 
 export function LocationSearchField({
   label,
+  ariaLabel,
   value,
   onChange,
   placeholder,
@@ -304,7 +307,13 @@ export function LocationSearchField({
             </p>
           ) : null}
           {suggestions.length > 0 ? (
-            <div id={listboxId} role="listbox" aria-label={label}>
+            <div
+              id={listboxId}
+              role="listbox"
+              aria-label={
+                ariaLabel || (typeof label === "string" ? label : placeholder)
+              }
+            >
               {suggestions.map((location, index) => (
                 <button
                   id={`${listboxId}-option-${index}`}

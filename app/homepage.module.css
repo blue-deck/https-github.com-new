@@ -500,11 +500,30 @@
 }
 
 .jobCard h3 {
-  margin-top: 1.75rem;
+  margin-top: 0;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.9rem;
   font-weight: 400;
   line-height: 1.12;
+}
+
+.jobTopline + h3 {
+  margin-top: 1.25rem;
+}
+
+.jobEmployment {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  color: #0876df;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.jobEmployment svg {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .yachtName {
