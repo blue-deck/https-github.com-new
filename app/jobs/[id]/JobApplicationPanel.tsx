@@ -8,9 +8,8 @@ import {
   LogIn,
   Send,
   Undo2,
-  UserRoundPlus,
 } from "lucide-react";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
   canWithdrawJobApplication,
@@ -53,6 +52,7 @@ export function JobApplicationPanel({
   const [coverNote, setCoverNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const helpId = useId();
 
   useEffect(() => {
     let active = true;
@@ -218,7 +218,12 @@ export function JobApplicationPanel({
 
   if (state.kind === "loading") {
     return (
-      <div className="mt-6 flex min-h-12 items-center gap-3 border-t border-slate-200 pt-6 text-sm font-black text-cyan-800">
+      <div
+        className="mt-5 flex min-h-11 items-center gap-2.5 border-t border-slate-200 pt-5 text-sm font-semibold text-slate-600"
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+      >
         <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
         {c.loading}
       </div>
@@ -227,7 +232,7 @@ export function JobApplicationPanel({
 
   if (state.kind === "signed-out") {
     return (
-      <div className="mt-6 border-t border-slate-200 pt-6">
+      <div className="mt-5 border-t border-slate-200 pt-5">
         <Link
           href={loginHref}
           className="bd-focus flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
@@ -235,21 +240,26 @@ export function JobApplicationPanel({
           <LogIn className="h-4 w-4" aria-hidden />
           {c.signIn}
         </Link>
-        <Link
-          href={signupHref}
-          className="bd-focus mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-300 hover:text-cyan-800"
-        >
-          <UserRoundPlus className="h-4 w-4" aria-hidden />
-          {c.createProfile}
-        </Link>
+        <p className="mt-3 text-center text-xs leading-5 text-slate-500">
+          {c.newToBlueDeck}{" "}
+          <Link
+            href={signupHref}
+            className="bd-focus inline-flex min-h-10 items-center rounded px-1 font-bold text-cyan-800 underline decoration-cyan-300 underline-offset-4 transition hover:text-cyan-600"
+          >
+            {c.createProfile}
+          </Link>
+        </p>
       </div>
     );
   }
 
   if (state.kind === "error") {
     return (
-      <div className="mt-6 flex items-start gap-3 border-t border-slate-200 pt-6 text-sm leading-6 text-rose-700">
-        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+      <div
+        className="mt-5 flex items-start gap-2.5 border-t border-slate-200 pt-5 text-sm leading-6 text-rose-700"
+        role="alert"
+      >
+        <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
         <span>{state.message}</span>
       </div>
     );
@@ -258,25 +268,34 @@ export function JobApplicationPanel({
   if (application) {
     const withdrawable = canWithdrawJobApplication(application.status);
     return (
-      <div className="mt-6 border-t border-slate-200 pt-6">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-black text-emerald-900">
+      <div className="mt-5 border-t border-slate-200 pt-5">
+        <div
+          className="flex items-start gap-3"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
             <CheckCircle2 className="h-5 w-5" aria-hidden />
-            {c.applicationStatus}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-slate-500">
+              {c.applicationStatus}
+            </p>
+            <p className="mt-0.5 text-base font-semibold text-slate-950">
+              {statusLabel(application.status, language)}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">
+              {c.statusHelp}
+            </p>
           </div>
-          <p className="mt-2 text-xl font-semibold text-emerald-950">
-            {statusLabel(application.status, language)}
-          </p>
-          <p className="mt-2 text-xs leading-5 text-emerald-800">
-            {c.statusHelp}
-          </p>
         </div>
         {withdrawable ? (
           <button
             type="button"
             onClick={() => void withdrawApplication()}
             disabled={submitting}
-            className="bd-focus mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 disabled:cursor-wait disabled:opacity-60"
+            aria-busy={submitting}
+            className="bd-focus mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 disabled:cursor-wait disabled:opacity-60"
           >
             {submitting ? (
               <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
@@ -300,8 +319,12 @@ export function JobApplicationPanel({
 
   if (!state.eligible) {
     return (
-      <div className="mt-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
-        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+      <div
+        className="mt-5 flex items-start gap-2.5 border-t border-slate-200 pt-5 text-sm leading-6 text-amber-900"
+        role="status"
+        aria-live="polite"
+      >
+        <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
         <span>
           {state.role === "captain" ? c.publisherCannotApply : c.notEligible}
         </span>
@@ -310,24 +333,26 @@ export function JobApplicationPanel({
   }
 
   return (
-    <form onSubmit={submitApplication} className="mt-6 border-t border-slate-200 pt-6">
+    <form onSubmit={submitApplication} className="mt-5 border-t border-slate-200 pt-5">
       <label className="block">
-        <span className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">
+        <span className="text-xs font-bold text-slate-600">
           {c.coverNote}
         </span>
         <textarea
           value={coverNote}
           onChange={(event) => setCoverNote(event.target.value.slice(0, 2000))}
           maxLength={2000}
-          rows={5}
+          rows={3}
           disabled={submitting}
+          aria-describedby={helpId}
           placeholder={c.coverNotePlaceholder}
-          className="bd-focus mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400 disabled:bg-slate-100"
+          className="bd-focus mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm leading-6 text-slate-900 placeholder:text-slate-400 disabled:bg-slate-100"
         />
       </label>
       <button
         type="submit"
         disabled={submitting}
+        aria-busy={submitting}
         className="bd-focus mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
       >
         {submitting ? (
@@ -335,9 +360,11 @@ export function JobApplicationPanel({
         ) : (
           <Send className="h-4 w-4" aria-hidden />
         )}
-        {c.apply}
+        {submitting ? c.applying : c.apply}
       </button>
-      <p className="mt-3 text-xs leading-5 text-slate-500">{c.applyHelp}</p>
+      <p id={helpId} className="mt-3 text-xs leading-5 text-slate-400">
+        {c.applyHelp}
+      </p>
       {notice ? (
         <p className="mt-3 text-xs font-semibold leading-5 text-rose-700" role="alert">
           {notice.message}
@@ -396,11 +423,13 @@ const copy = {
     loading: "Checking your application…",
     loadError: "Your application status could not be loaded.",
     signIn: "Sign in to apply",
+    newToBlueDeck: "New to BlueDeck?",
     createProfile: "Create crew account",
     coverNote: "Short note (optional)",
     coverNotePlaceholder:
       "Introduce your relevant experience, availability and interest in this role.",
     apply: "Apply for this role",
+    applying: "Applying…",
     applyHelp:
       "Your BlueDeck profile summary is shared securely. Private documents and references are never included.",
     submitError: "Your application could not be submitted.",
@@ -419,11 +448,13 @@ const copy = {
     loading: "Başvuru durumunuz kontrol ediliyor…",
     loadError: "Başvuru durumunuz yüklenemedi.",
     signIn: "Başvurmak için giriş yap",
+    newToBlueDeck: "BlueDeck'te yeni misiniz?",
     createProfile: "Crew hesabı oluştur",
     coverNote: "Kısa not (isteğe bağlı)",
     coverNotePlaceholder:
       "Bu pozisyonla ilgili deneyiminizi, müsaitliğinizi ve ilginizi kısaca anlatın.",
     apply: "Bu ilana başvur",
+    applying: "Başvuru gönderiliyor…",
     applyHelp:
       "BlueDeck profil özetiniz güvenli biçimde paylaşılır. Özel belgeleriniz ve referanslarınız başvuruya eklenmez.",
     submitError: "Başvurunuz gönderilemedi.",
