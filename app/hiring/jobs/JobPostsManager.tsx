@@ -127,17 +127,10 @@ type FormState = {
 
 const copy = {
   en: {
-    eyebrow: "Publisher workspace",
-    title: "Job posts",
-    intro:
-      "Create clear crew opportunities, control what is public and manage every role throughout its lifecycle.",
     back: "Hiring workspace",
     publicBoard: "View public jobs",
-    privateArea: "Private employer area",
-    total: "All posts",
     live: "Published",
     drafts: "Drafts",
-    closed: "Closed",
     newPost: "New job post",
     loading: "Loading your job posting workspace…",
     loadError: "Your job posting workspace could not be loaded.",
@@ -149,8 +142,6 @@ const copy = {
     createTitle: "Create a job post",
     editTitle: "Edit job post",
     listingNumber: "Listing no.",
-    createIntro:
-      "Drafts stay private. Publishing makes only the fields in this form visible on the public Jobs board.",
     status: "Status",
     draft: "Draft",
     published: "Published",
@@ -268,17 +259,10 @@ const copy = {
     selectPost: "Select a post",
   },
   tr: {
-    eyebrow: "İlan yayınlama alanı",
-    title: "İş ilanları",
-    intro:
-      "Net mürettebat fırsatları oluştur, hangi bilgilerin yayınlanacağını kontrol et ve her ilanı yaşam döngüsü boyunca yönet.",
     back: "İşe alım alanı",
     publicBoard: "Yayındaki ilanları gör",
-    privateArea: "Özel işveren alanı",
-    total: "Tüm ilanlar",
     live: "Yayında",
     drafts: "Taslak",
-    closed: "Kapalı",
     newPost: "Yeni iş ilanı",
     loading: "İş ilanı alanın yükleniyor…",
     loadError: "İş ilanı alanın yüklenemedi.",
@@ -290,8 +274,6 @@ const copy = {
     createTitle: "İş ilanı oluştur",
     editTitle: "İş ilanını düzenle",
     listingNumber: "İlan no:",
-    createIntro:
-      "Taslaklar gizli kalır. Yayınladığında yalnız bu formdaki alanlar herkese açık İş İlanları sayfasında görünür.",
     status: "Durum",
     draft: "Taslak",
     published: "Yayında",
@@ -441,16 +423,11 @@ export function JobPostsManager() {
   );
   const counts = useMemo(
     () => ({
-      total: jobs.length,
       published: jobs.filter(
         (job) =>
           job.status === "published" && !isEmployerJobPostExpired(job),
       ).length,
       draft: jobs.filter((job) => job.status === "draft").length,
-      closed: jobs.filter(
-        (job) =>
-          job.status === "closed" || isEmployerJobPostExpired(job),
-      ).length,
     }),
     [jobs],
   );
@@ -502,13 +479,8 @@ export function JobPostsManager() {
         setJobs(nextJobs);
         setNotice(null);
 
-        if (nextJobs.length > 0) {
-          setSelectedId(nextJobs[0].id);
-          setForm(formFromJob(nextJobs[0]));
-        } else {
-          setSelectedId("");
-          setForm(emptyForm(nextYachts[0]?.id || ""));
-        }
+        setSelectedId("");
+        setForm(emptyForm(nextYachts[0]?.id || ""));
       } catch (error) {
         if (!active) return;
         setLoadError(
@@ -804,24 +776,16 @@ export function JobPostsManager() {
 
   return (
     <main className="bd-app-page min-h-screen overflow-x-hidden bg-slate-50 px-4 pb-24 pt-6 text-slate-900 sm:px-7 sm:pt-8 lg:px-10">
-      <div className="mx-auto w-full max-w-[1280px]">
-        <header className="flex flex-col gap-5 border-b border-slate-200 pb-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                {c.eyebrow}
-              </p>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-800">
-                <LockKeyhole className="h-3 w-3" aria-hidden />
-                {c.privateArea}
-              </span>
-            </div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-[#071f3c] sm:text-4xl">
-              {c.title}
+      <div className="mx-auto w-full max-w-[1180px]">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#071f3c] sm:text-4xl">
+              {selectedJob ? c.editTitle : c.createTitle}
             </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              {c.intro}
-            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Metric label={c.live} value={counts.published} tone="emerald" />
+              <Metric label={c.drafts} value={counts.draft} tone="amber" />
+            </div>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -842,13 +806,6 @@ export function JobPostsManager() {
           </div>
         </header>
 
-        <section className="mt-4 flex flex-wrap gap-2">
-          <Metric label={c.total} value={counts.total} tone="navy" />
-          <Metric label={c.live} value={counts.published} tone="emerald" />
-          <Metric label={c.drafts} value={counts.draft} tone="amber" />
-          <Metric label={c.closed} value={counts.closed} tone="slate" />
-        </section>
-
         {notice ? (
           <div
             role={notice.tone === "error" ? "alert" : "status"}
@@ -868,71 +825,67 @@ export function JobPostsManager() {
           </div>
         ) : null}
 
-        <div className="mt-5">
+        <div className="mt-4">
           <form
             ref={formRef}
             onSubmit={handleSubmit}
             noValidate
             className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
           >
-            <div className="border-b border-slate-200 bg-white px-5 py-5 sm:px-7">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-3xl">
-                    {selectedJob ? c.editTitle : c.createTitle}
-                  </h2>
+            {jobs.length > 0 ? (
+              <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   {selectedJob ? (
-                    <p data-i18n-ignore className="mt-1.5 text-sm font-bold text-slate-700">
-                      {selectedJob.position || selectedJob.title}
-                    </p>
-                  ) : null}
-                  {selectedJob ? (
-                    <p
-                      data-i18n-ignore
-                      aria-label={`${c.listingNumber} ${formatJobListingNumber(selectedJob.listingNumber)}`}
-                      className="mt-1 font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
-                    >
-                      {formatJobListingNumber(selectedJob.listingNumber)}
-                    </p>
-                  ) : null}
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    {c.createIntro}
-                  </p>
-                </div>
+                    <div>
+                      <p data-i18n-ignore className="text-sm font-bold text-slate-800">
+                        {selectedJob.position || selectedJob.title}
+                      </p>
+                      <p
+                        data-i18n-ignore
+                        aria-label={`${c.listingNumber} ${formatJobListingNumber(selectedJob.listingNumber)}`}
+                        className="mt-1 font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
+                      >
+                        {formatJobListingNumber(selectedJob.listingNumber)}
+                      </p>
+                    </div>
+                  ) : (
+                    <span />
+                  )}
                 <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
-                  {jobs.length > 0 ? (
-                    <select
-                      value={selectedId}
-                      onChange={(event) => {
-                        const jobId = event.target.value;
-                        if (!jobId) {
-                          startNewPost();
-                          return;
-                        }
-                        const job = jobs.find((item) => item.id === jobId);
-                        if (job) selectJob(job);
-                      }}
-                      disabled={saving}
-                      aria-label={c.selectPost}
-                      className="bd-focus min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 sm:w-64"
-                    >
-                      <option value="">{c.newPost}</option>
-                      {jobs.map((job) => (
-                        <option key={job.id} value={job.id}>
-                          {job.position} ·{" "}
-                          {formatJobListingNumber(job.listingNumber)}
-                        </option>
-                      ))}
-                    </select>
+                  <select
+                    value={selectedId}
+                    onChange={(event) => {
+                      const jobId = event.target.value;
+                      if (!jobId) {
+                        startNewPost();
+                        return;
+                      }
+                      const job = jobs.find((item) => item.id === jobId);
+                      if (job) selectJob(job);
+                    }}
+                    disabled={saving}
+                    aria-label={c.selectPost}
+                    className="bd-focus min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 sm:w-64"
+                  >
+                    <option value="">{c.newPost}</option>
+                    {jobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.position} ·{" "}
+                        {formatJobListingNumber(job.listingNumber)}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedJob ? (
+                    <StatusBadge
+                      status={selectedJob.status}
+                      job={selectedJob}
+                      c={c}
+                    />
                   ) : null}
-                  <StatusBadge
-                    status={selectedJob?.status || "draft"}
-                    job={selectedJob}
-                    c={c}
-                  />
+                </div>
                 </div>
               </div>
-            </div>
+            ) : null}
 
             <fieldset
               disabled={selectedJobTerminal}
@@ -1952,13 +1905,11 @@ function Metric({
 }: {
   label: string;
   value: number;
-  tone: "navy" | "emerald" | "amber" | "slate";
+  tone: "emerald" | "amber";
 }) {
   const classes = {
-    navy: "border-slate-200 bg-white text-[#071f3c]",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
     amber: "border-amber-200 bg-amber-50 text-amber-900",
-    slate: "border-slate-200 bg-slate-100 text-slate-700",
   };
   return (
     <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${classes[tone]}`}>
