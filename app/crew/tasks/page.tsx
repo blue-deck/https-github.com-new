@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
+import { loadAccountCapabilities } from "../../lib/accountCapabilities";
 import {
   downloadChecklistPdfDocument,
   downloadYachtLogPdfDocument,
@@ -462,6 +463,12 @@ export default function CrewTasksPage() {
 
       if (!user?.email) {
         window.location.replace("/login");
+        return;
+      }
+
+      const capabilities = await loadAccountCapabilities().catch(() => null);
+      if (capabilities?.canUseCrewWorkspace !== true) {
+        window.location.replace("/dashboard");
         return;
       }
 

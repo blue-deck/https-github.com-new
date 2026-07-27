@@ -16,6 +16,7 @@ import {
   redactPublicContactDetails,
   safePublicMediaUrl,
 } from "../../lib/publicCrewSafety";
+import { loadMarketplaceEntitlement } from "../../lib/marketplaceEntitlementsServer";
 import { absoluteSiteUrl } from "../../lib/site";
 import { resolveSupabaseUrl } from "../../lib/supabaseConfig";
 
@@ -302,13 +303,26 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   const { data: profile, error } = await serviceClient
     .from("crew_profiles")
     .select(
-      "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes",
+      "id,user_id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes",
     )
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 
+  if (error || !profile?.id) return null;
+
+  const entitlementResult = await loadMarketplaceEntitlement(
+    serviceClient,
+    text(profile as Row, "user_id"),
+  );
+  if (
+    !entitlementResult.ok ||
+    !entitlementResult.entitlement?.canUseCrewWorkspace
+  ) {
+    return null;
+  }
+
   const discovery = getPublicCrewDiscoverySettings(profile?.notes);
-  if (error || !profile?.id || !discovery) return null;
+  if (!discovery) return null;
 
   const profileId = String(profile.id);
   const [documentRes, initialExperienceRes, referenceRes] = await Promise.all([

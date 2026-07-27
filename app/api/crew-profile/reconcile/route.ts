@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -46,6 +47,23 @@ export async function POST(request: NextRequest) {
   if (!user.email_confirmed_at) {
     return response(
       { ok: false, error: "A verified account email is required." },
+      403,
+    );
+  }
+
+  const entitlementResult = await loadMarketplaceEntitlement(
+    serviceClient,
+    user.id,
+  );
+  if (!entitlementResult.ok) {
+    return response(
+      { ok: false, error: "Crew workspace access could not be verified." },
+      503,
+    );
+  }
+  if (!entitlementResult.entitlement?.canUseCrewWorkspace) {
+    return response(
+      { ok: false, error: "Crew workspace access denied." },
       403,
     );
   }

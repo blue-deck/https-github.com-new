@@ -143,6 +143,7 @@ export function marketplaceEntitlementFromRow(
     canPostJobs:
       postingStatus === "enabled" && roleCapabilities.canPostJobs,
     canApplyJobs: roleCapabilities.canApplyJobs,
+    canUseCrewWorkspace: roleCapabilities.canUseCrewWorkspace,
     requiresAdminApproval: false,
     planCode,
     source: source as MarketplaceEntitlement["source"],

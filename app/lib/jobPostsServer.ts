@@ -816,6 +816,7 @@ function workspaceCapabilities(
     role: entitlement.role,
     canPostJobs: entitlement.canPostJobs,
     canApplyJobs: entitlement.canApplyJobs,
+    canUseCrewWorkspace: entitlement.canUseCrewWorkspace,
     requiresAdminApproval: false,
     postingStatus: entitlement.postingStatus,
     planCode: entitlement.planCode,

@@ -13,6 +13,8 @@ export const marketplacePostingRoles = [
 
 export const marketplaceApplicantRoles = ["crew", "captain"] as const;
 
+export const marketplaceCrewWorkspaceRoles = ["crew", "captain"] as const;
+
 export type MarketplaceAccountRole =
   (typeof marketplaceAccountRoles)[number];
 
@@ -20,6 +22,7 @@ export type MarketplaceCapabilities = {
   role: MarketplaceAccountRole;
   canPostJobs: boolean;
   canApplyJobs: boolean;
+  canUseCrewWorkspace: boolean;
   requiresAdminApproval: false;
 };
 
@@ -37,6 +40,17 @@ export function normalizeMarketplaceAccountRole(
   return isMarketplaceAccountRole(normalized) ? normalized : "crew";
 }
 
+export function canUseCrewWorkspace(value: unknown) {
+  if (typeof value !== "string") return false;
+
+  const normalized = value.trim().toLowerCase();
+  if (!isMarketplaceAccountRole(normalized)) return false;
+
+  return marketplaceCrewWorkspaceRoles.includes(
+    normalized as (typeof marketplaceCrewWorkspaceRoles)[number],
+  );
+}
+
 export function marketplaceCapabilitiesForRole(
   role: MarketplaceAccountRole,
 ): MarketplaceCapabilities {
@@ -48,6 +62,7 @@ export function marketplaceCapabilitiesForRole(
     canApplyJobs: marketplaceApplicantRoles.includes(
       role as (typeof marketplaceApplicantRoles)[number],
     ),
+    canUseCrewWorkspace: canUseCrewWorkspace(role),
     requiresAdminApproval: false,
   };
 }

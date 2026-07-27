@@ -163,6 +163,22 @@ export function JobsClient() {
   }, [employmentType, jobs, language, location, position, query]);
 
   const hasFilters = Boolean(query || position || location || employmentType);
+  const isEmployerViewer =
+    viewer.kind === "signed-in" &&
+    (viewer.role === "owner" || viewer.role === "management");
+  const emptyAction =
+    viewer.kind === "loading"
+      ? null
+      : isEmployerViewer
+        ? { href: "/hiring", label: c.openHiring }
+        : viewer.kind === "signed-in"
+          ? viewer.role === "crew" || viewer.role === "captain"
+            ? { href: "/profile", label: c.manageProfile }
+            : { href: "/dashboard", label: c.openDashboard }
+          : {
+              href: "/login?mode=signup&role=crew",
+              label: c.createProfile,
+            };
 
   function clearFilters() {
     setQuery("");
@@ -213,8 +229,8 @@ export function JobsClient() {
         ) : jobs.length === 0 ? (
           <EmptyState
             title={c.emptyTitle}
-            text={c.emptyText}
-            actionLabel={c.createProfile}
+            text={isEmployerViewer ? c.employerEmptyText : c.emptyText}
+            action={emptyAction}
           />
         ) : (
           <>
@@ -527,23 +543,25 @@ function RequestError({
 function EmptyState({
   title,
   text,
-  actionLabel,
+  action,
 }: {
   title: string;
   text: string;
-  actionLabel: string;
+  action: { href: string; label: string } | null;
 }) {
   return (
     <div className="rounded-[30px] border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-14 text-center">
       <BriefcaseBusiness className="mx-auto h-10 w-10 text-cyan-700" aria-hidden />
       <h2 className="mt-5 text-2xl font-semibold text-[#071f3c]">{title}</h2>
       <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">{text}</p>
-      <Link
-        href="/login?mode=signup&role=crew"
-        className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
-      >
-        {actionLabel}
-      </Link>
+      {action ? (
+        <Link
+          href={action.href}
+          className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+        >
+          {action.label}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -590,7 +608,12 @@ const copy = {
     emptyTitle: "There are no open roles right now",
     emptyText:
       "New opportunities will appear here when they are published. You can prepare your BlueDeck crew profile in the meantime.",
+    employerEmptyText:
+      "New opportunities will appear here when they are published. Continue to your hiring workspace to create and manage your own roles.",
     createProfile: "Create crew profile",
+    manageProfile: "Manage crew profile",
+    openHiring: "Open hiring workspace",
+    openDashboard: "Open dashboard",
     noMatchesTitle: "No roles match these filters",
     noMatchesText: "Clear one or more filters to explore the other open roles.",
   },
@@ -624,7 +647,12 @@ const copy = {
     emptyTitle: "Şu anda açık pozisyon yok",
     emptyText:
       "Yeni fırsatlar yayınlandığında burada görünecek. Bu sırada BlueDeck crew profilinizi hazırlayabilirsiniz.",
+    employerEmptyText:
+      "Yeni fırsatlar yayınlandığında burada görünecek. Kendi ilanlarınızı oluşturmak ve yönetmek için işe alım alanınıza devam edin.",
     createProfile: "Crew profili oluştur",
+    manageProfile: "Crew profilini yönet",
+    openHiring: "İşe alım alanını aç",
+    openDashboard: "Dashboard’u aç",
     noMatchesTitle: "Bu filtrelere uygun ilan yok",
     noMatchesText: "Diğer açık pozisyonları görmek için bir veya daha fazla filtreyi temizleyin.",
   },

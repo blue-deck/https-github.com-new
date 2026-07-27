@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
+import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import type { DiscoverableCrewProfile } from "../lib/findCrewData";
 import { supabase } from "../lib/supabase";
 
@@ -34,11 +35,25 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
   const [shortlist, setShortlist] = useState<string[]>([]);
   const [shortlistSaving, setShortlistSaving] = useState("");
   const [shortlistOnly, setShortlistOnly] = useState(false);
+  const [crewWorkspaceAccess, setCrewWorkspaceAccess] = useState<
+    "loading" | "signed-out" | "allowed" | "denied"
+  >("loading");
 
   useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => {
+    void (async () => {
+      const { data } = await supabase.auth.getUser();
       setShortlist(readShortlist(data.user?.user_metadata));
-    });
+
+      if (!data.user) {
+        setCrewWorkspaceAccess("signed-out");
+        return;
+      }
+
+      const capabilities = await loadAccountCapabilities().catch(() => null);
+      setCrewWorkspaceAccess(
+        capabilities?.canUseCrewWorkspace === true ? "allowed" : "denied",
+      );
+    })();
   }, []);
 
   const positions = useMemo(
@@ -320,7 +335,11 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
               {hasFilters ? c.noMatchesTitle : c.emptyTitle}
             </h3>
             <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">
-              {hasFilters ? c.noMatchesText : c.emptyText}
+              {hasFilters
+                ? c.noMatchesText
+                : crewWorkspaceAccess === "denied"
+                  ? c.employerEmptyText
+                  : c.emptyText}
             </p>
             {hasFilters ? (
               <button
@@ -330,12 +349,22 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
               >
                 {c.clear}
               </button>
-            ) : (
+            ) : crewWorkspaceAccess === "loading" ? null : (
               <Link
-                href="/profile"
+                href={
+                  crewWorkspaceAccess === "allowed"
+                    ? "/profile"
+                    : crewWorkspaceAccess === "denied"
+                      ? "/hiring"
+                      : "/login?mode=signup&role=crew"
+                }
                 className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white"
               >
-                {c.publishProfile}
+                {crewWorkspaceAccess === "allowed"
+                  ? c.publishProfile
+                  : crewWorkspaceAccess === "denied"
+                    ? c.openHiring
+                    : c.createCrewAccount}
               </Link>
             )}
           </div>
@@ -448,7 +477,11 @@ const copy = {
     emptyTitle: "The discoverable crew network is opening",
     emptyText:
       "Crew profiles stay private until their owner explicitly publishes them. Sign in to publish your own professional profile.",
+    employerEmptyText:
+      "New discoverable crew profiles will appear here. Continue to your hiring workspace to manage roles and candidates.",
     publishProfile: "Manage profile visibility",
+    openHiring: "Open hiring workspace",
+    createCrewAccount: "Create a crew account",
   },
   tr: {
     eyebrow: "İzin tabanlı mürettebat keşfi",
@@ -481,6 +514,10 @@ const copy = {
     emptyTitle: "Keşfedilebilir crew ağı açılıyor",
     emptyText:
       "Crew profilleri, sahibi açıkça yayınlayana kadar gizli kalır. Kendi profesyonel profilinizi yayınlamak için giriş yapın.",
+    employerEmptyText:
+      "Yeni keşfedilebilir crew profilleri burada görünecek. İlanları ve adayları yönetmek için işe alım alanınıza devam edin.",
     publishProfile: "Profil görünürlüğünü yönet",
+    openHiring: "İşe alım alanını aç",
+    createCrewAccount: "Crew hesabı oluştur",
   },
 } as const;

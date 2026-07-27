@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BLUEDECK } from "../../config";
+import { loadAccountCapabilities } from "../../lib/accountCapabilities";
 import { supabase } from "../../lib/supabase";
 
 type OverviewStats = {
@@ -42,6 +43,15 @@ type YachtRecord = {
   name?: string | null;
 };
 
+type YachtModule = {
+  title: string;
+  text: string;
+  href: string;
+  icon: LucideIcon;
+  tone: "cyan" | "emerald" | "gold" | "rose";
+  meta: string;
+};
+
 const emptyStats: OverviewStats = {
   crewCount: 0,
   invitedCrew: 0,
@@ -61,6 +71,7 @@ export default function YachtDashboard() {
   const [yacht, setYacht] = useState<YachtRecord | null>(null);
   const [stats, setStats] = useState<OverviewStats>(emptyStats);
   const [loadError, setLoadError] = useState("");
+  const [hasCrewWorkspace, setHasCrewWorkspace] = useState(false);
 
   async function loadOverview() {
     setLoadError("");
@@ -74,7 +85,12 @@ export default function YachtDashboard() {
       return;
     }
 
-    const [crewDataResponse, invitationResponse, documentResponse] =
+    const [
+      crewDataResponse,
+      invitationResponse,
+      documentResponse,
+      capabilities,
+    ] =
       await Promise.all([
         fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
           headers: {
@@ -92,7 +108,9 @@ export default function YachtDashboard() {
           .select("id,title,file_name,category,expiry_date,created_at")
           .eq("yacht_id", yachtId)
           .order("created_at", { ascending: false }),
+        loadAccountCapabilities(),
       ]);
+    setHasCrewWorkspace(capabilities?.canUseCrewWorkspace === true);
 
     const crewPayload: unknown = await crewDataResponse.json();
     const crewRecord =
@@ -186,7 +204,20 @@ export default function YachtDashboard() {
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
     : 0;
 
-  const modules = [
+  const crewWorkspaceModules: YachtModule[] = hasCrewWorkspace
+    ? [
+        {
+          title: "Crew My YACHT-OS",
+          text: "Crew accepts invitations and completes assigned checklist tasks here.",
+          href: "/crew/tasks",
+          icon: ClipboardCheck,
+          tone: "emerald",
+          meta: `${stats.completedTasks}/${stats.totalTasks} tasks`,
+        },
+      ]
+    : [];
+
+  const modules: YachtModule[] = [
     {
       title: "Crew Command",
       text: "Invite crew, review access and manage onboard roles.",
@@ -211,14 +242,7 @@ export default function YachtDashboard() {
       tone: "emerald",
       meta: `${stats.openChecklists} open`,
     },
-    {
-      title: "Crew My YACHT-OS",
-      text: "Crew accepts invitations and completes assigned checklist tasks here.",
-      href: "/crew/tasks",
-      icon: ClipboardCheck,
-      tone: "emerald",
-      meta: `${stats.completedTasks}/${stats.totalTasks} tasks`,
-    },
+    ...crewWorkspaceModules,
     {
       title: "IMO Crew List",
       text: "Generate a printable crew list directly from saved profile data.",
@@ -243,7 +267,7 @@ export default function YachtDashboard() {
       tone: stats.criticalDocuments ? "rose" : "emerald",
       meta: `${stats.criticalDocuments} critical`,
     },
-  ] as const;
+  ];
 
   return (
     <main className="bd-app-page min-h-screen min-w-0 overflow-x-hidden px-5 pb-32 pt-8 text-slate-950 sm:px-8 lg:px-10">

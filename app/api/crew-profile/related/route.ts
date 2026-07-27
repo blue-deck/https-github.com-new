@@ -5,6 +5,7 @@ import {
   signCrewDocumentRow,
   signCrewDocumentRows,
 } from "../../../lib/crewDocumentStorage";
+import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -371,6 +372,25 @@ async function getAuthorizedClients(token: string, profileId: string) {
 
   if (userError || !user?.id) {
     return { ok: false as const, error: "Login session is invalid.", status: 401 };
+  }
+
+  const entitlementResult = await loadMarketplaceEntitlement(
+    serviceClient,
+    user.id,
+  );
+  if (!entitlementResult.ok) {
+    return {
+      ok: false as const,
+      error: "Crew workspace access could not be verified.",
+      status: 503,
+    };
+  }
+  if (!entitlementResult.entitlement?.canUseCrewWorkspace) {
+    return {
+      ok: false as const,
+      error: "Crew workspace access denied.",
+      status: 403,
+    };
   }
 
   const { data: profile, error: profileError } = await serviceClient

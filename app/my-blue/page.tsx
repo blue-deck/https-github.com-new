@@ -32,6 +32,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
 
@@ -166,6 +167,12 @@ export default function MyBluePage() {
 
       if (!user?.email) {
         window.location.href = "/login";
+        return;
+      }
+
+      const capabilities = await loadAccountCapabilities().catch(() => null);
+      if (capabilities?.canUseCrewWorkspace !== true) {
+        window.location.replace("/dashboard");
         return;
       }
 

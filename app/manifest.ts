@@ -53,20 +53,6 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/dashboard",
         icons: [{ src: appIcon, sizes: "192x192", type: "image/png" }],
       },
-      {
-        name: "My YACHT-OS",
-        short_name: "My YACHT-OS",
-        description: "Open crew checklists and contracts.",
-        url: "/crew/tasks",
-        icons: [{ src: appIcon, sizes: "192x192", type: "image/png" }],
-      },
-      {
-        name: "Profile",
-        short_name: "Profile",
-        description: "Open your crew profile and CV.",
-        url: "/profile",
-        icons: [{ src: appIcon, sizes: "192x192", type: "image/png" }],
-      },
     ],
   };
 }

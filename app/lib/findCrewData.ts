@@ -1,7 +1,8 @@
 import "server-only";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { type CrewDiscoverySettings } from "./crewDiscovery";
+import { canUseCrewWorkspace } from "./marketplaceCapabilities";
 import {
   getPublicCrewDiscoverySettings,
   normalizePublicCrewId,
@@ -30,6 +31,7 @@ export type DiscoverableCrewProfile = {
 
 type CrewProfileRow = Record<string, unknown> & {
   id?: string;
+  user_id?: string;
   public_crew_id?: string;
   notes?: string;
 };
@@ -37,7 +39,7 @@ type CrewProfileRow = Record<string, unknown> & {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const discoverableCrewSelect =
-  "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes";
+  "id,user_id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes";
 
 export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]> {
   const serviceClient = createServiceClient();
@@ -55,7 +57,11 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
     return [];
   }
 
-  const visibleRows = ((data || []) as CrewProfileRow[])
+  const eligibleRows = await filterCrewWorkspaceProfiles(
+    serviceClient,
+    (data || []) as CrewProfileRow[],
+  );
+  const visibleRows = eligibleRows
     .map((row) => ({
       row,
       settings: getPublicCrewDiscoverySettings(row.notes),
@@ -119,6 +125,9 @@ export async function getDiscoverableCrew(
   if (error || !data) return null;
 
   const row = data as CrewProfileRow;
+  const [eligibleRow] = await filterCrewWorkspaceProfiles(serviceClient, [row]);
+  if (!eligibleRow) return null;
+
   const settings = getPublicCrewDiscoverySettings(row.notes);
   const profileId = text(row.id);
   if (!settings || !profileId) return null;
@@ -147,6 +156,37 @@ function createServiceClient() {
       autoRefreshToken: false,
     },
   });
+}
+
+async function filterCrewWorkspaceProfiles(
+  serviceClient: SupabaseClient,
+  rows: CrewProfileRow[],
+) {
+  const userIds = Array.from(
+    new Set(rows.map((row) => text(row.user_id)).filter(Boolean)),
+  );
+  if (userIds.length === 0) return [];
+
+  const { data, error } = await serviceClient
+    .from("marketplace_entitlements")
+    .select("user_id,account_role")
+    .in("user_id", userIds);
+
+  if (error) {
+    console.error("Find Crew roles could not be verified", error.message);
+    return [];
+  }
+
+  const eligibleUserIds = new Set(
+    (data || [])
+      .filter((entitlement) =>
+        canUseCrewWorkspace(entitlement.account_role),
+      )
+      .map((entitlement) => text(entitlement.user_id))
+      .filter(Boolean),
+  );
+
+  return rows.filter((row) => eligibleUserIds.has(text(row.user_id)));
 }
 
 function toDiscoverableCrew(

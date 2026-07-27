@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { ArrowUpRight, ChevronDown, LayoutDashboard, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react";
+import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { type TranslationKey } from "../lib/i18n";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
@@ -31,9 +32,17 @@ const publicMobileNavigation = [
 export function PublicHeader({ homepageNavigation = false }: { homepageNavigation?: boolean }) {
   const { t } = useLanguage();
   const [sessionEmail, setSessionEmail] = useState("");
+  const [hasCrewWorkspace, setHasCrewWorkspace] = useState(false);
 
   useEffect(() => {
     let active = true;
+
+    async function refreshCrewWorkspace() {
+      const capabilities = await loadAccountCapabilities().catch(() => null);
+      if (active) {
+        setHasCrewWorkspace(capabilities?.canUseCrewWorkspace === true);
+      }
+    }
 
     async function loadSession() {
       const {
@@ -42,6 +51,11 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
 
       if (!active) return;
       setSessionEmail(session?.user?.email || "");
+      if (session) {
+        await refreshCrewWorkspace();
+      } else {
+        setHasCrewWorkspace(false);
+      }
     }
 
     loadSession();
@@ -50,6 +64,11 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSessionEmail(session?.user?.email || "");
+      if (!session) {
+        setHasCrewWorkspace(false);
+        return;
+      }
+      window.setTimeout(() => void refreshCrewWorkspace(), 0);
     });
 
     return () => {
@@ -105,15 +124,17 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
                 <LayoutDashboard className="h-4 w-4" />
                 <span>{t("topbar.dashboard")}</span>
               </Link>
-              <Link
-                href="/profile"
-                className="bd-focus bd-public-action bd-public-action-solid bd-public-session-action"
-                title={sessionEmail}
-                aria-label={t("topbar.profile")}
-              >
-                <UserRound className="h-4 w-4" />
-                <span>{t("topbar.profile")}</span>
-              </Link>
+              {hasCrewWorkspace ? (
+                <Link
+                  href="/profile"
+                  className="bd-focus bd-public-action bd-public-action-solid bd-public-session-action"
+                  title={sessionEmail}
+                  aria-label={t("topbar.profile")}
+                >
+                  <UserRound className="h-4 w-4" />
+                  <span>{t("topbar.profile")}</span>
+                </Link>
+              ) : null}
               <button
                 type="button"
                 onClick={logout}

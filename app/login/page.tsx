@@ -20,6 +20,18 @@ const roleAccessCopy: Record<string, TranslationKey> = {
   management: "login.roleManagementAccess",
 };
 
+const crewFeatureBullets = [
+  "login.bullet1",
+  "login.bullet2",
+  "login.bullet3",
+] satisfies TranslationKey[];
+
+const employerFeatureBullets = [
+  "login.employerBullet1",
+  "login.employerBullet2",
+  "login.employerBullet3",
+] satisfies TranslationKey[];
+
 export default function LoginPage() {
   const { t } = useLanguage();
   const [email, setEmail] = useState("");
@@ -35,6 +47,10 @@ export default function LoginPage() {
   const [notice, setNotice] = useState("");
   const [nextPath, setNextPath] = useState("/dashboard");
   const passwordStrength = useMemo(() => getPasswordStrength(password, t), [password, t]);
+  const featureBullets =
+    mode === "signup" && ["owner", "management"].includes(role)
+      ? employerFeatureBullets
+      : crewFeatureBullets;
   const forgotPasswordHref = email.trim()
     ? `/forgot-password?email=${encodeURIComponent(email.trim().toLowerCase())}`
     : "/forgot-password";
@@ -235,7 +251,7 @@ export default function LoginPage() {
             {t("login.heroTitle")}
           </h1>
           <div className="mt-8 grid max-w-2xl gap-3 text-sm text-slate-700">
-            {(["login.bullet1", "login.bullet2", "login.bullet3"] satisfies TranslationKey[]).map((item) => (
+            {featureBullets.map((item) => (
               <div key={item} className="bd-glass-card flex items-center gap-3 rounded-2xl px-4 py-3">
                 <CheckCircle2 className="h-5 w-5 text-cyan-700" />
                 {t(item)}

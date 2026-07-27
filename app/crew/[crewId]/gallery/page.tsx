@@ -11,6 +11,7 @@ import {
   redactPublicContactDetails,
   safePublicMediaUrl,
 } from "../../../lib/publicCrewSafety";
+import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { absoluteSiteUrl } from "../../../lib/site";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 import { PublicCrewGallery, type PublicGalleryPhoto } from "./GalleryClient";
@@ -163,13 +164,26 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
   const { data: profile, error } = await serviceClient
     .from("crew_profiles")
     .select(
-      "id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,notes",
+      "id,user_id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,notes",
     )
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 
+  if (error || !profile?.id) return null;
+
+  const entitlementResult = await loadMarketplaceEntitlement(
+    serviceClient,
+    text(profile as Row, "user_id"),
+  );
+  if (
+    !entitlementResult.ok ||
+    !entitlementResult.entitlement?.canUseCrewWorkspace
+  ) {
+    return null;
+  }
+
   const discovery = getPublicCrewDiscoverySettings(profile?.notes);
-  if (error || !profile?.id || !discovery) return null;
+  if (!discovery) return null;
 
   const { data: photos, error: photosError } = await serviceClient
     .from("crew_portfolio_photos")

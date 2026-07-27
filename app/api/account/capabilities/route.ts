@@ -140,7 +140,11 @@ export async function GET(request: NextRequest) {
           clients.user.email,
         current_position: position,
         current_positions: [position],
-        public_crew_id: clients.user.id.slice(0, 8).toUpperCase(),
+        ...(entitlement.canUseCrewWorkspace
+          ? { public_crew_id: clients.user.id.slice(0, 8).toUpperCase() }
+          : crewProfile?.id
+            ? {}
+            : { public_crew_id: null }),
       },
       "id,current_position,current_positions",
     );
@@ -162,6 +166,7 @@ export async function GET(request: NextRequest) {
       entitlement.role,
     ),
     canApplyToJobs: entitlement.canApplyJobs,
+    canUseCrewWorkspace: entitlement.canUseCrewWorkspace,
   });
 }
 

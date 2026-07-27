@@ -76,7 +76,12 @@ const copy = {
     noJobsTitle: "New opportunities are on the horizon.",
     noJobsText:
       "Create your crew profile now and be ready when the next verified role is published.",
+    noJobsEmployerText:
+      "Use your hiring workspace to publish a role and start building the right shortlist.",
     createProfile: "Create crew profile",
+    manageProfile: "Manage crew profile",
+    openHiring: "Open hiring workspace",
+    openDashboard: "Open dashboard",
     jobsErrorTitle: "Roles are temporarily unavailable.",
     jobsErrorText: "You can still open the full jobs board and try again there.",
     openJobs: "Open jobs board",
@@ -87,6 +92,10 @@ const copy = {
     profilePromptTitle: "Let the right yacht discover you.",
     profilePromptText:
       "Build one credible crew profile for your experience, availability and essential documents.",
+    hiringPromptEyebrow: "Build your team",
+    hiringPromptTitle: "Publish and manage roles from one workspace.",
+    hiringPromptText:
+      "Create yacht job listings, review applications and keep every shortlist organized.",
     platformEyebrow: "One connected platform",
     platformTitle: "Less admin. More confidence on board.",
     platformIntro:
@@ -159,7 +168,12 @@ const copy = {
     noJobsTitle: "Yeni fırsatlar ufukta.",
     noJobsText:
       "Mürettebat profilinizi şimdi oluşturun ve sıradaki doğrulanmış ilan için hazır olun.",
+    noJobsEmployerText:
+      "İlan yayınlamak ve doğru aday listesini oluşturmaya başlamak için işe alım alanınızı kullanın.",
     createProfile: "Mürettebat profili oluştur",
+    manageProfile: "Mürettebat profilini yönet",
+    openHiring: "İşe alım alanını aç",
+    openDashboard: "Dashboard’u aç",
     jobsErrorTitle: "İlanlara şu anda ulaşılamıyor.",
     jobsErrorText: "Yine de tam ilan panosunu açıp oradan tekrar deneyebilirsiniz.",
     openJobs: "İlan panosunu aç",
@@ -170,6 +184,10 @@ const copy = {
     profilePromptTitle: "Doğru yatın sizi keşfetmesini sağlayın.",
     profilePromptText:
       "Deneyiminiz, müsaitliğiniz ve temel belgeleriniz için tek ve güvenilir mürettebat profili oluşturun.",
+    hiringPromptEyebrow: "Ekibinizi kurun",
+    hiringPromptTitle: "İlanları tek çalışma alanından yayınlayın ve yönetin.",
+    hiringPromptText:
+      "Yat iş ilanları oluşturun, başvuruları inceleyin ve aday listelerinizi düzenli tutun.",
     platformEyebrow: "Tek ve bağlantılı platform",
     platformTitle: "Daha az takip. Teknede daha çok güven.",
     platformIntro:
@@ -219,6 +237,48 @@ export default function HomePageClient() {
   const jobViewer = useJobListingViewer();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [jobs, setJobs] = useState<PublicJob[]>([]);
+  const isEmployerViewer =
+    jobViewer.kind === "signed-in" &&
+    (jobViewer.role === "owner" || jobViewer.role === "management");
+  const rolePrompt = isEmployerViewer
+    ? {
+        eyebrow: c.hiringPromptEyebrow,
+        title: c.hiringPromptTitle,
+        text: c.hiringPromptText,
+        action: c.openHiring,
+        href: "/hiring",
+      }
+    : jobViewer.kind === "signed-out" ||
+        (jobViewer.kind === "signed-in" &&
+          (jobViewer.role === "crew" || jobViewer.role === "captain"))
+      ? {
+          eyebrow: c.profilePromptEyebrow,
+          title: c.profilePromptTitle,
+          text: c.profilePromptText,
+          action:
+            jobViewer.kind === "signed-in" ? c.manageProfile : c.createProfile,
+          href:
+            jobViewer.kind === "signed-in"
+              ? "/profile"
+              : "/login?mode=signup&role=crew",
+        }
+      : null;
+  const noJobsAction =
+    loadState === "error"
+      ? { href: "/jobs", label: c.openJobs }
+      : isEmployerViewer
+        ? { href: "/hiring", label: c.openHiring }
+        : jobViewer.kind === "signed-out"
+          ? {
+              href: "/login?mode=signup&role=crew",
+              label: c.createProfile,
+            }
+          : jobViewer.kind === "signed-in" &&
+              (jobViewer.role === "crew" || jobViewer.role === "captain")
+            ? { href: "/profile", label: c.manageProfile }
+            : jobViewer.kind === "signed-in"
+              ? { href: "/dashboard", label: c.openDashboard }
+              : null;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -368,8 +428,8 @@ export default function HomePageClient() {
                     copy={c}
                   />
                 ))}
-                {jobs.length < 3 ? (
-                  <ProfilePrompt span={3 - jobs.length} copy={c} />
+                {jobs.length < 3 && rolePrompt ? (
+                  <RolePrompt span={3 - jobs.length} {...rolePrompt} />
                 ) : null}
               </>
             ) : (
@@ -379,12 +439,20 @@ export default function HomePageClient() {
                 </div>
                 <div>
                   <h3>{loadState === "error" ? c.jobsErrorTitle : c.noJobsTitle}</h3>
-                  <p>{loadState === "error" ? c.jobsErrorText : c.noJobsText}</p>
+                  <p>
+                    {loadState === "error"
+                      ? c.jobsErrorText
+                      : isEmployerViewer
+                        ? c.noJobsEmployerText
+                        : c.noJobsText}
+                  </p>
                 </div>
-                <Link href={loadState === "error" ? "/jobs" : "/login?mode=signup"}>
-                  {loadState === "error" ? c.openJobs : c.createProfile}
-                  <ArrowRight aria-hidden />
-                </Link>
+                {noJobsAction ? (
+                  <Link href={noJobsAction.href}>
+                    {noJobsAction.label}
+                    <ArrowRight aria-hidden />
+                  </Link>
+                ) : null}
               </div>
             )}
           </div>
@@ -646,12 +714,20 @@ function FeatureRow({
   );
 }
 
-function ProfilePrompt({
+function RolePrompt({
   span,
-  copy: c,
+  eyebrow,
+  title,
+  text,
+  action,
+  href,
 }: {
   span: number;
-  copy: (typeof copy)["en"] | (typeof copy)["tr"];
+  eyebrow: string;
+  title: string;
+  text: string;
+  action: string;
+  href: string;
 }) {
   return (
     <aside className={styles.profilePrompt} data-span={span}>
@@ -659,12 +735,12 @@ function ProfilePrompt({
         <BadgeCheck aria-hidden />
       </div>
       <div>
-        <p>{c.profilePromptEyebrow}</p>
-        <h3>{c.profilePromptTitle}</h3>
-        <span>{c.profilePromptText}</span>
+        <p>{eyebrow}</p>
+        <h3>{title}</h3>
+        <span>{text}</span>
       </div>
-      <Link href="/login?mode=signup">
-        {c.createProfile}
+      <Link href={href}>
+        {action}
         <ArrowRight aria-hidden />
       </Link>
     </aside>

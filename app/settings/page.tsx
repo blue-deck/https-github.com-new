@@ -65,6 +65,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [hasCrewWorkspace, setHasCrewWorkspace] = useState(false);
   const [profileNotice, setProfileNotice] = useState<Notice | null>(null);
   const [passwordNotice, setPasswordNotice] = useState<Notice | null>(null);
 
@@ -92,22 +93,25 @@ export default function SettingsPage() {
         return;
       }
 
+      const capabilities = await loadAccountCapabilities();
+      const canUseCrewWorkspace =
+        capabilities?.canUseCrewWorkspace === true;
       const [
         { data: baseProfile, error: baseProfileError },
         { data: crewProfile, error: crewProfileError },
-        capabilities,
       ] = await Promise.all([
         supabase
           .from("profiles")
           .select("email, full_name, role")
           .eq("id", user.id)
           .maybeSingle(),
-        supabase
-          .from("crew_profiles")
-          .select("full_name, email, current_position, current_positions")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        loadAccountCapabilities(),
+        canUseCrewWorkspace
+          ? supabase
+              .from("crew_profiles")
+              .select("full_name, email, current_position, current_positions")
+              .eq("user_id", user.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
       ]);
 
       if (baseProfileError || crewProfileError) {
@@ -142,6 +146,7 @@ export default function SettingsPage() {
       setProfile(nextProfile);
       setSavedProfile(nextProfile);
       setOriginalEmail(email);
+      setHasCrewWorkspace(canUseCrewWorkspace);
     } catch {
       setProfileNotice({ tone: "error", message: t("settings.loadError") });
     } finally {
@@ -192,11 +197,13 @@ export default function SettingsPage() {
           email,
           full_name: fullName,
         }),
-        saveCrewProfileByUserId(supabase, user.id, {
-          email,
-          full_name: fullName,
-          public_crew_id: user.id.slice(0, 8).toUpperCase(),
-        }),
+        hasCrewWorkspace
+          ? saveCrewProfileByUserId(supabase, user.id, {
+              email,
+              full_name: fullName,
+              public_crew_id: user.id.slice(0, 8).toUpperCase(),
+            })
+          : Promise.resolve({ data: null, error: null }),
       ]);
 
       if (baseError || crewError) {

@@ -26,6 +26,7 @@ import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
 import { PhoneInput } from "../components/PhoneInput";
+import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import {
   dashboardPhotoFromMetadata,
   publishDashboardPhotoUpdate,
@@ -646,6 +647,12 @@ export default function ProfilePage() {
 
     if (!user?.email) {
       window.location.href = "/login";
+      return;
+    }
+
+    const capabilities = await loadAccountCapabilities().catch(() => null);
+    if (capabilities?.canUseCrewWorkspace !== true) {
+      window.location.replace("/dashboard");
       return;
     }
 

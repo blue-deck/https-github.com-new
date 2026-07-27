@@ -26,6 +26,7 @@ import {
   type AccountIdentity,
 } from "../lib/accountIdentity";
 import { languages } from "../lib/i18n";
+import { canUseCrewWorkspace } from "../lib/marketplaceCapabilities";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { useLanguage } from "./LanguageProvider";
@@ -186,6 +187,9 @@ export function BlueDeckTopBar() {
   const photoUrl = identity?.dashboardPhotoUrl || "";
   const showPhoto = Boolean(photoUrl && failedPhotoUrl !== photoUrl);
   const normalizedRole = identity?.role?.trim().toLowerCase() || "crew";
+  const hasCrewWorkspace = Boolean(
+    identity && canUseCrewWorkspace(normalizedRole),
+  );
   const canManageYachts = ["captain", "owner", "management"].includes(
     normalizedRole,
   );
@@ -202,9 +206,13 @@ export function BlueDeckTopBar() {
             : identity?.role?.trim() || t("login.roleCrew");
   const navigationItems = [
     { href: "/dashboard", label: t("topbar.dashboard"), icon: LayoutDashboard },
-    { href: "/profile", label: t("topbar.myProfile"), icon: UserRound },
-    { href: "/my-blue", label: t("topbar.myBlue"), icon: Camera },
-    { href: "/crew/tasks", label: t("topbar.myDeck"), icon: Ship },
+    ...(hasCrewWorkspace
+      ? [
+          { href: "/profile", label: t("topbar.myProfile"), icon: UserRound },
+          { href: "/my-blue", label: t("topbar.myBlue"), icon: Camera },
+          { href: "/crew/tasks", label: t("topbar.myDeck"), icon: Ship },
+        ]
+      : []),
     ...(canApplyToJobs
       ? [{ href: "/jobs", label: t("nav.findJob"), icon: BriefcaseBusiness }]
       : []),
@@ -235,7 +243,9 @@ export function BlueDeckTopBar() {
           },
         ]
       : []),
-    { href: "/contracts", label: t("topbar.contracts"), icon: FileText },
+    ...(hasCrewWorkspace
+      ? [{ href: "/contracts", label: t("topbar.contracts"), icon: FileText }]
+      : []),
     { href: "/settings", label: t("topbar.settings"), icon: Settings },
   ];
 

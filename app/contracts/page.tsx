@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle2, FileSignature, PenLine } from "lucide-react";
+import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { supabase } from "../lib/supabase";
 import { parseAssignedContractPayload } from "../lib/contractPayload";
 
@@ -17,6 +18,12 @@ export default function ContractsPage() {
 
     if (!user?.email) {
       window.location.href = "/login";
+      return;
+    }
+
+    const capabilities = await loadAccountCapabilities().catch(() => null);
+    if (capabilities?.canUseCrewWorkspace !== true) {
+      window.location.replace("/dashboard");
       return;
     }
 

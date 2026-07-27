@@ -299,38 +299,43 @@ export default function DashboardPage() {
       return;
     }
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session?.access_token) {
-      try {
-        await fetch("/api/crew-profile/reconcile", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-      } catch {
-        // Reconciliation is a safe, idempotent legacy bridge. The regular
-        // dashboard can still load when it is temporarily unavailable.
-      }
-    }
-
-    const [profileResult, crewProfileResult, capabilities] = await Promise.all([
+    const [profileResult, capabilities] = await Promise.all([
       supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle(),
-      supabase
+      loadAccountCapabilities(),
+    ]);
+
+    let crewProfile: Record<string, any> | null = null;
+    if (capabilities?.canUseCrewWorkspace === true) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        try {
+          await fetch("/api/crew-profile/reconcile", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          });
+        } catch {
+          // Reconciliation is a safe, idempotent legacy bridge. The regular
+          // dashboard can still load when it is temporarily unavailable.
+        }
+      }
+
+      const crewProfileResult = await supabase
         .from("crew_profiles")
         .select("id, full_name, phone, email, profile_photo_url")
         .eq("user_id", user.id)
-        .maybeSingle(),
-      loadAccountCapabilities(),
-    ]);
+        .maybeSingle();
+      crewProfile = crewProfileResult.data;
+    }
+
     let profileData = profileResult.data;
-    const crewProfile = crewProfileResult.data;
 
     const preferredName =
       cleanDisplayName(profileData) ||
@@ -374,7 +379,15 @@ export default function DashboardPage() {
       dashboard_photo_url: dashboardPhotoUrl,
     });
     setAccountCapabilities(capabilities);
-    await hydrateDeckAccess(crewProfile, profileData?.email || crewProfile?.email || user.email);
+    if (capabilities?.canUseCrewWorkspace === true) {
+      await hydrateDeckAccess(
+        crewProfile,
+        profileData?.email || crewProfile?.email || user.email,
+      );
+    } else {
+      setDeckInvites([]);
+      setMyDecks([]);
+    }
     setLoading(false);
   }
 
@@ -527,6 +540,8 @@ export default function DashboardPage() {
   const canApplyToJobs =
     accountCapabilities?.canApplyToJobs ??
     ["crew", "captain"].includes(normalizedRole);
+  const hasCrewWorkspace =
+    accountCapabilities?.canUseCrewWorkspace === true;
   const roleLabel =
     normalizedRole === "captain"
       ? t("login.roleCaptain")
@@ -582,29 +597,33 @@ export default function DashboardPage() {
         </section>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <Link
-            href="/profile"
-            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-          >
-            <UserRound className="h-8 w-8 text-cyan-700" />
-            <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
-            <p className="mt-3 leading-7 text-slate-600">
-              Manage your crew ID, documents, expiry dates and CV.
-            </p>
-          </Link>
+          {hasCrewWorkspace ? (
+            <Link
+              href="/profile"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <UserRound className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                Manage your crew ID, documents, expiry dates and CV.
+              </p>
+            </Link>
+          ) : null}
 
-          <Link
-            href="/my-blue"
-            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-          >
-            <Camera className="h-8 w-8 text-cyan-700" />
-            <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Blue</h2>
-            <p className="mt-3 leading-7 text-slate-600">
-              Open and manage your professional Photo Gallery.
-            </p>
-          </Link>
+          {hasCrewWorkspace ? (
+            <Link
+              href="/my-blue"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <Camera className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Blue</h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                Open and manage your professional Photo Gallery.
+              </p>
+            </Link>
+          ) : null}
 
-          {deckInvites.length > 0 ? (
+          {hasCrewWorkspace && deckInvites.length > 0 ? (
             <div className="bd-glass-card-strong rounded-[28px] p-8 shadow-2xl shadow-cyan-950/8">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-lg shadow-cyan-950/15">
@@ -635,7 +654,7 @@ export default function DashboardPage() {
                 {acceptingInviteId === deckInvites[0].id ? "Accepting..." : "Accept Yacht Invite"}
               </button>
             </div>
-          ) : myDecks.length > 0 ? (
+          ) : hasCrewWorkspace && myDecks.length > 0 ? (
             <Link
               href="/crew/tasks"
               className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
@@ -729,14 +748,16 @@ export default function DashboardPage() {
             </Link>
           ) : null}
 
-          <Link
-            href="/contracts"
-            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-          >
-            <FileText className="h-8 w-8 text-cyan-700" />
-            <h2 className="mt-5 text-3xl font-semibold text-slate-950">Contracts</h2>
-            <p className="mt-3 leading-7 text-slate-600">Review yacht contracts assigned to your profile.</p>
-          </Link>
+          {hasCrewWorkspace ? (
+            <Link
+              href="/contracts"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <FileText className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Contracts</h2>
+              <p className="mt-3 leading-7 text-slate-600">Review yacht contracts assigned to your profile.</p>
+            </Link>
+          ) : null}
 
           <Link
             href="/settings"

@@ -12,6 +12,7 @@ export type AccountCapabilities = {
   position: string;
   canManageYachts: boolean;
   canApplyToJobs: boolean;
+  canUseCrewWorkspace: boolean;
 };
 
 export async function loadAccountCapabilities(
@@ -36,6 +37,7 @@ export async function loadAccountCapabilities(
     position: value.position,
     canManageYachts: value.canManageYachts,
     canApplyToJobs: value.canApplyToJobs,
+    canUseCrewWorkspace: value.canUseCrewWorkspace,
   };
 }
 
@@ -50,6 +52,7 @@ function isAccountCapabilitiesResponse(
     isMarketplaceAccountRole(candidate.role) &&
     typeof candidate.position === "string" &&
     typeof candidate.canManageYachts === "boolean" &&
-    typeof candidate.canApplyToJobs === "boolean"
+    typeof candidate.canApplyToJobs === "boolean" &&
+    typeof candidate.canUseCrewWorkspace === "boolean"
   );
 }

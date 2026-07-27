@@ -4,7 +4,10 @@ import { saveBaseProfileById } from "../../../lib/baseProfiles";
 import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 import { authConfirmUrl, safeInternalPath } from "../../../lib/site";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
-import { isMarketplaceAccountRole } from "../../../lib/marketplaceCapabilities";
+import {
+  canUseCrewWorkspace,
+  isMarketplaceAccountRole,
+} from "../../../lib/marketplaceCapabilities";
 import { ensureMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 
@@ -116,7 +119,9 @@ export async function POST(request: NextRequest) {
             full_name: fullName,
             current_position: position,
             current_positions: [position],
-            public_crew_id: data.user.id.slice(0, 8).toUpperCase(),
+            public_crew_id: canUseCrewWorkspace(role)
+              ? data.user.id.slice(0, 8).toUpperCase()
+              : null,
           }
         ),
       ]);
