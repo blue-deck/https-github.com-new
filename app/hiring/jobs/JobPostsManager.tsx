@@ -38,6 +38,7 @@ import {
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
   formatJobSmokerPolicy,
+  formatJobVisa,
   formatJobVisibleTattooPolicy,
   formatJobYachtType,
   formatJobListingNumber,
@@ -1273,6 +1274,7 @@ export function JobPostsManager() {
                     onOpenChange={(open) =>
                       setOpenChoiceGroup(open ? "visas" : null)
                     }
+                    formatOption={formatJobVisa}
                     onChange={(value) => updateForm("requiredVisas", value)}
                   />
                 </div>

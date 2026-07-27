@@ -399,6 +399,16 @@ export function formatJobRequiredLanguage(
   return labels[value][language];
 }
 
+export function formatJobVisa(value: JobVisa) {
+  if (value === "Schengen Visa") {
+    return "Schengen Visa / Residence Permit";
+  }
+  if (value === "US B1/B2 Visa") {
+    return "B1/B2";
+  }
+  return value;
+}
+
 export function formatJobYachtType(
   value: JobYachtType,
   language: "en" | "tr",

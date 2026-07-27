@@ -31,6 +31,7 @@ import {
   formatJobListingNumber,
   formatJobRequiredLanguage,
   formatJobSmokerPolicy,
+  formatJobVisa,
   formatJobVisibleTattooPolicy,
   formatJobYachtLength,
   formatJobYachtBuildYear,
@@ -353,7 +354,10 @@ function JobDetail({
                     title={c.certificatesDocuments}
                     items={job.requiredCertificates}
                   />
-                  <JobList title={c.visas} items={job.requiredVisas} />
+                  <JobList
+                    title={c.visas}
+                    items={job.requiredVisas.map(formatJobVisa)}
+                  />
                   <JobList title={c.benefits} items={job.benefits} />
                 </div>
               </div>
