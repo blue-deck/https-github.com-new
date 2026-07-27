@@ -165,6 +165,7 @@ export async function GET(request: NextRequest) {
     canManageYachts: ["captain", "owner", "management"].includes(
       entitlement.role,
     ),
+    canPostJobs: entitlement.canPostJobs,
     canApplyToJobs: entitlement.canApplyJobs,
     canUseCrewWorkspace: entitlement.canUseCrewWorkspace,
   });

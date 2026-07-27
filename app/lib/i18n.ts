@@ -27,7 +27,7 @@ const en = {
   "topbar.myBlue": "My Blue",
   "topbar.myDeck": "My Deck",
   "topbar.captainWorkspace": "Captain Workspace",
-  "topbar.hiring": "Hiring",
+  "topbar.hiring": "My Job Postings & Hiring",
   "topbar.employerApprovals": "Employer approvals",
   "topbar.contracts": "Contracts",
   "topbar.language": "Language",
@@ -37,9 +37,12 @@ const en = {
   "topbar.removePhoto": "Remove photo",
   "topbar.updatingPhoto": "Updating photo...",
   "topbar.photoUpdated": "Your photo has been updated.",
-  "dashboard.hiring": "Hiring",
+  "dashboard.hiring": "My Job Postings & Hiring",
   "dashboard.hiringText":
-    "Add or access a yacht, then publish and manage crew roles directly.",
+    "Review your job posts, applicants and hiring activity in one place.",
+  "dashboard.createJobPost": "Create Job Post",
+  "dashboard.createJobPostText":
+    "Publish a new yacht crew opportunity with clear role and start details.",
   "dashboard.findJob": "Find a Job",
   "dashboard.findJobText":
     "Explore current yacht roles and submit secure applications.",
@@ -405,7 +408,7 @@ const tr: Record<TranslationKey, string> = {
   "topbar.myBlue": "My Blue",
   "topbar.myDeck": "My Deck",
   "topbar.captainWorkspace": "Kaptan Çalışma Alanı",
-  "topbar.hiring": "İşe Alım",
+  "topbar.hiring": "İş İlanlarım ve İşe Alım",
   "topbar.employerApprovals": "İşveren Onayları",
   "topbar.contracts": "Kontratlar",
   "topbar.language": "Dil",
@@ -415,9 +418,12 @@ const tr: Record<TranslationKey, string> = {
   "topbar.removePhoto": "Fotoğrafı kaldır",
   "topbar.updatingPhoto": "Fotoğraf güncelleniyor...",
   "topbar.photoUpdated": "Fotoğrafınız güncellendi.",
-  "dashboard.hiring": "İşe Alım",
+  "dashboard.hiring": "İş İlanlarım ve İşe Alım",
   "dashboard.hiringText":
-    "Bir yat ekle veya yat erişimini kullan; ilanları doğrudan yayınlayıp yönet.",
+    "İlanlarını, başvuranları ve işe alım sürecini tek yerden yönet.",
+  "dashboard.createJobPost": "İş İlanı Oluştur",
+  "dashboard.createJobPostText":
+    "Pozisyon ve başlangıç bilgileriyle yeni bir yat personeli ilanı yayınla.",
   "dashboard.findJob": "İş Bul",
   "dashboard.findJobText":
     "Güncel yat ilanlarını incele ve güvenli başvuru gönder.",

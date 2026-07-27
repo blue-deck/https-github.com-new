@@ -228,7 +228,7 @@ export function MyJobApplicationsPortal() {
             body={c.publisherBody}
             actions={
               <Link
-                href="/hiring/jobs"
+                href="/hiring"
                 className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <BriefcaseBusiness className="h-4 w-4" aria-hidden />
@@ -625,8 +625,8 @@ const copy = {
     retry: "Try again",
     publisherTitle: "This workspace is for Crew and Captain accounts",
     publisherBody:
-      "Owner / Employer and Management accounts review candidates from the hiring workspace instead.",
-    manageJobs: "Open hiring workspace",
+      "Owner / Employer and Management accounts review candidates in My Job Postings & Hiring.",
+    manageJobs: "My Job Postings & Hiring",
     summaryLabel: "Application summary",
     listLabel: "Your job applications",
     total: "Total",
@@ -675,8 +675,8 @@ const copy = {
     retry: "Tekrar dene",
     publisherTitle: "Bu alan Crew ve Captain hesapları içindir",
     publisherBody:
-      "Owner / Employer ve Management hesapları adayları işe alım çalışma alanından inceler.",
-    manageJobs: "İşe alım alanını aç",
+      "Owner / Employer ve Management hesapları adayları İş İlanlarım ve İşe Alım alanından inceler.",
+    manageJobs: "İş İlanlarım ve İşe Alım",
     summaryLabel: "Başvuru özeti",
     listLabel: "İş başvurularınız",
     total: "Toplam",

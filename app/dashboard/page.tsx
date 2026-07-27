@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
+  FilePlus2,
   LoaderCircle,
   LogOut,
   Plus,
@@ -537,6 +538,7 @@ export default function DashboardPage() {
   const canManageYachts =
     accountCapabilities?.canManageYachts ??
     ["captain", "owner", "management"].includes(normalizedRole);
+  const canPostJobs = accountCapabilities?.canPostJobs === true;
   const canApplyToJobs =
     accountCapabilities?.canApplyToJobs ??
     ["crew", "captain"].includes(normalizedRole);
@@ -686,7 +688,7 @@ export default function DashboardPage() {
             </Link>
           ) : null}
 
-          {canManageYachts ? (
+          {canPostJobs ? (
             <Link
               href="/hiring"
               className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
@@ -697,6 +699,21 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
                 {t("dashboard.hiringText")}
+              </p>
+            </Link>
+          ) : null}
+
+          {canPostJobs ? (
+            <Link
+              href="/hiring/jobs"
+              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+            >
+              <FilePlus2 className="h-8 w-8 text-cyan-700" />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("dashboard.createJobPost")}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {t("dashboard.createJobPostText")}
               </p>
             </Link>
           ) : null}

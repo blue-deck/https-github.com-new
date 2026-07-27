@@ -227,7 +227,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <Link
-                href="/hiring/jobs"
+                href="/hiring"
                 className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-300 hover:bg-cyan-50"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden />
@@ -881,7 +881,7 @@ const copy = {
     loadError: "Applications could not be loaded",
     updateError: "The application status could not be updated.",
     updated: "Application status updated.",
-    back: "Back to job posts",
+    back: "My Job Postings & Hiring",
     eyebrow: "Candidate pipeline",
     total: "Applications",
     shortlisted: "Shortlisted",
@@ -922,7 +922,7 @@ const copy = {
     loadError: "Başvurular yüklenemedi",
     updateError: "Başvuru durumu güncellenemedi.",
     updated: "Başvuru durumu güncellendi.",
-    back: "İş ilanlarına dön",
+    back: "İş İlanlarım ve İşe Alım",
     eyebrow: "Aday süreci",
     total: "Başvuru",
     shortlisted: "Kısa listede",

@@ -39,7 +39,14 @@ export async function GET(request: NextRequest) {
   const { yachts, capabilities } = authority;
 
   if (yachts.length === 0) {
-    return employerResponse({ ok: true, capabilities, yachts: [], jobs: [] });
+    return employerResponse({
+      ok: true,
+      capabilities,
+      yachts: [],
+      jobs: [],
+      applicationCounts: {},
+      applicationCountsAvailable: true,
+    });
   }
 
   const { data, error } = await clients.serviceClient
@@ -79,7 +86,68 @@ export async function GET(request: NextRequest) {
     jobs.push(job);
   }
 
-  return employerResponse({ ok: true, capabilities, yachts, jobs });
+  let applicationCounts: Record<string, number> = Object.fromEntries(
+    jobs.map((job) => [job.id, 0]),
+  );
+  let applicationCountsAvailable = true;
+
+  if (jobs.length > 0) {
+    const authorizedJobIds = new Set(jobs.map((job) => job.id));
+
+    try {
+      const {
+        data: applicationRows,
+        error: applicationError,
+        count: applicationRowCount,
+      } = await clients.serviceClient
+        .from("job_applications")
+        .select("job_post_id", { count: "exact" })
+        .in("job_post_id", [...authorizedJobIds])
+        .limit(50_000);
+
+      if (
+        applicationError ||
+        !Array.isArray(applicationRows) ||
+        typeof applicationRowCount !== "number" ||
+        applicationRows.length !== applicationRowCount
+      ) {
+        throw (
+          applicationError ||
+          new Error("The application count result was incomplete.")
+        );
+      }
+
+      const nextCounts: Record<string, number> = Object.fromEntries(
+        jobs.map((job) => [job.id, 0]),
+      );
+
+      for (const row of applicationRows) {
+        const jobPostId = cleanText(row.job_post_id);
+        if (!authorizedJobIds.has(jobPostId)) {
+          throw new Error("The application count result was invalid.");
+        }
+        nextCounts[jobPostId] += 1;
+      }
+
+      applicationCounts = nextCounts;
+    } catch (error) {
+      applicationCounts = {};
+      applicationCountsAvailable = false;
+      logJobPostError("employer_job_application_counts_load_failed", error, {
+        actorUserId: clients.user.id,
+        jobPostCount: jobs.length,
+      });
+    }
+  }
+
+  return employerResponse({
+    ok: true,
+    capabilities,
+    yachts,
+    jobs,
+    applicationCounts,
+    applicationCountsAvailable,
+  });
 }
 
 export async function POST(request: NextRequest) {

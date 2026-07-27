@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowUpRight,
   BriefcaseBusiness,
   CheckCircle2,
   ChevronDown,
-  Eye,
   FilePenLine,
   LoaderCircle,
   LockKeyhole,
@@ -22,7 +21,6 @@ import {
 } from "lucide-react";
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -80,6 +78,9 @@ import { supabase } from "../../lib/supabase";
 type WorkspaceResponse = {
   ok?: boolean;
   error?: string;
+  capabilities?: {
+    canPostJobs?: boolean;
+  };
   yachts?: VerifiedEmployerYacht[];
   jobs?: EmployerJobPost[];
 };
@@ -127,19 +128,16 @@ type FormState = {
 
 const copy = {
   en: {
-    back: "Hiring workspace",
-    publicBoard: "View public jobs",
-    live: "Published",
-    drafts: "Drafts",
-    managePosts: "Manage job posts",
-    newPost: "New job post",
+    back: "My Job Postings & Hiring",
     loading: "Loading your job posting workspace…",
     loadError: "Your job posting workspace could not be loaded.",
+    jobNotFound:
+      "This job post is not available in your hiring workspace.",
     retry: "Try again",
     accessRequired: "Connect a yacht to publish roles",
     accessRequiredText:
       "Captain, Owner and Management accounts can publish for a yacht they own or actively manage. Add or connect your yacht first.",
-    reviewAccess: "Open hiring workspace",
+    reviewAccess: "My Job Postings & Hiring",
     createTitle: "Create a job post",
     editTitle: "Edit job post",
     listingNumber: "Listing no.",
@@ -242,11 +240,6 @@ const copy = {
     cancelConfirm:
       "Cancel this listing? It will be removed from the public jobs board and will no longer accept applications. Application history will be preserved.",
     saving: "Saving…",
-    viewLive: "View live post",
-    applications: "Applications",
-    savedDraft: "Draft saved.",
-    savedPublished: "Job post published.",
-    savedCancelled: "Job post cancelled.",
     saveError: "The job post could not be saved.",
     changedElsewhere:
       "This version may be out of date. Reload the workspace and try again.",
@@ -257,22 +250,18 @@ const copy = {
       "This listing was cancelled and is no longer public. Its application history remains available.",
     terminalClosed:
       "This listing is closed and can no longer be edited or republished.",
-    selectPost: "Select a post",
   },
   tr: {
-    back: "İşe alım alanı",
-    publicBoard: "Yayındaki ilanları gör",
-    live: "Yayında",
-    drafts: "Taslak",
-    managePosts: "İlanları yönet",
-    newPost: "Yeni iş ilanı",
+    back: "İş İlanlarım ve İşe Alım",
     loading: "İş ilanı alanın yükleniyor…",
     loadError: "İş ilanı alanın yüklenemedi.",
+    jobNotFound:
+      "Bu iş ilanı, işe alım alanınızda bulunamadı.",
     retry: "Tekrar dene",
     accessRequired: "İlan vermek için bir yat bağlayın",
     accessRequiredText:
       "Captain, Owner ve Management hesapları sahibi oldukları veya aktif olarak yönettikleri yat için ilan verebilir. Önce yatınızı ekleyin ya da hesabınıza bağlayın.",
-    reviewAccess: "İşe alım alanını aç",
+    reviewAccess: "İş İlanlarım ve İşe Alım",
     createTitle: "İş ilanı oluştur",
     editTitle: "İş ilanını düzenle",
     listingNumber: "İlan no:",
@@ -376,11 +365,6 @@ const copy = {
     cancelConfirm:
       "Bu ilanı iptal etmek istediğinize emin misiniz? İlan herkese açık iş ilanlarından kaldırılacak ve yeni başvuru kabul etmeyecek. Başvuru geçmişi korunacak.",
     saving: "Kaydediliyor…",
-    viewLive: "Yayındaki ilanı gör",
-    applications: "Başvurular",
-    savedDraft: "Taslak kaydedildi.",
-    savedPublished: "İş ilanı yayınlandı.",
-    savedCancelled: "İş ilanı iptal edildi.",
     saveError: "İş ilanı kaydedilemedi.",
     changedElsewhere:
       "Bu sürüm güncel olmayabilir. Alanı yenileyip tekrar dene.",
@@ -391,47 +375,32 @@ const copy = {
       "Bu ilan iptal edildi ve artık herkese açık değil. Başvuru geçmişi korunmaya devam eder.",
     terminalClosed:
       "Bu ilan kapatıldı; artık düzenlenemez veya yeniden yayınlanamaz.",
-    selectPost: "İlan seç",
   },
 } as const;
 
-export function JobPostsManager() {
+export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }) {
   const { language } = useLanguage();
   const c = copy[language];
+  const router = useRouter();
+  const requestedJobId = initialJobId.trim().toLowerCase();
+  const editorPath = requestedJobId
+    ? `/hiring/jobs?job=${encodeURIComponent(requestedJobId)}`
+    : "/hiring/jobs";
   const formRef = useRef<HTMLFormElement>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [reloadVersion, setReloadVersion] = useState(0);
   const [yachts, setYachts] = useState<VerifiedEmployerYacht[]>([]);
-  const [jobs, setJobs] = useState<EmployerJobPost[]>([]);
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedJob, setSelectedJob] = useState<EmployerJobPost | null>(null);
   const [form, setForm] = useState<FormState>(() => emptyForm(""));
   const [openChoiceGroup, setOpenChoiceGroup] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [applicationCounts, setApplicationCounts] = useState<
-    Record<string, number>
-  >({});
-
-  const selectedJob = useMemo(
-    () => jobs.find((job) => job.id === selectedId) || null,
-    [jobs, selectedId],
-  );
   const selectedJobExpired = selectedJob
     ? isEmployerJobPostExpired(selectedJob)
     : false;
   const selectedJobTerminal = Boolean(
     selectedJob && (selectedJob.status === "closed" || selectedJobExpired),
-  );
-  const counts = useMemo(
-    () => ({
-      published: jobs.filter(
-        (job) =>
-          job.status === "published" && !isEmployerJobPostExpired(job),
-      ).length,
-      draft: jobs.filter((job) => job.status === "draft").length,
-    }),
-    [jobs],
   );
 
   useEffect(() => {
@@ -447,7 +416,7 @@ export function JobPostsManager() {
 
       if (!session) {
         window.location.replace(
-          `/login?next=${encodeURIComponent("/hiring/jobs")}`,
+          `/login?next=${encodeURIComponent(editorPath)}`,
         );
         return;
       }
@@ -466,23 +435,42 @@ export function JobPostsManager() {
 
         if (response.status === 401) {
           window.location.replace(
-            `/login?next=${encodeURIComponent("/hiring/jobs")}`,
+            `/login?next=${encodeURIComponent(editorPath)}`,
           );
           return;
         }
-        if (!response.ok || !result?.ok || !Array.isArray(result.yachts) || !Array.isArray(result.jobs)) {
+        if (
+          !response.ok ||
+          !result?.ok ||
+          !Array.isArray(result.yachts) ||
+          !Array.isArray(result.jobs)
+        ) {
           throw new Error(result?.error || "workspace_load_failed");
         }
         if (!active) return;
+        if (result.capabilities?.canPostJobs !== true) {
+          router.replace("/hiring");
+          return;
+        }
 
         const nextYachts = result.yachts;
         const nextJobs = result.jobs;
-        setYachts(nextYachts);
-        setJobs(nextJobs);
-        setNotice(null);
+        const requestedJob = requestedJobId
+          ? nextJobs.find((job) => job.id.toLowerCase() === requestedJobId) || null
+          : null;
+        if (requestedJobId && !requestedJob) {
+          throw new Error("job_not_found");
+        }
 
-        setSelectedId("");
-        setForm(emptyForm(nextYachts[0]?.id || ""));
+        setYachts(nextYachts);
+        setSelectedJob(requestedJob);
+        setNotice(null);
+        setOpenChoiceGroup(null);
+        setForm(
+          requestedJob
+            ? formFromJob(requestedJob)
+            : emptyForm(nextYachts[0]?.id || ""),
+        );
       } catch (error) {
         if (!active) return;
         setLoadError(
@@ -497,66 +485,7 @@ export function JobPostsManager() {
     return () => {
       active = false;
     };
-  }, [reloadVersion]);
-
-  useEffect(() => {
-    if (!selectedJob || applicationCounts[selectedJob.id] !== undefined) return;
-    let active = true;
-
-    async function loadApplicationCount() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session || !selectedJob) return;
-
-      const response = await fetch(
-        `/api/employer/job-posts/${encodeURIComponent(selectedJob.id)}/applications?summary=1`,
-        {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          cache: "no-store",
-        },
-      );
-      const result = (await response.json().catch(() => null)) as {
-        ok?: boolean;
-        total?: number;
-      } | null;
-      if (
-        active &&
-        response.ok &&
-        result?.ok &&
-        typeof result.total === "number"
-      ) {
-        setApplicationCounts((current) => ({
-          ...current,
-          [selectedJob.id]: result.total || 0,
-        }));
-      }
-    }
-
-    void loadApplicationCount();
-    return () => {
-      active = false;
-    };
-  }, [applicationCounts, selectedJob]);
-
-  function startNewPost() {
-    setSelectedId("");
-    setForm(emptyForm(yachts[0]?.id || ""));
-    setOpenChoiceGroup(null);
-    setNotice(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  function selectJob(job: EmployerJobPost) {
-    setSelectedId(job.id);
-    setForm(formFromJob(job));
-    setOpenChoiceGroup(null);
-    setNotice(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, [editorPath, reloadVersion, requestedJobId, router]);
 
   function updateForm<Key extends keyof FormState>(
     key: Key,
@@ -605,7 +534,7 @@ export function JobPostsManager() {
     } = await supabase.auth.getSession();
     if (!session) {
       window.location.replace(
-        `/login?next=${encodeURIComponent("/hiring/jobs")}`,
+        `/login?next=${encodeURIComponent(editorPath)}`,
       );
       return;
     }
@@ -672,7 +601,7 @@ export function JobPostsManager() {
 
       if (response.status === 401) {
         window.location.replace(
-          `/login?next=${encodeURIComponent("/hiring/jobs")}`,
+          `/login?next=${encodeURIComponent(editorPath)}`,
         );
         return;
       }
@@ -684,24 +613,7 @@ export function JobPostsManager() {
         );
       }
 
-      const savedJob = result.job;
-      setJobs((current) =>
-        [savedJob, ...current.filter((job) => job.id !== savedJob.id)].sort(
-          (left, right) =>
-            Date.parse(right.updatedAt) - Date.parse(left.updatedAt),
-        ),
-      );
-      setSelectedId(savedJob.id);
-      setForm(formFromJob(savedJob));
-      setNotice({
-        tone: "success",
-        message:
-          savedJob.status === "published"
-            ? c.savedPublished
-            : savedJob.status === "closed"
-              ? c.savedCancelled
-              : c.savedDraft,
-      });
+      router.replace("/hiring");
     } catch (error) {
       setNotice({
         tone: "error",
@@ -730,18 +642,26 @@ export function JobPostsManager() {
     return <LoadingState label={c.loading} />;
   }
 
-  if (loadError || (yachts.length === 0 && jobs.length > 0)) {
+  if (loadError) {
     return (
       <MessageState
         icon={<AlertCircle className="h-8 w-8" />}
         title={c.loadError}
         text={
-          loadError && loadError !== "workspace_load_failed"
-            ? loadError
-            : c.loadError
+          loadError === "job_not_found"
+            ? c.jobNotFound
+            : loadError && loadError !== "workspace_load_failed"
+              ? loadError
+              : c.loadError
         }
-        action={c.retry}
-        onAction={() => setReloadVersion((current) => current + 1)}
+        action={loadError === "job_not_found" ? c.back : c.retry}
+        onAction={() => {
+          if (loadError === "job_not_found") {
+            router.replace("/hiring");
+            return;
+          }
+          setReloadVersion((current) => current + 1);
+        }}
       />
     );
   }
@@ -784,28 +704,15 @@ export function JobPostsManager() {
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#071f3c] sm:text-4xl">
               {selectedJob ? c.editTitle : c.createTitle}
             </h1>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Metric label={c.live} value={counts.published} tone="emerald" />
-              <Metric label={c.drafts} value={counts.draft} tone="amber" />
-            </div>
           </div>
 
-          <div className="flex flex-col gap-2 sm:flex-row">
-              <Link
-                href="/hiring"
-                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden />
-                {c.back}
-              </Link>
-              <Link
-                href="/jobs"
-                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-bold text-white transition hover:bg-cyan-800"
-              >
-                <Eye className="h-4 w-4" aria-hidden />
-                {c.publicBoard}
-              </Link>
-          </div>
+          <Link
+            href="/hiring"
+            className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            {c.back}
+          </Link>
         </header>
 
         {notice ? (
@@ -824,48 +731,6 @@ export function JobPostsManager() {
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
             )}
             <span>{notice.message}</span>
-          </div>
-        ) : null}
-
-        {jobs.length > 0 ? (
-          <div className="mt-4 flex flex-col gap-3 border-y border-slate-200 py-3 sm:flex-row sm:items-end sm:justify-between">
-            <label className="block w-full sm:max-w-sm">
-              <span className="mb-1.5 block text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
-                {c.managePosts}
-              </span>
-              <select
-                value={selectedId}
-                onChange={(event) => {
-                  const jobId = event.target.value;
-                  if (!jobId) {
-                    startNewPost();
-                    return;
-                  }
-                  const job = jobs.find((item) => item.id === jobId);
-                  if (job) selectJob(job);
-                }}
-                disabled={saving}
-                aria-label={c.selectPost}
-                className="bd-focus min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800"
-              >
-                <option value="">
-                  {c.selectPost} ({jobs.length})
-                </option>
-                {jobs.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.position} · {formatJobListingNumber(job.listingNumber)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={startNewPost}
-              disabled={saving || !selectedId}
-              className="bd-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-default disabled:opacity-45"
-            >
-              {c.newPost}
-            </button>
           </div>
         ) : null}
 
@@ -1470,34 +1335,6 @@ export function JobPostsManager() {
                     ) : null}
                   </div>
                 )}
-
-                {selectedJob ? (
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <Link
-                      href={`/hiring/jobs/${encodeURIComponent(selectedJob.id)}/applications`}
-                      className="bd-focus inline-flex min-h-11 w-fit items-center gap-2 rounded-xl text-sm font-black text-cyan-800 transition hover:text-cyan-950"
-                    >
-                      <UsersRound className="h-4 w-4" aria-hidden />
-                      {c.applications}
-                      <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-[10px] text-cyan-900">
-                        {applicationCounts[selectedJob.id] ?? "—"}
-                      </span>
-                      <ArrowUpRight className="h-4 w-4" aria-hidden />
-                    </Link>
-
-                    {selectedJob.status === "published" &&
-                    !selectedJobExpired ? (
-                      <Link
-                        href={`/jobs/${encodeURIComponent(selectedJob.id)}`}
-                        className="bd-focus inline-flex min-h-11 w-fit items-center gap-2 rounded-xl text-sm font-black text-cyan-800 transition hover:text-cyan-950"
-                      >
-                        <Eye className="h-4 w-4" aria-hidden />
-                        {c.viewLive}
-                        <ArrowUpRight className="h-4 w-4" aria-hidden />
-                      </Link>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
               </div>
             </fieldset>
@@ -1908,29 +1745,6 @@ function ActionButton({
       )}
       {label}
     </button>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "emerald" | "amber";
-}) {
-  const classes = {
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-900",
-    amber: "border-amber-200 bg-amber-50 text-amber-900",
-  };
-  return (
-    <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 ${classes[tone]}`}>
-      <p className="text-[10px] font-black uppercase tracking-[0.1em] opacity-65">
-        {label}
-      </p>
-      <p className="text-sm font-black">{value}</p>
-    </div>
   );
 }
 

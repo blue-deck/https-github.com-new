@@ -480,7 +480,7 @@ const copy = {
     employerEmptyText:
       "New discoverable crew profiles will appear here. Continue to your hiring workspace to manage roles and candidates.",
     publishProfile: "Manage profile visibility",
-    openHiring: "Open hiring workspace",
+    openHiring: "My Job Postings & Hiring",
     createCrewAccount: "Create a crew account",
   },
   tr: {
@@ -517,7 +517,7 @@ const copy = {
     employerEmptyText:
       "Yeni keşfedilebilir crew profilleri burada görünecek. İlanları ve adayları yönetmek için işe alım alanınıza devam edin.",
     publishProfile: "Profil görünürlüğünü yönet",
-    openHiring: "İşe alım alanını aç",
+    openHiring: "İş İlanlarım ve İşe Alım",
     createCrewAccount: "Crew hesabı oluştur",
   },
 } as const;

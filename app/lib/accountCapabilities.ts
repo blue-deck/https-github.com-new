@@ -11,6 +11,7 @@ export type AccountCapabilities = {
   role: MarketplaceAccountRole;
   position: string;
   canManageYachts: boolean;
+  canPostJobs: boolean;
   canApplyToJobs: boolean;
   canUseCrewWorkspace: boolean;
 };
@@ -36,6 +37,7 @@ export async function loadAccountCapabilities(
     role: value.role,
     position: value.position,
     canManageYachts: value.canManageYachts,
+    canPostJobs: value.canPostJobs,
     canApplyToJobs: value.canApplyToJobs,
     canUseCrewWorkspace: value.canUseCrewWorkspace,
   };
@@ -52,6 +54,7 @@ function isAccountCapabilitiesResponse(
     isMarketplaceAccountRole(candidate.role) &&
     typeof candidate.position === "string" &&
     typeof candidate.canManageYachts === "boolean" &&
+    typeof candidate.canPostJobs === "boolean" &&
     typeof candidate.canApplyToJobs === "boolean" &&
     typeof candidate.canUseCrewWorkspace === "boolean"
   );
