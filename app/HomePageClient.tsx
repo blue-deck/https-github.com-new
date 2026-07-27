@@ -10,6 +10,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
+  CircleDollarSign,
   ClipboardCheck,
   Compass,
   FileCheck2,
@@ -672,7 +673,10 @@ function JobCard({
         </span>
       </div>
       <div className={styles.jobFooter}>
-        <strong>{salary || c.salaryNotSpecified}</strong>
+        <div className={styles.jobSalary}>
+          <CircleDollarSign aria-hidden />
+          <strong>{salary || c.salaryNotSpecified}</strong>
+        </div>
         <div className={styles.jobActions}>
           <Link href={action.href} className={styles.jobPrimaryAction}>
             {action.label}

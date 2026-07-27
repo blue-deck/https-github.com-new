@@ -535,16 +535,24 @@
 }
 
 .jobFooter {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
   margin-top: auto;
   padding-top: 1.5rem;
   border-top: 1px solid var(--home-line);
 }
 
-.jobFooter strong {
+.jobSalary {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.jobSalary svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: #0876df;
+}
+
+.jobSalary strong {
   color: var(--home-ink);
   font-size: 0.82rem;
 }
@@ -552,8 +560,9 @@
 .jobActions {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 0.45rem;
+  margin-top: 1rem;
 }
 
 .jobPrimaryAction,
@@ -923,8 +932,6 @@
   .sectionTitle { font-size: clamp(2.5rem, 12vw, 3.4rem); }
   .jobsEmpty { grid-template-columns: auto minmax(0, 1fr); padding: 1.25rem; }
   .jobsEmpty a { grid-column: 2; }
-  .jobFooter { align-items: stretch; flex-direction: column; }
-  .jobActions { align-items: stretch; }
   .jobPrimaryAction { width: 100%; }
   .platformVisual { min-height: 520px; border-radius: 1rem; }
   .workspaceCard { inset: auto 0.75rem 0.75rem; padding: 1rem; }

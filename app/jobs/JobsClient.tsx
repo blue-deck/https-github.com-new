@@ -368,13 +368,16 @@ function JobCard({
                 : c.notSpecified
             }`}
           />
-          <InfoLine
-            icon={<CircleDollarSign />}
-            value={salary || c.salaryNotSpecified}
-          />
         </div>
 
-        <div className="mt-auto pt-6">
+        <div className="mt-auto pt-5">
+          <p
+            data-i18n-ignore
+            className="mb-3 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm font-black text-slate-900"
+          >
+            <CircleDollarSign className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
+            <span>{salary || c.salaryNotSpecified}</span>
+          </p>
           <Link
             href={action.href}
             className="bd-focus flex min-h-12 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
