@@ -8,12 +8,10 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ChevronDown,
-  Clock3,
   Eye,
   FilePenLine,
   LoaderCircle,
   LockKeyhole,
-  Plus,
   RefreshCw,
   Save,
   Send,
@@ -140,8 +138,6 @@ const copy = {
     live: "Published",
     drafts: "Drafts",
     closed: "Closed",
-    posts: "Your job posts",
-    postsIntro: "Select a role to edit it or start a new post.",
     newPost: "New job post",
     loading: "Loading your job posting workspace…",
     loadError: "Your job posting workspace could not be loaded.",
@@ -150,10 +146,6 @@ const copy = {
     accessRequiredText:
       "Captain, Owner and Management accounts can publish for a yacht they own or actively manage. Add or connect your yacht first.",
     reviewAccess: "Open hiring workspace",
-    noPosts: "No job posts yet",
-    noPostsText:
-      "Create your first role. You can keep it private as a draft until every detail is ready.",
-    createFirst: "Create first post",
     createTitle: "Create a job post",
     editTitle: "Edit job post",
     listingNumber: "Listing no.",
@@ -266,7 +258,6 @@ const copy = {
     saveError: "The job post could not be saved.",
     changedElsewhere:
       "This version may be out of date. Reload the workspace and try again.",
-    updated: "Updated",
     terminalTitle: "This listing has ended",
     terminalExpired:
       "The one-month publishing period has ended. The listing is no longer public and cannot be reopened.",
@@ -288,8 +279,6 @@ const copy = {
     live: "Yayında",
     drafts: "Taslak",
     closed: "Kapalı",
-    posts: "İlanların",
-    postsIntro: "Düzenlemek için bir ilan seç veya yeni bir ilan başlat.",
     newPost: "Yeni iş ilanı",
     loading: "İş ilanı alanın yükleniyor…",
     loadError: "İş ilanı alanın yüklenemedi.",
@@ -298,10 +287,6 @@ const copy = {
     accessRequiredText:
       "Captain, Owner ve Management hesapları sahibi oldukları veya aktif olarak yönettikleri yat için ilan verebilir. Önce yatınızı ekleyin ya da hesabınıza bağlayın.",
     reviewAccess: "İşe alım alanını aç",
-    noPosts: "Henüz iş ilanı yok",
-    noPostsText:
-      "İlk pozisyonunu oluştur. Tüm ayrıntılar hazır olana kadar ilanı gizli taslak olarak tutabilirsin.",
-    createFirst: "İlk ilanı oluştur",
     createTitle: "İş ilanı oluştur",
     editTitle: "İş ilanını düzenle",
     listingNumber: "İlan no:",
@@ -415,7 +400,6 @@ const copy = {
     saveError: "İş ilanı kaydedilemedi.",
     changedElsewhere:
       "Bu sürüm güncel olmayabilir. Alanı yenileyip tekrar dene.",
-    updated: "Güncellendi",
     terminalTitle: "Bu ilan sona erdi",
     terminalExpired:
       "Bir aylık yayın süresi doldu. İlan artık herkese açık değil ve yeniden yayınlanamaz.",
@@ -884,83 +868,14 @@ export function JobPostsManager() {
           </div>
         ) : null}
 
-        <div className="mt-5 grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-start">
-          <aside className="overflow-hidden rounded-2xl border border-slate-200 bg-white xl:sticky xl:top-24">
-            <div className="border-b border-slate-100 p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-black text-slate-950">{c.posts}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">
-                    {c.postsIntro}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={startNewPost}
-                  className="bd-focus inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071f3c] text-white transition hover:bg-cyan-800"
-                  aria-label={c.newPost}
-                  title={c.newPost}
-                >
-                  <Plus className="h-5 w-5" aria-hidden />
-                </button>
-              </div>
-            </div>
-
-            <div className="max-h-[70vh] overflow-y-auto p-2.5">
-              <button
-                type="button"
-                onClick={startNewPost}
-                className={`bd-focus flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${
-                  !selectedId
-                    ? "border-cyan-300 bg-cyan-50 text-[#071f3c]"
-                    : "border-transparent bg-white text-slate-600 hover:border-slate-200"
-                }`}
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#071f3c] text-cyan-200">
-                  <Plus className="h-4 w-4" aria-hidden />
-                </span>
-                <span className="font-black">{c.newPost}</span>
-              </button>
-
-              {jobs.length === 0 ? (
-                <div className="m-2 mt-4 rounded-2xl border border-dashed border-slate-300 bg-white/70 p-5">
-                  <BriefcaseBusiness
-                    className="h-6 w-6 text-cyan-700"
-                    aria-hidden
-                  />
-                  <p className="mt-3 font-black text-slate-950">{c.noPosts}</p>
-                  <p className="mt-2 text-xs leading-5 text-slate-500">
-                    {c.noPostsText}
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-2 grid gap-2">
-                  {jobs.map((job) => (
-                    <JobListButton
-                      key={job.id}
-                      job={job}
-                      selected={job.id === selectedId}
-                      language={language}
-                      c={c}
-                      onClick={() => selectJob(job)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </aside>
-
+        <div className="mt-5">
           <form
             ref={formRef}
             onSubmit={handleSubmit}
             noValidate
             className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
           >
-            <fieldset
-              disabled={selectedJobTerminal}
-              className="m-0 min-w-0 border-0 p-0"
-            >
-              <div className="border-b border-slate-200 bg-white px-5 py-5 sm:px-7">
+            <div className="border-b border-slate-200 bg-white px-5 py-5 sm:px-7">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-3xl">
@@ -984,14 +899,45 @@ export function JobPostsManager() {
                     {c.createIntro}
                   </p>
                 </div>
-                <StatusBadge
-                  status={selectedJob?.status || "draft"}
-                  job={selectedJob}
-                  c={c}
-                />
+                <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+                  {jobs.length > 0 ? (
+                    <select
+                      value={selectedId}
+                      onChange={(event) => {
+                        const jobId = event.target.value;
+                        if (!jobId) {
+                          startNewPost();
+                          return;
+                        }
+                        const job = jobs.find((item) => item.id === jobId);
+                        if (job) selectJob(job);
+                      }}
+                      disabled={saving}
+                      aria-label={c.selectPost}
+                      className="bd-focus min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-800 sm:w-64"
+                    >
+                      <option value="">{c.newPost}</option>
+                      {jobs.map((job) => (
+                        <option key={job.id} value={job.id}>
+                          {job.position} ·{" "}
+                          {formatJobListingNumber(job.listingNumber)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+                  <StatusBadge
+                    status={selectedJob?.status || "draft"}
+                    job={selectedJob}
+                    c={c}
+                  />
+                </div>
               </div>
-              </div>
+            </div>
 
+            <fieldset
+              disabled={selectedJobTerminal}
+              className="m-0 min-w-0 border-0 p-0"
+            >
               <div className="space-y-4 bg-slate-50/70 p-4 sm:p-6">
 
               {yachts.length > 1 ? (
@@ -1959,63 +1905,6 @@ function StatusBadge({
   );
 }
 
-function JobListButton({
-  job,
-  selected,
-  language,
-  c,
-  onClick,
-}: {
-  job: EmployerJobPost;
-  selected: boolean;
-  language: "en" | "tr";
-  c: (typeof copy)["en"] | (typeof copy)["tr"];
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`${c.selectPost}: ${job.position}`}
-      className={`bd-focus w-full rounded-xl border px-3 py-3 text-left transition ${
-        selected
-          ? "border-cyan-300 bg-cyan-50/80 shadow-sm"
-          : "border-transparent bg-white hover:border-slate-200"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p
-            data-i18n-ignore
-            className="truncate font-black text-slate-950"
-            title={job.position}
-          >
-            {job.position}
-          </p>
-          <p
-            data-i18n-ignore
-            className="mt-1 truncate text-xs font-semibold text-slate-500"
-          >
-            {job.yacht.name}
-          </p>
-          <p
-            data-i18n-ignore
-            aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
-            className="mt-2 truncate font-mono text-[10px] font-black tracking-[0.12em] text-cyan-800"
-          >
-            {formatJobListingNumber(job.listingNumber)}
-          </p>
-        </div>
-        <StatusBadge status={job.status} job={job} c={c} />
-      </div>
-      <div className="mt-3 flex items-center gap-2 text-[10px] font-semibold text-slate-400">
-        <Clock3 className="h-3.5 w-3.5" aria-hidden />
-        {c.updated} {formatDate(job.updatedAt, language)}
-      </div>
-    </button>
-  );
-}
-
 function ActionButton({
   label,
   icon,
@@ -2186,14 +2075,4 @@ function inputYachtBuildYear(
     return { ok: false };
   }
   return { ok: true, value: year };
-}
-
-function formatDate(value: string, language: "en" | "tr") {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
 }
