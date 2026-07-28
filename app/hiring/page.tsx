@@ -48,9 +48,6 @@ type JobWorkspaceResponse = {
 const copy = {
   en: {
     eyebrow: "BlueDeck hiring workspace",
-    title: "My Job Postings & Hiring",
-    intro:
-      "Review every role you manage, open its candidate pipeline and keep hiring decisions organized from one private workspace.",
     privacy: "Private account area",
     loading: "Loading your hiring workspace…",
     loadError: "Your hiring workspace could not be loaded.",
@@ -95,9 +92,6 @@ const copy = {
   },
   tr: {
     eyebrow: "BlueDeck işe alım alanı",
-    title: "İş İlanlarım ve İşe Alım",
-    intro:
-      "Yönettiğiniz tüm ilanları inceleyin, aday süreçlerini açın ve işe alım kararlarını tek bir özel alandan yönetin.",
     privacy: "Özel hesap alanı",
     loading: "İşe alım alanınız yükleniyor…",
     loadError: "İşe alım alanınız yüklenemedi.",
@@ -302,12 +296,6 @@ export default function HiringPage() {
                   {marketplaceRoleLabel(role, language)}
                 </span>
               </div>
-              <h1 className="bd-serif mt-5 text-4xl leading-[0.98] text-[#071f3c] sm:text-6xl">
-                {c.title}
-              </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
-                {c.intro}
-              </p>
             </div>
 
             {canCreateJob ? (
