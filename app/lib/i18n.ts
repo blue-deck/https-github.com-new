@@ -997,10 +997,16 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   },
 };
 
-export const phraseTranslations: Record<string, Partial<Record<Language, string>>> = {
-  ...generatedPhraseTranslations,
-  ...manualPhraseTranslations,
-};
+export const phraseTranslations: Record<
+  string,
+  Partial<Record<Language, string>>
+> = {};
+
+Object.assign(
+  phraseTranslations,
+  generatedPhraseTranslations,
+  manualPhraseTranslations,
+);
 
 function normalizeTranslationPhrase(phrase: string) {
   return phrase.replace(/\s+/g, " ").trim();

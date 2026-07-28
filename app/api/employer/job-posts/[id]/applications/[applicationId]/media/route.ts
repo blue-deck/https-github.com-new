@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
-import sharp from "sharp";
 import {
   hasEmployerApplicationMediaSigningSecret,
   selectEmployerApplicationGallerySources,
@@ -16,8 +15,6 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const maximumSourceBytes = 16 * 1024 * 1024;
-const maximumOutputBytes = 16 * 1024 * 1024;
-const maximumInputPixels = 40_000_000;
 const sourceTimeoutMilliseconds = 8_000;
 const allowedSourceContentTypes = new Set([
   "image/avif",
@@ -26,15 +23,6 @@ const allowedSourceContentTypes = new Set([
   "image/png",
   "image/tiff",
   "image/webp",
-]);
-const allowedSharpFormats = new Set([
-  "avif",
-  "gif",
-  "jpeg",
-  "jpg",
-  "png",
-  "tiff",
-  "webp",
 ]);
 const privateHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
@@ -134,7 +122,7 @@ export async function GET(request: Request, context: RouteContext) {
   const safeSource = safePublicMediaUrl(source);
   if (!safeSource) return mediaError("Media not found.", 404);
 
-  return proxyMedia(safeSource, capability.kind);
+  return proxyMedia(safeSource);
 }
 
 function mediaCapabilityFromRequest(
@@ -186,10 +174,7 @@ function singleSearchValue(
   return values.length === 1 ? values[0] : null;
 }
 
-async function proxyMedia(
-  source: string,
-  kind: EmployerApplicationMediaKind,
-) {
+async function proxyMedia(source: string) {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -227,18 +212,14 @@ async function proxyMedia(
       return mediaError("Media is too large.", 413);
     }
 
-    const sourceBuffer = await readLimitedBody(upstream, maximumSourceBytes);
-    const normalized = await normalizeMedia(sourceBuffer, kind);
-    if (normalized.byteLength > maximumOutputBytes) {
-      return mediaError("Media is too large.", 413);
-    }
+    const sourceBytes = await readLimitedBody(upstream, maximumSourceBytes);
 
-    return new Response(bufferToArrayBuffer(normalized), {
+    return new Response(sourceBytes, {
       status: 200,
       headers: {
         ...privateHeaders,
-        "Content-Length": String(normalized.byteLength),
-        "Content-Type": "image/webp",
+        "Content-Length": String(sourceBytes.byteLength),
+        "Content-Type": contentType,
       },
     });
   } catch (error) {
@@ -275,47 +256,13 @@ async function readLimitedBody(response: Response, limit: number) {
   }
 
   if (size === 0) throw new MediaFormatError();
-  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), size);
-}
-
-async function normalizeMedia(
-  buffer: Buffer,
-  kind: EmployerApplicationMediaKind,
-) {
-  try {
-    const basePipeline = sharp(buffer, {
-      animated: false,
-      failOn: "error",
-      limitInputPixels: maximumInputPixels,
-    }).rotate();
-    const metadata = await basePipeline.metadata();
-    if (
-      !metadata.format ||
-      !allowedSharpFormats.has(metadata.format) ||
-      !metadata.width ||
-      !metadata.height
-    ) {
-      throw new MediaFormatError();
-    }
-
-    const dimensions =
-      kind === "avatar"
-        ? { width: 512, height: 512 }
-        : { width: 960, height: 720 };
-
-    return await basePipeline
-      .resize({
-        ...dimensions,
-        fit: "cover",
-        position: "attention",
-        withoutEnlargement: true,
-      })
-      .webp({ quality: 86, effort: 4 })
-      .toBuffer();
-  } catch (error) {
-    if (error instanceof MediaFormatError) throw error;
-    throw new MediaFormatError();
+  const body = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
   }
+  return body;
 }
 
 function mediaError(message: string, status: number) {
@@ -326,13 +273,6 @@ function mediaError(message: string, status: number) {
       "Content-Type": "text/plain; charset=utf-8",
     },
   });
-}
-
-function bufferToArrayBuffer(buffer: Buffer) {
-  return buffer.buffer.slice(
-    buffer.byteOffset,
-    buffer.byteOffset + buffer.byteLength,
-  ) as ArrayBuffer;
 }
 
 function text(value: unknown) {
