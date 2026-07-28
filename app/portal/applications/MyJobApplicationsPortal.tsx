@@ -26,6 +26,7 @@ import {
   type JobApplicationStatus,
 } from "../../lib/jobApplications";
 import {
+  formatJobEmploymentType,
   formatJobListingNumber,
   isJobEmploymentType,
   isJobPostStatus,
@@ -240,15 +241,33 @@ export function MyJobApplicationsPortal() {
 
         {state.kind === "ready" && state.eligible && metrics ? (
           <>
-            <section className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label={c.summaryLabel}>
+            <section
+              className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4"
+              aria-label={c.summaryLabel}
+            >
               <MetricCard label={c.total} value={metrics.total} />
-              <MetricCard label={c.active} value={metrics.active} accent="cyan" />
-              <MetricCard label={c.shortlisted} value={metrics.shortlisted} accent="amber" />
-              <MetricCard label={c.hired} value={metrics.hired} accent="emerald" />
+              <MetricCard
+                label={c.active}
+                value={metrics.active}
+                accent="cyan"
+              />
+              <MetricCard
+                label={c.shortlisted}
+                value={metrics.shortlisted}
+                accent="amber"
+              />
+              <MetricCard
+                label={c.hired}
+                value={metrics.hired}
+                accent="emerald"
+              />
             </section>
 
             {state.applications.length ? (
-              <section className="mt-6 space-y-4" aria-label={c.listLabel}>
+              <section
+                className="mt-6 grid gap-4 xl:grid-cols-2"
+                aria-label={c.listLabel}
+              >
                 {state.applications.map((application) => (
                   <ApplicationCard
                     key={application.id}
@@ -294,19 +313,28 @@ function ApplicationCard({
     application.job.jobAvailability,
     language,
   );
+  const roleMeta = [
+    application.job.department,
+    formatJobEmploymentType(application.job.employmentType, language),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
-    <article className="overflow-hidden rounded-[26px] border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/5">
-      <div className="grid gap-6 p-6 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2.5">
+    <article className="group flex min-h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04] transition hover:border-cyan-300 hover:shadow-md hover:shadow-slate-950/[0.06]">
+      <div className="h-1 bg-gradient-to-r from-[#071f3c] via-cyan-700 to-cyan-300" />
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <span
               data-i18n-ignore
               aria-label={`${c.listingNumber} ${formatJobListingNumber(application.job.listingNumber)}`}
-              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-600"
+              className="font-mono text-[11px] font-black tracking-[0.13em] text-cyan-800"
             >
               {formatJobListingNumber(application.job.listingNumber)}
             </span>
+          </div>
+          <div className="flex max-w-[72%] flex-wrap justify-end gap-1.5">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.13em] ${badge.className}`}
             >
@@ -322,61 +350,71 @@ function ApplicationCard({
               </span>
             ) : null}
           </div>
-
-          <h2 data-i18n-ignore className="mt-4 text-2xl font-semibold tracking-[-0.025em] text-[#071f3c] sm:text-3xl">
-            {application.job.title}
-          </h2>
-          <p data-i18n-ignore className="mt-2 text-sm font-bold text-cyan-800">
-            {application.job.position} · {application.job.department}
-          </p>
-
-          <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2 xl:grid-cols-4">
-            <ApplicationFact
-              icon={<MapPin className="h-4 w-4" aria-hidden />}
-              label={c.location}
-              value={application.job.location}
-              ignoreTranslation
-            />
-            <ApplicationFact
-              icon={<CalendarDays className="h-4 w-4" aria-hidden />}
-              label={c.startDate}
-              value={
-                application.job.startDate
-                  ? formatDate(application.job.startDate, language)
-                  : c.flexible
-              }
-            />
-            <ApplicationFact
-              icon={<Clock3 className="h-4 w-4" aria-hidden />}
-              label={c.appliedAt}
-              value={formatDate(application.submittedAt, language)}
-            />
-            <ApplicationFact
-              icon={<RefreshCw className="h-4 w-4" aria-hidden />}
-              label={c.lastUpdate}
-              value={formatDate(application.updatedAt, language)}
-            />
-          </div>
-
-          {application.status === "withdrawn" ? (
-            <p className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold leading-5 text-slate-600">
-              {c.withdrawnHelp}
-            </p>
-          ) : null}
         </div>
 
-        <div className="lg:min-w-44">
+        <h2
+          data-i18n-ignore
+          className="mt-4 text-[1.7rem] font-semibold leading-tight tracking-[-0.035em] text-[#071f3c]"
+        >
+          {application.job.title}
+        </h2>
+        <p
+          data-i18n-ignore
+          className="mt-1.5 text-sm font-semibold text-cyan-800"
+        >
+          {roleMeta}
+        </p>
+
+        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-slate-100 py-4 text-sm">
+          <ApplicationFact
+            icon={<MapPin className="h-4 w-4" aria-hidden />}
+            label={c.location}
+            value={application.job.location}
+            ignoreTranslation
+          />
+          <ApplicationFact
+            icon={<CalendarDays className="h-4 w-4" aria-hidden />}
+            label={c.startDate}
+            value={
+              application.job.startDate
+                ? formatDate(application.job.startDate, language)
+                : c.flexible
+            }
+          />
+          <ApplicationFact
+            icon={<Clock3 className="h-4 w-4" aria-hidden />}
+            label={c.appliedAt}
+            value={formatDate(application.submittedAt, language)}
+          />
+          <ApplicationFact
+            icon={<RefreshCw className="h-4 w-4" aria-hidden />}
+            label={c.lastUpdate}
+            value={formatDate(application.updatedAt, language)}
+          />
+        </dl>
+
+        {application.status === "withdrawn" ? (
+          <p className="mt-4 border-l-2 border-slate-300 pl-3 text-xs font-semibold leading-5 text-slate-500">
+            {c.withdrawnHelp}
+          </p>
+        ) : null}
+
+        <div className="mt-auto pt-4">
           {listingAvailable ? (
             <Link
               href={`/jobs/${encodeURIComponent(application.job.id)}`}
-              className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-focus flex min-h-12 w-full items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
             >
               {c.viewJob}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           ) : (
-            <div className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-5 text-center text-xs font-black uppercase tracking-[0.1em] text-slate-500">
-              {availability?.label ?? c.jobUnavailable}
+            <div className="flex min-h-12 items-center gap-2 border-t border-slate-100 px-1 pt-3 text-xs font-semibold text-slate-500">
+              <FileCheck2
+                className="h-4 w-4 shrink-0 text-cyan-700"
+                aria-hidden
+              />
+              {c.historyRetained}
             </div>
           )}
         </div>
@@ -397,20 +435,22 @@ function ApplicationFact({
   ignoreTranslation?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
-      <span className="mt-0.5 text-cyan-700">{icon}</span>
-      <span className="min-w-0">
-        <span className="block text-[9px] font-black uppercase tracking-[0.13em] text-slate-400">
+    <div className="flex min-w-0 items-start gap-2">
+      <span className="mt-0.5 text-cyan-700 [&>svg]:h-3.5 [&>svg]:w-3.5">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <dt className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-500 sm:text-[10px]">
           {label}
-        </span>
-        <span
+        </dt>
+        <dd
           data-i18n-ignore={ignoreTranslation ? true : undefined}
-          className="mt-1 block truncate font-bold text-slate-700"
+          className="mt-0.5 truncate text-xs font-semibold text-slate-800 sm:text-sm"
           title={value}
         >
           {value}
-        </span>
-      </span>
+        </dd>
+      </div>
     </div>
   );
 }
@@ -432,8 +472,12 @@ function MetricCard({
   }[accent];
 
   return (
-    <div className={`rounded-2xl border bg-white/90 p-4 shadow-lg shadow-slate-950/4 ${accentClass}`}>
-      <p className="text-2xl font-semibold tracking-tight sm:text-3xl">{value}</p>
+    <div
+      className={`rounded-2xl border bg-white p-4 shadow-sm shadow-slate-950/[0.03] ${accentClass}`}
+    >
+      <p className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        {value}
+      </p>
       <p className="mt-1 text-[10px] font-black uppercase tracking-[0.13em] opacity-75">
         {label}
       </p>
@@ -473,12 +517,17 @@ function PortalMessage({
         {title}
       </h2>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">{body}</p>
-      {actions ? <div className="mt-6 flex flex-wrap gap-3">{actions}</div> : null}
+      {actions ? (
+        <div className="mt-6 flex flex-wrap gap-3">{actions}</div>
+      ) : null}
     </section>
   );
 }
 
-function statusPresentation(status: JobApplicationStatus, language: "en" | "tr") {
+function statusPresentation(
+  status: JobApplicationStatus,
+  language: "en" | "tr",
+) {
   const c = copy[language].statuses[status];
   const presentations: Record<
     JobApplicationStatus,
@@ -551,7 +600,9 @@ function formatDate(value: string, language: "en" | "tr") {
   }).format(date);
 }
 
-function isApplicationsResponse(value: unknown): value is MyJobApplicationsResponse {
+function isApplicationsResponse(
+  value: unknown,
+): value is MyJobApplicationsResponse {
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   if (
@@ -645,6 +696,7 @@ const copy = {
     withdrawnHelp:
       "You withdrew this application. It remains in your history for a clear record of your activity.",
     viewJob: "View job",
+    historyRetained: "Application history retained",
     jobExpired: "Job expired",
     jobCancelled: "Job cancelled by advertiser",
     jobUnavailable: "Listing unavailable",
@@ -695,6 +747,7 @@ const copy = {
     withdrawnHelp:
       "Bu başvuruyu geri çektiniz. İşlem geçmişinizin net kalması için portalınızda gösterilmeye devam eder.",
     viewJob: "İlanı gör",
+    historyRetained: "Başvuru geçmişi korunuyor",
     jobExpired: "İlanın süresi doldu",
     jobCancelled: "İlan sahibi iptal etti",
     jobUnavailable: "İlan görüntülenemiyor",
