@@ -2394,6 +2394,30 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
     line-height: 1.1 !important;
   }
 
+  .bd-print-preference-groups {
+    display: grid !important;
+    gap: 1.6mm !important;
+  }
+
+  .bd-print-preference-group > p {
+    margin: 0 0 0.8mm !important;
+    color: #2d7482 !important;
+    font-size: 7.5px !important;
+    font-weight: 900 !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+  }
+
+  .bd-print-preference-group .bd-print-pills {
+    gap: 0.8mm !important;
+  }
+
+  .bd-print-preference-group .bd-print-pills span {
+    padding: 0.5mm 1.6mm !important;
+    font-size: 9px !important;
+  }
+
   .bd-print-doc-hint,
   .bd-print-empty {
     margin: 0 !important;

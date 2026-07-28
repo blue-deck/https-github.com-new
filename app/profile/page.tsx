@@ -137,26 +137,25 @@ type ReferenceEntry = {
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
 type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "languages" | "preview";
+type CvPreferenceGroup = {
+  label: string;
+  items: string[];
+};
 
 const workPreferences = [
-  "Seasonal",
-  "Permanent",
-  "Rotational",
-  "Temporary",
-  "Delivery",
   "Private yacht",
   "Charter yacht",
   "Motor yacht",
   "Sailing yacht",
   "Catamaran",
-  "Mediterranean",
-  "Caribbean",
-  "Worldwide",
   "8m-20m",
   "20m-40m",
   "40m-60m",
   "60m+",
 ];
+const workPreferenceSet = new Set<string>(workPreferences);
+const crewEmploymentTypeSet = new Set<string>(crewEmploymentTypes);
+const crewPreferredLocationSet = new Set<string>(crewPreferredLocations);
 
 const personalSkills = [
   "Navigation",
@@ -471,6 +470,7 @@ const referenceUponRequestText = "References available upon request.";
 const referenceUponRequestCvText = "REFERENCES AVAILABLE UPON REQUEST";
 const referenceUponRequestMarker = "__BLUDECK_REFERENCE_ON_REQUEST__";
 const maxCvDocuments = 15;
+const maxCareerPreferenceSelections = 4;
 const profileFieldLabelClassName = "mb-1.5 block select-text text-xs font-semibold leading-4 text-slate-700";
 const profileFieldControlClassName = "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-base font-medium text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm";
 
@@ -525,7 +525,12 @@ export default function ProfilePage() {
   const profileDirty = !saveStateEquals(profileSaveState(profile), profileSaveState(savedProfile));
   const currentPositionValue = getProfileCurrentPosition(profile);
   const discoverySettings = parseCrewDiscoverySettings(profile.notes);
-  const skillsCount = (profile.personal_skills?.length || 0) + (profile.personal_characteristics?.length || 0) + (profile.work_preferences?.length || 0);
+  const skillsCount =
+    (profile.personal_skills?.length || 0) +
+    (profile.personal_characteristics?.length || 0) +
+    cleanWorkPreferenceSelections(profile.work_preferences).length +
+    discoverySettings.preferredLocations.length +
+    discoverySettings.employmentTypes.length;
   const sortedExperiences = useMemo(
     () =>
       [...experiences].sort((first, second) => {
@@ -1532,41 +1537,6 @@ export default function ProfilePage() {
                     profileField
                   />
                 </div>
-
-                <div className="divide-y divide-cyan-100 border-t border-cyan-100 px-5 sm:px-6">
-                  <DropdownChoiceGroup
-                    title="Preferred hiring regions"
-                    options={[...crewPreferredLocations]}
-                    value={discoverySettings.preferredLocations}
-                    onChange={(value) =>
-                      updateDiscoverySettings({ preferredLocations: value })
-                    }
-                    maxSelected={4}
-                    inlineSelected
-                    commitOnSelect
-                    compact
-                    open={openSkillsGroup === "preferred-hiring-regions"}
-                    onOpenChange={(open) =>
-                      setOpenSkillsGroup(open ? "preferred-hiring-regions" : null)
-                    }
-                  />
-                  <DropdownChoiceGroup
-                    title="Employment types"
-                    options={[...crewEmploymentTypes]}
-                    value={discoverySettings.employmentTypes}
-                    onChange={(value) =>
-                      updateDiscoverySettings({ employmentTypes: value })
-                    }
-                    maxSelected={4}
-                    inlineSelected
-                    commitOnSelect
-                    compact
-                    open={openSkillsGroup === "employment-types"}
-                    onOpenChange={(open) =>
-                      setOpenSkillsGroup(open ? "employment-types" : null)
-                    }
-                  />
-                </div>
               </section>
 
               <div className="divide-y divide-slate-200">
@@ -1603,9 +1573,41 @@ export default function ProfilePage() {
                   onOpenChange={(open) => setOpenSkillsGroup(open ? "personal-characteristics" : null)}
                 />
                 <DropdownChoiceGroup
+                  title="Employment types"
+                  options={[...crewEmploymentTypes]}
+                  value={discoverySettings.employmentTypes}
+                  onChange={(value) =>
+                    updateDiscoverySettings({ employmentTypes: value })
+                  }
+                  maxSelected={maxCareerPreferenceSelections}
+                  inlineSelected
+                  commitOnSelect
+                  compact
+                  open={openSkillsGroup === "employment-types"}
+                  onOpenChange={(open) =>
+                    setOpenSkillsGroup(open ? "employment-types" : null)
+                  }
+                />
+                <DropdownChoiceGroup
+                  title="Preferred hiring regions"
+                  options={[...crewPreferredLocations]}
+                  value={discoverySettings.preferredLocations}
+                  onChange={(value) =>
+                    updateDiscoverySettings({ preferredLocations: value })
+                  }
+                  maxSelected={maxCareerPreferenceSelections}
+                  inlineSelected
+                  commitOnSelect
+                  compact
+                  open={openSkillsGroup === "preferred-hiring-regions"}
+                  onOpenChange={(open) =>
+                    setOpenSkillsGroup(open ? "preferred-hiring-regions" : null)
+                  }
+                />
+                <DropdownChoiceGroup
                   title="Work preferences"
                   options={workPreferences}
-                  value={profile.work_preferences || []}
+                  value={cleanWorkPreferenceSelections(profile.work_preferences)}
                   onChange={(value) => {
                     const nextProfile = { ...profile, work_preferences: value };
                     setProfile(nextProfile);
@@ -2273,6 +2275,14 @@ function cleanSaveList(value?: unknown) {
   return value.map((item) => cleanSaveText(typeof item === "string" ? item : "")).filter(Boolean);
 }
 
+function cleanWorkPreferenceSelections(value?: unknown) {
+  return Array.from(new Set(cleanSaveList(value))).filter((item) => workPreferenceSet.has(item));
+}
+
+function mergeUniqueSelections(current: string[], legacy: string[], maxSelected: number) {
+  return Array.from(new Set([...current, ...legacy])).slice(0, maxSelected);
+}
+
 function getProfileCurrentPosition(profile: CrewProfile) {
   return cleanSaveText(profile.current_position) || cleanSaveList(profile.current_positions)[0] || "";
 }
@@ -2293,7 +2303,12 @@ function calculateCvCompletion({
     ...(profile.personal_skills || []),
     ...(profile.personal_characteristics || []),
   ].filter(Boolean);
-  const visiblePreferences = (profile.work_preferences || []).filter(Boolean);
+  const discoverySettings = parseCrewDiscoverySettings(profile.notes);
+  const visiblePreferences = [
+    ...cleanWorkPreferenceSelections(profile.work_preferences),
+    ...discoverySettings.preferredLocations,
+    ...discoverySettings.employmentTypes,
+  ];
   const visibleLanguages = (profile.languages || []).filter((language) => language.name && language.level);
   const allExperiences = [...yachtExperiences, ...otherWorkExperiences];
   const firstPageExperienceScore =
@@ -2326,6 +2341,25 @@ function calculateCvCompletion({
   const totalWeight = completionChecks.reduce((sum, item) => sum + item.weight, 0);
   const completedWeight = completionChecks.reduce((sum, item) => sum + item.ratio * item.weight, 0);
   return Math.max(0, Math.min(100, Math.round((completedWeight / totalWeight) * 100)));
+}
+
+function cvPreferenceGroups(profile: CrewProfile): CvPreferenceGroup[] {
+  const discoverySettings = parseCrewDiscoverySettings(profile.notes);
+
+  return [
+    {
+      label: "Employment types",
+      items: discoverySettings.employmentTypes.slice(0, maxCareerPreferenceSelections),
+    },
+    {
+      label: "Preferred hiring regions",
+      items: discoverySettings.preferredLocations.slice(0, maxCareerPreferenceSelections),
+    },
+    {
+      label: "Work preferences",
+      items: cleanWorkPreferenceSelections(profile.work_preferences),
+    },
+  ].filter((group) => group.items.length > 0);
 }
 
 function filledRatio(values: Array<unknown>) {
@@ -2385,7 +2419,7 @@ function profileSaveState(profile: CrewProfile) {
     smoker: cleanSaveText(profile.smoker),
     current_positions: currentPosition ? [currentPosition] : [],
     seeking_positions: cleanSaveList(profile.seeking_positions),
-    work_preferences: cleanSaveList(profile.work_preferences),
+    work_preferences: cleanWorkPreferenceSelections(profile.work_preferences),
     personal_skills: cleanSaveList(profile.personal_skills),
     personal_characteristics: cleanSaveList(profile.personal_characteristics),
     languages: cleanSaveLanguages(profile.languages),
@@ -2522,6 +2556,7 @@ function SeazoneStyleCvPreview({
   const cleanExperiences = [...cleanYachtExperiences, ...cleanOtherWorkExperiences];
   const cleanReferences = cleanReferenceEntries(references);
   const visibleSkills = [...(profile.personal_skills || []), ...(profile.personal_characteristics || [])].slice(0, 18);
+  const preferenceGroups = cvPreferenceGroups(profile);
   const crewName = profile.full_name || "Crew Member";
   const professionalSummary =
     profile.bio?.trim() ||
@@ -2620,7 +2655,20 @@ function SeazoneStyleCvPreview({
                 </SeazoneSideSection>
 
                 <SeazoneSideSection title="Preferences">
-                  <PillList items={profile.work_preferences || []} light large />
+                  {preferenceGroups.length > 0 ? (
+                    <div className="space-y-3.5">
+                      {preferenceGroups.map((group) => (
+                        <div key={group.label}>
+                          <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#2d7482]">
+                            {group.label}
+                          </p>
+                          <PillList items={group.items} light large />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <PillList items={[]} light large />
+                  )}
                 </SeazoneSideSection>
 
                 <SeazoneSideSection title="Documents & Certificates" className="bd-cv-documents-section">
@@ -2710,6 +2758,7 @@ function SeazoneStyleCvPreview({
         crewName={crewName}
         primaryPosition={primaryPosition}
         visibleSkills={visibleSkills}
+        preferenceGroups={preferenceGroups}
       />
     </section>
   );
@@ -2840,6 +2889,7 @@ function PrintableCvPages({
   crewName,
   primaryPosition,
   visibleSkills,
+  preferenceGroups,
 }: {
   profile: CrewProfile;
   documents: CrewDocument[];
@@ -2850,6 +2900,7 @@ function PrintableCvPages({
   crewName: string;
   primaryPosition: string;
   visibleSkills: string[];
+  preferenceGroups: CvPreferenceGroup[];
 }) {
   const firstPageExperiences = experiences.slice(0, 3);
   const remainingPages = chunkItems(experiences.slice(3), 4);
@@ -2867,7 +2918,12 @@ function PrintableCvPages({
         <section className="bd-print-page" key={`${page.kind}-${pageIndex}`}>
           <aside className="bd-print-sidebar">
             {pageIndex === 0 ? (
-              <PrintablePrimarySidebar profile={profile} documents={documents} visibleSkills={visibleSkills} />
+              <PrintablePrimarySidebar
+                profile={profile}
+                documents={documents}
+                visibleSkills={visibleSkills}
+                preferenceGroups={preferenceGroups}
+              />
             ) : pageIndex === 1 ? (
               <PrintableDocumentSidebar profile={profile} documents={documents} />
             ) : (
@@ -2942,10 +2998,12 @@ function PrintablePrimarySidebar({
   profile,
   documents,
   visibleSkills,
+  preferenceGroups,
 }: {
   profile: CrewProfile;
   documents: CrewDocument[];
   visibleSkills: string[];
+  preferenceGroups: CvPreferenceGroup[];
 }) {
   return (
     <div className="bd-print-sidebar-stack bd-print-primary-sidebar-stack">
@@ -2989,7 +3047,18 @@ function PrintablePrimarySidebar({
       </PrintableSideSection>
 
       <PrintableSideSection title="Preferences">
-        <PrintablePills items={(profile.work_preferences || []).slice(0, 5)} />
+        {preferenceGroups.length > 0 ? (
+          <div className="bd-print-preference-groups">
+            {preferenceGroups.map((group) => (
+              <div className="bd-print-preference-group" key={group.label}>
+                <p>{group.label}</p>
+                <PrintablePills items={group.items} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <PrintablePills items={[]} />
+        )}
       </PrintableSideSection>
 
       {documents.length > 0 && (
@@ -5411,6 +5480,28 @@ function PillList({ items, light = false, large = false }: { items: string[]; li
 
 function normalizeProfile(profile: CrewProfile) {
   const currentPosition = getProfileCurrentPosition(profile);
+  const rawWorkPreferences = Array.from(new Set(cleanSaveList(profile.work_preferences)));
+  const legacyEmploymentTypes = rawWorkPreferences.filter((item) => crewEmploymentTypeSet.has(item));
+  const legacyPreferredLocations = rawWorkPreferences.filter((item) => crewPreferredLocationSet.has(item));
+  const cleanNotes = cleanSaveText(profile.notes);
+  let notes = cleanNotes;
+
+  if (legacyEmploymentTypes.length > 0 || legacyPreferredLocations.length > 0) {
+    const currentDiscoverySettings = parseCrewDiscoverySettings(cleanNotes);
+    notes = writeCrewDiscoverySettings(cleanNotes, {
+      ...currentDiscoverySettings,
+      employmentTypes: mergeUniqueSelections(
+        currentDiscoverySettings.employmentTypes,
+        legacyEmploymentTypes,
+        maxCareerPreferenceSelections,
+      ),
+      preferredLocations: mergeUniqueSelections(
+        currentDiscoverySettings.preferredLocations,
+        legacyPreferredLocations,
+        maxCareerPreferenceSelections,
+      ),
+    });
+  }
 
   return {
     ...profile,
@@ -5419,11 +5510,11 @@ function normalizeProfile(profile: CrewProfile) {
     current_position: currentPosition,
     current_positions: currentPosition ? [currentPosition] : [],
     seeking_positions: cleanSaveList(profile.seeking_positions),
-    work_preferences: cleanSaveList(profile.work_preferences),
+    work_preferences: cleanWorkPreferenceSelections(rawWorkPreferences),
     personal_skills: cleanSaveList(profile.personal_skills),
     personal_characteristics: cleanSaveList(profile.personal_characteristics),
     languages: profile.languages || [],
-    notes: cleanSaveText(profile.notes),
+    notes,
   };
 }
 
