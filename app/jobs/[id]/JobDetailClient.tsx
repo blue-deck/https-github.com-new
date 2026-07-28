@@ -39,12 +39,19 @@ import { JobApplicationPanel } from "./JobApplicationPanel";
 
 type LoadState = "loading" | "ready" | "not-found" | "error";
 
-export function JobDetailClient({ jobId }: { jobId: string }) {
+export function JobDetailClient({
+  jobId,
+  embedded = false,
+}: {
+  jobId: string;
+  embedded?: boolean;
+}) {
   const { language } = useLanguage();
   const c = copy[language];
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [job, setJob] = useState<PublicJob | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
+  const Root = embedded ? "div" : "main";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,7 +88,8 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
         setJob(parsedJob);
         setLoadState("ready");
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         setJob(null);
         setLoadState("error");
       }
@@ -103,8 +111,10 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
   }, [job, loadState]);
 
   return (
-    <main className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
+    <Root
+      className={`${embedded ? "min-h-full" : "bd-site-shell min-h-screen"} text-[#071f3c]`}
+    >
+      {!embedded ? <PublicHeader /> : null}
 
       {loadState === "loading" ? (
         <DetailLoading label={c.loading} />
@@ -124,20 +134,22 @@ export function JobDetailClient({ jobId }: { jobId: string }) {
           onAction={() => setRequestVersion((current) => current + 1)}
         />
       ) : job ? (
-        <JobDetail job={job} language={language} />
+        <JobDetail job={job} language={language} embedded={embedded} />
       ) : null}
 
-      <PublicFooter />
-    </main>
+      {!embedded ? <PublicFooter /> : null}
+    </Root>
   );
 }
 
 function JobDetail({
   job,
   language,
+  embedded,
 }: {
   job: PublicJob;
   language: "en" | "tr";
+  embedded: boolean;
 }) {
   const c = copy[language];
   const salary = formatJobSalary(job.salary, language);
@@ -149,19 +161,12 @@ function JobDetail({
     : "";
   const yachtLength =
     job.yachtLength !== null && job.yachtLengthUnit
-      ? formatJobYachtLength(
-          job.yachtLength,
-          job.yachtLengthUnit,
-          language,
-        )
+      ? formatJobYachtLength(job.yachtLength, job.yachtLengthUnit, language)
       : "";
   const minimumYachtExperience =
     job.minimumYachtExperience === null
       ? ""
-      : formatJobMinimumYachtExperience(
-          job.minimumYachtExperience,
-          language,
-        );
+      : formatJobMinimumYachtExperience(job.minimumYachtExperience, language);
   const crewMemberCount =
     job.crewMemberCount === null
       ? ""
@@ -269,15 +274,17 @@ function JobDetail({
     <>
       <section className="border-b border-[#071f3c]/8 bg-[linear-gradient(145deg,#f3f9fb_0%,#ffffff_72%)]">
         <div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
-          <Link
-            href="/jobs"
-            className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-500 transition hover:text-cyan-800"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            {c.back}
-          </Link>
+          {!embedded ? (
+            <Link
+              href="/jobs"
+              className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-500 transition hover:text-cyan-800"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              {c.back}
+            </Link>
+          ) : null}
 
-          <div className="mt-7 max-w-4xl">
+          <div className={`${embedded ? "" : "mt-7"} max-w-4xl`}>
             <div className="flex flex-wrap items-center gap-2.5">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.13em] text-cyan-800">
                 <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
@@ -298,7 +305,10 @@ function JobDetail({
               {job.position || job.title}
             </h1>
             {job.department ? (
-              <p data-i18n-ignore className="mt-3 text-sm font-semibold text-cyan-800">
+              <p
+                data-i18n-ignore
+                className="mt-3 text-sm font-semibold text-cyan-800"
+              >
                 {job.department}
               </p>
             ) : null}
@@ -535,7 +545,11 @@ function BulletList({ items }: { items: string[] }) {
 function DetailLoading({ label }: { label: string }) {
   return (
     <section className="mx-auto max-w-[1180px] px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
-      <div className="flex items-center gap-3 text-sm font-bold text-cyan-800" aria-live="polite" aria-busy="true">
+      <div
+        className="flex items-center gap-3 text-sm font-bold text-cyan-800"
+        aria-live="polite"
+        aria-busy="true"
+      >
         <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
         {label}
       </div>
@@ -584,7 +598,10 @@ function DetailMessage({
 }) {
   return (
     <section className="mx-auto max-w-[920px] px-5 py-16 sm:px-8 lg:py-24">
-      <div role="alert" className="rounded-[30px] border border-cyan-200 bg-white px-6 py-14 text-center shadow-xl shadow-[#071f3c]/5">
+      <div
+        role="alert"
+        className="rounded-[30px] border border-cyan-200 bg-white px-6 py-14 text-center shadow-xl shadow-[#071f3c]/5"
+      >
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 [&>svg]:h-7 [&>svg]:w-7">
           {icon}
         </span>

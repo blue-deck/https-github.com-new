@@ -16,9 +16,11 @@ import {
   Plus,
   RefreshCw,
   UsersRound,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../components/LanguageProvider";
+import { JobDetailClient } from "../jobs/[id]/JobDetailClient";
 import {
   marketplaceCapabilitiesForRole,
   marketplaceRoleLabel,
@@ -75,8 +77,12 @@ const copy = {
     listingNumber: "Listing",
     applicants: "Applicants",
     viewApplicants: "View Applicants",
+    viewApplicantsShort: "View",
     editPost: "Edit Job Post",
     viewLive: "View Live Listing",
+    livePreview: "Live listing preview",
+    livePreviewHint: "This is how your published role appears on BlueDeck.",
+    closePreview: "Close preview",
     location: "Location",
     startDate: "Start date",
     updated: "Updated",
@@ -119,8 +125,13 @@ const copy = {
     listingNumber: "İlan",
     applicants: "Başvuru",
     viewApplicants: "Başvuranları Gör",
+    viewApplicantsShort: "Gör",
     editPost: "İlanı Düzenle",
     viewLive: "Yayındaki İlanı Gör",
+    livePreview: "Canlı ilan önizlemesi",
+    livePreviewHint:
+      "Yayındaki ilanınızın BlueDeck'te nasıl göründüğünü inceleyin.",
+    closePreview: "Önizlemeyi kapat",
     location: "Konum",
     startDate: "Başlangıç",
     updated: "Güncellendi",
@@ -150,6 +161,7 @@ export default function HiringPage() {
   >({});
   const [applicationCountsAvailable, setApplicationCountsAvailable] =
     useState(true);
+  const [previewJob, setPreviewJob] = useState<EmployerJobPost | null>(null);
 
   async function loadHiringWorkspace() {
     setLoading(true);
@@ -160,9 +172,7 @@ export default function HiringPage() {
     } = await supabase.auth.getSession();
 
     if (!session) {
-      window.location.replace(
-        `/login?next=${encodeURIComponent("/hiring")}`,
-      );
+      window.location.replace(`/login?next=${encodeURIComponent("/hiring")}`);
       return;
     }
 
@@ -179,9 +189,7 @@ export default function HiringPage() {
         .catch(() => null)) as JobWorkspaceResponse | null;
 
       if (response.status === 401) {
-        window.location.replace(
-          `/login?next=${encodeURIComponent("/hiring")}`,
-        );
+        window.location.replace(`/login?next=${encodeURIComponent("/hiring")}`);
         return;
       }
 
@@ -407,17 +415,25 @@ export default function HiringPage() {
                   job={job}
                   applicantCount={
                     applicationCountsAvailable
-                      ? applicationCounts[job.id] ?? 0
+                      ? (applicationCounts[job.id] ?? 0)
                       : null
                   }
                   canEdit={canPostJobs}
                   language={language}
+                  onViewLive={() => setPreviewJob(job)}
                 />
               ))}
             </div>
           )}
         </section>
       </div>
+      {previewJob ? (
+        <LiveListingPreviewModal
+          job={previewJob}
+          language={language}
+          onClose={() => setPreviewJob(null)}
+        />
+      ) : null}
     </main>
   );
 }
@@ -427,19 +443,22 @@ function JobPostCard({
   applicantCount,
   canEdit,
   language,
+  onViewLive,
 }: {
   job: EmployerJobPost;
   applicantCount: number | null;
   canEdit: boolean;
   language: "en" | "tr";
+  onViewLive: () => void;
 }) {
   const c = copy[language];
   const status = jobStatus(job, language);
   const expired = isEmployerJobPostExpired(job);
   const terminal = expired || job.status === "closed";
   return (
-    <article className="bd-glass-card-strong overflow-hidden rounded-[28px] border border-white/80">
-      <div className="p-6 sm:p-7">
+    <article className="group flex min-h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04] transition hover:border-cyan-300 hover:shadow-md hover:shadow-slate-950/[0.06]">
+      <div className="h-1 bg-gradient-to-r from-[#071f3c] via-cyan-700 to-cyan-300" />
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p
@@ -451,7 +470,7 @@ function JobPostCard({
             </p>
             <h3
               data-i18n-ignore
-              className="mt-2 text-2xl font-semibold leading-tight text-[#071f3c]"
+              className="mt-2 text-[1.7rem] font-semibold leading-tight tracking-[-0.035em] text-[#071f3c]"
             >
               {job.position || job.title}
             </h3>
@@ -463,7 +482,7 @@ function JobPostCard({
           </span>
         </div>
 
-        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
+        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-slate-100 py-4 text-sm">
           <JobDetail
             icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden />}
             label={c.employmentType}
@@ -477,7 +496,11 @@ function JobPostCard({
           <JobDetail
             icon={<CalendarDays className="h-4 w-4" aria-hidden />}
             label={c.startDate}
-            value={job.startDate ? formatDate(job.startDate, language) : c.notSpecified}
+            value={
+              job.startDate
+                ? formatDate(job.startDate, language)
+                : c.notSpecified
+            }
           />
           <JobDetail
             icon={<Clock3 className="h-4 w-4" aria-hidden />}
@@ -486,51 +509,158 @@ function JobPostCard({
           />
         </dl>
 
-        <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-[#f2f9fb] p-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
               <UsersRound className="h-5 w-5" aria-hidden />
             </span>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-cyan-800">
+            <div className="min-w-0">
+              <p className="truncate text-xs font-black text-[#071f3c] sm:text-sm">
+                <span className="mr-1.5 text-xl leading-none text-cyan-800">
+                  {applicantCount ?? "—"}
+                </span>
                 {c.applicants}
-              </p>
-              <p className="mt-0.5 text-2xl font-semibold leading-none text-[#071f3c]">
-                {applicantCount ?? "—"}
               </p>
             </div>
           </div>
           <Link
             href={`/hiring/jobs/${encodeURIComponent(job.id)}/applications`}
-            className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+            className="bd-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-3.5 text-xs font-black text-white transition hover:bg-cyan-800 sm:px-4 sm:text-sm"
           >
-            {c.viewApplicants}
+            <span className="sm:hidden">{c.viewApplicantsShort}</span>
+            <span className="hidden sm:inline">{c.viewApplicants}</span>
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
           {canEdit && !terminal ? (
             <Link
               href={`/hiring/jobs?job=${encodeURIComponent(job.id)}`}
-              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
+              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 sm:text-sm"
             >
               <FilePenLine className="h-4 w-4" aria-hidden />
               {c.editPost}
             </Link>
           ) : null}
           {job.status === "published" && !expired ? (
-            <Link
-              href={`/jobs/${encodeURIComponent(job.id)}`}
-              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
+            <button
+              type="button"
+              onClick={onViewLive}
+              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 sm:text-sm"
             >
               <Eye className="h-4 w-4" aria-hidden />
               {c.viewLive}
-            </Link>
+            </button>
           ) : null}
         </div>
       </div>
     </article>
+  );
+}
+
+function LiveListingPreviewModal({
+  job,
+  language,
+  onClose,
+}: {
+  job: EmployerJobPost;
+  language: "en" | "tr";
+  onClose: () => void;
+}) {
+  const c = copy[language];
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previousActiveElement = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousActiveElement?.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex bg-[#03152c]/80 p-0 backdrop-blur-sm sm:items-center sm:justify-center sm:p-5"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="live-listing-preview-title"
+        className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-2xl sm:h-[92dvh] sm:max-w-6xl sm:rounded-[28px]"
+      >
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
+              <p
+                id="live-listing-preview-title"
+                className="text-sm font-black text-[#071f3c] sm:text-base"
+              >
+                {c.livePreview}
+              </p>
+            </div>
+            <p className="mt-0.5 hidden truncate text-xs text-slate-500 sm:block">
+              {c.livePreviewHint}
+            </p>
+          </div>
+          <div className="flex min-w-0 items-center gap-3">
+            <p
+              data-i18n-ignore
+              className="hidden max-w-56 truncate text-sm font-semibold text-slate-600 md:block"
+            >
+              {job.position || job.title}
+            </p>
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={onClose}
+              aria-label={c.closePreview}
+              title={c.closePreview}
+              className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
+            >
+              <X className="h-5 w-5" aria-hidden />
+            </button>
+          </div>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-[#f6f9fb]">
+          <JobDetailClient jobId={job.id} embedded />
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -544,13 +674,18 @@ function JobDetail({
   value: string;
 }) {
   return (
-    <div className="flex min-w-0 items-start gap-2.5">
-      <span className="mt-0.5 text-cyan-700">{icon}</span>
+    <div className="flex min-w-0 items-start gap-2">
+      <span className="mt-0.5 text-cyan-700 [&>svg]:h-3.5 [&>svg]:w-3.5">
+        {icon}
+      </span>
       <div className="min-w-0">
-        <dt className="text-[10px] font-black uppercase tracking-[0.11em] text-slate-500">
+        <dt className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-500 sm:text-[10px]">
           {label}
         </dt>
-        <dd data-i18n-ignore className="mt-0.5 truncate font-semibold text-slate-800">
+        <dd
+          data-i18n-ignore
+          className="mt-0.5 truncate text-xs font-semibold text-slate-800 sm:text-sm"
+        >
           {value}
         </dd>
       </div>
@@ -605,7 +740,9 @@ function WorkspaceNotice({
         </span>
         <div>
           <h2 className="font-black text-[#071f3c]">{title}</h2>
-          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">{text}</p>
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
+            {text}
+          </p>
         </div>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
@@ -663,7 +800,11 @@ function formatDate(value: string, language: "en" | "tr") {
 function LoadingState({ label }: { label: string }) {
   return (
     <main className="bd-app-page bd-ocean-shell flex min-h-screen items-center justify-center px-5 py-16 text-slate-900">
-      <div className="bd-ocean-content text-center" role="status" aria-live="polite">
+      <div
+        className="bd-ocean-content text-center"
+        role="status"
+        aria-live="polite"
+      >
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-100 bg-white text-cyan-800 shadow-lg">
           <LoaderCircle className="h-6 w-6 animate-spin" aria-hidden />
         </span>
