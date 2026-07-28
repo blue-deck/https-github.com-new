@@ -55,7 +55,6 @@ type WorkspaceResponse = {
 
 type Filter = "all" | JobApplicationStatus;
 type Notice = { tone: "success" | "error"; message: string };
-const candidateMediaRefreshAgeMilliseconds = 8 * 60 * 1_000;
 
 export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const { language } = useLanguage();
@@ -75,8 +74,6 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [profileDetails, setProfileDetails] =
     useState<EmployerJobApplicationDetails | null>(null);
   const profileRequestRef = useRef<AbortController | null>(null);
-  const applicationsLoadedRef = useRef(false);
-  const mediaRefreshRequestedAtRef = useRef(Date.now());
 
   const selected = useMemo(
     () => applications.find((application) => application.id === selectedId) || null,
@@ -101,10 +98,8 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     let active = true;
 
     async function loadApplications() {
-      if (!applicationsLoadedRef.current) {
-        setLoading(true);
-        setError("");
-      }
+      setLoading(true);
+      setError("");
 
       const {
         data: { session },
@@ -155,9 +150,6 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         }
 
         if (!active) return;
-        applicationsLoadedRef.current = true;
-        mediaRefreshRequestedAtRef.current = Date.now();
-        setError("");
         setJob(parsedJob);
         setApplications(parsedApplications);
         setSelectedId((current) =>
@@ -167,12 +159,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         );
       } catch (loadError) {
         if (!active) return;
-        if (!applicationsLoadedRef.current) {
-          setError(loadError instanceof Error ? loadError.message : c.loadError);
-        } else {
-          mediaRefreshRequestedAtRef.current =
-            Date.now() - candidateMediaRefreshAgeMilliseconds + 60_000;
-        }
+        setError(loadError instanceof Error ? loadError.message : c.loadError);
       } finally {
         if (active) setLoading(false);
       }
@@ -183,33 +170,6 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       active = false;
     };
   }, [c.loadError, jobId, reloadVersion]);
-
-  useEffect(() => {
-    function refreshStaleCandidateMedia() {
-      if (
-        document.visibilityState === "hidden" ||
-        Date.now() - mediaRefreshRequestedAtRef.current <
-          candidateMediaRefreshAgeMilliseconds
-      ) {
-        return;
-      }
-
-      mediaRefreshRequestedAtRef.current = Date.now();
-      setReloadVersion((current) => current + 1);
-    }
-
-    const interval = window.setInterval(refreshStaleCandidateMedia, 60_000);
-    window.addEventListener("focus", refreshStaleCandidateMedia);
-    document.addEventListener("visibilitychange", refreshStaleCandidateMedia);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("focus", refreshStaleCandidateMedia);
-      document.removeEventListener(
-        "visibilitychange",
-        refreshStaleCandidateMedia,
-      );
-    };
-  }, []);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -1134,6 +1094,7 @@ function candidateMediaSource(source: string, width: number, height: number) {
   ) {
     return source;
   }
+  if (source.startsWith("https://")) return source;
 
   const search = new URLSearchParams({
     src: source,

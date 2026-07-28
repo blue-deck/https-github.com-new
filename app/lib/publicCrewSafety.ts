@@ -108,8 +108,11 @@ export function safePublicMediaUrl(value: unknown) {
           return [];
         }
       });
+    const isSupabaseStorageHost =
+      /^[a-z0-9]{15,32}\.supabase\.co$/i.test(url.hostname);
     if (
-      !configuredStorageOrigins.includes(url.origin) ||
+      (!configuredStorageOrigins.includes(url.origin) &&
+        !isSupabaseStorageHost) ||
       !url.pathname.startsWith("/storage/v1/object/public/crew-portfolio/")
     ) {
       return "";
