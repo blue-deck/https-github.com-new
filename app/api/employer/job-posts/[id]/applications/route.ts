@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { isUuid } from "../../../../../lib/employerAccessServer";
 import {
-  applicationApplicantUserId,
+  applicationCandidatePreviewKey,
   applicationResponse,
   authenticatedApplicationClients,
   canManageJobApplications,
@@ -103,7 +103,7 @@ export async function GET(
     .map((row) =>
       employerJobApplicationFromRow(
         row,
-        candidatePreviews.previews.get(applicationApplicantUserId(row)),
+        candidatePreviews.previews.get(applicationCandidatePreviewKey(row)),
       ),
     )
     .filter((application) => application !== null)

@@ -42,6 +42,10 @@ import {
   writeCrewDiscoverySettings,
   type CrewDiscoverySettings,
 } from "../lib/crewDiscovery";
+import {
+  calculateCrewProfileCompletion,
+  isPremiumCrewProfile,
+} from "../lib/crewProfileCompletion";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { absoluteSiteUrl } from "../lib/site";
 import { createSafeStoragePath } from "../lib/storage";
@@ -1048,9 +1052,14 @@ export default function ProfilePage() {
           <div className="bd-brand-rule h-1.5" />
           <div className="p-5 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-            <h1 className="bd-serif mt-3 text-3xl font-normal text-[#071f3c] sm:text-5xl">
-              {profile.full_name || "Professional Crew Profile"}
-            </h1>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <h1 className="bd-serif text-3xl font-normal text-[#071f3c] sm:text-5xl">
+                {profile.full_name || "Professional Crew Profile"}
+              </h1>
+              {isPremiumCrewProfile(cvCompletionPercent) ? (
+                <PremiumProfileBadge percent={cvCompletionPercent} />
+              ) : null}
+            </div>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
               Build a clean yachting CV from verified profile data, documents,
               work preferences, skills and references.
@@ -2299,48 +2308,10 @@ function calculateCvCompletion({
   references: ReferenceEntry[];
   portfolio: PortfolioPhoto[];
 }) {
-  const visibleSkills = [
-    ...(profile.personal_skills || []),
-    ...(profile.personal_characteristics || []),
-  ].filter(Boolean);
-  const discoverySettings = parseCrewDiscoverySettings(profile.notes);
-  const visiblePreferences = [
-    ...cleanWorkPreferenceSelections(profile.work_preferences),
-    ...discoverySettings.preferredLocations,
-    ...discoverySettings.employmentTypes,
-  ];
-  const visibleLanguages = (profile.languages || []).filter((language) => language.name && language.level);
-  const allExperiences = [...yachtExperiences, ...otherWorkExperiences];
-  const firstPageExperienceScore =
-    allExperiences
-      .slice(0, 3)
-      .reduce((sum, experience) => sum + experienceCompletionRatio(experience), 0) / 3;
-  const completionChecks: Array<{ ratio: number; weight: number }> = [
-    { ratio: profile.profile_photo_url ? 1 : 0, weight: 8 },
-    { ratio: cleanSaveText(profile.full_name) ? 1 : 0, weight: 5 },
-    { ratio: getProfileCurrentPosition(profile) ? 1 : 0, weight: 5 },
-    {
-      ratio: filledRatio([
-        profile.date_of_birth,
-        profile.nationality,
-        profile.gender,
-        profile.height_cm,
-        profile.weight_kg,
-        profile.smoker,
-        profile.visible_tattoos,
-      ]),
-      weight: 14,
-    },
-    { ratio: filledRatio([profile.phone, profile.email, profile.location]), weight: 12 },
-    { ratio: textCompletionRatio(profile.bio, 200), weight: 14 },
-    { ratio: firstPageExperienceScore, weight: 24 },
-    { ratio: Math.min(visibleLanguages.length / 4, 1), weight: 6 },
-    { ratio: Math.min(visibleSkills.length / 10, 1), weight: 8 },
-    { ratio: Math.min(visiblePreferences.length / 5, 1), weight: 4 },
-  ];
-  const totalWeight = completionChecks.reduce((sum, item) => sum + item.weight, 0);
-  const completedWeight = completionChecks.reduce((sum, item) => sum + item.ratio * item.weight, 0);
-  return Math.max(0, Math.min(100, Math.round((completedWeight / totalWeight) * 100)));
+  return calculateCrewProfileCompletion({
+    profile,
+    experiences: [...yachtExperiences, ...otherWorkExperiences],
+  });
 }
 
 function cvPreferenceGroups(profile: CrewProfile): CvPreferenceGroup[] {
@@ -2360,36 +2331,6 @@ function cvPreferenceGroups(profile: CrewProfile): CvPreferenceGroup[] {
       items: cleanWorkPreferenceSelections(profile.work_preferences),
     },
   ].filter((group) => group.items.length > 0);
-}
-
-function filledRatio(values: Array<unknown>) {
-  if (values.length === 0) return 0;
-  const filled = values.filter((value) => {
-    if (typeof value === "number") return value > 0;
-    return Boolean(cleanSaveText(typeof value === "string" ? value : ""));
-  }).length;
-  return filled / values.length;
-}
-
-function textCompletionRatio(value: string | undefined, fullLength: number) {
-  return Math.min(cleanSaveText(value).length / fullLength, 1);
-}
-
-function experienceCompletionRatio(experience: Experience) {
-  const isOtherWork = isOtherWorkExperience(experience);
-  const fields = [
-    cleanSaveText(experience.yacht_name),
-    cleanSaveText(experience.position),
-    cleanSaveText(experience.start_date),
-    cleanSaveText(experience.end_date),
-    cleanSaveText(experience.location),
-    isOtherWork ? "other-work" : cleanSaveText(experience.yacht_type),
-    isOtherWork ? "other-work" : cleanSaveText(experience.yacht_program),
-    isOtherWork ? "other-work" : cleanSaveText(experience.yacht_size),
-  ];
-  const fieldScore = filledRatio(fields) * 0.5;
-  const dutiesScore = textCompletionRatio(experience.description, 160) * 0.5;
-  return fieldScore + dutiesScore;
 }
 
 function cleanSaveLanguages(value?: LanguageEntry[]) {
@@ -5470,6 +5411,20 @@ function CvCompletionRing({ percent }: { percent: number }) {
         <span className="block text-xs font-black uppercase tracking-[0.08em] text-white">Completion</span>
       </span>
     </div>
+  );
+}
+
+function PremiumProfileBadge({ percent }: { percent: number }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-[linear-gradient(135deg,#071631,#0d3f5f)] px-3.5 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#071631]/15"
+      title={`CV completion ${percent}%`}
+    >
+      <span className="grid h-5 w-5 place-items-center rounded-full bg-cyan-300 text-[#071631] shadow-[0_0_0_3px_rgba(165,243,252,0.16)]">
+        <Check className="h-3.5 w-3.5" aria-hidden />
+      </span>
+      Premium profile
+    </span>
   );
 }
 

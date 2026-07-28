@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "bluedeck-yachtos";
-const CACHE_NAME = `${CACHE_PREFIX}-shell-v3`;
+const CACHE_NAME = `${CACHE_PREFIX}-shell-v5`;
 
 const urlsToCache = [
   "/manifest.webmanifest",
@@ -66,6 +66,10 @@ self.addEventListener("fetch", function (event) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Employer application media uses short-lived capabilities and must never
+  // outlive its private, no-store response in CacheStorage.
+  if (/^\/api\/employer\/job-posts\/[^/]+\/applications\/[^/]+\/media$/.test(url.pathname)) return;
+
   if (request.mode === "navigate") {
     event.respondWith(
       (async function () {
@@ -93,6 +97,9 @@ self.addEventListener("fetch", function (event) {
 
         return fetch(request).then(function (networkResponse) {
           if (!networkResponse || !networkResponse.ok) return networkResponse;
+
+          const cacheControl = networkResponse.headers.get("Cache-Control") || "";
+          if (/\b(?:no-store|private)\b/i.test(cacheControl)) return networkResponse;
 
           const responseToCache = networkResponse.clone();
           event.waitUntil(

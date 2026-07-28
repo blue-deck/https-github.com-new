@@ -43,14 +43,52 @@ export type EmployerJobApplication = OwnJobApplication & {
   applicantRole: "crew" | "captain";
   privateNoteAvailable: boolean;
   candidate: {
-    fullName: string;
+    displayName: string;
+    initials: string;
     profilePhotoUrl: string;
     currentPosition: string;
-    location: string;
     nationality: string;
-    seekingPositions: string[];
     availabilityStatus: string;
     availableFrom: string;
+    experienceYears: number;
+    cvCompletionPercent: number;
+    premiumProfile: boolean;
+  };
+};
+
+export type EmployerJobApplicationDetails = {
+  applicationId: string;
+  candidate: {
+    displayName: string;
+    initials: string;
+    profilePhotoUrl: string;
+    currentPosition: string;
+    nationality: string;
+    location: string;
+    gender: string;
+    heightCm: number | null;
+    weightKg: number | null;
+    smoker: string;
+    visibleTattoos: string;
+    professionalSummary: string;
+    skills: string[];
+    characteristics: string[];
+    workPreferences: string[];
+    seekingPositions: string[];
+    employmentTypes: string[];
+    preferredLocations: string[];
+    languages: Array<{
+      name: string;
+      level: string;
+    }>;
+    galleryPhotos: string[];
+    referenceCount: number;
+    documentCount: number;
+    experienceCount: number;
+    publicCrewId: string;
+    portalAvailable: boolean;
+    cvCompletionPercent: number;
+    premiumProfile: boolean;
   };
 };
 
