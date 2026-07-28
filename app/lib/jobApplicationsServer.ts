@@ -481,13 +481,7 @@ export async function loadApplicationCandidateDetails(
       candidate: {
         displayName: maskedPersonName(snapshotName),
         initials: personInitials(snapshotName),
-        profilePhotoUrl: avatarSource
-          ? buildEmployerApplicationMediaUrl({
-              jobPostId,
-              applicationId,
-              kind: "avatar",
-            })
-          : "",
+        profilePhotoUrl: avatarSource,
         currentPosition,
         nationality: publicStructuredProfileField(profile.nationality, 80),
         location: publicStructuredProfileField(profile.location, 120),
@@ -614,13 +608,7 @@ export function employerJobApplicationFromRow(
     candidate: {
       displayName: maskedPersonName(fullName),
       initials: personInitials(fullName),
-      profilePhotoUrl: preview?.profilePhotoUrl
-        ? buildEmployerApplicationMediaUrl({
-            jobPostId: application.jobPostId,
-            applicationId: application.id,
-            kind: "avatar",
-          })
-        : "",
+      profilePhotoUrl: preview?.profilePhotoUrl || "",
       currentPosition: preview?.currentPosition || currentPosition,
       nationality: preview?.nationality || "",
       availabilityStatus: preview?.availabilityStatus || "",
