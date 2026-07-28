@@ -455,6 +455,22 @@ export async function loadApplicationCandidateDetails(
   }
 
   const experiences = experienceResult.rows;
+  let gender = publicStructuredProfileField(profile.gender, 60);
+  if (!gender) {
+    const { data: accountData, error: accountError } =
+      await serviceClient.auth.admin.getUserById(applicantUserId);
+    if (accountError) {
+      logJobApplicationError("candidate_detail_gender_fallback_failed", accountError, {
+        applicationId,
+        crewProfileId,
+      });
+    } else {
+      gender = publicStructuredProfileField(
+        accountData.user?.user_metadata?.gender,
+        60,
+      );
+    }
+  }
   const discovery = parseCrewDiscoverySettings(cleanText(profile.notes));
   const completionPercent = calculateCrewProfileCompletion({
     profile,
@@ -485,7 +501,7 @@ export async function loadApplicationCandidateDetails(
         currentPosition,
         nationality: publicStructuredProfileField(profile.nationality, 80),
         location: publicStructuredProfileField(profile.location, 120),
-        gender: publicStructuredProfileField(profile.gender, 60),
+        gender,
         heightCm: safeMeasurement(profile.height_cm, 80, 260),
         weightKg: safeMeasurement(profile.weight_kg, 20, 400),
         smoker: publicStructuredProfileField(profile.smoker, 60),
@@ -523,7 +539,7 @@ export async function loadApplicationCandidateDetails(
           referenceResult.data || [],
         ),
         documentCount: safeCount(documentResult.count),
-        experienceCount: experiences.length,
+        experienceYears: crewExperienceYears(experiences),
         publicCrewId: portalAvailable ? publicCrewId : "",
         portalAvailable,
         cvCompletionPercent: completionPercent,
@@ -715,7 +731,7 @@ function emptyCandidateDetails(
       galleryPhotos: [],
       referenceCount: 0,
       documentCount: 0,
-      experienceCount: 0,
+      experienceYears: 0,
       publicCrewId: "",
       portalAvailable: false,
       cvCompletionPercent: 0,
