@@ -84,7 +84,7 @@ export type EmployerJobApplicationDetails = {
     galleryPhotos: string[];
     referenceCount: number;
     documentCount: number;
-    experienceCount: number;
+    experienceYears: number;
     publicCrewId: string;
     portalAvailable: boolean;
     cvCompletionPercent: number;

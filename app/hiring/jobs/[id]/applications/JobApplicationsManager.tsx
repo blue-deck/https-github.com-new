@@ -780,6 +780,15 @@ function CandidateProfileModal({
 
             <section className="grid gap-3 sm:grid-cols-3">
               <ProfileMetric
+                icon={<BriefcaseBusiness />}
+                value={
+                  candidate.experienceYears > 0
+                    ? `${candidate.experienceYears}+ ${c.years}`
+                    : c.noExperience
+                }
+                label={c.experiences}
+              />
+              <ProfileMetric
                 icon={<UsersRound />}
                 value={candidate.referenceCount}
                 label={c.references}
@@ -788,11 +797,6 @@ function CandidateProfileModal({
                 icon={<FileText />}
                 value={candidate.documentCount}
                 label={c.documents}
-              />
-              <ProfileMetric
-                icon={<BriefcaseBusiness />}
-                value={candidate.experienceCount}
-                label={c.experiences}
               />
             </section>
 
@@ -1190,7 +1194,7 @@ function ProfileMetric({
   label,
 }: {
   icon: React.ReactNode;
-  value: number;
+  value: number | string;
   label: string;
 }) {
   return (
@@ -1524,7 +1528,7 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
       galleryPhotos: stringArray(candidate.galleryPhotos, 4),
       referenceCount: safeCount(candidate.referenceCount),
       documentCount: safeCount(candidate.documentCount),
-      experienceCount: safeCount(candidate.experienceCount),
+      experienceYears: safeCount(candidate.experienceYears),
       publicCrewId: stringValue(candidate.publicCrewId),
       portalAvailable: candidate.portalAvailable,
       cvCompletionPercent: Math.max(
