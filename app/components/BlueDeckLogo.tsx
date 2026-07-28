@@ -35,7 +35,7 @@ export function BlueDeckLogoLink({
         alt="BlueDeck"
         width={1560}
         height={300}
-        priority={priority}
+        preload={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />
     </Link>
@@ -56,7 +56,7 @@ export function BlueDeckMark({
         alt="BlueDeck"
         width={1024}
         height={1024}
-        priority={priority}
+        preload={priority}
         className={`h-full w-full object-contain ${imageClassName}`}
       />
     </span>

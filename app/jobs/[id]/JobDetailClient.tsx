@@ -51,7 +51,6 @@ export function JobDetailClient({
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [job, setJob] = useState<PublicJob | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
-  const Root = embedded ? "div" : "main";
 
   useEffect(() => {
     const controller = new AbortController();
@@ -105,40 +104,47 @@ export function JobDetailClient({
     }
 
     const frame = window.requestAnimationFrame(() => {
-      document.getElementById("apply")?.scrollIntoView({ block: "start" });
+      const applicationSection = document.getElementById("apply");
+      applicationSection?.scrollIntoView({ block: "start" });
+      document.getElementById("apply-title")?.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [job, loadState]);
 
+  const content =
+    loadState === "loading" ? (
+      <DetailLoading label={c.loading} />
+    ) : loadState === "not-found" ? (
+      <DetailMessage
+        icon={<BriefcaseBusiness />}
+        title={c.notFoundTitle}
+        text={c.notFoundText}
+        actionLabel={c.back}
+      />
+    ) : loadState === "error" ? (
+      <DetailMessage
+        icon={<RefreshCw />}
+        title={c.errorTitle}
+        text={c.errorText}
+        actionLabel={c.retry}
+        onAction={() => setRequestVersion((current) => current + 1)}
+      />
+    ) : job ? (
+      <JobDetail job={job} language={language} embedded={embedded} />
+    ) : null;
+
+  if (embedded) {
+    return <div className="min-h-full text-[#071f3c]">{content}</div>;
+  }
+
   return (
-    <Root
-      className={`${embedded ? "min-h-full" : "bd-site-shell min-h-screen"} text-[#071f3c]`}
-    >
-      {!embedded ? <PublicHeader /> : null}
-
-      {loadState === "loading" ? (
-        <DetailLoading label={c.loading} />
-      ) : loadState === "not-found" ? (
-        <DetailMessage
-          icon={<BriefcaseBusiness />}
-          title={c.notFoundTitle}
-          text={c.notFoundText}
-          actionLabel={c.back}
-        />
-      ) : loadState === "error" ? (
-        <DetailMessage
-          icon={<RefreshCw />}
-          title={c.errorTitle}
-          text={c.errorText}
-          actionLabel={c.retry}
-          onAction={() => setRequestVersion((current) => current + 1)}
-        />
-      ) : job ? (
-        <JobDetail job={job} language={language} embedded={embedded} />
-      ) : null}
-
-      {!embedded ? <PublicFooter /> : null}
-    </Root>
+    <>
+      <PublicHeader />
+      <main id="main-content" className="bd-site-shell min-h-screen text-[#071f3c]">
+        {content}
+      </main>
+      <PublicFooter />
+    </>
   );
 }
 
@@ -272,12 +278,12 @@ function JobDetail({
 
   return (
     <>
-      <section className="border-b border-[#071f3c]/8 bg-[linear-gradient(145deg,#f3f9fb_0%,#ffffff_72%)]">
+      <section className="border-b border-[#071f3c]/10 bg-white">
         <div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           {!embedded ? (
             <Link
               href="/jobs"
-              className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-500 transition hover:text-cyan-800"
+              className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-600 transition hover:text-cyan-800"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
               {c.back}
@@ -324,31 +330,9 @@ function JobDetail({
         </div>
       </section>
 
-      <section className="bg-[#f6f9fb]">
-        <div className="mx-auto grid max-w-[1180px] gap-5 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 lg:px-10 lg:py-12">
-          <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-[calc(var(--public-header-height)+1.5rem)]">
-            <section
-              id="apply"
-              aria-labelledby="apply-title"
-              className="scroll-mt-[calc(var(--public-header-height)+1.5rem)] rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:p-6"
-            >
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
-                {c.applicationEyebrow}
-              </p>
-              <h2
-                id="apply-title"
-                className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950"
-              >
-                {c.secureTitle}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                {c.secureText}
-              </p>
-              <JobApplicationPanel jobId={job.id} language={language} />
-            </section>
-          </aside>
-
-          <article className="overflow-hidden rounded-[26px] border border-slate-200 bg-white px-6 py-7 shadow-sm shadow-slate-950/5 sm:px-9 sm:py-9 lg:col-start-1 lg:row-start-1">
+      <section className="bg-[#f7f9fc]">
+        <div className="mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 lg:px-10 lg:py-12">
+          <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm shadow-slate-950/5 sm:px-8 sm:py-8 lg:col-start-1 lg:row-start-1">
             {roleOverview ? (
               <DetailSection title={c.description} first>
                 <p
@@ -413,6 +397,29 @@ function JobDetail({
               </DetailSection>
             ) : null}
           </article>
+
+          <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-[calc(var(--public-header-height)+1.5rem)]">
+            <section
+              id="apply"
+              aria-labelledby="apply-title"
+              className="scroll-mt-[calc(var(--public-header-height)+1.5rem)] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:p-6"
+            >
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
+                {c.applicationEyebrow}
+              </p>
+              <h2
+                id="apply-title"
+                tabIndex={-1}
+                className="bd-focus mt-2 rounded-sm text-2xl font-semibold tracking-[-0.03em] text-slate-950"
+              >
+                {c.secureTitle}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {c.secureText}
+              </p>
+              <JobApplicationPanel jobId={job.id} language={language} />
+            </section>
+          </aside>
         </div>
       </section>
     </>
@@ -433,8 +440,8 @@ type DefinitionItem = {
 function EssentialFact({ icon, label, value }: DetailItem) {
   return (
     <div className="min-w-0 border-l border-cyan-200 pl-3.5">
-      <dt className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 [&>svg]:h-3.5 [&>svg]:w-3.5 [&>svg]:text-cyan-700">
-        {icon}
+      <dt className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 [&>span>svg]:h-3.5 [&>span>svg]:w-3.5 [&>span>svg]:text-cyan-700">
+        <span aria-hidden="true">{icon}</span>
         {label}
       </dt>
       <dd
@@ -508,12 +515,12 @@ function DefinitionGrid({ items }: { items: DefinitionItem[] }) {
       {items.map((item) => (
         <div
           key={item.label}
-          className="flex min-w-0 items-baseline justify-between gap-4 border-b border-slate-100 py-3"
+          className="grid min-w-0 gap-1 border-b border-slate-100 py-3 sm:flex sm:items-baseline sm:justify-between sm:gap-4"
         >
           <dt className="text-sm text-slate-500">{item.label}</dt>
           <dd
             data-i18n-ignore
-            className="min-w-0 max-w-[65%] break-words text-right text-sm font-semibold text-slate-900 [overflow-wrap:anywhere]"
+            className="min-w-0 break-words text-left text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] sm:max-w-[65%] sm:text-right"
           >
             {item.value}
           </dd>
@@ -546,6 +553,7 @@ function DetailLoading({ label }: { label: string }) {
   return (
     <section className="mx-auto max-w-[1180px] px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
       <div
+        role="status"
         className="flex items-center gap-3 text-sm font-bold text-cyan-800"
         aria-live="polite"
         aria-busy="true"
@@ -553,7 +561,7 @@ function DetailLoading({ label }: { label: string }) {
         <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
         {label}
       </div>
-      <div className="mt-7 animate-pulse">
+      <div className="mt-7 animate-pulse" aria-hidden="true">
         <div className="h-6 w-44 rounded-full bg-slate-100" />
         <div className="mt-5 h-12 w-3/5 rounded bg-slate-100" />
         <div className="mt-7 grid grid-cols-2 gap-5 sm:grid-cols-4">
@@ -565,14 +573,17 @@ function DetailLoading({ label }: { label: string }) {
           ))}
         </div>
       </div>
-      <div className="mt-10 grid animate-pulse gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8">
-        <div className="order-last min-h-[430px] rounded-[26px] border border-slate-200 bg-white p-8 lg:order-first">
+      <div
+        className="mt-10 grid animate-pulse gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-8"
+        aria-hidden="true"
+      >
+        <div className="min-h-[430px] rounded-2xl border border-slate-200 bg-white p-8">
           <div className="h-7 w-40 rounded bg-slate-100" />
           <div className="mt-6 h-4 rounded bg-slate-100" />
           <div className="mt-3 h-4 rounded bg-slate-100" />
           <div className="mt-3 h-4 w-4/5 rounded bg-slate-100" />
         </div>
-        <div className="order-first h-[250px] rounded-[24px] border border-slate-200 bg-white p-6 lg:order-last">
+        <div className="h-[250px] rounded-2xl border border-slate-200 bg-white p-6">
           <div className="h-3 w-24 rounded bg-slate-100" />
           <div className="mt-4 h-8 w-3/4 rounded bg-slate-100" />
           <div className="mt-5 h-4 rounded bg-slate-100" />
@@ -600,9 +611,12 @@ function DetailMessage({
     <section className="mx-auto max-w-[920px] px-5 py-16 sm:px-8 lg:py-24">
       <div
         role="alert"
-        className="rounded-[30px] border border-cyan-200 bg-white px-6 py-14 text-center shadow-xl shadow-[#071f3c]/5"
+        className="rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center shadow-sm shadow-[#071f3c]/5"
       >
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 [&>svg]:h-7 [&>svg]:w-7">
+        <span
+          aria-hidden="true"
+          className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 [&>svg]:h-7 [&>svg]:w-7"
+        >
           {icon}
         </span>
         <h1 className="mt-5 text-3xl font-semibold text-[#071f3c]">{title}</h1>

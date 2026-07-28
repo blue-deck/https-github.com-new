@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
@@ -34,6 +34,13 @@ const employerFeatureBullets = [
 
 export default function LoginPage() {
   const { t } = useLanguage();
+  const formTitleId = useId();
+  const fullNameId = useId();
+  const roleId = useId();
+  const positionId = useId();
+  const emailId = useId();
+  const passwordId = useId();
+  const confirmPasswordId = useId();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -241,19 +248,25 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="bd-site-shell min-h-screen overflow-hidden text-slate-900">
+    <>
       <PublicHeader />
-
+      <main
+        id="main-content"
+        className="bd-site-shell min-h-screen overflow-x-clip text-slate-900"
+      >
       <div className="bd-ocean-content mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
           <p className="bd-kicker">{t("login.heroEyebrow")}</p>
-          <h1 className="bd-serif mt-5 max-w-3xl text-6xl font-normal leading-tight text-[#071f3c]">
+          <h2 className="bd-serif mt-5 max-w-3xl text-6xl font-normal leading-tight text-[#071f3c]">
             {t("login.heroTitle")}
-          </h1>
+          </h2>
           <div className="mt-8 grid max-w-2xl gap-3 text-sm text-slate-700">
             {featureBullets.map((item) => (
-              <div key={item} className="bd-glass-card flex items-center gap-3 rounded-2xl px-4 py-3">
-                <CheckCircle2 className="h-5 w-5 text-cyan-700" />
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-xl border border-[#071f3c]/10 bg-white/80 px-4 py-3"
+              >
+                <CheckCircle2 className="h-5 w-5 text-cyan-700" aria-hidden />
                 {t(item)}
               </div>
             ))}
@@ -265,10 +278,11 @@ export default function LoginPage() {
             event.preventDefault();
             submit();
           }}
-          className="bd-glass-card-strong relative w-full rounded-[30px] p-6 sm:p-8"
+          aria-labelledby={formTitleId}
+          className="relative w-full rounded-2xl border border-[#071f3c]/10 bg-white p-6 shadow-xl shadow-[#071f3c]/8 sm:p-8"
         >
           <div className="flex items-center gap-3">
-            <BlueDeckMark className="h-14 w-16 rounded-2xl" imageClassName="p-1" />
+            <BlueDeckMark className="h-14 w-16 rounded-xl" imageClassName="p-1" />
             <div>
               <p className="font-semibold text-slate-950">BlueDeck</p>
               <p className="text-xs text-slate-500">{t("login.secureAccess")}</p>
@@ -282,32 +296,38 @@ export default function LoginPage() {
                 setMode("login");
                 setNotice("");
               }}
-              className="mt-7 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50"
+              className="bd-focus mt-7 min-h-11 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50"
             >
               {t("login.backToLogin")}
             </button>
           ) : (
-            <div className="mt-7 grid grid-cols-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
+            <div
+              role="group"
+              aria-label={t("login.secureAccess")}
+              className="mt-7 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1"
+            >
               <button
                 type="button"
                 onClick={() => setMode("login")}
-                className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "login" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
+                aria-pressed={mode === "login"}
+                className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "login" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
               >
                 {t("login.tabLogin")}
               </button>
               <button
                 type="button"
                 onClick={() => setMode("signup")}
-                className={`rounded-xl px-4 py-3 text-sm font-semibold ${mode === "signup" ? "bg-cyan-600 text-white" : "text-slate-500"}`}
+                aria-pressed={mode === "signup"}
+                className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "signup" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
               >
                 {t("login.tabSignup")}
               </button>
             </div>
           )}
 
-          <h2 className="mt-7 text-3xl font-semibold text-slate-950">
+          <h1 id={formTitleId} className="mt-7 text-3xl font-semibold text-slate-950">
             {mode === "login" ? t("login.welcomeBack") : mode === "recovery" ? t("login.newPasswordTitle") : t("login.createTitle")}
-          </h2>
+          </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             {mode === "login"
               ? t("login.loginIntro")
@@ -319,21 +339,32 @@ export default function LoginPage() {
           <div className="mt-6 space-y-4">
             {mode === "signup" && (
               <>
-                <AuthField icon={<UserRound className="h-5 w-5" />} label={t("login.fullName")} required>
+                <AuthField
+                  htmlFor={fullNameId}
+                  icon={<UserRound className="h-5 w-5" aria-hidden />}
+                  label={t("login.fullName")}
+                  required
+                >
                   <input
+                    id={fullNameId}
                     value={fullName}
                     required
                     autoComplete="name"
                     onChange={(event) => setFullName(event.target.value)}
-                    className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                    className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                     placeholder={t("login.fullName")}
                   />
                 </AuthField>
                 <div className="block">
-                  <p className="mb-2 block select-text text-sm text-slate-500">
-                    {t("login.accountType")} <span className="text-rose-500">*</span>
-                  </p>
+                  <label
+                    htmlFor={roleId}
+                    className="mb-2 block select-text text-sm text-slate-600"
+                  >
+                    {t("login.accountType")}{" "}
+                    <span aria-hidden="true" className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id={roleId}
                     value={role}
                     required
                     onChange={(event) => {
@@ -341,7 +372,7 @@ export default function LoginPage() {
                       setRole(nextRole);
                       setPosition(getDefaultPositionForAccountType(nextRole));
                     }}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
                   >
                     <option value="">{t("login.selectAccountType")}</option>
                     <option value="crew">{t("login.roleCrew")}</option>
@@ -350,20 +381,25 @@ export default function LoginPage() {
                     <option value="management">{t("login.roleManagement")}</option>
                   </select>
                   {role && roleAccessCopy[role] ? (
-                    <p className="mt-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-sm leading-6 text-slate-700">
+                    <p className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-sm leading-6 text-slate-700">
                       {t(roleAccessCopy[role])}
                     </p>
                   ) : null}
                 </div>
                 <div className="block">
-                  <p className="mb-2 block select-text text-sm text-slate-500">
-                    {t("login.position")} <span className="text-rose-500">*</span>
-                  </p>
+                  <label
+                    htmlFor={positionId}
+                    className="mb-2 block select-text text-sm text-slate-600"
+                  >
+                    {t("login.position")}{" "}
+                    <span aria-hidden="true" className="text-rose-500">*</span>
+                  </label>
                   <select
+                    id={positionId}
                     value={position}
                     required
                     onChange={(event) => setPosition(event.target.value)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-slate-950 outline-none focus:border-cyan-300"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
                   >
                     <option value="">{t("login.selectPosition")}</option>
                     {positionSelectGroups.map((group) => (
@@ -381,27 +417,39 @@ export default function LoginPage() {
             )}
 
             {mode !== "recovery" && (
-              <AuthField icon={<Mail className="h-5 w-5" />} label={t("login.email")} required={mode === "signup"}>
+              <AuthField
+                htmlFor={emailId}
+                icon={<Mail className="h-5 w-5" aria-hidden />}
+                label={t("login.email")}
+                required
+              >
                 <input
+                  id={emailId}
                   value={email}
                   type="email"
                   required
                   autoComplete="email"
                   onChange={(event) => setEmail(event.target.value)}
-                  className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                  className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                   placeholder="you@example.com"
                 />
               </AuthField>
             )}
 
-            <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={mode === "recovery" ? t("login.newPassword") : t("login.password")} required={mode !== "login"}>
+            <AuthField
+              htmlFor={passwordId}
+              icon={<LockKeyhole className="h-5 w-5" aria-hidden />}
+              label={mode === "recovery" ? t("login.newPassword") : t("login.password")}
+              required
+            >
               <input
+                id={passwordId}
                 value={password}
                 type={showPassword ? "text" : "password"}
                 required
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                 placeholder={
                   mode === "login"
                     ? t("login.password")
@@ -413,10 +461,16 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t("settings.hidePassword") : t("settings.showPassword")}
+                aria-controls={
+                  mode === "recovery"
+                    ? `${passwordId} ${confirmPasswordId}`
+                    : passwordId
+                }
+                aria-pressed={showPassword}
                 className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-cyan-700"
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
               </button>
             </AuthField>
 
@@ -424,7 +478,7 @@ export default function LoginPage() {
               <>
                 <PasswordStrengthMeter strength={passwordStrength} />
                 {mode === "signup" && (
-                  <p className="rounded-2xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                  <p className="rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
                     {t("login.passwordRequirements")}
                   </p>
                 )}
@@ -433,14 +487,20 @@ export default function LoginPage() {
 
             {mode === "recovery" && (
               <>
-                <AuthField icon={<LockKeyhole className="h-5 w-5" />} label={t("login.repeatPassword")} required>
+                <AuthField
+                  htmlFor={confirmPasswordId}
+                  icon={<LockKeyhole className="h-5 w-5" aria-hidden />}
+                  label={t("login.repeatPassword")}
+                  required
+                >
                   <input
+                    id={confirmPasswordId}
                     value={confirmPassword}
                     type={showPassword ? "text" : "password"}
                     required
                     autoComplete="new-password"
                     onChange={(event) => setConfirmPassword(event.target.value)}
-                    className="w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                    className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
                     placeholder={t("login.samePassword")}
                   />
                 </AuthField>
@@ -448,7 +508,7 @@ export default function LoginPage() {
             )}
 
             {mode === "signup" && (
-              <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+              <label className="flex min-h-11 items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
                 <input
                   type="checkbox"
                   checked={acceptedPrivacy}
@@ -458,16 +518,21 @@ export default function LoginPage() {
                 />
                 <span>
                   {t("login.privacyAgree")}{" "}
-                  <Link href="/privacy" className="font-semibold text-cyan-700">
+                  <Link href="/privacy" className="bd-focus rounded-sm font-semibold text-cyan-700">
                     {t("login.privacyPolicy")}
                   </Link>
-                  . <span className="text-rose-500">*</span>
+                  . <span aria-hidden="true" className="text-rose-500">*</span>
                 </span>
               </label>
             )}
 
             {notice && (
-              <div className="rounded-2xl border border-cyan-300/30 bg-cyan-50 p-4 text-sm leading-6 text-slate-700">
+              <div
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="rounded-xl border border-cyan-300/30 bg-cyan-50 p-4 text-sm leading-6 text-slate-700"
+              >
                 {notice}
               </div>
             )}
@@ -475,40 +540,58 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-2xl bg-cyan-600 px-5 py-4 font-bold text-white transition hover:bg-cyan-700 disabled:opacity-60"
+              aria-busy={loading}
+              className="bd-focus min-h-12 w-full rounded-xl bg-[#071f3c] px-5 py-3 font-bold text-white transition hover:bg-[#0d355f] disabled:cursor-wait disabled:opacity-60"
             >
               {loading ? t("login.wait") : mode === "login" ? t("login.loginButton") : mode === "recovery" ? t("login.savePassword") : t("login.createButton")}
             </button>
 
             {mode !== "recovery" && (
               <div className="flex flex-wrap justify-between gap-3 text-sm">
-                <Link href={forgotPasswordHref} className="inline-flex min-h-11 items-center font-semibold text-cyan-700">
+                <Link href={forgotPasswordHref} className="bd-focus inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-cyan-700">
                   {t("login.forgot")}
                 </Link>
-                <button type="button" onClick={resendConfirmation} className="min-h-11 font-semibold text-slate-600">
+                <button type="button" onClick={resendConfirmation} className="bd-focus min-h-11 rounded-lg px-1 font-semibold text-slate-600">
                   {t("login.resend")}
                 </button>
               </div>
             )}
 
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" />
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
               {t("login.protection")}
             </div>
           </div>
         </form>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
 
-function AuthField({ label, icon, children, required = false }: { label: string; icon: ReactNode; children: ReactNode; required?: boolean }) {
+function AuthField({
+  htmlFor,
+  label,
+  icon,
+  children,
+  required = false,
+}: {
+  htmlFor: string;
+  label: string;
+  icon: ReactNode;
+  children: ReactNode;
+  required?: boolean;
+}) {
   return (
     <div className="block">
-      <p className="mb-2 block select-text text-sm text-slate-500">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </p>
-      <span className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-cyan-700 focus-within:border-cyan-300">
+      <label
+        htmlFor={htmlFor}
+        className="mb-2 block select-text text-sm text-slate-600"
+      >
+        {label}{" "}
+        {required ? <span aria-hidden="true" className="text-rose-500">*</span> : null}
+      </label>
+      <span className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-cyan-700 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-100">
         {icon}
         {children}
       </span>
@@ -522,7 +605,12 @@ function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
   if (!strength.visible) return null;
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="rounded-xl border border-slate-200 bg-slate-50 p-3"
+    >
       <div className="flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.12em]">
         <span className="text-slate-500">{t("password.strength")}</span>
         <span className={strength.textClass}>{strength.label}</span>
@@ -531,6 +619,7 @@ function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
         {[0, 1, 2].map((index) => (
           <span
             key={index}
+            aria-hidden="true"
             className={`h-2 rounded-full transition ${index < strength.score ? strength.barClass : "bg-slate-200"}`}
           />
         ))}

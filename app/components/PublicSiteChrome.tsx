@@ -1,89 +1,128 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { ArrowUpRight, ChevronDown, LayoutDashboard, LogOut, Mail, MapPin, ShieldCheck, UserRound } from "lucide-react";
-import { loadAccountCapabilities } from "../lib/accountCapabilities";
+import {
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
-import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
 
-const publicPrimaryNavigation = [
-  { labelKey: "nav.findJob", href: "/jobs", featured: true },
-  { labelKey: "nav.findCrew", href: "/find-crew", featured: true },
-  { labelKey: "nav.forYachts", href: "/#yacht-platform" },
-] satisfies Array<{ labelKey: TranslationKey; href: string; featured?: boolean }>;
+const publicNavigation = [
+  { labelKey: "nav.findJob", href: "/jobs", desktop: true },
+  { labelKey: "nav.findCrew", href: "/find-crew", desktop: true },
+  { labelKey: "nav.forYachts", href: "/yacht-os", desktop: true },
+  { labelKey: "nav.about", href: "/about", desktop: true },
+  { labelKey: "nav.trust", href: "/trust", desktop: false },
+  { labelKey: "nav.contact", href: "/contact", desktop: true },
+] satisfies Array<{
+  labelKey: TranslationKey;
+  href: string;
+  desktop: boolean;
+}>;
 
-const publicMoreNavigation = [
-  { labelKey: "nav.services", href: "/services" },
-  { labelKey: "nav.management", href: "/management" },
-  { labelKey: "nav.trust", href: "/trust" },
-  { labelKey: "nav.about", href: "/about" },
-  { labelKey: "nav.contact", href: "/contact" },
-] satisfies Array<{ labelKey: TranslationKey; href: string }>;
+function isCurrentRoute(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
-const publicMobileNavigation = [
-  ...publicPrimaryNavigation,
-  ...publicMoreNavigation,
-];
-
-export function PublicHeader({ homepageNavigation = false }: { homepageNavigation?: boolean }) {
-  const { t } = useLanguage();
+export function PublicHeader() {
+  const pathname = usePathname() || "/";
+  const { language, t } = useLanguage();
   const [sessionEmail, setSessionEmail] = useState("");
-  const [hasCrewWorkspace, setHasCrewWorkspace] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuId = useId();
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    async function refreshCrewWorkspace() {
-      const capabilities = await loadAccountCapabilities().catch(() => null);
-      if (active) {
-        setHasCrewWorkspace(capabilities?.canUseCrewWorkspace === true);
-      }
-    }
+    async function watchSession() {
+      const { supabase } = await import("../lib/supabase");
+      if (!active) return;
 
-    async function loadSession() {
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (active) setSessionEmail(session?.user?.email || "");
+      });
+      unsubscribe = () => subscription.unsubscribe();
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!active) return;
-      setSessionEmail(session?.user?.email || "");
-      if (session) {
-        await refreshCrewWorkspace();
-      } else {
-        setHasCrewWorkspace(false);
-      }
+      if (active) setSessionEmail(session?.user?.email || "");
     }
 
-    loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionEmail(session?.user?.email || "");
-      if (!session) {
-        setHasCrewWorkspace(false);
-        return;
-      }
-      window.setTimeout(() => void refreshCrewWorkspace(), 0);
-    });
+    void watchSession();
 
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      menuPanelRef.current?.querySelector<HTMLAnchorElement>("a[href]")?.focus();
+    });
+
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (
+        !menuPanelRef.current?.contains(target) &&
+        !menuButtonRef.current?.contains(target)
+      ) {
+        setMenuOpen(false);
+      }
+    }
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      window.setTimeout(() => menuButtonRef.current?.focus(), 0);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
   async function logout() {
+    const { supabase } = await import("../lib/supabase");
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    window.location.assign("/login");
   }
 
   return (
-    <header className={`bd-public-header ${homepageNavigation ? "bd-public-header-home" : ""}`}>
+    <header className="bd-public-header">
+      <a className="bd-skip-link" href="#main-content">
+        {language === "tr" ? "İçeriğe geç" : "Skip to content"}
+      </a>
+
       <div className="bd-public-header-inner">
         <BlueDeckLogoLink
           href="/"
@@ -92,56 +131,62 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
           imageClassName="object-contain object-left p-0"
         />
 
-        <nav className="bd-public-shortcuts" aria-label="BlueDeck public navigation">
-          {publicPrimaryNavigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={
-                item.featured
-                  ? "bd-focus bd-public-shortcut-button"
-                  : "bd-focus transition hover:text-cyan-200"
-              }
-            >
-              {t(item.labelKey)}
-            </Link>
-          ))}
-          <PublicMoreMenu items={publicMoreNavigation} />
+        <nav className="bd-public-navigation" aria-label="BlueDeck">
+          {publicNavigation
+            .filter((item) => item.desktop)
+            .map((item) => {
+              const active = isCurrentRoute(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className="bd-focus bd-public-nav-link"
+                >
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
         </nav>
 
         <div className="bd-public-actions">
-          {!sessionEmail ? (
-            <PublicMoreMenu items={publicMobileNavigation} mobile />
-          ) : null}
+          <button
+            ref={menuButtonRef}
+            type="button"
+            aria-label={
+              menuOpen
+                ? language === "tr"
+                  ? "Menüyü kapat"
+                  : "Close menu"
+                : language === "tr"
+                  ? "Menüyü aç"
+                  : "Open menu"
+            }
+            aria-expanded={menuOpen}
+            aria-controls={menuId}
+            onClick={() => setMenuOpen((current) => !current)}
+            className="bd-focus bd-public-menu-button"
+          >
+            {menuOpen ? <X aria-hidden /> : <Menu aria-hidden />}
+          </button>
+
           {sessionEmail ? (
             <>
               <Link
                 href="/dashboard"
-                className="bd-focus bd-public-action bd-public-action-outline bd-public-session-action"
+                className="bd-focus bd-public-action bd-public-action-solid"
                 title={sessionEmail}
-                aria-label={t("topbar.dashboard")}
               >
-                <LayoutDashboard className="h-4 w-4" />
+                <LayoutDashboard aria-hidden />
                 <span>{t("topbar.dashboard")}</span>
               </Link>
-              {hasCrewWorkspace ? (
-                <Link
-                  href="/profile"
-                  className="bd-focus bd-public-action bd-public-action-solid bd-public-session-action"
-                  title={sessionEmail}
-                  aria-label={t("topbar.profile")}
-                >
-                  <UserRound className="h-4 w-4" />
-                  <span>{t("topbar.profile")}</span>
-                </Link>
-              ) : null}
               <button
                 type="button"
-                onClick={logout}
+                onClick={() => void logout()}
                 className="bd-focus bd-public-action bd-public-action-outline bd-public-session-action"
                 aria-label={t("topbar.logout")}
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut aria-hidden />
                 <span>{t("topbar.logout")}</span>
               </button>
             </>
@@ -149,7 +194,7 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
             <>
               <Link
                 href="/login"
-                className="bd-focus bd-public-action bd-public-action-outline"
+                className="bd-focus bd-public-action bd-public-action-quiet"
               >
                 {t("auth.login")}
               </Link>
@@ -163,85 +208,34 @@ export function PublicHeader({ homepageNavigation = false }: { homepageNavigatio
           )}
           <LanguageSwitcher size="compact" className="bd-public-language" />
         </div>
+
+        {menuOpen ? (
+          <div
+            ref={menuPanelRef}
+            id={menuId}
+            className="bd-public-mobile-panel"
+            aria-label={language === "tr" ? "Ana menü" : "Main menu"}
+          >
+            <nav>
+              {publicNavigation.map((item) => {
+                const active = isCurrentRoute(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => setMenuOpen(false)}
+                    className="bd-focus bd-public-mobile-link"
+                  >
+                    {t(item.labelKey)}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        ) : null}
       </div>
     </header>
-  );
-}
-
-function PublicMoreMenu({
-  items,
-  mobile = false,
-}: {
-  items: Array<{ labelKey: TranslationKey; href: string }>;
-  mobile?: boolean;
-}) {
-  const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const panelId = useId();
-
-  useEffect(() => {
-    function onPointerDown(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && open) {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    }
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  return (
-    <div
-      ref={menuRef}
-      className={`bd-public-more-menu ${mobile ? "bd-public-more-menu-mobile" : ""}`}
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => setOpen((current) => !current)}
-        className={`bd-focus bd-public-more-trigger ${
-          mobile ? "bd-public-action bd-public-action-outline" : ""
-        }`}
-      >
-        {t("nav.more")}
-        <ChevronDown
-          aria-hidden
-          className={`h-3.5 w-3.5 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {open ? (
-        <div id={panelId} aria-label={t("nav.more")} className="bd-public-more-panel">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="bd-focus bd-public-more-item"
-            >
-              {t(item.labelKey)}
-              <ArrowUpRight aria-hidden className="h-3.5 w-3.5" />
-            </Link>
-          ))}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -249,84 +243,82 @@ export function PublicFooter() {
   const { t } = useLanguage();
 
   return (
-    <footer className="bd-public-footer border-t border-[#071f3c]/10 bg-[#06172b] text-white">
-      <div className="mx-auto grid max-w-[1500px] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr] lg:px-12">
-        <div>
+    <footer className="bd-public-footer">
+      <div className="bd-public-footer-grid">
+        <div className="bd-public-footer-brand">
           <BlueDeckLogoLink
             href="/"
-            className="h-16 w-56"
-            imageClassName="object-contain p-0"
+            className="h-12 w-48"
+            imageClassName="object-contain object-left p-0"
           />
-          <p className="mt-5 max-w-sm text-sm leading-7 text-white/62">
-            {t("footer.description")}
-          </p>
+          <p>{t("footer.description")}</p>
         </div>
 
+        <FooterColumn
+          title={t("footer.platform")}
+          links={[
+            [t("nav.forYachts"), "/yacht-os"],
+            [t("nav.findJob"), "/jobs"],
+            [t("nav.findCrew"), "/find-crew"],
+          ]}
+        />
         <FooterColumn
           title={t("footer.company")}
           links={[
             [t("nav.about"), "/about"],
-            [t("footer.vision"), "/about#vision"],
-            [t("nav.services"), "/services"],
+            [t("nav.trust"), "/trust"],
             [t("nav.contact"), "/contact"],
           ]}
         />
-        <FooterColumn
-          title={t("footer.platform")}
-          links={[
-            [t("nav.yachts"), "/#yacht-platform"],
-            [t("nav.findJob"), "/jobs"],
-            [t("nav.findCrew"), "/find-crew"],
-            [t("nav.management"), "/management"],
-            [t("nav.trust"), "/trust"],
-            [t("footer.clientLogin"), "/login"],
-          ]}
-        />
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">{t("footer.contact")}</p>
-          <div className="mt-5 space-y-4 text-sm text-white/68">
-            <a href="mailto:info@bluedeck.app" className="flex items-center gap-3 transition hover:text-white">
-              <Mail className="h-4 w-4 text-cyan-200" />
-              info@bluedeck.app
-            </a>
-            <p className="flex items-center gap-3">
-              <MapPin className="h-4 w-4 text-cyan-200" />
-              {t("footer.operations")}
-            </p>
-            <p className="flex items-center gap-3">
-              <ShieldCheck className="h-4 w-4 text-cyan-200" />
-              {t("footer.secureAccess")}
-            </p>
-          </div>
+        <div className="bd-public-footer-contact">
+          <p className="bd-public-footer-title">{t("footer.contact")}</p>
+          <a href="mailto:info@bluedeck.app">
+            <Mail aria-hidden />
+            info@bluedeck.app
+          </a>
+          <p>
+            <MapPin aria-hidden />
+            {t("footer.operations")}
+          </p>
+          <p>
+            <ShieldCheck aria-hidden />
+            {t("footer.secureAccess")}
+          </p>
         </div>
       </div>
 
-      <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-[1500px] flex-col gap-3 px-5 py-5 text-xs text-white/50 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12">
-          <p>© {new Date().getFullYear()} BlueDeck. {t("footer.rights")}</p>
-          <div className="flex flex-wrap gap-4">
-            <Link href="/privacy" className="hover:text-white">{t("footer.privacy")}</Link>
-            <Link href="/terms" className="hover:text-white">{t("footer.terms")}</Link>
-            <Link href="/contact" className="hover:text-white">{t("nav.contact")}</Link>
-          </div>
+      <div className="bd-public-footer-bottom">
+        <div>
+          <p>
+            © {new Date().getFullYear()} BlueDeck. {t("footer.rights")}
+          </p>
+          <nav aria-label="Legal">
+            <Link href="/privacy">{t("footer.privacy")}</Link>
+            <Link href="/terms">{t("footer.terms")}</Link>
+          </nav>
         </div>
       </div>
     </footer>
   );
 }
 
-function FooterColumn({ title, links }: { title: string; links: Array<[string, string]> }) {
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: Array<[string, string]>;
+}) {
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-[0.22em] text-cyan-200">{title}</p>
-      <div className="mt-5 grid gap-3 text-sm text-white/68">
+      <p className="bd-public-footer-title">{title}</p>
+      <nav className="bd-public-footer-links">
         {links.map(([label, href]) => (
-          <Link key={href} href={href} className="inline-flex items-center gap-2 transition hover:text-white">
+          <Link key={href} href={href}>
             {label}
-            <ArrowUpRight className="h-3.5 w-3.5" />
           </Link>
         ))}
-      </div>
+      </nav>
     </div>
   );
 }
@@ -343,19 +335,19 @@ export function PublicPageShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="bd-site-shell min-h-screen text-[#071f3c]">
+    <div className="bd-site-shell min-h-screen text-[#07182d]">
       <PublicHeader />
-      <section className="bd-public-page-intro">
-        <div className="mx-auto max-w-[1500px] px-5 pb-14 pt-16 sm:px-8 lg:px-12 lg:pt-24">
-          <p className="bd-kicker">{eyebrow}</p>
-          <h1 className="bd-serif mt-5 max-w-5xl text-5xl leading-[1.02] text-[#071f3c] sm:text-7xl">
-            {title}
-          </h1>
-          <p className="mt-7 max-w-3xl text-lg leading-8 text-[#5b7088]">{intro}</p>
-        </div>
-      </section>
-      {children}
+      <main id="main-content">
+        <section className="bd-public-page-intro">
+          <div className="bd-public-container bd-public-page-intro-inner">
+            <p className="bd-kicker">{eyebrow}</p>
+            <h1>{title}</h1>
+            <p>{intro}</p>
+          </div>
+        </section>
+        {children}
+      </main>
       <PublicFooter />
-    </main>
+    </div>
   );
 }

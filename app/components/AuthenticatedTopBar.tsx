@@ -1,8 +1,12 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-import { BlueDeckTopBar } from "./BlueDeckTopBar";
+
+const BlueDeckTopBar = dynamic(
+  () => import("./BlueDeckTopBar").then((module) => module.BlueDeckTopBar),
+  { ssr: false },
+);
 
 export function AuthenticatedTopBar() {
   const [hasSession, setHasSession] = useState(false);
@@ -10,8 +14,10 @@ export function AuthenticatedTopBar() {
 
   useEffect(() => {
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
     function reflectSession(session: unknown) {
+      if (!active) return;
       const authenticated = Boolean(session);
       setHasSession(authenticated);
       setChecked(true);
@@ -19,25 +25,28 @@ export function AuthenticatedTopBar() {
     }
 
     async function loadSession() {
+      const { supabase } = await import("../lib/supabase");
+      if (!active) return;
+
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        reflectSession(session);
+      });
+      unsubscribe = () => subscription.unsubscribe();
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!active) return;
       reflectSession(session);
     }
 
-    loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      reflectSession(session);
-    });
+    void loadSession();
 
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe?.();
       document.documentElement.removeAttribute("data-authenticated");
     };
   }, []);
