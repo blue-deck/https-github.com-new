@@ -44,6 +44,7 @@ import {
 } from "../lib/crewDiscovery";
 import {
   calculateCrewProfileCompletion,
+  crewExperienceYears,
   isPremiumCrewProfile,
 } from "../lib/crewProfileCompletion";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
@@ -557,11 +558,8 @@ export default function ProfilePage() {
   const showNewDocumentForm = newDocumentOpen;
   const newDocumentDirty = !saveStateEquals(documentSaveState(documentDraft), documentSaveState(newDocumentDraft()));
   const totalExperienceYears = useMemo(() => {
-    const firstYear = editableYachtExperiences
-      .map((item) => Number((item.start_date || "").slice(0, 4)))
-      .filter(Boolean)
-      .sort((a, b) => a - b)[0];
-    return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
+    const years = crewExperienceYears(editableYachtExperiences);
+    return years > 0 ? `${years}+` : "0";
   }, [editableYachtExperiences]);
   const cvCompletionPercent = useMemo(
     () =>

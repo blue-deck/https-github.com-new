@@ -37,6 +37,10 @@ export type CompletionExperience = {
   description?: unknown;
 };
 
+export type CompletionReference = {
+  vessel?: unknown;
+};
+
 const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
 const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
 
@@ -112,43 +116,42 @@ export function calculateCrewProfileCompletion({
   );
 }
 
-export function crewExperienceYears(experiences: CompletionExperience[]) {
-  const now = Date.now();
-  const ranges = experiences
+export function crewExperienceYears(
+  experiences: CompletionExperience[],
+  currentYear = new Date().getUTCFullYear(),
+) {
+  const firstYear = experiences
     .map(normalizeCompletionExperience)
     .filter(
       (experience) => text(experience.yacht_type) !== otherWorkExperienceMarker,
     )
-    .map((experience) => {
-      const start = completionDate(experience.start_date);
-      const endValue = text(experience.end_date);
-      const savedEnd = endValue ? completionDate(endValue) : now;
-      const end = savedEnd === null ? null : Math.min(savedEnd, now);
-      return start !== null && end !== null && end >= start
-        ? ([start, end] as const)
-        : null;
-    })
-    .filter((range): range is readonly [number, number] => range !== null)
-    .sort((left, right) => left[0] - right[0]);
-  if (ranges.length === 0) return 0;
+    .map((experience) => Number(text(experience.start_date).slice(0, 4)))
+    .filter((year) => Number.isInteger(year) && year > 0)
+    .sort((left, right) => left - right)[0];
 
-  const merged: Array<[number, number]> = [];
-  for (const [start, end] of ranges) {
-    const current = merged.at(-1);
-    if (!current || start > current[1]) {
-      merged.push([start, end]);
-    } else {
-      current[1] = Math.max(current[1], end);
-    }
-  }
+  return firstYear ? Math.max(currentYear - firstYear, 1) : 0;
+}
 
-  const dayMilliseconds = 24 * 60 * 60 * 1_000;
-  const totalDays = merged.reduce(
-    (sum, [start, end]) => sum + Math.max((end - start) / dayMilliseconds, 1),
-    0,
-  );
-  const completedYears = Math.floor(totalDays / 365);
-  return completedYears > 0 ? completedYears : 0.5;
+export function countExperienceReferences(
+  experiences: CompletionExperience[],
+  references: CompletionReference[],
+) {
+  const experienceTargets = experiences
+    .map(normalizeCompletionExperience)
+    .map((experience) => normalizeReferenceTarget(experience.yacht_name))
+    .filter(Boolean);
+
+  if (experienceTargets.length === 0) return 0;
+
+  return references.filter((reference) => {
+    const referenceTarget = normalizeReferenceTarget(reference.vessel);
+    return (
+      referenceTarget.length > 0 &&
+      experienceTargets.some((experienceTarget) =>
+        referenceTargetMatches(referenceTarget, experienceTarget),
+      )
+    );
+  }).length;
 }
 
 export function isPremiumCrewProfile(completionPercent: number) {
@@ -222,15 +225,26 @@ function textCompletionRatio(value: unknown, fullLength: number) {
   return Math.min(text(value).length / fullLength, 1);
 }
 
-function completionDate(value: unknown) {
-  const normalized = text(value);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return null;
+function normalizeReferenceTarget(value: unknown) {
+  return text(value)
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(m y|s y|my|sy|motor yacht|sailing yacht|yacht)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  const parsed = Date.parse(`${normalized}T00:00:00.000Z`);
-  return Number.isNaN(parsed) ||
-    new Date(parsed).toISOString().slice(0, 10) !== normalized
-    ? null
-    : parsed;
+function referenceTargetMatches(referenceTarget: string, experienceTarget: string) {
+  if (referenceTarget === experienceTarget) return true;
+  return (
+    referenceTarget.length >= 3 &&
+    experienceTarget.length >= 3 &&
+    (referenceTarget.includes(experienceTarget) ||
+      experienceTarget.includes(referenceTarget))
+  );
 }
 
 function languageEntries(value: unknown) {
