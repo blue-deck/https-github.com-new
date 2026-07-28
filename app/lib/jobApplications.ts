@@ -49,6 +49,8 @@ export type EmployerJobApplication = OwnJobApplication & {
     location: string;
     nationality: string;
     seekingPositions: string[];
+    availabilityStatus: string;
+    availableFrom: string;
   };
 };
 

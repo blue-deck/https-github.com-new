@@ -15,6 +15,10 @@ import {
   type OwnJobApplication,
 } from "./jobApplications";
 import {
+  crewDiscoveryNotesPrefix,
+  parseCrewDiscoverySettings,
+} from "./crewDiscovery";
+import {
   isJobClosureReason,
   isJobPostStatus,
   isSupportedJobListingNumber,
@@ -36,6 +40,8 @@ export type ApplicationCandidatePreview = {
   location: string;
   nationality: string;
   seekingPositions: string[];
+  availabilityStatus: string;
+  availableFrom: string;
 };
 
 type CandidatePreviewResult =
@@ -227,7 +233,7 @@ export async function loadApplicationCandidatePreviews(
     const { data, error } = await serviceClient
       .from("crew_profiles")
       .select(
-        "user_id,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,created_at",
+        "user_id,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,notes,created_at",
       )
       .in("user_id", batch)
       .order("created_at", { ascending: true });
@@ -242,6 +248,12 @@ export async function loadApplicationCandidatePreviews(
     for (const row of data || []) {
       const userId = cleanText(row.user_id);
       if (!isUuid(userId) || previews.has(userId)) continue;
+      const discoveryNotes =
+        typeof row.notes === "string" ? row.notes.trim() : "";
+      const hasSavedDiscoverySettings = discoveryNotes.startsWith(
+        crewDiscoveryNotesPrefix,
+      );
+      const discovery = parseCrewDiscoverySettings(discoveryNotes);
 
       previews.set(userId, {
         profilePhotoUrl: safePublicMediaUrl(row.profile_photo_url),
@@ -255,6 +267,10 @@ export async function loadApplicationCandidatePreviews(
           3,
           120,
         ),
+        availabilityStatus: hasSavedDiscoverySettings
+          ? discovery.availabilityStatus
+          : "",
+        availableFrom: candidateAvailabilityDate(discovery.availableFrom),
       });
     }
   }
@@ -341,6 +357,8 @@ export function employerJobApplicationFromRow(
       location: preview?.location || "",
       nationality: preview?.nationality || "",
       seekingPositions: preview?.seekingPositions || [],
+      availabilityStatus: preview?.availabilityStatus || "",
+      availableFrom: preview?.availableFrom || "",
     },
   };
 }
@@ -432,6 +450,17 @@ function optionalDate(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const text = cleanText(value);
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
+}
+
+function candidateAvailabilityDate(value: unknown) {
+  const date = cleanText(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "";
+
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === date
+    ? date
+    : "";
 }
 
 function safeError(error: unknown) {

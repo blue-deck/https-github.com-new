@@ -408,6 +408,26 @@ function CandidateDetail({
               value={application.candidate.nationality}
             />
           ) : null}
+          {application.candidate.availabilityStatus ? (
+            <CandidateFact
+              icon={<CheckCircle2 />}
+              label={c.availability}
+              value={candidateAvailabilityLabel(
+                application.candidate.availabilityStatus,
+                language,
+              )}
+            />
+          ) : null}
+          {application.candidate.availableFrom ? (
+            <CandidateFact
+              icon={<CalendarDays />}
+              label={c.availableFrom}
+              value={formatDate(
+                application.candidate.availableFrom,
+                language,
+              )}
+            />
+          ) : null}
         </div>
 
         <section className="mt-8 border-t border-slate-200 pt-7">
@@ -529,6 +549,8 @@ function CandidateButton({
   selected: boolean;
   onClick: () => void;
 }) {
+  const c = copy[language];
+
   return (
     <button
       type="button"
@@ -549,6 +571,34 @@ function CandidateButton({
           <p data-i18n-ignore className="mt-1 truncate text-xs font-semibold text-slate-500">
             {application.candidate.currentPosition || application.applicantRole}
           </p>
+          {application.candidate.availabilityStatus ||
+          application.candidate.availableFrom ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {application.candidate.availabilityStatus ? (
+                <span
+                  data-i18n-ignore
+                  className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-800"
+                >
+                  {candidateAvailabilityLabel(
+                    application.candidate.availabilityStatus,
+                    language,
+                  )}
+                </span>
+              ) : null}
+              {application.candidate.availableFrom ? (
+                <span
+                  data-i18n-ignore
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-bold text-slate-600"
+                >
+                  <CalendarDays className="h-3 w-3" aria-hidden />
+                  {c.availableFrom}: {formatDate(
+                    application.candidate.availableFrom,
+                    language,
+                  )}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           <div className="mt-3 flex items-center justify-between gap-2">
             <StatusBadge status={application.status} language={language} compact />
             <span className="text-[10px] font-semibold text-slate-400">
@@ -841,8 +891,33 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
             .filter((position): position is string => typeof position === "string")
             .slice(0, 3)
         : [],
+      availabilityStatus:
+        typeof value.candidate.availabilityStatus === "string"
+          ? value.candidate.availabilityStatus
+          : "",
+      availableFrom:
+        typeof value.candidate.availableFrom === "string"
+          ? value.candidate.availableFrom
+          : "",
     },
   };
+}
+
+function candidateAvailabilityLabel(
+  value: string,
+  language: "en" | "tr",
+) {
+  const labels: Record<string, { en: string; tr: string }> = {
+    "Available now": { en: "Available now", tr: "Hemen müsait" },
+    "Available soon": { en: "Available soon", tr: "Yakında müsait" },
+    "Open to offers": { en: "Open to offers", tr: "Tekliflere açık" },
+    "Currently employed": {
+      en: "Currently employed",
+      tr: "Şu anda çalışıyor",
+    },
+  };
+
+  return labels[value]?.[language] || value;
 }
 
 function statusLabel(status: JobApplicationStatus, language: "en" | "tr") {
@@ -921,6 +996,8 @@ const copy = {
     applied: "Applied",
     location: "Location",
     nationality: "Nationality",
+    availability: "Availability",
+    availableFrom: "Available from",
     profilePreview: "Professional profile preview",
     noProfileSummary: "This candidate has not added preferred positions yet.",
     candidateNote: "Candidate note",
@@ -962,6 +1039,8 @@ const copy = {
     applied: "Başvuru tarihi",
     location: "Konum",
     nationality: "Uyruk",
+    availability: "Müsaitlik",
+    availableFrom: "Müsaitlik başlangıcı",
     profilePreview: "Profesyonel profil özeti",
     noProfileSummary: "Aday henüz tercih ettiği pozisyonları eklememiş.",
     candidateNote: "Aday notu",

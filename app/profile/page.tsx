@@ -1504,35 +1504,17 @@ export default function ProfilePage() {
             <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
               <section className="mb-5 overflow-hidden rounded-[24px] border border-cyan-200 bg-[linear-gradient(145deg,#f6fdff,#ffffff)] shadow-sm">
                 <div className="border-b border-cyan-100 p-5 sm:p-6">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-                        Find Crew visibility
-                      </p>
-                      <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-                        Control how employers discover you
-                      </h3>
-                      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                        Your profile stays private until you turn discovery on. Contact details are never shown in search.
-                      </p>
-                    </div>
-                    <label className="flex min-h-12 shrink-0 cursor-pointer items-center gap-3 rounded-2xl border border-cyan-200 bg-white px-4 shadow-sm">
-                      <input
-                        type="checkbox"
-                        checked={discoverySettings.discoverable}
-                        onChange={(event) =>
-                          updateDiscoverySettings({ discoverable: event.target.checked })
-                        }
-                        className="h-5 w-5 accent-cyan-700"
-                      />
-                      <span className="text-sm font-black text-cyan-950">
-                        {discoverySettings.discoverable ? "Discoverable" : "Private"}
-                      </span>
-                    </label>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                      Find Crew visibility
+                    </p>
+                    <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
+                      Control how employers discover you
+                    </h3>
                   </div>
                 </div>
 
-                <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-3">
+                <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-2">
                   <SelectField
                     label="Availability"
                     value={discoverySettings.availabilityStatus}
@@ -1548,21 +1530,6 @@ export default function ProfilePage() {
                       updateDiscoverySettings({ availableFrom: value })
                     }
                     profileField
-                  />
-                  <SelectField
-                    label="Contact visibility"
-                    value={
-                      discoverySettings.contactVisibility === "hidden"
-                        ? "Hidden"
-                        : "Request required"
-                    }
-                    options={["Request required", "Hidden"]}
-                    onChange={(value) =>
-                      updateDiscoverySettings({
-                        contactVisibility:
-                          value === "Hidden" ? "hidden" : "request_only",
-                      })
-                    }
                   />
                 </div>
 
