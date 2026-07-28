@@ -22,7 +22,6 @@ import {
   type OwnJobApplication,
 } from "./jobApplications";
 import {
-  buildEmployerApplicationMediaUrl,
   selectEmployerApplicationGallerySources,
 } from "./jobApplicationMediaServer";
 import {
@@ -517,16 +516,7 @@ export async function loadApplicationCandidateDetails(
           .map((item) => publicStructuredProfileField(item, 120))
           .filter(Boolean),
         languages: publicLanguageEntries(profile.languages),
-        galleryPhotos: gallerySources
-          .map((_source, slot) =>
-            buildEmployerApplicationMediaUrl({
-              jobPostId,
-              applicationId,
-              kind: "gallery",
-              slot,
-            }),
-          )
-          .filter(Boolean),
+        galleryPhotos: gallerySources,
         referenceCount: safeCount(referenceResult.count),
         documentCount: safeCount(documentResult.count),
         experienceCount: experiences.length,
