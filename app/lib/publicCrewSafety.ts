@@ -12,6 +12,7 @@ const flexibleEmailPattern = /\b[A-Z0-9._%+-]{1,64}\s*(?:@|\[\s*at\s*\]|\(\s*at\
 const phoneCandidatePattern = /(?:\+?\d[\d\s().-]{5,}\d)/g;
 const publicUrlPattern = /\b(?:https?:\/\/|www\.)[^\s<>{}\[\]]+/gi;
 const schemelessDomainPattern = /\b(?:[A-Z0-9-]{1,63}\s*(?:\.|\[\s*dot\s*\]|\(\s*dot\s*\)|\{\s*dot\s*\}|\s+dot\s+)\s*)+(?:COM|NET|ORG|ME|IO|CO|APP|DEV|EU|TR|UK|DE|FR|ES|IT)\b(?:\s*\/\s*[A-Z0-9._~!$&'()*+,;=:@%/-]{1,200})?/gi;
+const genericSchemelessDomainPattern = /\b(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,63}\b(?:\/[A-Z0-9._~!$&'()*+,;=:@%/-]{1,200})?/gi;
 const socialHandlePattern = /(^|[^A-Z0-9._%+-])@[A-Z0-9._-]{2,64}\b/gi;
 const labelledSocialHandlePattern = /\b(?:instagram|telegram|whatsapp|linkedin|facebook|signal|wechat|skype|discord|ig)\b\s*(?:(?:is|at|on|user(?:name)?|handle|account|profile)\s*)*(?:(?::|=|\-|\/)\s*)?@?[A-Z0-9._+-]{2,64}\b/gi;
 const structuredContactKeywordPattern = /\b(?:contact|discord|dm|email|facebook|handle|ig|instagram|linkedin|mail|message|mobile|phone|profile|signal|skype|snapchat|telegram|threads|tiktok|twitter|user(?:name)?|wechat|whatsapp)\b/i;
@@ -58,6 +59,7 @@ export function redactPublicContactDetails(value: unknown, maxLength = 2_000) {
     .replace(emailPattern, contactWithheldText)
     .replace(publicUrlPattern, contactWithheldText)
     .replace(schemelessDomainPattern, contactWithheldText)
+    .replace(genericSchemelessDomainPattern, contactWithheldText)
     .replace(labelledSocialHandlePattern, contactWithheldText)
     .replace(socialHandlePattern, (_match, prefix: string) =>
       `${prefix}${contactWithheldText}`,

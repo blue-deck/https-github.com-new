@@ -4,26 +4,34 @@ import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
+  BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
+  Camera,
   CheckCircle2,
   Clock3,
+  ExternalLink,
+  Eye,
+  FileText,
   Flag,
+  Languages,
   LoaderCircle,
   LockKeyhole,
-  MapPin,
   RefreshCw,
   Send,
   UserRound,
   UsersRound,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BlueDeckLogoLink } from "../../../../components/BlueDeckLogo";
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
   employerJobApplicationStatuses,
-  isJobApplicationStatus,
   isJobApplicationJobAvailability,
+  isJobApplicationStatus,
   type EmployerJobApplication,
+  type EmployerJobApplicationDetails,
   type EmployerJobApplicationStatus,
   type JobApplicationJobAvailability,
   type JobApplicationJobSummary,
@@ -42,10 +50,12 @@ type WorkspaceResponse = {
   total?: number;
   applications?: unknown[];
   application?: unknown;
+  details?: unknown;
 };
 
 type Filter = "all" | JobApplicationStatus;
 type Notice = { tone: "success" | "error"; message: string };
+const candidateMediaRefreshAgeMilliseconds = 8 * 60 * 1_000;
 
 export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const { language } = useLanguage();
@@ -59,6 +69,14 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [updating, setUpdating] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [reloadVersion, setReloadVersion] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
+  const [profileDetails, setProfileDetails] =
+    useState<EmployerJobApplicationDetails | null>(null);
+  const profileRequestRef = useRef<AbortController | null>(null);
+  const applicationsLoadedRef = useRef(false);
+  const mediaRefreshRequestedAtRef = useRef(Date.now());
 
   const selected = useMemo(
     () => applications.find((application) => application.id === selectedId) || null,
@@ -83,8 +101,10 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     let active = true;
 
     async function loadApplications() {
-      setLoading(true);
-      setError("");
+      if (!applicationsLoadedRef.current) {
+        setLoading(true);
+        setError("");
+      }
 
       const {
         data: { session },
@@ -127,21 +147,32 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
               .map(parseEmployerApplication)
               .filter((application) => application !== null)
           : [];
-        if (!parsedJob || parsedApplications.length !== (payload.applications || []).length) {
+        if (
+          !parsedJob ||
+          parsedApplications.length !== (payload.applications || []).length
+        ) {
           throw new Error(c.loadError);
         }
 
         if (!active) return;
+        applicationsLoadedRef.current = true;
+        mediaRefreshRequestedAtRef.current = Date.now();
+        setError("");
         setJob(parsedJob);
         setApplications(parsedApplications);
         setSelectedId((current) =>
           parsedApplications.some((application) => application.id === current)
             ? current
-            : parsedApplications[0]?.id || "",
+            : "",
         );
       } catch (loadError) {
         if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : c.loadError);
+        if (!applicationsLoadedRef.current) {
+          setError(loadError instanceof Error ? loadError.message : c.loadError);
+        } else {
+          mediaRefreshRequestedAtRef.current =
+            Date.now() - candidateMediaRefreshAgeMilliseconds + 60_000;
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -152,6 +183,121 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       active = false;
     };
   }, [c.loadError, jobId, reloadVersion]);
+
+  useEffect(() => {
+    function refreshStaleCandidateMedia() {
+      if (
+        document.visibilityState === "hidden" ||
+        Date.now() - mediaRefreshRequestedAtRef.current <
+          candidateMediaRefreshAgeMilliseconds
+      ) {
+        return;
+      }
+
+      mediaRefreshRequestedAtRef.current = Date.now();
+      setReloadVersion((current) => current + 1);
+    }
+
+    const interval = window.setInterval(refreshStaleCandidateMedia, 60_000);
+    window.addEventListener("focus", refreshStaleCandidateMedia);
+    document.addEventListener("visibilitychange", refreshStaleCandidateMedia);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshStaleCandidateMedia);
+      document.removeEventListener(
+        "visibilitychange",
+        refreshStaleCandidateMedia,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") closeProfile();
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [profileOpen]);
+
+  useEffect(
+    () => () => {
+      profileRequestRef.current?.abort();
+    },
+    [],
+  );
+
+  async function openProfile(application: EmployerJobApplication) {
+    profileRequestRef.current?.abort();
+    const controller = new AbortController();
+    profileRequestRef.current = controller;
+
+    setSelectedId(application.id);
+    setNotice(null);
+    setProfileOpen(true);
+    setProfileLoading(true);
+    setProfileError("");
+    setProfileDetails(null);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.replace(
+        `/login?next=${encodeURIComponent(`/hiring/jobs/${jobId}/applications`)}`,
+      );
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/employer/job-posts/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(application.id)}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+          signal: controller.signal,
+        },
+      );
+      const payload = (await response
+        .json()
+        .catch(() => null)) as WorkspaceResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || c.profileLoadError);
+      }
+
+      const parsedDetails = parseCandidateDetails(payload.details);
+      if (!parsedDetails || parsedDetails.applicationId !== application.id) {
+        throw new Error(c.profileLoadError);
+      }
+      if (!controller.signal.aborted) setProfileDetails(parsedDetails);
+    } catch (loadError) {
+      if (controller.signal.aborted) return;
+      setProfileError(
+        loadError instanceof Error ? loadError.message : c.profileLoadError,
+      );
+    } finally {
+      if (!controller.signal.aborted) setProfileLoading(false);
+    }
+  }
+
+  function closeProfile() {
+    profileRequestRef.current?.abort();
+    profileRequestRef.current = null;
+    setProfileOpen(false);
+    setProfileLoading(false);
+    setProfileError("");
+  }
 
   async function updateStatus(status: EmployerJobApplicationStatus) {
     if (!selected || updating) return;
@@ -220,9 +366,14 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-5 pb-24 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
-      <div className="bd-ocean-content mx-auto w-full max-w-[1440px]">
-        <section className="bd-page-hero relative overflow-hidden rounded-[34px] border border-slate-200 bg-white p-6 sm:p-8 lg:p-10">
+    <>
+      <main
+        className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-4 pb-24 pt-6 text-slate-900 sm:px-8 sm:pt-10 lg:px-10"
+        aria-hidden={profileOpen ? true : undefined}
+        inert={profileOpen ? true : undefined}
+      >
+        <div className="bd-ocean-content mx-auto w-full max-w-[1440px]">
+          <section className="bd-page-hero relative overflow-hidden rounded-[30px] border border-slate-200 bg-white p-5 sm:rounded-[34px] sm:p-8 lg:p-10">
           <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />
           <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -234,11 +385,17 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
                 {c.back}
               </Link>
               <p className="bd-kicker mt-6">{c.eyebrow}</p>
-              <h1 data-i18n-ignore className="bd-serif mt-4 text-4xl leading-none text-[#071f3c] sm:text-6xl">
+              <h1
+                data-i18n-ignore
+                className="bd-serif mt-4 text-4xl leading-none text-[#071f3c] sm:text-6xl"
+              >
                 {job.position || job.title}
               </h1>
               <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                <p data-i18n-ignore className="font-mono text-xs font-black tracking-[0.12em] text-slate-500">
+                <p
+                  data-i18n-ignore
+                  className="font-mono text-xs font-black tracking-[0.12em] text-slate-500"
+                >
                   {formatJobListingNumber(job.listingNumber)}
                 </p>
                 <ListingAvailabilityBadge
@@ -264,7 +421,10 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           ) : null}
         </section>
 
-        <section className="mt-5 flex gap-2 overflow-x-auto pb-1" aria-label={c.filters}>
+        <section
+          className="mt-5 flex gap-2 overflow-x-auto pb-1"
+          aria-label={c.filters}
+        >
           <FilterButton
             active={filter === "all"}
             label={c.all}
@@ -287,339 +447,627 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         {applications.length === 0 ? (
           <section className="bd-glass-card-strong mt-6 rounded-[30px] p-8 text-center sm:p-14">
             <UsersRound className="mx-auto h-10 w-10 text-cyan-700" aria-hidden />
-            <h2 className="mt-5 text-3xl font-semibold text-[#071f3c]">{c.empty}</h2>
+            <h2 className="mt-5 text-3xl font-semibold text-[#071f3c]">
+              {c.empty}
+            </h2>
             <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">
               {c.emptyText}
             </p>
           </section>
         ) : (
-          <div className="mt-6 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)] xl:items-start">
-            <aside className="bd-glass-card-strong overflow-hidden rounded-[28px] xl:sticky xl:top-28">
-              <div className="border-b border-slate-200 p-5">
+          <section className="mt-6">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
+              <div>
                 <p className="bd-kicker">{c.candidates}</p>
-                <p className="mt-2 text-xs leading-5 text-slate-500">
+                <p className="mt-1 text-sm text-slate-500">
                   {visibleApplications.length} {c.results}
                 </p>
               </div>
-              <div className="max-h-[68vh] overflow-y-auto p-3">
-                {visibleApplications.length === 0 ? (
-                  <p className="p-5 text-sm leading-6 text-slate-500">
-                    {c.noFilterResults}
-                  </p>
-                ) : (
-                  <div className="grid gap-2">
-                    {visibleApplications.map((application) => (
-                      <CandidateButton
-                        key={application.id}
-                        application={application}
-                        language={language}
-                        selected={application.id === selectedId}
-                        onClick={() => {
-                          setSelectedId(application.id);
-                          setNotice(null);
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </aside>
+              <p className="max-w-lg text-right text-xs leading-5 text-slate-500">
+                {c.identityProtection}
+              </p>
+            </div>
 
-            {selected ? (
-              <CandidateDetail
-                application={selected}
-                language={language}
-                updating={updating}
-                notice={notice}
-                onUpdate={updateStatus}
-              />
+            {visibleApplications.length === 0 ? (
+              <div className="bd-glass-card-strong rounded-[28px] p-8 text-center text-sm text-slate-500">
+                {c.noFilterResults}
+              </div>
             ) : (
-              <section className="bd-glass-card-strong rounded-[30px] p-8 text-center">
-                <UserRound className="mx-auto h-9 w-9 text-cyan-700" aria-hidden />
-                <p className="mt-4 font-black text-slate-700">{c.selectCandidate}</p>
-              </section>
+              <div className="grid gap-6">
+                {visibleApplications.map((application) => (
+                  <CrewPassportCard
+                    key={application.id}
+                    application={application}
+                    language={language}
+                    onView={() => void openProfile(application)}
+                  />
+                ))}
+              </div>
             )}
-          </div>
+          </section>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+
+      {profileOpen && selected ? (
+        <CandidateProfileModal
+          application={selected}
+          details={profileDetails}
+          language={language}
+          loading={profileLoading}
+          error={profileError}
+          updating={updating}
+          notice={notice}
+          onClose={closeProfile}
+          onRetry={() => void openProfile(selected)}
+          onUpdate={updateStatus}
+        />
+      ) : null}
+    </>
   );
 }
 
-function CandidateDetail({
+function CrewPassportCard({
   application,
   language,
-  updating,
-  notice,
-  onUpdate,
+  onView,
 }: {
   application: EmployerJobApplication;
   language: "en" | "tr";
-  updating: boolean;
-  notice: Notice | null;
-  onUpdate: (status: EmployerJobApplicationStatus) => void;
+  onView: () => void;
 }) {
   const c = copy[language];
-  const isFinal = ["rejected", "withdrawn", "hired"].includes(application.status);
+  const candidate = application.candidate;
+  const startValue = candidate.availableFrom
+    ? formatDate(candidate.availableFrom, language)
+    : c.notProvided;
 
   return (
-    <article className="bd-glass-card-strong overflow-hidden rounded-[30px]">
-      <div className="bd-brand-rule h-1.5" />
-      <div className="p-6 sm:p-8 lg:p-10">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <CandidateAvatar application={application} large />
-            <div className="min-w-0">
-              <h2 data-i18n-ignore className="truncate text-3xl font-semibold tracking-[-0.03em] text-slate-950">
-                {application.candidate.fullName}
+    <article className="group relative overflow-hidden rounded-[28px] border border-[#aebfca]/80 bg-white shadow-[0_28px_80px_rgba(7,22,49,0.10)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_32px_90px_rgba(7,22,49,0.14)] sm:rounded-[34px] md:grid md:grid-cols-[260px_minmax(0,1fr)] lg:grid-cols-[310px_minmax(0,1fr)]">
+      <aside className="relative min-h-[290px] overflow-hidden bg-[radial-gradient(circle_at_24%_28%,rgba(15,121,236,0.20),transparent_34%),linear-gradient(145deg,#031126_0%,#071631_58%,#0d254f_100%)] px-6 pb-6 pt-5 text-white md:min-h-[440px] md:px-7 md:pt-7">
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(165,243,252,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.08)_1px,transparent_1px)] [background-size:32px_32px]" />
+        <div className="pointer-events-none absolute -bottom-20 -left-16 h-52 w-52 rounded-full border border-cyan-200/10 shadow-[0_0_0_24px_rgba(165,243,252,0.025),0_0_0_48px_rgba(165,243,252,0.02)]" />
+        <BlueDeckLogoLink
+          href="/"
+          label="BlueDeck"
+          className="relative z-10 h-9 w-40"
+          imageClassName="object-left"
+        />
+
+        <div className="relative z-10 mx-auto mt-7 w-fit md:mt-14">
+          <span className="absolute -inset-3 rounded-full border border-cyan-200/30" />
+          <span className="absolute -inset-6 rounded-full border border-cyan-200/10" />
+          <CandidateAvatar
+            profilePhotoUrl={candidate.profilePhotoUrl}
+            displayName={candidate.displayName}
+            initials={candidate.initials}
+            className="h-36 w-36 rounded-full border-[7px] border-white shadow-2xl shadow-slate-950/30 md:h-44 md:w-44"
+            textClassName="text-3xl"
+          />
+          {candidate.premiumProfile ? (
+            <span
+              className="absolute -bottom-1 -right-1 grid h-10 w-10 place-items-center rounded-full border-4 border-[#071631] bg-cyan-300 text-[#071631] shadow-lg"
+              title={c.premiumProfile}
+            >
+              <BadgeCheck className="h-5 w-5" aria-hidden />
+            </span>
+          ) : null}
+        </div>
+
+        <div className="relative z-10 mt-8 flex items-center justify-between font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-cyan-100/60 md:absolute md:inset-x-7 md:bottom-6 md:mt-0">
+          <span>36° 07.2′ N</span>
+          <span>115° 08.9′ E</span>
+        </div>
+      </aside>
+
+      <div className="relative flex min-w-0 flex-col p-5 sm:p-7 lg:p-10">
+        <div className="pointer-events-none absolute bottom-0 right-0 h-44 w-44 opacity-[0.035] [background:repeating-radial-gradient(circle_at_100%_100%,#071631_0_1px,transparent_2px_18px)]" />
+        <div className="relative flex flex-col gap-4 border-b border-cyan-600/35 pb-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2
+                data-i18n-ignore
+                className="break-words text-3xl font-black uppercase leading-none tracking-[-0.035em] text-[#071631] sm:text-4xl lg:text-5xl"
+              >
+                {candidate.displayName}
               </h2>
-              <p data-i18n-ignore className="mt-1 font-black text-cyan-800">
-                {application.candidate.currentPosition || c.crewMember}
-              </p>
+              <LockKeyhole
+                className="h-5 w-5 shrink-0 text-slate-400"
+                aria-label={c.nameLocked}
+              />
             </div>
+            <p
+              data-i18n-ignore
+              className="mt-3 text-sm font-black uppercase tracking-[0.18em] text-cyan-800"
+            >
+              {candidate.currentPosition || c.crewMember}
+            </p>
+            {candidate.premiumProfile ? (
+              <PremiumBadge label={c.premiumProfile} />
+            ) : null}
+            {candidate.availabilityStatus ? (
+              <span className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.11em] text-emerald-800">
+                <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                {candidateAvailabilityLabel(
+                  candidate.availabilityStatus,
+                  language,
+                )}
+              </span>
+            ) : null}
           </div>
           <StatusBadge status={application.status} language={language} />
         </div>
 
-        <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <CandidateFact
+        <div className="relative mt-6 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-2">
+          <PassportFact
+            icon={<Flag />}
+            label={c.nationality}
+            value={candidate.nationality || c.notProvided}
+          />
+          <PassportFact
+            icon={<CalendarDays />}
+            label={c.availableToStart}
+            value={startValue}
+          />
+          <PassportFact
             icon={<BriefcaseBusiness />}
-            label={c.accountType}
+            label={c.experience}
             value={
-              application.applicantRole === "captain" ? c.captain : c.crew
+              candidate.experienceYears > 0
+                ? candidate.experienceYears < 1
+                  ? c.lessThanOneYear
+                  : `${candidate.experienceYears}+ ${c.years}`
+                : c.noExperience
             }
           />
-          <CandidateFact
+          <PassportFact
             icon={<Clock3 />}
             label={c.applied}
-            value={formatDateTime(application.submittedAt, language)}
+            value={formatDate(application.submittedAt, language)}
           />
-          {application.candidate.location ? (
-            <CandidateFact
-              icon={<MapPin />}
-              label={c.location}
-              value={application.candidate.location}
-            />
-          ) : null}
-          {application.candidate.nationality ? (
-            <CandidateFact
-              icon={<Flag />}
-              label={c.nationality}
-              value={application.candidate.nationality}
-            />
-          ) : null}
-          {application.candidate.availabilityStatus ? (
-            <CandidateFact
-              icon={<CheckCircle2 />}
-              label={c.availability}
-              value={candidateAvailabilityLabel(
-                application.candidate.availabilityStatus,
-                language,
-              )}
-            />
-          ) : null}
-          {application.candidate.availableFrom ? (
-            <CandidateFact
-              icon={<CalendarDays />}
-              label={c.availableFrom}
-              value={formatDate(
-                application.candidate.availableFrom,
-                language,
-              )}
-            />
-          ) : null}
         </div>
 
-        <section className="mt-8 border-t border-slate-200 pt-7">
-          <p className="bd-kicker">{c.profilePreview}</p>
-          {application.candidate.seekingPositions.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {application.candidate.seekingPositions.map((position) => (
-                <span
-                  key={position}
-                  data-i18n-ignore
-                  className="rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-black text-cyan-900"
-                >
-                  {position}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-4 text-sm italic text-slate-500">
-              {c.noProfileSummary}
-            </p>
-          )}
-        </section>
-
-        <section className="mt-8 border-t border-slate-200 pt-7">
-          <p className="bd-kicker">{c.candidateNote}</p>
-          {application.privateNoteAvailable ? (
-            <p className="mt-4 inline-flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-600">
-              <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-cyan-800" aria-hidden />
-              {c.privateNoteReserved}
-            </p>
-          ) : (
-            <p className="mt-4 text-sm italic text-slate-500">{c.noNote}</p>
-          )}
-        </section>
-
-        <section className="mt-8 border-t border-slate-200 pt-7">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-800">
-              <Send className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <h3 className="text-lg font-black text-slate-950">{c.decision}</h3>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                {isFinal ? c.finalStatus : c.decisionHelp}
-              </p>
-            </div>
-          </div>
-
-          {!isFinal ? (
-            <div className="mt-5 flex flex-wrap gap-2">
-              {employerJobApplicationStatuses.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => onUpdate(status)}
-                  disabled={updating || application.status === status}
-                  className={`bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                    status === "hired"
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
-                      : status === "rejected"
-                        ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
-                        : "border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50"
-                  }`}
-                >
-                  {updating ? (
-                    <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-                  ) : null}
-                  {statusLabel(status, language)}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {notice ? (
-            <p
-              className={`mt-4 flex items-start gap-2 text-sm font-semibold leading-6 ${notice.tone === "success" ? "text-emerald-800" : "text-rose-700"}`}
-              role={notice.tone === "error" ? "alert" : "status"}
-            >
-              {notice.tone === "success" ? (
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-              ) : (
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-              )}
-              {notice.message}
-            </p>
-          ) : null}
-        </section>
-
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#f8fafc,#eef7fa)] p-5">
-          <div className="flex items-start gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#071f3c] text-cyan-100">
-              <LockKeyhole className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <h3 className="font-black text-slate-950">{c.fullProfileLocked}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {c.fullProfileLockedText}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <div className="mt-8 rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-xs leading-5 text-cyan-950">
-          {c.privacyNote}
+        <div className="relative mt-auto flex flex-wrap items-center justify-between gap-3 pt-6">
+          <p className="inline-flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <LockKeyhole className="h-3.5 w-3.5" aria-hidden />
+            {c.maskedIdentity}
+          </p>
+          <button
+            type="button"
+            onClick={onView}
+            className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white shadow-lg shadow-[#071631]/15 transition hover:bg-[#0d3e72]"
+          >
+            <Eye className="h-4 w-4" aria-hidden />
+            {c.viewProfile}
+          </button>
         </div>
       </div>
     </article>
   );
 }
 
-function CandidateButton({
+function CandidateProfileModal({
   application,
+  details,
   language,
-  selected,
-  onClick,
+  loading,
+  error,
+  updating,
+  notice,
+  onClose,
+  onRetry,
+  onUpdate,
 }: {
   application: EmployerJobApplication;
+  details: EmployerJobApplicationDetails | null;
   language: "en" | "tr";
-  selected: boolean;
-  onClick: () => void;
+  loading: boolean;
+  error: string;
+  updating: boolean;
+  notice: Notice | null;
+  onClose: () => void;
+  onRetry: () => void;
+  onUpdate: (status: EmployerJobApplicationStatus) => void;
 }) {
   const c = copy[language];
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const candidate = details?.candidate;
+  const cardCandidate = application.candidate;
+  const isFinal = ["rejected", "withdrawn", "hired"].includes(
+    application.status,
+  );
+
+  useEffect(() => {
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    closeButtonRef.current?.focus();
+    return () => previouslyFocused?.focus();
+  }, []);
+
+  function keepKeyboardFocusInDialog(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Tab") return;
+
+    const dialog = dialogRef.current;
+    const focusable = Array.from(
+      dialog?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) || [],
+    ).filter(
+      (element) =>
+        element.getAttribute("aria-hidden") !== "true" &&
+        element.getClientRects().length > 0,
+    );
+    if (focusable.length === 0) {
+      event.preventDefault();
+      closeButtonRef.current?.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable.at(-1) || first;
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || !dialog?.contains(active))) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && (active === last || !dialog?.contains(active))) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={selected}
-      className={`bd-focus w-full rounded-2xl border p-4 text-left transition ${
-        selected
-          ? "border-cyan-300 bg-cyan-50/80 shadow-sm"
-          : "border-transparent bg-white hover:border-slate-200"
-      }`}
+    <div
+      ref={dialogRef}
+      className="fixed inset-0 z-[250] flex items-center justify-center bg-[#020817]/80 p-2 backdrop-blur-md sm:p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="candidate-profile-title"
+      onKeyDown={keepKeyboardFocusInDialog}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
-      <div className="flex items-start gap-3">
-        <CandidateAvatar application={application} />
-        <div className="min-w-0 flex-1">
-          <p data-i18n-ignore className="truncate font-black text-slate-950">
-            {application.candidate.fullName}
-          </p>
-          <p data-i18n-ignore className="mt-1 truncate text-xs font-semibold text-slate-500">
-            {application.candidate.currentPosition || application.applicantRole}
-          </p>
-          {application.candidate.availabilityStatus ||
-          application.candidate.availableFrom ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {application.candidate.availabilityStatus ? (
-                <span
+      <article className="relative max-h-[96dvh] w-full max-w-[1180px] overflow-x-hidden overflow-y-auto rounded-[26px] border border-white/15 bg-[#f6f9fd] shadow-2xl shadow-black/40 sm:rounded-[34px]">
+        <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
+          <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            className="bd-focus absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
+            aria-label={c.close}
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+
+          <div className="relative flex min-w-0 flex-col gap-5 pr-12 sm:flex-row sm:items-center">
+            <CandidateAvatar
+              profilePhotoUrl={
+                candidate?.profilePhotoUrl || cardCandidate.profilePhotoUrl
+              }
+              displayName={candidate?.displayName || cardCandidate.displayName}
+              initials={candidate?.initials || cardCandidate.initials}
+              className="h-24 w-24 rounded-full border-[5px] border-white shadow-xl shadow-black/25"
+              textClassName="text-2xl"
+            />
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">
+                {c.candidateProfile}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <h2
+                  id="candidate-profile-title"
                   data-i18n-ignore
-                  className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-black text-emerald-800"
+                  className="break-words text-3xl font-black uppercase tracking-[-0.035em] sm:text-4xl"
                 >
-                  {candidateAvailabilityLabel(
-                    application.candidate.availabilityStatus,
-                    language,
-                  )}
-                </span>
-              ) : null}
-              {application.candidate.availableFrom ? (
-                <span
-                  data-i18n-ignore
-                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-bold text-slate-600"
-                >
-                  <CalendarDays className="h-3 w-3" aria-hidden />
-                  {c.availableFrom}: {formatDate(
-                    application.candidate.availableFrom,
-                    language,
-                  )}
-                </span>
+                  {candidate?.displayName || cardCandidate.displayName}
+                </h2>
+                <LockKeyhole className="h-5 w-5 text-white/55" aria-hidden />
+              </div>
+              <p
+                data-i18n-ignore
+                className="mt-2 font-black uppercase tracking-[0.16em] text-cyan-100"
+              >
+                {candidate?.currentPosition ||
+                  cardCandidate.currentPosition ||
+                  c.crewMember}
+              </p>
+              {candidate?.premiumProfile || cardCandidate.premiumProfile ? (
+                <PremiumBadge label={c.premiumProfile} dark />
               ) : null}
             </div>
-          ) : null}
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <StatusBadge status={application.status} language={language} compact />
-            <span className="text-[10px] font-semibold text-slate-400">
-              {formatDate(application.submittedAt, language)}
-            </span>
           </div>
-        </div>
-      </div>
-    </button>
+        </header>
+
+        {loading ? (
+          <div className="flex min-h-[420px] flex-col items-center justify-center p-10 text-center">
+            <LoaderCircle className="h-10 w-10 animate-spin text-cyan-700" aria-hidden />
+            <p className="mt-4 font-black text-[#071631]">{c.profileLoading}</p>
+          </div>
+        ) : error || !candidate ? (
+          <div className="flex min-h-[420px] flex-col items-center justify-center p-10 text-center">
+            <AlertCircle className="h-10 w-10 text-rose-600" aria-hidden />
+            <h3 className="mt-4 text-2xl font-black text-[#071631]">
+              {c.profileLoadError}
+            </h3>
+            {error ? <p className="mt-2 text-slate-600">{error}</p> : null}
+            <button
+              type="button"
+              onClick={onRetry}
+              className="bd-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              {c.retry}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6 p-4 sm:p-7 lg:p-8">
+            <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+              <SectionHeading
+                icon={<Camera />}
+                title={c.gallery}
+                text={c.galleryHelp}
+              />
+              {candidate.galleryPhotos.length > 0 ? (
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+                  {candidate.galleryPhotos.map((photo, index) => (
+                    <GalleryPhoto
+                      key={photo}
+                      source={photo}
+                      alt={`${candidate.displayName} ${c.galleryPhoto} ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
+                  {c.noGalleryPhotos}
+                </div>
+              )}
+            </section>
+
+            <section className="grid gap-3 sm:grid-cols-3">
+              <ProfileMetric
+                icon={<UsersRound />}
+                value={candidate.referenceCount}
+                label={c.references}
+              />
+              <ProfileMetric
+                icon={<FileText />}
+                value={candidate.documentCount}
+                label={c.documents}
+              />
+              <ProfileMetric
+                icon={<BriefcaseBusiness />}
+                value={candidate.experienceCount}
+                label={c.experiences}
+              />
+            </section>
+
+            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+              <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <SectionHeading
+                  icon={<UserRound />}
+                  title={c.personalDetails}
+                />
+                <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-2">
+                  <DetailFact label={c.gender} value={candidate.gender} fallback={c.notProvided} />
+                  <DetailFact
+                    label={c.height}
+                    value={candidate.heightCm ? `${candidate.heightCm} cm` : ""}
+                    fallback={c.notProvided}
+                  />
+                  <DetailFact
+                    label={c.weight}
+                    value={candidate.weightKg ? `${candidate.weightKg} kg` : ""}
+                    fallback={c.notProvided}
+                  />
+                  <DetailFact label={c.smoker} value={candidate.smoker} fallback={c.notProvided} />
+                  <DetailFact
+                    label={c.visibleTattoos}
+                    value={candidate.visibleTattoos}
+                    fallback={c.notProvided}
+                  />
+                  <DetailFact
+                    label={c.nationality}
+                    value={candidate.nationality}
+                    fallback={c.notProvided}
+                  />
+                  <DetailFact
+                    label={c.location}
+                    value={candidate.location}
+                    fallback={c.notProvided}
+                    wide
+                  />
+                </dl>
+              </section>
+
+              <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                <SectionHeading
+                  icon={<FileText />}
+                  title={c.professionalSummary}
+                />
+                <p
+                  data-i18n-ignore
+                  className="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base"
+                >
+                  {candidate.professionalSummary || c.noProfessionalSummary}
+                </p>
+              </section>
+            </div>
+
+            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <SectionHeading
+                icon={<BadgeCheck />}
+                title={c.skillsCharacteristics}
+                text={c.skillsHelp}
+              />
+              <div className="mt-5 grid gap-5 md:grid-cols-2">
+                <TagGroup label={c.skills} items={candidate.skills} empty={c.notProvided} />
+                <TagGroup
+                  label={c.characteristics}
+                  items={candidate.characteristics}
+                  empty={c.notProvided}
+                />
+                <TagGroup
+                  label={c.seekingPositions}
+                  items={candidate.seekingPositions}
+                  empty={c.notProvided}
+                />
+                <TagGroup
+                  label={c.workPreferences}
+                  items={candidate.workPreferences}
+                  empty={c.notProvided}
+                />
+                <TagGroup
+                  label={c.employmentTypes}
+                  items={candidate.employmentTypes}
+                  empty={c.notProvided}
+                />
+                <TagGroup
+                  label={c.preferredLocations}
+                  items={candidate.preferredLocations}
+                  empty={c.notProvided}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <SectionHeading icon={<Languages />} title={c.languages} />
+              {candidate.languages.length > 0 ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {candidate.languages.map((item) => (
+                    <div
+                      key={`${item.name}-${item.level}`}
+                      data-i18n-ignore
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+                    >
+                      <span className="min-w-0 break-words font-black text-[#071631]">
+                        {item.name}
+                      </span>
+                      <span className="max-w-[48%] shrink-0 break-words rounded-full bg-cyan-50 px-2.5 py-1 text-right text-[10px] font-black uppercase tracking-[0.1em] text-cyan-800">
+                        {item.level}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-5 text-sm text-slate-500">{c.noLanguages}</p>
+              )}
+            </section>
+
+            <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-800">
+                    {c.crewPortal}
+                  </p>
+                  <h3 className="mt-2 text-xl font-black text-[#071631]">
+                    {c.crewPortalTitle}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {candidate.portalAvailable
+                      ? c.crewPortalHelp
+                      : c.crewPortalUnavailable}
+                  </p>
+                </div>
+                {candidate.portalAvailable && candidate.publicCrewId ? (
+                  <a
+                    href={`/crew/${encodeURIComponent(candidate.publicCrewId)}/gallery`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bd-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white shadow-lg shadow-[#071631]/15 transition hover:bg-[#0d3e72]"
+                  >
+                    {c.openCrewPortal}
+                    <ExternalLink className="h-4 w-4" aria-hidden />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex min-h-12 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-200 px-5 text-sm font-black text-slate-500"
+                  >
+                    <LockKeyhole className="h-4 w-4" aria-hidden />
+                    {c.openCrewPortal}
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <SectionHeading
+                icon={<Send />}
+                title={c.decision}
+                text={isFinal ? c.finalStatus : c.decisionHelp}
+              />
+              {!isFinal ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {employerJobApplicationStatuses.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => onUpdate(status)}
+                      disabled={updating || application.status === status}
+                      className={`bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        status === "hired"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                          : status === "rejected"
+                            ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50"
+                      }`}
+                    >
+                      {updating ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
+                      ) : null}
+                      {statusLabel(status, language)}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {notice ? (
+                <p
+                  className={`mt-4 flex items-start gap-2 text-sm font-semibold leading-6 ${
+                    notice.tone === "success"
+                      ? "text-emerald-800"
+                      : "text-rose-700"
+                  }`}
+                  role={notice.tone === "error" ? "alert" : "status"}
+                >
+                  {notice.tone === "success" ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                  ) : (
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                  )}
+                  {notice.message}
+                </p>
+              ) : null}
+            </section>
+
+            <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-xs leading-5 text-cyan-950">
+              {c.privacyNote}
+            </p>
+          </div>
+        )}
+      </article>
+    </div>
   );
 }
 
 function CandidateAvatar({
-  application,
-  large = false,
+  profilePhotoUrl,
+  displayName,
+  initials,
+  className,
+  textClassName,
 }: {
-  application: EmployerJobApplication;
-  large?: boolean;
+  profilePhotoUrl: string;
+  displayName: string;
+  initials: string;
+  className: string;
+  textClassName: string;
 }) {
-  const classes = large ? "h-16 w-16 text-xl" : "h-11 w-11 text-sm";
-  const profilePhotoUrl = application.candidate.profilePhotoUrl;
   const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
@@ -628,10 +1076,10 @@ function CandidateAvatar({
 
   if (profilePhotoUrl && !imageFailed) {
     return (
-      <span className={`${classes} relative flex shrink-0 overflow-hidden rounded-2xl bg-slate-100`}>
+      <span className={`relative flex shrink-0 overflow-hidden bg-slate-100 ${className}`}>
         <img
-          src={candidateProfilePhotoSource(profilePhotoUrl)}
-          alt={application.candidate.fullName}
+          src={candidateMediaSource(profilePhotoUrl, 420, 420)}
+          alt={displayName}
           className="h-full w-full object-cover"
           loading="lazy"
           decoding="async"
@@ -643,23 +1091,60 @@ function CandidateAvatar({
   }
 
   return (
-    <span className={`${classes} flex shrink-0 items-center justify-center rounded-2xl bg-[#071f3c] font-black text-cyan-100`}>
-      {initials(application.candidate.fullName)}
+    <span
+      className={`flex shrink-0 items-center justify-center bg-[linear-gradient(145deg,#d8f8ff,#73bffc)] font-black text-[#071631] ${className} ${textClassName}`}
+      aria-label={displayName}
+    >
+      {initials || "BD"}
     </span>
   );
 }
 
-function candidateProfilePhotoSource(source: string) {
+function GalleryPhoto({ source, alt }: { source: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <span className="grid aspect-[4/3] place-items-center rounded-2xl bg-slate-100 text-slate-400">
+        <Camera className="h-7 w-7" aria-hidden />
+      </span>
+    );
+  }
+
+  return (
+    <span className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
+      <img
+        src={candidateMediaSource(source, 720, 540)}
+        alt={alt}
+        className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
+      />
+    </span>
+  );
+}
+
+function candidateMediaSource(source: string, width: number, height: number) {
+  if (
+    /^\/api\/employer\/job-posts\/[0-9a-f-]+\/applications\/[0-9a-f-]+\/media\?/i.test(
+      source,
+    )
+  ) {
+    return source;
+  }
+
   const search = new URLSearchParams({
     src: source,
-    w: "160",
-    h: "160",
+    w: String(width),
+    h: String(height),
     fit: "cover",
   });
   return `/api/cv-image?${search.toString()}`;
 }
 
-function CandidateFact({
+function PassportFact({
   icon,
   label,
   value,
@@ -669,14 +1154,141 @@ function CandidateFact({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center gap-2 text-cyan-700 [&>svg]:h-4 [&>svg]:w-4">
+    <div className="flex min-w-0 items-center gap-4 bg-white p-4 sm:p-5">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-[#071631] [&>svg]:h-5 [&>svg]:w-5">
         {icon}
-        <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
+      </span>
+      <div className="min-w-0">
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
           {label}
-        </span>
+        </p>
+        <p
+          data-i18n-ignore
+          className="mt-1 break-words text-sm font-black text-[#071631] sm:text-base"
+        >
+          {value}
+        </p>
       </div>
-      <p data-i18n-ignore className="mt-2 font-black text-slate-900">{value}</p>
+    </div>
+  );
+}
+
+function PremiumBadge({ label, dark = false }: { label: string; dark?: boolean }) {
+  return (
+    <span
+      className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] ${
+        dark
+          ? "border-cyan-200/30 bg-cyan-200/10 text-cyan-100"
+          : "border-cyan-200 bg-cyan-50 text-cyan-900"
+      }`}
+    >
+      <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+      {label}
+    </span>
+  );
+}
+
+function SectionHeading({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071631] text-cyan-100 [&>svg]:h-5 [&>svg]:w-5">
+        {icon}
+      </span>
+      <div>
+        <h3 className="text-lg font-black text-[#071631]">{title}</h3>
+        {text ? <p className="mt-1 text-xs leading-5 text-slate-500">{text}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function ProfileMetric({
+  icon,
+  value,
+  label,
+}: {
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800 [&>svg]:h-5 [&>svg]:w-5">
+        {icon}
+      </span>
+      <div>
+        <p className="text-2xl font-black tabular-nums text-[#071631]">{value}</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DetailFact({
+  label,
+  value,
+  fallback,
+  wide = false,
+}: {
+  label: string;
+  value: string;
+  fallback: string;
+  wide?: boolean;
+}) {
+  return (
+    <div className={`min-w-0 bg-white p-4 ${wide ? "sm:col-span-2" : ""}`}>
+      <dt className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-500">
+        {label}
+      </dt>
+      <dd
+        data-i18n-ignore
+        className="mt-1.5 break-words font-black text-[#071631]"
+      >
+        {value || fallback}
+      </dd>
+    </div>
+  );
+}
+
+function TagGroup({
+  label,
+  items,
+  empty,
+}: {
+  label: string;
+  items: string[];
+  empty: string;
+}) {
+  return (
+    <div>
+      <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-800">
+        {label}
+      </h4>
+      {items.length > 0 ? (
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          {items.map((item) => (
+            <span
+              key={item}
+              data-i18n-ignore
+              className="max-w-full break-words rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-slate-400">{empty}</p>
+      )}
     </div>
   );
 }
@@ -684,14 +1296,12 @@ function CandidateFact({
 function StatusBadge({
   status,
   language,
-  compact = false,
 }: {
   status: JobApplicationStatus;
   language: "en" | "tr";
-  compact?: boolean;
 }) {
   const tones: Record<JobApplicationStatus, string> = {
-    submitted: "border-sky-200 bg-sky-50 text-sky-800",
+    submitted: "border-cyan-300 bg-cyan-50 text-cyan-800",
     reviewing: "border-amber-200 bg-amber-50 text-amber-800",
     shortlisted: "border-violet-200 bg-violet-50 text-violet-800",
     rejected: "border-rose-200 bg-rose-50 text-rose-700",
@@ -699,7 +1309,9 @@ function StatusBadge({
     withdrawn: "border-slate-200 bg-slate-100 text-slate-600",
   };
   return (
-    <span className={`inline-flex w-fit items-center rounded-full border font-black uppercase tracking-[0.1em] ${tones[status]} ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}>
+    <span
+      className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
+    >
       {statusLabel(status, language)}
     </span>
   );
@@ -760,7 +1372,11 @@ function FilterButton({
       }`}
     >
       {label}
-      <span className={`rounded-full px-2 py-0.5 text-[10px] ${active ? "bg-white/15" : "bg-slate-100"}`}>
+      <span
+        className={`rounded-full px-2 py-0.5 text-[10px] ${
+          active ? "bg-white/15" : "bg-slate-100"
+        }`}
+      >
         {count}
       </span>
     </button>
@@ -844,6 +1460,7 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
   if (!isRecord(value) || !isRecord(value.candidate)) return null;
   const status = value.status;
   const applicantRole = value.applicantRole;
+  const candidate = value.candidate;
   if (
     typeof value.id !== "string" ||
     typeof value.jobPostId !== "string" ||
@@ -853,10 +1470,15 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
     typeof value.updatedAt !== "string" ||
     typeof value.version !== "number" ||
     typeof value.privateNoteAvailable !== "boolean" ||
-    typeof value.candidate.fullName !== "string"
+    typeof candidate.displayName !== "string" ||
+    typeof candidate.initials !== "string" ||
+    typeof candidate.experienceYears !== "number" ||
+    typeof candidate.cvCompletionPercent !== "number" ||
+    typeof candidate.premiumProfile !== "boolean"
   ) {
     return null;
   }
+
   return {
     id: value.id,
     jobPostId: value.jobPostId,
@@ -869,44 +1491,116 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
     applicantRole,
     privateNoteAvailable: value.privateNoteAvailable,
     candidate: {
-      fullName: value.candidate.fullName,
-      profilePhotoUrl:
-        typeof value.candidate.profilePhotoUrl === "string"
-          ? value.candidate.profilePhotoUrl
-          : "",
-      currentPosition:
-        typeof value.candidate.currentPosition === "string"
-          ? value.candidate.currentPosition
-          : "",
-      location:
-        typeof value.candidate.location === "string"
-          ? value.candidate.location
-          : "",
-      nationality:
-        typeof value.candidate.nationality === "string"
-          ? value.candidate.nationality
-          : "",
-      seekingPositions: Array.isArray(value.candidate.seekingPositions)
-        ? value.candidate.seekingPositions
-            .filter((position): position is string => typeof position === "string")
-            .slice(0, 3)
-        : [],
-      availabilityStatus:
-        typeof value.candidate.availabilityStatus === "string"
-          ? value.candidate.availabilityStatus
-          : "",
-      availableFrom:
-        typeof value.candidate.availableFrom === "string"
-          ? value.candidate.availableFrom
-          : "",
+      displayName: candidate.displayName,
+      initials: candidate.initials,
+      profilePhotoUrl: stringValue(candidate.profilePhotoUrl),
+      currentPosition: stringValue(candidate.currentPosition),
+      nationality: stringValue(candidate.nationality),
+      availabilityStatus: stringValue(candidate.availabilityStatus),
+      availableFrom: stringValue(candidate.availableFrom),
+      experienceYears:
+        candidate.experienceYears > 0 && candidate.experienceYears < 1
+          ? 0.5
+          : Math.max(0, Math.floor(candidate.experienceYears)),
+      cvCompletionPercent: Math.max(
+        0,
+        Math.min(100, Math.round(candidate.cvCompletionPercent)),
+      ),
+      premiumProfile: candidate.premiumProfile,
     },
   };
 }
 
-function candidateAvailabilityLabel(
-  value: string,
-  language: "en" | "tr",
-) {
+function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | null {
+  if (!isRecord(value) || !isRecord(value.candidate)) return null;
+  const candidate = value.candidate;
+  if (
+    typeof value.applicationId !== "string" ||
+    typeof candidate.displayName !== "string" ||
+    typeof candidate.initials !== "string" ||
+    typeof candidate.premiumProfile !== "boolean" ||
+    typeof candidate.cvCompletionPercent !== "number" ||
+    typeof candidate.portalAvailable !== "boolean"
+  ) {
+    return null;
+  }
+
+  return {
+    applicationId: value.applicationId,
+    candidate: {
+      displayName: candidate.displayName,
+      initials: candidate.initials,
+      profilePhotoUrl: stringValue(candidate.profilePhotoUrl),
+      currentPosition: stringValue(candidate.currentPosition),
+      nationality: stringValue(candidate.nationality),
+      location: stringValue(candidate.location),
+      gender: stringValue(candidate.gender),
+      heightCm: nullableSafeNumber(candidate.heightCm),
+      weightKg: nullableSafeNumber(candidate.weightKg),
+      smoker: stringValue(candidate.smoker),
+      visibleTattoos: stringValue(candidate.visibleTattoos),
+      professionalSummary: stringValue(candidate.professionalSummary),
+      skills: stringArray(candidate.skills, 30),
+      characteristics: stringArray(candidate.characteristics, 30),
+      workPreferences: stringArray(candidate.workPreferences, 30),
+      seekingPositions: stringArray(candidate.seekingPositions, 30),
+      employmentTypes: stringArray(candidate.employmentTypes, 30),
+      preferredLocations: stringArray(candidate.preferredLocations, 30),
+      languages: languageArray(candidate.languages),
+      galleryPhotos: stringArray(candidate.galleryPhotos, 4),
+      referenceCount: safeCount(candidate.referenceCount),
+      documentCount: safeCount(candidate.documentCount),
+      experienceCount: safeCount(candidate.experienceCount),
+      publicCrewId: stringValue(candidate.publicCrewId),
+      portalAvailable: candidate.portalAvailable,
+      cvCompletionPercent: Math.max(
+        0,
+        Math.min(100, Math.round(candidate.cvCompletionPercent)),
+      ),
+      premiumProfile: candidate.premiumProfile,
+    },
+  };
+}
+
+function languageArray(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!isRecord(item)) return null;
+      const name = stringValue(item.name);
+      const level = stringValue(item.level);
+      return name ? { name, level } : null;
+    })
+    .filter((item): item is { name: string; level: string } => Boolean(item));
+}
+
+function stringArray(value: unknown, limit: number) {
+  return Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
+        .slice(0, limit)
+    : [];
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function nullableSafeNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.round(value)
+    : null;
+}
+
+function safeCount(value: unknown) {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
+    ? value
+    : 0;
+}
+
+function candidateAvailabilityLabel(value: string, language: "en" | "tr") {
   const labels: Record<string, { en: string; tr: string }> = {
     "Available now": { en: "Available now", tr: "Hemen müsait" },
     "Available soon": { en: "Available soon", tr: "Yakında müsait" },
@@ -922,7 +1616,7 @@ function candidateAvailabilityLabel(
 
 function statusLabel(status: JobApplicationStatus, language: "en" | "tr") {
   const labels = {
-    submitted: { en: "Submitted", tr: "Yeni" },
+    submitted: { en: "New application", tr: "Yeni başvuru" },
     reviewing: { en: "Reviewing", tr: "İnceleniyor" },
     shortlisted: { en: "Shortlisted", tr: "Kısa listede" },
     rejected: { en: "Rejected", tr: "Olumsuz" },
@@ -944,27 +1638,6 @@ function formatDate(value: string, language: "en" | "tr") {
   }).format(date);
 }
 
-function formatDateTime(value: string, language: "en" | "tr") {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function initials(value: string) {
-  return value
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "BD";
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -975,6 +1648,9 @@ const copy = {
     loadError: "Applications could not be loaded",
     updateError: "The application status could not be updated.",
     updated: "Application status updated.",
+    profileLoading: "Loading candidate profile…",
+    profileLoadError: "Candidate profile could not be loaded",
+    retry: "Retry",
     back: "My Job Postings & Hiring",
     eyebrow: "Candidate pipeline",
     total: "Applications",
@@ -985,39 +1661,73 @@ const copy = {
     empty: "No applications yet",
     emptyText:
       "Candidates will appear here as soon as Crew or Captain accounts apply to this role.",
-    candidates: "Candidates",
+    candidates: "Applicants",
     results: "results",
     noFilterResults: "No candidates match this filter.",
-    selectCandidate: "Select a candidate to review their application.",
+    identityProtection:
+      "Candidate names remain protected until BlueDeck Hiring access is introduced.",
     crewMember: "Yacht crew",
-    accountType: "Account",
-    captain: "Captain",
-    crew: "Crew",
-    applied: "Applied",
-    location: "Location",
     nationality: "Nationality",
-    availability: "Availability",
-    availableFrom: "Available from",
-    profilePreview: "Professional profile preview",
-    noProfileSummary: "This candidate has not added preferred positions yet.",
-    candidateNote: "Candidate note",
-    noNote: "The candidate applied without an additional note.",
-    privateNoteReserved:
-      "A private application note is saved. Its free-text content is reserved with the full candidate profile.",
+    availableToStart: "Available to start",
+    experience: "Experience",
+    years: "years",
+    lessThanOneYear: "Less than 1 year",
+    noExperience: "Not added",
+    applied: "Applied on",
+    notProvided: "Not provided",
+    premiumProfile: "Premium profile",
+    nameLocked: "Candidate name protected",
+    maskedIdentity: "Identity protected by BlueDeck",
+    viewProfile: "View profile",
+    candidateProfile: "Applicant profile",
+    close: "Close profile",
+    gallery: "My Blue gallery",
+    galleryHelp: "Four selected photos shared by the candidate in My Blue.",
+    galleryPhoto: "gallery photo",
+    noGalleryPhotos: "The candidate has not shared gallery photos yet.",
+    references: "References",
+    documents: "Documents",
+    experiences: "Experiences",
+    personalDetails: "Personal details",
+    gender: "Gender",
+    height: "Height",
+    weight: "Weight",
+    smoker: "Smoker",
+    visibleTattoos: "Visible tattoos",
+    location: "Location",
+    professionalSummary: "Professional summary",
+    noProfessionalSummary: "No professional summary has been added yet.",
+    skillsCharacteristics: "Skills & characteristics",
+    skillsHelp: "All structured career preferences shared in My Profile.",
+    skills: "Skills",
+    characteristics: "Characteristics",
+    seekingPositions: "Seeking positions",
+    workPreferences: "Work preferences",
+    employmentTypes: "Employment types",
+    preferredLocations: "Preferred hiring regions",
+    languages: "Languages",
+    noLanguages: "No language information has been added yet.",
+    crewPortal: "Crew Portal / CV",
+    crewPortalTitle: "Open the candidate’s public BlueDeck profile",
+    crewPortalHelp:
+      "This opens the same gallery linked by the CV QR code, with access to the public CV.",
+    crewPortalUnavailable:
+      "The candidate has not enabled their public Crew Portal yet.",
+    openCrewPortal: "Open Crew Portal / CV",
     decision: "Application status",
     decisionHelp: "Move the candidate through a clear, private hiring pipeline.",
     finalStatus: "This application has reached a final status.",
-    fullProfileLocked: "Full candidate profile is reserved",
-    fullProfileLockedText:
-      "Contact details, the private application note, documents, references and the detailed CV remain private. This access layer is ready for a future BlueDeck Hiring plan; no payment is required today.",
     privacyNote:
-      "Only structured professional preview fields are shown here. Free-text profile content, private documents and references are not included.",
+      "Contact details, document files and reference identities are never included here. Candidate names are masked in this hiring workspace.",
   },
   tr: {
     loading: "Başvurular yükleniyor…",
     loadError: "Başvurular yüklenemedi",
     updateError: "Başvuru durumu güncellenemedi.",
     updated: "Başvuru durumu güncellendi.",
+    profileLoading: "Aday profili yükleniyor…",
+    profileLoadError: "Aday profili yüklenemedi",
+    retry: "Tekrar dene",
     back: "İş İlanlarım ve İşe Alım",
     eyebrow: "Aday süreci",
     total: "Başvuru",
@@ -1028,32 +1738,63 @@ const copy = {
     empty: "Henüz başvuru yok",
     emptyText:
       "Crew veya Captain hesapları bu ilana başvurduğunda adaylar burada görünecek.",
-    candidates: "Adaylar",
+    candidates: "Başvuranlar",
     results: "sonuç",
     noFilterResults: "Bu filtreyle eşleşen aday yok.",
-    selectCandidate: "Başvurusunu incelemek için bir aday seçin.",
+    identityProtection:
+      "BlueDeck Hiring erişimi sunulana kadar aday adları korumalı kalır.",
     crewMember: "Yat mürettebatı",
-    accountType: "Hesap",
-    captain: "Captain",
-    crew: "Crew",
-    applied: "Başvuru tarihi",
-    location: "Konum",
     nationality: "Uyruk",
-    availability: "Müsaitlik",
-    availableFrom: "Müsaitlik başlangıcı",
-    profilePreview: "Profesyonel profil özeti",
-    noProfileSummary: "Aday henüz tercih ettiği pozisyonları eklememiş.",
-    candidateNote: "Aday notu",
-    noNote: "Aday ek bir not yazmadan başvurdu.",
-    privateNoteReserved:
-      "Özel başvuru notu kaydedildi. Serbest metin içeriği ayrıntılı aday profiliyle birlikte kilitli tutulur.",
+    availableToStart: "İşe başlayabileceği tarih",
+    experience: "Deneyim",
+    years: "yıl",
+    lessThanOneYear: "1 yıldan az",
+    noExperience: "Eklenmedi",
+    applied: "Başvuru tarihi",
+    notProvided: "Belirtilmedi",
+    premiumProfile: "Premium profil",
+    nameLocked: "Aday adı korumalı",
+    maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
+    viewProfile: "Profili görüntüle",
+    candidateProfile: "Başvuran profili",
+    close: "Profili kapat",
+    gallery: "My Blue galerisi",
+    galleryHelp: "Adayın My Blue bölümünde paylaştığı dört seçilmiş fotoğraf.",
+    galleryPhoto: "galeri fotoğrafı",
+    noGalleryPhotos: "Aday henüz galeri fotoğrafı paylaşmamış.",
+    references: "Referans",
+    documents: "Doküman",
+    experiences: "Deneyim",
+    personalDetails: "Kişisel bilgiler",
+    gender: "Cinsiyet",
+    height: "Boy",
+    weight: "Kilo",
+    smoker: "Sigara kullanımı",
+    visibleTattoos: "Görünür dövme",
+    location: "Konum",
+    professionalSummary: "Profesyonel özet",
+    noProfessionalSummary: "Henüz profesyonel özet eklenmemiş.",
+    skillsCharacteristics: "Beceriler ve özellikler",
+    skillsHelp: "My Profile içinde paylaşılan tüm yapılandırılmış kariyer tercihleri.",
+    skills: "Beceriler",
+    characteristics: "Kişisel özellikler",
+    seekingPositions: "Aranan pozisyonlar",
+    workPreferences: "Çalışma tercihleri",
+    employmentTypes: "Çalışma türleri",
+    preferredLocations: "Tercih edilen çalışma bölgeleri",
+    languages: "Diller",
+    noLanguages: "Henüz dil bilgisi eklenmemiş.",
+    crewPortal: "Crew Portal / CV",
+    crewPortalTitle: "Adayın herkese açık BlueDeck profilini aç",
+    crewPortalHelp:
+      "CV üzerindeki QR koduyla aynı galeriyi açar ve herkese açık CV’ye erişim sağlar.",
+    crewPortalUnavailable:
+      "Aday herkese açık Crew Portal görünürlüğünü henüz etkinleştirmemiş.",
+    openCrewPortal: "Crew Portal / CV’yi aç",
     decision: "Başvuru durumu",
     decisionHelp: "Adayı sade ve özel işe alım sürecinde ilerletin.",
     finalStatus: "Bu başvuru nihai duruma ulaştı.",
-    fullProfileLocked: "Ayrıntılı aday profili kilitli",
-    fullProfileLockedText:
-      "İletişim bilgileri, özel başvuru notu, belgeler, referanslar ve ayrıntılı CV gizli kalır. Bu erişim katmanı gelecekteki BlueDeck Hiring planı için hazırdır; bugün herhangi bir ödeme gerekmez.",
     privacyNote:
-      "Burada yalnız yapılandırılmış profesyonel önizleme alanları gösterilir. Serbest profil metni, özel belgeler ve referanslar dahil edilmez.",
+      "İletişim bilgileri, doküman dosyaları ve referans kimlikleri burada gösterilmez. Aday adları işe alım alanında maskelidir.",
   },
 } as const;

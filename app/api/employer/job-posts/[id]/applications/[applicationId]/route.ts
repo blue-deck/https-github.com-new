@@ -5,17 +5,97 @@ import {
 } from "../../../../../../lib/employerAccessServer";
 import { isEmployerJobApplicationStatus } from "../../../../../../lib/jobApplications";
 import {
-  applicationApplicantUserId,
+  applicationCandidatePreviewKey,
   applicationResponse,
   authenticatedApplicationClients,
   canManageJobApplications,
   employerJobApplicationFromRow,
+  loadApplicationCandidateDetails,
   loadApplicationCandidatePreviews,
   logJobApplicationError,
   readApplicationBody,
 } from "../../../../../../lib/jobApplicationsServer";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string; applicationId: string }> },
+) {
+  const params = await context.params;
+  const jobPostId = params.id.trim().toLowerCase();
+  const applicationId = params.applicationId.trim().toLowerCase();
+  if (!isUuid(jobPostId) || !isUuid(applicationId)) {
+    return applicationResponse({ ok: false, error: "Application not found." }, 404);
+  }
+
+  const clients = await authenticatedApplicationClients(request);
+  if ("error" in clients) {
+    return applicationResponse(
+      { ok: false, error: clients.error },
+      clients.status,
+    );
+  }
+
+  const authority = await canManageJobApplications(
+    clients.serviceClient,
+    clients.user.id,
+    jobPostId,
+  );
+  if (!authority.ok) {
+    return applicationResponse(
+      { ok: false, error: "The application could not be loaded." },
+      500,
+    );
+  }
+  if (!authority.allowed) {
+    return applicationResponse(
+      { ok: false, error: "You cannot manage this application." },
+      403,
+    );
+  }
+
+  const { data: applicationRow, error: applicationError } =
+    await clients.serviceClient
+      .from("job_applications")
+      .select(
+        "id,job_post_id,applicant_user_id,crew_profile_id,applicant_name_snapshot,applicant_position_snapshot",
+      )
+      .eq("id", applicationId)
+      .eq("job_post_id", jobPostId)
+      .maybeSingle();
+
+  if (applicationError) {
+    logJobApplicationError(
+      "candidate_detail_application_load_failed",
+      applicationError,
+      { actorUserId: clients.user.id, jobPostId, applicationId },
+    );
+    return applicationResponse(
+      { ok: false, error: "The application could not be loaded." },
+      500,
+    );
+  }
+  if (!applicationRow) {
+    return applicationResponse({ ok: false, error: "Application not found." }, 404);
+  }
+
+  const candidateDetails = await loadApplicationCandidateDetails(
+    clients.serviceClient,
+    applicationRow,
+  );
+  if (!candidateDetails.ok) {
+    return applicationResponse(
+      { ok: false, error: candidateDetails.error },
+      500,
+    );
+  }
+
+  return applicationResponse({
+    ok: true,
+    details: candidateDetails.details,
+  });
+}
 
 export async function PATCH(
   request: NextRequest,
@@ -148,7 +228,7 @@ export async function PATCH(
   const application = employerJobApplicationFromRow(
     updatedRow,
     candidatePreviews.ok
-      ? candidatePreviews.previews.get(applicationApplicantUserId(updatedRow))
+      ? candidatePreviews.previews.get(applicationCandidatePreviewKey(updatedRow))
       : undefined,
   );
   if (!application) {
