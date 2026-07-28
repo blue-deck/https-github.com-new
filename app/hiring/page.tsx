@@ -355,28 +355,17 @@ export default function HiringPage() {
         ) : null}
 
         <section className="mt-6" aria-labelledby="job-postings-title">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="bd-kicker">{c.postingsEyebrow}</p>
-              <h2
-                id="job-postings-title"
-                className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl"
-              >
-                {c.postingsTitle}
-              </h2>
-              <p className="mt-2 max-w-2xl leading-7 text-slate-600">
-                {c.postingsIntro}
-              </p>
-            </div>
-            {canCreateJob && jobs.length > 0 ? (
-              <Link
-                href="/hiring/jobs"
-                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50"
-              >
-                <Plus className="h-4 w-4" aria-hidden />
-                {c.createPost}
-              </Link>
-            ) : null}
+          <div>
+            <p className="bd-kicker">{c.postingsEyebrow}</p>
+            <h2
+              id="job-postings-title"
+              className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl"
+            >
+              {c.postingsTitle}
+            </h2>
+            <p className="mt-2 max-w-2xl leading-7 text-slate-600">
+              {c.postingsIntro}
+            </p>
           </div>
 
           {!applicationCountsAvailable && jobs.length > 0 ? (
