@@ -10,6 +10,7 @@ import {
 } from "./employerAccessServer";
 import {
   calculateCrewProfileCompletion,
+  countExperienceReferences,
   crewExperienceYears,
   isPremiumCrewProfile,
   type CompletionExperience,
@@ -435,7 +436,7 @@ export async function loadApplicationCandidateDetails(
         .eq("crew_profile_id", crewProfileId),
       serviceClient
         .from("crew_references")
-        .select("id", { count: "exact", head: true })
+        .select("id,vessel")
         .eq("crew_profile_id", crewProfileId),
       loadCompletionExperienceRows(serviceClient, [crewProfileId]),
     ]);
@@ -517,7 +518,10 @@ export async function loadApplicationCandidateDetails(
           .filter(Boolean),
         languages: publicLanguageEntries(profile.languages),
         galleryPhotos: gallerySources,
-        referenceCount: safeCount(referenceResult.count),
+        referenceCount: countExperienceReferences(
+          experiences,
+          referenceResult.data || [],
+        ),
         documentCount: safeCount(documentResult.count),
         experienceCount: experiences.length,
         publicCrewId: portalAvailable ? publicCrewId : "",

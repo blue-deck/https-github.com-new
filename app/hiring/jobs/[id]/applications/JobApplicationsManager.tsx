@@ -493,12 +493,12 @@ function CrewPassportCard({
       <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#071631] via-cyan-500 to-transparent opacity-80" />
 
       <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-        <div className="shrink-0 rounded-2xl bg-[#071631] p-1.5 shadow-sm">
+        <div className="shrink-0">
           <CandidateAvatar
             profilePhotoUrl={candidate.profilePhotoUrl}
             displayName={candidate.displayName}
             initials={candidate.initials}
-            className="h-16 w-16 rounded-xl border border-white/80 sm:h-20 sm:w-20"
+            className="h-16 w-16 rounded-xl border border-slate-200 bg-white shadow-sm sm:h-20 sm:w-20"
             textClassName="text-lg sm:text-xl"
             mediaSize={160}
           />
