@@ -18,6 +18,7 @@ import {
   LoaderCircle,
   LockKeyhole,
   RefreshCw,
+  RotateCcw,
   Send,
   UserRound,
   UsersRound,
@@ -391,7 +392,13 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
             count={applications.length}
             onClick={() => setFilter("all")}
           />
-          {(["submitted", "reviewing", "shortlisted", "hired"] as const).map(
+          {([
+            "submitted",
+            "reviewing",
+            "shortlisted",
+            "rejected",
+            "hired",
+          ] as const).map(
             (status) => (
               <FilterButton
                 key={status}
@@ -634,9 +641,8 @@ function CandidateProfileModal({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const candidate = details?.candidate;
   const cardCandidate = application.candidate;
-  const isFinal = ["rejected", "withdrawn", "hired"].includes(
-    application.status,
-  );
+  const isRejected = application.status === "rejected";
+  const isFinal = ["withdrawn", "hired"].includes(application.status);
 
   useEffect(() => {
     const previouslyFocused =
@@ -960,9 +966,31 @@ function CandidateProfileModal({
               <SectionHeading
                 icon={<Send />}
                 title={c.decision}
-                text={isFinal ? c.finalStatus : c.decisionHelp}
+                text={
+                  isRejected
+                    ? c.rejectionCanBeUndone
+                    : isFinal
+                      ? c.finalStatus
+                      : c.decisionHelp
+                }
               />
-              {!isFinal ? (
+              {isRejected ? (
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    onClick={() => onUpdate("reviewing")}
+                    disabled={updating}
+                    className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-black text-cyan-900 transition hover:border-cyan-300 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {updating ? (
+                      <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" aria-hidden />
+                    )}
+                    {c.undoRejection}
+                  </button>
+                </div>
+              ) : !isFinal ? (
                 <div className="mt-5 flex flex-wrap gap-2">
                   {employerJobApplicationStatuses.map((status) => (
                     <button
@@ -1677,6 +1705,9 @@ const copy = {
     openCrewPortal: "Open Crew Portal / CV",
     decision: "Application status",
     decisionHelp: "Move the candidate through a clear, private hiring pipeline.",
+    rejectionCanBeUndone:
+      "If this applicant was rejected by mistake, you can move them back to Reviewing.",
+    undoRejection: "Undo rejection",
     finalStatus: "This application has reached a final status.",
     privacyNote:
       "Contact details, document files and reference identities are never included here. Candidate names are masked in this hiring workspace.",
@@ -1754,6 +1785,9 @@ const copy = {
     openCrewPortal: "Crew Portal / CV’yi aç",
     decision: "Başvuru durumu",
     decisionHelp: "Adayı sade ve özel işe alım sürecinde ilerletin.",
+    rejectionCanBeUndone:
+      "Aday yanlışlıkla reddedildiyse başvuruyu yeniden İnceleniyor durumuna alabilirsiniz.",
+    undoRejection: "Reddi geri al",
     finalStatus: "Bu başvuru nihai duruma ulaştı.",
     privacyNote:
       "İletişim bilgileri, doküman dosyaları ve referans kimlikleri burada gösterilmez. Aday adları işe alım alanında maskelidir.",
