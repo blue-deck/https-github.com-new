@@ -668,6 +668,8 @@ textarea:-webkit-autofill:focus {
   left: max(0.75rem, var(--safe-area-left));
   z-index: 120;
   transform: translateY(-180%);
+  opacity: 0;
+  pointer-events: none;
   border-radius: 0.5rem;
   background: #ffffff;
   padding: 0.7rem 0.9rem;
@@ -675,11 +677,15 @@ textarea:-webkit-autofill:focus {
   box-shadow: 0 8px 28px rgba(2, 8, 23, 0.18);
   font-size: 0.82rem;
   font-weight: 800;
-  transition: transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
-.bd-skip-link:focus {
+.bd-skip-link:focus-visible {
   transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .bd-public-header {
