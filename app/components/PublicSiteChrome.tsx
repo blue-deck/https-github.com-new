@@ -124,32 +124,7 @@ export function PublicHeader() {
       </a>
 
       <div className="bd-public-header-inner">
-        <BlueDeckLogoLink
-          href="/"
-          priority
-          className="bd-public-brand"
-          imageClassName="object-contain object-left p-0"
-        />
-
-        <nav className="bd-public-navigation" aria-label="BlueDeck">
-          {publicNavigation
-            .filter((item) => item.desktop)
-            .map((item) => {
-              const active = isCurrentRoute(pathname, item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? "page" : undefined}
-                  className="bd-focus bd-public-nav-link"
-                >
-                  {t(item.labelKey)}
-                </Link>
-              );
-            })}
-        </nav>
-
-        <div className="bd-public-actions">
+        <div className="bd-public-brand-group">
           <button
             ref={menuButtonRef}
             type="button"
@@ -170,6 +145,33 @@ export function PublicHeader() {
             {menuOpen ? <X aria-hidden /> : <Menu aria-hidden />}
           </button>
 
+          <BlueDeckLogoLink
+            href="/"
+            priority
+            className="bd-public-brand"
+            imageClassName="object-contain object-left p-0"
+          />
+        </div>
+
+        <nav className="bd-public-navigation" aria-label="BlueDeck">
+          {publicNavigation
+            .filter((item) => item.desktop)
+            .map((item) => {
+              const active = isCurrentRoute(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className="bd-focus bd-public-nav-link"
+                >
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+        </nav>
+
+        <div className="bd-public-actions">
           {sessionEmail ? (
             <>
               <Link

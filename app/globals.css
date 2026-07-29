@@ -702,6 +702,13 @@ textarea:-webkit-autofill:focus {
   padding-inline: 1.25rem;
 }
 
+.bd-public-brand-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .bd-public-brand {
   width: 11.5rem;
   height: 2.25rem;
@@ -1924,6 +1931,10 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     gap: 0.5rem;
     padding-right: 0.75rem;
     padding-left: 0.75rem;
+  }
+
+  .bd-public-brand-group {
+    gap: 0.5rem;
   }
 
   .bd-public-brand {
