@@ -8,11 +8,8 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
-  FilePlus2,
   LoaderCircle,
-  LogOut,
   Plus,
-  Settings,
   ShieldCheck,
   Ship,
   Trash2,
@@ -67,6 +64,59 @@ type DashboardDeck = {
   department?: string;
 };
 
+const dashboardCopy = {
+  en: {
+    profileDescription: "Manage your crew ID, documents, expiry dates and CV.",
+    galleryDescription: "Open and manage your professional photo gallery.",
+    inviteBadge: "Invite",
+    inviteTitle: "Yacht Invite",
+    invitedBy: "You are invited by",
+    invitedFor: "for",
+    crewDuty: "crew duty",
+    sent: "Sent",
+    from: "From",
+    blueDeckCaptain: "BlueDeck captain",
+    blueDeckYacht: "BlueDeck yacht",
+    acceptingInvite: "Accepting...",
+    acceptInvite: "Accept Yacht Invite",
+    additionalDecks: (count: number) => `+${count} additional ${count === 1 ? "deck" : "decks"}`,
+    captainWorkspaceDescription: "Manage yachts, crew, documents and onboard operations.",
+    applicationsTitle: "My Applications",
+    applicationsDescription: "Track the jobs you applied for and their latest status in one place.",
+    contractsDescription: "Review yacht contracts assigned to your profile.",
+    photoUpdateFailed: "Your photo could not be updated.",
+    photoStorageUnavailable: "Photo storage is not ready yet. Please try again later.",
+    photoRemoveFailed: "Your photo could not be removed.",
+    inviteLinkIncomplete: "This invitation link is incomplete. Ask the sender to create a new invitation.",
+    inviteAcceptFailed: "Invitation could not be accepted.",
+  },
+  tr: {
+    profileDescription: "Mürettebat kimliğinizi, belgelerinizi, geçerlilik tarihlerinizi ve CV’nizi yönetin.",
+    galleryDescription: "Profesyonel fotoğraf galerinizi açın ve yönetin.",
+    inviteBadge: "Davet",
+    inviteTitle: "Yat Daveti",
+    invitedBy: "Şu yat tarafından davet edildiniz:",
+    invitedFor: "Görev",
+    crewDuty: "mürettebat görevi",
+    sent: "Gönderildi",
+    from: "Gönderen",
+    blueDeckCaptain: "BlueDeck kaptanı",
+    blueDeckYacht: "BlueDeck yatı",
+    acceptingInvite: "Kabul ediliyor...",
+    acceptInvite: "Yat Davetini Kabul Et",
+    additionalDecks: (count: number) => `+${count} ek tekne`,
+    captainWorkspaceDescription: "Yatları, mürettebatı, belgeleri ve tekne operasyonlarını yönetin.",
+    applicationsTitle: "Başvurularım",
+    applicationsDescription: "Başvurduğunuz ilanları ve güncel durumlarını tek ekrandan takip edin.",
+    contractsDescription: "Profilinize atanmış yat kontratlarını inceleyin.",
+    photoUpdateFailed: "Fotoğrafınız güncellenemedi.",
+    photoStorageUnavailable: "Fotoğraf depolama alanı henüz hazır değil. Lütfen daha sonra tekrar deneyin.",
+    photoRemoveFailed: "Fotoğrafınız kaldırılamadı.",
+    inviteLinkIncomplete: "Bu davet bağlantısı eksik. Gönderenden yeni bir davet oluşturmasını isteyin.",
+    inviteAcceptFailed: "Davet kabul edilemedi.",
+  },
+} as const;
+
 function cleanDisplayName(profile?: DashboardProfile | null) {
   const name = profile?.full_name?.trim();
   if (name && name !== profile?.email) return name;
@@ -82,14 +132,20 @@ function uniqueById<T extends { id?: string }>(items: T[]) {
 
 function DashboardPhotoControl({
   url,
-  name,
+  photoAlt,
+  addLabel,
+  changeLabel,
+  removeLabel,
   uploading,
   uploadingLabel,
   onChoose,
   onRemove,
 }: {
   url?: string;
-  name?: string;
+  photoAlt: string;
+  addLabel: string;
+  changeLabel: string;
+  removeLabel: string;
   uploading: boolean;
   uploadingLabel: string;
   onChoose: () => void;
@@ -103,7 +159,7 @@ function DashboardPhotoControl({
       {url && (
         <img
           src={url}
-          alt={`${name || "User"} dashboard photo`}
+          alt={photoAlt}
           className="h-full w-full object-cover transition duration-200 pointer-fine:group-hover:scale-[1.02] pointer-fine:group-hover:brightness-75 pointer-fine:group-hover:blur-[1px] group-focus-within:scale-[1.02] group-focus-within:brightness-75 group-focus-within:blur-[1px]"
         />
       )}
@@ -112,8 +168,8 @@ function DashboardPhotoControl({
         <button
           type="button"
           onClick={onChoose}
-          aria-label="Add dashboard photo"
-          title="Add dashboard photo"
+          aria-label={addLabel}
+          title={addLabel}
           className="absolute inset-0 flex cursor-pointer items-center justify-center text-cyan-800 transition hover:bg-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full border border-cyan-200 bg-white shadow-sm transition group-hover:scale-105 group-hover:border-cyan-300">
@@ -128,8 +184,8 @@ function DashboardPhotoControl({
             <button
               type="button"
               onClick={onChoose}
-              aria-label="Change dashboard photo"
-              title="Change dashboard photo"
+              aria-label={changeLabel}
+              title={changeLabel}
               className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-cyan-800 shadow-lg">
@@ -139,8 +195,8 @@ function DashboardPhotoControl({
             <button
               type="button"
               onClick={onRemove}
-              aria-label="Remove dashboard photo"
-              title="Remove dashboard photo"
+              aria-label={removeLabel}
+              title={removeLabel}
               className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full transition hover:bg-rose-100/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-lg">
@@ -153,7 +209,8 @@ function DashboardPhotoControl({
             <button
               type="button"
               onClick={onChoose}
-              aria-label="Change dashboard photo"
+              aria-label={changeLabel}
+              title={changeLabel}
               className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-cyan-800 shadow-md">
@@ -163,7 +220,8 @@ function DashboardPhotoControl({
             <button
               type="button"
               onClick={onRemove}
-              aria-label="Remove dashboard photo"
+              aria-label={removeLabel}
+              title={removeLabel}
               className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-md">
@@ -189,6 +247,7 @@ function DashboardPhotoControl({
 
 export default function DashboardPage() {
   const { language, t } = useLanguage();
+  const copy = dashboardCopy[language];
   const [profile, setProfile] = useState<DashboardProfile | null>(null);
   const [accountCapabilities, setAccountCapabilities] =
     useState<AccountCapabilities | null>(null);
@@ -419,10 +478,10 @@ export default function DashboardPage() {
         dashboard_photo_url: result.photoUrl,
       }));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Your photo could not be updated.";
+      const message = error instanceof Error ? error.message : copy.photoUpdateFailed;
       alert(
         message === "Bucket not found"
-          ? "Photo storage is not ready yet. Please try again later."
+          ? copy.photoStorageUnavailable
           : message,
       );
     } finally {
@@ -448,7 +507,7 @@ export default function DashboardPage() {
       });
       setProfile((current) => ({ ...(current || {}), dashboard_photo_url: "" }));
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Your photo could not be removed.");
+      alert(error instanceof Error ? error.message : copy.photoRemoveFailed);
     } finally {
       setPhotoUploading(false);
     }
@@ -465,7 +524,7 @@ export default function DashboardPage() {
     }
 
     if (!invite.token) {
-      alert("This invitation link is incomplete. Ask the sender to create a new invitation.");
+      alert(copy.inviteLinkIncomplete);
       return;
     }
 
@@ -490,14 +549,14 @@ export default function DashboardPage() {
         alert(
           typeof error === "string"
             ? error
-            : "Invitation could not be accepted.",
+            : copy.inviteAcceptFailed,
         );
         return;
       }
 
       await loadDashboard();
     } catch {
-      alert("Invitation could not be accepted.");
+      alert(copy.inviteAcceptFailed);
     } finally {
       setAcceptingInviteId("");
     }
@@ -528,7 +587,11 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="bd-app-page bd-ocean-shell min-h-screen p-10 text-slate-900">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="bd-app-page bd-ocean-shell min-h-screen p-10 text-slate-900"
+      >
         <div className="bd-ocean-content">{t("dashboard.loading")}</div>
       </main>
     );
@@ -549,14 +612,29 @@ export default function DashboardPage() {
       ? t("login.roleCaptain")
       : normalizedRole === "management"
         ? t("login.roleManagement")
-        : normalizedRole === "owner"
-          ? t("login.roleOwner")
-          : t("login.roleCrew");
+          : normalizedRole === "owner"
+            ? t("login.roleOwner")
+            : t("login.roleCrew");
+  const dashboardCardClass =
+    "bd-focus bd-glass-card rounded-2xl p-6 transition-colors hover:border-cyan-300 [&>h2]:text-xl [&>h2]:tracking-[-0.02em] [&>p]:text-sm";
+  const inviteSenderRole = deckInvites[0]?.sender_role?.trim().toLowerCase();
+  const inviteSenderRoleLabel =
+    inviteSenderRole === "owner"
+      ? t("login.roleOwner")
+      : inviteSenderRole === "management"
+        ? t("login.roleManagement")
+        : inviteSenderRole === "crew"
+          ? t("login.roleCrew")
+          : t("login.roleCaptain");
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10"
+    >
       <div className="bd-ocean-content mx-auto max-w-7xl">
-        <section className="relative overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/95 shadow-xl shadow-slate-950/6 backdrop-blur">
+        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="bd-brand-rule h-0.5" />
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5 sm:gap-8 sm:p-7">
             <div className="min-w-0">
@@ -575,7 +653,10 @@ export default function DashboardPage() {
 
             <DashboardPhotoControl
               url={profile?.dashboard_photo_url}
-              name={profile?.full_name}
+              photoAlt={`${profile?.full_name || t("topbar.accountFallback")} — ${t("dashboard.profilePhoto")}`}
+              addLabel={`${t("topbar.addPhoto")} — ${t("dashboard.profilePhoto")}`}
+              changeLabel={`${t("topbar.changePhoto")} — ${t("dashboard.profilePhoto")}`}
+              removeLabel={`${t("topbar.removePhoto")} — ${t("dashboard.profilePhoto")}`}
               uploading={photoUploading}
               uploadingLabel={t("dashboard.updatingPhoto")}
               onChoose={() => fileInputRef.current?.click()}
@@ -585,7 +666,11 @@ export default function DashboardPage() {
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp,image/avif"
-              aria-label="Choose dashboard photo"
+              aria-label={
+                profile?.dashboard_photo_url
+                  ? `${t("topbar.changePhoto")} — ${t("dashboard.profilePhoto")}`
+                  : `${t("topbar.addPhoto")} — ${t("dashboard.profilePhoto")}`
+              }
               disabled={photoUploading}
               className="sr-only"
               tabIndex={-1}
@@ -598,16 +683,18 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {hasCrewWorkspace ? (
             <Link
               href="/profile"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <UserRound className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Profile</h2>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("topbar.myProfile")}
+              </h2>
               <p className="mt-3 leading-7 text-slate-600">
-                Manage your crew ID, documents, expiry dates and CV.
+                {copy.profileDescription}
               </p>
             </Link>
           ) : null}
@@ -615,61 +702,110 @@ export default function DashboardPage() {
           {hasCrewWorkspace ? (
             <Link
               href="/my-blue"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <Camera className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Blue</h2>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("topbar.myBlue")}
+              </h2>
               <p className="mt-3 leading-7 text-slate-600">
-                Open and manage your professional Photo Gallery.
+                {copy.galleryDescription}
               </p>
             </Link>
           ) : null}
 
           {hasCrewWorkspace && deckInvites.length > 0 ? (
-            <div className="bd-glass-card-strong rounded-[28px] p-8 shadow-2xl shadow-cyan-950/8">
+            <div className="bd-glass-card-strong rounded-2xl p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-lg shadow-cyan-950/15">
                   <UserPlus className="h-6 w-6" />
                 </div>
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-800">
-                  Invite
+                  {copy.inviteBadge}
                 </span>
               </div>
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Yacht Invite</h2>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {copy.inviteTitle}
+              </h2>
               <div className="mt-4 rounded-2xl border border-cyan-100 bg-white/72 p-4">
                 <p className="text-sm font-semibold leading-6 text-slate-600">
-                  You are invited by <span data-i18n-ignore className="font-black text-slate-950">{deckInvites[0].yacht_name}</span> for{" "}
-                  <span className="font-black text-cyan-800">{deckInvites[0].position || "crew duty"}</span>.
+                  {language === "tr" ? (
+                    <>
+                      <span data-i18n-ignore className="font-black text-slate-950">
+                        {deckInvites[0].yacht_name === "BlueDeck yacht"
+                          ? copy.blueDeckYacht
+                          : deckInvites[0].yacht_name}
+                      </span>{" "}
+                      tarafından{" "}
+                      <span className="font-black text-cyan-800">
+                        {deckInvites[0].position || copy.crewDuty}
+                      </span>{" "}
+                      görevi için davet edildiniz.
+                    </>
+                  ) : (
+                    <>
+                      {copy.invitedBy}{" "}
+                      <span data-i18n-ignore className="font-black text-slate-950">
+                        {deckInvites[0].yacht_name}
+                      </span>{" "}
+                      {copy.invitedFor}{" "}
+                      <span className="font-black text-cyan-800">
+                        {deckInvites[0].position || copy.crewDuty}
+                      </span>
+                      .
+                    </>
+                  )}
                 </p>
                 <div className="mt-3 space-y-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">
-                  <p>Sent: {deckInvites[0].created_at ? new Date(deckInvites[0].created_at).toLocaleDateString() : "-"}</p>
-                  <p>From: <span data-i18n-ignore>{deckInvites[0].sender_role || "Captain"} · {deckInvites[0].sender_name || "BlueDeck captain"}</span></p>
+                  <p>
+                    {copy.sent}:{" "}
+                    {deckInvites[0].created_at
+                      ? new Date(deckInvites[0].created_at).toLocaleDateString(
+                          language === "tr" ? "tr-TR" : "en-GB",
+                        )
+                      : "-"}
+                  </p>
+                  <p>
+                    {copy.from}:{" "}
+                    <span data-i18n-ignore>
+                      {inviteSenderRoleLabel} ·{" "}
+                      {deckInvites[0].sender_name === "BlueDeck captain"
+                        ? copy.blueDeckCaptain
+                        : deckInvites[0].sender_name || copy.blueDeckCaptain}
+                    </span>
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => acceptDashboardInvite(deckInvites[0])}
                 disabled={acceptingInviteId === deckInvites[0].id}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-4 text-base font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:opacity-60"
+                className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
               >
                 <CheckCircle2 className="h-5 w-5" />
-                {acceptingInviteId === deckInvites[0].id ? "Accepting..." : "Accept Yacht Invite"}
+                {acceptingInviteId === deckInvites[0].id
+                  ? copy.acceptingInvite
+                  : copy.acceptInvite}
               </button>
             </div>
           ) : hasCrewWorkspace && myDecks.length > 0 ? (
             <Link
               href="/crew/tasks"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <Ship className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">My Deck</h2>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("topbar.myDeck")}
+              </h2>
               <p data-i18n-ignore className="mt-3 leading-7 text-slate-600">
-                {myDecks[0].yacht_name}
+                {myDecks[0].yacht_name === "BlueDeck yacht"
+                  ? copy.blueDeckYacht
+                  : myDecks[0].yacht_name}
                 {myDecks[0].position ? ` · ${myDecks[0].position}` : ""}
               </p>
               {myDecks.length > 1 && (
                 <p className="mt-3 inline-flex rounded-full bg-cyan-50 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                  +{myDecks.length - 1} deck
+                  {copy.additionalDecks(myDecks.length - 1)}
                 </p>
               )}
             </Link>
@@ -678,12 +814,14 @@ export default function DashboardPage() {
           {canManageYachts ? (
             <Link
               href="/yachts"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <Ship className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Captain Workspace</h2>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("topbar.captainWorkspace")}
+              </h2>
               <p className="mt-3 leading-7 text-slate-600">
-                Manage yachts, crew, documents and onboard operations.
+                {copy.captainWorkspaceDescription}
               </p>
             </Link>
           ) : null}
@@ -691,7 +829,7 @@ export default function DashboardPage() {
           {canPostJobs ? (
             <Link
               href="/hiring"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">
@@ -703,25 +841,10 @@ export default function DashboardPage() {
             </Link>
           ) : null}
 
-          {canPostJobs ? (
-            <Link
-              href="/hiring/jobs"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-            >
-              <FilePlus2 className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("dashboard.createJobPost")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {t("dashboard.createJobPostText")}
-              </p>
-            </Link>
-          ) : null}
-
           {canApplyToJobs ? (
             <Link
               href="/jobs"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">
@@ -736,16 +859,14 @@ export default function DashboardPage() {
           {canApplyToJobs ? (
             <Link
               href="/portal/applications"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <ClipboardCheck className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {language === "tr" ? "Başvurularım" : "My Applications"}
+                {copy.applicationsTitle}
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
-                {language === "tr"
-                  ? "Başvurduğunuz ilanları ve güncel durumlarını tek ekrandan takip edin."
-                  : "Track the jobs you applied for and their latest status in one place."}
+                {copy.applicationsDescription}
               </p>
             </Link>
           ) : null}
@@ -753,7 +874,7 @@ export default function DashboardPage() {
           {profile?.is_admin ? (
             <Link
               href="/admin/employer-access"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <ShieldCheck className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">
@@ -768,36 +889,18 @@ export default function DashboardPage() {
           {hasCrewWorkspace ? (
             <Link
               href="/contracts"
-              className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
+              className={dashboardCardClass}
             >
               <FileText className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">Contracts</h2>
-              <p className="mt-3 leading-7 text-slate-600">Review yacht contracts assigned to your profile.</p>
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {t("topbar.contracts")}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {copy.contractsDescription}
+              </p>
             </Link>
           ) : null}
 
-          <Link
-            href="/settings"
-            className="bd-focus bd-glass-card rounded-[28px] p-8 transition hover:-translate-y-1 hover:bg-white/90"
-          >
-            <Settings className="h-8 w-8 text-cyan-700" />
-            <h2 className="mt-5 text-3xl font-semibold text-slate-950">Settings</h2>
-            <p className="mt-3 leading-7 text-slate-600">
-              Manage your name, password, language and security access.
-            </p>
-          </Link>
-
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut();
-              window.location.href = "/login";
-            }}
-            className="bd-focus rounded-[28px] border border-[#ef776f]/30 bg-white/70 p-8 text-left text-[#b9423b] shadow-xl shadow-slate-900/5 backdrop-blur transition hover:bg-[#fff6f5]"
-          >
-            <LogOut className="h-8 w-8" />
-            <h2 className="mt-5 text-3xl font-semibold">Logout</h2>
-            <p className="mt-3">Sign out from your BlueDeck account.</p>
-          </button>
         </div>
       </div>
     </main>

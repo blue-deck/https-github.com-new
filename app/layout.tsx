@@ -1,49 +1,55 @@
 import type { Metadata, Viewport } from "next";
+import { Geist } from "next/font/google";
 import { AuthenticatedTopBar } from "./components/AuthenticatedTopBar";
 import { LanguageProvider } from "./components/LanguageProvider";
 import { PlatformBridge } from "./components/PlatformBridge";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
-const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
+const geistSans = Geist({
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
+  variable: "--font-geist-sans",
+});
+
+const bluedeckLogoUrl = `${BLUEDECK_SITE_URL}/bluedeck-logo-wide-premium-transparent.png`;
 const bluedeckSearchIconUrl = `${BLUEDECK_SITE_URL}/bluedeck-search-icon.png`;
+const bluedeckSocialCardUrl = `${BLUEDECK_SITE_URL}/og.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(BLUEDECK_SITE_URL),
   applicationName: "BlueDeck",
-  title: "BlueDeck | Yacht Management Platform",
+  title: "BlueDeck | Yacht Careers, Crew & Operations",
   description:
-    "A premium yacht management website for owners, captains and crew: profiles, documents, contracts, checklist workflows and private yacht readiness.",
+    "Discover yacht jobs, find professional crew and run private yacht operations through one connected BlueDeck platform.",
   manifest: "/manifest.webmanifest",
-  alternates: {
-    canonical: "/",
-  },
   appleWebApp: {
     capable: true,
     title: "BlueDeck",
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "BlueDeck Yacht Management",
+    title: "BlueDeck | Yacht Careers, Crew & Operations",
     description:
-      "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
+      "Discover yacht jobs, find professional crew and run private yacht operations through one connected platform.",
     url: BLUEDECK_SITE_URL,
     siteName: "BlueDeck",
+    type: "website",
     images: [
       {
-        url: bluedeckSearchIconUrl,
-        width: 1024,
-        height: 1024,
-        alt: "BlueDeck",
+        url: bluedeckSocialCardUrl,
+        width: 1200,
+        height: 630,
+        alt: "BlueDeck — Yacht careers, crew and operations",
       },
     ],
   },
   twitter: {
-    card: "summary",
-    title: "BlueDeck Yacht Management",
+    card: "summary_large_image",
+    title: "BlueDeck | Yacht Careers, Crew & Operations",
     description:
-      "Private yacht operations, crew workflows, documents, contracts and readiness in one premium website.",
-    images: [bluedeckSearchIconUrl],
+      "Discover yacht jobs, find professional crew and run private yacht operations through one connected platform.",
+    images: [bluedeckSocialCardUrl],
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -78,7 +84,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={geistSans.variable}>
       <body>
         <script
           type="application/ld+json"

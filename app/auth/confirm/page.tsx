@@ -38,7 +38,9 @@ export default function ConfirmAuthPage() {
 
       if (errorDescription) {
         setStatus("error");
-        setMessage(errorDescription.replaceAll("+", " "));
+        setMessage(
+          "This confirmation link is incomplete or expired. Please request a new BlueDeck confirmation email.",
+        );
         return;
       }
 
@@ -54,7 +56,9 @@ export default function ConfirmAuthPage() {
 
         if (error) {
           setStatus("error");
-          setMessage(error.message);
+          setMessage(
+            "This confirmation link could not be verified. Please request a new BlueDeck confirmation email.",
+          );
           return;
         }
       } else if (code) {
@@ -62,7 +66,9 @@ export default function ConfirmAuthPage() {
 
         if (error) {
           setStatus("error");
-          setMessage(error.message);
+          setMessage(
+            "This confirmation link could not be verified. Please request a new BlueDeck confirmation email.",
+          );
           return;
         }
       } else {
@@ -97,14 +103,21 @@ export default function ConfirmAuthPage() {
   }, []);
 
   return (
-    <main className="bd-app-page bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-950">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="bd-app-page bd-ocean-shell flex min-h-screen items-center justify-center p-5 text-slate-950"
+    >
       <div className="bd-glass-card-strong w-full max-w-lg rounded-[34px] p-8 text-center">
         <BlueDeckLogoLink
           href="/"
           className="mx-auto mb-6 h-12 w-40 rounded-none border-0 bg-transparent shadow-none sm:w-52"
           imageClassName="object-contain p-0"
         />
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300">
+        <div
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950 text-cyan-300"
+          aria-hidden
+        >
           {status === "loading" && <Loader2 className="h-8 w-8 animate-spin" />}
           {status === "success" && <CheckCircle2 className="h-8 w-8" />}
           {status === "error" && <ShieldCheck className="h-8 w-8" />}
@@ -114,7 +127,14 @@ export default function ConfirmAuthPage() {
         <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">
           {status === "success" ? "Account activated" : status === "error" ? "Confirmation needs attention" : "Secure confirmation"}
         </h1>
-        <p className="mt-4 leading-7 text-slate-600">{message}</p>
+        <p
+          className="mt-4 leading-7 text-slate-600"
+          role={status === "error" ? "alert" : "status"}
+          aria-live={status === "error" ? "assertive" : "polite"}
+          aria-atomic="true"
+        >
+          {message}
+        </p>
 
         {status !== "loading" && (
           <Link

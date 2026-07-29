@@ -66,6 +66,10 @@ self.addEventListener("fetch", function (event) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Next.js owns the caching and invalidation of its generated assets.
+  // Intercepting these paths can mix modules from different deployments.
+  if (url.pathname.startsWith("/_next/")) return;
+
   // Employer application media uses short-lived capabilities and must never
   // outlive its private, no-store response in CacheStorage.
   if (/^\/api\/employer\/job-posts\/[^/]+\/applications\/[^/]+\/media$/.test(url.pathname)) return;
@@ -90,7 +94,7 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
-  if (["font", "image", "script", "style"].includes(request.destination)) {
+  if (["font", "image"].includes(request.destination)) {
     event.respondWith(
       caches.match(request).then(function (cachedResponse) {
         if (cachedResponse) return cachedResponse;

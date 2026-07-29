@@ -67,18 +67,26 @@ export async function fetchMaritimeVessel(mmsi: string) {
     };
   }
 
-  const errors: string[] = [];
+  let notFoundCount = 0;
 
   for (const provider of providers) {
-    const result = await fetchProviderVessel(provider, cleanMmsi);
-    if (result.ok) return result;
-    errors.push(`${provider.name}: ${result.error}`);
+    try {
+      const result = await fetchProviderVessel(provider, cleanMmsi);
+      if (result.ok) return result;
+      if (result.status === 404) notFoundCount += 1;
+    } catch {
+      // Try the next configured provider without exposing provider URLs, keys,
+      // or transport details to API consumers.
+    }
   }
 
+  const noProviderHadData = notFoundCount === providers.length;
   return {
     ok: false as const,
-    status: 502,
-    error: errors.join(" | ") || "Maritime AIS provider request failed.",
+    status: noProviderHadData ? 404 : 502,
+    error: noProviderHadData
+      ? "Live AIS data is not currently available for this vessel."
+      : "The maritime AIS provider request could not be completed.",
     configured: true,
   };
 }
@@ -91,6 +99,7 @@ async function fetchProviderVessel(provider: ProviderConfig, cleanMmsi: string) 
   const requestUrl = buildProviderUrl(provider, cleanMmsi);
   const response = await fetch(requestUrl, {
     cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
     headers: {
       accept: "application/json",
       "user-agent": "BlueDeck YachtOS/1.0",
@@ -103,7 +112,7 @@ async function fetchProviderVessel(provider: ProviderConfig, cleanMmsi: string) 
     return {
       ok: false as const,
       status: response.status,
-      error: responseText || `${provider.name} returned HTTP ${response.status}.`,
+      error: `${provider.name} request failed.`,
       configured: true,
     };
   }

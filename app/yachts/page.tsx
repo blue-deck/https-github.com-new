@@ -18,30 +18,43 @@ export default function YachtsPage() {
   const [flag, setFlag] = useState("");
   const [mmsi, setMmsi] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   async function fetchYachts() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    setLoading(true);
+    setLoadError("");
 
-    if (!user) {
-      window.location.href = "/login";
-      return;
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.replace(
+          `/login?next=${encodeURIComponent("/yachts")}`,
+        );
+        return;
+      }
+
+      if (userError) throw userError;
+
+      const { data, error } = await supabase
+        .from("yachts")
+        .select("*")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setYachts(data || []);
+    } catch {
+      setLoadError(
+        "Your fleet could not be loaded. Check your connection and try again.",
+      );
+    } finally {
+      setLoading(false);
     }
-
-    const { data, error } = await supabase
-      .from("yachts")
-      .select("*")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setYachts(data || []);
-    setLoading(false);
   }
 
   async function createYacht() {
@@ -95,17 +108,51 @@ export default function YachtsPage() {
     setFlag("");
     setMmsi("");
 
-    fetchYachts();
+    void fetchYachts();
   }
 
   useEffect(() => {
-    fetchYachts();
+    void fetchYachts();
   }, []);
 
   if (loading) {
     return (
       <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
-        <div className="bd-ocean-content mx-auto max-w-7xl">Loading yachts...</div>
+        <div
+          className="bd-ocean-content mx-auto max-w-7xl"
+          role="status"
+          aria-live="polite"
+        >
+          Loading yachts...
+        </div>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+        <section
+          className="bd-ocean-content bd-glass-card-strong mx-auto max-w-3xl rounded-[28px] p-8"
+          role="alert"
+          aria-labelledby="fleet-load-error-title"
+        >
+          <p className="bd-kicker">Captain Workspace</p>
+          <h1
+            id="fleet-load-error-title"
+            className="bd-serif mt-4 text-4xl font-normal text-[#071f3c] sm:text-5xl"
+          >
+            Fleet could not be loaded
+          </h1>
+          <p className="mt-4 max-w-xl leading-7 text-slate-600">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void fetchYachts()}
+            className="bd-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-cyan-600 px-6 font-bold text-white transition hover:bg-cyan-700"
+          >
+            Try again
+          </button>
+        </section>
       </main>
     );
   }

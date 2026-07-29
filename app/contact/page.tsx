@@ -21,14 +21,13 @@ export default function ContactPage() {
             <h2 className="bd-serif mt-4 text-4xl leading-tight text-white">
               {t("contact.directTitle")}
             </h2>
-            <a href="mailto:info@bluedeck.app" className="mt-8 inline-flex items-center gap-3 rounded-full bg-white px-6 py-4 font-black text-[#07182d]">
+            <a href="mailto:info@bluedeck.app" className="bd-focus mt-8 inline-flex min-h-12 items-center gap-3 rounded-xl bg-white px-5 py-3 font-bold text-[#07182d]">
               {t("contact.emailBlueDeck")}
               <Mail className="h-5 w-5" />
             </a>
           </div>
 
           <div className="grid gap-4">
-            <ContactLine icon={<Mail className="h-5 w-5" />} title={t("contact.email")} text="info@bluedeck.app" />
             <ContactLine icon={<MapPin className="h-5 w-5" />} title={t("contact.operationsTitle")} text={t("contact.operationsText")} />
             <ContactLine icon={<ShieldCheck className="h-5 w-5" />} title={t("contact.accessTitle")} text={t("contact.accessText")} />
             <Link href="/login" className="bd-feature-panel">

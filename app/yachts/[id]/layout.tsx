@@ -34,7 +34,10 @@ export default function YachtAppLayout({
       if (!active) return;
 
       if (!session) {
-        window.location.href = "/login";
+        const returnPath = pathname || (yachtId ? `/yachts/${yachtId}` : "/yachts");
+        window.location.replace(
+          `/login?next=${encodeURIComponent(returnPath)}`,
+        );
         return;
       }
 
@@ -46,7 +49,7 @@ export default function YachtAppLayout({
     return () => {
       active = false;
     };
-  }, []);
+  }, [pathname, yachtId]);
 
   const nav = [
     { label: translatePhrase("Overview", language), href: `/yachts/${yachtId}`, icon: Home },
@@ -60,7 +63,7 @@ export default function YachtAppLayout({
 
   if (!sessionChecked) {
     return (
-      <main className="bd-app-page bd-site-shell min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12">
+      <main className="bd-app-page min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1500px]">
           <p className="bd-kicker">BlueDeck Secure Access</p>
           <h1 className="bd-serif mt-4 text-5xl">Opening private yacht workspace...</h1>

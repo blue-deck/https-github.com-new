@@ -6,7 +6,6 @@ import {
   isMarketplaceAccountRole,
   type MarketplaceAccountRole,
 } from "../lib/marketplaceCapabilities";
-import { supabase } from "../lib/supabase";
 
 export type JobListingViewer =
   | { kind: "loading" }
@@ -26,39 +25,51 @@ export function useJobListingViewer(): JobListingViewer {
   useEffect(() => {
     let active = true;
     let viewerRequest = 0;
+    let unsubscribe: (() => void) | undefined;
 
-    async function resolveViewer(session: Session | null) {
-      const request = ++viewerRequest;
-      if (!session) {
-        if (active) setViewer({ kind: "signed-out" });
-        return;
+    async function watchViewer() {
+      const { supabase } = await import("../lib/supabase");
+      if (!active) return;
+
+      async function resolveViewer(session: Session | null) {
+        const request = ++viewerRequest;
+        if (!session) {
+          if (active) setViewer({ kind: "signed-out" });
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .maybeSingle<{ role?: string | null }>();
+
+        if (!active || request !== viewerRequest) return;
+        const role =
+          !error && isMarketplaceAccountRole(data?.role) ? data.role : null;
+        setViewer({ kind: "signed-in", role });
       }
 
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", session.user.id)
-        .maybeSingle<{ role?: string | null }>();
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          void resolveViewer(session);
+        },
+      );
+      unsubscribe = () => authListener.subscription.unsubscribe();
 
-      if (!active || request !== viewerRequest) return;
-      const role = !error && isMarketplaceAccountRole(data?.role)
-        ? data.role
-        : null;
-      setViewer({ kind: "signed-in", role });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (active) {
+        void resolveViewer(session);
+      }
     }
 
-    void supabase.auth.getSession().then(({ data }) => {
-      void resolveViewer(data.session);
-    });
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        void resolveViewer(session);
-      },
-    );
+    void watchViewer();
 
     return () => {
       active = false;
-      authListener.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 

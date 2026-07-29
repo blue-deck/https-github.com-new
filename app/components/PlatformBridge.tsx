@@ -43,7 +43,30 @@ export function PlatformBridge() {
   }, []);
 
   useEffect(() => {
-    if (process.env.NODE_ENV !== "production" || !("serviceWorker" in navigator)) {
+    if (!("serviceWorker" in navigator)) {
+      return;
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      async function clearDevelopmentServiceWorkers() {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+
+          if ("caches" in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+              cacheNames
+                .filter((cacheName) => cacheName.startsWith("bluedeck-yachtos"))
+                .map((cacheName) => caches.delete(cacheName)),
+            );
+          }
+        } catch (error) {
+          console.warn("BlueDeck development cache could not be cleared.", error);
+        }
+      }
+
+      void clearDevelopmentServiceWorkers();
       return;
     }
 

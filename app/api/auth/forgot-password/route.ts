@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { absoluteSiteUrl } from "../../../lib/site";
+import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
+import {
+  getClientIp,
+  isTurnstileConfigured,
+  verifyTurnstileToken,
+} from "../../../lib/turnstileServer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY || process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+const minuteMs = 60 * 1_000;
 
 export async function POST(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey) {
-    return NextResponse.json({ error: "BlueDeck password reset is not configured." }, { status: 500 });
+    return forgotPasswordError("service_unavailable", 503);
   }
 
   let body: ForgotPasswordRequestBody;
@@ -17,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     body = (await request.json()) as ForgotPasswordRequestBody;
   } catch {
-    return NextResponse.json({ error: "Invalid password reset request." }, { status: 400 });
+    return forgotPasswordError("invalid_request", 400);
   }
 
   const email = body.email?.trim().toLowerCase() || "";
@@ -29,24 +35,44 @@ export async function POST(request: NextRequest) {
   }
 
   if (!isValidEmail(email)) {
-    return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+    return forgotPasswordError("invalid_email", 400);
   }
 
-  if (!turnstileSecretKey) {
-    return NextResponse.json(
-      { error: "BlueDeck security verification is not configured yet." },
-      { status: 503 }
+  const turnstileConfigured = isTurnstileConfigured();
+  const clientIp = getClientIp(request) || "unknown";
+  const rateLimitMode = turnstileConfigured ? "verified" : "fallback";
+  const ipLimit = consumeRequestRateLimit(
+    "forgot-password:" + rateLimitMode + ":ip:" + clientIp,
+    turnstileConfigured ? 8 : 4,
+    (turnstileConfigured ? 10 : 30) * minuteMs,
+  );
+  if (!ipLimit.allowed) {
+    return forgotPasswordRateLimitResponse(ipLimit.retryAfterSeconds);
+  }
+
+  const emailLimit = consumeRequestRateLimit(
+    "forgot-password:" + rateLimitMode + ":email:" + email,
+    turnstileConfigured ? 5 : 3,
+    (turnstileConfigured ? 30 : 60) * minuteMs,
+  );
+  if (!emailLimit.allowed) {
+    return forgotPasswordRateLimitResponse(emailLimit.retryAfterSeconds);
+  }
+
+  if (turnstileConfigured) {
+    if (!captchaToken) {
+      return forgotPasswordError("captcha_required", 400);
+    }
+
+    const captchaVerified = await verifyTurnstileToken(
+      captchaToken,
+      clientIp === "unknown" ? undefined : clientIp,
+      "forgot_password",
     );
-  }
 
-  if (!captchaToken) {
-    return NextResponse.json({ error: "Please complete the security verification." }, { status: 400 });
-  }
-
-  const captchaResult = await verifyTurnstileToken(captchaToken, getClientIp(request));
-
-  if (!captchaResult.success) {
-    return NextResponse.json({ error: "Security verification failed. Please try again." }, { status: 400 });
+    if (!captchaVerified) {
+      return forgotPasswordError("captcha_failed", 400);
+    }
   }
 
   const supabase = createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey, {
@@ -62,10 +88,7 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error("BlueDeck password reset request failed", error.message);
-    return NextResponse.json(
-      { error: "BlueDeck could not send the reset email. Please try again in a moment." },
-      { status: 500 }
-    );
+    return forgotPasswordError("send_failed", 502);
   }
 
   return NextResponse.json({ ok: true });
@@ -77,31 +100,24 @@ type ForgotPasswordRequestBody = {
   website?: string;
 };
 
-type TurnstileVerifyResponse = {
-  success?: boolean;
-  "error-codes"?: string[];
-};
-
-async function verifyTurnstileToken(token: string, remoteIp?: string) {
-  const formData = new FormData();
-  formData.append("secret", turnstileSecretKey || "");
-  formData.append("response", token);
-  if (remoteIp) formData.append("remoteip", remoteIp);
-
-  try {
-    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      body: formData,
-    });
-    return (await response.json()) as TurnstileVerifyResponse;
-  } catch {
-    return { success: false };
-  }
+function forgotPasswordRateLimitResponse(retryAfterSeconds: number) {
+  return NextResponse.json(
+    { error: "Password reset could not be requested.", code: "rate_limited" },
+    {
+      status: 429,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": String(retryAfterSeconds),
+      },
+    },
+  );
 }
 
-function getClientIp(request: NextRequest) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return request.headers.get("cf-connecting-ip") || forwardedFor || undefined;
+function forgotPasswordError(code: string, status: number) {
+  return NextResponse.json(
+    { error: "Password reset could not be requested.", code },
+    { status, headers: { "Cache-Control": "no-store" } },
+  );
 }
 
 function isValidEmail(value: string) {

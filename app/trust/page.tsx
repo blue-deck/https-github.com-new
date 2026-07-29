@@ -1,9 +1,11 @@
 "use client";
 
-import { LockKeyhole, MailCheck, ShieldCheck, UserCheck } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, LockKeyhole, MailCheck, ShieldCheck, UserCheck } from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
 import { useLanguage } from "../components/LanguageProvider";
 import { PublicPageShell } from "../components/PublicSiteChrome";
+import { useJobListingViewer } from "../jobs/JobListingAction";
 
 const trustItems = [
   {
@@ -29,7 +31,12 @@ const trustItems = [
 ] satisfies Array<{ icon: typeof UserCheck; titleKey: TranslationKey; textKey: TranslationKey }>;
 
 export default function TrustPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const viewer = useJobListingViewer();
+  const accountAction =
+    viewer.kind === "signed-in"
+      ? { href: "/dashboard", label: t("topbar.dashboard") }
+      : { href: "/login?mode=signup", label: t("home.createAccount") };
 
   return (
     <PublicPageShell
@@ -49,6 +56,30 @@ export default function TrustPage() {
               </article>
             );
           })}
+        </div>
+      </section>
+
+      <section className="bd-public-container pb-20">
+        <div className="bd-cta-band">
+          <div>
+            <p className="bd-kicker">
+              {language === "tr" ? "Açık ve anlaşılır" : "Clear by design"}
+            </p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-[#07182d]">
+              {language === "tr"
+                ? "Verinizin nasıl kullanıldığını inceleyin."
+                : "Review how your information is used."}
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/privacy" className="bd-secondary-cta">
+              {t("footer.privacy")}
+            </Link>
+            <Link href={accountAction.href} className="bd-primary-cta">
+              {accountAction.label}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
         </div>
       </section>
     </PublicPageShell>

@@ -19,6 +19,12 @@
 
 # production
 /build
+/dist/
+/.open-next/
+
+# local design renders and generated previews
+/output/
+/public/homepage-concepts/renders/
 
 # misc
 .DS_Store
@@ -32,6 +38,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.production
 
 # vercel
 .vercel

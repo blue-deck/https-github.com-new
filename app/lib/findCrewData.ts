@@ -43,7 +43,9 @@ const discoverableCrewSelect =
 
 export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]> {
   const serviceClient = createServiceClient();
-  if (!serviceClient) return [];
+  if (!serviceClient) {
+    throw new Error("find_crew_service_unavailable");
+  }
 
   const { data, error } = await serviceClient
     .from("crew_profiles")
@@ -54,7 +56,7 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
 
   if (error) {
     console.error("Find Crew profiles could not be loaded", error.message);
-    return [];
+    throw new Error("find_crew_profiles_unavailable");
   }
 
   const eligibleRows = await filterCrewWorkspaceProfiles(
@@ -81,11 +83,19 @@ export async function listDiscoverableCrew(): Promise<DiscoverableCrewProfile[]>
   const experienceStarts = new Map<string, string[]>();
 
   if (profileIds.length > 0) {
-    const { data: experienceRows } = await serviceClient
+    const { data: experienceRows, error: experienceError } = await serviceClient
       .from("crew_experiences")
       .select("crew_profile_id,start_date")
       .in("crew_profile_id", profileIds)
       .limit(5_000);
+
+    if (experienceError) {
+      console.error(
+        "Find Crew experience could not be loaded",
+        experienceError.message,
+      );
+      throw new Error("find_crew_experience_unavailable");
+    }
 
     for (const experience of experienceRows || []) {
       const profileId = text(experience.crew_profile_id);
@@ -114,7 +124,9 @@ export async function getDiscoverableCrew(
   if (!cleanCrewId) return null;
 
   const serviceClient = createServiceClient();
-  if (!serviceClient) return null;
+  if (!serviceClient) {
+    throw new Error("find_crew_service_unavailable");
+  }
 
   const { data, error } = await serviceClient
     .from("crew_profiles")
@@ -122,7 +134,11 @@ export async function getDiscoverableCrew(
     .eq("public_crew_id", cleanCrewId)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("Find Crew profile could not be loaded", error.message);
+    throw new Error("find_crew_profile_unavailable");
+  }
+  if (!data) return null;
 
   const row = data as CrewProfileRow;
   const [eligibleRow] = await filterCrewWorkspaceProfiles(serviceClient, [row]);
@@ -138,7 +154,13 @@ export async function getDiscoverableCrew(
     .eq("crew_profile_id", profileId)
     .limit(100);
 
-  if (experienceError) return null;
+  if (experienceError) {
+    console.error(
+      "Find Crew profile experience could not be loaded",
+      experienceError.message,
+    );
+    throw new Error("find_crew_experience_unavailable");
+  }
 
   return toDiscoverableCrew(
     row,
@@ -174,7 +196,7 @@ async function filterCrewWorkspaceProfiles(
 
   if (error) {
     console.error("Find Crew roles could not be verified", error.message);
-    return [];
+    throw new Error("find_crew_roles_unavailable");
   }
 
   const eligibleUserIds = new Set(

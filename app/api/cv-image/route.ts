@@ -1,7 +1,4 @@
-import sharp from "sharp";
-
 const maxImageBytes = 24 * 1024 * 1024;
-const defaultMaxImageDimension = 1800;
 const allowedSourceContentTypes = new Set([
   "image/avif",
   "image/gif",
@@ -9,15 +6,6 @@ const allowedSourceContentTypes = new Set([
   "image/png",
   "image/tiff",
   "image/webp",
-]);
-const allowedSharpFormats = new Set([
-  "avif",
-  "gif",
-  "jpeg",
-  "jpg",
-  "png",
-  "tiff",
-  "webp",
 ]);
 
 export const runtime = "nodejs";
@@ -74,22 +62,16 @@ export async function GET(request: Request) {
       return new Response("Image is too large", { status: 413 });
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.byteLength > maxImageBytes) {
+    const imageBytes = await response.arrayBuffer();
+    if (imageBytes.byteLength > maxImageBytes) {
       return new Response("Image is too large", { status: 413 });
     }
 
-    let normalizedImage: Awaited<ReturnType<typeof normalizeCvImage>>;
-    try {
-      normalizedImage = await normalizeCvImage(buffer, requestUrl.searchParams);
-    } catch {
-      return new Response("Invalid image data", { status: 415 });
-    }
-
-    return new Response(bufferToArrayBuffer(normalizedImage.buffer), {
+    return new Response(imageBytes, {
       headers: {
         "Cache-Control": "private, max-age=3600",
-        "Content-Type": normalizedImage.contentType,
+        "Content-Length": String(imageBytes.byteLength),
+        "Content-Type": contentType,
         "X-Content-Type-Options": "nosniff",
       },
     });
@@ -98,70 +80,6 @@ export async function GET(request: Request) {
   } finally {
     clearTimeout(timeout);
   }
-}
-
-function bufferToArrayBuffer(buffer: Buffer) {
-  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
-}
-
-async function normalizeCvImage(buffer: Buffer, searchParams: URLSearchParams) {
-  const width = parseImageDimension(searchParams.get("w"));
-  const height = parseImageDimension(searchParams.get("h"));
-  const max = parseImageDimension(searchParams.get("max")) || defaultMaxImageDimension;
-  const fit = parseImageFit(searchParams.get("fit"));
-
-  let pipeline = sharp(buffer, { animated: false, failOn: "error" }).rotate();
-  const metadata = await pipeline.metadata();
-  if (!metadata.format || !allowedSharpFormats.has(metadata.format)) {
-    throw new Error("Unsupported image format");
-  }
-
-  const currentWidth = metadata.width || 0;
-  const currentHeight = metadata.height || 0;
-  if (currentWidth < 1 || currentHeight < 1) {
-    throw new Error("Image dimensions are missing");
-  }
-
-  if (width || height) {
-    pipeline = pipeline.resize({
-      width,
-      height,
-      fit,
-      position: "center",
-      withoutEnlargement: false,
-    });
-  } else if (Math.max(currentWidth, currentHeight) > max) {
-    pipeline = pipeline.resize({
-      width: max,
-      height: max,
-      fit: "inside",
-      withoutEnlargement: true,
-    });
-  }
-
-  if (metadata.hasAlpha) {
-    return {
-      buffer: await pipeline.png({ compressionLevel: 8, adaptiveFiltering: true }).toBuffer(),
-      contentType: "image/png",
-    };
-  }
-
-  return {
-    buffer: await pipeline.jpeg({ quality: 88, mozjpeg: true }).toBuffer(),
-    contentType: "image/jpeg",
-  };
-}
-
-function parseImageDimension(value: string | null) {
-  if (!value) return undefined;
-  const dimension = Number.parseInt(value, 10);
-  if (!Number.isFinite(dimension)) return undefined;
-  return Math.min(Math.max(dimension, 32), 2400);
-}
-
-function parseImageFit(value: string | null): "cover" | "contain" | "inside" {
-  if (value === "contain" || value === "inside") return value;
-  return "cover";
 }
 
 function isAllowedCvImageHost(imageUrl: URL, requestUrl: URL) {

@@ -173,147 +173,165 @@ export function JobsClient() {
   }
 
   return (
-    <main className="bd-site-shell min-h-screen text-[#071f3c]">
+    <div className="bd-site-shell min-h-screen text-[#071f3c]">
       <PublicHeader />
 
-      <section className="relative overflow-hidden border-b border-[#071f3c]/8 bg-[linear-gradient(145deg,#f7fbfd_0%,#eaf4f7_52%,#ffffff_100%)]">
-        <div className="mx-auto grid max-w-[1500px] gap-10 px-5 pb-14 pt-14 sm:px-8 lg:grid-cols-[1fr_0.72fr] lg:items-end lg:px-12 lg:pb-20 lg:pt-24">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-white/80 px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-800 shadow-sm">
-              <Compass className="h-4 w-4" aria-hidden />
-              {c.eyebrow}
+      <main id="main-content">
+        <section className="border-b border-slate-200 bg-white">
+          <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)] lg:items-end lg:px-10 lg:py-16">
+            <div>
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
+                <Compass className="h-4 w-4" aria-hidden />
+                {c.eyebrow}
+              </p>
+              <h1 className="bd-serif mt-4 max-w-4xl text-4xl leading-[1.02] text-[#071f3c] sm:text-5xl lg:text-6xl">
+                {c.title}
+              </h1>
+              <p className="mt-5 max-w-2xl text-lg leading-8 text-[#526b83]">
+                {c.intro}
+              </p>
             </div>
-            <h1 className="bd-serif mt-6 max-w-4xl text-5xl leading-[0.98] text-[#071f3c] sm:text-7xl">
-              {c.title}
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-[#526b83]">
-              {c.intro}
-            </p>
-          </div>
 
-          <div className="rounded-[28px] border border-white/80 bg-white/76 p-5 shadow-2xl shadow-[#071f3c]/8 backdrop-blur">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-              <ShieldCheck className="h-4 w-4" aria-hidden />
-              {c.trustTitle}
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{c.trustText}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1500px] px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
-        {loadState === "loading" ? (
-          <JobsLoadingState label={c.loading} />
-        ) : loadState === "error" ? (
-          <RequestError
-            title={c.errorTitle}
-            text={c.errorText}
-            retry={c.retry}
-            onRetry={() => setRequestVersion((current) => current + 1)}
-          />
-        ) : jobs.length === 0 ? (
-          <EmptyState
-            title={c.emptyTitle}
-            text={isEmployerViewer ? c.employerEmptyText : c.emptyText}
-            action={emptyAction}
-          />
-        ) : (
-          <>
-            <div className="rounded-[28px] border border-[#071f3c]/10 bg-white p-4 shadow-xl shadow-[#071f3c]/5 sm:p-6">
-              <div className="flex items-center gap-2 text-sm font-black text-[#071f3c]">
-                <SlidersHorizontal className="h-5 w-5 text-cyan-700" aria-hidden />
-                {c.filters}
+            <aside className="border-l-2 border-cyan-600 pl-5">
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                <ShieldCheck className="h-4 w-4" aria-hidden />
+                {c.trustTitle}
               </div>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{c.trustText}</p>
+            </aside>
+          </div>
+        </section>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.45fr_repeat(3,minmax(0,1fr))]">
-                <label className="relative block">
-                  <span className="sr-only">{c.search}</span>
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-700" aria-hidden />
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder={c.searchPlaceholder}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-                  />
-                </label>
-                <FilterSelect
-                  label={c.position}
-                  value={position}
-                  options={positions}
-                  onChange={setPosition}
-                />
-                <FilterSelect
-                  label={c.location}
-                  value={location}
-                  options={locations}
-                  onChange={setLocation}
-                />
-                <FilterSelect
-                  label={c.employmentType}
-                  value={employmentType}
-                  options={employmentTypes}
-                  onChange={setEmploymentType}
-                />
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
-              <div aria-live="polite">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-                  {c.results}
-                </p>
-                <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]">
-                  <span data-i18n-ignore>{filteredJobs.length}</span> {c.roles}
+        <section
+          aria-label={c.results}
+          className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12"
+        >
+          {loadState === "loading" ? (
+            <JobsLoadingState label={c.loading} />
+          ) : loadState === "error" ? (
+            <RequestError
+              title={c.errorTitle}
+              text={c.errorText}
+              retry={c.retry}
+              onRetry={() => setRequestVersion((current) => current + 1)}
+            />
+          ) : jobs.length === 0 ? (
+            <EmptyState
+              title={c.emptyTitle}
+              text={isEmployerViewer ? c.employerEmptyText : c.emptyText}
+              action={emptyAction}
+            />
+          ) : (
+            <>
+              <section
+                aria-labelledby="jobs-filter-heading"
+                className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+              >
+                <h2
+                  id="jobs-filter-heading"
+                  className="flex items-center gap-2 text-sm font-black text-[#071f3c]"
+                >
+                  <SlidersHorizontal className="h-5 w-5 text-cyan-700" aria-hidden />
+                  {c.filters}
                 </h2>
-              </div>
-              {hasFilters ? (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-600 transition hover:border-cyan-300 hover:text-cyan-800"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                  {c.clear}
-                </button>
-              ) : null}
-            </div>
 
-            {filteredJobs.length > 0 ? (
-              <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-                {filteredJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    language={language}
-                    viewer={viewer}
+                <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.45fr_repeat(3,minmax(0,1fr))]">
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                      {c.search}
+                    </span>
+                    <span className="relative block">
+                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-700" aria-hidden />
+                      <input
+                        type="search"
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder={c.searchPlaceholder}
+                        className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                      />
+                    </span>
+                  </label>
+                  <FilterSelect
+                    label={c.position}
+                    value={position}
+                    options={positions}
+                    onChange={setPosition}
                   />
-                ))}
+                  <FilterSelect
+                    label={c.location}
+                    value={location}
+                    options={locations}
+                    onChange={setLocation}
+                  />
+                  <FilterSelect
+                    label={c.employmentType}
+                    value={employmentType}
+                    options={employmentTypes}
+                    onChange={setEmploymentType}
+                  />
+                </div>
+              </section>
+
+              <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+                <div aria-live="polite">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                    {c.results}
+                  </p>
+                  <h2
+                    id="jobs-results-heading"
+                    className="mt-1 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
+                  >
+                    <span data-i18n-ignore>{filteredJobs.length}</span> {c.roles}
+                  </h2>
+                </div>
+                {hasFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
+                  >
+                    <X className="h-4 w-4" aria-hidden />
+                    {c.clear}
+                  </button>
+                ) : null}
               </div>
-            ) : (
-              <div className="mt-6 rounded-[30px] border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-14 text-center">
-                <Search className="mx-auto h-10 w-10 text-cyan-700" aria-hidden />
-                <h3 className="mt-5 text-2xl font-semibold text-[#071f3c]">
-                  {c.noMatchesTitle}
-                </h3>
-                <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">
-                  {c.noMatchesText}
-                </p>
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
-                >
-                  {c.clear}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </section>
+
+              {filteredJobs.length > 0 ? (
+                <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredJobs.map((job) => (
+                    <JobCard
+                      key={job.id}
+                      job={job}
+                      language={language}
+                      viewer={viewer}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-12 text-center">
+                  <Search className="mx-auto h-9 w-9 text-cyan-700" aria-hidden />
+                  <h3 className="mt-4 text-2xl font-semibold text-[#071f3c]">
+                    {c.noMatchesTitle}
+                  </h3>
+                  <p className="mx-auto mt-2 max-w-xl leading-7 text-slate-600">
+                    {c.noMatchesText}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                  >
+                    {c.clear}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </main>
 
       <PublicFooter />
-    </main>
+    </div>
   );
 }
 
@@ -338,74 +356,69 @@ function JobCard({
   const action = getJobListingAction(job.id, viewer, language);
 
   return (
-    <article className="group flex min-h-full flex-col overflow-hidden rounded-[28px] border border-[#071f3c]/10 bg-white shadow-xl shadow-[#071f3c]/5 transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-[#071f3c]/9">
-      <div className="h-1.5 bg-[linear-gradient(90deg,#083344,#22d3ee,#8ed8e6)]" />
-      <div className="flex flex-1 flex-col p-5 sm:p-6">
-        {job.candidateType !== "individual" ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusPill>
-              {formatJobCandidateType(job.candidateType, language)}
-            </StatusPill>
-          </div>
-        ) : null}
+    <article className="flex min-h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 transition-colors hover:border-cyan-300 sm:p-6">
+      {job.candidateType !== "individual" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill>
+            {formatJobCandidateType(job.candidateType, language)}
+          </StatusPill>
+        </div>
+      ) : null}
 
-        <h3
-          data-i18n-ignore
-          className={`${job.candidateType !== "individual" ? "mt-3" : ""} text-2xl font-semibold tracking-[-0.03em] text-slate-950`}
-        >
-          {job.position}
-        </h3>
+      <h3
+        data-i18n-ignore
+        className={`${job.candidateType !== "individual" ? "mt-3" : ""} text-2xl font-semibold tracking-[-0.03em] text-slate-950`}
+      >
+        {job.position}
+      </h3>
+      <p
+        data-i18n-ignore
+        className="mt-2 flex items-center gap-2 text-sm font-bold text-cyan-800"
+      >
+        <BriefcaseBusiness className="h-4 w-4 shrink-0" aria-hidden />
+        <span>{formatJobEmploymentType(job.employmentType, language)}</span>
+      </p>
+
+      <div className="mt-5 space-y-2.5 text-sm text-slate-600">
+        <InfoLine icon={<Ship />} value={yachtType || c.notSpecified} />
+        <InfoLine icon={<Ruler />} value={yachtLength || c.notSpecified} />
+        <InfoLine icon={<MapPin />} value={job.location} />
+        <InfoLine
+          icon={<CalendarDays />}
+          value={`${c.start}: ${
+            job.startDate
+              ? formatJobDate(job.startDate, language)
+              : c.notSpecified
+          }`}
+        />
+      </div>
+
+      <div className="mt-auto pt-5">
         <p
           data-i18n-ignore
-          className="mt-2 flex items-center gap-2 text-sm font-bold text-cyan-800"
+          className="mb-4 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm font-black text-slate-900"
         >
-          <BriefcaseBusiness className="h-4 w-4 shrink-0" aria-hidden />
-          <span>{formatJobEmploymentType(job.employmentType, language)}</span>
+          <CircleDollarSign className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
+          <span>{salary || c.salaryNotSpecified}</span>
         </p>
-
-        <div className="mt-5 space-y-2.5 text-sm text-slate-600">
-          <InfoLine icon={<Ship />} value={yachtType || c.notSpecified} />
-          <InfoLine icon={<Ruler />} value={yachtLength || c.notSpecified} />
-          <InfoLine icon={<MapPin />} value={job.location} />
-          <InfoLine
-            icon={<CalendarDays />}
-            value={`${c.start}: ${
-              job.startDate
-                ? formatJobDate(job.startDate, language)
-                : c.notSpecified
-            }`}
-          />
-        </div>
-
-        <div className="mt-auto pt-5">
-          <p
-            data-i18n-ignore
-            className="mb-3 flex items-center gap-2 border-t border-slate-100 pt-4 text-sm font-black text-slate-900"
-          >
-            <CircleDollarSign className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
-            <span>{salary || c.salaryNotSpecified}</span>
-          </p>
+        <Link
+          href={action.detailHref}
+          className="bd-focus flex min-h-12 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+        >
+          {c.viewRole}
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+        {action.intent !== "view" ? (
           <Link
             href={action.href}
-            className="bd-focus flex min-h-12 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+            className="bd-focus mt-2 flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-[#071f3c] transition hover:border-cyan-500 hover:bg-cyan-50"
           >
-            <span className="inline-flex items-center gap-2">
-              {viewer.kind === "signed-out" ? (
-                <UserRoundPlus className="h-4 w-4" aria-hidden />
-              ) : null}
-              {action.label}
-            </span>
-            <ArrowRight className="h-4 w-4" aria-hidden />
+            {action.intent === "signup" ? (
+              <UserRoundPlus className="h-4 w-4" aria-hidden />
+            ) : null}
+            {action.label}
           </Link>
-          {viewer.kind === "signed-out" ? (
-            <Link
-              href={action.detailHref}
-              className="bd-focus mt-2 flex min-h-10 items-center justify-center rounded-xl text-xs font-black text-cyan-800 transition hover:bg-cyan-50 hover:text-cyan-950"
-            >
-              {c.viewRole}
-            </Link>
-          ) : null}
-        </div>
+        ) : null}
       </div>
     </article>
   );
@@ -424,7 +437,9 @@ function FilterSelect({
 }) {
   return (
     <label className="block">
-      <span className="sr-only">{label}</span>
+      <span className="mb-1.5 block text-xs font-bold text-slate-600">
+        {label}
+      </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -474,7 +489,7 @@ function JobsLoadingState({ label }: { label: string }) {
         {[0, 1, 2].map((item) => (
           <div
             key={item}
-            className="min-h-[360px] animate-pulse rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-[#071f3c]/5"
+            className="min-h-[340px] animate-pulse rounded-2xl border border-slate-200 bg-white p-6"
           >
             <div className="h-7 w-28 rounded-full bg-slate-100" />
             <div className="mt-7 h-8 w-3/4 rounded bg-slate-100" />
@@ -503,7 +518,7 @@ function RequestError({
   onRetry: () => void;
 }) {
   return (
-    <div role="alert" className="rounded-[30px] border border-rose-200 bg-rose-50/70 px-6 py-14 text-center">
+    <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50/70 px-6 py-12 text-center">
       <RefreshCw className="mx-auto h-10 w-10 text-rose-700" aria-hidden />
       <h2 className="mt-5 text-2xl font-semibold text-[#071f3c]">{title}</h2>
       <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">{text}</p>
@@ -529,7 +544,7 @@ function EmptyState({
   action: { href: string; label: string } | null;
 }) {
   return (
-    <div className="rounded-[30px] border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-14 text-center">
+    <div className="rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-12 text-center">
       <BriefcaseBusiness className="mx-auto h-10 w-10 text-cyan-700" aria-hidden />
       <h2 className="mt-5 text-2xl font-semibold text-[#071f3c]">{title}</h2>
       <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">{text}</p>
@@ -577,7 +592,7 @@ const copy = {
     start: "Start",
     notSpecified: "Not specified",
     salaryNotSpecified: "Salary not specified",
-    viewRole: "View role",
+    viewRole: "View role details",
     loading: "Loading current opportunities…",
     errorTitle: "The job board could not be loaded",
     errorText: "Check your connection and try again.",
@@ -614,7 +629,7 @@ const copy = {
     start: "Başlangıç",
     notSpecified: "Belirtilmedi",
     salaryNotSpecified: "Maaş belirtilmedi",
-    viewRole: "İlanı görüntüle",
+    viewRole: "İlan detaylarını görüntüle",
     loading: "Güncel fırsatlar yükleniyor…",
     errorTitle: "İş ilanları yüklenemedi",
     errorText: "Bağlantınızı kontrol edip yeniden deneyin.",
