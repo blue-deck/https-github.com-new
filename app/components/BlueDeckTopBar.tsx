@@ -45,6 +45,19 @@ function isRouteActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function ensureMainContentTarget() {
+  const existingTarget = document.getElementById("main-content");
+  const target =
+    existingTarget instanceof HTMLElement
+      ? existingTarget
+      : document.querySelector<HTMLElement>("main");
+
+  if (!target) return null;
+  if (!target.id) target.id = "main-content";
+  if (!target.hasAttribute("tabindex")) target.tabIndex = -1;
+  return target;
+}
+
 export function BlueDeckTopBar() {
   const pathname = usePathname() || "/dashboard";
   const { language, setLanguage, t } = useLanguage();
@@ -135,6 +148,14 @@ export function BlueDeckTopBar() {
 
   useEffect(() => {
     setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      ensureMainContentTarget();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
 
   useEffect(() => {
@@ -258,6 +279,20 @@ export function BlueDeckTopBar() {
     <header
       className="bd-app-topbar bd-account-topbar border-b border-white/10 shadow-2xl shadow-slate-950/22"
     >
+      <a
+        className="bd-skip-link"
+        href="#main-content"
+        onClick={(event) => {
+          const target = ensureMainContentTarget();
+          if (!target) return;
+
+          event.preventDefault();
+          target.focus({ preventScroll: true });
+          target.scrollIntoView({ block: "start" });
+        }}
+      >
+        {language === "tr" ? "İçeriğe geç" : "Skip to content"}
+      </a>
       <div className="bd-app-topbar-inner mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         <div className="bd-topbar-logo-area flex min-w-0 items-center gap-4">
           <BlueDeckLogoLink

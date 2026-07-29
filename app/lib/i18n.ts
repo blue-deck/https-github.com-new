@@ -244,6 +244,9 @@ const en = {
   "login.samePassword": "Enter the same password again",
   "login.passwordRequirements":
     "Use uppercase and lowercase letters, a number and at least 1 special character.",
+  "login.security": "Security verification",
+  "login.securityUnavailable":
+    "Account creation requires the BlueDeck security verification keys.",
   "login.privacyAgree": "I agree to the BlueDeck",
   "login.privacyPolicy": "Privacy Policy",
   "login.wait": "Please wait...",
@@ -266,8 +269,18 @@ const en = {
   "login.notice.required":
     "Name, email, password, account type and yacht position are required.",
   "login.notice.privacy": "Please accept the Privacy Policy to create your account.",
+  "login.notice.completeSecurity": "Please complete the security verification.",
+  "login.notice.securityError":
+    "Security verification could not load. Please refresh and try again.",
   "login.notice.loginService":
     "BlueDeck could not reach the login service. Please try again in a moment.",
+  "login.notice.invalidCredentials": "Email or password is incorrect.",
+  "login.notice.emailNotConfirmed":
+    "Confirm your email before logging in. You can resend the confirmation below.",
+  "login.notice.emailInUse":
+    "An account already exists for this email. Log in or reset your password.",
+  "login.notice.rateLimited":
+    "Too many account attempts. Please wait a moment and try again.",
   "login.notice.accountFailed": "Account could not be created. Please try again.",
   "login.notice.confirmEmail":
     "Account created. Please check your email and confirm your BlueDeck account, then login.",
@@ -295,6 +308,8 @@ const en = {
     "BlueDeck security verification needs Cloudflare Turnstile keys before password reset can be used.",
   "forgot.sendFailed": "BlueDeck could not send the reset email. Please try again.",
   "forgot.sendFailedMoment": "BlueDeck could not send the reset email. Please try again in a moment.",
+  "forgot.rateLimited":
+    "Too many password reset attempts. Please wait before trying again.",
   "forgot.sent": "If this email belongs to a BlueDeck account, a secure reset link has been sent.",
   "forgot.sending": "Sending reset link...",
   "forgot.send": "Send reset link",
@@ -596,6 +611,9 @@ const tr: Record<TranslationKey, string> = {
   "login.minimumSignupPassword": "Minimum 8 karakter",
   "login.samePassword": "Aynı şifreyi tekrar girin",
   "login.passwordRequirements": "Büyük ve küçük harf, sayı ve en az 1 özel karakter kullanın.",
+  "login.security": "Güvenlik doğrulaması",
+  "login.securityUnavailable":
+    "Hesap oluşturmak için BlueDeck güvenlik doğrulama anahtarları gerekir.",
   "login.privacyAgree": "BlueDeck",
   "login.privacyPolicy": "Gizlilik Politikası’nı kabul ediyorum",
   "login.wait": "Lütfen bekleyin...",
@@ -615,7 +633,17 @@ const tr: Record<TranslationKey, string> = {
   "login.notice.emailPassword": "Lütfen e-posta ve şifrenizi girin.",
   "login.notice.required": "İsim, e-posta, şifre, hesap tipi ve yat pozisyonu zorunludur.",
   "login.notice.privacy": "Hesap oluşturmak için Gizlilik Politikası’nı kabul edin.",
+  "login.notice.completeSecurity": "Lütfen güvenlik doğrulamasını tamamlayın.",
+  "login.notice.securityError":
+    "Güvenlik doğrulaması yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.",
   "login.notice.loginService": "BlueDeck giriş servisine ulaşamadı. Lütfen biraz sonra tekrar deneyin.",
+  "login.notice.invalidCredentials": "E-posta veya şifre hatalı.",
+  "login.notice.emailNotConfirmed":
+    "Giriş yapmadan önce e-postanızı onaylayın. Onay e-postasını aşağıdan tekrar gönderebilirsiniz.",
+  "login.notice.emailInUse":
+    "Bu e-posta için zaten bir hesap var. Giriş yapın veya şifrenizi sıfırlayın.",
+  "login.notice.rateLimited":
+    "Çok fazla hesap işlemi denendi. Lütfen biraz bekleyip tekrar deneyin.",
   "login.notice.accountFailed": "Hesap oluşturulamadı. Lütfen tekrar deneyin.",
   "login.notice.confirmEmail": "Hesap oluşturuldu. Lütfen e-postanızı onaylayın, ardından giriş yapın.",
   "login.notice.accountCreated": "Hesap oluşturuldu. My Dashboard’a devam etmek için giriş yapın.",
@@ -638,6 +666,8 @@ const tr: Record<TranslationKey, string> = {
   "forgot.needsKeys": "Şifre sıfırlama için BlueDeck güvenlik doğrulamasında Cloudflare Turnstile anahtarları gerekir.",
   "forgot.sendFailed": "BlueDeck sıfırlama e-postasını gönderemedi. Lütfen tekrar deneyin.",
   "forgot.sendFailedMoment": "BlueDeck sıfırlama e-postasını gönderemedi. Lütfen biraz sonra tekrar deneyin.",
+  "forgot.rateLimited":
+    "Çok fazla şifre sıfırlama isteği gönderildi. Lütfen bekleyip tekrar deneyin.",
   "forgot.sent": "Bu e-posta BlueDeck hesabına aitse güvenli sıfırlama bağlantısı gönderildi.",
   "forgot.sending": "Sıfırlama bağlantısı gönderiliyor...",
   "forgot.send": "Sıfırlama bağlantısı gönder",

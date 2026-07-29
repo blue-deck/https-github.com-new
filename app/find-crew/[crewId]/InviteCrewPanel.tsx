@@ -252,6 +252,8 @@ export function InviteCrewPanel({
   const { language } = useLanguage();
   const c = copy[language];
   const [loading, setLoading] = useState(true);
+  const [accessLoadError, setAccessLoadError] = useState(false);
+  const [accessLoadAttempt, setAccessLoadAttempt] = useState(0);
   const [sessionToken, setSessionToken] = useState("");
   const [authorized, setAuthorized] = useState(false);
   const [hasOwnedYachts, setHasOwnedYachts] = useState(false);
@@ -266,36 +268,80 @@ export function InviteCrewPanel({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [shortlisted, setShortlisted] = useState(false);
   const [shortlistSaving, setShortlistSaving] = useState(false);
+  const [shortlistError, setShortlistError] = useState("");
 
   const returnPath = useMemo(
     () => `/find-crew/${encodeURIComponent(crewId)}`,
     [crewId],
   );
+  const loginHref = useMemo(
+    () => `/login?next=${encodeURIComponent(returnPath)}`,
+    [returnPath],
+  );
 
   useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
     async function loadHiringContext() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.user) {
-        setLoading(false);
-        return;
-      }
-
-      setSessionToken(session.access_token);
-      setShortlisted(readShortlist(session.user.user_metadata).includes(crewId));
+      setLoading(true);
+      setAccessLoadError(false);
+      setAuthorized(false);
+      setHasOwnedYachts(false);
+      setYachts([]);
+      setSelectedYacht("");
 
       try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (!active) return;
+
+        if (sessionError) {
+          window.location.replace(loginHref);
+          return;
+        }
+
+        if (!session?.user) {
+          setSessionToken("");
+          setShortlisted(false);
+          return;
+        }
+
+        setSessionToken(session.access_token);
+        setShortlisted(
+          readShortlist(session.user.user_metadata).includes(crewId),
+        );
+
         const response = await fetch("/api/employer-access", {
           headers: { Authorization: `Bearer ${session.access_token}` },
           cache: "no-store",
+          signal: controller.signal,
         });
         const payload: unknown = await response.json().catch(() => null);
         const result =
           payload && typeof payload === "object"
             ? (payload as Record<string, unknown>)
             : {};
+
+        if (!active) return;
+
+        if (response.status === 401) {
+          setSessionToken("");
+          window.location.replace(loginHref);
+          return;
+        }
+
+        if (
+          !response.ok ||
+          result.ok !== true ||
+          !Array.isArray(result.yachts)
+        ) {
+          throw new Error("employer_access_request_failed");
+        }
+
         const ownedYachts = Array.isArray(result.yachts)
           ? (result.yachts as HiringYacht[])
           : [];
@@ -305,49 +351,70 @@ export function InviteCrewPanel({
           .filter((yacht) => yacht.id && yacht.name);
 
         setHasOwnedYachts(ownedYachts.length > 0);
-        setAuthorized(response.ok && nextYachts.length > 0);
+        setAuthorized(nextYachts.length > 0);
         setYachts(nextYachts);
         setSelectedYacht(nextYachts[0]?.id || "");
-      } catch {
+      } catch (error) {
+        if (
+          !active ||
+          (error instanceof DOMException && error.name === "AbortError")
+        ) {
+          return;
+        }
+
+        setAccessLoadError(true);
         setHasOwnedYachts(false);
         setAuthorized(false);
         setYachts([]);
         setSelectedYacht("");
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     }
 
     void loadHiringContext();
-  }, [crewId]);
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [accessLoadAttempt, crewId, loginHref]);
 
   async function toggleShortlist() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    if (shortlistSaving) return;
 
-    if (!user) {
-      window.location.href = `/login?next=${encodeURIComponent(returnPath)}`;
-      return;
-    }
-
-    const current = readShortlist(user.user_metadata);
-    const next = current.includes(crewId)
-      ? current.filter((item) => item !== crewId)
-      : [...current, crewId];
-
+    setShortlistError("");
     setShortlistSaving(true);
-    const { error } = await supabase.auth.updateUser({
-      data: { crew_shortlist: next },
-    });
-    setShortlistSaving(false);
 
-    if (error) {
-      setNotice({ kind: "error", message: c.shortlistError });
-      return;
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = loginHref;
+        return;
+      }
+
+      if (userError) throw userError;
+
+      const current = readShortlist(user.user_metadata);
+      const next = current.includes(crewId)
+        ? current.filter((item) => item !== crewId)
+        : [...current, crewId];
+      const { error } = await supabase.auth.updateUser({
+        data: { crew_shortlist: next },
+      });
+
+      if (error) throw error;
+
+      setShortlisted(next.includes(crewId));
+    } catch {
+      setShortlistError(c.shortlistError);
+    } finally {
+      setShortlistSaving(false);
     }
-
-    setShortlisted(next.includes(crewId));
   }
 
   async function sendInvitation() {
@@ -426,9 +493,25 @@ export function InviteCrewPanel({
             <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
             {c.checkingAccess}
           </div>
+        ) : accessLoadError ? (
+          <div className="mt-5">
+            <p
+              className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-6 text-rose-950"
+              role="alert"
+            >
+              {c.accessLoadError}
+            </p>
+            <button
+              type="button"
+              onClick={() => setAccessLoadAttempt((current) => current + 1)}
+              className="bd-focus mt-3 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+            >
+              {c.tryAgain}
+            </button>
+          </div>
         ) : !sessionToken ? (
           <Link
-            href={`/login?next=${encodeURIComponent(returnPath)}`}
+            href={loginHref}
             className="bd-focus mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
           >
             <LogIn className="h-4 w-4" aria-hidden />
@@ -542,6 +625,15 @@ export function InviteCrewPanel({
               ? c.savedToShortlist
               : c.saveToShortlist}
         </button>
+
+        {shortlistError ? (
+          <p
+            className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-6 text-rose-950"
+            role="alert"
+          >
+            {shortlistError}
+          </p>
+        ) : null}
 
         {notice ? (
           <p
@@ -713,6 +805,9 @@ const copy = {
     secureHiringText:
       "Contact details stay private. Invite this crew member to a verified yacht or save the profile for later.",
     checkingAccess: "Checking hiring access…",
+    accessLoadError:
+      "Hiring access could not be loaded. Check your connection and try again.",
+    tryAgain: "Try again",
     logInToContinue: "Log in to continue",
     yachtRequired:
       "Add a yacht to your workspace before sending an invitation.",
@@ -760,6 +855,9 @@ const copy = {
     secureHiringText:
       "İletişim bilgileri gizli kalır. Bu ekip üyesini doğrulanmış bir yata davet edin veya profili daha sonra incelemek üzere kaydedin.",
     checkingAccess: "İşe alım erişimi kontrol ediliyor…",
+    accessLoadError:
+      "İşe alım erişimi yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.",
+    tryAgain: "Tekrar dene",
     logInToContinue: "Devam etmek için giriş yap",
     yachtRequired:
       "Davet göndermeden önce çalışma alanınıza bir yat ekleyin.",

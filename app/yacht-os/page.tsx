@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PublicPageShell } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
+import { useJobListingViewer } from "../jobs/JobListingAction";
 import styles from "./yacht-os.module.css";
 
 const copy = {
@@ -62,6 +63,7 @@ const copy = {
     trustLink: "See how BlueDeck protects access",
     findCrew: "Find crew",
     createAccount: "Create account",
+    openDashboard: "Open dashboard",
   },
   tr: {
     eyebrow: "BlueDeck Yacht-OS",
@@ -108,12 +110,18 @@ const copy = {
     trustLink: "BlueDeck’in erişimi nasıl koruduğunu görün",
     findCrew: "Mürettebat bul",
     createAccount: "Hesap oluştur",
+    openDashboard: "Paneli aç",
   },
 } as const;
 
 export default function YachtOsPage() {
   const { language } = useLanguage();
   const c = copy[language];
+  const viewer = useJobListingViewer();
+  const accountAction =
+    viewer.kind === "signed-in"
+      ? { href: "/dashboard", label: c.openDashboard }
+      : { href: "/login?mode=signup", label: c.createAccount };
 
   return (
     <PublicPageShell
@@ -202,8 +210,8 @@ export default function YachtOsPage() {
             <UsersRound aria-hidden />
             {c.findCrew}
           </Link>
-          <Link href="/login?mode=signup" className={styles.primaryAction}>
-            {c.createAccount}
+          <Link href={accountAction.href} className={styles.primaryAction}>
+            {accountAction.label}
             <ArrowRight aria-hidden />
           </Link>
         </div>

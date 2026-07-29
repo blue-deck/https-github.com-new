@@ -34,6 +34,7 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
   const [employmentType, setEmploymentType] = useState("");
   const [shortlist, setShortlist] = useState<string[]>([]);
   const [shortlistSaving, setShortlistSaving] = useState("");
+  const [shortlistError, setShortlistError] = useState("");
   const [shortlistOnly, setShortlistOnly] = useState(false);
   const [crewWorkspaceAccess, setCrewWorkspaceAccess] = useState<
     "loading" | "signed-out" | "allowed" | "denied"
@@ -140,26 +141,41 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
   const hasFilters = Boolean(query || position || location || availability || employmentType || shortlistOnly);
 
   async function toggleShortlist(crewId: string) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    if (shortlistSaving) return;
 
-    if (!user) {
-      window.location.href = `/login?next=${encodeURIComponent("/find-crew")}`;
-      return;
-    }
-
-    const nextShortlist = shortlist.includes(crewId)
-      ? shortlist.filter((item) => item !== crewId)
-      : [...shortlist, crewId];
-
+    setShortlistError("");
     setShortlistSaving(crewId);
-    const { error } = await supabase.auth.updateUser({
-      data: { crew_shortlist: nextShortlist },
-    });
-    setShortlistSaving("");
 
-    if (!error) setShortlist(nextShortlist);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        window.location.href = `/login?next=${encodeURIComponent("/find-crew")}`;
+        return;
+      }
+
+      if (userError) throw userError;
+
+      const currentShortlist = readShortlist(user.user_metadata);
+      const nextShortlist = currentShortlist.includes(crewId)
+        ? currentShortlist.filter((item) => item !== crewId)
+        : [...currentShortlist, crewId];
+      const { error } = await supabase.auth.updateUser({
+        data: { crew_shortlist: nextShortlist },
+      });
+
+      if (error) throw error;
+
+      setShortlist(nextShortlist);
+      if (nextShortlist.length === 0) setShortlistOnly(false);
+    } catch {
+      setShortlistError(c.shortlistError);
+    } finally {
+      setShortlistSaving("");
+    }
   }
 
   function clearFilters() {
@@ -280,6 +296,15 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
             </div>
           </div>
 
+          {shortlistError ? (
+            <p
+              className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-900"
+              role="alert"
+            >
+              {shortlistError}
+            </p>
+          ) : null}
+
           {filteredProfiles.length > 0 ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {filteredProfiles.map((profile) => (
@@ -314,11 +339,11 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
                     <button
                       type="button"
                       onClick={() => void toggleShortlist(profile.crewId)}
-                      disabled={shortlistSaving === profile.crewId}
+                      disabled={Boolean(shortlistSaving)}
                       aria-busy={shortlistSaving === profile.crewId}
                       aria-pressed={shortlist.includes(profile.crewId)}
                       aria-label={shortlist.includes(profile.crewId) ? c.removeShortlist : c.addShortlist}
-                      className={`bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition ${
+                      className={`bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition disabled:cursor-wait disabled:opacity-60 ${
                         shortlist.includes(profile.crewId)
                           ? "border-cyan-500 bg-cyan-50 text-cyan-900"
                           : "border-slate-300 bg-white text-slate-600 hover:border-cyan-500 hover:text-cyan-900"
@@ -509,6 +534,7 @@ const copy = {
     addShortlist: "Add to shortlist",
     removeShortlist: "Remove from shortlist",
     shortlist: "Shortlist",
+    shortlistError: "The shortlist could not be updated. Please try again.",
     noMatchesTitle: "No profiles match these filters",
     noMatchesText: "Clear one or more filters to see other discoverable crew.",
     emptyTitle: "The discoverable crew network is opening",
@@ -546,6 +572,7 @@ const copy = {
     addShortlist: "Kısa listeye ekle",
     removeShortlist: "Kısa listeden çıkar",
     shortlist: "Kısa liste",
+    shortlistError: "Kısa liste güncellenemedi. Lütfen tekrar deneyin.",
     noMatchesTitle: "Bu filtrelere uygun profil yok",
     noMatchesText: "Diğer keşfedilebilir crew profillerini görmek için bazı filtreleri temizleyin.",
     emptyTitle: "Keşfedilebilir crew ağı açılıyor",

@@ -1100,6 +1100,15 @@ textarea:-webkit-autofill:focus {
   padding-left: var(--safe-area-left);
 }
 
+.bd-app-topbar-placeholder {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  width: 100%;
+  height: calc(var(--topbar-height) + var(--safe-area-top));
+  background: var(--bluedeck-header-surface);
+}
+
 .bd-app-topbar-inner,
 .bd-topbar-navigation {
   min-width: 0;
@@ -1503,19 +1512,19 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 }
 
 @media screen {
-  html[data-authenticated] body {
+  html[data-authenticated][data-account-shell] body {
     background: var(--bluedeck-canvas);
   }
 
-  html[data-authenticated] {
+  html[data-authenticated][data-account-shell] {
     scroll-padding-top: calc(var(--topbar-height) + var(--safe-area-top));
   }
 
-  html[data-authenticated] .bd-public-header {
+  html[data-authenticated][data-account-shell] .bd-public-header {
     display: none;
   }
 
-  html[data-authenticated] .bd-site-shell {
+  html[data-authenticated][data-account-shell] .bd-site-shell {
     padding-top: 0;
   }
 
@@ -1998,6 +2007,10 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     gap: 0.4rem !important;
     padding-left: 0.65rem !important;
     padding-right: 0.65rem !important;
+  }
+
+  .bd-app-topbar-placeholder {
+    height: calc(var(--topbar-height-mobile) + var(--safe-area-top));
   }
 
   .bd-app-topbar .bd-topbar-logo,

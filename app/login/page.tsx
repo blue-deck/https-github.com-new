@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { PublicHeader } from "../components/PublicSiteChrome";
+import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useLanguage } from "../components/LanguageProvider";
 import type { TranslationKey } from "../lib/i18n";
 import { authConfirmUrl, safeInternalPath } from "../lib/site";
 import { supabase } from "../lib/supabase";
+import { useTurnstileConfiguration } from "../lib/useTurnstileConfiguration";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
 type AuthMode = "login" | "signup" | "recovery";
@@ -34,6 +37,11 @@ const employerFeatureBullets = [
 
 export default function LoginPage() {
   const { t } = useLanguage();
+  const {
+    enabled: turnstileEnabled,
+    siteKey: turnstileSiteKey,
+  } = useTurnstileConfiguration();
+  const router = useRouter();
   const formTitleId = useId();
   const fullNameId = useId();
   const roleId = useId();
@@ -51,6 +59,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaAttempt, setCaptchaAttempt] = useState(0);
+  const [website, setWebsite] = useState("");
   const [notice, setNotice] = useState("");
   const [nextPath, setNextPath] = useState("/dashboard");
   const passwordStrength = useMemo(() => getPasswordStrength(password, t), [password, t]);
@@ -95,8 +106,32 @@ export default function LoginPage() {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    setNextPath(safeInternalPath(searchParams.get("next")));
-  }, []);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const requestedNext = safeInternalPath(searchParams.get("next"));
+    const isPasswordRecovery =
+      searchParams.get("mode") === "recovery" ||
+      searchParams.get("type") === "recovery" ||
+      hashParams.get("type") === "recovery";
+    let active = true;
+
+    setNextPath(requestedNext);
+
+    async function redirectAuthenticatedUser() {
+      if (isPasswordRecovery) return;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (active && session) router.replace(requestedNext);
+    }
+
+    void redirectAuthenticatedUser();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   async function submit() {
     setNotice("");
@@ -107,8 +142,8 @@ export default function LoginPage() {
         return;
       }
 
-      if (password.length < 6) {
-        setNotice(t("login.notice.minPassword"));
+      if (!hasSignupPasswordRequirements(password)) {
+        setNotice(t("login.notice.signupPassword"));
         return;
       }
 
@@ -123,7 +158,7 @@ export default function LoginPage() {
         const { error } = await supabase.auth.updateUser({ password });
 
         if (error) {
-          setNotice(error.message);
+          setNotice(t("login.notice.resetFailed"));
           return;
         }
 
@@ -161,6 +196,11 @@ export default function LoginPage() {
       return;
     }
 
+    if (mode === "signup" && turnstileEnabled && !captchaToken) {
+      setNotice(t("login.notice.completeSecurity"));
+      return;
+    }
+
     setLoading(true);
 
     if (mode === "login") {
@@ -173,7 +213,13 @@ export default function LoginPage() {
         setLoading(false);
 
         if (error) {
-          setNotice(error.message);
+          setNotice(
+            authNotice(
+              error.code,
+              t,
+              "login.notice.loginService",
+            ),
+          );
           return;
         }
 
@@ -197,18 +243,23 @@ export default function LoginPage() {
           role,
           position,
           next: nextPath,
+          captchaToken,
+          website,
         }),
       });
 
       const result = (await response.json()) as {
         error?: string;
+        code?: string;
         userId?: string | null;
         needsEmailConfirmation?: boolean;
       };
 
       if (!response.ok || result.error) {
         setLoading(false);
-        setNotice(result.error || t("login.notice.accountFailed"));
+        setNotice(signupNotice(result.code, response.status, t));
+        setCaptchaToken("");
+        setCaptchaAttempt((attempt) => attempt + 1);
         return;
       }
 
@@ -225,6 +276,8 @@ export default function LoginPage() {
     } catch {
       setLoading(false);
       setNotice(t("login.notice.createFailed"));
+      setCaptchaToken("");
+      setCaptchaAttempt((attempt) => attempt + 1);
     }
   }
 
@@ -238,10 +291,14 @@ export default function LoginPage() {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: authConfirmUrl("/dashboard") },
+        options: { emailRedirectTo: authConfirmUrl(nextPath) },
       });
 
-      setNotice(error ? error.message : t("login.notice.confirmationSent"));
+      setNotice(
+        error
+          ? authNotice(error.code, t, "login.notice.resendFailed")
+          : t("login.notice.confirmationSent"),
+      );
     } catch {
       setNotice(t("login.notice.resendFailed"));
     }
@@ -308,7 +365,10 @@ export default function LoginPage() {
             >
               <button
                 type="button"
-                onClick={() => setMode("login")}
+                onClick={() => {
+                  setMode("login");
+                  setCaptchaToken("");
+                }}
                 aria-pressed={mode === "login"}
                 className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "login" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
               >
@@ -316,7 +376,11 @@ export default function LoginPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setMode("signup")}
+                onClick={() => {
+                  setMode("signup");
+                  setCaptchaToken("");
+                  setCaptchaAttempt((attempt) => attempt + 1);
+                }}
                 aria-pressed={mode === "signup"}
                 className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "signup" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
               >
@@ -526,6 +590,44 @@ export default function LoginPage() {
               </label>
             )}
 
+            {mode === "signup" && (
+              <>
+                <input
+                  name="website"
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  value={website}
+                  onChange={(event) => setWebsite(event.target.value)}
+                  className="pointer-events-none absolute -left-[10000px] h-px w-px opacity-0"
+                  autoComplete="off"
+                />
+
+                {turnstileEnabled && turnstileSiteKey ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                      <ShieldCheck className="h-4 w-4 text-cyan-700" aria-hidden />
+                      {t("login.security")}
+                    </div>
+                    <TurnstileWidget
+                      key={captchaAttempt}
+                      siteKey={turnstileSiteKey}
+                      action="signup"
+                      className="min-h-[65px]"
+                      onVerify={(token) => {
+                        setCaptchaToken(token);
+                        setNotice("");
+                      }}
+                      onExpire={() => setCaptchaToken("")}
+                      onError={() => {
+                        setCaptchaToken("");
+                        setNotice(t("login.notice.securityError"));
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </>
+            )}
+
             {notice && (
               <div
                 role="status"
@@ -667,4 +769,41 @@ function hasSignupPasswordRequirements(value: string) {
     /\d/.test(value) &&
     /[^A-Za-z0-9]/.test(value)
   );
+}
+
+function authNotice(
+  code: string | undefined,
+  t: (key: TranslationKey) => string,
+  fallback: TranslationKey,
+) {
+  if (code === "invalid_credentials") {
+    return t("login.notice.invalidCredentials");
+  }
+  if (code === "email_not_confirmed") {
+    return t("login.notice.emailNotConfirmed");
+  }
+  if (
+    code === "over_email_send_rate_limit" ||
+    code === "over_request_rate_limit"
+  ) {
+    return t("login.notice.rateLimited");
+  }
+  return t(fallback);
+}
+
+function signupNotice(
+  code: string | undefined,
+  status: number,
+  t: (key: TranslationKey) => string,
+) {
+  if (code === "email_in_use") return t("login.notice.emailInUse");
+  if (code === "weak_password") return t("login.notice.signupPassword");
+  if (code === "captcha_required") {
+    return t("login.notice.completeSecurity");
+  }
+  if (code === "captcha_failed") return t("login.notice.securityError");
+  if (code === "rate_limited" || status === 429) {
+    return t("login.notice.rateLimited");
+  }
+  return t("login.notice.accountFailed");
 }

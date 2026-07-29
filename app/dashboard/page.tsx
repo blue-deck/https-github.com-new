@@ -587,7 +587,11 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <main className="bd-app-page bd-ocean-shell min-h-screen p-10 text-slate-900">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="bd-app-page bd-ocean-shell min-h-screen p-10 text-slate-900"
+      >
         <div className="bd-ocean-content">{t("dashboard.loading")}</div>
       </main>
     );
@@ -624,7 +628,11 @@ export default function DashboardPage() {
           : t("login.roleCaptain");
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10"
+    >
       <div className="bd-ocean-content mx-auto max-w-7xl">
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="bd-brand-rule h-0.5" />

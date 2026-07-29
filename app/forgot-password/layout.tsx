@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { privatePageMetadata } from "../lib/privatePageMetadata";
 
 export const metadata: Metadata = {
+  ...privatePageMetadata,
   title: "Reset Your Password | BlueDeck",
   description: "Request a secure password reset link for your BlueDeck account.",
   alternates: { canonical: "/forgot-password" },

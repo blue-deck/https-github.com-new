@@ -222,6 +222,14 @@ export default function HomePageClient() {
             : jobViewer.kind === "signed-in"
               ? { href: "/dashboard", label: c.openDashboard }
               : null;
+  const trustAction = isEmployerViewer
+    ? { href: "/hiring", label: c.openHiring }
+    : jobViewer.kind === "signed-in" &&
+        (jobViewer.role === "crew" || jobViewer.role === "captain")
+      ? { href: "/profile", label: c.manageProfile }
+      : jobViewer.kind === "signed-in"
+        ? { href: "/dashboard", label: c.openDashboard }
+        : { href: "/login?mode=signup", label: c.getStarted };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -449,8 +457,8 @@ export default function HomePageClient() {
                   </li>
                 ))}
               </ul>
-              <Link href="/login?mode=signup" className={styles.primaryButton}>
-                {c.getStarted}
+              <Link href={trustAction.href} className={styles.primaryButton}>
+                {trustAction.label}
                 <ArrowRight aria-hidden />
               </Link>
             </div>

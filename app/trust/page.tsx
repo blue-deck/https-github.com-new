@@ -5,6 +5,7 @@ import { ArrowRight, LockKeyhole, MailCheck, ShieldCheck, UserCheck } from "luci
 import { type TranslationKey } from "../lib/i18n";
 import { useLanguage } from "../components/LanguageProvider";
 import { PublicPageShell } from "../components/PublicSiteChrome";
+import { useJobListingViewer } from "../jobs/JobListingAction";
 
 const trustItems = [
   {
@@ -31,6 +32,11 @@ const trustItems = [
 
 export default function TrustPage() {
   const { language, t } = useLanguage();
+  const viewer = useJobListingViewer();
+  const accountAction =
+    viewer.kind === "signed-in"
+      ? { href: "/dashboard", label: t("topbar.dashboard") }
+      : { href: "/login?mode=signup", label: t("home.createAccount") };
 
   return (
     <PublicPageShell
@@ -69,8 +75,8 @@ export default function TrustPage() {
             <Link href="/privacy" className="bd-secondary-cta">
               {t("footer.privacy")}
             </Link>
-            <Link href="/login?mode=signup" className="bd-primary-cta">
-              {t("home.createAccount")}
+            <Link href={accountAction.href} className="bd-primary-cta">
+              {accountAction.label}
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
