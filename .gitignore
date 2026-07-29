@@ -22,6 +22,10 @@
 /dist/
 /.open-next/
 
+# local design renders and generated previews
+/output/
+/public/homepage-concepts/renders/
+
 # misc
 .DS_Store
 *.pem
