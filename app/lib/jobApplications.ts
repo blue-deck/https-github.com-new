@@ -49,7 +49,6 @@ export type EmployerJobApplication = OwnJobApplication & {
     currentPosition: string;
     nationality: string;
     availabilityStatus: string;
-    availableFrom: string;
     experienceYears: number;
     cvCompletionPercent: number;
     premiumProfile: boolean;

@@ -335,7 +335,6 @@ export async function loadApplicationCandidatePreviews(
         availabilityStatus: hasSavedDiscoverySettings
           ? discovery.availabilityStatus
           : "",
-        availableFrom: candidateAvailabilityDate(discovery.availableFrom),
         experienceYears: crewExperienceYears(experiences),
         cvCompletionPercent: completionPercent,
         premiumProfile: isPremiumCrewProfile(completionPercent),
@@ -622,7 +621,6 @@ export function employerJobApplicationFromRow(
       currentPosition: preview?.currentPosition || currentPosition,
       nationality: preview?.nationality || "",
       availabilityStatus: preview?.availabilityStatus || "",
-      availableFrom: preview?.availableFrom || "",
       experienceYears: preview?.experienceYears || 0,
       cvCompletionPercent: preview?.cvCompletionPercent || 0,
       premiumProfile: preview?.premiumProfile || false,
@@ -881,17 +879,6 @@ function optionalDate(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const text = cleanText(value);
   return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : null;
-}
-
-function candidateAvailabilityDate(value: unknown) {
-  const date = cleanText(value);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "";
-
-  const parsed = new Date(`${date}T00:00:00.000Z`);
-  return !Number.isNaN(parsed.getTime()) &&
-    parsed.toISOString().slice(0, 10) === date
-    ? date
-    : "";
 }
 
 function safeError(error: unknown) {

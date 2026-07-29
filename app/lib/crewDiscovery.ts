@@ -1,10 +1,11 @@
 export const crewDiscoveryNotesPrefix = "__BLUDECK_FIND_CREW__";
 
 export const crewAvailabilityStatuses = [
-  "Available now",
-  "Available soon",
+  "Available",
+  "In 1 week",
+  "In 1 month",
   "Open to offers",
-  "Currently employed",
+  "Not available",
 ] as const;
 
 export const crewEmploymentTypes = [
@@ -27,7 +28,6 @@ export const crewPreferredLocations = [
 export type CrewDiscoverySettings = {
   discoverable: boolean;
   availabilityStatus: string;
-  availableFrom: string;
   preferredLocations: string[];
   employmentTypes: string[];
   contactVisibility: "request_only" | "hidden";
@@ -36,7 +36,6 @@ export type CrewDiscoverySettings = {
 export const defaultCrewDiscoverySettings: CrewDiscoverySettings = {
   discoverable: false,
   availabilityStatus: "Open to offers",
-  availableFrom: "",
   preferredLocations: [],
   employmentTypes: [],
   contactVisibility: "request_only",
@@ -98,21 +97,37 @@ function splitCrewDiscoveryNotes(notes?: string | null): {
 function normalizeCrewDiscoverySettings(
   value?: Partial<CrewDiscoverySettings> | null,
 ): CrewDiscoverySettings {
-  const availabilityStatus = crewAvailabilityStatuses.includes(
-    value?.availabilityStatus as (typeof crewAvailabilityStatuses)[number],
-  )
-    ? String(value?.availabilityStatus)
-    : defaultCrewDiscoverySettings.availabilityStatus;
+  const availabilityStatus = normalizeAvailabilityStatus(
+    value?.availabilityStatus,
+  );
 
   return {
     discoverable: value?.discoverable === true,
     availabilityStatus,
-    availableFrom:
-      typeof value?.availableFrom === "string" ? value.availableFrom.trim().slice(0, 10) : "",
     preferredLocations: cleanAllowedList(value?.preferredLocations, crewPreferredLocations),
     employmentTypes: cleanAllowedList(value?.employmentTypes, crewEmploymentTypes),
     contactVisibility: value?.contactVisibility === "hidden" ? "hidden" : "request_only",
   };
+}
+
+function normalizeAvailabilityStatus(value: unknown) {
+  if (
+    crewAvailabilityStatuses.includes(
+      value as (typeof crewAvailabilityStatuses)[number],
+    )
+  ) {
+    return String(value);
+  }
+
+  const legacyStatuses: Record<string, (typeof crewAvailabilityStatuses)[number]> = {
+    "Available now": "Available",
+    "Available soon": "In 1 week",
+    "Currently employed": "Not available",
+  };
+
+  return typeof value === "string" && legacyStatuses[value]
+    ? legacyStatuses[value]
+    : defaultCrewDiscoverySettings.availabilityStatus;
 }
 
 function cleanAllowedList(

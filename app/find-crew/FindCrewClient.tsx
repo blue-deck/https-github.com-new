@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Bookmark,
   BriefcaseBusiness,
-  CalendarDays,
   MapPin,
   Search,
   ShieldCheck,
@@ -369,10 +368,6 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
                       icon={<BriefcaseBusiness className="h-4 w-4" />}
                       value={profile.seekingPositions.slice(0, 2).join(" · ") || profile.currentPosition}
                     />
-                    <InfoLine
-                      icon={<CalendarDays className="h-4 w-4" />}
-                      value={profile.discovery.availableFrom ? `${c.from} ${formatDate(profile.discovery.availableFrom, language)}` : c.dateFlexible}
-                    />
                   </div>
 
                   <div className="mt-auto pt-6">
@@ -497,16 +492,6 @@ function readShortlist(metadata?: Record<string, unknown>) {
   return value.filter((item): item is string => typeof item === "string").slice(0, 100);
 }
 
-function formatDate(value: string, language: "en" | "tr") {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
 const copy = {
   en: {
     eyebrow: "Permission-based crew discovery",
@@ -527,9 +512,7 @@ const copy = {
     profiles: "crew profiles",
     clear: "Clear filters",
     years: "years",
-    from: "From",
     locationFlexible: "Location flexible",
-    dateFlexible: "Start date flexible",
     viewProfile: "View secure profile",
     addShortlist: "Add to shortlist",
     removeShortlist: "Remove from shortlist",
@@ -565,9 +548,7 @@ const copy = {
     profiles: "mürettebat profili",
     clear: "Filtreleri temizle",
     years: "yıl",
-    from: "Başlangıç",
     locationFlexible: "Konum esnek",
-    dateFlexible: "Başlangıç tarihi esnek",
     viewProfile: "Güvenli profili görüntüle",
     addShortlist: "Kısa listeye ekle",
     removeShortlist: "Kısa listeden çıkar",

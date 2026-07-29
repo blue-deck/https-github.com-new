@@ -484,8 +484,8 @@ function CrewPassportCard({
 }) {
   const c = copy[language];
   const candidate = application.candidate;
-  const startValue = candidate.availableFrom
-    ? formatDate(candidate.availableFrom, language)
+  const startValue = candidate.availabilityStatus
+    ? candidateAvailabilityLabel(candidate.availabilityStatus, language)
     : c.notProvided;
 
   return (
@@ -530,23 +530,14 @@ function CrewPassportCard({
             <StatusBadge status={application.status} language={language} />
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {candidate.premiumProfile ? (
+          {candidate.premiumProfile ? (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-900">
                 <BadgeCheck className="h-3 w-3" aria-hidden />
                 {c.premiumProfile}
               </span>
-            ) : null}
-            {candidate.availabilityStatus ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.09em] text-emerald-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                {candidateAvailabilityLabel(
-                  candidate.availabilityStatus,
-                  language,
-                )}
-              </span>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -1475,7 +1466,6 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
       currentPosition: stringValue(candidate.currentPosition),
       nationality: stringValue(candidate.nationality),
       availabilityStatus: stringValue(candidate.availabilityStatus),
-      availableFrom: stringValue(candidate.availableFrom),
       experienceYears:
         candidate.experienceYears > 0 && candidate.experienceYears < 1
           ? 0.5
@@ -1580,13 +1570,14 @@ function safeCount(value: unknown) {
 
 function candidateAvailabilityLabel(value: string, language: "en" | "tr") {
   const labels: Record<string, { en: string; tr: string }> = {
-    "Available now": { en: "Available now", tr: "Hemen müsait" },
-    "Available soon": { en: "Available soon", tr: "Yakında müsait" },
+    Available: { en: "Available", tr: "Müsait" },
+    "In 1 week": { en: "In 1 week", tr: "1 hafta içinde" },
+    "In 1 month": { en: "In 1 month", tr: "1 ay içinde" },
     "Open to offers": { en: "Open to offers", tr: "Tekliflere açık" },
-    "Currently employed": {
-      en: "Currently employed",
-      tr: "Şu anda çalışıyor",
-    },
+    "Not available": { en: "Not available", tr: "Müsait değil" },
+    "Available now": { en: "Available", tr: "Müsait" },
+    "Available soon": { en: "In 1 week", tr: "1 hafta içinde" },
+    "Currently employed": { en: "Not available", tr: "Müsait değil" },
   };
 
   return labels[value]?.[language] || value;
@@ -1726,7 +1717,7 @@ const copy = {
       "BlueDeck Hiring erişimi sunulana kadar aday adları korumalı kalır.",
     crewMember: "Yat mürettebatı",
     nationality: "Uyruk",
-    availableToStart: "İşe başlayabileceği tarih",
+    availableToStart: "İşe başlama müsaitliği",
     experience: "Deneyim",
     years: "yıl",
     lessThanOneYear: "1 yıldan az",

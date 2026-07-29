@@ -1049,19 +1049,54 @@ export default function ProfilePage() {
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-5 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <h1 className="bd-serif text-3xl font-normal text-[#071f3c] sm:text-5xl">
-                {profile.full_name || "Professional Crew Profile"}
-              </h1>
-              {isPremiumCrewProfile(cvCompletionPercent) ? (
-                <PremiumProfileBadge percent={cvCompletionPercent} />
-              ) : null}
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-end">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <h1 className="bd-serif text-3xl font-normal text-[#071f3c] sm:text-5xl">
+                    {profile.full_name || "Professional Crew Profile"}
+                  </h1>
+                  {isPremiumCrewProfile(cvCompletionPercent) ? (
+                    <PremiumProfileBadge percent={cvCompletionPercent} />
+                  ) : null}
+                </div>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                  Build a clean yachting CV from verified profile data, documents,
+                  work preferences, skills and references.
+                </p>
+              </div>
+
+              <label className="block rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+                <span className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
+                    Availability
+                  </span>
+                  <span aria-live="polite" className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                    {saving ? "Saving" : "Auto-saved"}
+                  </span>
+                </span>
+                <span className="relative mt-2 block">
+                  <select
+                    value={discoverySettings.availabilityStatus}
+                    onChange={(event) =>
+                      updateDiscoverySettings({
+                        availabilityStatus: event.target.value,
+                      })
+                    }
+                    className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-10 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm"
+                  >
+                    {crewAvailabilityStatuses.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
+                </span>
+                <span className="mt-2 block text-xs leading-5 text-slate-500">
+                  Shown to employers on your job applications.
+                </span>
+              </label>
             </div>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              Build a clean yachting CV from verified profile data, documents,
-              work preferences, skills and references.
-            </p>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
               <Snapshot label="Experience" value={`${totalExperienceYears} yrs`} tone="cyan" />
@@ -1514,38 +1549,6 @@ export default function ProfilePage() {
             </Panel>
 
             <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
-              <section className="mb-5 overflow-hidden rounded-[24px] border border-cyan-200 bg-[linear-gradient(145deg,#f6fdff,#ffffff)] shadow-sm">
-                <div className="border-b border-cyan-100 p-5 sm:p-6">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-                      Find Crew visibility
-                    </p>
-                    <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950">
-                      Control how employers discover you
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 p-5 sm:p-6 md:grid-cols-2">
-                  <SelectField
-                    label="Availability"
-                    value={discoverySettings.availabilityStatus}
-                    options={[...crewAvailabilityStatuses]}
-                    onChange={(value) =>
-                      updateDiscoverySettings({ availabilityStatus: value })
-                    }
-                  />
-                  <DateField
-                    label="Available from"
-                    value={discoverySettings.availableFrom}
-                    onChange={(value) =>
-                      updateDiscoverySettings({ availableFrom: value })
-                    }
-                    profileField
-                  />
-                </div>
-              </section>
-
               <div className="divide-y divide-slate-200">
                 <DropdownChoiceGroup
                   title="Personal skills"

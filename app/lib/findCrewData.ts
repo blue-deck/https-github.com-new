@@ -253,10 +253,11 @@ function sortDiscoverableCrew(
   second: DiscoverableCrewProfile,
 ) {
   const availabilityPriority = (status: string) => {
-    if (status === "Available now") return 0;
-    if (status === "Available soon") return 1;
-    if (status === "Open to offers") return 2;
-    return 3;
+    if (status === "Available") return 0;
+    if (status === "In 1 week") return 1;
+    if (status === "In 1 month") return 2;
+    if (status === "Open to offers") return 3;
+    return 4;
   };
 
   const availabilityDifference =
