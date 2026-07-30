@@ -48,11 +48,22 @@ export async function GET(request: Request, context: RouteContext) {
 
   const safeSource = safePublicMediaUrl(source);
   if (!safeSource) return mediaError(404);
-  return proxyMedia(safeSource, mediaRequest.kind);
+  return proxyMedia(
+    safeSource,
+    mediaRequest.kind,
+    safeUpstreamAccept(request.headers.get("accept")),
+  );
 }
 
 function parseMediaRequest(request: Request) {
   const searchParams = new URL(request.url).searchParams;
+  if (
+    Array.from(searchParams.keys()).some(
+      (key) => key !== "kind" && key !== "slot",
+    )
+  ) {
+    return null;
+  }
   const kinds = searchParams.getAll("kind");
   const slots = searchParams.getAll("slot");
   if (
@@ -79,6 +90,7 @@ function parseMediaRequest(request: Request) {
 async function proxyMedia(
   source: string,
   kind: "avatar" | "gallery",
+  accept: string,
 ) {
   const controller = new AbortController();
   const timeout = setTimeout(
@@ -88,13 +100,17 @@ async function proxyMedia(
 
   try {
     const transformedSource = transformedStorageSource(source, kind);
-    let upstream = await fetchMediaSource(transformedSource, controller.signal);
+    let upstream = await fetchMediaSource(
+      transformedSource,
+      controller.signal,
+      accept,
+    );
     if (
       !upstream.ok ||
       (upstream.status >= 300 && upstream.status < 400)
     ) {
       await upstream.body?.cancel().catch(() => undefined);
-      upstream = await fetchMediaSource(source, controller.signal);
+      upstream = await fetchMediaSource(source, controller.signal, accept);
       if (
         !upstream.ok ||
         (upstream.status >= 300 && upstream.status < 400)
@@ -126,6 +142,7 @@ async function proxyMedia(
           "public, max-age=300, s-maxage=300, stale-while-revalidate=60",
         "Content-Length": String(sourceBytes.byteLength),
         "Content-Type": contentType,
+        Vary: "Accept",
       },
     });
   } catch (error) {
@@ -154,14 +171,44 @@ function transformedStorageSource(
   return transformed.toString();
 }
 
-function fetchMediaSource(source: string, signal: AbortSignal) {
+function fetchMediaSource(
+  source: string,
+  signal: AbortSignal,
+  accept: string,
+) {
   return fetch(source, {
     cache: "no-store",
     redirect: "manual",
     signal,
     headers: {
-      Accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8",
+      Accept: accept,
     },
+  });
+}
+
+function safeUpstreamAccept(value: string | null) {
+  const accepted = [
+    acceptsImageType(value, "image/avif") ? "image/avif" : "",
+    acceptsImageType(value, "image/webp") ? "image/webp" : "",
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/*;q=0.8",
+  ].filter(Boolean);
+  return accepted.join(",");
+}
+
+function acceptsImageType(value: string | null, contentType: string) {
+  return (value || "").split(",").some((entry) => {
+    const [mediaRange, ...parameters] = entry
+      .split(";")
+      .map((part) => part.trim().toLowerCase());
+    if (mediaRange !== contentType) return false;
+
+    const qualityParameter = parameters.find((part) => part.startsWith("q="));
+    if (!qualityParameter) return true;
+    const quality = Number(qualityParameter.slice(2));
+    return Number.isFinite(quality) && quality > 0;
   });
 }
 

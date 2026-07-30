@@ -477,6 +477,9 @@ export default function MyBluePage() {
                   <h1 className="truncate text-xl font-black tracking-[-0.02em] text-[#071f3c] sm:text-2xl">
                     Photo Gallery
                   </h1>
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500">
+                    Selected photos may appear on your public Find Crew profile.
+                  </p>
                 </div>
               </div>
 

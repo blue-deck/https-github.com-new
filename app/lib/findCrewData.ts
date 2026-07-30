@@ -30,8 +30,8 @@ import {
   normalizePublicCrewId,
   publicStructuredProfileField,
   publicStructuredStringArray,
-  safePublicMediaUrl,
-  selectPublicCrewGallerySources,
+  safeOwnedPublicMediaUrl,
+  selectOwnedPublicCrewGallerySources,
 } from "./publicCrewSafety";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
@@ -93,7 +93,7 @@ const crewProfileSelect =
 
 const loadCachedCrewDirectory = unstable_cache(
   loadDiscoverableCrewList,
-  ["find-crew-directory-v2"],
+  ["find-crew-directory-v3"],
   {
     revalidate: directoryCacheSeconds,
     tags: ["find-crew-directory"],
@@ -145,7 +145,7 @@ async function loadDiscoverableCrewList(): Promise<
 
 const loadCachedDiscoverableCrew = unstable_cache(
   loadDiscoverableCrewProfile,
-  ["find-crew-profile-v2"],
+  ["find-crew-profile-v3"],
   {
     revalidate: directoryCacheSeconds,
     tags: ["find-crew-directory"],
@@ -154,7 +154,7 @@ const loadCachedDiscoverableCrew = unstable_cache(
 
 const loadCachedDirectoryMediaProfile = unstable_cache(
   loadActiveDirectoryMediaProfile,
-  ["find-crew-media-profile-v2"],
+  ["find-crew-media-profile-v3"],
   {
     revalidate: directoryCacheSeconds,
     tags: ["find-crew-directory"],
@@ -163,7 +163,7 @@ const loadCachedDirectoryMediaProfile = unstable_cache(
 
 const loadCachedDirectoryGallerySources = unstable_cache(
   loadActiveDirectoryGallerySources,
-  ["find-crew-media-gallery-v2"],
+  ["find-crew-media-gallery-v3"],
   {
     revalidate: directoryCacheSeconds,
     tags: ["find-crew-directory"],
@@ -271,9 +271,10 @@ async function loadDiscoverableCrewProfile(
     profileIdentity || preview.displayName,
     2_000,
   );
-  const gallerySources = selectPublicCrewGallerySources(
+  const gallerySources = selectOwnedPublicCrewGallerySources(
     photoResult.data || [],
     profileId,
+    [profileId, row.user_id],
   );
 
   return {
@@ -395,7 +396,10 @@ async function loadActiveDirectoryMediaProfile(crewId: string) {
   if (!isUuid(profileId)) return null;
   return {
     profileId,
-    avatarSource: safePublicMediaUrl(row.profile_photo_url),
+    avatarSource: safeOwnedPublicMediaUrl(row.profile_photo_url, [
+      profileId,
+      row.user_id,
+    ]),
   };
 }
 
@@ -418,7 +422,9 @@ async function loadActiveDirectoryGallerySources(profileId: string) {
     throw new Error("find_crew_media_unavailable");
   }
 
-  return selectPublicCrewGallerySources(data || [], profileId);
+  return selectOwnedPublicCrewGallerySources(data || [], profileId, [
+    profileId,
+  ]);
 }
 
 function createServiceClient() {
@@ -633,7 +639,10 @@ function toDiscoverableCrewPreview(
     crewId,
     displayName: maskedPersonName(rawName),
     initials: personInitials(rawName),
-    profilePhotoUrl: safePublicMediaUrl(row.profile_photo_url)
+    profilePhotoUrl: safeOwnedPublicMediaUrl(row.profile_photo_url, [
+      row.id,
+      row.user_id,
+    ])
       ? publicCrewMediaUrl(crewId, "avatar")
       : "",
     currentPosition,
