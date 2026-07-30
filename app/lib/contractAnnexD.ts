@@ -249,6 +249,7 @@ export function drawContractAnnexDPage(
     placeValue: details.seafarerPlaceSigned,
     dateValue: details.seafarerDateSigned,
     emptyWhenMissing: true,
+    halfSignatureWidth: true,
     y: 82 + employerHeight + cardGap,
   });
 }
