@@ -48,7 +48,8 @@ const copy = {
       "Find trusted yacht roles, hire with clarity and keep essential onboard work connected in one focused platform.",
     browseJobs: "Explore open roles",
     findCrew: "Find professional crew",
-    heroTrust: "Private profiles. Role-based access. Clear ownership.",
+    heroTrust:
+      "Visible profiles. Protected names, contacts and private records.",
     jobsEyebrow: "Latest opportunities",
     jobsTitle: "A focused path to your next role.",
     jobsIntro:
@@ -100,9 +101,9 @@ const copy = {
     trustEyebrow: "Private by design",
     trustTitle: "A calmer system for decisions that matter.",
     trustText:
-      "BlueDeck keeps access controlled and responsibilities visible from first contact to life on board.",
+      "Crew discovery can show faces in profile and gallery photos, along with selected professional and physical details. Full names, contact details and private documents remain protected.",
     trust1: "Role-based account access",
-    trust2: "Permission-based crew discovery",
+    trust2: "Visible crew profiles, protected private data",
     trust3: "Traceable yacht workflows",
     getStarted: "Create a BlueDeck account",
   },
@@ -114,7 +115,8 @@ const copy = {
       "Güvenilir yat ilanlarını bulun, doğru bilgilerle işe alım yapın ve teknedeki temel işleri tek, odaklı platformda yönetin.",
     browseJobs: "Açık ilanları keşfet",
     findCrew: "Profesyonel mürettebat bul",
-    heroTrust: "Gizli profiller. Rol bazlı erişim. Net sorumluluk.",
+    heroTrust:
+      "Görünür profiller. Korumalı adlar, iletişim bilgileri ve özel kayıtlar.",
     jobsEyebrow: "Güncel fırsatlar",
     jobsTitle: "Sıradaki görevinize giden sade yol.",
     jobsIntro:
@@ -166,9 +168,9 @@ const copy = {
     trustEyebrow: "Gizlilik temelden tasarlandı",
     trustTitle: "Önemli kararlar için daha sakin bir sistem.",
     trustText:
-      "BlueDeck, ilk temastan teknedeki yaşama kadar erişimi kontrollü ve sorumlulukları görünür tutar.",
+      "Crew keşfinde profil ve galeri fotoğraflarındaki yüzler ile seçili profesyonel ve fiziksel bilgiler gösterilebilir. Tam adlar, iletişim bilgileri ve özel belgeler korumalı kalır.",
     trust1: "Rol bazlı hesap erişimi",
-    trust2: "İzin tabanlı mürettebat keşfi",
+    trust2: "Görünür crew profilleri, korumalı özel veriler",
     trust3: "İzlenebilir yat iş akışları",
     getStarted: "BlueDeck hesabı oluştur",
   },
