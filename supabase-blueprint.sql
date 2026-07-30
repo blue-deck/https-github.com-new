@@ -11,6 +11,7 @@ create table if not exists public.crew_profiles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid unique references auth.users(id) on delete cascade,
   public_crew_id text unique not null default upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)),
+  status text not null default 'active',
   email text unique,
   full_name text,
   phone text,

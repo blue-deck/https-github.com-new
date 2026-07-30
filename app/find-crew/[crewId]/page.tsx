@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { getDiscoverableCrew } from "../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../lib/site";
-import { CrewProfileContent } from "./InviteCrewPanel";
+import { PublicCrewProfileContent } from "./InviteCrewPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -20,14 +20,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${profile.fullName} — ${profile.currentPosition} | BlueDeck`,
-    description: profile.bio || `${profile.currentPosition} · BlueDeck`,
+    title: `${profile.displayName} — ${profile.currentPosition} | BlueDeck`,
+    description: `${profile.currentPosition} profile in the privacy-protected BlueDeck crew directory.`,
     alternates: {
       canonical: `/find-crew/${encodeURIComponent(profile.crewId)}`,
     },
+    robots: {
+      index: false,
+      follow: false,
+    },
     openGraph: {
-      title: `${profile.fullName} — ${profile.currentPosition}`,
-      description: profile.bio || `${profile.currentPosition} · BlueDeck`,
+      title: `${profile.displayName} — ${profile.currentPosition}`,
+      description: `${profile.currentPosition} profile in the privacy-protected BlueDeck crew directory.`,
       url: absoluteSiteUrl(`/find-crew/${encodeURIComponent(profile.crewId)}`),
       images: [
         profile.profilePhotoUrl ||
@@ -48,7 +52,7 @@ export default async function FindCrewProfilePage({ params }: PageProps) {
       <PublicHeader />
 
       <main id="main-content">
-        <CrewProfileContent profile={profile} />
+        <PublicCrewProfileContent profile={profile} />
       </main>
 
       <PublicFooter />

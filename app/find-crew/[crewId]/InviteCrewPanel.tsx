@@ -10,8 +10,10 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
+  ExternalLink,
   Languages,
   LoaderCircle,
+  LockKeyhole,
   LogIn,
   MapPin,
   Send,
@@ -19,6 +21,10 @@ import {
   Ship,
   UserRound,
 } from "lucide-react";
+import {
+  CrewCandidateProfileBody,
+  CrewCandidateProfileIdentity,
+} from "../../components/CrewCandidatePresentation";
 import { useLanguage } from "../../components/LanguageProvider";
 import type { DiscoverableCrewProfile } from "../../lib/findCrewData";
 import { translatePhrase, type Language } from "../../lib/i18n";
@@ -230,6 +236,106 @@ export function CrewProfileContent({
           <InviteCrewPanel
             crewId={profile.crewId}
             fullName={profile.fullName}
+            defaultPosition={
+              profile.seekingPositions[0] || profile.currentPosition
+            }
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function PublicCrewProfileContent({
+  profile,
+}: {
+  profile: DiscoverableCrewProfile;
+}) {
+  const { language } = useLanguage();
+  const c = copy[language];
+  const p = publicProfileCopy[language];
+
+  return (
+    <section
+      data-i18n-ignore
+      aria-labelledby="crew-profile-heading"
+      className="border-b border-slate-200 bg-slate-50/70"
+    >
+      <div className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+        <nav aria-label={c.profileNavigation}>
+          <Link
+            href="/find-crew"
+            className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            {c.backToSearch}
+          </Link>
+        </nav>
+
+        <article className="mt-6 overflow-hidden rounded-[26px] border border-white/15 bg-[#f6f9fd] shadow-2xl shadow-slate-950/10 sm:rounded-[34px]">
+          <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
+            <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
+            <CrewCandidateProfileIdentity
+              candidate={profile}
+              kicker={p.candidateProfile}
+              titleId="crew-profile-heading"
+              premiumLabel={p.premiumProfile}
+              headingLevel="h1"
+            />
+          </header>
+
+          <CrewCandidateProfileBody
+            candidate={profile}
+            copy={p}
+            sectionHeadingLevel="h2"
+          >
+            <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-2xl">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-800">
+                    {p.crewPortal}
+                  </p>
+                  <h2 className="mt-2 text-xl font-black text-[#071631]">
+                    {p.crewPortalTitle}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {profile.portalAvailable
+                      ? p.crewPortalHelp
+                      : p.crewPortalUnavailable}
+                  </p>
+                </div>
+                {profile.portalAvailable && profile.publicCrewId ? (
+                  <a
+                    href={`/crew/${encodeURIComponent(profile.publicCrewId)}/gallery`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bd-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white shadow-lg shadow-[#071631]/15 transition hover:bg-[#0d3e72]"
+                  >
+                    {p.openCrewPortal}
+                    <ExternalLink className="h-4 w-4" aria-hidden />
+                  </a>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    className="inline-flex min-h-12 shrink-0 cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-200 px-5 text-sm font-black text-slate-500"
+                  >
+                    <LockKeyhole className="h-4 w-4" aria-hidden />
+                    {p.openCrewPortal}
+                  </button>
+                )}
+              </div>
+            </section>
+            <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-xs leading-5 text-cyan-950">
+              {p.privacyNote}
+            </p>
+          </CrewCandidateProfileBody>
+        </article>
+
+        <div className="mx-auto mt-6 max-w-xl">
+          <InviteCrewPanel
+            crewId={profile.crewId}
+            fullName={profile.displayName}
             defaultPosition={
               profile.seekingPositions[0] || profile.currentPosition
             }
@@ -768,6 +874,8 @@ const invitationErrorsTr: Record<string, string> = {
     "Ekip davet etmeden önce doğrulanmış BlueDeck işe alım erişimi gerekir.",
   "No BlueDeck crew profile matches that Crew ID.":
     "Bu Crew ID ile eşleşen bir BlueDeck ekip profili bulunamadı.",
+  "No active BlueDeck crew profile matches that Crew ID.":
+    "Bu Crew ID ile eşleşen aktif bir BlueDeck crew profili bulunamadı.",
   "This crew profile is not currently available for discovery.":
     "Bu ekip profili şu anda aramalarda görünmüyor.",
   "The Crew ID and email do not match the same crew profile.":
@@ -780,6 +888,99 @@ const invitationErrorsTr: Record<string, string> = {
     "Bu ekip üyesi bu yatta zaten aktif.",
   "Invalid invitation request.": "Davet isteği geçersiz.",
 };
+
+const publicProfileCopy = {
+  en: {
+    candidateProfile: "Crew profile",
+    premiumProfile: "Premium profile",
+    gallery: "My Blue gallery",
+    galleryHelp:
+      "Four selected professional photos from this crew member’s My Blue profile.",
+    galleryPhoto: "gallery photo",
+    noGalleryPhotos: "This crew member has not added gallery photos yet.",
+    years: "years",
+    noExperience: "Not added",
+    experiences: "Experiences",
+    references: "References",
+    documents: "Documents",
+    personalDetails: "Personal details",
+    gender: "Gender",
+    height: "Height",
+    weight: "Weight",
+    smoker: "Smoker",
+    visibleTattoos: "Visible tattoos",
+    nationality: "Nationality",
+    location: "Location",
+    notProvided: "Not provided",
+    professionalSummary: "Professional summary",
+    noProfessionalSummary: "No professional summary has been added yet.",
+    skillsCharacteristics: "Skills & characteristics",
+    skillsHelp:
+      "Structured career preferences shared in the BlueDeck profile.",
+    skills: "Skills",
+    characteristics: "Characteristics",
+    seekingPositions: "Seeking positions",
+    workPreferences: "Work preferences",
+    employmentTypes: "Employment types",
+    preferredLocations: "Preferred hiring regions",
+    languages: "Languages",
+    noLanguages: "No language information has been added yet.",
+    crewPortal: "Crew Portal / CV",
+    crewPortalTitle: "Open this crew member’s public BlueDeck profile",
+    crewPortalHelp:
+      "This opens the same gallery linked by the CV QR code, with access to the public CV.",
+    crewPortalUnavailable:
+      "This crew member has not enabled their public Crew Portal yet.",
+    openCrewPortal: "Open Crew Portal / CV",
+    privacyNote:
+      "Full names, stored contact fields, document files and reference identities are not included here. Photos and selected professional profile fields are public.",
+  },
+  tr: {
+    candidateProfile: "Crew profili",
+    premiumProfile: "Premium profil",
+    gallery: "My Blue galerisi",
+    galleryHelp:
+      "Bu crew üyesinin My Blue profilinden seçilen dört profesyonel fotoğraf.",
+    galleryPhoto: "galeri fotoğrafı",
+    noGalleryPhotos: "Bu crew üyesi henüz galeri fotoğrafı eklememiş.",
+    years: "yıl",
+    noExperience: "Eklenmedi",
+    experiences: "Deneyim",
+    references: "Referans",
+    documents: "Doküman",
+    personalDetails: "Kişisel bilgiler",
+    gender: "Cinsiyet",
+    height: "Boy",
+    weight: "Kilo",
+    smoker: "Sigara kullanımı",
+    visibleTattoos: "Görünür dövme",
+    nationality: "Uyruk",
+    location: "Konum",
+    notProvided: "Belirtilmedi",
+    professionalSummary: "Profesyonel özet",
+    noProfessionalSummary: "Henüz profesyonel özet eklenmemiş.",
+    skillsCharacteristics: "Beceriler ve özellikler",
+    skillsHelp:
+      "BlueDeck profilinde paylaşılan yapılandırılmış kariyer tercihleri.",
+    skills: "Beceriler",
+    characteristics: "Kişisel özellikler",
+    seekingPositions: "Aranan pozisyonlar",
+    workPreferences: "Çalışma tercihleri",
+    employmentTypes: "Çalışma türleri",
+    preferredLocations: "Tercih edilen çalışma bölgeleri",
+    languages: "Diller",
+    noLanguages: "Henüz dil bilgisi eklenmemiş.",
+    crewPortal: "Crew Portal / CV",
+    crewPortalTitle: "Bu crew üyesinin herkese açık BlueDeck profilini aç",
+    crewPortalHelp:
+      "CV üzerindeki QR koduyla aynı galeriyi açar ve herkese açık CV’ye erişim sağlar.",
+    crewPortalUnavailable:
+      "Bu crew üyesi herkese açık Crew Portal görünürlüğünü henüz etkinleştirmemiş.",
+    openCrewPortal: "Crew Portal / CV’yi aç",
+    privacyNote:
+      "Tam adlar, kayıtlı iletişim alanları, doküman dosyaları ve referans kimlikleri burada gösterilmez. Fotoğraflar ve seçili profesyonel profil alanları herkese açıktır.",
+  },
+} as const;
 
 const copy = {
   en: {

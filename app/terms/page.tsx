@@ -7,7 +7,7 @@ const sections = [
   },
   {
     title: "Yacht and Crew Data",
-    text: "BlueDeck organizes yacht operations, crew profiles, documents, contracts, checklist activity and related records for private account use.",
+    text: "BlueDeck organizes yacht operations, crew profiles, documents, contracts, checklist activity and related records. Active, email-confirmed crew profiles may appear in the public Find Crew directory, where profile and gallery photos plus selected professional and physical details can be visible. Full legal names, contact details, private documents and yacht workspaces remain protected or access-controlled.",
   },
   {
     title: "Operational Responsibility",

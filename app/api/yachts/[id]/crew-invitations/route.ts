@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isActiveDirectoryCrew } from "../../../../lib/findCrewData";
 import { saveYachtMembership } from "../../../../lib/yachtMemberships";
 import { getPosition } from "../../../../lib/yachtOperations";
 import { absoluteSiteUrl } from "../../../../lib/site";
-import { getPublicCrewDiscoverySettings } from "../../../../lib/publicCrewSafety";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -24,7 +24,6 @@ type CrewProfileRow = {
   id: string;
   email: string;
   publicCrewId: string;
-  notes: string;
 };
 
 export async function POST(
@@ -193,11 +192,22 @@ async function createCrewInvitation(
   let targetProfile: CrewProfileRow | null = null;
 
   if (crewId) {
+    if (!(await isActiveDirectoryCrew(crewId))) {
+      return invitationResponse(
+        {
+          ok: false,
+          error: "No active BlueDeck crew profile matches that Crew ID.",
+        },
+        404,
+      );
+    }
+
     const { data, error } = await serviceClient
       .from("crew_profiles")
-      .select("id,email,public_crew_id,current_position,notes")
+      .select("id,email,public_crew_id,current_position")
+      .eq("status", "active")
       .eq("public_crew_id", crewId)
-      .maybeSingle();
+      .limit(2);
 
     if (error) {
       logCrewInvitationError("crew_id_profile_lookup_failed", error, {
@@ -210,7 +220,7 @@ async function createCrewInvitation(
       );
     }
 
-    if (!data) {
+    if (!data || data.length !== 1) {
       return invitationResponse(
         {
           ok: false,
@@ -220,7 +230,7 @@ async function createCrewInvitation(
       );
     }
 
-    targetProfile = crewProfileFromRow(data);
+    targetProfile = crewProfileFromRow(data[0]);
     if (!targetProfile) {
       logCrewInvitationError("invalid_target_profile_record", undefined, {
         actorUserId: user.id,
@@ -229,16 +239,6 @@ async function createCrewInvitation(
       return invitationResponse(
         { ok: false, error: "Crew invitation could not be created." },
         500,
-      );
-    }
-
-    if (!getPublicCrewDiscoverySettings(targetProfile.notes)) {
-      return invitationResponse(
-        {
-          ok: false,
-          error: "This crew profile is not currently available for discovery.",
-        },
-        404,
       );
     }
 
@@ -258,7 +258,7 @@ async function createCrewInvitation(
   } else if (email) {
     const { data, error } = await serviceClient
       .from("crew_profiles")
-      .select("id,email,public_crew_id,current_position,notes")
+      .select("id,email,public_crew_id,current_position")
       .eq("email", email)
       .maybeSingle();
 
@@ -571,7 +571,6 @@ function crewProfileFromRow(value: unknown): CrewProfileRow | null {
     id,
     email: isValidEmail(storedEmail) ? storedEmail : "",
     publicCrewId: cleanText(value.public_crew_id).toUpperCase(),
-    notes: cleanText(value.notes),
   };
 }
 

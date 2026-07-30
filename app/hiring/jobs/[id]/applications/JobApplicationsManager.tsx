@@ -11,9 +11,7 @@ import {
   CheckCircle2,
   Clock3,
   ExternalLink,
-  Eye,
   FileText,
-  Flag,
   Languages,
   LoaderCircle,
   LockKeyhole,
@@ -25,6 +23,10 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CrewCandidatePassportCard,
+  CrewCandidateProfileIdentity,
+} from "../../../../components/CrewCandidatePresentation";
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
   employerJobApplicationStatuses,
@@ -489,102 +491,20 @@ function CrewPassportCard({
     : c.notProvided;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_28px_rgba(7,22,49,0.06)] transition duration-200 hover:border-cyan-200 hover:shadow-[0_12px_34px_rgba(7,22,49,0.10)] sm:p-4">
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#071631] via-cyan-500 to-transparent opacity-80" />
-
-      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-        <div className="shrink-0">
-          <CandidateAvatar
-            profilePhotoUrl={candidate.profilePhotoUrl}
-            displayName={candidate.displayName}
-            initials={candidate.initials}
-            className="h-16 w-16 rounded-xl border border-slate-200 bg-white shadow-sm sm:h-20 sm:w-20"
-            textClassName="text-lg sm:text-xl"
-            mediaSize={160}
-          />
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <h2
-                  data-i18n-ignore
-                  className="truncate text-base font-black tracking-[-0.015em] text-[#071631] sm:text-lg"
-                  title={candidate.displayName}
-                >
-                  {candidate.displayName}
-                </h2>
-                <LockKeyhole
-                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
-                  aria-label={c.nameLocked}
-                />
-              </div>
-              <p
-                data-i18n-ignore
-                className="mt-1 truncate text-[11px] font-black uppercase tracking-[0.12em] text-cyan-800 sm:text-xs"
-              >
-                {candidate.currentPosition || c.crewMember}
-              </p>
-            </div>
-            <StatusBadge status={application.status} language={language} />
-          </div>
-
-          {candidate.premiumProfile ? (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-900">
-                <BadgeCheck className="h-3 w-3" aria-hidden />
-                {c.premiumProfile}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <PassportFact
-          icon={<Flag />}
-          label={c.nationality}
-          value={candidate.nationality || c.notProvided}
-        />
-        <PassportFact
-          icon={<CalendarDays />}
-          label={c.availableToStart}
-          value={startValue}
-        />
-        <PassportFact
-          icon={<BriefcaseBusiness />}
-          label={c.experience}
-          value={
-            candidate.experienceYears > 0
-              ? candidate.experienceYears < 1
-                ? c.lessThanOneYear
-                : `${candidate.experienceYears}+ ${c.years}`
-              : c.noExperience
-          }
-        />
-        <PassportFact
-          icon={<Clock3 />}
-          label={c.applied}
-          value={formatDate(application.submittedAt, language)}
-        />
-      </dl>
-
-      <div className="mt-3 flex items-center justify-end gap-3 border-t border-slate-100 pt-3 sm:justify-between">
-        <p className="hidden items-center gap-1.5 text-[10px] font-semibold text-slate-500 sm:inline-flex">
-          <LockKeyhole className="h-3 w-3" aria-hidden />
-          {c.maskedIdentity}
-        </p>
-        <button
-          type="button"
-          onClick={onView}
-          className="bd-focus inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[#0d3e72] sm:w-auto"
-        >
-          <Eye className="h-3.5 w-3.5" aria-hidden />
-          {c.viewProfile}
-        </button>
-      </div>
-    </article>
+    <CrewCandidatePassportCard
+      candidate={candidate}
+      availabilityValue={startValue}
+      primaryBadge={
+        <StatusBadge status={application.status} language={language} />
+      }
+      fourthFact={{
+        icon: <Clock3 />,
+        label: c.applied,
+        value: formatDate(application.submittedAt, language),
+      }}
+      copy={c}
+      onView={onView}
+    />
   );
 }
 
@@ -684,42 +604,26 @@ function CandidateProfileModal({
             <X className="h-5 w-5" aria-hidden />
           </button>
 
-          <div className="relative flex min-w-0 flex-col gap-5 pr-12 sm:flex-row sm:items-center">
-            <CandidateAvatar
-              profilePhotoUrl={
-                candidate?.profilePhotoUrl || cardCandidate.profilePhotoUrl
-              }
-              displayName={candidate?.displayName || cardCandidate.displayName}
-              initials={candidate?.initials || cardCandidate.initials}
-              className="h-24 w-24 rounded-full border-[5px] border-white shadow-xl shadow-black/25"
-              textClassName="text-2xl"
-            />
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">
-                {c.candidateProfile}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <h2
-                  id="candidate-profile-title"
-                  data-i18n-ignore
-                  className="break-words text-3xl font-black uppercase tracking-[-0.035em] sm:text-4xl"
-                >
-                  {candidate?.displayName || cardCandidate.displayName}
-                </h2>
-                <LockKeyhole className="h-5 w-5 text-white/55" aria-hidden />
-              </div>
-              <p
-                data-i18n-ignore
-                className="mt-2 font-black uppercase tracking-[0.16em] text-cyan-100"
-              >
-                {candidate?.currentPosition ||
+          <div className="pr-12">
+            <CrewCandidateProfileIdentity
+              candidate={{
+                displayName:
+                  candidate?.displayName || cardCandidate.displayName,
+                initials: candidate?.initials || cardCandidate.initials,
+                profilePhotoUrl:
+                  candidate?.profilePhotoUrl || cardCandidate.profilePhotoUrl,
+                currentPosition:
+                  candidate?.currentPosition ||
                   cardCandidate.currentPosition ||
-                  c.crewMember}
-              </p>
-              {candidate?.premiumProfile || cardCandidate.premiumProfile ? (
-                <PremiumBadge label={c.premiumProfile} dark />
-              ) : null}
-            </div>
+                  c.crewMember,
+                premiumProfile:
+                  candidate?.premiumProfile || cardCandidate.premiumProfile,
+              }}
+              kicker={c.candidateProfile}
+              titleId="candidate-profile-title"
+              premiumLabel={c.premiumProfile}
+              headingLevel="h2"
+            />
           </div>
         </header>
 
@@ -1022,53 +926,6 @@ function CandidateProfileModal({
   );
 }
 
-function CandidateAvatar({
-  profilePhotoUrl,
-  displayName,
-  initials,
-  className,
-  textClassName,
-  mediaSize = 420,
-}: {
-  profilePhotoUrl: string;
-  displayName: string;
-  initials: string;
-  className: string;
-  textClassName: string;
-  mediaSize?: number;
-}) {
-  const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [profilePhotoUrl]);
-
-  if (profilePhotoUrl && !imageFailed) {
-    return (
-      <span className={`relative flex shrink-0 overflow-hidden bg-slate-100 ${className}`}>
-        <img
-          src={candidateMediaSource(profilePhotoUrl, mediaSize, mediaSize)}
-          alt={displayName}
-          className="h-full w-full object-cover"
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => setImageFailed(true)}
-        />
-      </span>
-    );
-  }
-
-  return (
-    <span
-      className={`flex shrink-0 items-center justify-center bg-[linear-gradient(145deg,#d8f8ff,#73bffc)] font-black text-[#071631] ${className} ${textClassName}`}
-      aria-label={displayName}
-    >
-      {initials || "BD"}
-    </span>
-  );
-}
-
 function GalleryPhoto({ source, alt }: { source: string; alt: string }) {
   const [failed, setFailed] = useState(false);
 
@@ -1112,49 +969,6 @@ function candidateMediaSource(source: string, width: number, height: number) {
     fit: "cover",
   });
   return `/api/cv-image?${search.toString()}`;
-}
-
-function PassportFact({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/80 px-2.5 py-2">
-      <dt className="flex min-w-0 items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.1em] text-slate-500">
-        <span className="shrink-0 text-cyan-800 [&>svg]:h-3 [&>svg]:w-3">
-          {icon}
-        </span>
-        <span className="truncate">{label}</span>
-      </dt>
-      <dd
-        data-i18n-ignore
-        className="mt-1 truncate text-xs font-black text-[#071631]"
-        title={value}
-      >
-        {value}
-      </dd>
-    </div>
-  );
-}
-
-function PremiumBadge({ label, dark = false }: { label: string; dark?: boolean }) {
-  return (
-    <span
-      className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] ${
-        dark
-          ? "border-cyan-200/30 bg-cyan-200/10 text-cyan-100"
-          : "border-cyan-200 bg-cyan-50 text-cyan-900"
-      }`}
-    >
-      <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
-      {label}
-    </span>
-  );
 }
 
 function SectionHeading({
@@ -1279,7 +1093,7 @@ function StatusBadge({
   };
   return (
     <span
-      className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
+      className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
     >
       {statusLabel(status, language)}
     </span>
@@ -1645,6 +1459,7 @@ const copy = {
     applied: "Applied on",
     notProvided: "Not provided",
     premiumProfile: "Premium profile",
+    premium: "Premium",
     nameLocked: "Candidate name protected",
     maskedIdentity: "Identity protected by BlueDeck",
     viewProfile: "View profile",
@@ -1725,6 +1540,7 @@ const copy = {
     applied: "Başvuru tarihi",
     notProvided: "Belirtilmedi",
     premiumProfile: "Premium profil",
+    premium: "Premium",
     nameLocked: "Aday adı korumalı",
     maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
     viewProfile: "Profili görüntüle",

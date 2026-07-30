@@ -16,6 +16,15 @@ import {
   type CompletionExperience,
 } from "./crewProfileCompletion";
 import {
+  loadCandidateExperienceRows,
+  maskedPersonName,
+  personInitials,
+  publicCandidateLanguageEntries,
+  redactCandidateProfileText,
+  safeCandidateCount,
+  safeCandidateMeasurement,
+} from "./crewCandidateDataServer";
+import {
   isJobApplicationStatus,
   type EmployerJobApplication,
   type EmployerJobApplicationDetails,
@@ -37,7 +46,6 @@ import {
 import {
   getPublicCrewDiscoverySettings,
   normalizePublicCrewId,
-  redactPublicContactDetails,
   safePublicMediaUrl,
   publicStructuredProfileField,
   publicStructuredStringArray,
@@ -57,19 +65,6 @@ type CandidatePreviewResult =
 type CandidateDetailsResult =
   | { ok: true; details: EmployerJobApplicationDetails }
   | { ok: false; error: string };
-
-type CompletionExperienceRow = CompletionExperience & {
-  id?: unknown;
-  crew_profile_id?: unknown;
-  created_at?: unknown;
-};
-
-const experienceProfileBatchSize = 25;
-const experiencePageSize = 500;
-const richExperienceSelect =
-  "id,crew_profile_id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,created_at";
-const fallbackExperienceSelect =
-  "id,crew_profile_id,yacht_name,position,start_date,end_date,description,created_at";
 
 export function authenticatedApplicationClients(request: NextRequest) {
   return authenticatedEmployerClients(request);
@@ -278,7 +273,7 @@ export async function loadApplicationCandidatePreviews(
     const experiencesByProfile = new Map<string, CompletionExperience[]>();
 
     if (batch.length > 0) {
-      const experienceResult = await loadCompletionExperienceRows(
+      const experienceResult = await loadCandidateExperienceRows(
         serviceClient,
         batch,
       );
@@ -437,7 +432,7 @@ export async function loadApplicationCandidateDetails(
         .from("crew_references")
         .select("id,vessel")
         .eq("crew_profile_id", crewProfileId),
-      loadCompletionExperienceRows(serviceClient, [crewProfileId]),
+      loadCandidateExperienceRows(serviceClient, [crewProfileId]),
     ]);
 
   const relatedError =
@@ -501,14 +496,18 @@ export async function loadApplicationCandidateDetails(
         nationality: publicStructuredProfileField(profile.nationality, 80),
         location: publicStructuredProfileField(profile.location, 120),
         gender,
-        heightCm: safeMeasurement(profile.height_cm, 80, 260),
-        weightKg: safeMeasurement(profile.weight_kg, 20, 400),
+        heightCm: safeCandidateMeasurement(profile.height_cm, 80, 260),
+        weightKg: safeCandidateMeasurement(profile.weight_kg, 20, 400),
         smoker: publicStructuredProfileField(profile.smoker, 60),
         visibleTattoos: publicStructuredProfileField(
           profile.visible_tattoos,
           120,
         ),
-        professionalSummary: redactPublicContactDetails(profile.bio, 2_000),
+        professionalSummary: redactCandidateProfileText(
+          profile.bio,
+          publicStructuredProfileField(profile.full_name, 120) || snapshotName,
+          2_000,
+        ),
         skills: publicStructuredStringArray(profile.personal_skills, 30, 120),
         characteristics: publicStructuredStringArray(
           profile.personal_characteristics,
@@ -531,13 +530,13 @@ export async function loadApplicationCandidateDetails(
         preferredLocations: discovery.preferredLocations
           .map((item) => publicStructuredProfileField(item, 120))
           .filter(Boolean),
-        languages: publicLanguageEntries(profile.languages),
+        languages: publicCandidateLanguageEntries(profile.languages),
         galleryPhotos: gallerySources,
         referenceCount: countExperienceReferences(
           experiences,
           referenceResult.data || [],
         ),
-        documentCount: safeCount(documentResult.count),
+        documentCount: safeCandidateCount(documentResult.count),
         experienceYears: crewExperienceYears(experiences),
         publicCrewId: portalAvailable ? publicCrewId : "",
         portalAvailable,
@@ -736,131 +735,6 @@ function emptyCandidateDetails(
       premiumProfile: false,
     },
   };
-}
-
-function maskedPersonName(value: string) {
-  const parts = value.trim().split(/\s+/).filter(Boolean);
-  const visibleParts = parts.length > 1 ? [parts[0], parts.at(-1) || ""] : parts;
-  const masked = visibleParts
-    .map((part) => `${Array.from(part)[0]?.toLocaleUpperCase() || "B"}••••`)
-    .join(" ");
-  return masked || "B•••• C••••";
-}
-
-function personInitials(value: string) {
-  const parts = value.trim().split(/\s+/).filter(Boolean);
-  const visibleParts = parts.length > 1 ? [parts[0], parts.at(-1) || ""] : parts;
-  return (
-    visibleParts
-      .map((part) => Array.from(part)[0]?.toLocaleUpperCase() || "")
-      .join("") || "BD"
-  );
-}
-
-function safeMeasurement(value: unknown, minimum: number, maximum: number) {
-  if (
-    typeof value !== "number" ||
-    !Number.isFinite(value) ||
-    value < minimum ||
-    value > maximum
-  ) {
-    return null;
-  }
-  return Math.round(value);
-}
-
-function safeCount(value: number | null) {
-  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
-    ? value
-    : 0;
-}
-
-function publicLanguageEntries(value: unknown) {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .map((item) => {
-      if (!isRecord(item)) return null;
-      const name = publicStructuredProfileField(item.name, 80);
-      const level = publicStructuredProfileField(item.level, 80);
-      return name ? { name, level: level || "Intermediate" } : null;
-    })
-    .filter((item): item is { name: string; level: string } => Boolean(item));
-}
-
-async function loadCompletionExperienceRows(
-  serviceClient: SupabaseClient,
-  profileIds: string[],
-): Promise<{ rows: CompletionExperienceRow[]; error: unknown | null }> {
-  const uniqueProfileIds = Array.from(new Set(profileIds.filter(isUuid)));
-  const rows: CompletionExperienceRow[] = [];
-
-  for (
-    let profileIndex = 0;
-    profileIndex < uniqueProfileIds.length;
-    profileIndex += experienceProfileBatchSize
-  ) {
-    const profileBatch = uniqueProfileIds.slice(
-      profileIndex,
-      profileIndex + experienceProfileBatchSize,
-    );
-    let useFallbackSelect = false;
-
-    for (let offset = 0; ; offset += experiencePageSize) {
-      let response = await completionExperiencePage(
-        serviceClient,
-        profileBatch,
-        offset,
-        useFallbackSelect,
-      );
-
-      if (
-        response.error &&
-        !useFallbackSelect &&
-        isLegacyExperienceSchemaError(response.error)
-      ) {
-        useFallbackSelect = true;
-        response = await completionExperiencePage(
-          serviceClient,
-          profileBatch,
-          offset,
-          true,
-        );
-      }
-
-      if (response.error) return { rows: [], error: response.error };
-
-      const page = (response.data || []) as CompletionExperienceRow[];
-      rows.push(...page);
-      if (page.length < experiencePageSize) break;
-    }
-  }
-
-  return { rows, error: null };
-}
-
-function completionExperiencePage(
-  serviceClient: SupabaseClient,
-  profileIds: string[],
-  offset: number,
-  fallback: boolean,
-) {
-  return serviceClient
-    .from("crew_experiences")
-    .select(fallback ? fallbackExperienceSelect : richExperienceSelect)
-    .in("crew_profile_id", profileIds)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + experiencePageSize - 1);
-}
-
-function isLegacyExperienceSchemaError(error: unknown) {
-  if (!isRecord(error)) return false;
-  const message = cleanText(error.message).toLowerCase();
-  return (
-    message.includes("schema cache") ||
-    (message.includes("column") &&
-      /yacht_type|yacht_program|yacht_size|location/.test(message))
-  );
 }
 
 function databaseTimestamp(value: unknown) {

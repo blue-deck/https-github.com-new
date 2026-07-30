@@ -1,8 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { isRecord } from "./employerAccessServer";
-import { safePublicMediaUrl } from "./publicCrewSafety";
+import { selectPublicCrewGallerySources } from "./publicCrewSafety";
 
 export const employerApplicationMediaKinds = ["avatar", "gallery"] as const;
 
@@ -122,32 +121,7 @@ export function selectEmployerApplicationGallerySources(
   applicationId: string,
 ) {
   if (!uuidPattern.test(applicationId)) return [];
-
-  const originalOrder = Array.from(
-    new Set(
-      rows
-        .map((row) =>
-          isRecord(row) ? safePublicMediaUrl(row.image_url) : "",
-        )
-        .filter(Boolean),
-    ),
-  );
-  const selected = [...originalOrder]
-    .sort(
-      (left, right) =>
-        stableTextHash(`${applicationId}:${left}`) -
-        stableTextHash(`${applicationId}:${right}`),
-    )
-    .slice(0, 4);
-
-  if (
-    originalOrder.length > 4 &&
-    selected.every((photo) => originalOrder.slice(0, 4).includes(photo))
-  ) {
-    return [originalOrder[4], ...selected.slice(0, 3)].filter(Boolean);
-  }
-
-  return selected;
+  return selectPublicCrewGallerySources(rows, applicationId);
 }
 
 function normalizeMediaIdentity(input: MediaUrlInput) {
@@ -212,13 +186,4 @@ function mediaSigningSecret() {
   return serviceRoleSecret.length >= minimumSigningSecretLength
     ? serviceRoleSecret
     : "";
-}
-
-function stableTextHash(value: string) {
-  let hash = 2166136261;
-  for (const character of value) {
-    hash ^= character.codePointAt(0) || 0;
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
 }

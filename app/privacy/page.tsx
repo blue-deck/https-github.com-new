@@ -10,6 +10,10 @@ const sections = [
     text: "We use this information to create user accounts, provide secure dashboards, manage crew profiles, build CVs, support captain invitations, organize contracts, show expiry alerts and keep yacht workflows connected.",
   },
   {
+    title: "Public Crew Directory",
+    text: "Active, email-confirmed crew accounts may appear in the public Find Crew directory. Profile and gallery photos may show a crew member's face, and selected professional and physical profile fields can be public. Full legal names, email addresses, phone numbers, private documents, reference identities and private file links are not shown there.",
+  },
+  {
     title: "Documents and Photos",
     text: "Documents and images uploaded by users are used for profile, CV, photo gallery, yacht record, checklist proof and operational history purposes inside the BlueDeck account experience.",
   },

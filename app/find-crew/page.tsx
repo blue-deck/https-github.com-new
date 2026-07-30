@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Find Professional Yacht Crew | BlueDeck",
   description:
-    "Search discoverable BlueDeck yacht crew profiles by position, location, availability and employment preference.",
+    "Browse active BlueDeck yacht crew through privacy-protected profiles, filtered by position, location, availability and employment preference.",
   alternates: {
     canonical: "/find-crew",
   },

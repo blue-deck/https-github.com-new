@@ -108,11 +108,8 @@ export function safePublicMediaUrl(value: unknown) {
           return [];
         }
       });
-    const isSupabaseStorageHost =
-      /^[a-z0-9]{15,32}\.supabase\.co$/i.test(url.hostname);
     if (
-      (!configuredStorageOrigins.includes(url.origin) &&
-        !isSupabaseStorageHost) ||
+      !configuredStorageOrigins.includes(url.origin) ||
       !url.pathname.startsWith("/storage/v1/object/public/crew-portfolio/")
     ) {
       return "";
@@ -122,6 +119,41 @@ export function safePublicMediaUrl(value: unknown) {
   } catch {
     return "";
   }
+}
+
+export function selectPublicCrewGallerySources(
+  rows: unknown[],
+  selectionSeed: string,
+) {
+  if (!selectionSeed.trim()) return [];
+
+  const originalOrder = Array.from(
+    new Set(
+      rows
+        .map((row) =>
+          row && typeof row === "object" && !Array.isArray(row)
+            ? safePublicMediaUrl((row as Record<string, unknown>).image_url)
+            : "",
+        )
+        .filter(Boolean),
+    ),
+  );
+  const selected = [...originalOrder]
+    .sort(
+      (left, right) =>
+        stablePublicTextHash(`${selectionSeed}:${left}`) -
+        stablePublicTextHash(`${selectionSeed}:${right}`),
+    )
+    .slice(0, 4);
+
+  if (
+    originalOrder.length > 4 &&
+    selected.every((photo) => originalOrder.slice(0, 4).includes(photo))
+  ) {
+    return [originalOrder[4], ...selected.slice(0, 3)].filter(Boolean);
+  }
+
+  return selected;
 }
 
 export function publicStructuredProfileField(
@@ -179,4 +211,13 @@ export function publicStringArray(
         .filter(Boolean),
     ),
   ).slice(0, safeLimit);
+}
+
+function stablePublicTextHash(value: string) {
+  let hash = 2166136261;
+  for (const character of value) {
+    hash ^= character.codePointAt(0) || 0;
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }

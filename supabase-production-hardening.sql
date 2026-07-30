@@ -26,6 +26,7 @@ create table if not exists public.crew_profiles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade,
   public_crew_id text default upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)),
+  status text not null default 'active',
   email text,
   full_name text,
   phone text,
@@ -38,6 +39,7 @@ create table if not exists public.crew_profiles (
 alter table public.crew_profiles
   add column if not exists user_id uuid references auth.users(id) on delete cascade,
   add column if not exists public_crew_id text,
+  add column if not exists status text default 'active',
   add column if not exists email text,
   add column if not exists full_name text,
   add column if not exists phone text,
@@ -45,6 +47,14 @@ alter table public.crew_profiles
   add column if not exists profile_photo_url text,
   add column if not exists created_at timestamptz default now(),
   add column if not exists updated_at timestamptz default now();
+
+update public.crew_profiles
+set status = 'active'
+where status is null or btrim(status) = '';
+
+alter table public.crew_profiles
+  alter column status set default 'active',
+  alter column status set not null;
 
 create unique index if not exists profiles_id_unique_idx on public.profiles(id);
 create unique index if not exists crew_profiles_user_id_unique_idx on public.crew_profiles(user_id) where user_id is not null;

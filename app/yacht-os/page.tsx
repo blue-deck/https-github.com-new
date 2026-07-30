@@ -55,11 +55,11 @@ const copy = {
     step3Label: "03 · Operate",
     step3Title: "Work from one record",
     step3Text:
-      "Carry the same verified context into crew records and daily operations.",
+      "Carry the same professional context into crew records and daily operations.",
     trustEyebrow: "Access stays controlled",
-    trustTitle: "Private by default. Useful by permission.",
+    trustTitle: "Public profiles. Protected private records.",
     trustText:
-      "Crew controls discoverability. Yacht workspaces open according to account role and membership, while operational activity stays traceable.",
+      "Crew discovery can show faces in profile and gallery photos, plus selected professional and physical details. Full legal names, contact details, private documents and yacht workspaces remain behind account and role controls.",
     trustLink: "See how BlueDeck protects access",
     findCrew: "Find crew",
     createAccount: "Create account",
@@ -102,11 +102,11 @@ const copy = {
     step3Label: "03 · Yönet",
     step3Title: "Tek kayıttan çalışın",
     step3Text:
-      "Aynı güvenilir bağlamı mürettebat kayıtlarına ve günlük operasyona taşıyın.",
+      "Aynı profesyonel bağlamı mürettebat kayıtlarına ve günlük operasyona taşıyın.",
     trustEyebrow: "Erişim kontrollü kalır",
-    trustTitle: "Varsayılan olarak gizli. İzin verildiğinde kullanışlı.",
+    trustTitle: "Herkese açık profiller. Korumalı özel kayıtlar.",
     trustText:
-      "Keşfedilebilirliği mürettebat yönetir. Yat çalışma alanları hesap rolü ve üyeliğe göre açılır; operasyon hareketleri izlenebilir kalır.",
+      "Crew keşfinde profil ve galeri fotoğraflarındaki yüzler ile seçili profesyonel ve fiziksel bilgiler gösterilebilir. Tam yasal adlar, iletişim bilgileri, özel belgeler ve yat çalışma alanları hesap ve rol kontrollerinin arkasında kalır.",
     trustLink: "BlueDeck’in erişimi nasıl koruduğunu görün",
     findCrew: "Mürettebat bul",
     createAccount: "Hesap oluştur",

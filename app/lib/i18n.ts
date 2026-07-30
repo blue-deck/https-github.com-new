@@ -767,6 +767,16 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
 };
 
 const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>> = {
+  "Professional crew network": { tr: "Profesyonel crew ağı" },
+  "Finding the right crew.": { tr: "Doğru crew aranıyor." },
+  "Crew profiles are loading.": { tr: "Crew profilleri yükleniyor." },
+  "Public Crew Directory": { tr: "Herkese Açık Crew Dizini" },
+  "Active, email-confirmed crew accounts may appear in the public Find Crew directory. Profile and gallery photos may show a crew member's face, and selected professional and physical profile fields can be public. Full legal names, email addresses, phone numbers, private documents, reference identities and private file links are not shown there.": {
+    tr: "Aktif ve e-posta adresi onaylanmış crew hesapları herkese açık Find Crew dizininde yer alabilir. Profil ve galeri fotoğraflarında crew üyesinin yüzü görünebilir; seçili profesyonel ve fiziksel profil alanları herkese açık olabilir. Tam yasal adlar, e-posta adresleri, telefon numaraları, özel belgeler, referans kişilerin kimlikleri ve özel dosya bağlantıları bu dizinde gösterilmez.",
+  },
+  "BlueDeck organizes yacht operations, crew profiles, documents, contracts, checklist activity and related records. Active, email-confirmed crew profiles may appear in the public Find Crew directory, where profile and gallery photos plus selected professional and physical details can be visible. Full legal names, contact details, private documents and yacht workspaces remain protected or access-controlled.": {
+    tr: "BlueDeck; yat operasyonlarını, crew profillerini, belgeleri, kontratları, kontrol listesi aktivitelerini ve ilgili kayıtları düzenler. Aktif ve e-posta adresi onaylanmış crew profilleri herkese açık Find Crew dizininde yer alabilir; burada profil ve galeri fotoğrafları ile seçili profesyonel ve fiziksel bilgiler görünür olabilir. Tam yasal adlar, iletişim bilgileri, özel belgeler ve yat çalışma alanları korumalı veya erişim kontrollü kalır.",
+  },
   "Overview": { tr: "Genel Bakış" },
   "Checklist": { tr: "Kontrol Listesi" },
   "Checklists": { tr: "Kontrol Listeleri" },
