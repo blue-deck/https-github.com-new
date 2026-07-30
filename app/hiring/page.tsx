@@ -71,9 +71,9 @@ const copy = {
       "Crew accounts can browse and apply to roles. Captain, Owner / Employer and Management accounts can publish job posts.",
     emptyTitle: "No job postings yet",
     emptyCreateText:
-      "Create your first role and BlueDeck will keep its applicants and hiring activity organized here.",
+      "Your job postings and applicants will appear here.",
     emptyReadOnlyText:
-      "There are no existing job postings available for this account.",
+      "There are no job postings for this account.",
     listingNumber: "Listing",
     applicants: "Applicants",
     viewApplicants: "View Applicants",
@@ -119,9 +119,9 @@ const copy = {
       "Crew hesapları ilanları görüntüleyip başvurabilir. Captain, Owner / Employer ve Management hesapları iş ilanı yayınlayabilir.",
     emptyTitle: "Henüz iş ilanı yok",
     emptyCreateText:
-      "İlk ilanınızı oluşturun; BlueDeck başvuruları ve işe alım hareketlerini burada düzenli tutsun.",
+      "İlanlarınız ve başvurularınız burada görünecek.",
     emptyReadOnlyText:
-      "Bu hesap için görüntülenebilecek mevcut bir iş ilanı bulunmuyor.",
+      "Bu hesapta henüz iş ilanı yok.",
     listingNumber: "İlan",
     applicants: "Başvuru",
     viewApplicants: "Başvuranları Gör",
@@ -362,52 +362,55 @@ export default function HiringPage() {
           />
         ) : null}
 
-        <section className="mt-6" aria-labelledby="job-postings-title">
-          <div>
-            <p className="bd-kicker">{c.postingsEyebrow}</p>
-            <h2
-              id="job-postings-title"
-              className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl"
-            >
-              {c.postingsTitle}
-            </h2>
-            <p className="mt-2 max-w-2xl leading-7 text-slate-600">
-              {c.postingsIntro}
-            </p>
-          </div>
-
-          {!applicationCountsAvailable && jobs.length > 0 ? (
-            <div
-              role="status"
-              className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold leading-6 text-amber-950"
-            >
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
-              <p>{c.countsUnavailable}</p>
+        {jobs.length === 0 ? (
+          <section
+            className="mt-6"
+            aria-labelledby="job-postings-empty-title"
+          >
+            <div className="rounded-[24px] border border-slate-200 bg-white px-5 py-5 shadow-sm shadow-slate-950/[0.04] sm:px-6 sm:py-6">
+              <div className="flex items-start gap-4">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-800">
+                  <BriefcaseBusiness className="h-5 w-5" aria-hidden />
+                </span>
+                <div className="min-w-0 py-0.5">
+                  <h2
+                    id="job-postings-empty-title"
+                    className="text-lg font-semibold tracking-[-0.02em] text-[#071f3c] sm:text-xl"
+                  >
+                    {c.emptyTitle}
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    {canCreateJob ? c.emptyCreateText : c.emptyReadOnlyText}
+                  </p>
+                </div>
+              </div>
             </div>
-          ) : null}
-
-          {jobs.length === 0 ? (
-            <div className="bd-glass-card-strong mt-5 rounded-[30px] p-8 text-center sm:p-12">
-              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800">
-                <BriefcaseBusiness className="h-7 w-7" aria-hidden />
-              </span>
-              <h3 className="mt-5 text-2xl font-semibold text-[#071f3c]">
-                {c.emptyTitle}
-              </h3>
-              <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">
-                {canCreateJob ? c.emptyCreateText : c.emptyReadOnlyText}
+          </section>
+        ) : (
+          <section className="mt-6" aria-labelledby="job-postings-title">
+            <div>
+              <p className="bd-kicker">{c.postingsEyebrow}</p>
+              <h2
+                id="job-postings-title"
+                className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl"
+              >
+                {c.postingsTitle}
+              </h2>
+              <p className="mt-2 max-w-2xl leading-7 text-slate-600">
+                {c.postingsIntro}
               </p>
-              {canCreateJob ? (
-                <Link
-                  href="/hiring/jobs"
-                  className="bd-focus mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
-                >
-                  <Plus className="h-4 w-4" aria-hidden />
-                  {c.createPost}
-                </Link>
-              ) : null}
             </div>
-          ) : (
+
+            {!applicationCountsAvailable ? (
+              <div
+                role="status"
+                className="mt-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm font-semibold leading-6 text-amber-950"
+              >
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
+                <p>{c.countsUnavailable}</p>
+              </div>
+            ) : null}
+
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
               {jobs.map((job) => (
                 <JobPostCard
@@ -424,8 +427,8 @@ export default function HiringPage() {
                 />
               ))}
             </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
       {previewJob ? (
         <LiveListingPreviewModal
