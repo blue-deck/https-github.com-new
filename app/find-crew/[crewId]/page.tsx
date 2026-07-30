@@ -33,10 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       title: `${profile.displayName} — ${profile.currentPosition}`,
       description: `${profile.currentPosition} profile in the privacy-protected BlueDeck crew directory.`,
       url: absoluteSiteUrl(`/find-crew/${encodeURIComponent(profile.crewId)}`),
-      images: [
-        profile.profilePhotoUrl ||
-          absoluteSiteUrl("/og.png"),
-      ],
+      images: [absoluteSiteUrl("/og.png")],
     },
   };
 }

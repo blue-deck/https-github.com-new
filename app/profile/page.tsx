@@ -3484,7 +3484,7 @@ function ProfilePhoto({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-950">Profile photo</p>
-        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "This appears in your portal and CV."}</p>
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "This appears in your CV, portal and public Find Crew profile."}</p>
       </div>
     </div>
   );

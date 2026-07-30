@@ -3637,6 +3637,9 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Selected file:": {
     "tr": "Seçilen dosya:",
   },
+  "Selected photos may appear on your public Find Crew profile.": {
+    "tr": "Seçilen fotoğraflar herkese açık Find Crew profilinizde görünebilir.",
+  },
   "Send Contract for Signature": {
     "tr": "İmza için Sözleşme Gönder",
   },
@@ -4023,6 +4026,9 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   },
   "This appears in your portal and CV.": {
     "tr": "Bu, portalınızda ve CV'nizde görünür.",
+  },
+  "This appears in your CV, portal and public Find Crew profile.": {
+    "tr": "Bu, CV'nizde, portalınızda ve herkese açık Find Crew profilinizde görünür.",
   },
   "This checklist has no task items yet.": {
     "tr": "Bu kontrol listesinde henüz görev öğesi yok.",

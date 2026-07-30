@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "bluedeck-yachtos";
-const CACHE_NAME = `${CACHE_PREFIX}-shell-v5`;
+const CACHE_NAME = `${CACHE_PREFIX}-shell-v6`;
 
 const urlsToCache = [
   "/manifest.webmanifest",
@@ -73,6 +73,10 @@ self.addEventListener("fetch", function (event) {
   // Employer application media uses short-lived capabilities and must never
   // outlive its private, no-store response in CacheStorage.
   if (/^\/api\/employer\/job-posts\/[^/]+\/applications\/[^/]+\/media$/.test(url.pathname)) return;
+
+  // Public crew photos have short server-side eligibility and revocation
+  // windows. Let the media route and HTTP cache headers own their lifetime.
+  if (/^\/api\/find-crew\/[^/]+\/media$/.test(url.pathname)) return;
 
   if (request.mode === "navigate") {
     event.respondWith(

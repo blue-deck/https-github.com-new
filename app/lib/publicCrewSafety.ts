@@ -4,6 +4,7 @@ import {
   parseCrewDiscoverySettings,
   type CrewDiscoverySettings,
 } from "./crewDiscovery";
+import { resolveSupabaseUrl } from "./supabaseConfig";
 
 const publicCrewIdPattern = /^[A-Z0-9_-]{1,64}$/;
 const emailPattern = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
@@ -19,6 +20,9 @@ const structuredContactKeywordPattern = /\b(?:contact|discord|dm|email|facebook|
 const structuredIdentifierPattern = /[A-Z0-9][._][A-Z0-9]/i;
 const structuredUnsafeSymbolPattern = /[@:=#<>\[\]{}|\\]/;
 const contactWithheldText = "Contact details withheld";
+const publicCrewPortfolioPath = "/storage/v1/object/public/crew-portfolio/";
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function normalizePublicCrewId(value: string) {
   let decoded = "";
@@ -96,21 +100,10 @@ export function safePublicMediaUrl(value: unknown) {
   try {
     const url = new URL(value.trim());
     if (url.protocol !== "https:" || url.username || url.password) return "";
-    const configuredStorageOrigins = [
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_URL,
-    ]
-      .flatMap((candidate) => {
-        if (!candidate) return [];
-        try {
-          return [new URL(candidate).origin];
-        } catch {
-          return [];
-        }
-      });
+    const configuredStorageOrigins = publicStorageOrigins();
     if (
       !configuredStorageOrigins.includes(url.origin) ||
-      !url.pathname.startsWith("/storage/v1/object/public/crew-portfolio/")
+      !url.pathname.startsWith(publicCrewPortfolioPath)
     ) {
       return "";
     }
@@ -121,9 +114,66 @@ export function safePublicMediaUrl(value: unknown) {
   }
 }
 
+export function safeOwnedPublicMediaUrl(
+  value: unknown,
+  ownerIds: unknown[],
+) {
+  const safeUrl = safePublicMediaUrl(value);
+  if (!safeUrl) return "";
+
+  const allowedOwners = new Set(
+    ownerIds
+      .filter((ownerId): ownerId is string => typeof ownerId === "string")
+      .map((ownerId) => ownerId.trim().toLowerCase())
+      .filter((ownerId) => uuidPattern.test(ownerId)),
+  );
+  if (allowedOwners.size === 0) return "";
+
+  try {
+    const url = new URL(safeUrl);
+    const encodedPath = url.pathname.slice(publicCrewPortfolioPath.length);
+    const decodedPath = decodeURIComponent(encodedPath);
+    const segments = decodedPath.split("/");
+    if (
+      segments.length < 2 ||
+      segments.some(
+        (segment) =>
+          !segment ||
+          segment === "." ||
+          segment === ".." ||
+          segment.includes("\\"),
+      )
+    ) {
+      return "";
+    }
+
+    return allowedOwners.has(segments[0].toLowerCase()) ? safeUrl : "";
+  } catch {
+    return "";
+  }
+}
+
 export function selectPublicCrewGallerySources(
   rows: unknown[],
   selectionSeed: string,
+) {
+  return selectCrewGallerySources(rows, selectionSeed, safePublicMediaUrl);
+}
+
+export function selectOwnedPublicCrewGallerySources(
+  rows: unknown[],
+  selectionSeed: string,
+  ownerIds: unknown[],
+) {
+  return selectCrewGallerySources(rows, selectionSeed, (value) =>
+    safeOwnedPublicMediaUrl(value, ownerIds),
+  );
+}
+
+function selectCrewGallerySources(
+  rows: unknown[],
+  selectionSeed: string,
+  safeMediaUrl: (value: unknown) => string,
 ) {
   if (!selectionSeed.trim()) return [];
 
@@ -132,7 +182,7 @@ export function selectPublicCrewGallerySources(
       rows
         .map((row) =>
           row && typeof row === "object" && !Array.isArray(row)
-            ? safePublicMediaUrl((row as Record<string, unknown>).image_url)
+            ? safeMediaUrl((row as Record<string, unknown>).image_url)
             : "",
         )
         .filter(Boolean),
@@ -154,6 +204,29 @@ export function selectPublicCrewGallerySources(
   }
 
   return selected;
+}
+
+function publicStorageOrigins() {
+  const configuredUrls = [
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_URL,
+  ].filter((candidate): candidate is string => Boolean(candidate?.trim()));
+  const resolvedUrls =
+    configuredUrls.length > 0
+      ? configuredUrls.map((candidate) => resolveSupabaseUrl(candidate))
+      : [resolveSupabaseUrl()];
+
+  return Array.from(
+    new Set(
+      resolvedUrls.flatMap((candidate) => {
+        try {
+          return [new URL(candidate).origin];
+        } catch {
+          return [];
+        }
+      }),
+    ),
+  );
 }
 
 export function publicStructuredProfileField(
