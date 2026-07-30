@@ -5469,6 +5469,7 @@ function ContractAnnexDPreview({
           ["Place Signed", details.seafarerPlaceSigned],
           ["Date", details.seafarerDateSigned],
         ]}
+        halfSignatureWidth
       />
     </div>
   );
