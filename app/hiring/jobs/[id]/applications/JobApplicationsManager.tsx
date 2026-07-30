@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
@@ -489,99 +490,91 @@ function CrewPassportCard({
     : c.notProvided;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_28px_rgba(7,22,49,0.06)] transition duration-200 hover:border-cyan-200 hover:shadow-[0_12px_34px_rgba(7,22,49,0.10)] sm:p-4">
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-[#071631] via-cyan-500 to-transparent opacity-80" />
-
-      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-        <div className="shrink-0">
+    <article className="group flex min-h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04] transition hover:border-cyan-300 hover:shadow-md hover:shadow-slate-950/[0.06]">
+      <div className="h-1 bg-gradient-to-r from-[#071631] via-cyan-700 to-cyan-300" />
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <div className="flex min-w-0 items-start gap-3.5 sm:gap-4">
           <CandidateAvatar
             profilePhotoUrl={candidate.profilePhotoUrl}
             displayName={candidate.displayName}
             initials={candidate.initials}
-            className="h-16 w-16 rounded-xl border border-slate-200 bg-white shadow-sm sm:h-20 sm:w-20"
+            className="h-[72px] w-[72px] rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-20 sm:w-20"
             textClassName="text-lg sm:text-xl"
             mediaSize={160}
           />
-        </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <h2
-                  data-i18n-ignore
-                  className="truncate text-base font-black tracking-[-0.015em] text-[#071631] sm:text-lg"
-                  title={candidate.displayName}
-                >
-                  {candidate.displayName}
-                </h2>
-                <LockKeyhole
-                  className="h-3.5 w-3.5 shrink-0 text-slate-400"
-                  aria-label={c.nameLocked}
-                />
-              </div>
-              <p
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-1.5 pt-0.5">
+              <h2
                 data-i18n-ignore
-                className="mt-1 truncate text-[11px] font-black uppercase tracking-[0.12em] text-cyan-800 sm:text-xs"
+                className="truncate text-lg font-semibold tracking-[-0.025em] text-[#071631] sm:text-xl"
+                title={candidate.displayName}
               >
-                {candidate.currentPosition || c.crewMember}
-              </p>
+                {candidate.displayName}
+              </h2>
+              <LockKeyhole
+                className="h-3.5 w-3.5 shrink-0 text-slate-400"
+                aria-label={c.nameLocked}
+              />
             </div>
-            <StatusBadge status={application.status} language={language} />
-          </div>
+            <p
+              data-i18n-ignore
+              className="mt-1 truncate text-sm font-semibold text-cyan-800"
+            >
+              {candidate.currentPosition || c.crewMember}
+            </p>
 
-          {candidate.premiumProfile ? (
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-900">
-                <BadgeCheck className="h-3 w-3" aria-hidden />
-                {c.premiumProfile}
-              </span>
+              <StatusBadge status={application.status} language={language} />
+              {candidate.premiumProfile ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-900">
+                  <BadgeCheck className="h-3 w-3" aria-hidden />
+                  {c.premium}
+                </span>
+              ) : null}
             </div>
-          ) : null}
+          </div>
         </div>
-      </div>
 
-      <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <PassportFact
-          icon={<Flag />}
-          label={c.nationality}
-          value={candidate.nationality || c.notProvided}
-        />
-        <PassportFact
-          icon={<CalendarDays />}
-          label={c.availableToStart}
-          value={startValue}
-        />
-        <PassportFact
-          icon={<BriefcaseBusiness />}
-          label={c.experience}
-          value={
-            candidate.experienceYears > 0
-              ? candidate.experienceYears < 1
-                ? c.lessThanOneYear
-                : `${candidate.experienceYears}+ ${c.years}`
-              : c.noExperience
-          }
-        />
-        <PassportFact
-          icon={<Clock3 />}
-          label={c.applied}
-          value={formatDate(application.submittedAt, language)}
-        />
-      </dl>
+        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-slate-100 py-4 sm:grid-cols-4">
+          <PassportFact
+            icon={<Flag />}
+            label={c.nationality}
+            value={candidate.nationality || c.notProvided}
+          />
+          <PassportFact
+            icon={<CalendarDays />}
+            label={c.availableToStart}
+            value={startValue}
+          />
+          <PassportFact
+            icon={<BriefcaseBusiness />}
+            label={c.experience}
+            value={
+              candidate.experienceYears > 0
+                ? candidate.experienceYears < 1
+                  ? c.lessThanOneYear
+                  : `${candidate.experienceYears}+ ${c.years}`
+                : c.noExperience
+            }
+          />
+          <PassportFact
+            icon={<Clock3 />}
+            label={c.applied}
+            value={formatDate(application.submittedAt, language)}
+          />
+        </dl>
 
-      <div className="mt-3 flex items-center justify-end gap-3 border-t border-slate-100 pt-3 sm:justify-between">
-        <p className="hidden items-center gap-1.5 text-[10px] font-semibold text-slate-500 sm:inline-flex">
-          <LockKeyhole className="h-3 w-3" aria-hidden />
-          {c.maskedIdentity}
-        </p>
         <button
           type="button"
           onClick={onView}
-          className="bd-focus inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 text-xs font-black text-white shadow-sm transition hover:bg-[#0d3e72] sm:w-auto"
+          className="bd-focus mt-3 flex min-h-11 w-full items-center justify-between rounded-xl bg-[#071631] px-4 text-sm font-black text-white transition hover:bg-[#0d3e72]"
         >
-          <Eye className="h-3.5 w-3.5" aria-hidden />
-          {c.viewProfile}
+          <span className="inline-flex items-center gap-2">
+            <Eye className="h-4 w-4" aria-hidden />
+            {c.viewProfile}
+          </span>
+          <ArrowRight className="h-4 w-4" aria-hidden />
         </button>
       </div>
     </article>
@@ -1124,20 +1117,22 @@ function PassportFact({
   value: string;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/80 px-2.5 py-2">
-      <dt className="flex min-w-0 items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.1em] text-slate-500">
-        <span className="shrink-0 text-cyan-800 [&>svg]:h-3 [&>svg]:w-3">
-          {icon}
-        </span>
-        <span className="truncate">{label}</span>
-      </dt>
-      <dd
-        data-i18n-ignore
-        className="mt-1 truncate text-xs font-black text-[#071631]"
-        title={value}
-      >
-        {value}
-      </dd>
+    <div className="flex min-w-0 items-start gap-2">
+      <span className="mt-0.5 shrink-0 text-cyan-800 [&>svg]:h-3.5 [&>svg]:w-3.5">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <dt className="truncate text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
+          {label}
+        </dt>
+        <dd
+          data-i18n-ignore
+          className="mt-0.5 truncate text-xs font-semibold text-[#071631]"
+          title={value}
+        >
+          {value}
+        </dd>
+      </div>
     </div>
   );
 }
@@ -1279,7 +1274,7 @@ function StatusBadge({
   };
   return (
     <span
-      className={`inline-flex w-fit items-center rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
+      className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
     >
       {statusLabel(status, language)}
     </span>
@@ -1645,6 +1640,7 @@ const copy = {
     applied: "Applied on",
     notProvided: "Not provided",
     premiumProfile: "Premium profile",
+    premium: "Premium",
     nameLocked: "Candidate name protected",
     maskedIdentity: "Identity protected by BlueDeck",
     viewProfile: "View profile",
@@ -1725,6 +1721,7 @@ const copy = {
     applied: "Başvuru tarihi",
     notProvided: "Belirtilmedi",
     premiumProfile: "Premium profil",
+    premium: "Premium",
     nameLocked: "Aday adı korumalı",
     maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
     viewProfile: "Profili görüntüle",
