@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import {
+  countActiveExpiryAlerts,
+  expiryAlertWindowEndIso,
+} from "../../../lib/expiryAlerts";
 import { supabase } from "../../../lib/supabase";
 
 export default function CommandCenterPage() {
@@ -13,7 +17,7 @@ export default function CommandCenterPage() {
   const [position, setPosition] = useState<any>(null);
   const [engineering, setEngineering] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertCount, setAlertCount] = useState(0);
   const [finance, setFinance] = useState({ fuel: 0, expenses: 0 });
 
   async function loadData() {
@@ -58,7 +62,14 @@ export default function CommandCenterPage() {
       .from("expiry_alerts")
       .select("*")
       .eq("yacht_id", yachtId)
-      .neq("status", "resolved");
+      .lte("expiry_date", expiryAlertWindowEndIso());
+
+    const { data: expiringDocumentData } = await supabase
+      .from("yacht_documents")
+      .select("id,expiry_date")
+      .eq("yacht_id", yachtId)
+      .not("expiry_date", "is", null)
+      .lte("expiry_date", expiryAlertWindowEndIso());
 
     const { data: fuelData } = await supabase
       .from("fuel_logs")
@@ -82,7 +93,12 @@ export default function CommandCenterPage() {
         }))
       )
     );
-    setAlerts(alertData || []);
+    setAlertCount(
+      countActiveExpiryAlerts(
+        alertData || [],
+        expiringDocumentData || [],
+      ),
+    );
 
     setFinance({
       fuel: (fuelData || []).reduce((s, i) => s + Number(i.total_cost || 0), 0),
@@ -129,11 +145,11 @@ export default function CommandCenterPage() {
           },
         ]
       : []),
-    ...(alerts.length
+    ...(alertCount
       ? [
           {
             title: "Compliance alerts",
-            text: `${alerts.length} unresolved expiry/compliance alerts.`,
+            text: `${alertCount} unresolved expiry/compliance alerts.`,
             severity: "critical",
           },
         ]
@@ -167,7 +183,7 @@ export default function CommandCenterPage() {
           <Stat title="Heading" value={`${position?.heading || 0}°`} />
           <Stat title="Pending" value={pendingTasks.length} />
           <Stat title="Overdue" value={overdueSystems.length} danger />
-          <Stat title="Alerts" value={alerts.length} danger />
+          <Stat title="Alerts" value={alertCount} danger />
           <Stat title="Cost" value={`€${(finance.fuel + finance.expenses).toFixed(0)}`} />
         </div>
 

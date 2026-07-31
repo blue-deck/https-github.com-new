@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  calculateExpiryAlertLevel,
+  daysUntilExpiry,
+  expiryAlertWindowEndIso,
+  isInsideThreeMonthAlertWindow,
+} from "../../../lib/expiryAlerts";
 import { supabase } from "../../../lib/supabase";
 
 type AlertItem = {
@@ -14,41 +20,23 @@ type AlertItem = {
   status: string | null;
 };
 
+type YachtDocument = {
+  id: string;
+  title: string | null;
+  file_name: string | null;
+  expiry_date: string | null;
+};
+
 export default function AlertsPage() {
   const pathname = usePathname();
   const yachtId = pathname.split("/")[2];
 
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<YachtDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
-  function daysUntil(dateString: string | null) {
-    if (!dateString) return null;
-
-    const today = new Date();
-    const expiry = new Date(dateString);
-
-    today.setHours(0, 0, 0, 0);
-    expiry.setHours(0, 0, 0, 0);
-
-    const differenceMs = expiry.getTime() - today.getTime();
-
-    return Math.ceil(differenceMs / (1000 * 60 * 60 * 24));
-  }
-
-  function calculateLevel(dateString: string | null) {
-    const days = daysUntil(dateString);
-
-    if (days === null) return "normal";
-    if (days < 0) return "expired";
-    if (days <= 14) return "critical";
-    if (days <= 30) return "warning";
-
-    return "normal";
-  }
-
   function alertText(dateString: string | null) {
-    const days = daysUntil(dateString);
+    const days = daysUntilExpiry(dateString);
 
     if (days === null) return "No expiry date";
     if (days < 0) return `Expired ${Math.abs(days)} days ago`;
@@ -90,12 +78,14 @@ export default function AlertsPage() {
       return;
     }
 
-    setDocuments(documentData || []);
+    const documentRows = (documentData || []) as YachtDocument[];
+    setDocuments(documentRows);
 
     const { data: alertData, error: alertError } = await supabase
       .from("expiry_alerts")
       .select("*")
       .eq("yacht_id", yachtId)
+      .lte("expiry_date", expiryAlertWindowEndIso())
       .order("expiry_date", { ascending: true });
 
     if (alertError) {
@@ -104,58 +94,83 @@ export default function AlertsPage() {
       return;
     }
 
-    setAlerts(alertData || []);
+    const persistedAlerts = (alertData || []) as AlertItem[];
+    const persistedDocumentAlerts = new Map(
+      persistedAlerts
+        .filter(
+          (item) => item.source_type === "document" && item.source_id,
+        )
+        .map((item) => [item.source_id, item]),
+    );
+    const automaticDocumentAlerts = documentRows
+      .filter((document) =>
+        isInsideThreeMonthAlertWindow(document.expiry_date),
+      )
+      .map(
+        (document): AlertItem =>
+          persistedDocumentAlerts.get(document.id) || {
+            id: `document:${document.id}`,
+            title:
+              document.title ||
+              document.file_name ||
+              "Untitled document",
+            expiry_date: document.expiry_date,
+            source_type: "document",
+            source_id: document.id,
+            alert_level: calculateExpiryAlertLevel(document.expiry_date),
+            status: "active",
+          },
+      );
+    const nonDocumentAlerts = persistedAlerts.filter(
+      (item) => item.source_type !== "document",
+    );
+
+    setAlerts(
+      [...automaticDocumentAlerts, ...nonDocumentAlerts].sort((first, second) =>
+        String(first.expiry_date || "").localeCompare(
+          String(second.expiry_date || ""),
+        ),
+      ),
+    );
     setLoading(false);
   }
 
-  async function syncDocumentAlerts() {
-    if (!yachtId) return;
+  async function markResolved(alertItem: AlertItem) {
+    const result = alertItem.id.startsWith("document:")
+      ? await saveResolvedDocumentAlert(alertItem)
+      : await supabase
+          .from("expiry_alerts")
+          .update({ status: "resolved" })
+          .eq("id", alertItem.id);
 
-    const { data: documentData, error: documentError } = await supabase
-      .from("yacht_documents")
-      .select("*")
-      .eq("yacht_id", yachtId)
-      .not("expiry_date", "is", null);
-
-    if (documentError) {
-      alert(documentError.message);
+    if (result.error) {
+      alert(result.error.message);
       return;
     }
 
-    if (!documentData || documentData.length === 0) {
-      alert("No documents with expiry dates found.");
-      return;
-    }
-
-    for (const document of documentData) {
-      const level = calculateLevel(document.expiry_date);
-
-      const { error } = await saveDocumentAlert({
-        yacht_id: yachtId,
-        source_type: "document",
-        source_id: document.id,
-        title: document.title || document.file_name || "Untitled document",
-        expiry_date: document.expiry_date,
-        alert_level: level,
-        status: "active",
-      });
-
-      if (error) {
-        alert(error.message);
-        return;
-      }
-    }
-
-    await fetchData();
-    alert("Document alerts synced.");
+    fetchData();
   }
 
-  async function saveDocumentAlert(payload: Record<string, string>) {
+  async function saveResolvedDocumentAlert(alertItem: AlertItem) {
+    if (!alertItem.source_id || !alertItem.expiry_date) {
+      return { error: new Error("This document alert could not be resolved.") };
+    }
+
+    const payload = {
+      yacht_id: yachtId,
+      source_type: "document",
+      source_id: alertItem.source_id,
+      title: alertItem.title || "Untitled document",
+      expiry_date: alertItem.expiry_date,
+      alert_level: calculateExpiryAlertLevel(alertItem.expiry_date),
+      status: "resolved",
+    };
     const existing = await supabase
       .from("expiry_alerts")
       .select("id")
-      .eq("yacht_id", payload.yacht_id)
-      .eq("source_id", payload.source_id)
+      .eq("yacht_id", yachtId)
+      .eq("source_type", "document")
+      .eq("source_id", alertItem.source_id)
       .limit(1);
 
     if (existing.error) return { error: existing.error };
@@ -170,25 +185,20 @@ export default function AlertsPage() {
     return supabase.from("expiry_alerts").insert(payload);
   }
 
-  async function markResolved(id: string) {
-    const { error } = await supabase
-      .from("expiry_alerts")
-      .update({ status: "resolved" })
-      .eq("id", id);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    fetchData();
-  }
-
   useEffect(() => {
     if (yachtId) fetchData();
   }, [yachtId]);
 
-  const activeAlerts = alerts.filter((alert) => alert.status !== "resolved");
+  const activeAlerts = alerts
+    .filter(
+      (alert) =>
+        alert.status !== "resolved" &&
+        isInsideThreeMonthAlertWindow(alert.expiry_date),
+    )
+    .map((alert) => ({
+      ...alert,
+      alert_level: calculateExpiryAlertLevel(alert.expiry_date),
+    }));
 
   const expired = activeAlerts.filter(
     (alert) => alert.alert_level === "expired"
@@ -232,16 +242,9 @@ export default function AlertsPage() {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              onClick={syncDocumentAlerts}
-              className="rounded-2xl bg-blue-400 px-6 py-4 font-semibold text-black"
-            >
-              Sync Document Alerts
-            </button>
-
             <a
               href={`/yachts/${yachtId}/documents`}
-              className="rounded-2xl border border-white/10 px-6 py-4 font-semibold text-white"
+              className="rounded-2xl bg-blue-400 px-6 py-4 font-semibold text-black"
             >
               Go to Documents
             </a>
@@ -309,7 +312,7 @@ export default function AlertsPage() {
                   </div>
 
                   <button
-                    onClick={() => markResolved(alert.id)}
+                    onClick={() => markResolved(alert)}
                     className="rounded-xl border border-white/20 px-5 py-3 text-white"
                   >
                     Resolve
@@ -320,8 +323,8 @@ export default function AlertsPage() {
 
             {activeAlerts.length === 0 && (
               <div className="bd-app-card rounded-2xl border border-white/10 bg-black/20 p-6 text-gray-400">
-                No active expiry alerts. Click sync after uploading documents
-                with expiry dates.
+                No active expiry alerts. Documents will appear automatically
+                three months before their expiry date.
               </div>
             )}
           </div>

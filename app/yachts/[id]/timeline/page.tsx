@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import {
+  calculateExpiryAlertLevel,
+  expiryAlertWindowEndIso,
+} from "../../../lib/expiryAlerts";
 import { supabase } from "../../../lib/supabase";
 
 export default function TimelinePage() {
@@ -37,7 +41,9 @@ export default function TimelinePage() {
     const { data: alerts } = await supabase
       .from("expiry_alerts")
       .select("*")
-      .eq("yacht_id", yachtId);
+      .eq("yacht_id", yachtId)
+      .lte("expiry_date", expiryAlertWindowEndIso())
+      .neq("status", "resolved");
 
     (checklists || []).forEach((item) => {
       const tasks = item.yacht_checklist_items || [];
@@ -64,7 +70,7 @@ export default function TimelinePage() {
         time: item.created_at,
         title: item.title,
         type: "Alert",
-        message: `${item.alert_level} · ${item.expiry_date}`,
+        message: `${calculateExpiryAlertLevel(item.expiry_date)} · ${item.expiry_date}`,
       })
     );
 

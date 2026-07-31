@@ -2659,8 +2659,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "No": {
     "tr": "Hayır",
   },
-  "No active expiry alerts. Click sync after uploading documents with expiry dates.": {
-    "tr": "Aktif süre sonu uyarısı yok. Son kullanma tarihi olan belgeleri yükledikten sonra senkronizasyona tıklayın.",
+  "No active expiry alerts. Documents will appear automatically three months before their expiry date.": {
+    "tr": "Aktif son kullanma uyarısı yok. Belgeler, son kullanma tarihlerinden üç ay önce otomatik olarak burada görünür.",
   },
   "No activity yet. Start by inviting crew or assigning a checklist.": {
     "tr": "Henüz etkinlik yok. Mürettebat davet ederek veya bir kontrol listesi atayarak başlayın.",

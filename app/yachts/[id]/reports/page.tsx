@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { FileText, Printer, Ship, Users, Wallet, Wrench } from "lucide-react";
+import {
+  countActiveExpiryAlerts,
+  expiryAlertWindowEndIso,
+} from "../../../lib/expiryAlerts";
 import { supabase } from "../../../lib/supabase";
 
 export default function ReportsPage() {
@@ -14,7 +18,7 @@ export default function ReportsPage() {
   const [engineering, setEngineering] = useState<any[]>([]);
   const [fuel, setFuel] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertCount, setAlertCount] = useState(0);
 
   function printPage() {
     window.print();
@@ -23,14 +27,15 @@ export default function ReportsPage() {
   async function loadReport() {
     if (!yachtId) return;
 
-    const [statusRes, crewRes, checklistRes, engineeringRes, fuelRes, expenseRes, alertRes] = await Promise.all([
+    const [statusRes, crewRes, checklistRes, engineeringRes, fuelRes, expenseRes, alertRes, expiringDocumentRes] = await Promise.all([
       supabase.from("yacht_status").select("*").eq("yacht_id", yachtId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       supabase.from("yacht_crew_memberships").select("id,status,position,department").eq("yacht_id", yachtId),
       supabase.from("yacht_checklists").select("id,title,status,yacht_checklist_items(id,completed)").eq("yacht_id", yachtId),
       supabase.from("engineering_assets").select("*").eq("yacht_id", yachtId),
       supabase.from("fuel_logs").select("*").eq("yacht_id", yachtId),
       supabase.from("yacht_expenses").select("*").eq("yacht_id", yachtId),
-      supabase.from("expiry_alerts").select("*").eq("yacht_id", yachtId).neq("status", "resolved"),
+      supabase.from("expiry_alerts").select("*").eq("yacht_id", yachtId).lte("expiry_date", expiryAlertWindowEndIso()),
+      supabase.from("yacht_documents").select("id,expiry_date").eq("yacht_id", yachtId).not("expiry_date", "is", null).lte("expiry_date", expiryAlertWindowEndIso()),
     ]);
 
     setStatus(statusRes.data || null);
@@ -39,7 +44,12 @@ export default function ReportsPage() {
     setEngineering(engineeringRes.data || []);
     setFuel(fuelRes.data || []);
     setExpenses(expenseRes.data || []);
-    setAlerts(alertRes.data || []);
+    setAlertCount(
+      countActiveExpiryAlerts(
+        alertRes.data || [],
+        expiringDocumentRes.data || [],
+      ),
+    );
   }
 
   useEffect(() => {
@@ -103,7 +113,7 @@ export default function ReportsPage() {
           <Report
             icon={<Wallet />}
             title="Finance Report"
-            text={`Recorded spend: €${summary.financeTotal.toFixed(0)}. Open compliance alerts: ${alerts.length}.`}
+            text={`Recorded spend: €${summary.financeTotal.toFixed(0)}. Open compliance alerts: ${alertCount}.`}
           />
         </div>
       </div>

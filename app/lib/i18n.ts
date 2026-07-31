@@ -989,8 +989,8 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Warnings": { tr: "Uyarılar" },
   "Normal": { tr: "Normal" },
   "Active Alerts": { tr: "Aktif Uyarılar" },
-  "No active expiry alerts. Click sync after uploading documents with expiry dates.": {
-    tr: "Aktif bitiş uyarısı yok. Bitiş tarihli belgeleri yükledikten sonra eşitlemeye tıklayın.",
+  "No active expiry alerts. Documents will appear automatically three months before their expiry date.": {
+    tr: "Aktif bitiş uyarısı yok. Belgeler, bitiş tarihlerinden üç ay önce otomatik olarak burada görünür.",
   },
   "BlueDeck Documents": { tr: "BlueDeck Belgeleri" },
   "Yacht Documents": { tr: "Yat Belgeleri" },
