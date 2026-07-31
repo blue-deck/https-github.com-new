@@ -16,6 +16,10 @@ import {
 } from "lucide-react";
 import { BLUEDECK } from "../../config";
 import { loadAccountCapabilities } from "../../lib/accountCapabilities";
+import {
+  daysUntilExpiry,
+  isInsideThreeMonthAlertWindow,
+} from "../../lib/expiryAlerts";
 import { supabase } from "../../lib/supabase";
 
 type OverviewStats = {
@@ -144,11 +148,15 @@ export default function YachtDashboard() {
     const completedTasks = taskItems.filter((task: any) => task.completed).length;
     const pendingInvites = invitations.filter((item: any) => item.status === "pending").length;
     const expiringDocuments = documents.filter((item: any) => {
-      const days = daysUntil(item.expiry_date);
-      return days !== null && days >= 0 && days <= 90;
+      const days = daysUntilExpiry(item.expiry_date);
+      return (
+        days !== null &&
+        days >= 0 &&
+        isInsideThreeMonthAlertWindow(item.expiry_date)
+      );
     }).length;
     const criticalDocuments = documents.filter((item: any) => {
-      const days = daysUntil(item.expiry_date);
+      const days = daysUntilExpiry(item.expiry_date);
       return days !== null && days <= 30;
     }).length;
 
@@ -365,15 +373,6 @@ export default function YachtDashboard() {
       </div>
     </main>
   );
-}
-
-function daysUntil(dateString?: string | null) {
-  if (!dateString) return null;
-  const today = new Date();
-  const expiry = new Date(dateString);
-  today.setHours(0, 0, 0, 0);
-  expiry.setHours(0, 0, 0, 0);
-  return Math.ceil((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
 function formatDate(value?: string | null) {

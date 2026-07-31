@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
+  DateTextField,
+  formatDateForDisplay,
+} from "../../../components/DateTextField";
+import {
   parsePrivateStorageReference,
   resolvePrivateStorageUrls,
   type PrivateStorageReference,
@@ -137,7 +141,7 @@ export default function DocumentsPage() {
       .insert([
         {
           yacht_id: yachtId,
-          title,
+          title: title.trim(),
           category,
           expiry_date: expiryDate || null,
           file_url: filePath,
@@ -276,11 +280,21 @@ export default function DocumentsPage() {
                 can upload or delete files.
               </p>
             ) : (
-              <div className="mt-8 space-y-4">
+              <form
+                className="mt-8 space-y-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void uploadDocument();
+                }}
+              >
                 <input
                   placeholder="Document title"
                   value={title}
-                  onChange={(event) => setTitle(event.target.value)}
+                  onChange={(event) =>
+                    setTitle(capitalizeFirstLetter(event.target.value))
+                  }
+                  autoCapitalize="sentences"
+                  required
                   className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
                 />
 
@@ -300,16 +314,20 @@ export default function DocumentsPage() {
                   <option value="Other">Other</option>
                 </select>
 
-                <input
-                  type="date"
+                <DateTextField
+                  label="Expiry date"
                   value={expiryDate}
-                  onChange={(event) => setExpiryDate(event.target.value)}
-                  className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 outline-none"
+                  onChange={setExpiryDate}
+                  placeholder="DD/MM/YYYY"
+                  invalidText="Enter a valid expiry date in DD/MM/YYYY format."
+                  labelClassName="mb-2 block text-sm font-semibold text-gray-300"
+                  inputClassName="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4 text-base text-white outline-none transition placeholder:text-gray-500 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
                 />
 
                 <input
                   type="file"
                   onChange={(event) => setFile(event.target.files?.[0] || null)}
+                  required
                   className="w-full rounded-2xl border border-white/10 bg-white/10 px-5 py-4"
                 />
 
@@ -320,13 +338,13 @@ export default function DocumentsPage() {
                 )}
 
                 <button
-                  onClick={uploadDocument}
+                  type="submit"
                   disabled={uploading}
                   className="w-full rounded-2xl bg-blue-400 px-5 py-4 font-semibold text-black disabled:opacity-50"
                 >
                   {uploading ? "Uploading..." : "Upload Document"}
                 </button>
-              </div>
+              </form>
             )}
           </div>
 
@@ -379,7 +397,8 @@ export default function DocumentsPage() {
                                   : "text-gray-400"
                               }`}
                             >
-                              Expiry: {document.expiry_date}
+                              Expiry:{" "}
+                              {formatDateForDisplay(document.expiry_date)}
                             </p>
                           ) : (
                             <p className="mt-1 text-sm text-gray-500">
@@ -424,5 +443,16 @@ export default function DocumentsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function capitalizeFirstLetter(value: string) {
+  const firstLetterIndex = value.search(/\p{L}/u);
+  if (firstLetterIndex < 0) return value;
+
+  return (
+    value.slice(0, firstLetterIndex) +
+    value[firstLetterIndex].toLocaleUpperCase() +
+    value.slice(firstLetterIndex + 1)
   );
 }
