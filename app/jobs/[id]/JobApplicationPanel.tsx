@@ -318,6 +318,10 @@ export function JobApplicationPanel({
   }
 
   if (!state.eligible) {
+    if (state.role !== "captain") {
+      return null;
+    }
+
     return (
       <div
         className="mt-5 flex items-start gap-2.5 border-t border-slate-200 pt-5 text-sm leading-6 text-amber-900"
@@ -325,9 +329,7 @@ export function JobApplicationPanel({
         aria-live="polite"
       >
         <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
-        <span>
-          {state.role === "captain" ? c.publisherCannotApply : c.notEligible}
-        </span>
+        <span>{c.publisherCannotApply}</span>
       </div>
     );
   }
@@ -439,8 +441,6 @@ const copy = {
     withdraw: "Withdraw application",
     withdrawError: "Your application could not be withdrawn.",
     withdrawn: "Your application has been withdrawn.",
-    notEligible:
-      "Job applications are available to Crew and Captain accounts. Owner and Management accounts can manage hiring instead.",
     publisherCannotApply:
       "A Captain cannot apply to a role on a yacht they currently publish or manage for.",
   },
@@ -464,8 +464,6 @@ const copy = {
     withdraw: "Başvuruyu geri çek",
     withdrawError: "Başvurunuz geri çekilemedi.",
     withdrawn: "Başvurunuz geri çekildi.",
-    notEligible:
-      "İş ilanlarına Crew ve Captain hesapları başvurabilir. Owner ve Management hesapları işe alım yönetimi için kullanılır.",
     publisherCannotApply:
       "Captain hesabı, ilan yayınladığı veya yönettiği yatın kendi ilanına başvuramaz.",
   },
