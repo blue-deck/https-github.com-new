@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from "@supabase/supabase-js";
 import {
   normalizeCrewDocumentStoragePath,
   signCrewDocumentRow,
@@ -11,8 +15,12 @@ import {
   signCrewPortfolioReference,
   signCrewPortfolioReferences,
 } from "../../../lib/crewPortfolioStorage";
+import { authenticateActiveBearer } from "../../../lib/activeBearerServer";
 import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
+import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
+import { readLimitedJsonObjectDetailed } from "../../../lib/requestBodyServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
+import { getClientIp } from "../../../lib/turnstileServer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -24,6 +32,7 @@ const maxPayloadKeys = 40;
 const maxDefaultTextLength = 1_000;
 const maxLongTextLength = 10_000;
 const maxUrlLength = 4_096;
+const maximumRelatedRequestBytes = 64 * 1024;
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type RelatedAction = "save" | "delete" | "reorder";
@@ -62,6 +71,19 @@ export async function GET(request: NextRequest) {
   const token = readBearerToken(request);
   const profileId = request.nextUrl.searchParams.get("profileId")?.trim();
 
+  const rateLimit = consumeRequestRateLimit(
+    `crew-related:get:${getClientIp(request) || "unknown"}`,
+    120,
+    60_000,
+  );
+  if (!rateLimit.allowed) {
+    return jsonError(
+      "Too many crew profile requests.",
+      429,
+      rateLimit.retryAfterSeconds,
+    );
+  }
+
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return jsonError("Crew profile service is unavailable.", 500);
   }
@@ -85,22 +107,26 @@ export async function GET(request: NextRequest) {
       .from("crew_documents")
       .select("*")
       .eq("crew_profile_id", profileId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(100),
     serviceClient
       .from("crew_experiences")
       .select("*")
       .eq("crew_profile_id", profileId)
-      .order("start_date", { ascending: false }),
+      .order("start_date", { ascending: false })
+      .limit(200),
     serviceClient
       .from("crew_references")
       .select("*")
       .eq("crew_profile_id", profileId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(100),
     serviceClient
       .from("crew_portfolio_photos")
       .select("*")
       .eq("crew_profile_id", profileId)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(200),
   ]);
 
   const error = documentRes.error || experienceRes.error || referenceRes.error || portfolioRes.error;
@@ -146,6 +172,19 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const token = readBearerToken(request);
 
+  const rateLimit = consumeRequestRateLimit(
+    `crew-related:post:${getClientIp(request) || "unknown"}`,
+    60,
+    60_000,
+  );
+  if (!rateLimit.allowed) {
+    return jsonError(
+      "Too many crew profile changes.",
+      429,
+      rateLimit.retryAfterSeconds,
+    );
+  }
+
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return jsonError("Crew profile service is unavailable.", 500);
   }
@@ -154,10 +193,32 @@ export async function POST(request: NextRequest) {
     return jsonError("Login session is required.", 401);
   }
 
-  const body = await request.json().catch(() => null);
-  if (!isPlainRecord(body)) {
-    return jsonError("Invalid crew profile request.", 400);
+  // Authenticate before consuming a mutation body so unauthenticated callers
+  // cannot spend server memory parsing arbitrary payloads.
+  const authenticated = await getAuthenticatedClients(token);
+  if (!authenticated.ok) {
+    return jsonError(authenticated.error, authenticated.status);
   }
+
+  const parsedBody = await readLimitedJsonObjectDetailed(
+    request,
+    maximumRelatedRequestBytes,
+  );
+  if (!parsedBody.ok) {
+    return jsonError(
+      parsedBody.error === "content-type"
+        ? "The request must use JSON."
+        : parsedBody.error === "too-large"
+          ? "The crew profile request is too large."
+          : "Invalid crew profile request.",
+      parsedBody.error === "content-type"
+        ? 415
+        : parsedBody.error === "too-large"
+          ? 413
+          : 400,
+    );
+  }
+  const body = parsedBody.value;
 
   const action = isRelatedAction(body.action) ? body.action : null;
   const kind = isRelatedKind(body.kind) ? body.kind : null;
@@ -176,7 +237,11 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid crew profile request.", 400);
   }
 
-  const clients = await getAuthorizedClients(token, profileId);
+  const clients = await authorizeProfileAccess(
+    authenticated.user,
+    authenticated.serviceClient,
+    profileId,
+  );
   if (!clients.ok) {
     return jsonError(clients.error, clients.status);
   }
@@ -242,7 +307,9 @@ export async function POST(request: NextRequest) {
     }
 
     const mediaColumn =
-      kind === "experience"
+      kind === "document"
+        ? "file_url"
+        : kind === "experience"
         ? "photo_url"
         : kind === "portfolio"
           ? "image_url"
@@ -256,27 +323,31 @@ export async function POST(request: NextRequest) {
           .maybeSingle()
       : null;
 
-    const { error } = await serviceClient
+    if (mediaRecord?.error) {
+      console.error("Crew media cleanup lookup failed", mediaRecord.error.message);
+      return jsonError("Crew profile record could not be deleted.", 500);
+    }
+    if (mediaColumn && !mediaRecord?.data) {
+      return jsonError("Crew profile record not found.", 404);
+    }
+
+    const { error, count } = await serviceClient
       .from(config.table)
-      .delete()
+      .delete({ count: "exact" })
       .eq("id", id)
       .eq("crew_profile_id", profileId);
 
     if (error) return jsonError("Crew profile record could not be deleted.", 500);
+    if (count !== 1) return jsonError("Crew profile record not found.", 404);
 
     if (mediaColumn && mediaRecord?.data) {
-      const storagePath = normalizeCrewPortfolioStoragePath(
+      const storagePath = normalizeRelatedMediaPath(
+        kind,
         (mediaRecord.data as unknown as Record<string, unknown>)[mediaColumn],
-        [profileId],
-        resolvedSupabaseUrl,
+        profileId,
       );
       if (storagePath) {
-        const { error: removeError } = await serviceClient.storage
-          .from(crewPortfolioBucket)
-          .remove([storagePath]);
-        if (removeError) {
-          console.error("Crew media cleanup failed", removeError.message);
-        }
+        await removeRelatedMedia(serviceClient, kind, storagePath);
       }
     }
     return jsonResponse({ ok: true });
@@ -323,6 +394,31 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const mediaColumn =
+    kind === "document" ? "file_url" : portfolioColumn;
+  let previousMediaPath = "";
+  if (id && mediaColumn && Object.hasOwn(payload, mediaColumn)) {
+    const previousMedia = await serviceClient
+      .from(config.table)
+      .select(mediaColumn)
+      .eq("id", id)
+      .eq("crew_profile_id", profileId)
+      .maybeSingle();
+    if (previousMedia.error) {
+      console.error("Crew media replacement lookup failed", previousMedia.error.message);
+      return jsonError("Crew profile record could not be saved.", 500);
+    }
+    if (!previousMedia.data) {
+      return jsonError("Crew profile record not found.", 404);
+    }
+    previousMediaPath =
+      normalizeRelatedMediaPath(
+        kind,
+        (previousMedia.data as unknown as Record<string, unknown>)[mediaColumn],
+        profileId,
+      ) || "";
+  }
+
   const row = { ...payload, crew_profile_id: profileId };
 
   let response = id
@@ -349,7 +445,28 @@ export async function POST(request: NextRequest) {
   }
 
   if (response.error) {
-    return jsonError("Crew profile record could not be saved.", 500);
+    const rejectedMediaPath = mediaColumn
+      ? normalizeRelatedMediaPath(kind, payload[mediaColumn], profileId) || ""
+      : "";
+    if (rejectedMediaPath && rejectedMediaPath !== previousMediaPath) {
+      await removeRelatedMedia(serviceClient, kind, rejectedMediaPath);
+    }
+    const quotaOrValidationFailure =
+      response.error.code === "23514" ||
+      /row limit reached|bounded_payload_check/i.test(response.error.message);
+    return jsonError(
+      quotaOrValidationFailure
+        ? "This crew profile section has reached its safe record or field limit."
+        : "Crew profile record could not be saved.",
+      quotaOrValidationFailure ? 409 : 500,
+    );
+  }
+
+  const savedMediaPath = mediaColumn
+    ? normalizeRelatedMediaPath(kind, response.data?.[mediaColumn], profileId) || ""
+    : "";
+  if (previousMediaPath && previousMediaPath !== savedMediaPath) {
+    await removeRelatedMedia(serviceClient, kind, previousMediaPath);
   }
 
   let data = response.data;
@@ -373,6 +490,52 @@ export async function POST(request: NextRequest) {
   }
 
   return jsonResponse({ ok: true, data });
+}
+
+function normalizeRelatedMediaPath(
+  kind: RelatedKind,
+  value: unknown,
+  profileId: string,
+) {
+  if (kind === "document") {
+    return normalizeCrewDocumentStoragePath(
+      value,
+      profileId,
+      resolvedSupabaseUrl,
+    );
+  }
+  if (kind === "experience" || kind === "portfolio") {
+    return normalizeCrewPortfolioStoragePath(
+      value,
+      [profileId],
+      resolvedSupabaseUrl,
+    );
+  }
+  return null;
+}
+
+async function removeRelatedMedia(
+  serviceClient: SupabaseClient,
+  kind: RelatedKind,
+  storagePath: string,
+) {
+  const bucket = kind === "document" ? "crew-documents" : crewPortfolioBucket;
+  if (bucket === crewPortfolioBucket) {
+    const locked = await serviceClient.rpc(
+      "bluedeck_job_application_media_path_locked",
+      { p_storage_path: storagePath },
+    );
+    if (locked.error) {
+      console.error("Crew media retention check failed", locked.error.message);
+      return;
+    }
+    if (locked.data === true) return;
+  }
+
+  const { error } = await serviceClient.storage.from(bucket).remove([storagePath]);
+  if (error) {
+    console.error("Crew media cleanup failed", error.message);
+  }
 }
 
 function cleanPayload(payload: Record<string, unknown>, columns: string[]) {
@@ -445,6 +608,16 @@ function stripExperienceMetadata(value: string) {
 }
 
 async function getAuthorizedClients(token: string, profileId: string) {
+  const authenticated = await getAuthenticatedClients(token);
+  if (!authenticated.ok) return authenticated;
+  return authorizeProfileAccess(
+    authenticated.user,
+    authenticated.serviceClient,
+    profileId,
+  );
+}
+
+async function getAuthenticatedClients(token: string) {
   const authClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseAnonKey!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -452,15 +625,27 @@ async function getAuthorizedClients(token: string, profileId: string) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const {
-    data: { user },
-    error: userError,
-  } = await authClient.auth.getUser(token);
-
-  if (userError || !user?.id) {
-    return { ok: false as const, error: "Login session is invalid.", status: 401 };
+  const authenticated = await authenticateActiveBearer({
+    token,
+    authClient,
+    serviceClient,
+  });
+  if (!authenticated.ok) {
+    return {
+      ok: false as const,
+      error: authenticated.error,
+      status: authenticated.status,
+    };
   }
 
+  return { ok: true as const, user: authenticated.user, serviceClient };
+}
+
+async function authorizeProfileAccess(
+  user: User,
+  serviceClient: SupabaseClient,
+  profileId: string,
+) {
   const entitlementResult = await loadMarketplaceEntitlement(
     serviceClient,
     user.id,
@@ -482,7 +667,7 @@ async function getAuthorizedClients(token: string, profileId: string) {
 
   const { data: profile, error: profileError } = await serviceClient
     .from("crew_profiles")
-    .select("id,user_id,email")
+    .select("id,user_id")
     .eq("id", profileId)
     .maybeSingle();
 
@@ -494,19 +679,15 @@ async function getAuthorizedClients(token: string, profileId: string) {
     };
   }
 
-  const userEmail = user.email?.trim().toLowerCase();
-  const profileEmail = profile?.email?.trim().toLowerCase();
-  const ownsProfile =
-    profile?.user_id === user.id ||
-    Boolean(
-      profile?.user_id === null &&
-        user.email_confirmed_at &&
-        userEmail &&
-        profileEmail &&
-        userEmail === profileEmail,
-    );
+  if (profile?.user_id === null) {
+    return {
+      ok: false as const,
+      error: "Crew profile identity must be reconciled before editing.",
+      status: 409,
+    };
+  }
 
-  if (!profile || !ownsProfile) {
+  if (!profile || profile.user_id !== user.id) {
     return { ok: false as const, error: "Crew profile access denied.", status: 403 };
   }
 
@@ -559,13 +740,23 @@ function textLimitForColumn(column: string) {
   return maxDefaultTextLength;
 }
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function jsonResponse(
+  body: Record<string, unknown>,
+  status = 200,
+  retryAfterSeconds?: number,
+) {
   return NextResponse.json(body, {
     status,
-    headers: { "Cache-Control": "no-store" },
+    headers: {
+      "Cache-Control": "private, no-store, max-age=0",
+      "X-Content-Type-Options": "nosniff",
+      ...(retryAfterSeconds
+        ? { "Retry-After": String(retryAfterSeconds) }
+        : {}),
+    },
   });
 }
 
-function jsonError(error: string, status: number) {
-  return jsonResponse({ ok: false, error }, status);
+function jsonError(error: string, status: number, retryAfterSeconds?: number) {
+  return jsonResponse({ ok: false, error }, status, retryAfterSeconds);
 }

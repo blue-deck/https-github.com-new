@@ -25,6 +25,7 @@ import {
 import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
+import { LocationSearchField } from "../components/LocationSearchField";
 import { PhoneInput } from "../components/PhoneInput";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
@@ -49,7 +50,14 @@ import {
 } from "../lib/crewPortfolioStorage";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { absoluteSiteUrl } from "../lib/site";
-import { createSafeStoragePath } from "../lib/storage";
+import {
+  createSafeStoragePath,
+  maximumCrewDocumentUploadBytes,
+  maximumImageUploadBytes,
+  safeDocumentUploadMimeTypes,
+  safePortfolioUploadMimeTypes,
+  validateStorageUpload,
+} from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 import { yachtPositionTitles } from "../lib/yachtOperations";
@@ -1066,6 +1074,19 @@ export default function ProfilePage() {
 
   async function uploadFile(file: File, bucket: UploadBucket, slot: string = bucket) {
     if (!profile.id) return "";
+    const validationError = validateStorageUpload(
+      file,
+      bucket === "crew-portfolio"
+        ? safePortfolioUploadMimeTypes
+        : safeDocumentUploadMimeTypes,
+      bucket === "crew-portfolio"
+        ? maximumImageUploadBytes
+        : maximumCrewDocumentUploadBytes,
+    );
+    if (validationError) {
+      setUploadError(validationError);
+      return "";
+    }
     const uploadRun = uploadRunRef.current + 1;
     uploadRunRef.current = uploadRun;
     setUploadError("");
@@ -1156,8 +1177,10 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900">
-        <div className="bd-ocean-content">Loading profile...</div>
+      <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900" aria-busy="true">
+        <div className="bd-ocean-content" role="status" aria-live="polite">
+          <h1 className="text-3xl font-semibold text-[#071f3c]">Loading profile...</h1>
+        </div>
       </main>
     );
   }
@@ -1193,8 +1216,14 @@ export default function ProfilePage() {
                         Find Crew visibility
                       </p>
                       <p className="mt-1.5 text-xs leading-5 text-slate-500">
-                        Private by default. Your contact details are never shown publicly.
+                        Private by default. Turning this on publishes your masked Find Crew profile and a Crew ID portal containing your masked name, selected CV fields and selected gallery photos. Email, phone, private documents and reference contact details stay hidden. Turn it off at any time to remove every public crew page.
                       </p>
+                      <a
+                        href="/privacy"
+                        className="bd-focus mt-2 inline-flex text-xs font-bold text-cyan-800 underline decoration-cyan-300 underline-offset-4"
+                      >
+                        Review public-profile privacy details
+                      </a>
                     </div>
                     <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 transition hover:border-cyan-300 has-[:disabled]:cursor-wait has-[:disabled]:opacity-70">
                       <input
@@ -3626,7 +3655,7 @@ function ProfilePhoto({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={Array.from(safePortfolioUploadMimeTypes).join(",")}
           aria-label="Choose profile photo"
           disabled={uploading}
           tabIndex={-1}
@@ -3641,7 +3670,7 @@ function ProfilePhoto({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-950">Profile photo</p>
-        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "This appears in your CV, portal and public Find Crew profile."}</p>
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "When Find Crew visibility is on, this appears in your public CV portal and Find Crew profile."}</p>
       </div>
     </div>
   );
@@ -3916,6 +3945,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
       <div className="rounded-3xl border border-cyan-100 bg-[linear-gradient(135deg,#f8fdff,#ffffff_52%,#f2fbff)] p-4 shadow-sm shadow-cyan-950/5">
         <div className="grid gap-3">
           <select
+            aria-label="Language"
             value={selectedLanguage}
             onChange={(event) => setSelectedLanguage(event.target.value)}
             className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
@@ -3931,6 +3961,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
 
           {selectedLanguage === "__custom__" && (
             <input
+              aria-label="Custom language name"
               value={customLanguage}
               onChange={(event) => setCustomLanguage(event.target.value)}
               placeholder="Language name"
@@ -3940,6 +3971,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
 
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <select
+              aria-label="Language proficiency level"
               value={selectedLevel}
               onChange={(event) => setSelectedLevel(event.target.value)}
               className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
@@ -3954,7 +3986,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
               disabled={!canAdd}
               className="bd-focus inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4" aria-hidden="true" />
               Add language
             </button>
           </div>
@@ -3977,6 +4009,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
               <p className="font-black text-slate-950">{language.name}</p>
             </div>
             <select
+              aria-label={`${language.name} proficiency level`}
               value={language.level}
               onChange={(event) =>
                 updateLanguageLevel(language.name, event.target.value)
@@ -3990,10 +4023,11 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
             <button
               type="button"
               onClick={() => removeLanguage(language.name)}
+              aria-label={`Remove ${language.name}`}
               className="bd-focus flex h-11 w-full items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-[#b9423b] transition hover:border-rose-200 hover:bg-rose-100 sm:w-11"
               title={`Remove ${language.name}`}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
         ))}
@@ -4240,7 +4274,7 @@ function ExperienceEditor({
               <input
                 id={photoInputId}
                 type="file"
-                accept="image/*"
+                accept={Array.from(safePortfolioUploadMimeTypes).join(",")}
                 disabled={uploading}
                 className="peer sr-only"
                 onChange={async (event) => {
@@ -4974,6 +5008,8 @@ function ReferenceMiniPhoneField({
   onChange: (value: string) => void;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const countryButtonRef = useRef<HTMLButtonElement>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [manualCountry, setManualCountry] = useState<PhoneCountryOption | null>(null);
@@ -4996,12 +5032,31 @@ function ReferenceMiniPhoneField({
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div
+      ref={wrapperRef}
+      className="relative"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+          setQuery("");
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !open) return;
+        event.preventDefault();
+        setOpen(false);
+        setQuery("");
+        window.requestAnimationFrame(() => countryButtonRef.current?.focus());
+      }}
+    >
       <span className="sr-only">Phone</span>
       <div className="experience-reference-phone flex h-9 overflow-hidden rounded-lg border border-[#d8e2e6] bg-[#f6f8f8] transition focus-within:border-[#2d7482] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#2d7482]/15">
         <button
+          ref={countryButtonRef}
           type="button"
           disabled={disabled}
+          aria-expanded={open}
+          aria-haspopup="dialog"
           onClick={() => {
             if (disabled) return;
             setOpen(!open);
@@ -5020,6 +5075,8 @@ function ReferenceMiniPhoneField({
           )}
         </button>
         <input
+          ref={phoneInputRef}
+          aria-label="Reference phone number"
           value={localNumber}
           disabled={disabled}
           onChange={(event) => onChange(composeReferencePhone(country, event.target.value))}
@@ -5031,9 +5088,14 @@ function ReferenceMiniPhoneField({
       </div>
 
       {open && !disabled && (
-        <div className="bd-auth-popover absolute left-0 top-[calc(100%+6px)] z-50 w-[min(330px,84vw)] overflow-hidden rounded-xl border border-[#d8e2e6] bg-white shadow-2xl shadow-slate-900/18">
+        <div
+          role="dialog"
+          aria-label="Select reference country code"
+          className="bd-auth-popover absolute left-0 top-[calc(100%+6px)] z-50 w-[min(330px,84vw)] overflow-hidden rounded-xl border border-[#d8e2e6] bg-white shadow-2xl shadow-slate-900/18"
+        >
           <input
             autoFocus
+            aria-label="Search reference country code"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search country..."
@@ -5050,6 +5112,7 @@ function ReferenceMiniPhoneField({
                   onChange(composeReferencePhone(item, localNumber));
                   setOpen(false);
                   setQuery("");
+                  window.requestAnimationFrame(() => phoneInputRef.current?.focus());
                 }}
                 className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-[12px] font-semibold text-[#364650] transition hover:bg-[#eef7f8]"
               >
@@ -5249,6 +5312,7 @@ function CountrySearch({
   phoneMode?: boolean;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pickedLabel, setPickedLabel] = useState(selectedLabel);
@@ -5282,9 +5346,28 @@ function CountrySearch({
   }, []);
 
   return (
-    <div ref={wrapperRef} className={`relative ${fullWidth ? "w-full" : phoneMode ? "w-[135px] shrink-0" : "w-[170px] shrink-0"}`}>
+    <div
+      ref={wrapperRef}
+      className={`relative ${fullWidth ? "w-full" : phoneMode ? "w-[135px] shrink-0" : "w-[170px] shrink-0"}`}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setOpen(false);
+          setQuery("");
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !open) return;
+        event.preventDefault();
+        setOpen(false);
+        setQuery("");
+        window.requestAnimationFrame(() => triggerRef.current?.focus());
+      }}
+    >
       <button
+        ref={triggerRef}
         type="button"
+        aria-expanded={open}
+        aria-haspopup="dialog"
         onClick={() => {
           setOpen(!open);
           setQuery("");
@@ -5297,9 +5380,14 @@ function CountrySearch({
         <ChevronDown className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
       </button>
       {open && (
-        <div className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20">
+        <div
+          role="dialog"
+          aria-label="Select country"
+          className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
+        >
           <input
             autoFocus
+            aria-label="Search country"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search country..."
@@ -5317,6 +5405,7 @@ function CountrySearch({
                   setOpen(false);
                   setQuery("");
                   onSelect(country);
+                  window.requestAnimationFrame(() => triggerRef.current?.focus());
                 }}
                 className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-cyan-50"
               >
@@ -5326,6 +5415,11 @@ function CountrySearch({
                 {"dial" in country && <span className="shrink-0 font-semibold text-cyan-700">{country.dial}</span>}
               </button>
             ))}
+            {!filtered.length ? (
+              <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500">
+                No matching country found.
+              </p>
+            ) : null}
           </div>
         </div>
       )}
@@ -5334,146 +5428,20 @@ function CountrySearch({
 }
 
 function LocationSelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(value);
-  const [suggestions, setSuggestions] = useState<Array<{ label: string; detail: string }>>([]);
-  const [searching, setSearching] = useState(false);
-
-  useEffect(() => {
-    setQuery(value);
-  }, [value]);
-
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!open || trimmed.length < 3) return;
-
-    const controller = new AbortController();
-    const timeout = window.setTimeout(async () => {
-      setSearching(true);
-      try {
-        const response = await fetch(
-          `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(trimmed)}&count=8&language=en&format=json`,
-          { signal: controller.signal }
-        );
-        const data = (await response.json()) as {
-          results?: Array<{
-            id: number;
-            name: string;
-            country?: string;
-            admin1?: string;
-            admin2?: string;
-          }>;
-        };
-        const cleanResults = (data.results || []).map((item) => {
-          const country = cleanLocationCountry(item.country);
-          return {
-            label: [item.name, country].filter(Boolean).join(", "),
-            detail: [item.admin1, item.admin2].filter((part) => part && part !== item.name && part !== country).join(" · "),
-          };
-        });
-        setSuggestions(cleanResults);
-      } catch {
-        if (!controller.signal.aborted) setSuggestions([]);
-      } finally {
-        if (!controller.signal.aborted) setSearching(false);
-      }
-    }, 450);
-
-    return () => {
-      controller.abort();
-      window.clearTimeout(timeout);
-    };
-  }, [query, open]);
-
-  useEffect(() => {
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (!wrapperRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, []);
-
   return (
-    <div ref={wrapperRef} className="block">
-      <p className={profileFieldLabelClassName}>Location</p>
-      <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-500/15">
-        <span className="flex items-center pl-3 text-cyan-700">
-          <MapPin className="h-4 w-4" />
-        </span>
-        <input
-          value={query}
-          onFocus={() => {
-            setOpen(true);
-            if (query.trim().length < 3) {
-              setSuggestions([]);
-              setSearching(false);
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") setOpen(false);
-          }}
-          onChange={(event) => {
-            const nextQuery = event.target.value;
-            setQuery(nextQuery);
-            onChange(nextQuery);
-            setOpen(true);
-            if (nextQuery.trim().length < 3) {
-              setSuggestions([]);
-              setSearching(false);
-            }
-          }}
-          placeholder="Search any city, marina or country"
-          className="h-full min-w-0 flex-1 px-3 py-0 text-base font-medium text-slate-950 outline-none sm:text-sm"
-        />
-      </div>
-      {open && (suggestions.length > 0 || searching) && (
-        <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10">
-          {searching && <p className="px-3 py-2 text-sm text-slate-500">Searching...</p>}
-          {suggestions.map((location) => (
-            <button
-              key={`${location.label}-${location.detail}`}
-              type="button"
-              onClick={() => {
-                setQuery(location.label);
-                onChange(location.label);
-                setSuggestions([]);
-                setOpen(false);
-              }}
-              className="block w-full border-b border-slate-100 px-3 py-2 text-left text-sm text-slate-700 last:border-b-0 hover:bg-cyan-50"
-            >
-              <span className="block font-semibold text-slate-900">{location.label}</span>
-              {location.detail && <span className="block text-xs text-slate-500">{location.detail}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <LocationSearchField
+      label="Location"
+      ariaLabel="Location suggestions"
+      value={value}
+      onChange={onChange}
+      placeholder="Search any city, marina or country"
+      searchingText="Searching..."
+      noResultsText="No matching location found. You can keep your own text."
+      resultsText="location options available."
+      maxLength={160}
+      labelClassName={profileFieldLabelClassName}
+    />
   );
-}
-
-function cleanLocationCountry(country?: string) {
-  if (!country) return "";
-  const replacements: Record<string, string> = {
-    "Republic of Turkey": "Turkey",
-    "Republic of Türkiye": "Turkey",
-    "Türkiye": "Turkey",
-    "United States of America": "United States",
-    "Russian Federation": "Russia",
-    "United Kingdom of Great Britain and Northern Ireland": "United Kingdom",
-    "United Arab Emirates": "UAE",
-  };
-
-  if (replacements[country]) return replacements[country];
-  return country
-    .replace(/^Republic of /, "")
-    .replace(/^Kingdom of /, "")
-    .replace(/^State of /, "")
-    .replace(/^Commonwealth of /, "")
-    .trim();
 }
 
 function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
@@ -5481,7 +5449,7 @@ function SelectField({ label, value, options, onChange }: { label: string; value
     <div className="block">
       <p className={profileFieldLabelClassName}>{label}</p>
       <div className="relative">
-        <select value={value} onChange={(event) => onChange(event.target.value)} className={`${profileFieldControlClassName} cursor-pointer appearance-none py-0 pr-10`}>
+        <select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className={`${profileFieldControlClassName} cursor-pointer appearance-none py-0 pr-10`}>
           <option value="">Select</option>
           {options.map((option) => <option key={option}>{option}</option>)}
         </select>
@@ -5520,6 +5488,7 @@ function TextArea({
         )}
       </div>
       <textarea
+        aria-label={label}
         value={displayValue}
         maxLength={maxLength}
         onChange={(event) => onChange(maxLength ? event.target.value.slice(0, maxLength) : event.target.value)}

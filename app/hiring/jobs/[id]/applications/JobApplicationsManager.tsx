@@ -50,6 +50,8 @@ type WorkspaceResponse = {
   error?: string;
   job?: unknown;
   total?: number;
+  nextCursor?: string | null;
+  hasMore?: boolean;
   applications?: unknown[];
   application?: unknown;
   details?: unknown;
@@ -65,6 +67,10 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [error, setError] = useState("");
   const [job, setJob] = useState<JobApplicationJobSummary | null>(null);
   const [applications, setApplications] = useState<EmployerJobApplication[]>([]);
+  const [totalApplications, setTotalApplications] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [selectedId, setSelectedId] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [updating, setUpdating] = useState(false);
@@ -146,7 +152,13 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           : [];
         if (
           !parsedJob ||
-          parsedApplications.length !== (payload.applications || []).length
+          parsedApplications.length !== (payload.applications || []).length ||
+          typeof payload.total !== "number" ||
+          !Number.isSafeInteger(payload.total) ||
+          payload.total < parsedApplications.length ||
+          typeof payload.hasMore !== "boolean" ||
+          !isApplicationCursor(payload.nextCursor, payload.hasMore) ||
+          (payload.hasMore && parsedApplications.length === 0)
         ) {
           throw new Error(c.loadError);
         }
@@ -154,6 +166,9 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         if (!active) return;
         setJob(parsedJob);
         setApplications(parsedApplications);
+        setTotalApplications(payload.total);
+        setNextCursor(payload.nextCursor || null);
+        setHasMore(payload.hasMore);
         setSelectedId((current) =>
           parsedApplications.some((application) => application.id === current)
             ? current
@@ -172,6 +187,75 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       active = false;
     };
   }, [c.loadError, jobId, reloadVersion]);
+
+  async function loadMoreApplications() {
+    if (loadingMore || !hasMore || !nextCursor) return;
+    setLoadingMore(true);
+    setNotice(null);
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) {
+      setLoadingMore(false);
+      window.location.replace(
+        `/login?next=${encodeURIComponent(`/hiring/jobs/${jobId}/applications`)}`,
+      );
+      return;
+    }
+
+    try {
+      const requestedCursor = nextCursor;
+      const response = await fetch(
+        `/api/employer/job-posts/${encodeURIComponent(jobId)}/applications?cursor=${encodeURIComponent(requestedCursor)}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          cache: "no-store",
+        },
+      );
+      const payload = (await response
+        .json()
+        .catch(() => null)) as WorkspaceResponse | null;
+      const page = Array.isArray(payload?.applications)
+        ? payload.applications
+            .map(parseEmployerApplication)
+            .filter((application) => application !== null)
+        : [];
+      if (
+        !response.ok ||
+        !payload?.ok ||
+        page.length !== (payload.applications || []).length ||
+        typeof payload.total !== "number" ||
+        !Number.isSafeInteger(payload.total) ||
+        payload.total < page.length ||
+        typeof payload.hasMore !== "boolean" ||
+        !isApplicationCursor(payload.nextCursor, payload.hasMore) ||
+        (payload.hasMore &&
+          (page.length === 0 || payload.nextCursor === requestedCursor))
+      ) {
+        throw new Error(payload?.error || c.loadError);
+      }
+
+      setApplications((current) => {
+        const byId = new Map(current.map((application) => [application.id, application]));
+        for (const application of page) byId.set(application.id, application);
+        return Array.from(byId.values());
+      });
+      setTotalApplications(payload.total);
+      setNextCursor(payload.nextCursor || null);
+      setHasMore(payload.hasMore);
+    } catch (loadError) {
+      setNotice({
+        tone: "error",
+        message: loadError instanceof Error ? loadError.message : c.loadError,
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -367,7 +451,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
               </div>
             </div>
             <div className="grid min-w-[260px] grid-cols-2 gap-3">
-              <Metric label={c.total} value={applications.length} />
+              <Metric label={c.total} value={totalApplications} />
               <Metric
                 label={c.shortlisted}
                 value={counts.get("shortlisted") || 0}
@@ -390,7 +474,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           <FilterButton
             active={filter === "all"}
             label={c.all}
-            count={applications.length}
+            count={totalApplications}
             onClick={() => setFilter("all")}
           />
           {([
@@ -452,6 +536,26 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
                 ))}
               </div>
             )}
+            {hasMore ? (
+              <div className="mt-6 flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  disabled={loadingMore}
+                  onClick={() => void loadMoreApplications()}
+                  className="bd-focus inline-flex min-h-11 min-w-52 items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-white px-5 text-sm font-black text-cyan-900 transition hover:border-cyan-400 hover:bg-cyan-50 disabled:cursor-progress disabled:opacity-65"
+                >
+                  {loadingMore ? (
+                    <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <UsersRound className="h-4 w-4" aria-hidden />
+                  )}
+                  {loadingMore ? c.loadingMore : c.loadMore}
+                </button>
+                <p className="text-xs font-semibold text-slate-500">
+                  {applications.length} / {totalApplications}
+                </p>
+              </div>
+            ) : null}
           </section>
         )}
         </div>
@@ -1421,6 +1525,14 @@ function formatDate(value: string, language: "en" | "tr") {
   }).format(date);
 }
 
+function isApplicationCursor(
+  value: unknown,
+  hasMore: boolean,
+): value is string | null {
+  if (!hasMore) return value === null;
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,256}$/.test(value);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -1447,6 +1559,8 @@ const copy = {
     candidates: "Applicants",
     results: "results",
     noFilterResults: "No candidates match this filter.",
+    loadMore: "Load more candidates",
+    loadingMore: "Loading candidates…",
     identityProtection:
       "Candidate names remain protected until BlueDeck Hiring access is introduced.",
     crewMember: "Yacht crew",
@@ -1528,6 +1642,8 @@ const copy = {
     candidates: "Başvuranlar",
     results: "sonuç",
     noFilterResults: "Bu filtreyle eşleşen aday yok.",
+    loadMore: "Daha fazla aday yükle",
+    loadingMore: "Adaylar yükleniyor…",
     identityProtection:
       "BlueDeck Hiring erişimi sunulana kadar aday adları korumalı kalır.",
     crewMember: "Yat mürettebatı",

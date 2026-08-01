@@ -32,9 +32,15 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { AccessibleImageLightbox } from "../components/AccessibleImageLightbox";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { signCrewPortfolioReference } from "../lib/crewPortfolioStorage";
-import { createSafeStoragePath } from "../lib/storage";
+import {
+  createSafeStoragePath,
+  maximumImageUploadBytes,
+  safePortfolioUploadMimeTypes,
+  validateStorageUpload,
+} from "../lib/storage";
 import { supabase } from "../lib/supabase";
 import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 
@@ -411,6 +417,15 @@ export default function MyBluePage() {
 
   async function uploadPhoto(file: File) {
     if (!profile?.id) return "";
+    const validationError = validateStorageUpload(
+      file,
+      safePortfolioUploadMimeTypes,
+      maximumImageUploadBytes,
+    );
+    if (validationError) {
+      setErrorMessage(validationError);
+      return "";
+    }
 
     const uploadRun = uploadRunRef.current + 1;
     uploadRunRef.current = uploadRun;
@@ -539,7 +554,7 @@ export default function MyBluePage() {
                 <input
                   ref={photoInputRef}
                   type="file"
-                  accept="image/*"
+                  accept={Array.from(safePortfolioUploadMimeTypes).join(",")}
                   aria-label="Choose gallery photo"
                   disabled={uploading || saving}
                   className="sr-only"
@@ -631,33 +646,17 @@ export default function MyBluePage() {
 
       {preview &&
         createPortal(
-          <div
-            className="bd-modal-backdrop fixed inset-0 z-[200] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-[#06111f]/80 p-3 backdrop-blur-sm sm:p-6"
-            onClick={() => setPreview(null)}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Photo gallery preview"
-          >
-            <div
-              className="bd-auth-modal-panel relative flex max-h-[calc(100dvh-1.5rem)] w-[min(960px,94vw)] items-center justify-center overflow-hidden rounded-3xl bg-white p-2 shadow-2xl shadow-black/40 sm:max-h-[calc(100dvh-3rem)] sm:p-3"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <button
-                type="button"
-                autoFocus
-                onClick={() => setPreview(null)}
-                className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-[#06111f] shadow-lg shadow-slate-950/20 transition hover:bg-cyan-50 sm:right-4 sm:top-4"
-                aria-label="Close photo preview"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              <img
-                src={preview.image_url}
-                alt="Photo gallery preview"
-                className="max-h-[calc(100dvh-2.5rem)] w-full rounded-2xl object-contain sm:max-h-[calc(100dvh-4.5rem)]"
-              />
-            </div>
-          </div>,
+          <AccessibleImageLightbox
+            source={preview.image_url}
+            imageAlt={preview.title || "Photo gallery preview"}
+            dialogLabel={
+              preview.title
+                ? `Photo gallery preview: ${preview.title}`
+                : "Photo gallery preview"
+            }
+            closeLabel="Close photo preview"
+            onClose={() => setPreview(null)}
+          />,
           document.body,
         )}
     </main>

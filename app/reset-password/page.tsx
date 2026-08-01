@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, LockKeyhole, ShieldCheck } from "lucide-react";
-import type { EmailOtpType } from "@supabase/supabase-js";
 import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { useLanguage } from "../components/LanguageProvider";
 import { PublicHeader } from "../components/PublicSiteChrome";
 import type { TranslationKey } from "../lib/i18n";
-import { supabase } from "../lib/supabase";
 
-type RecoveryState = "checking" | "ready" | "done" | "error";
+type RecoveryState = "checking" | "confirm" | "ready" | "done" | "error";
 type RecoveryMessageTone = "info" | "success" | "error";
+type RecoveryProof = {
+  state: string;
+  type: "recovery";
+  tokenHash?: string;
+  accessToken?: string;
+};
 
 export default function ResetPasswordPage() {
   const { t } = useLanguage();
@@ -25,75 +29,97 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
+  const recoveryCheckStarted = useRef(false);
+  const recoveryProof = useRef<RecoveryProof | null>(null);
   const passwordStrength = useMemo(() => getPasswordStrength(password, t), [password, t]);
 
   useEffect(() => {
-    async function prepareResetSession() {
-      setMessage(t("reset.checking"));
-      setMessageTone("info");
+    if (recoveryCheckStarted.current) return;
+    recoveryCheckStarted.current = true;
+
+    async function prepareResetTransaction() {
+      // Recovery credentials must never remain in history or leak through a
+      // same-origin referrer, including links issued before the server-only
+      // callback was introduced.
       const searchParams = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const errorDescription =
-        searchParams.get("error_description") ||
-        hashParams.get("error_description") ||
+      const proof = readRecoveryProof(searchParams, hashParams);
+      const providerError =
         searchParams.get("error") ||
-        hashParams.get("error");
+        searchParams.get("error_description") ||
+        hashParams.get("error") ||
+        hashParams.get("error_description");
+      window.history.replaceState(null, "", "/reset-password");
+      setMessage(t("reset.checking"));
+      setMessageTone("info");
 
-      if (errorDescription) {
+      if (providerError) {
         setStatus("error");
-        setMessage(t("reset.incomplete"));
+        setMessage(t("reset.verifyFailed"));
         setMessageTone("error");
         return;
       }
 
+      if (proof) {
+        recoveryProof.current = proof;
+        setStatus("confirm");
+        setMessage(t("reset.continueIntro"));
+        setMessageTone("info");
+        return;
+      }
+
       try {
-        const code = searchParams.get("code");
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
-        const tokenHash = searchParams.get("token_hash") || hashParams.get("token_hash");
-        const type = (searchParams.get("type") || hashParams.get("type")) as EmailOtpType | null;
-
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-        } else if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) throw error;
-        } else if (tokenHash && type) {
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type,
-          });
-          if (error) throw error;
-        }
-
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session) {
-          setStatus("error");
-          setMessage(t("reset.incomplete"));
-          setMessageTone("error");
+        const statusResponse = await fetch("/api/auth/reset-password", {
+          method: "GET",
+          cache: "no-store",
+        });
+        if (statusResponse.ok) {
+          setStatus("ready");
+          setMessage(t("reset.ready"));
+          setMessageTone("info");
           return;
         }
-
-        window.history.replaceState(null, "", "/reset-password");
-        setStatus("ready");
-        setMessage(t("reset.ready"));
+        setStatus("confirm");
+        setMessage(t("reset.continueIntro"));
         setMessageTone("info");
       } catch {
-        setStatus("error");
-        setMessage(t("reset.verifyFailed"));
-        setMessageTone("error");
+        setStatus("confirm");
+        setMessage(t("reset.continueIntro"));
+        setMessageTone("info");
       }
     }
 
-    prepareResetSession();
+    void prepareResetTransaction();
   }, [t]);
+
+  async function confirmRecovery() {
+    setStatus("checking");
+    setMessage(t("reset.checking"));
+    setMessageTone("info");
+    try {
+      const proof = recoveryProof.current;
+      const response = await fetch("/api/auth/recovery/confirm", {
+        method: "POST",
+        cache: "no-store",
+        ...(proof
+          ? {
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(proof),
+            }
+          : {}),
+      });
+      if (!response.ok) throw new Error("Recovery confirmation failed");
+      recoveryProof.current = null;
+      setStatus("ready");
+      setMessage(t("reset.ready"));
+      setMessageTone("info");
+    } catch {
+      recoveryProof.current = null;
+      setStatus("error");
+      setMessage(t("reset.verifyFailed"));
+      setMessageTone("error");
+    }
+  }
 
   async function saveNewPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,10 +147,14 @@ export default function ResetPasswordPage() {
     setSaving(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) throw error;
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+        cache: "no-store",
+      });
+      if (!response.ok) throw new Error("Password update failed");
 
-      await supabase.auth.signOut();
       setPassword("");
       setConfirmPassword("");
       setStatus("done");
@@ -172,7 +202,7 @@ export default function ResetPasswordPage() {
 
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#07182d] text-cyan-200" aria-hidden>
             {status === "checking" && <Loader2 className="h-7 w-7 animate-spin" />}
-            {status === "ready" && <KeyRound className="h-7 w-7" />}
+            {(status === "confirm" || status === "ready") && <KeyRound className="h-7 w-7" />}
             {status === "done" && <CheckCircle2 className="h-7 w-7" />}
             {status === "error" && <ShieldCheck className="h-7 w-7" />}
           </div>
@@ -270,7 +300,18 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          {status !== "ready" && status !== "checking" && (
+          {status === "confirm" && (
+            <button
+              type="button"
+              onClick={() => void confirmRecovery()}
+              className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-[#0b2fba] px-6 py-4 text-base font-black text-white shadow-xl shadow-blue-950/18 transition hover:bg-[#09248f]"
+            >
+              <ShieldCheck className="h-5 w-5" aria-hidden />
+              {t("reset.continueSecurely")}
+            </button>
+          )}
+
+          {(status === "done" || status === "error") && (
             <Link href={status === "done" ? "/login" : "/forgot-password"} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#07182d] px-6 py-4 font-black text-white transition hover:bg-[#0b2842]">
               {status === "done" ? t("login.backToLogin") : t("reset.requestNew")}
             </Link>
@@ -287,6 +328,38 @@ export default function ResetPasswordPage() {
       </main>
     </>
   );
+}
+
+function readRecoveryProof(
+  searchParams: URLSearchParams,
+  hashParams: URLSearchParams,
+): RecoveryProof | null {
+  const states = searchParams.getAll("state");
+  const tokenHashes = searchParams.getAll("token_hash");
+  const accessTokens = hashParams.getAll("access_token");
+  const types = [
+    ...searchParams.getAll("type"),
+    ...hashParams.getAll("type"),
+  ];
+  if (states.length !== 1 || types.length !== 1 || types[0] !== "recovery") {
+    return null;
+  }
+
+  const state = states[0];
+  const tokenHash = tokenHashes.length === 1 ? tokenHashes[0] : "";
+  const accessToken = accessTokens.length === 1 ? accessTokens[0] : "";
+  if (
+    !/^[A-Za-z0-9_-]{43}$/.test(state) ||
+    Boolean(tokenHash) === Boolean(accessToken) ||
+    (tokenHash && !/^[a-f0-9]{64}$/i.test(tokenHash)) ||
+    (accessToken && (accessToken.length < 100 || accessToken.length > 8_192))
+  ) {
+    return null;
+  }
+
+  return tokenHash
+    ? { state, type: "recovery", tokenHash }
+    : { state, type: "recovery", accessToken };
 }
 
 function AuthField({

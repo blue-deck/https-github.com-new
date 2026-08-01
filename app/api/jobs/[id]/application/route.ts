@@ -12,12 +12,21 @@ import {
 } from "../../../../lib/jobApplicationsServer";
 import { canWithdrawJobApplication } from "../../../../lib/jobApplications";
 import { cleanText, isRecord, isUuid } from "../../../../lib/employerAccessServer";
+import { consumeRequestRateLimit } from "../../../../lib/requestRateLimitServer";
+import { getClientIp } from "../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: RouteContext) {
+  const ipLimit = consumeRequestRateLimit(
+    `job-application:get:ip:${getClientIp(request) || "unknown"}`,
+    180,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const jobPostId = (await context.params).id.trim().toLowerCase();
   if (!isUuid(jobPostId)) {
     return applicationResponse({ ok: false, error: "Job post not found." }, 404);
@@ -30,6 +39,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `job-application:get:user:${clients.user.id}`,
+    120,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const [roleResult, applicationResult, eligibility] = await Promise.all([
     accountRole(clients.serviceClient, clients.user.id),
@@ -86,6 +101,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const ipLimit = consumeRequestRateLimit(
+    `job-application:post:ip:${getClientIp(request) || "unknown"}`,
+    60,
+    60 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const jobPostId = (await context.params).id.trim().toLowerCase();
   if (!isUuid(jobPostId)) {
     return applicationResponse({ ok: false, error: "Job post not found." }, 404);
@@ -98,6 +120,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `job-application:post:user:${clients.user.id}`,
+    20,
+    60 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const body = await readApplicationBody(request);
   if (!body.ok) {
@@ -173,6 +201,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const ipLimit = consumeRequestRateLimit(
+    `job-application:patch:ip:${getClientIp(request) || "unknown"}`,
+    60,
+    60 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const body = await readApplicationBody(request);
   if (!body.ok) {
     return applicationResponse({ ok: false, error: body.error }, body.status);
@@ -216,6 +251,12 @@ async function withdrawOwnApplication(
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `job-application:patch:user:${clients.user.id}`,
+    30,
+    60 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const { data: existingData, error: existingError } =
     await clients.serviceClient
@@ -305,4 +346,12 @@ async function withdrawOwnApplication(
 function firstRow(value: unknown) {
   if (Array.isArray(value)) return value[0];
   return isRecord(value) ? value : null;
+}
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return applicationResponse(
+    { ok: false, error: "Too many job application requests." },
+    429,
+    { "Retry-After": String(retryAfterSeconds) },
+  );
 }

@@ -10,21 +10,19 @@ import {
   loadActiveDirectoryCrewRecordMediaSource,
 } from "../../../../lib/findCrewData";
 import { safePublicMediaUrl } from "../../../../lib/publicCrewSafety";
+import {
+  hasExpectedRasterSignature,
+  safeRasterImageContentTypes,
+} from "../../../../lib/imageSafetyServer";
+import { consumeRequestRateLimit } from "../../../../lib/requestRateLimitServer";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
+import { getClientIp } from "../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const maximumSourceBytes = 16 * 1024 * 1024;
+const maximumSourceBytes = 10 * 1024 * 1024;
 const sourceTimeoutMilliseconds = 15_000;
-const allowedSourceContentTypes = new Set([
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/tiff",
-  "image/webp",
-]);
 const safeResponseHeaders = {
   "Cross-Origin-Resource-Policy": "same-origin",
   "Referrer-Policy": "no-referrer",
@@ -36,6 +34,15 @@ type RouteContext = {
 };
 
 export async function GET(request: Request, context: RouteContext) {
+  const rateLimit = consumeRequestRateLimit(
+    `find-crew-media:${getClientIp(request) || "unknown"}`,
+    90,
+    60_000,
+  );
+  if (!rateLimit.allowed) {
+    return mediaError(429, rateLimit.retryAfterSeconds);
+  }
+
   const { crewId } = await context.params;
   const mediaRequest = parseMediaRequest(request);
   if (!mediaRequest) return mediaError(404);
@@ -152,30 +159,20 @@ async function proxyMedia(
 
   try {
     const transformedSource = transformedStorageSource(source, kind);
-    let upstream = await fetchMediaSource(
+    const upstream = await fetchMediaSource(
       transformedSource,
       controller.signal,
       accept,
     );
-    if (
-      !upstream.ok ||
-      (upstream.status >= 300 && upstream.status < 400)
-    ) {
-      await upstream.body?.cancel().catch(() => undefined);
-      upstream = await fetchMediaSource(source, controller.signal, accept);
-      if (
-        !upstream.ok ||
-        (upstream.status >= 300 && upstream.status < 400)
-      ) {
-        return mediaError(502);
-      }
+    if (!upstream.ok || (upstream.status >= 300 && upstream.status < 400)) {
+      return mediaError(502);
     }
 
     const contentType = (upstream.headers.get("content-type") || "")
       .split(";", 1)[0]
       .trim()
       .toLowerCase();
-    if (!allowedSourceContentTypes.has(contentType)) return mediaError(415);
+    if (!safeRasterImageContentTypes.has(contentType)) return mediaError(415);
 
     const declaredLength = Number(upstream.headers.get("content-length") || 0);
     if (
@@ -186,6 +183,9 @@ async function proxyMedia(
     }
 
     const sourceBytes = await readLimitedBody(upstream, maximumSourceBytes);
+    if (!hasExpectedRasterSignature(sourceBytes, contentType)) {
+      throw new MediaFormatError();
+    }
     return new Response(sourceBytes, {
       status: 200,
       headers: {
@@ -210,6 +210,9 @@ function transformedStorageSource(
   kind: "avatar" | "gallery",
 ) {
   const transformed = new URL(source);
+  if (!transformed.pathname.includes("/storage/v1/object/sign/")) {
+    throw new MediaFormatError();
+  }
   transformed.pathname = transformed.pathname.replace(
     "/storage/v1/object/sign/",
     "/storage/v1/render/image/sign/",
@@ -292,13 +295,16 @@ async function readLimitedBody(response: Response, limit: number) {
   return body;
 }
 
-function mediaError(status: number) {
+function mediaError(status: number, retryAfterSeconds?: number) {
   return new Response("Media not found.", {
     status,
     headers: {
       ...safeResponseHeaders,
       "Cache-Control": "private, no-store, max-age=0",
       "Content-Type": "text/plain; charset=utf-8",
+      ...(retryAfterSeconds
+        ? { "Retry-After": String(retryAfterSeconds) }
+        : {}),
     },
   });
 }

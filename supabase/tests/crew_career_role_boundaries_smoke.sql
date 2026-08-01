@@ -24,6 +24,26 @@ select set_config(
   true
 );
 select set_config(
+  'bluedeck_smoke.crew_session_id',
+  gen_random_uuid()::text,
+  true
+);
+select set_config(
+  'bluedeck_smoke.captain_session_id',
+  gen_random_uuid()::text,
+  true
+);
+select set_config(
+  'bluedeck_smoke.owner_session_id',
+  gen_random_uuid()::text,
+  true
+);
+select set_config(
+  'bluedeck_smoke.management_session_id',
+  gen_random_uuid()::text,
+  true
+);
+select set_config(
   'bluedeck_smoke.crew_profile_id',
   gen_random_uuid()::text,
   true
@@ -60,6 +80,10 @@ declare
   captain_user_id uuid := current_setting('bluedeck_smoke.captain_user_id')::uuid;
   owner_user_id uuid := current_setting('bluedeck_smoke.owner_user_id')::uuid;
   management_user_id uuid := current_setting('bluedeck_smoke.management_user_id')::uuid;
+  crew_session_id uuid := current_setting('bluedeck_smoke.crew_session_id')::uuid;
+  captain_session_id uuid := current_setting('bluedeck_smoke.captain_session_id')::uuid;
+  owner_session_id uuid := current_setting('bluedeck_smoke.owner_session_id')::uuid;
+  management_session_id uuid := current_setting('bluedeck_smoke.management_session_id')::uuid;
 begin
   insert into auth.users (
     id,
@@ -122,6 +146,23 @@ begin
       now(),
       now()
     );
+
+  insert into private.bluedeck_account_provisioning (
+    user_id,
+    state,
+    failure_code
+  ) values
+    (crew_user_id, 'ready', ''),
+    (captain_user_id, 'ready', ''),
+    (owner_user_id, 'ready', ''),
+    (management_user_id, 'ready', '');
+
+  insert into auth.sessions (id, user_id, created_at, updated_at)
+  values
+    (crew_session_id, crew_user_id, now(), now()),
+    (captain_session_id, captain_user_id, now(), now()),
+    (owner_session_id, owner_user_id, now(), now()),
+    (management_session_id, management_user_id, now(), now());
 
   insert into public.profiles (id, email, full_name, role)
   values
@@ -235,10 +276,6 @@ returns void
 language plpgsql
 as $function$
 declare
-  document_id uuid := gen_random_uuid();
-  experience_id uuid := gen_random_uuid();
-  reference_id uuid := gen_random_uuid();
-  portfolio_id uuid := gen_random_uuid();
   portfolio_object_id uuid := gen_random_uuid();
   document_object_id uuid := gen_random_uuid();
   affected integer;
@@ -276,63 +313,23 @@ begin
     raise exception '% could not update its crew profile.', actor_label;
   end if;
 
-  insert into public.crew_documents (id, crew_profile_id, document_type)
-  values (document_id, profile_id, 'STCW');
-  insert into public.crew_experiences (id, crew_profile_id, yacht_name)
-  values (experience_id, profile_id, 'Career Smoke Yacht');
-  insert into public.crew_references (id, crew_profile_id, name)
-  values (reference_id, profile_id, 'Career Smoke Reference');
-  insert into public.crew_portfolio_photos (
-    id,
-    crew_profile_id,
-    title,
-    image_url
-  )
-  values (
-    portfolio_id,
-    profile_id,
-    'Career Smoke Photo',
-    'https://example.invalid/career-smoke.jpg'
-  );
-
-  if (select count(*) from public.crew_documents where id = document_id) <> 1
-    or (select count(*) from public.crew_experiences where id = experience_id) <> 1
-    or (select count(*) from public.crew_references where id = reference_id) <> 1
-    or (select count(*) from public.crew_portfolio_photos where id = portfolio_id) <> 1
+  -- Related career rows are application-owned after the bounded-career
+  -- migration. Crew/Captain browsers retain self-service reads, but every
+  -- mutation must pass through the authenticated API's service-role path.
+  if has_table_privilege('authenticated', 'public.crew_documents', 'INSERT')
+    or has_table_privilege('authenticated', 'public.crew_documents', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.crew_documents', 'DELETE')
+    or has_table_privilege('authenticated', 'public.crew_experiences', 'INSERT')
+    or has_table_privilege('authenticated', 'public.crew_experiences', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.crew_experiences', 'DELETE')
+    or has_table_privilege('authenticated', 'public.crew_references', 'INSERT')
+    or has_table_privilege('authenticated', 'public.crew_references', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.crew_references', 'DELETE')
+    or has_table_privilege('authenticated', 'public.crew_portfolio_photos', 'INSERT')
+    or has_table_privilege('authenticated', 'public.crew_portfolio_photos', 'UPDATE')
+    or has_table_privilege('authenticated', 'public.crew_portfolio_photos', 'DELETE')
   then
-    raise exception '% could not read its crew career records.', actor_label;
-  end if;
-
-  update public.crew_documents
-  set document_type = 'Updated STCW'
-  where id = document_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not update its crew document.', actor_label;
-  end if;
-
-  update public.crew_experiences
-  set yacht_name = 'Updated Career Smoke Yacht'
-  where id = experience_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not update its crew experience.', actor_label;
-  end if;
-
-  update public.crew_references
-  set name = 'Updated Career Smoke Reference'
-  where id = reference_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not update its crew reference.', actor_label;
-  end if;
-
-  update public.crew_portfolio_photos
-  set title = 'Updated Career Smoke Photo'
-  where id = portfolio_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not update its portfolio photo.', actor_label;
+    raise exception '% retained a direct career-child mutation privilege.', actor_label;
   end if;
 
   insert into storage.objects (id, bucket_id, name, owner, metadata)
@@ -341,7 +338,7 @@ begin
     'crew-portfolio',
     profile_id::text || '/career-smoke.jpg',
     actor_id,
-    '{}'::jsonb
+    '{"size":0}'::jsonb
   );
   insert into storage.objects (id, bucket_id, name, owner, metadata)
   values (
@@ -349,36 +346,25 @@ begin
     'crew-documents',
     profile_id::text || '/career-smoke.pdf',
     actor_id,
-    '{}'::jsonb
+    '{"size":0}'::jsonb
   );
 
+  -- Portfolio bytes are immutable once uploaded; documents retain their
+  -- owner-scoped metadata update path.
   update storage.objects
-  set metadata = '{"verified":true}'::jsonb
-  where id in (portfolio_object_id, document_object_id);
+  set metadata = metadata || '{"verified":true}'::jsonb
+  where id = document_object_id;
   get diagnostics affected = row_count;
-  if affected <> 2 then
-    raise exception '% could not update its career media.', actor_label;
+  if affected <> 1 then
+    raise exception '% could not update its document media.', actor_label;
   end if;
 
-  delete from public.crew_documents where id = document_id;
+  update storage.objects
+  set metadata = metadata || '{"overwritten":true}'::jsonb
+  where id = portfolio_object_id;
   get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not delete its crew document.', actor_label;
-  end if;
-  delete from public.crew_experiences where id = experience_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not delete its crew experience.', actor_label;
-  end if;
-  delete from public.crew_references where id = reference_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not delete its crew reference.', actor_label;
-  end if;
-  delete from public.crew_portfolio_photos where id = portfolio_id;
-  get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not delete its portfolio photo.', actor_label;
+  if affected <> 0 then
+    raise exception '% overwrote immutable portfolio media.', actor_label;
   end if;
 end;
 $function$;
@@ -390,6 +376,16 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', current_setting('bluedeck_smoke.owner_user_id'),
+    'role', 'authenticated',
+    'session_id', current_setting('bluedeck_smoke.owner_session_id'),
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password'))
+  )::text,
+  true
+);
 select pg_temp.assert_profile_insert_denied(
   current_setting('bluedeck_smoke.owner_user_id')::uuid,
   current_setting('bluedeck_smoke.owner_profile_id')::uuid,
@@ -404,6 +400,16 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', current_setting('bluedeck_smoke.management_user_id'),
+    'role', 'authenticated',
+    'session_id', current_setting('bluedeck_smoke.management_session_id'),
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password'))
+  )::text,
+  true
+);
 select pg_temp.assert_profile_insert_denied(
   current_setting('bluedeck_smoke.management_user_id')::uuid,
   current_setting('bluedeck_smoke.management_profile_id')::uuid,
@@ -418,6 +424,16 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', current_setting('bluedeck_smoke.crew_user_id'),
+    'role', 'authenticated',
+    'session_id', current_setting('bluedeck_smoke.crew_session_id'),
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password'))
+  )::text,
+  true
+);
 select pg_temp.assert_career_actor_allowed(
   current_setting('bluedeck_smoke.crew_user_id')::uuid,
   current_setting('bluedeck_smoke.crew_profile_id')::uuid,
@@ -432,6 +448,16 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', current_setting('bluedeck_smoke.captain_user_id'),
+    'role', 'authenticated',
+    'session_id', current_setting('bluedeck_smoke.captain_session_id'),
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password'))
+  )::text,
+  true
+);
 select pg_temp.assert_career_actor_allowed(
   current_setting('bluedeck_smoke.captain_user_id')::uuid,
   current_setting('bluedeck_smoke.captain_profile_id')::uuid,
@@ -640,55 +666,9 @@ begin
     raise exception '% inserted one or more crew career child records.', actor_label;
   end if;
 
-  update public.crew_documents
-  set document_type = 'Denied update'
-  where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% updated a crew document.', actor_label;
-  end if;
-  update public.crew_experiences
-  set yacht_name = 'Denied update'
-  where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% updated a crew experience.', actor_label;
-  end if;
-  update public.crew_references
-  set name = 'Denied update'
-  where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% updated a crew reference.', actor_label;
-  end if;
-  update public.crew_portfolio_photos
-  set title = 'Denied update'
-  where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% updated a portfolio photo.', actor_label;
-  end if;
-
-  delete from public.crew_documents where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% deleted a crew document.', actor_label;
-  end if;
-  delete from public.crew_experiences where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% deleted a crew experience.', actor_label;
-  end if;
-  delete from public.crew_references where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% deleted a crew reference.', actor_label;
-  end if;
-  delete from public.crew_portfolio_photos where crew_profile_id = profile_id;
-  get diagnostics affected = row_count;
-  if affected <> 0 then
-    raise exception '% deleted a portfolio photo.', actor_label;
-  end if;
+  -- UPDATE and DELETE are covered by the same table-level revocation asserted
+  -- for Crew/Captain above. The rejected INSERTs prove this actor cannot enter
+  -- the application-owned mutation path either.
 
   begin
     insert into storage.objects (id, bucket_id, name, owner, metadata)
@@ -697,7 +677,7 @@ begin
       'crew-portfolio',
       profile_id::text || '/career-denied.jpg',
       actor_id,
-      '{}'::jsonb
+      '{"size":0}'::jsonb
     );
   exception
     when insufficient_privilege then
@@ -710,7 +690,7 @@ begin
       'crew-documents',
       profile_id::text || '/career-denied.pdf',
       actor_id,
-      '{}'::jsonb
+      '{"size":0}'::jsonb
     );
   exception
     when insufficient_privilege then
@@ -722,22 +702,23 @@ begin
   end if;
 
   -- Dashboard avatars are account identity media, not career/CV media. Every
-  -- authenticated role keeps this exact, self-owned path exception.
+  -- active authenticated role keeps this exact self-owned upload path, while
+  -- the bucket-wide immutable-object rule still forbids in-place overwrite.
   insert into storage.objects (id, bucket_id, name, owner, metadata)
   values (
     avatar_object_id,
     'crew-portfolio',
     actor_id::text || '/dashboard-smoke.jpg',
     actor_id,
-    '{}'::jsonb
+    '{"size":0}'::jsonb
   );
 
   update storage.objects
-  set metadata = '{"dashboard":true}'::jsonb
+  set metadata = metadata || '{"dashboard":true}'::jsonb
   where id = avatar_object_id;
   get diagnostics affected = row_count;
-  if affected <> 1 then
-    raise exception '% could not update its dashboard avatar.', actor_label;
+  if affected <> 0 then
+    raise exception '% overwrote an immutable dashboard avatar.', actor_label;
   end if;
 
   -- storage.protect_delete intentionally forbids direct SQL deletion even
@@ -753,6 +734,16 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', current_setting('bluedeck_smoke.owner_user_id'),
+    'role', 'authenticated',
+    'session_id', current_setting('bluedeck_smoke.owner_session_id'),
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password'))
+  )::text,
+  true
+);
 select pg_temp.assert_noncareer_actor_denied(
   current_setting('bluedeck_smoke.owner_user_id')::uuid,
   current_setting('bluedeck_smoke.owner_profile_id')::uuid,
@@ -768,6 +759,16 @@ select set_config(
   true
 );
 select set_config('request.jwt.claim.role', 'authenticated', true);
+select set_config(
+  'request.jwt.claims',
+  jsonb_build_object(
+    'sub', current_setting('bluedeck_smoke.management_user_id'),
+    'role', 'authenticated',
+    'session_id', current_setting('bluedeck_smoke.management_session_id'),
+    'amr', jsonb_build_array(jsonb_build_object('method', 'password'))
+  )::text,
+  true
+);
 select pg_temp.assert_noncareer_actor_denied(
   current_setting('bluedeck_smoke.management_user_id')::uuid,
   current_setting('bluedeck_smoke.management_profile_id')::uuid,

@@ -13,6 +13,7 @@ import {
   isPlatformAdmin,
   type EmployerAccessEntry,
 } from "./employerAccess";
+import { authenticateActiveBearer } from "./activeBearerServer";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
 export const employerAccessSelect =
@@ -80,16 +81,27 @@ export async function authenticatedEmployerClients(
   });
 
   try {
-    const {
-      data: { user },
-      error,
-    } = await authClient.auth.getUser(token);
-
-    if (error || !user) {
-      return { error: "Login session is invalid.", status: 401 };
+    const authenticated = await authenticateActiveBearer({
+      token,
+      authClient,
+      serviceClient,
+    });
+    if (!authenticated.ok) {
+      if (authenticated.reason === "account_not_ready") {
+        logEmployerAccessError(
+          "account_provisioning_incomplete",
+          authenticated.cause,
+        );
+      } else if (authenticated.reason === "session_check_unavailable") {
+        logEmployerAccessError(
+          "authentication_failed",
+          authenticated.cause,
+        );
+      }
+      return { error: authenticated.error, status: authenticated.status };
     }
 
-    return { user, serviceClient };
+    return { user: authenticated.user, serviceClient };
   } catch (error) {
     logEmployerAccessError("authentication_failed", error);
     return {

@@ -53,6 +53,34 @@ begin
 end;
 $block$;
 
+-- Portfolio objects are immutable. Every upload uses a new, non-upsert path;
+-- denying UPDATE prevents an old job-application snapshot from being changed
+-- by replacing the bytes behind the same storage reference.
+do $block$
+declare
+  policy_row record;
+begin
+  for policy_row in
+    select policyname
+    from pg_catalog.pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'UPDATE'
+      and (
+        position('crew-portfolio' in coalesce(qual, '')) > 0
+        or position('crew-portfolio' in coalesce(with_check, '')) > 0
+      )
+  loop
+    execute format(
+      'drop policy if exists %I on storage.objects',
+      policy_row.policyname
+    );
+  end loop;
+end;
+$block$;
+
+drop policy if exists "Authenticated crew portfolio updates" on storage.objects;
+
 drop policy if exists "Public crew media read" on storage.objects;
 drop policy if exists "Crew portfolio owner read" on storage.objects;
 create policy "Crew portfolio owner read"

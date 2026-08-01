@@ -9,6 +9,7 @@ type TurnstileRenderOptions = {
   size?: "normal" | "compact" | "flexible";
   callback?: (token: string) => void;
   "expired-callback"?: () => void;
+  "timeout-callback"?: () => void;
   "error-callback"?: () => void;
 };
 
@@ -65,6 +66,7 @@ export function TurnstileWidget({
         size: "normal",
         callback: (token) => callbacksRef.current.onVerify(token),
         "expired-callback": () => callbacksRef.current.onExpire(),
+        "timeout-callback": () => callbacksRef.current.onExpire(),
         "error-callback": () => callbacksRef.current.onError(),
       });
     }

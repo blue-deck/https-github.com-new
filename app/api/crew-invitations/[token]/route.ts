@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { authenticateActiveBearer } from "../../../lib/activeBearerServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -146,17 +147,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const {
-    data: { user },
-    error: userError,
-  } = await clients.authClient.auth.getUser(bearerToken);
-
-  if (userError || !user) {
+  const authenticated = await authenticateActiveBearer({
+    token: bearerToken,
+    authClient: clients.authClient,
+    serviceClient: clients.serviceClient,
+  });
+  if (!authenticated.ok) {
     return invitationResponse(
-      { ok: false, error: "Login session is invalid." },
-      401,
+      { ok: false, error: authenticated.error },
+      authenticated.status,
     );
   }
+  const user = authenticated.user;
 
   const userEmail = normalizeEmail(user.email);
   if (!userEmail || !user.email_confirmed_at) {

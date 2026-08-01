@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { selectOwnedPublicCrewGallerySources } from "./publicCrewSafety";
 
 export const employerApplicationMediaKinds = ["avatar", "gallery"] as const;
@@ -13,6 +13,7 @@ type MediaUrlInput = {
   applicationId: string;
   kind: EmployerApplicationMediaKind;
   slot?: number;
+  revision: string;
 };
 
 type MediaCapabilityInput = MediaUrlInput & {
@@ -27,9 +28,10 @@ export type VerifiedEmployerApplicationMediaCapability = {
   kind: EmployerApplicationMediaKind;
   slot: number | null;
   expiresAt: number;
+  revision: string;
 };
 
-const mediaCapabilityVersion = "1";
+const mediaCapabilityVersion = "2";
 const mediaCapabilityLifetimeSeconds = 900;
 const maximumAcceptedLifetimeSeconds = 1_200;
 const minimumSigningSecretLength = 32;
@@ -50,6 +52,7 @@ export function buildEmployerApplicationMediaUrl(input: MediaUrlInput) {
     normalized.applicationId,
     normalized.kind,
     normalized.slot,
+    normalized.revision,
     expiresAt,
   );
   const search = new URLSearchParams({
@@ -57,6 +60,7 @@ export function buildEmployerApplicationMediaUrl(input: MediaUrlInput) {
     kind: normalized.kind,
     expires: String(expiresAt),
     token,
+    revision: normalized.revision,
   });
   if (normalized.slot !== null) search.set("slot", String(normalized.slot));
 
@@ -95,6 +99,7 @@ export function verifyEmployerApplicationMediaCapability(
     normalized.applicationId,
     normalized.kind,
     normalized.slot,
+    normalized.revision,
     expiresAt,
   );
   const providedBuffer = Buffer.from(input.token, "base64url");
@@ -110,6 +115,21 @@ export function verifyEmployerApplicationMediaCapability(
     ...normalized,
     expiresAt,
   };
+}
+
+export function employerApplicationMediaRevision(
+  capturedAt: string,
+  source: string,
+) {
+  const normalizedCapturedAt = capturedAt.trim();
+  const normalizedSource = source.trim();
+  if (!normalizedCapturedAt || !normalizedSource) return "";
+  return createHash("sha256")
+    .update("bluedeck-job-application-media-revision\n")
+    .update(normalizedCapturedAt)
+    .update("\n")
+    .update(normalizedSource)
+    .digest("base64url");
 }
 
 export function hasEmployerApplicationMediaSigningSecret() {
@@ -135,14 +155,21 @@ function normalizeMediaIdentity(input: MediaUrlInput) {
   if (
     !uuidPattern.test(jobPostId) ||
     !uuidPattern.test(applicationId) ||
-    !employerApplicationMediaKinds.includes(input.kind)
+    !employerApplicationMediaKinds.includes(input.kind) ||
+    !tokenPattern.test(input.revision)
   ) {
     return null;
   }
 
   if (input.kind === "avatar") {
     if (input.slot !== undefined) return null;
-    return { jobPostId, applicationId, kind: input.kind, slot: null };
+    return {
+      jobPostId,
+      applicationId,
+      kind: input.kind,
+      slot: null,
+      revision: input.revision,
+    };
   }
 
   if (
@@ -154,7 +181,13 @@ function normalizeMediaIdentity(input: MediaUrlInput) {
     return null;
   }
 
-  return { jobPostId, applicationId, kind: input.kind, slot: input.slot };
+  return {
+    jobPostId,
+    applicationId,
+    kind: input.kind,
+    slot: input.slot,
+    revision: input.revision,
+  };
 }
 
 function signMediaCapability(
@@ -163,6 +196,7 @@ function signMediaCapability(
   applicationId: string,
   kind: EmployerApplicationMediaKind,
   slot: number | null,
+  revision: string,
   expiresAt: number,
 ) {
   const payload = [
@@ -172,6 +206,7 @@ function signMediaCapability(
     applicationId,
     kind,
     slot === null ? "-" : String(slot),
+    revision,
     String(expiresAt),
   ].join("\n");
 

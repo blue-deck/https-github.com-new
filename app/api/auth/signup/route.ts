@@ -1,21 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { saveBaseProfileById } from "../../../lib/baseProfiles";
-import { saveCrewProfileByUserId } from "../../../lib/crewProfiles";
 import { authConfirmUrl, safeInternalPath } from "../../../lib/site";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
-import {
-  canUseCrewWorkspace,
-  isMarketplaceAccountRole,
-} from "../../../lib/marketplaceCapabilities";
-import { ensureMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
+import { isMarketplaceAccountRole } from "../../../lib/marketplaceCapabilities";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
 import { readLimitedJsonObject } from "../../../lib/requestBodyServer";
+import { isTrustedSameOriginMutation } from "../../../lib/requestOriginServer";
+import {
+  currentLegalAcceptance,
+  isCurrentLegalAcceptance,
+} from "../../../lib/legalPolicies";
 import {
   getClientIp,
   isTurnstileConfigured,
-  verifyTurnstileToken,
 } from "../../../lib/turnstileServer";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -23,14 +21,20 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const minuteMs = 60 * 1_000;
 const maximumSignupRequestBytes = 16 * 1024;
+const minimumPublicSignupDurationMs = 1_200;
 
 export async function POST(request: NextRequest) {
+  if (!isTrustedSameOriginMutation(request)) {
+    return signupError("invalid_request", 403);
+  }
+
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return signupError("service_unavailable", 503);
   }
 
   const turnstileConfigured = isTurnstileConfigured();
-  const clientIp = getClientIp(request) || "unknown";
+  const trustedClientIp = getClientIp(request);
+  const clientIp = trustedClientIp || "unknown";
   const ipLimit = consumeRequestRateLimit(
     "signup:" +
       (turnstileConfigured ? "verified" : "fallback") +
@@ -48,6 +52,9 @@ export async function POST(request: NextRequest) {
   if (!rawBody) {
     return signupError("invalid_request", 400);
   }
+  if (!hasOnlySignupRequestKeys(rawBody)) {
+    return signupError("invalid_request", 400);
+  }
   const body = rawBody as SignupRequestBody;
 
   const email = requestText(body.email).toLowerCase();
@@ -59,16 +66,29 @@ export async function POST(request: NextRequest) {
   const nextPath = safeInternalPath(requestText(body.next));
   const captchaToken = requestText(body.captchaToken);
   const website = requestText(body.website);
+  const legalAcceptance = body.legalAcceptance;
 
   if (website) {
-    return NextResponse.json({
-      userId: null,
-      emailConfirmed: false,
-      needsEmailConfirmation: true,
-    });
+    return genericSignupResponse();
   }
 
-  if (!email || !password || !fullName || !role || !position) {
+  if (
+    !email ||
+    !password ||
+    !fullName ||
+    !role ||
+    !position ||
+    !isCurrentLegalAcceptance(legalAcceptance)
+  ) {
+    return signupError(
+      !isCurrentLegalAcceptance(legalAcceptance)
+        ? "legal_acceptance_required"
+        : "invalid_request",
+      400,
+    );
+  }
+
+  if (fullName.length > 120 || email.length > 320) {
     return signupError("invalid_request", 400);
   }
 
@@ -90,21 +110,12 @@ export async function POST(request: NextRequest) {
   );
   if (!emailLimit.allowed) return signupRateLimitResponse(emailLimit.retryAfterSeconds);
 
-  if (turnstileConfigured) {
-    if (!captchaToken) {
-      return signupError("captcha_required", 400);
-    }
-
-    const captchaVerified = await verifyTurnstileToken(
-      captchaToken,
-      clientIp === "unknown" ? undefined : clientIp,
-      "signup",
-    );
-    if (!captchaVerified) {
-      return signupError("captcha_failed", 400);
-    }
+  if (!turnstileConfigured && process.env.NODE_ENV === "production") {
+    return signupError("service_unavailable", 503);
   }
-
+  if (turnstileConfigured && !captchaToken) {
+    return signupError("captcha_required", 400);
+  }
   const resolvedSupabaseUrl = resolveSupabaseUrl(supabaseUrl);
 
   const supabase = createClient(resolvedSupabaseUrl, supabaseAnonKey, {
@@ -114,32 +125,45 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  const authRequestStartedAt = Date.now();
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: authConfirmUrl(nextPath),
+      captchaToken,
       data: {
         full_name: fullName,
         role,
         position,
+        bluedeck_legal_acceptance: currentLegalAcceptance(),
       },
     },
   });
 
   if (error) {
-    const code = publicSignupErrorCode(error.code);
     console.error("BlueDeck account signup failed", {
-      code,
+      code: error.code || "signup_failed",
       status: error.status,
     });
+    if (isDuplicateSignupError(error.code)) {
+      await waitForMinimumSignupDuration(authRequestStartedAt);
+      return genericSignupResponse();
+    }
+    const code = publicSignupErrorCode(error.code);
     return signupError(
       code,
       code === "rate_limited" ? 429 : 400,
     );
   }
 
-  if (data.user?.id) {
+  const isNewAccount = Boolean(
+    data.user?.id &&
+      Array.isArray(data.user.identities) &&
+      data.user.identities.length > 0,
+  );
+  let provisioningFailed = false;
+  if (isNewAccount && data.user?.id) {
     const adminSupabase = createClient(resolvedSupabaseUrl, supabaseServiceRoleKey, {
       auth: {
         persistSession: false,
@@ -147,80 +171,52 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    try {
-      const trustedMetadataResult =
-        await adminSupabase.auth.admin.updateUserById(data.user.id, {
-          app_metadata: {
-            ...(data.user.app_metadata || {}),
-            role,
-            position,
-            bluedeck_account_role: role,
-            bluedeck_signup_position: position,
-          },
-        });
+    const { data: provisioned, error: provisioningError } =
+      await adminSupabase.rpc("bluedeck_provision_signup_account", {
+        p_user_id: data.user.id,
+        p_email: email,
+        p_full_name: fullName,
+        p_account_role: role,
+        p_position: position,
+      });
 
-      if (trustedMetadataResult.error) {
-        console.error("BlueDeck trusted account metadata sync failed after signup", {
-          userId: data.user.id,
-          message: trustedMetadataResult.error.message,
-        });
-      }
+    if (provisioningError || provisioned !== true) {
+      provisioningFailed = true;
+      console.error("BlueDeck atomic signup provisioning failed", {
+        userId: data.user.id,
+        code: provisioningError?.code || "signup_not_provisioned",
+      });
 
-      const profileResults = await Promise.all([
-        saveBaseProfileById(adminSupabase, {
-          id: data.user.id,
-          email,
-          full_name: fullName,
-          role,
-        }),
-        saveCrewProfileByUserId(
-          adminSupabase,
-          data.user.id,
-          {
-            email,
-            full_name: fullName,
-            current_position: position,
-            current_positions: [position],
-            public_crew_id: canUseCrewWorkspace(role)
-              ? data.user.id.slice(0, 8).toUpperCase()
-              : null,
-          }
-        ),
-      ]);
-
-      const failedProfileWrites = profileResults
-        .map((result) => result.error?.message)
-        .filter(Boolean);
-
-      if (failedProfileWrites.length > 0) {
-        console.error("BlueDeck profile sync returned errors after signup", failedProfileWrites);
-      }
-
-      const entitlementResult = await ensureMarketplaceEntitlement(
-        adminSupabase,
-        data.user.id,
-        role,
-        "self_service",
+      const { error: quarantineError } = await adminSupabase.rpc(
+        "bluedeck_fail_signup_provisioning",
+        {
+          p_user_id: data.user.id,
+          p_failure_code: "trusted_promotion_failed",
+        },
       );
-      if (!entitlementResult.ok) {
-        console.error("BlueDeck marketplace entitlement sync failed after signup", {
-          schemaUnavailable: entitlementResult.schemaUnavailable,
-          message:
-            entitlementResult.error instanceof Error
-              ? entitlementResult.error.message
-              : "Marketplace entitlement sync failed",
+      if (quarantineError) {
+        console.error("BlueDeck failed signup quarantine failed", {
+          userId: data.user.id,
+          code: quarantineError.code || "signup_quarantine_failed",
         });
       }
-    } catch (profileError) {
-      console.error("BlueDeck profile sync failed after signup", profileError);
+
+      const { error: cleanupError } =
+        await adminSupabase.auth.admin.deleteUser(data.user.id, false);
+      if (cleanupError) {
+        console.error("BlueDeck failed signup cleanup failed", {
+          userId: data.user.id,
+          code: cleanupError.code || "signup_cleanup_failed",
+        });
+      }
     }
   }
 
-  return NextResponse.json({
-    userId: data.user?.id || null,
-    emailConfirmed: Boolean(data.user?.email_confirmed_at),
-    needsEmailConfirmation: !data.session,
-  });
+  await waitForMinimumSignupDuration(authRequestStartedAt);
+  if (provisioningFailed) {
+    return signupError("service_unavailable", 503);
+  }
+  return genericSignupResponse();
 }
 
 type SignupRequestBody = {
@@ -232,7 +228,23 @@ type SignupRequestBody = {
   next?: string;
   captchaToken?: string;
   website?: string;
+  legalAcceptance?: unknown;
 };
+
+function hasOnlySignupRequestKeys(value: Record<string, unknown>) {
+  const allowed = new Set([
+    "email",
+    "password",
+    "fullName",
+    "role",
+    "position",
+    "next",
+    "captchaToken",
+    "website",
+    "legalAcceptance",
+  ]);
+  return Object.keys(value).every((key) => allowed.has(key));
+}
 
 function requestText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
@@ -259,17 +271,35 @@ function signupError(code: string, status: number) {
 }
 
 function publicSignupErrorCode(code: string | undefined) {
-  if (code === "user_already_exists" || code === "email_exists") {
-    return "email_in_use";
-  }
   if (
     code === "over_email_send_rate_limit" ||
     code === "over_request_rate_limit"
   ) {
     return "rate_limited";
   }
-  if (code === "weak_password") return "weak_password";
+  if (code === "weak_password" || code === "captcha_failed") return code;
   return "signup_failed";
+}
+
+function isDuplicateSignupError(code: string | undefined) {
+  return code === "user_already_exists" || code === "email_exists";
+}
+
+function genericSignupResponse() {
+  return NextResponse.json(
+    {
+      userId: null,
+      emailConfirmed: false,
+      needsEmailConfirmation: true,
+    },
+    { headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+async function waitForMinimumSignupDuration(startedAt: number) {
+  const remaining = minimumPublicSignupDurationMs - (Date.now() - startedAt);
+  if (remaining <= 0) return;
+  await new Promise((resolve) => setTimeout(resolve, remaining));
 }
 
 function isValidEmail(value: string) {

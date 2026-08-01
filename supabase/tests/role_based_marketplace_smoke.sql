@@ -19,6 +19,9 @@ declare
   crew_profile_b uuid := gen_random_uuid();
   yacht_a uuid := gen_random_uuid();
   yacht_b uuid := gen_random_uuid();
+  yacht_b_backup uuid := gen_random_uuid();
+  captain_yacht uuid := gen_random_uuid();
+  management_yacht uuid := gen_random_uuid();
   captain_membership uuid := gen_random_uuid();
   job_a uuid;
   job_b uuid;
@@ -83,8 +86,13 @@ begin
       'public.bluedeck_can_manage_job(uuid,uuid)',
       'execute'
     )
-    or has_function_privilege(
+    or not has_function_privilege(
       'authenticated',
+      'public.bluedeck_can_apply_to_job(uuid,uuid)',
+      'execute'
+    )
+    or has_function_privilege(
+      'anon',
       'public.bluedeck_can_apply_to_job(uuid,uuid)',
       'execute'
     )
@@ -109,7 +117,7 @@ begin
       'execute'
     )
   then
-    raise exception 'Marketplace RPC grants are not service-role-only.';
+    raise exception 'Marketplace RPC grants do not match the guarded runtime boundary.';
   end if;
 
   insert into auth.users (
@@ -304,7 +312,10 @@ begin
   insert into public.yachts (id, name, model, flag, owner_id)
   values
     (yacht_a, 'Marketplace Smoke A', 'Test 50', 'Malta', owner_a),
-    (yacht_b, 'Marketplace Smoke B', 'Test 60', 'Cayman Islands', owner_b);
+    (yacht_b, 'Marketplace Smoke B', 'Test 60', 'Cayman Islands', owner_b),
+    (yacht_b_backup, 'Marketplace Smoke B Backup', 'Test 61', 'Malta', owner_b),
+    (captain_yacht, 'Marketplace Captain Publisher', 'Test 52', 'Malta', captain_a),
+    (management_yacht, 'Marketplace Management Publisher', 'Test 54', 'Malta', management_a);
 
   insert into public.yacht_crew_memberships (
     id,
@@ -391,6 +402,26 @@ begin
     'self_service'
   );
 
+  insert into public.employer_access (
+    user_id,
+    yacht_id,
+    requested_role,
+    status,
+    request_note
+  )
+  values
+    (owner_a, yacht_a, 'owner', 'pending', 'Marketplace smoke verification.'),
+    (owner_b, yacht_b, 'owner', 'pending', 'Marketplace smoke verification.'),
+    (owner_b, yacht_b_backup, 'owner', 'pending', 'Marketplace smoke backup verification.'),
+    (captain_a, captain_yacht, 'captain', 'pending', 'Marketplace smoke verification.'),
+    (management_a, management_yacht, 'management', 'pending', 'Marketplace smoke verification.');
+
+  update public.employer_access
+  set status = 'verified',
+      reviewed_by = owner_a,
+      review_note = 'Verified for transactional marketplace testing.'
+  where user_id in (owner_a, owner_b, captain_a, management_a);
+
   if not exists (
     select 1
     from public.marketplace_entitlements as entitlement
@@ -442,7 +473,8 @@ begin
     raise exception 'Captain Workspace yacht authority matrix failed.';
   end if;
 
-  -- Job publishing is account-level and independent from every yacht record.
+  -- A publisher role is necessary but not sufficient: each actor below also
+  -- has administrator-reviewed employer access for a yacht they still own.
   if not public.bluedeck_can_publish_jobs(owner_a)
     or not public.bluedeck_can_publish_jobs(owner_b)
     or not public.bluedeck_can_publish_jobs(captain_a)
@@ -450,7 +482,7 @@ begin
     or public.bluedeck_can_publish_jobs(crew_a)
     or public.bluedeck_can_publish_jobs(crew_b)
   then
-    raise exception 'Account-level job publishing role matrix failed.';
+    raise exception 'Verified job publishing role matrix failed.';
   end if;
 
   insert into public.job_posts (

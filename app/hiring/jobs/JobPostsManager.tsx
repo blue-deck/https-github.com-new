@@ -24,6 +24,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { ConfirmationDialog } from "../../components/ConfirmationDialog";
 import { DateTextField } from "../../components/DateTextField";
 import { CountryFlagField } from "../../components/CountryFlagField";
 import { useLanguage } from "../../components/LanguageProvider";
@@ -230,6 +231,8 @@ const copy = {
     cancelPost: "Cancel listing",
     cancelConfirm:
       "Cancel this listing? It will be removed from the public jobs board and will no longer accept applications. Application history will be preserved.",
+    keepEditing: "Keep listing",
+    confirmCancel: "Cancel listing",
     saving: "Saving…",
     saveError: "The job post could not be saved.",
     changedElsewhere:
@@ -351,6 +354,8 @@ const copy = {
     cancelPost: "İlanı iptal et",
     cancelConfirm:
       "Bu ilanı iptal etmek istediğinize emin misiniz? İlan herkese açık iş ilanlarından kaldırılacak ve yeni başvuru kabul etmeyecek. Başvuru geçmişi korunacak.",
+    keepEditing: "İlanı koru",
+    confirmCancel: "İlanı iptal et",
     saving: "Kaydediliyor…",
     saveError: "İş ilanı kaydedilemedi.",
     changedElsewhere:
@@ -383,6 +388,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
   const [openChoiceGroup, setOpenChoiceGroup] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const selectedJobExpired = selectedJob
     ? isEmployerJobPostExpired(selectedJob)
     : false;
@@ -451,6 +457,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
         setCanPostJobs(result.capabilities.canPostJobs);
         setSelectedJob(requestedJob);
         setNotice(null);
+        setCancelDialogOpen(false);
         setOpenChoiceGroup(null);
         setForm(
           requestedJob
@@ -629,8 +636,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
   function cancelSelectedJob() {
     if (!selectedJob || selectedJobTerminal || saving) return;
-    if (!window.confirm(c.cancelConfirm)) return;
-    void saveJob("closed");
+    setCancelDialogOpen(true);
   }
 
   if (loading) {
@@ -1305,6 +1311,20 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
           </form>
         </div>
       </div>
+
+      {cancelDialogOpen && selectedJob ? (
+        <ConfirmationDialog
+          title={c.cancelPost}
+          message={c.cancelConfirm}
+          confirmLabel={c.confirmCancel}
+          cancelLabel={c.keepEditing}
+          onCancel={() => setCancelDialogOpen(false)}
+          onConfirm={() => {
+            setCancelDialogOpen(false);
+            void saveJob("closed");
+          }}
+        />
+      ) : null}
     </main>
   );
 }

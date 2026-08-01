@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -19,6 +20,8 @@ export default function YachtsPage() {
   const [mmsi, setMmsi] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   async function fetchYachts() {
     setLoading(true);
@@ -58,57 +61,72 @@ export default function YachtsPage() {
   }
 
   async function createYacht() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    if (creating) return;
+    setCreateError("");
 
-    if (!user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    if (!name) {
-      alert("Yacht name is required");
+    const cleanName = name.trim();
+    if (!cleanName) {
+      setCreateError("Yacht name is required.");
       return;
     }
 
     if (mmsi && !/^\d{9}$/.test(mmsi)) {
-      alert("MMSI must be 9 digits.");
+      setCreateError("MMSI must contain exactly 9 digits.");
       return;
     }
 
-    const yachtPayload = {
-      name,
-      model,
-      flag,
-      mmsi: mmsi || null,
-      owner_id: user.id,
-    };
+    setCreating(true);
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    let { error } = await supabase.from("yachts").insert([yachtPayload]);
+      if (userError) throw userError;
+      if (!user) {
+        window.location.replace(
+          `/login?next=${encodeURIComponent("/yachts")}`,
+        );
+        return;
+      }
 
-    if (error && /mmsi|schema cache|column/i.test(error.message)) {
-      const fallbackPayload = {
-        name,
-        model,
-        flag,
+      const yachtPayload = {
+        name: cleanName,
+        model: model.trim(),
+        flag: flag.trim(),
+        mmsi: mmsi || null,
         owner_id: user.id,
       };
-      const fallback = await supabase.from("yachts").insert([fallbackPayload]);
-      error = fallback.error;
+
+      let { error } = await supabase.from("yachts").insert([yachtPayload]);
+
+      if (error && /mmsi|schema cache|column/i.test(error.message)) {
+        const fallbackPayload = {
+          name: cleanName,
+          model: model.trim(),
+          flag: flag.trim(),
+          owner_id: user.id,
+        };
+        const fallback = await supabase.from("yachts").insert([fallbackPayload]);
+        error = fallback.error;
+      }
+
+      if (error) throw error;
+
+      setName("");
+      setModel("");
+      setFlag("");
+      setMmsi("");
+      await fetchYachts();
+    } catch (error) {
+      setCreateError(
+        error instanceof Error
+          ? error.message
+          : "The yacht could not be created. Try again.",
+      );
+    } finally {
+      setCreating(false);
     }
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setName("");
-    setModel("");
-    setFlag("");
-    setMmsi("");
-
-    void fetchYachts();
   }
 
   useEffect(() => {
@@ -174,55 +192,82 @@ export default function YachtsPage() {
         </div>
 
         <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,390px)_minmax(0,1fr)]">
-          <div className="bd-glass-card rounded-[28px] p-6">
-            <h2 className="text-2xl font-semibold text-slate-950">Add Yacht</h2>
+          <section className="bd-glass-card rounded-[28px] p-6" aria-labelledby="add-yacht-title">
+            <h2 id="add-yacht-title" className="text-2xl font-semibold text-slate-950">Add Yacht</h2>
 
-            <div className="mt-6 space-y-4">
-              <input
-                placeholder="Yacht name"
+            <form
+              className="mt-6 space-y-4"
+              aria-busy={creating}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createYacht();
+              }}
+            >
+              <YachtTextField
+                id="yacht-name"
+                label="Yacht name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="bd-focus w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 placeholder:text-slate-400"
+                onChange={setName}
+                maxLength={120}
+                disabled={creating}
+                required
               />
-
-              <input
-                placeholder="Model"
+              <YachtTextField
+                id="yacht-model"
+                label="Model"
                 value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="bd-focus w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 placeholder:text-slate-400"
+                onChange={setModel}
+                maxLength={120}
+                disabled={creating}
               />
-
-              <input
-                placeholder="Flag"
+              <YachtTextField
+                id="yacht-flag"
+                label="Flag"
                 value={flag}
-                onChange={(e) => setFlag(e.target.value)}
-                className="bd-focus w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 placeholder:text-slate-400"
+                onChange={setFlag}
+                maxLength={80}
+                disabled={creating}
               />
 
-              <input
-                placeholder="MMSI number (9 digits)"
-                value={mmsi}
-                inputMode="numeric"
-                maxLength={9}
-                onChange={(e) => setMmsi(e.target.value.replace(/\D/g, "").slice(0, 9))}
-                className="bd-focus w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 placeholder:text-slate-400"
-              />
+              <div>
+                <label htmlFor="yacht-mmsi" className="mb-1.5 block text-sm font-bold text-slate-700">
+                  MMSI number <span className="font-medium text-slate-500">(optional)</span>
+                </label>
+                <input
+                  id="yacht-mmsi"
+                  placeholder="9 digits"
+                  value={mmsi}
+                  inputMode="numeric"
+                  pattern="[0-9]{9}"
+                  maxLength={9}
+                  disabled={creating}
+                  onChange={(event) => setMmsi(event.target.value.replace(/\D/g, "").slice(0, 9))}
+                  className="bd-focus min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-950 placeholder:text-slate-400 disabled:cursor-wait disabled:opacity-60"
+                />
+              </div>
+
+              {createError ? (
+                <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold leading-6 text-rose-800">
+                  {createError}
+                </p>
+              ) : null}
 
               <button
-                onClick={createYacht}
-                className="bd-focus w-full rounded-full bg-cyan-600 px-5 py-4 font-bold text-white transition hover:bg-cyan-700"
+                type="submit"
+                disabled={creating}
+                className="bd-focus min-h-12 w-full rounded-xl bg-[#071f3c] px-5 py-3 font-bold text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
               >
-                Create Yacht
+                {creating ? "Creating yacht..." : "Create Yacht"}
               </button>
-            </div>
-          </div>
+            </form>
+          </section>
 
           <div className="bd-glass-card rounded-[28px] p-6">
             <h2 className="text-2xl font-semibold text-slate-950">Connected Yachts</h2>
 
             <div className="mt-6 space-y-4">
               {yachts.map((yacht) => (
-                <a
+                <Link
                   href={`/yachts/${yacht.id}`}
                   key={yacht.id}
                   className="bd-focus block rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-cyan-300 hover:bg-cyan-50"
@@ -233,7 +278,7 @@ export default function YachtsPage() {
                   {yacht.mmsi && (
                     <p className="mt-2 text-sm font-semibold text-cyan-700">MMSI {yacht.mmsi}</p>
                   )}
-                </a>
+                </Link>
               ))}
 
               {yachts.length === 0 && (
@@ -246,5 +291,41 @@ export default function YachtsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function YachtTextField({
+  id,
+  label,
+  value,
+  onChange,
+  maxLength,
+  disabled,
+  required = false,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxLength: number;
+  disabled: boolean;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-bold text-slate-700">
+        {label}
+        {required ? <span aria-hidden="true" className="ml-1 text-rose-600">*</span> : null}
+      </label>
+      <input
+        id={id}
+        value={value}
+        required={required}
+        maxLength={maxLength}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="bd-focus min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-slate-950 disabled:cursor-wait disabled:opacity-60"
+      />
+    </div>
   );
 }

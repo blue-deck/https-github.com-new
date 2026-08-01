@@ -16,6 +16,7 @@ declare
   owner_id uuid := gen_random_uuid();
   crew_id uuid := gen_random_uuid();
   yacht_id uuid := gen_random_uuid();
+  access_id uuid;
   manual_job_id uuid;
   due_job_id uuid;
   original_deadline timestamptz;
@@ -100,6 +101,19 @@ begin
     owner_id
   );
 
+  insert into public.employer_access (
+    user_id, yacht_id, requested_role, status, request_note
+  ) values (
+    owner_id, yacht_id, 'owner', 'pending',
+    'Automatic job-expiry smoke verification.'
+  ) returning id into access_id;
+
+  update public.employer_access
+  set status = 'verified',
+      reviewed_by = crew_id,
+      review_note = 'Verified for automatic job-expiry smoke testing.'
+  where id = access_id;
+
   perform public.bluedeck_ensure_marketplace_entitlement(
     owner_id,
     'owner',
@@ -120,11 +134,15 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status,
     closes_at,
     closure_reason
@@ -138,11 +156,15 @@ begin
     'Deck',
     'seasonal',
     'Palma, Spain',
+    current_date + 14,
     'motor_yacht',
     50,
     'm',
     'A complete role used to verify publisher cancellation semantics.',
     'This temporary posting verifies server-owned calendar-month expiry, cancellation and terminal lifecycle enforcement.',
+    5000,
+    'EUR',
+    'month',
     'published',
     statement_timestamp() + interval '10 years',
     'expired'
@@ -241,11 +263,15 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
@@ -257,11 +283,15 @@ begin
     'Deck',
     'temporary',
     'Antibes, France',
+    current_date + 21,
     'sailing_yacht',
     148,
     'ft',
     'A complete role used to verify automatic terminal expiry semantics.',
     'This temporary posting verifies exact cutoff, scheduled archival, audit history and idempotent processing.',
+    5500,
+    'EUR',
+    'month',
     'published'
   )
   returning id into due_job_id;

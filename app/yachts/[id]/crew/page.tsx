@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useParams } from "next/navigation";
+import { AccessibleImageLightbox } from "../../../components/AccessibleImageLightbox";
 import { supabase } from "../../../lib/supabase";
 import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
 import {
@@ -22,7 +23,12 @@ import {
   contractSeafarerDeclarationParagraphs,
   drawContractAnnexDPage,
 } from "../../../lib/contractAnnexD";
-import { createSafeStoragePath } from "../../../lib/storage";
+import {
+  createSafeStoragePath,
+  maximumImageUploadBytes,
+  safeImageUploadMimeTypes,
+  validateStorageUpload,
+} from "../../../lib/storage";
 import {
   isContractSignatureDataUrl,
   serializeAssignedContractPayload,
@@ -1103,7 +1109,7 @@ export default function CrewPage({
       .select("id, contract_text")
       .eq("yacht_id", yachtId)
       .eq("status", "studio_draft")
-      .order("sent_at", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -1139,7 +1145,7 @@ export default function CrewPage({
         .select("id")
         .eq("yacht_id", yachtId)
         .eq("status", "studio_draft")
-        .order("sent_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -1149,14 +1155,11 @@ export default function CrewPage({
       }
     }
 
-    const savedAt = new Date().toISOString();
-
     if (recordId) {
       const { error } = await supabase
         .from("yacht_contracts")
         .update({
           contract_text: contractText,
-          sent_at: savedAt,
           status: "studio_draft",
         })
         .eq("id", recordId);
@@ -1172,7 +1175,6 @@ export default function CrewPage({
         yacht_id: yachtId,
         contract_text: contractText,
         status: "studio_draft",
-        sent_at: savedAt,
       })
       .select("id")
       .single();
@@ -1530,6 +1532,14 @@ export default function CrewPage({
   function addManualTask(taskOverride?: string) {
     const task = (taskOverride || manualTaskDraft).trim();
     if (!task) return;
+    if (task.length > 500) {
+      alert("Checklist tasks can contain at most 500 characters.");
+      return;
+    }
+    if (manualTasks.length >= 200) {
+      alert("A checklist can contain at most 200 tasks.");
+      return;
+    }
 
     setManualTasks((current) => [
       ...current,
@@ -1562,8 +1572,13 @@ export default function CrewPage({
 
   function selectManualTaskPhoto(file?: File) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Select an image file for the task.");
+    const validationError = validateStorageUpload(
+      file,
+      safeImageUploadMimeTypes,
+      maximumImageUploadBytes,
+    );
+    if (validationError) {
+      alert(validationError);
       return;
     }
 
@@ -1689,6 +1704,9 @@ export default function CrewPage({
       assigned_to: member?.crew_profile_id,
       due_date: dueDate || null,
       status: "open",
+      recurrence_enabled: ["daily", "weekly", "monthly"].includes(
+        frequency.trim().toLowerCase(),
+      ),
       items: {
         frequency,
         captain_note: captainNote || null,
@@ -1781,14 +1799,9 @@ export default function CrewPage({
         (typeof user?.user_metadata?.role === "string" ? user.user_metadata.role : "")
     );
 
-    const normalizedUserEmail = normalizeEmail(user.email);
-    const membership = crewData.find((member) => {
-      return (
-        member.crew_profiles?.user_id === user.id ||
-        normalizeEmail(member.crew_profiles?.email) === normalizedUserEmail ||
-        normalizeEmail(member.invited_email) === normalizedUserEmail
-      );
-    });
+    const membership = crewData.find(
+      (member) => member.crew_profiles?.user_id === user.id,
+    );
 
     if (!membership && !resolvedOperator && role !== "captain" && role !== "management" && role !== "owner") {
       setOperator({ position: "", department: "", role });
@@ -1984,7 +1997,7 @@ export default function CrewPage({
   }
 
   async function createChecklist(payload: Record<string, any>) {
-    const variants = [
+    const schemaVariants = [
       payload,
       omitKeys(payload, ["captain_note"]),
       omitKeys(payload, ["frequency"]),
@@ -1998,6 +2011,10 @@ export default function CrewPage({
       omitKeys(payload, ["items", "frequency", "captain_note", "due_date"]),
       omitKeys(payload, ["items", "frequency", "captain_note", "due_date", "status"]),
     ];
+    const variants = schemaVariants.flatMap((variant) => [
+      variant,
+      omitKeys(variant, ["recurrence_enabled"]),
+    ]);
 
     let lastResponse: any = null;
 
@@ -2383,46 +2400,62 @@ export default function CrewPage({
 
     const member = crew.find((item) => item.id === selectedCrew);
 
-    const { error } = await insertContract({
-      yacht_id: yachtId,
-      crew_profile_id: member?.crew_profile_id,
-      membership_id: selectedCrew,
-      contract_text: serializeAssignedContractPayload(
-        contractPreviewText,
-        contractPreviewDraft.employerSignatureDataUrl,
-      ),
-      status: "sent_for_signature",
-      sent_at: new Date().toISOString(),
-    });
+    const assignedContractText = serializeAssignedContractPayload(
+      contractPreviewText,
+      contractPreviewDraft.employerSignatureDataUrl,
+    );
+    let draftId = contractDraftRecordId;
+    let createdDraft = false;
 
-    if (error) {
-      alert(error.message);
+    if (!draftId) {
+      const draftResponse = await supabase
+        .from("yacht_contracts")
+        .insert({
+          yacht_id: yachtId,
+          contract_text: assignedContractText,
+          status: "studio_draft",
+        })
+        .select("id")
+        .single();
+
+      if (draftResponse.error || !draftResponse.data?.id) {
+        alert(draftResponse.error?.message || "Contract draft could not be created.");
+        return;
+      }
+
+      draftId = draftResponse.data.id;
+      createdDraft = true;
+    }
+
+    const sendResponse = await supabase
+      .from("yacht_contracts")
+      .update({
+        crew_profile_id: member?.crew_profile_id,
+        membership_id: selectedCrew,
+        contract_text: assignedContractText,
+        status: "sent_for_signature",
+      })
+      .eq("id", draftId)
+      .eq("yacht_id", yachtId)
+      .eq("status", "studio_draft")
+      .select("id")
+      .maybeSingle();
+
+    if (sendResponse.error || !sendResponse.data?.id) {
+      if (createdDraft) {
+        await supabase
+          .from("yacht_contracts")
+          .delete()
+          .eq("id", draftId)
+          .eq("status", "studio_draft");
+      }
+      alert(sendResponse.error?.message || "Contract could not be sent.");
       return;
     }
 
+    setContractDraftRecordId("");
     setContractStep("preview");
     alert("Contract sent for mobile signature.");
-  }
-
-  async function insertContract(payload: Record<string, any>) {
-    const variants = [
-      payload,
-      omitKeys(payload, ["sent_at"]),
-      omitKeys(payload, ["membership_id"]),
-      omitKeys(payload, ["sent_at", "membership_id"]),
-    ];
-    let lastResponse: any = null;
-
-    for (const variant of variants) {
-      const response = await supabase.from("yacht_contracts").insert(variant);
-
-      if (!response.error) return response;
-      lastResponse = response;
-
-      if (!isSchemaCacheError(response.error)) return response;
-    }
-
-    return lastResponse;
   }
 
   return (
@@ -3663,6 +3696,7 @@ export default function CrewPage({
                     placeholder="Optional note for the assigned crew"
                     value={captainNote}
                     onChange={(e) => setCaptainNote(e.target.value)}
+                    maxLength={2000}
                     className="mt-2 h-24 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                   />
                 </label>
@@ -3812,7 +3846,9 @@ export default function CrewPage({
                     <div className="flex gap-2">
                       <input
                         value={manualTaskDraft}
+                        aria-label="New checklist task"
                         onChange={(event) => setManualTaskDraft(event.target.value)}
+                        maxLength={500}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") {
                             event.preventDefault();
@@ -3830,11 +3866,11 @@ export default function CrewPage({
                         }`}
                         title="Add a before photo to this task"
                       >
-                        <ImagePlus className="h-5 w-5" />
+                        <ImagePlus className="h-5 w-5" aria-hidden="true" />
                         <span className="sr-only">Add task before photo</span>
                         <input
                           type="file"
-                          accept="image/*"
+                          accept={Array.from(safeImageUploadMimeTypes).join(",")}
                           className="sr-only"
                           onChange={(event) => {
                             selectManualTaskPhoto(event.target.files?.[0]);
@@ -3845,10 +3881,11 @@ export default function CrewPage({
                       <button
                         type="button"
                         onClick={() => addManualTask()}
+                        aria-label="Add manual checklist item"
                         className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
                         title="Add manual checklist item"
                       >
-                        <Plus className="h-5 w-5" />
+                        <Plus className="h-5 w-5" aria-hidden="true" />
                       </button>
                     </div>
 
@@ -3868,10 +3905,11 @@ export default function CrewPage({
                         <button
                           type="button"
                           onClick={removeManualTaskDraftPhoto}
+                          aria-label="Remove task photo"
                           className="bd-focus flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600 shadow-sm"
                           title="Remove task photo"
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-4 w-4" aria-hidden="true" />
                         </button>
                       </div>
                     )}
@@ -3914,7 +3952,9 @@ export default function CrewPage({
                         <div className="min-w-0 flex-1">
                           <input
                             value={task.text}
+                            aria-label={`Checklist task ${index + 1}`}
                             onChange={(event) => updateManualTask(index, event.target.value)}
+                            maxLength={500}
                             className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none focus:border-cyan-300"
                           />
                           {task.beforePhotoPreview && (
@@ -3963,6 +4003,7 @@ export default function CrewPage({
                       placeholder="Optional note for the assigned crew"
                       value={captainNote}
                       onChange={(event) => setCaptainNote(event.target.value)}
+                      maxLength={2000}
                       className="mt-2 h-20 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-cyan-300"
                     />
                   </label>
@@ -4607,44 +4648,15 @@ export default function CrewPage({
         )}
       </div>
 
-      {photoPreview && (
-        <div
-          className="bd-modal-backdrop fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
-          onClick={() => setPhotoPreview(null)}
-        >
-          <div
-            className="bd-auth-modal-panel w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/20 bg-white shadow-2xl shadow-slate-950/40"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-700" style={{ color: "#0e7490" }}>
-                  Task Photo
-                </p>
-                <h3 className="text-2xl font-black text-slate-950" style={{ color: "#071631" }}>{photoPreview.label}</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPhotoPreview(null)}
-                className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border shadow-md transition hover:scale-105 hover:bg-cyan-800 active:scale-95"
-                style={{ backgroundColor: "#071631", borderColor: "#164e63", color: "#ffffff" }}
-                aria-label="Close photo preview"
-                title="Close"
-              >
-                <X className="h-6 w-6" strokeWidth={2.5} />
-              </button>
-            </div>
-
-            <div className="bd-media-canvas bg-slate-950">
-              <img
-                src={photoPreview.url}
-                alt={`${photoPreview.label} task photo`}
-                className="max-h-[78vh] w-full object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {photoPreview ? (
+        <AccessibleImageLightbox
+          source={photoPreview.url}
+          imageAlt={`${photoPreview.label} task photo`}
+          dialogLabel={`Task photo: ${photoPreview.label}`}
+          closeLabel="Close photo preview"
+          onClose={() => setPhotoPreview(null)}
+        />
+      ) : null}
     </main>
   );
 }
@@ -5948,10 +5960,6 @@ function ContractArea({
       />
     </label>
   );
-}
-
-function normalizeEmail(value?: string | null) {
-  return (value || "").trim().toLowerCase();
 }
 
 function normalizeAccountRole(value?: unknown) {

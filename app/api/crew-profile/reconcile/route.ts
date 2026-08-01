@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { authenticateActiveBearer } from "../../../lib/activeBearerServer";
 import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
@@ -32,17 +33,18 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const {
-    data: { user },
-    error: userError,
-  } = await authClient.auth.getUser(token);
-
-  if (userError || !user) {
+  const authenticated = await authenticateActiveBearer({
+    token,
+    authClient,
+    serviceClient,
+  });
+  if (!authenticated.ok) {
     return response(
-      { ok: false, error: "Login session is invalid." },
-      401,
+      { ok: false, error: authenticated.error },
+      authenticated.status,
     );
   }
+  const user = authenticated.user;
 
   if (!user.email_confirmed_at) {
     return response(

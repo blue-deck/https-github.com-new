@@ -23,7 +23,7 @@ export type MarketplaceCapabilities = {
   canPostJobs: boolean;
   canApplyJobs: boolean;
   canUseCrewWorkspace: boolean;
-  requiresAdminApproval: false;
+  requiresAdminApproval: boolean;
 };
 
 export function isMarketplaceAccountRole(

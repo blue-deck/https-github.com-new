@@ -18,7 +18,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
   employerAccessNoteLimit,
@@ -39,6 +39,10 @@ type AdminListResponse = {
   ok?: boolean;
   error?: string;
   requests?: EmployerRequest[];
+  counts?: Partial<Record<RequestFilter, number>>;
+  total?: number;
+  hasMore?: boolean;
+  nextCursor?: string;
 };
 
 type AdminReviewResponse = {
@@ -48,6 +52,8 @@ type AdminReviewResponse = {
 };
 
 type RequestFilter = "all" | EmployerAccessStatus;
+
+type RequestCounts = Record<RequestFilter, number>;
 
 type Notice = {
   tone: "success" | "error";
@@ -132,6 +138,8 @@ const copy = {
     captain: "Captain",
     management: "Yacht management",
     requestCount: "requests",
+    loadMore: "Load more requests",
+    loadingMore: "Loading more…",
   },
   tr: {
     eyebrow: "Platform yönetimi",
@@ -210,6 +218,8 @@ const copy = {
     captain: "Kaptan",
     management: "Yat yönetimi",
     requestCount: "talep",
+    loadMore: "Daha fazla talep yükle",
+    loadingMore: "Daha fazlası yükleniyor…",
   },
 } as const;
 
@@ -221,12 +231,25 @@ const filters: RequestFilter[] = [
   "suspended",
 ];
 
+const emptyRequestCounts: RequestCounts = {
+  all: 0,
+  pending: 0,
+  verified: 0,
+  rejected: 0,
+  suspended: 0,
+};
+
 export default function AdminEmployerAccessPage() {
   const { language } = useLanguage();
   const c = copy[language];
   const [requests, setRequests] = useState<EmployerRequest[]>([]);
+  const [counts, setCounts] = useState<RequestCounts>(emptyRequestCounts);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState("");
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [accessDenied, setAccessDenied] = useState(false);
   const [filter, setFilter] = useState<RequestFilter>("pending");
@@ -238,20 +261,7 @@ export default function AdminEmployerAccessPage() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const reviewHeadingRef = useRef<HTMLHeadingElement>(null);
-
-  const counts = useMemo(
-    () => ({
-      all: requests.length,
-      pending: requests.filter((item) => item.access.status === "pending").length,
-      verified: requests.filter((item) => item.access.status === "verified")
-        .length,
-      rejected: requests.filter((item) => item.access.status === "rejected")
-        .length,
-      suspended: requests.filter((item) => item.access.status === "suspended")
-        .length,
-    }),
-    [requests],
-  );
+  const loadGenerationRef = useRef(0);
 
   const visibleRequests = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase(
@@ -280,9 +290,15 @@ export default function AdminEmployerAccessPage() {
     visibleRequests[0] ||
     null;
 
-  async function loadRequests(mode: "initial" | "refresh" = "initial") {
+  const loadRequests = useCallback(async (
+    mode: "initial" | "refresh" | "more" = "initial",
+    cursor = "",
+  ) => {
+    const append = mode === "more";
+    const generation = ++loadGenerationRef.current;
     if (mode === "initial") setLoading(true);
-    else setRefreshing(true);
+    else if (mode === "refresh") setRefreshing(true);
+    else setLoadingMore(true);
 
     setLoadError("");
     setAccessDenied(false);
@@ -299,13 +315,17 @@ export default function AdminEmployerAccessPage() {
     }
 
     try {
-      const response = await fetch("/api/admin/employer-access", {
+      const searchParameters = new URLSearchParams({ status: filter });
+      if (append && cursor) searchParameters.set("cursor", cursor);
+      const response = await fetch(`/api/admin/employer-access?${searchParameters}`, {
         headers: { Authorization: `Bearer ${session.access_token}` },
         cache: "no-store",
       });
       const result = (await response
         .json()
         .catch(() => null)) as AdminListResponse | null;
+
+      if (generation !== loadGenerationRef.current) return;
 
       if (response.status === 401) {
         window.location.replace(
@@ -324,34 +344,58 @@ export default function AdminEmployerAccessPage() {
       }
 
       const nextRequests = result.requests || [];
-      setRequests(nextRequests);
-      setSelectedKey((current) => {
-        if (nextRequests.some((item) => requestKey(item) === current)) {
-          return current;
-        }
-        return (
-          nextRequests.find((item) => item.access.status === "pending")
-            ? requestKey(
-                nextRequests.find(
-                  (item) => item.access.status === "pending",
-                ) as EmployerRequest,
-              )
-            : nextRequests[0]
-              ? requestKey(nextRequests[0])
-              : ""
-        );
+      setRequests((current) => {
+        if (!append) return nextRequests;
+        const knownKeys = new Set(current.map(requestKey));
+        return [
+          ...current,
+          ...nextRequests.filter((item) => !knownKeys.has(requestKey(item))),
+        ];
       });
+      setCounts(normalizeRequestCounts(result.counts));
+      const normalizedTotal = normalizeCount(result.total);
+      setTotal(
+        normalizedTotal === null
+          ? normalizeRequestCounts(result.counts)[filter]
+          : normalizedTotal,
+      );
+      const returnedCursor =
+        typeof result.nextCursor === "string" &&
+        result.nextCursor.length <= 512
+          ? result.nextCursor
+          : "";
+      setNextCursor(returnedCursor);
+      setHasMore(Boolean(result.hasMore && returnedCursor));
+      if (!append) {
+        setSelectedKey((current) => {
+          if (nextRequests.some((item) => requestKey(item) === current)) {
+            return current;
+          }
+          return nextRequests[0] ? requestKey(nextRequests[0]) : "";
+        });
+      }
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : c.loadError);
+      if (generation === loadGenerationRef.current) {
+        const message = error instanceof Error ? error.message : c.loadError;
+        if (mode === "initial") setLoadError(message);
+        else setNotice({ tone: "error", message });
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (generation === loadGenerationRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
+      }
     }
-  }
+  }, [c.loadError, filter]);
 
   useEffect(() => {
+    setRequests([]);
+    setSelectedKey("");
+    setNextCursor("");
+    setHasMore(false);
     void loadRequests();
-  }, []);
+  }, [loadRequests]);
 
   useEffect(() => {
     setDecision(null);
@@ -454,6 +498,7 @@ export default function AdminEmployerAccessPage() {
       );
       setDecision(null);
       setNotice({ tone: "success", message: c.saved });
+      await loadRequests("refresh");
     } catch (error) {
       setNotice({
         tone: "error",
@@ -663,27 +708,46 @@ export default function AdminEmployerAccessPage() {
                   </span>
                 </label>
                 <p className="mt-3 text-xs font-bold text-slate-500">
-                  {visibleRequests.length} {c.requestCount}
+                  {language === "tr"
+                    ? `${total} talepten ${requests.length} tanesi yüklendi`
+                    : `${requests.length} of ${total} requests loaded`}
+                  {query ? ` · ${visibleRequests.length} ${c.requestCount}` : ""}
                 </p>
               </div>
 
               <div className="max-h-[720px] overflow-y-auto p-3 sm:p-4">
                 {visibleRequests.length ? (
-                  <div className="grid gap-2">
-                    {visibleRequests.map((item) => (
-                      <RequestRow
-                        key={requestKey(item)}
-                        item={item}
-                        selected={
-                          selectedRequest
-                            ? requestKey(selectedRequest) === requestKey(item)
-                            : false
-                        }
-                        language={language}
-                        c={c}
-                        onSelect={() => chooseRequest(item)}
-                      />
-                    ))}
+                  <div className="grid gap-3">
+                    <div className="grid gap-2">
+                      {visibleRequests.map((item) => (
+                        <RequestRow
+                          key={requestKey(item)}
+                          item={item}
+                          selected={
+                            selectedRequest
+                              ? requestKey(selectedRequest) === requestKey(item)
+                              : false
+                          }
+                          language={language}
+                          c={c}
+                          onSelect={() => chooseRequest(item)}
+                        />
+                      ))}
+                    </div>
+                    {hasMore && !query ? (
+                      <button
+                        type="button"
+                        onClick={() => void loadRequests("more", nextCursor)}
+                        disabled={loadingMore}
+                        className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        <RefreshCw
+                          className={`h-4 w-4 ${loadingMore ? "animate-spin" : ""}`}
+                          aria-hidden
+                        />
+                        {loadingMore ? c.loadingMore : c.loadMore}
+                      </button>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex min-h-64 flex-col items-center justify-center px-5 text-center">
@@ -746,6 +810,26 @@ export default function AdminEmployerAccessPage() {
       </div>
     </main>
   );
+}
+
+function normalizeRequestCounts(
+  value: AdminListResponse["counts"],
+): RequestCounts {
+  return {
+    all: normalizeCount(value?.all) || 0,
+    pending: normalizeCount(value?.pending) || 0,
+    verified: normalizeCount(value?.verified) || 0,
+    rejected: normalizeCount(value?.rejected) || 0,
+    suspended: normalizeCount(value?.suspended) || 0,
+  };
+}
+
+function normalizeCount(value: unknown) {
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0
+    ? value
+    : null;
 }
 
 function RequestRow({

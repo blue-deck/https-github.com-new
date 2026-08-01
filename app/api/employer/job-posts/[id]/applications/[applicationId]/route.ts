@@ -15,6 +15,8 @@ import {
   logJobApplicationError,
   readApplicationBody,
 } from "../../../../../../lib/jobApplicationsServer";
+import { consumeRequestRateLimit } from "../../../../../../lib/requestRateLimitServer";
+import { getClientIp } from "../../../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,13 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string; applicationId: string }> },
 ) {
+  const ipLimit = consumeRequestRateLimit(
+    `managed-application:get:ip:${getClientIp(request) || "unknown"}`,
+    180,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const params = await context.params;
   const jobPostId = params.id.trim().toLowerCase();
   const applicationId = params.applicationId.trim().toLowerCase();
@@ -36,6 +45,12 @@ export async function GET(
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `managed-application:get:user:${clients.user.id}`,
+    120,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const authority = await canManageJobApplications(
     clients.serviceClient,
@@ -101,6 +116,13 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string; applicationId: string }> },
 ) {
+  const ipLimit = consumeRequestRateLimit(
+    `managed-application:patch:ip:${getClientIp(request) || "unknown"}`,
+    90,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const params = await context.params;
   const jobPostId = params.id.trim().toLowerCase();
   const applicationId = params.applicationId.trim().toLowerCase();
@@ -115,6 +137,12 @@ export async function PATCH(
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `managed-application:patch:user:${clients.user.id}`,
+    60,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const body = await readApplicationBody(request);
   if (!body.ok) {
@@ -244,4 +272,12 @@ export async function PATCH(
   }
 
   return applicationResponse({ ok: true, application });
+}
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return applicationResponse(
+    { ok: false, error: "Too many application review requests." },
+    429,
+    { "Retry-After": String(retryAfterSeconds) },
+  );
 }

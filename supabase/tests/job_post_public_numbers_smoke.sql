@@ -6,7 +6,9 @@ begin;
 do $test$
 declare
   owner_id uuid := gen_random_uuid();
+  reviewer_id uuid := gen_random_uuid();
   yacht_id uuid := gen_random_uuid();
+  access_id uuid;
   first_job_id uuid;
   second_job_id uuid;
   first_number text;
@@ -104,21 +106,34 @@ begin
     created_at,
     updated_at
   )
-  values (
-    owner_id,
-    'authenticated',
-    'authenticated',
-    'five-digit-number-owner-' || owner_id || '@example.invalid',
-    '',
-    now(),
-    '{}'::jsonb,
-    jsonb_build_object(
-      'role', 'owner',
-      'full_name', 'Five Digit Number Owner'
+  values
+    (
+      owner_id,
+      'authenticated',
+      'authenticated',
+      'five-digit-number-owner-' || owner_id || '@example.invalid',
+      '',
+      now(),
+      '{}'::jsonb,
+      jsonb_build_object(
+        'role', 'owner',
+        'full_name', 'Five Digit Number Owner'
+      ),
+      now(),
+      now()
     ),
-    now(),
-    now()
-  );
+    (
+      reviewer_id,
+      'authenticated',
+      'authenticated',
+      'five-digit-number-reviewer-' || reviewer_id || '@example.invalid',
+      '',
+      now(),
+      '{}'::jsonb,
+      '{}'::jsonb,
+      now(),
+      now()
+    );
 
   insert into public.profiles (id, email, full_name, role)
   values (
@@ -136,6 +151,19 @@ begin
     'Malta',
     owner_id
   );
+
+  insert into public.employer_access (
+    user_id, yacht_id, requested_role, status, request_note
+  ) values (
+    owner_id, yacht_id, 'owner', 'pending',
+    'Five-digit job reference smoke verification.'
+  ) returning id into access_id;
+
+  update public.employer_access
+  set status = 'verified',
+      reviewed_by = reviewer_id,
+      review_note = 'Verified for five-digit job reference smoke testing.'
+  where id = access_id;
 
   perform public.bluedeck_ensure_marketplace_entitlement(
     owner_id,

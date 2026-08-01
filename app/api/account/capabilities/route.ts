@@ -158,6 +158,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const publisherAuthority = await clients.serviceClient.rpc(
+    "bluedeck_can_publish_jobs",
+    { p_actor_user_id: clients.user.id },
+  );
+  if (publisherAuthority.error) {
+    console.error("[account-capabilities]", {
+      event: "job_publisher_authority_lookup_failed",
+      userId: clients.user.id,
+      code: cleanText(publisherAuthority.error.code) || undefined,
+    });
+    return accountResponse(
+      { ok: false, error: "Your verified hiring access could not be checked." },
+      503,
+    );
+  }
+
   return accountResponse({
     ok: true,
     role: entitlement.role,
@@ -165,7 +181,8 @@ export async function GET(request: NextRequest) {
     canManageYachts: ["captain", "owner", "management"].includes(
       entitlement.role,
     ),
-    canPostJobs: entitlement.canPostJobs,
+    canPostJobs:
+      entitlement.canPostJobs && publisherAuthority.data === true,
     canApplyToJobs: entitlement.canApplyJobs,
     canUseCrewWorkspace: entitlement.canUseCrewWorkspace,
   });

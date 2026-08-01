@@ -247,8 +247,10 @@ const en = {
   "login.security": "Security verification",
   "login.securityUnavailable":
     "Account creation requires the BlueDeck security verification keys.",
-  "login.privacyAgree": "I agree to the BlueDeck",
+  "login.legalAgree": "I have read and agree to the BlueDeck",
+  "login.legalAnd": "and",
   "login.privacyPolicy": "Privacy Policy",
+  "login.termsOfUse": "Terms of Use",
   "login.wait": "Please wait...",
   "login.loginButton": "Login to My Dashboard",
   "login.savePassword": "Save new password",
@@ -258,7 +260,7 @@ const en = {
   "login.protection":
     "BlueDeck protects new accounts with email confirmation. If the email does not arrive, check spam or resend the confirmation email.",
   "login.notice.newPasswordTwice": "Please enter your new password twice.",
-  "login.notice.minPassword": "Password must be at least 6 characters.",
+  "login.notice.minPassword": "Password must be at least 8 characters.",
   "login.notice.signupPassword":
     "Password must be at least 8 characters and include uppercase, lowercase, a number and at least 1 special character.",
   "login.notice.passwordMismatch": "Passwords do not match.",
@@ -275,6 +277,8 @@ const en = {
   "login.notice.loginService":
     "BlueDeck could not reach the login service. Please try again in a moment.",
   "login.notice.invalidCredentials": "Email or password is incorrect.",
+  "login.notice.passwordUpgrade":
+    "This password no longer meets BlueDeck security requirements. Use Forgot password to replace it securely.",
   "login.notice.emailNotConfirmed":
     "Confirm your email before logging in. You can resend the confirmation below.",
   "login.notice.emailInUse":
@@ -317,6 +321,9 @@ const en = {
   "reset.incomplete":
     "This reset link is incomplete or expired. Please request a new BlueDeck password reset email.",
   "reset.ready": "Choose a new password for your BlueDeck account.",
+  "reset.continueIntro":
+    "Continue when you are ready. BlueDeck will verify and consume the single-use link only after your confirmation.",
+  "reset.continueSecurely": "Continue securely",
   "reset.verifyFailed": "BlueDeck could not verify this reset link.",
   "reset.privateAccess": "Private account access",
   "reset.leftTitle": "Set a fresh password securely.",
@@ -614,8 +621,10 @@ const tr: Record<TranslationKey, string> = {
   "login.security": "Güvenlik doğrulaması",
   "login.securityUnavailable":
     "Hesap oluşturmak için BlueDeck güvenlik doğrulama anahtarları gerekir.",
-  "login.privacyAgree": "BlueDeck",
-  "login.privacyPolicy": "Gizlilik Politikası’nı kabul ediyorum",
+  "login.legalAgree": "BlueDeck",
+  "login.legalAnd": "ve",
+  "login.privacyPolicy": "Gizlilik Politikası’nı",
+  "login.termsOfUse": "Kullanım Şartları’nı okudum ve kabul ediyorum",
   "login.wait": "Lütfen bekleyin...",
   "login.loginButton": "My Dashboard’a giriş",
   "login.savePassword": "Yeni şifreyi kaydet",
@@ -624,7 +633,7 @@ const tr: Record<TranslationKey, string> = {
   "login.resend": "Onay e-postasını tekrar gönder",
   "login.protection": "BlueDeck yeni hesapları e-posta onayıyla korur. E-posta gelmezse spam klasörünü kontrol edin veya onayı tekrar gönderin.",
   "login.notice.newPasswordTwice": "Lütfen yeni şifrenizi iki kez girin.",
-  "login.notice.minPassword": "Şifre en az 6 karakter olmalı.",
+  "login.notice.minPassword": "Şifre en az 8 karakter olmalı.",
   "login.notice.signupPassword":
     "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, sayı ve en az 1 özel karakter içermelidir.",
   "login.notice.passwordMismatch": "Şifreler eşleşmiyor.",
@@ -638,6 +647,8 @@ const tr: Record<TranslationKey, string> = {
     "Güvenlik doğrulaması yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.",
   "login.notice.loginService": "BlueDeck giriş servisine ulaşamadı. Lütfen biraz sonra tekrar deneyin.",
   "login.notice.invalidCredentials": "E-posta veya şifre hatalı.",
+  "login.notice.passwordUpgrade":
+    "Bu şifre artık BlueDeck güvenlik koşullarını karşılamıyor. Güvenli biçimde yenilemek için Şifremi unuttum bağlantısını kullanın.",
   "login.notice.emailNotConfirmed":
     "Giriş yapmadan önce e-postanızı onaylayın. Onay e-postasını aşağıdan tekrar gönderebilirsiniz.",
   "login.notice.emailInUse":
@@ -674,6 +685,9 @@ const tr: Record<TranslationKey, string> = {
   "reset.checking": "Güvenli BlueDeck sıfırlama bağlantınız kontrol ediliyor...",
   "reset.incomplete": "Bu sıfırlama bağlantısı eksik veya süresi dolmuş. Lütfen yeni BlueDeck şifre sıfırlama e-postası isteyin.",
   "reset.ready": "BlueDeck hesabınız için yeni şifre seçin.",
+  "reset.continueIntro":
+    "Hazır olduğunuzda devam edin. BlueDeck tek kullanımlık bağlantıyı yalnızca onayınızdan sonra doğrular ve tüketir.",
+  "reset.continueSecurely": "Güvenle devam et",
   "reset.verifyFailed": "BlueDeck bu sıfırlama bağlantısını doğrulayamadı.",
   "reset.privateAccess": "Özel hesap erişimi",
   "reset.leftTitle": "Yeni şifrenizi güvenle belirleyin.",

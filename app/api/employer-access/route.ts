@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
   isEmployerRole,
   isPlatformAdmin,
@@ -14,6 +14,13 @@ import {
   logEmployerAccessError,
   type EmployerAccessDatabaseRow,
 } from "../../lib/employerAccessServer";
+import { readLimitedJsonObjectDetailed } from "../../lib/requestBodyServer";
+import { privateNextResponse as NextResponse } from "../../lib/privateApiResponse";
+import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
+import { getClientIp } from "../../lib/turnstileServer";
+
+const maximumEmployerAccessRequestBytes = 8 * 1024;
+const maximumOwnedYachtsPerAccount = 25;
 
 type EmployerAccessRequestBody = {
   yachtId?: unknown;
@@ -29,6 +36,15 @@ type OwnedYacht = {
 };
 
 export async function GET(request: NextRequest) {
+  const ipLimit = consumeRequestRateLimit(
+    `employer-access:get:ip:${getClientIp(request) || "unknown"}`,
+    180,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) {
+    return rateLimitedResponse(ipLimit.retryAfterSeconds);
+  }
+
   const clients = await authenticatedEmployerClients(request);
   if ("error" in clients) {
     return NextResponse.json(
@@ -37,24 +53,34 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const [yachtsResponse, accessResponse, profileResponse, userResponse] =
+  const userLimit = consumeRequestRateLimit(
+    `employer-access:get:user:${clients.user.id}`,
+    120,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) {
+    return rateLimitedResponse(userLimit.retryAfterSeconds);
+  }
+
+  const [yachtsResponse, accessResponse, profileResponse] =
     await Promise.all([
       clients.serviceClient
         .from("yachts")
         .select("id,name,model,flag,owner_id")
         .eq("owner_id", clients.user.id)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(maximumOwnedYachtsPerAccount + 1),
       clients.serviceClient
         .from("employer_access")
         .select(employerAccessSelect)
         .eq("user_id", clients.user.id)
-        .order("updated_at", { ascending: false }),
+        .order("updated_at", { ascending: false })
+        .limit(maximumOwnedYachtsPerAccount + 1),
       clients.serviceClient
         .from("profiles")
         .select("role")
         .eq("id", clients.user.id)
         .maybeSingle(),
-      clients.serviceClient.auth.admin.getUserById(clients.user.id),
     ]);
 
   if (yachtsResponse.error || accessResponse.error) {
@@ -77,15 +103,22 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (userResponse.error || !userResponse.data.user) {
+  if (
+    (yachtsResponse.data || []).length > maximumOwnedYachtsPerAccount ||
+    (accessResponse.data || []).length > maximumOwnedYachtsPerAccount
+  ) {
     logEmployerAccessError(
-      "applicant_account_load_failed",
-      userResponse.error,
+      "applicant_workspace_resource_limit_exceeded",
+      undefined,
       { actorUserId: clients.user.id },
     );
     return NextResponse.json(
-      { ok: false, error: "Your account could not be loaded." },
-      { status: 500 },
+      {
+        ok: false,
+        error:
+          "This account has more yacht records than the workspace can safely display. Contact BlueDeck support.",
+      },
+      { status: 409 },
     );
   }
 
@@ -114,7 +147,7 @@ export async function GET(request: NextRequest) {
     accessByYacht.set(access.yachtId, access);
   }
 
-  const freshUser = userResponse.data.user;
+  const freshUser = clients.user;
   return NextResponse.json({
     ok: true,
     accountRole: normalizeAccountRole(
@@ -131,6 +164,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ipLimit = consumeRequestRateLimit(
+    `employer-access:post:ip:${getClientIp(request) || "unknown"}`,
+    30,
+    60 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) {
+    return rateLimitedResponse(ipLimit.retryAfterSeconds);
+  }
+
   const clients = await authenticatedEmployerClients(request);
   if ("error" in clients) {
     return NextResponse.json(
@@ -139,17 +181,41 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: EmployerAccessRequestBody;
-  try {
-    const value: unknown = await request.json();
-    if (!isRecord(value)) throw new Error("Invalid JSON object");
-    body = value;
-  } catch {
+  const userLimit = consumeRequestRateLimit(
+    `employer-access:post:user:${clients.user.id}`,
+    10,
+    60 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) {
+    return rateLimitedResponse(userLimit.retryAfterSeconds);
+  }
+
+  const parsedBody = await readLimitedJsonObjectDetailed(
+    request,
+    maximumEmployerAccessRequestBytes,
+  );
+  if (!parsedBody.ok) {
     return NextResponse.json(
-      { ok: false, error: "Invalid employer access request." },
-      { status: 400 },
+      {
+        ok: false,
+        error:
+          parsedBody.error === "content-type"
+            ? "The request must use JSON."
+            : parsedBody.error === "too-large"
+              ? "The employer access request is too large."
+              : "Invalid employer access request.",
+      },
+      {
+        status:
+          parsedBody.error === "content-type"
+            ? 415
+            : parsedBody.error === "too-large"
+              ? 413
+              : 400,
+      },
     );
   }
+  const body: EmployerAccessRequestBody = parsedBody.value;
 
   const yachtId = cleanText(body.yachtId);
   const note = cleanEmployerAccessNote(body.note);
@@ -362,4 +428,14 @@ function normalizeOwnedYacht(value: unknown): OwnedYacht | null {
     model: cleanText(value.model),
     flag: cleanText(value.flag),
   };
+}
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return NextResponse.json(
+    { ok: false, error: "Too many hiring access requests." },
+    {
+      status: 429,
+      headers: { "Retry-After": String(retryAfterSeconds) },
+    },
+  );
 }

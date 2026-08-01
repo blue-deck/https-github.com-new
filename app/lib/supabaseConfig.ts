@@ -1,6 +1,7 @@
 export const BLUEDECK_SUPABASE_URL = "https://onftggrmmpvvwgxxzywo.supabase.co";
 
 const knownWrongProjectRefs = ["onftgqrmmpvvwgxxzywo"];
+const bluedeckSupabaseOrigin = new URL(BLUEDECK_SUPABASE_URL).origin;
 
 export function resolveSupabaseUrl(url?: string) {
   const cleanUrl = url?.trim().replace(/\/$/, "");
@@ -11,5 +12,23 @@ export function resolveSupabaseUrl(url?: string) {
     return BLUEDECK_SUPABASE_URL;
   }
 
-  return cleanUrl;
+  try {
+    const parsedUrl = new URL(cleanUrl);
+    if (
+      parsedUrl.protocol === "https:" &&
+      !parsedUrl.username &&
+      !parsedUrl.password &&
+      !parsedUrl.search &&
+      !parsedUrl.hash &&
+      (parsedUrl.pathname === "" || parsedUrl.pathname === "/") &&
+      parsedUrl.origin === bluedeckSupabaseOrigin
+    ) {
+      return BLUEDECK_SUPABASE_URL;
+    }
+  } catch {
+    // Fail closed to the reviewed BlueDeck project instead of forwarding a
+    // service-role credential to an arbitrary deployment-configured origin.
+  }
+
+  return BLUEDECK_SUPABASE_URL;
 }

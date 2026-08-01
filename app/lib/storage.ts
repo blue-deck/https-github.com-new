@@ -14,6 +14,68 @@ const turkishCharacterMap: Record<string, string> = {
   Ü: "u",
 };
 
+const extensionByMimeType: Record<string, string> = {
+  "application/msword": "doc",
+  "application/pdf": "pdf",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "image/avif": "avif",
+  "image/gif": "gif",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "text/plain": "txt",
+};
+
+export const safeImageUploadMimeTypes = new Set([
+  "image/avif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
+export const safePortfolioUploadMimeTypes = new Set([
+  ...safeImageUploadMimeTypes,
+  "image/gif",
+]);
+
+export const safeDocumentUploadMimeTypes = new Set([
+  ...safeImageUploadMimeTypes,
+  "application/pdf",
+  "application/msword",
+  "application/vnd.ms-excel",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+]);
+
+export const maximumImageUploadBytes = 10 * 1024 * 1024;
+export const maximumCrewDocumentUploadBytes = 20 * 1024 * 1024;
+export const maximumYachtDocumentUploadBytes = 25 * 1024 * 1024;
+
+export function validateStorageUpload(
+  file: File,
+  allowedMimeTypes: ReadonlySet<string>,
+  maximumBytes: number,
+) {
+  const mimeType = file.type.trim().toLowerCase();
+  if (!allowedMimeTypes.has(mimeType)) {
+    return "This file type is not supported.";
+  }
+  if (file.size <= 0) {
+    return "The selected file is empty.";
+  }
+  if (file.size > maximumBytes) {
+    return `The selected file must be ${Math.floor(maximumBytes / (1024 * 1024))} MB or smaller.`;
+  }
+  return "";
+}
+
 export function createSafeStoragePath(ownerId: string, file: File, prefix = "upload") {
   const cleanOwnerId = sanitizeStoragePath(ownerId) || "user";
   const cleanPrefix = sanitizeStorageSegment(prefix) || "upload";
@@ -52,12 +114,6 @@ function sanitizeStoragePath(value: string) {
 }
 
 function getSafeExtension(fileName: string, mimeType: string) {
-  const extensionFromName = fileName.includes(".")
-    ? fileName.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || ""
-    : "";
-  if (extensionFromName) return extensionFromName.slice(0, 12);
-
-  const extensionFromMime = mimeType.split("/")[1]?.toLowerCase().replace(/[^a-z0-9]/g, "") || "";
-  if (extensionFromMime === "jpeg") return "jpg";
-  return extensionFromMime.slice(0, 12) || "bin";
+  void fileName;
+  return extensionByMimeType[mimeType.trim().toLowerCase()] || "bin";
 }

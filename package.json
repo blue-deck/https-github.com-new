@@ -8,6 +8,7 @@
     "build:cloudflare": "opennextjs-cloudflare build && node scripts/prepare-sites-dist.mjs",
     "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "start": "next start",
+    "test": "node --test tests/*.test.mjs",
     "lint": "eslint",
     "typecheck": "node scripts/clean-next-dev-types.mjs && next typegen && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build:cloudflare",

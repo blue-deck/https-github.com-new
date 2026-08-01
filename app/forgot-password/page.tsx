@@ -11,6 +11,7 @@ import { useTurnstileConfiguration } from "../lib/useTurnstileConfiguration";
 export default function ForgotPasswordPage() {
   const { t } = useLanguage();
   const {
+    ready: turnstileReady,
     enabled: turnstileEnabled,
     siteKey: turnstileSiteKey,
   } = useTurnstileConfiguration();
@@ -31,6 +32,7 @@ export default function ForgotPasswordPage() {
 
   async function submitResetRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (sent || loading) return;
     setNotice("");
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -40,13 +42,14 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    if (turnstileEnabled && !captchaToken) {
+    if (!turnstileReady || (turnstileEnabled && !captchaToken)) {
       setNotice(t("forgot.completeSecurity"));
       return;
     }
 
     if (website) {
       setSent(true);
+      setCaptchaToken("");
       return;
     }
 
@@ -75,6 +78,8 @@ export default function ForgotPasswordPage() {
       }
 
       setSent(true);
+      setCaptchaToken("");
+      setCaptchaAttempt((attempt) => attempt + 1);
     } catch {
       setNotice(t("forgot.sendFailedMoment"));
       setCaptchaToken("");
@@ -127,6 +132,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 type="email"
                 required
+                disabled={sent}
                 autoComplete="email"
                 onChange={(event) => setEmail(event.target.value)}
                 className="w-full bg-transparent text-[#071f3c] outline-none placeholder:text-slate-400"
@@ -145,7 +151,7 @@ export default function ForgotPasswordPage() {
             autoComplete="off"
           />
 
-          {turnstileEnabled && turnstileSiteKey ? (
+          {!sent && turnstileEnabled && turnstileSiteKey ? (
             <div className="mt-5 max-w-xl">
               <div className="rounded-xl border border-[#071f3c]/12 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#07182d]">
@@ -155,6 +161,7 @@ export default function ForgotPasswordPage() {
                 <TurnstileWidget
                   key={captchaAttempt}
                   siteKey={turnstileSiteKey}
+                  action="forgot_password"
                   className="min-h-[65px]"
                   onVerify={(token) => {
                     setCaptchaToken(token);
@@ -195,7 +202,7 @@ export default function ForgotPasswordPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || sent || !turnstileReady}
             aria-busy={loading}
             className="mt-6 inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-cyan-600 px-7 text-base font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
           >

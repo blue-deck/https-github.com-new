@@ -3,6 +3,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import {
   hasEmployerApplicationMediaSigningSecret,
+  employerApplicationMediaRevision,
   selectEmployerApplicationGallerySources,
   verifyEmployerApplicationMediaCapability,
   type EmployerApplicationMediaKind,
@@ -12,22 +13,20 @@ import {
   crewPortfolioProxySignedUrlLifetimeSeconds,
   signCrewPortfolioReference,
 } from "../../../../../../../lib/crewPortfolioStorage";
-import { safePublicMediaUrl } from "../../../../../../../lib/publicCrewSafety";
+import { safeOwnedPublicMediaUrl } from "../../../../../../../lib/publicCrewSafety";
+import {
+  hasExpectedRasterSignature,
+  safeRasterImageContentTypes,
+} from "../../../../../../../lib/imageSafetyServer";
+import { consumeRequestRateLimit } from "../../../../../../../lib/requestRateLimitServer";
 import { resolveSupabaseUrl } from "../../../../../../../lib/supabaseConfig";
+import { getClientIp } from "../../../../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const maximumSourceBytes = 16 * 1024 * 1024;
+const maximumSourceBytes = 10 * 1024 * 1024;
 const sourceTimeoutMilliseconds = 8_000;
-const allowedSourceContentTypes = new Set([
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/tiff",
-  "image/webp",
-]);
 const privateHeaders = {
   "Cache-Control": "private, no-store, max-age=0",
   "Cross-Origin-Resource-Policy": "same-origin",
@@ -45,6 +44,7 @@ type MediaCapability = {
   kind: EmployerApplicationMediaKind;
   slot: number | null;
   expiresAt: number;
+  revision: string;
 };
 
 type ApplicationMediaRow = {
@@ -53,6 +53,19 @@ type ApplicationMediaRow = {
 };
 
 export async function GET(request: Request, context: RouteContext) {
+  const rateLimit = consumeRequestRateLimit(
+    `employer-application-media:${getClientIp(request) || "unknown"}`,
+    240,
+    10 * 60 * 1_000,
+  );
+  if (!rateLimit.allowed) {
+    return mediaError(
+      "Too many media requests.",
+      429,
+      rateLimit.retryAfterSeconds,
+    );
+  }
+
   const params = await context.params;
   const capability = mediaCapabilityFromRequest(request, params);
   if (!capability) return mediaError("Media not found.", 404);
@@ -93,39 +106,51 @@ export async function GET(request: Request, context: RouteContext) {
     return mediaError("Media not found.", 404);
   }
 
-  const { data: profile, error: profileError } = await serviceClient
-    .from("crew_profiles")
-    .select("id,user_id,profile_photo_url")
-    .eq("id", crewProfileId)
-    .eq("user_id", applicantUserId)
+  const { data: snapshot, error: snapshotError } = await serviceClient
+    .from("job_application_snapshots")
+    .select("media_snapshot,captured_at,expires_at,purged_at")
+    .eq("application_id", capability.applicationId)
+    .is("purged_at", null)
+    .gt("expires_at", new Date().toISOString())
     .maybeSingle();
-  if (profileError || !profile) {
+  if (
+    snapshotError ||
+    !snapshot ||
+    !isRecord(snapshot.media_snapshot) ||
+    typeof snapshot.captured_at !== "string"
+  ) {
     return mediaError("Media not found.", 404);
   }
 
   let source = "";
   if (capability.kind === "avatar") {
-    source = safePublicMediaUrl(profile.profile_photo_url);
+    source = safeOwnedPublicMediaUrl(
+      snapshot.media_snapshot.avatar_source,
+      [crewProfileId, applicantUserId],
+    );
   } else {
-    const { data: photos, error: photoError } = await serviceClient
-      .from("crew_portfolio_photos")
-      .select("id,image_url,created_at")
-      .eq("crew_profile_id", crewProfileId)
-      .not("image_url", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (photoError) return mediaError("Media not found.", 404);
-
     const selected = selectEmployerApplicationGallerySources(
-      photos || [],
+      Array.isArray(snapshot.media_snapshot.gallery)
+        ? snapshot.media_snapshot.gallery
+        : [],
       capability.applicationId,
       [crewProfileId, applicantUserId],
     );
     source = capability.slot === null ? "" : selected[capability.slot] || "";
   }
 
-  const safeSource = safePublicMediaUrl(source);
+  const safeSource = safeOwnedPublicMediaUrl(source, [
+    crewProfileId,
+    applicantUserId,
+  ]);
   if (!safeSource) return mediaError("Media not found.", 404);
+  const expectedRevision = employerApplicationMediaRevision(
+    snapshot.captured_at,
+    safeSource,
+  );
+  if (!expectedRevision || expectedRevision !== capability.revision) {
+    return mediaError("Media not found.", 404);
+  }
 
   const signedSource = await signCrewPortfolioReference(
     serviceClient,
@@ -136,7 +161,7 @@ export async function GET(request: Request, context: RouteContext) {
   );
   if (!signedSource) return mediaError("Media not found.", 404);
 
-  return proxyMedia(signedSource);
+  return proxyMedia(signedSource, capability.kind);
 }
 
 function mediaCapabilityFromRequest(
@@ -153,12 +178,14 @@ function mediaCapabilityFromRequest(
   const rawSlot = singleSearchValue(requestUrl.searchParams, "slot", true);
   const expires = singleSearchValue(requestUrl.searchParams, "expires");
   const token = singleSearchValue(requestUrl.searchParams, "token");
+  const revision = singleSearchValue(requestUrl.searchParams, "revision");
   if (
     version === null ||
     kind === null ||
     rawSlot === null ||
     expires === null ||
     token === null ||
+    revision === null ||
     (kind !== "avatar" && kind !== "gallery")
   ) {
     return null;
@@ -174,8 +201,13 @@ function mediaCapabilityFromRequest(
     slot: kind === "gallery" ? Number(rawSlot) : undefined,
     expires,
     token,
+    revision,
     version,
   });
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
 function singleSearchValue(
@@ -188,7 +220,10 @@ function singleSearchValue(
   return values.length === 1 ? values[0] : null;
 }
 
-async function proxyMedia(source: string) {
+async function proxyMedia(
+  source: string,
+  kind: EmployerApplicationMediaKind,
+) {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),
@@ -196,7 +231,7 @@ async function proxyMedia(source: string) {
   );
 
   try {
-    const upstream = await fetch(source, {
+    const upstream = await fetch(transformedStorageSource(source, kind), {
       cache: "no-store",
       redirect: "manual",
       signal: controller.signal,
@@ -214,7 +249,7 @@ async function proxyMedia(source: string) {
       .split(";", 1)[0]
       .trim()
       .toLowerCase();
-    if (!allowedSourceContentTypes.has(contentType)) {
+    if (!safeRasterImageContentTypes.has(contentType)) {
       return mediaError("Unsupported media type.", 415);
     }
 
@@ -227,6 +262,9 @@ async function proxyMedia(source: string) {
     }
 
     const sourceBytes = await readLimitedBody(upstream, maximumSourceBytes);
+    if (!hasExpectedRasterSignature(sourceBytes, contentType)) {
+      throw new MediaFormatError();
+    }
 
     return new Response(sourceBytes, {
       status: 200,
@@ -247,6 +285,25 @@ async function proxyMedia(source: string) {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+function transformedStorageSource(
+  source: string,
+  kind: EmployerApplicationMediaKind,
+) {
+  const transformed = new URL(source);
+  if (!transformed.pathname.includes("/storage/v1/object/sign/")) {
+    throw new MediaFormatError();
+  }
+  transformed.pathname = transformed.pathname.replace(
+    "/storage/v1/object/sign/",
+    "/storage/v1/render/image/sign/",
+  );
+  transformed.searchParams.set("width", kind === "avatar" ? "320" : "960");
+  transformed.searchParams.set("height", kind === "avatar" ? "320" : "960");
+  transformed.searchParams.set("resize", kind === "avatar" ? "cover" : "contain");
+  transformed.searchParams.set("quality", "82");
+  return transformed.toString();
 }
 
 async function readLimitedBody(response: Response, limit: number) {
@@ -279,12 +336,19 @@ async function readLimitedBody(response: Response, limit: number) {
   return body;
 }
 
-function mediaError(message: string, status: number) {
+function mediaError(
+  message: string,
+  status: number,
+  retryAfterSeconds?: number,
+) {
   return new Response(message, {
     status,
     headers: {
       ...privateHeaders,
       "Content-Type": "text/plain; charset=utf-8",
+      ...(retryAfterSeconds
+        ? { "Retry-After": String(retryAfterSeconds) }
+        : {}),
     },
   });
 }

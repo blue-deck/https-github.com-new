@@ -14,7 +14,9 @@ create temporary table job_post_yacht_details_smoke_ids (
 do $test$
 declare
   owner_id uuid := gen_random_uuid();
+  reviewer_id uuid := gen_random_uuid();
   yacht_id uuid := gen_random_uuid();
+  access_id uuid;
   partial_job_id uuid;
   valid_job_id uuid;
   job_row public.job_posts%rowtype;
@@ -39,18 +41,31 @@ begin
     created_at,
     updated_at
   )
-  values (
-    owner_id,
-    'authenticated',
-    'authenticated',
-    'job-yacht-details-owner-' || owner_id || '@example.invalid',
-    '',
-    statement_timestamp(),
-    '{}'::jsonb,
-    jsonb_build_object('role', 'owner', 'full_name', 'Yacht Details Owner'),
-    statement_timestamp(),
-    statement_timestamp()
-  );
+  values
+    (
+      owner_id,
+      'authenticated',
+      'authenticated',
+      'job-yacht-details-owner-' || owner_id || '@example.invalid',
+      '',
+      statement_timestamp(),
+      '{}'::jsonb,
+      jsonb_build_object('role', 'owner', 'full_name', 'Yacht Details Owner'),
+      statement_timestamp(),
+      statement_timestamp()
+    ),
+    (
+      reviewer_id,
+      'authenticated',
+      'authenticated',
+      'job-yacht-details-reviewer-' || reviewer_id || '@example.invalid',
+      '',
+      statement_timestamp(),
+      '{}'::jsonb,
+      '{}'::jsonb,
+      statement_timestamp(),
+      statement_timestamp()
+    );
 
   insert into public.profiles (id, email, full_name, role)
   values (
@@ -68,6 +83,19 @@ begin
     'Malta',
     owner_id
   );
+
+  insert into public.employer_access (
+    user_id, yacht_id, requested_role, status, request_note
+  ) values (
+    owner_id, yacht_id, 'owner', 'pending',
+    'Job yacht-details smoke verification.'
+  ) returning id into access_id;
+
+  update public.employer_access
+  set status = 'verified',
+      reviewed_by = reviewer_id,
+      review_note = 'Verified for job yacht-details smoke testing.'
+  where id = access_id;
 
   perform public.bluedeck_ensure_marketplace_entitlement(
     owner_id,
@@ -296,12 +324,16 @@ begin
     department,
     employment_type,
     location,
+    start_date,
     yacht_type,
     yacht_length,
     yacht_length_unit,
     minimum_yacht_experience_years,
     summary,
     description,
+    salary_min,
+    salary_currency,
+    salary_period,
     status
   )
   values (
@@ -313,12 +345,16 @@ begin
     'Engineering',
     'rotation',
     'Monaco',
+    current_date + 30,
     '  MOTOR_YACHT  ',
     27.50,
     ' FT ',
     5,
     'A complete public role used to verify normalized yacht specifications.',
     'This complete public description verifies normalized yacht type, numeric length, unit and immutable closure snapshots.',
+    8000,
+    'EUR',
+    'month',
     'published'
   )
   returning * into job_row;
@@ -363,6 +399,8 @@ $test$;
 -- fixture and restored before any lifecycle assertion.
 alter table public.job_posts
   disable trigger job_posts_y_yacht_details_guard;
+alter table public.job_posts
+  disable trigger job_posts_prepare_write;
 
 do $test$
 declare
@@ -376,7 +414,6 @@ begin
   where smoke.record_kind = 'yacht';
 
   insert into public.job_posts (
-    yacht_id,
     created_by,
     updated_by,
     title,
@@ -386,10 +423,12 @@ begin
     location,
     summary,
     description,
+    published_at,
+    published_by,
+    closes_at,
     status
   )
   values (
-    yacht_id,
     owner_id,
     owner_id,
     'Legacy Published Yacht Details Fixture',
@@ -399,6 +438,9 @@ begin
     'Antibes, France',
     'A complete legacy role published before yacht specifications existed.',
     'This legacy fixture verifies that missing historical yacht details never block safe automatic expiry and archival.',
+    statement_timestamp(),
+    owner_id,
+    statement_timestamp() + interval '1 month',
     'published'
   )
   returning id into legacy_job_id;
@@ -414,6 +456,8 @@ $test$;
 
 alter table public.job_posts
   enable trigger job_posts_y_yacht_details_guard;
+alter table public.job_posts
+  enable trigger job_posts_prepare_write;
 
 do $test$
 declare

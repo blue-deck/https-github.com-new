@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   Clock3,
+  LoaderCircle,
   Search,
   ShieldCheck,
   SlidersHorizontal,
@@ -17,11 +18,22 @@ import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 
 type FindCrewClientProps = {
   profiles: DiscoverableCrewPreview[];
+  initialNextCursor: string | null;
+  initialHasMore: boolean;
 };
 
-export function FindCrewClient({ profiles }: FindCrewClientProps) {
+export function FindCrewClient({
+  profiles: initialProfiles,
+  initialNextCursor,
+  initialHasMore,
+}: FindCrewClientProps) {
   const { language } = useLanguage();
   const c = copy[language];
+  const [profiles, setProfiles] = useState(initialProfiles);
+  const [nextCursor, setNextCursor] = useState(initialNextCursor);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState("");
   const [query, setQuery] = useState("");
   const [position, setPosition] = useState("");
   const [location, setLocation] = useState("");
@@ -132,6 +144,46 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
     setLocation("");
     setAvailability("");
     setEmploymentType("");
+  }
+
+  async function loadMoreProfiles() {
+    if (!hasMore || !nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    setLoadMoreError("");
+
+    try {
+      const requestedCursor = nextCursor;
+      const response = await fetch(
+        `/api/find-crew?cursor=${encodeURIComponent(requestedCursor)}`,
+        { headers: { Accept: "application/json" }, cache: "no-store" },
+      );
+      const payload = (await response.json().catch(() => null)) as unknown;
+      if (!isCrewPageResponse(payload) || !response.ok) {
+        throw new Error(c.loadMoreError);
+      }
+      if (
+        payload.hasMore &&
+        (!payload.nextCursor || payload.nextCursor === requestedCursor)
+      ) {
+        throw new Error(c.loadMoreError);
+      }
+
+      setProfiles((current) => {
+        const profilesById = new Map(
+          current.map((profile) => [profile.crewId, profile]),
+        );
+        for (const profile of payload.profiles) {
+          profilesById.set(profile.crewId, profile);
+        }
+        return Array.from(profilesById.values());
+      });
+      setNextCursor(payload.nextCursor);
+      setHasMore(payload.hasMore);
+    } catch {
+      setLoadMoreError(c.loadMoreError);
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   return (
@@ -307,6 +359,27 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
               )}
             </div>
           )}
+
+          {hasMore ? (
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                onClick={() => void loadMoreProfiles()}
+                disabled={loadingMore}
+                className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-700 bg-white px-6 text-sm font-black text-cyan-900 transition hover:bg-cyan-50 disabled:cursor-wait disabled:opacity-60"
+              >
+                {loadingMore ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
+                ) : null}
+                {loadingMore ? c.loadingMore : c.loadMore}
+              </button>
+            </div>
+          ) : null}
+          {loadMoreError ? (
+            <p role="alert" className="mt-3 text-center text-sm font-semibold text-rose-700">
+              {loadMoreError}
+            </p>
+          ) : null}
         </section>
       </main>
 
@@ -376,12 +449,72 @@ function formatMonthYear(value: string, language: "en" | "tr") {
   }).format(date);
 }
 
+function isCrewPageResponse(value: unknown): value is {
+  ok: true;
+  profiles: DiscoverableCrewPreview[];
+  nextCursor: string | null;
+  hasMore: boolean;
+} {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const page = value as Record<string, unknown>;
+  if (
+    page.ok !== true ||
+    !Array.isArray(page.profiles) ||
+    typeof page.hasMore !== "boolean" ||
+    !isOpaqueCursor(page.nextCursor, page.hasMore)
+  ) {
+    return false;
+  }
+  return page.profiles.every(isDiscoverableCrewPreview);
+}
+
+function isOpaqueCursor(value: unknown, hasMore: boolean) {
+  if (!hasMore) return value === null;
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,256}$/.test(value);
+}
+
+function isDiscoverableCrewPreview(
+  value: unknown,
+): value is DiscoverableCrewPreview {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const profile = value as Record<string, unknown>;
+  const stringFields = [
+    "crewId",
+    "displayName",
+    "initials",
+    "profilePhotoUrl",
+    "currentPosition",
+    "location",
+    "nationality",
+    "availabilityStatus",
+    "memberSince",
+  ];
+  const arrayFields = [
+    "seekingPositions",
+    "preferredLocations",
+    "employmentTypes",
+    "personalSkills",
+  ];
+  return (
+    stringFields.every((field) => typeof profile[field] === "string") &&
+    arrayFields.every(
+      (field) =>
+        Array.isArray(profile[field]) &&
+        (profile[field] as unknown[]).every((item) => typeof item === "string"),
+    ) &&
+    typeof profile.experienceYears === "number" &&
+    Number.isSafeInteger(profile.experienceYears) &&
+    profile.experienceYears >= 0 &&
+    typeof profile.premiumProfile === "boolean"
+  );
+}
+
 const copy = {
   en: {
     eyebrow: "Public crew directory",
     title: "Meet active BlueDeck crew.",
     intro:
-      "Browse active, email-confirmed Crew and Captain accounts through the same profile card experience used in BlueDeck hiring.",
+      "Browse Crew and Captain accounts that explicitly enabled their privacy-protected Find Crew profile.",
     filters: "Search and filters",
     search: "Search crew",
     searchPlaceholder: "Position, skill or location",
@@ -411,12 +544,15 @@ const copy = {
     emptyText:
       "Email-confirmed Crew and Captain accounts will appear here as the network grows.",
     createCrewAccount: "Create a crew account",
+    loadMore: "Load more crew",
+    loadingMore: "Loading crew…",
+    loadMoreError: "More crew profiles could not be loaded. Please try again.",
   },
   tr: {
     eyebrow: "Herkese açık crew rehberi",
     title: "Aktif BlueDeck crew profillerini keşfedin.",
     intro:
-      "Aktif ve e-posta adresi onaylanmış Crew ile Captain hesaplarını, BlueDeck işe alım alanındakiyle aynı profil kartı deneyimi üzerinden inceleyin.",
+      "Gizlilik korumalı Mürettebat Bul profilini açıkça etkinleştiren Crew ve Captain hesaplarını inceleyin.",
     filters: "Arama ve filtreler",
     search: "Crew ara",
     searchPlaceholder: "Pozisyon, beceri veya konum",
@@ -447,5 +583,8 @@ const copy = {
     emptyText:
       "E-posta adresi onaylanmış Crew ve Captain hesapları ağ büyüdükçe burada görünecek.",
     createCrewAccount: "Crew hesabı oluştur",
+    loadMore: "Daha fazla crew yükle",
+    loadingMore: "Crew profilleri yükleniyor…",
+    loadMoreError: "Diğer crew profilleri yüklenemedi. Lütfen tekrar deneyin.",
   },
 } as const;

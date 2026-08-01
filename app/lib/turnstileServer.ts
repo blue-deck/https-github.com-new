@@ -2,12 +2,6 @@ import "server-only";
 
 import { isIP } from "node:net";
 
-type TurnstileVerifyResponse = {
-  success?: boolean;
-  action?: string;
-  "error-codes"?: string[];
-};
-
 export type TurnstileConfiguration = {
   enabled: boolean;
   siteKey: string;
@@ -25,47 +19,7 @@ export function isTurnstileConfigured() {
   return getTurnstileConfiguration().enabled;
 }
 
-export async function verifyTurnstileToken(
-  token: string,
-  remoteIp?: string,
-  expectedAction?: string,
-) {
-  const secret = turnstileSecretKey();
-  if (!secret || !token.trim()) return false;
-
-  const formData = new FormData();
-  formData.append("secret", secret);
-  formData.append("response", token.trim());
-  if (remoteIp) formData.append("remoteip", remoteIp);
-
-  try {
-    const response = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        body: formData,
-        cache: "no-store",
-        signal: AbortSignal.timeout(8_000),
-      },
-    );
-
-    if (!response.ok) return false;
-
-    const result = (await response.json()) as TurnstileVerifyResponse;
-    if (!result.success) return false;
-
-    return !expectedAction || result.action === expectedAction;
-  } catch {
-    return false;
-  }
-}
-
 export function getClientIp(request: Request) {
-  const cloudflareIp = validIp(
-    request.headers.get("cf-connecting-ip")?.trim(),
-  );
-  if (cloudflareIp) return cloudflareIp;
-
   // Vercel overwrites these forwarding headers at its trusted edge. Only use
   // them when the runtime itself confirms that requests are running there.
   if (process.env.VERCEL === "1") {
@@ -78,11 +32,17 @@ export function getClientIp(request: Request) {
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
     );
     if (forwardedFor) return forwardedFor;
+    return undefined;
   }
 
-  // Sites runs behind Cloudflare, which supplies cf-connecting-ip. In an
-  // unknown production environment, caller-controlled forwarding headers
-  // are not trusted.
+  // BlueDeck explicitly enables this only in the Sites/Cloudflare runtime.
+  // A header name alone is never enough to establish a trusted proxy.
+  if (process.env.BLUDECK_TRUSTED_PROXY === "cloudflare") {
+    return validIp(request.headers.get("cf-connecting-ip")?.trim());
+  }
+
+  // In an unknown production environment, caller-controlled forwarding
+  // headers are not trusted.
   if (process.env.NODE_ENV === "production") return undefined;
 
   const forwardedFor = validIp(
@@ -96,17 +56,28 @@ function validIp(value?: string) {
 }
 
 function turnstileSecretKey() {
-  return (
+  const value = (
     process.env.TURNSTILE_SECRET_KEY ||
     process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ||
     ""
   ).trim();
+  return isPlausibleTurnstileCredential(value) ? value : "";
 }
 
 function turnstileSiteKey() {
-  return (
+  const value = (
     process.env.TURNSTILE_SITE_KEY ||
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
     ""
   ).trim();
+  return isPlausibleTurnstileCredential(value) ? value : "";
+}
+
+function isPlausibleTurnstileCredential(value: string) {
+  return (
+    value.length >= 20 &&
+    value.length <= 256 &&
+    /^[A-Za-z0-9_-]+$/.test(value) &&
+    !/^(placeholder|changeme|turnstile|example)/i.test(value)
+  );
 }

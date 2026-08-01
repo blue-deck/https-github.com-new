@@ -1,14 +1,13 @@
-const maxImageBytes = 24 * 1024 * 1024;
+import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
+import { getClientIp } from "../../lib/turnstileServer";
+import {
+  hasExpectedRasterSignature,
+  safeRasterImageContentTypes,
+} from "../../lib/imageSafetyServer";
+
+const maxImageBytes = 10 * 1024 * 1024;
 const maxSourceLength = 8_192;
 const sourceTimeoutMilliseconds = 8_000;
-const allowedSourceContentTypes = new Set([
-  "image/avif",
-  "image/gif",
-  "image/jpeg",
-  "image/png",
-  "image/tiff",
-  "image/webp",
-]);
 const allowedQueryParameters = new Set(["fit", "h", "max", "src", "url", "w"]);
 const allowedImageFits = new Set(["contain", "cover", "inside"]);
 const allowedSameOriginStaticPaths = new Set([
@@ -33,6 +32,19 @@ const privateResponseHeaders = {
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
+  const rateLimit = consumeRequestRateLimit(
+    `cv-image:${getClientIp(request) || "unknown"}`,
+    120,
+    60_000,
+  );
+  if (!rateLimit.allowed) {
+    return privateTextResponse(
+      "Too many image requests",
+      429,
+      rateLimit.retryAfterSeconds,
+    );
+  }
+
   const requestUrl = new URL(request.url);
   const rawSource = getValidatedSource(requestUrl.searchParams);
   if (!rawSource) {
@@ -65,13 +77,19 @@ export async function GET(request: Request) {
   const timeout = setTimeout(() => controller.abort(), sourceTimeoutMilliseconds);
 
   try {
-    const response = await fetch(imageUrl, {
-      cache: "no-store",
-      credentials: "omit",
-      headers: { Accept: "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8" },
-      redirect: "manual",
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      transformedCvImageSource(imageUrl, requestUrl.searchParams),
+      {
+        cache: "no-store",
+        credentials: "omit",
+        headers: {
+          Accept:
+            "image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8",
+        },
+        redirect: "manual",
+        signal: controller.signal,
+      },
+    );
 
     if (response.status >= 300 && response.status < 400) {
       return privateTextResponse("Image redirects are not allowed", 403);
@@ -85,7 +103,7 @@ export async function GET(request: Request) {
       .split(";", 1)[0]
       .trim()
       .toLowerCase();
-    if (!allowedSourceContentTypes.has(contentType)) {
+    if (!safeRasterImageContentTypes.has(contentType)) {
       return privateTextResponse("Unsupported image type", 415);
     }
 
@@ -100,6 +118,9 @@ export async function GET(request: Request) {
     }
 
     const imageBytes = await readLimitedImageBody(response);
+    if (!hasExpectedRasterSignature(imageBytes, contentType)) {
+      throw new ImageFormatError();
+    }
     return new Response(imageBytes, {
       headers: {
         ...privateResponseHeaders,
@@ -111,6 +132,9 @@ export async function GET(request: Request) {
   } catch (error) {
     if (error instanceof ImageTooLargeError) {
       return privateTextResponse("Image is too large", 413);
+    }
+    if (error instanceof ImageFormatError) {
+      return privateTextResponse("Invalid image data", 415);
     }
 
     return privateTextResponse("Image request failed", 502);
@@ -195,6 +219,37 @@ function isAllowedConfiguredSupabaseStorageObject(imageUrl: URL) {
     .every((segment) => safelyDecodePathSegment(segment) !== null);
 }
 
+function transformedCvImageSource(
+  imageUrl: URL,
+  searchParams: URLSearchParams,
+) {
+  if (!isAllowedConfiguredSupabaseStorageObject(imageUrl)) {
+    return imageUrl.toString();
+  }
+
+  const transformed = new URL(imageUrl);
+  transformed.pathname = transformed.pathname.replace(
+    "/storage/v1/object/",
+    "/storage/v1/render/image/",
+  );
+  const maximumDimension = searchParams.get("max") || "1200";
+  transformed.searchParams.set(
+    "width",
+    searchParams.get("w") || maximumDimension,
+  );
+  transformed.searchParams.set(
+    "height",
+    searchParams.get("h") || maximumDimension,
+  );
+  const fit = searchParams.get("fit");
+  transformed.searchParams.set(
+    "resize",
+    fit === "cover" ? "cover" : "contain",
+  );
+  transformed.searchParams.set("quality", "88");
+  return transformed.toString();
+}
+
 function getConfiguredSupabaseOrigin() {
   const configuredUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!configuredUrl) return null;
@@ -246,7 +301,7 @@ function parseDeclaredContentLength(value: string | null): number | null | "inva
 }
 
 async function readLimitedImageBody(response: Response) {
-  if (!response.body) throw new Error("Image response body is missing");
+  if (!response.body) throw new ImageFormatError();
 
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -274,7 +329,7 @@ async function readLimitedImageBody(response: Response) {
     reader.releaseLock();
   }
 
-  if (byteLength === 0) throw new Error("Image response body is empty");
+  if (byteLength === 0) throw new ImageFormatError();
 
   const imageBytes = new Uint8Array(byteLength);
   let offset = 0;
@@ -286,14 +341,22 @@ async function readLimitedImageBody(response: Response) {
   return imageBytes;
 }
 
-function privateTextResponse(message: string, status: number) {
+function privateTextResponse(
+  message: string,
+  status: number,
+  retryAfterSeconds?: number,
+) {
   return new Response(message, {
     status,
     headers: {
       ...privateResponseHeaders,
       "Content-Type": "text/plain; charset=utf-8",
+      ...(retryAfterSeconds
+        ? { "Retry-After": String(retryAfterSeconds) }
+        : {}),
     },
   });
 }
 
 class ImageTooLargeError extends Error {}
+class ImageFormatError extends Error {}

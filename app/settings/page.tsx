@@ -268,17 +268,14 @@ export default function SettingsPage() {
         return;
       }
 
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
+      // Supabase verifies current_password inside this authenticated update.
+      // Avoid a second password grant: production Auth requires a fresh
+      // single-use CAPTCHA token for every password sign-in.
+      const { error } = await supabase.auth.updateUser({
         email: accountEmail,
-        password: currentPassword,
+        current_password: currentPassword,
+        password: newPassword,
       });
-
-      if (verifyError) {
-        setPasswordNotice({ tone: "error", message: t("settings.incorrectPasswordError") });
-        return;
-      }
-
-      const { error } = await supabase.auth.updateUser({ password: newPassword });
 
       if (error) {
         setPasswordNotice({ tone: "error", message: error.message });
@@ -573,6 +570,7 @@ export default function SettingsPage() {
                       }))}
                     />
                   )}
+
                 </fieldset>
 
                 <div className="mt-6 flex flex-col gap-4 border-t border-dashed border-[#c8d5d9] pt-5 sm:flex-row sm:items-center sm:justify-between">

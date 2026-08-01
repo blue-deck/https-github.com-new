@@ -19,12 +19,18 @@ import {
   DateTextField,
   formatDateForDisplay,
 } from "../../../components/DateTextField";
+import { ConfirmationDialog } from "../../../components/ConfirmationDialog";
 import {
   parsePrivateStorageReference,
   resolvePrivateStorageUrls,
   type PrivateStorageReference,
 } from "../../../lib/privateStorageUrls";
-import { createSafeStoragePath } from "../../../lib/storage";
+import {
+  createSafeStoragePath,
+  maximumYachtDocumentUploadBytes,
+  safeDocumentUploadMimeTypes,
+  validateStorageUpload,
+} from "../../../lib/storage";
 import { supabase } from "../../../lib/supabase";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
@@ -61,6 +67,8 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [accessLoaded, setAccessLoaded] = useState(false);
   const [canManageDocuments, setCanManageDocuments] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<YachtDocument | null>(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function fetchDocumentAccess() {
@@ -141,6 +149,16 @@ export default function DocumentsPage() {
       return;
     }
 
+    const validationError = validateStorageUpload(
+      file,
+      safeDocumentUploadMimeTypes,
+      maximumYachtDocumentUploadBytes,
+    );
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+
     setUploading(true);
 
     const filePath = createSafeStoragePath(yachtId, file, "document");
@@ -191,43 +209,46 @@ export default function DocumentsPage() {
       return;
     }
 
-    const confirmDelete = confirm("Delete this document?");
-    if (!confirmDelete) return;
+    setDeletingDocumentId(document.id);
+    try {
+      const { error } = await supabase
+        .from("yacht_documents")
+        .delete()
+        .eq("id", document.id)
+        .eq("yacht_id", yachtId);
 
-    const { error } = await supabase
-      .from("yacht_documents")
-      .delete()
-      .eq("id", document.id)
-      .eq("yacht_id", yachtId);
+      if (error) {
+        alert(error.message);
+        return;
+      }
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    const storedObject = parsePrivateStorageReference(
-      {
-        value: document.storage_reference,
-        defaultBucket: "documents",
-        allowedBuckets: ["documents", "yacht-documents"],
-        expectedPathOwner: yachtId,
-      },
-      configuredSupabaseUrl,
-    );
-    const cleanupError = storedObject
-      ? (
-          await supabase.storage
-            .from(storedObject.bucket)
-            .remove([storedObject.path])
-        ).error
-      : null;
-
-    await fetchDocuments();
-
-    if (cleanupError) {
-      alert(
-        "The document record was deleted, but its stored file could not be cleaned up.",
+      const storedObject = parsePrivateStorageReference(
+        {
+          value: document.storage_reference,
+          defaultBucket: "documents",
+          allowedBuckets: ["documents", "yacht-documents"],
+          expectedPathOwner: yachtId,
+        },
+        configuredSupabaseUrl,
       );
+      const cleanupError = storedObject
+        ? (
+            await supabase.storage
+              .from(storedObject.bucket)
+              .remove([storedObject.path])
+          ).error
+        : null;
+
+      setDocumentToDelete(null);
+      await fetchDocuments();
+
+      if (cleanupError) {
+        alert(
+          "The document record was deleted, but its stored file could not be cleaned up.",
+        );
+      }
+    } finally {
+      setDeletingDocumentId("");
     }
   }
 
@@ -418,6 +439,7 @@ export default function DocumentsPage() {
                     ref={fileInputRef}
                     id="document-file"
                     type="file"
+                    accept={Array.from(safeDocumentUploadMimeTypes).join(",")}
                     onChange={(event) =>
                       setFile(event.target.files?.[0] || null)
                     }
@@ -561,7 +583,7 @@ export default function DocumentsPage() {
                           {canManageDocuments ? (
                             <button
                               type="button"
-                              onClick={() => deleteDocument(document)}
+                              onClick={() => setDocumentToDelete(document)}
                               aria-label={`Delete ${document.title || "document"}`}
                               className="bd-focus inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-3 text-sm font-bold text-rose-700 transition hover:bg-rose-50"
                             >
@@ -595,6 +617,18 @@ export default function DocumentsPage() {
           </section>
         </div>
       </div>
+
+      {documentToDelete ? (
+        <ConfirmationDialog
+          title="Delete yacht document?"
+          message={`“${documentToDelete.title || documentToDelete.file_name || "This document"}” and its stored file will be permanently deleted. This action cannot be undone.`}
+          confirmLabel="Delete permanently"
+          cancelLabel="Keep document"
+          pending={deletingDocumentId === documentToDelete.id}
+          onCancel={() => setDocumentToDelete(null)}
+          onConfirm={() => void deleteDocument(documentToDelete)}
+        />
+      ) : null}
     </main>
   );
 }

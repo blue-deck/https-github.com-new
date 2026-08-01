@@ -10,13 +10,11 @@ import {
 } from "./employerAccessServer";
 import {
   calculateCrewProfileCompletion,
-  countExperienceReferences,
   crewExperienceYears,
   isPremiumCrewProfile,
   type CompletionExperience,
 } from "./crewProfileCompletion";
 import {
-  loadCandidateExperienceRows,
   maskedPersonName,
   personInitials,
   publicCandidateLanguageEntries,
@@ -33,6 +31,7 @@ import {
 } from "./jobApplications";
 import {
   buildEmployerApplicationMediaUrl,
+  employerApplicationMediaRevision,
   selectEmployerApplicationGallerySources,
 } from "./jobApplicationMediaServer";
 import {
@@ -45,12 +44,11 @@ import {
   isSupportedJobListingNumber,
 } from "./jobPosts";
 import {
-  getPublicCrewDiscoverySettings,
-  normalizePublicCrewId,
   publicStructuredProfileField,
   publicStructuredStringArray,
   safeOwnedPublicMediaUrl,
 } from "./publicCrewSafety";
+import { readLimitedJsonObjectDetailed } from "./requestBodyServer";
 
 export const maximumApplicationRequestBytes = 8_192;
 export const maximumCoverNoteLength = 2_000;
@@ -77,34 +75,20 @@ export async function readApplicationBody(
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; error: string; status: number }
 > {
-  const contentType = request.headers.get("content-type") || "";
-  if (!contentType.toLowerCase().includes("application/json")) {
+  const result = await readLimitedJsonObjectDetailed(
+    request,
+    maximumApplicationRequestBytes,
+  );
+  if (!result.ok && result.error === "content-type") {
     return { ok: false, error: "The request must use JSON.", status: 415 };
   }
-
-  const declaredLength = Number(request.headers.get("content-length") || "0");
-  if (
-    Number.isFinite(declaredLength) &&
-    declaredLength > maximumApplicationRequestBytes
-  ) {
+  if (!result.ok && result.error === "too-large") {
     return { ok: false, error: "The request is too large.", status: 413 };
   }
-
-  try {
-    const text = await request.text();
-    if (
-      new TextEncoder().encode(text).byteLength > maximumApplicationRequestBytes
-    ) {
-      return { ok: false, error: "The request is too large.", status: 413 };
-    }
-    const value: unknown = JSON.parse(text);
-    if (!isRecord(value)) {
-      return { ok: false, error: "The request must be an object.", status: 400 };
-    }
-    return { ok: true, value };
-  } catch {
+  if (!result.ok) {
     return { ok: false, error: "The request contains invalid JSON.", status: 400 };
   }
+  return { ok: true, value: result.value };
 }
 
 export function coverNoteFromBody(value: Record<string, unknown>) {
@@ -257,103 +241,61 @@ export async function loadApplicationCandidatePreviews(
   }
 
   const previews = new Map<string, ApplicationCandidatePreview>();
-  const profileIds = Array.from(
-    new Set(targets.map((target) => target.crewProfileId).filter(isUuid)),
+  const snapshots = await loadAvailableApplicationSnapshots(
+    serviceClient,
+    targets.map((target) => target.applicationId),
   );
+  if (!snapshots.ok) {
+    return { ok: false, error: "Candidate profiles could not be loaded." };
+  }
 
-  for (let index = 0; index < profileIds.length; index += 100) {
-    const batch = profileIds.slice(index, index + 100);
-    const { data: profiles, error } = await serviceClient
-      .from("crew_profiles")
-      .select(
-        "id,user_id,full_name,email,phone,profile_photo_url,current_position,current_positions,location,nationality,gender,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at",
-      )
-      .in("id", batch);
+  for (const target of targets) {
+    const snapshot = snapshots.rows.get(target.applicationId);
+    if (!snapshot || !isUuid(target.crewProfileId)) continue;
 
-    if (error) {
-      logJobApplicationError("candidate_preview_load_failed", error, {
-        candidateCount: batch.length,
-      });
-      return { ok: false, error: "Candidate profiles could not be loaded." };
-    }
-
-    const experiencesByProfile = new Map<string, CompletionExperience[]>();
-
-    if (batch.length > 0) {
-      const experienceResult = await loadCandidateExperienceRows(
-        serviceClient,
-        batch,
-      );
-
-      if (experienceResult.error) {
-        logJobApplicationError(
-          "candidate_preview_experience_load_failed",
-          experienceResult.error,
-          { candidateCount: batch.length },
-        );
-        return { ok: false, error: "Candidate profiles could not be loaded." };
-      }
-
-      for (const experience of experienceResult.rows) {
-        const profileId = cleanText(experience.crew_profile_id);
-        if (!isUuid(profileId)) continue;
-        const current = experiencesByProfile.get(profileId) || [];
-        current.push(experience as CompletionExperience);
-        experiencesByProfile.set(profileId, current);
-      }
-    }
-
-    const profilesById = new Map(
-      (profiles || [])
-        .map((profile) => [cleanText(profile.id), profile] as const)
-        .filter(([profileId]) => isUuid(profileId)),
+    const candidate = recordValue(snapshot.candidate_snapshot);
+    const media = recordValue(snapshot.media_snapshot);
+    const profile = recordValue(candidate.profile);
+    const experiences = recordArray(candidate.experiences) as CompletionExperience[];
+    const discoveryNotes = cleanText(profile.notes);
+    const discovery = parseCrewDiscoverySettings(discoveryNotes);
+    const completionPercent = calculateCrewProfileCompletion({
+      profile,
+      experiences,
+    });
+    const avatarSource = safeOwnedPublicMediaUrl(media.avatar_source, [
+      target.crewProfileId,
+      target.applicantUserId,
+    ]);
+    const capturedAt = databaseTimestamp(snapshot.captured_at);
+    const avatarRevision = employerApplicationMediaRevision(
+      capturedAt,
+      avatarSource,
     );
 
-    for (const target of targets) {
-      if (!batch.includes(target.crewProfileId)) continue;
-      const row = profilesById.get(target.crewProfileId);
-      if (!row || cleanText(row.user_id) !== target.applicantUserId) continue;
-      const profileId = cleanText(row.id);
-      const experiences = experiencesByProfile.get(profileId) || [];
-      const discoveryNotes =
-        typeof row.notes === "string" ? row.notes.trim() : "";
-      const hasSavedDiscoverySettings = discoveryNotes.startsWith(
-        crewDiscoveryNotesPrefix,
-      );
-      const discovery = parseCrewDiscoverySettings(discoveryNotes);
-      const completionPercent = calculateCrewProfileCompletion({
-        profile: row,
-        experiences,
-      });
-      const hasAvatar = Boolean(
-        safeOwnedPublicMediaUrl(row.profile_photo_url, [
-          profileId,
-          target.applicantUserId,
-        ]),
-      );
-
-      previews.set(target.applicationId, {
-        displayName: "",
-        initials: "",
-        profilePhotoUrl: hasAvatar
+    previews.set(target.applicationId, {
+      displayName: "",
+      initials: "",
+      profilePhotoUrl:
+        avatarSource && avatarRevision
           ? buildEmployerApplicationMediaUrl({
               jobPostId: target.jobPostId,
               applicationId: target.applicationId,
               kind: "avatar",
+              revision: avatarRevision,
             })
           : "",
-        currentPosition:
-          publicStructuredStringArray(row.current_positions, 1, 120)[0] ||
-          publicStructuredProfileField(row.current_position, 120),
-        nationality: publicStructuredProfileField(row.nationality, 80),
-        availabilityStatus: hasSavedDiscoverySettings
-          ? discovery.availabilityStatus
-          : "",
-        experienceYears: crewExperienceYears(experiences),
-        cvCompletionPercent: completionPercent,
-        premiumProfile: isPremiumCrewProfile(completionPercent),
-      });
-    }
+      currentPosition:
+        publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
+        publicStructuredProfileField(profile.current_position, 120),
+      nationality: publicStructuredProfileField(profile.nationality, 80),
+      availabilityStatus: discoveryNotes.startsWith(crewDiscoveryNotesPrefix)
+        ? discovery.availabilityStatus
+        : "",
+      experienceYears: crewExperienceYears(experiences),
+      cvCompletionPercent: completionPercent,
+      premiumProfile: isPremiumCrewProfile(completionPercent),
+    });
   }
 
   return { ok: true, previews };
@@ -406,24 +348,16 @@ export async function loadApplicationCandidateDetails(
     };
   }
 
-  const { data: profile, error: profileError } = await serviceClient
-    .from("crew_profiles")
-    .select(
-      "id,user_id,public_crew_id,full_name,email,phone,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,gender,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes",
-    )
-    .eq("id", crewProfileId)
-    .eq("user_id", applicantUserId)
-    .maybeSingle();
-
-  if (profileError) {
-    logJobApplicationError("candidate_detail_profile_load_failed", profileError, {
-      applicationId,
-      crewProfileId,
-    });
+  const snapshots = await loadAvailableApplicationSnapshots(
+    serviceClient,
+    [applicationId],
+  );
+  if (!snapshots.ok) {
     return { ok: false, error: "Candidate profile could not be loaded." };
   }
 
-  if (!profile) {
+  const snapshot = snapshots.rows.get(applicationId);
+  if (!snapshot) {
     return {
       ok: true,
       details: emptyCandidateDetails(
@@ -434,75 +368,30 @@ export async function loadApplicationCandidateDetails(
     };
   }
 
-  const [photoResult, documentResult, referenceResult, experienceResult] =
-    await Promise.all([
-      serviceClient
-        .from("crew_portfolio_photos")
-        .select("id,image_url,created_at")
-        .eq("crew_profile_id", crewProfileId)
-        .not("image_url", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(100),
-      serviceClient
-        .from("crew_documents")
-        .select("id", { count: "exact", head: true })
-        .eq("crew_profile_id", crewProfileId),
-      serviceClient
-        .from("crew_references")
-        .select("id,vessel")
-        .eq("crew_profile_id", crewProfileId),
-      loadCandidateExperienceRows(serviceClient, [crewProfileId]),
-    ]);
-
-  const relatedError =
-    photoResult.error ||
-    documentResult.error ||
-    referenceResult.error ||
-    experienceResult.error;
-  if (relatedError) {
-    logJobApplicationError("candidate_detail_related_load_failed", relatedError, {
-      applicationId,
-      crewProfileId,
-    });
-    return { ok: false, error: "Candidate profile could not be loaded." };
-  }
-
-  const experiences = experienceResult.rows;
-  let gender = publicStructuredProfileField(profile.gender, 60);
-  if (!gender) {
-    const { data: accountData, error: accountError } =
-      await serviceClient.auth.admin.getUserById(applicantUserId);
-    if (accountError) {
-      logJobApplicationError("candidate_detail_gender_fallback_failed", accountError, {
-        applicationId,
-        crewProfileId,
-      });
-    } else {
-      gender = publicStructuredProfileField(
-        accountData.user?.user_metadata?.gender,
-        60,
-      );
-    }
-  }
+  const candidate = recordValue(snapshot.candidate_snapshot);
+  const media = recordValue(snapshot.media_snapshot);
+  const profile = recordValue(candidate.profile);
+  const experiences = recordArray(candidate.experiences) as CompletionExperience[];
   const discovery = parseCrewDiscoverySettings(cleanText(profile.notes));
   const completionPercent = calculateCrewProfileCompletion({
     profile,
     experiences,
   });
-  const publicCrewId = normalizePublicCrewId(cleanText(profile.public_crew_id));
-  const portalAvailable = Boolean(
-    publicCrewId && getPublicCrewDiscoverySettings(profile.notes),
-  );
   const currentPosition =
     publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
     publicStructuredProfileField(profile.current_position, 120) ||
     snapshotPosition;
-  const avatarSource = safeOwnedPublicMediaUrl(profile.profile_photo_url, [
+  const capturedAt = databaseTimestamp(snapshot.captured_at);
+  const avatarSource = safeOwnedPublicMediaUrl(media.avatar_source, [
     crewProfileId,
     applicantUserId,
   ]);
+  const avatarRevision = employerApplicationMediaRevision(
+    capturedAt,
+    avatarSource,
+  );
   const gallerySources = selectEmployerApplicationGallerySources(
-    photoResult.data || [],
+    recordArray(media.gallery),
     applicationId,
     [crewProfileId, applicantUserId],
   );
@@ -514,17 +403,19 @@ export async function loadApplicationCandidateDetails(
       candidate: {
         displayName: maskedPersonName(snapshotName),
         initials: personInitials(snapshotName),
-        profilePhotoUrl: avatarSource
-          ? buildEmployerApplicationMediaUrl({
-              jobPostId,
-              applicationId,
-              kind: "avatar",
-            })
-          : "",
+        profilePhotoUrl:
+          avatarSource && avatarRevision
+            ? buildEmployerApplicationMediaUrl({
+                jobPostId,
+                applicationId,
+                kind: "avatar",
+                revision: avatarRevision,
+              })
+            : "",
         currentPosition,
         nationality: publicStructuredProfileField(profile.nationality, 80),
         location: publicStructuredProfileField(profile.location, 120),
-        gender,
+        gender: publicStructuredProfileField(profile.gender, 60),
         heightCm: safeCandidateMeasurement(profile.height_cm, 80, 260),
         weightKg: safeCandidateMeasurement(profile.weight_kg, 20, 400),
         smoker: publicStructuredProfileField(profile.smoker, 60),
@@ -534,7 +425,7 @@ export async function loadApplicationCandidateDetails(
         ),
         professionalSummary: redactCandidateProfileText(
           profile.bio,
-          publicStructuredProfileField(profile.full_name, 120) || snapshotName,
+          snapshotName,
           2_000,
         ),
         skills: publicStructuredStringArray(profile.personal_skills, 30, 120),
@@ -560,27 +451,123 @@ export async function loadApplicationCandidateDetails(
           .map((item) => publicStructuredProfileField(item, 120))
           .filter(Boolean),
         languages: publicCandidateLanguageEntries(profile.languages),
-        galleryPhotos: gallerySources.map((_source, slot) =>
-          buildEmployerApplicationMediaUrl({
-            jobPostId,
-            applicationId,
-            kind: "gallery",
-            slot,
-          }),
-        ).filter(Boolean),
-        referenceCount: countExperienceReferences(
-          experiences,
-          referenceResult.data || [],
+        galleryPhotos: gallerySources
+          .map((source, slot) => {
+            const revision = employerApplicationMediaRevision(
+              capturedAt,
+              source,
+            );
+            return revision
+              ? buildEmployerApplicationMediaUrl({
+                  jobPostId,
+                  applicationId,
+                  kind: "gallery",
+                  slot,
+                  revision,
+                })
+              : "";
+          })
+          .filter(Boolean),
+        referenceCount: safeCandidateCount(
+          typeof candidate.reference_count === "number"
+            ? candidate.reference_count
+            : null,
         ),
-        documentCount: safeCandidateCount(documentResult.count),
-        experienceYears: crewExperienceYears(experiences),
-        publicCrewId: portalAvailable ? publicCrewId : "",
-        portalAvailable,
+        documentCount: safeCandidateCount(
+          typeof candidate.document_count === "number"
+            ? candidate.document_count
+            : null,
+        ),
+        experienceYears: safeCandidateCount(
+          typeof candidate.experience_years === "number"
+            ? candidate.experience_years
+            : null,
+        ),
+        publicCrewId: "",
+        portalAvailable: false,
         cvCompletionPercent: completionPercent,
         premiumProfile: isPremiumCrewProfile(completionPercent),
       },
     },
   };
+}
+
+type ApplicationSnapshotRow = {
+  application_id: string;
+  candidate_snapshot: unknown;
+  media_snapshot: unknown;
+  captured_at: string;
+  expires_at: string;
+  purged_at: null;
+};
+
+async function loadAvailableApplicationSnapshots(
+  serviceClient: SupabaseClient,
+  applicationIds: string[],
+): Promise<
+  | { ok: true; rows: Map<string, ApplicationSnapshotRow> }
+  | { ok: false }
+> {
+  const ids = Array.from(new Set(applicationIds.filter(isUuid)));
+  const rows = new Map<string, ApplicationSnapshotRow>();
+  const now = new Date().toISOString();
+
+  for (let index = 0; index < ids.length; index += 100) {
+    const batch = ids.slice(index, index + 100);
+    const { data, error } = await serviceClient
+      .from("job_application_snapshots")
+      .select(
+        "application_id,candidate_snapshot,media_snapshot,captured_at,expires_at,purged_at",
+      )
+      .in("application_id", batch)
+      .is("purged_at", null)
+      .gt("expires_at", now);
+
+    if (error) {
+      logJobApplicationError("application_snapshot_load_failed", error, {
+        applicationCount: batch.length,
+      });
+      return { ok: false };
+    }
+
+    for (const value of data || []) {
+      const applicationId = cleanText(value.application_id);
+      const capturedAt = databaseTimestamp(value.captured_at);
+      const expiresAt = databaseTimestamp(value.expires_at);
+      if (
+        !isUuid(applicationId) ||
+        !capturedAt ||
+        !expiresAt ||
+        value.purged_at !== null ||
+        !isRecord(value.candidate_snapshot) ||
+        !isRecord(value.media_snapshot)
+      ) {
+        logJobApplicationError("invalid_application_snapshot_record", undefined, {
+          applicationId: applicationId || "unknown",
+        });
+        return { ok: false };
+      }
+
+      rows.set(applicationId, {
+        application_id: applicationId,
+        candidate_snapshot: value.candidate_snapshot,
+        media_snapshot: value.media_snapshot,
+        captured_at: capturedAt,
+        expires_at: expiresAt,
+        purged_at: null,
+      });
+    }
+  }
+
+  return { ok: true, rows };
+}
+
+function recordValue(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
+function recordArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.filter(isRecord) : [];
 }
 
 export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | null {
@@ -711,14 +698,18 @@ export function jobApplicationSummaryFromRow(
   };
 }
 
-export function applicationResponse(body: object, status = 200) {
+export function applicationResponse(
+  body: object,
+  status = 200,
+  extraHeaders?: HeadersInit,
+) {
+  const headers = new Headers(extraHeaders);
+  headers.set("Cache-Control", "private, no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Vary", "Authorization");
   return Response.json(body, {
     status,
-    headers: {
-      "Cache-Control": "private, no-store, max-age=0",
-      "X-Content-Type-Options": "nosniff",
-      Vary: "Authorization",
-    },
+    headers,
   });
 }
 

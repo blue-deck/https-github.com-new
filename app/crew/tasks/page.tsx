@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { signChecklistTaskPhotoUrls } from "../../lib/privateStorageUrls";
-import { createSafeStoragePath } from "../../lib/storage";
+import {
+  createSafeStoragePath,
+  maximumImageUploadBytes,
+  safeImageUploadMimeTypes,
+  validateStorageUpload,
+} from "../../lib/storage";
 import { resolveSupabaseUrl } from "../../lib/supabaseConfig";
 import {
   CheckCircle2,
@@ -20,9 +25,9 @@ import {
   Sparkles,
   Upload,
   UserPlus,
-  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { AccessibleImageLightbox } from "../../components/AccessibleImageLightbox";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import { loadAccountCapabilities } from "../../lib/accountCapabilities";
 import {
@@ -47,7 +52,7 @@ export default function CrewTasksPage() {
   const [activeChecklist, setActiveChecklist] = useState<any>(null);
   const [portalView, setPortalView] = useState<"home" | "checklists" | "contracts" | "log">("home");
   const [checklistView, setChecklistView] = useState<"open" | "completed" | "archive">("open");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [acceptingInviteId, setAcceptingInviteId] = useState("");
   const [updatingTaskId, setUpdatingTaskId] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState("");
@@ -344,6 +349,15 @@ export default function CrewTasksPage() {
   }
 
   async function uploadTaskPhoto(task: any, file: File, type: "before" | "after") {
+    const validationError = validateStorageUpload(
+      file,
+      safeImageUploadMimeTypes,
+      maximumImageUploadBytes,
+    );
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
     setUploadingPhoto(`${type}-${task.id}`);
 
     const filePath = createSafeStoragePath(`${activeChecklist.yacht_id}/${task.id}`, file, type);
@@ -619,9 +633,38 @@ export default function CrewTasksPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <main
+        className="bd-app-page bd-ocean-shell min-h-screen px-5 py-12 text-slate-900 sm:px-8 lg:px-10"
+        aria-busy="true"
+      >
+        <div
+          className="bd-ocean-content mx-auto max-w-7xl rounded-[28px] border border-slate-200 bg-white p-7 shadow-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <p className="bd-kicker">BlueDeck Crew Workspace</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl">
+            Opening My Deck...
+          </h1>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
       <div className="bd-ocean-content bd-crew-task-content mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
+        <header className="mb-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <p className="bd-kicker">BlueDeck Crew Workspace</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl">
+            My Deck
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
+            Review assigned work, contracts, invitations and your yacht activity from one place.
+          </p>
+        </header>
         {portalView === "home" && (
           <section className="space-y-5">
           <div className="grid gap-5 md:grid-cols-3">
@@ -910,35 +953,15 @@ export default function CrewTasksPage() {
           </section>
         )}
 
-        {photoPreview && (
-          <div
-            className="bd-modal-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-[#071631]/80 p-4 backdrop-blur-sm"
-            onClick={() => setPhotoPreview(null)}
-          >
-            <div
-              className="bd-auth-modal-panel w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/20 bg-white shadow-2xl"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-cyan-700">Proof photo</p>
-                  <h3 className="mt-1 text-xl font-black text-[#071631]">{photoPreview.label}</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setPhotoPreview(null)}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071631] text-white shadow-md transition hover:bg-cyan-800"
-                  aria-label="Close photo preview"
-                >
-                  <X className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </div>
-              <div className="bd-media-canvas bg-[#071631] p-3">
-                <img src={photoPreview.url} alt={`${photoPreview.label} proof`} className="max-h-[76vh] w-full object-contain" />
-              </div>
-            </div>
-          </div>
-        )}
+        {photoPreview ? (
+          <AccessibleImageLightbox
+            source={photoPreview.url}
+            imageAlt={`${photoPreview.label} proof`}
+            dialogLabel={`Proof photo: ${photoPreview.label}`}
+            closeLabel="Close photo preview"
+            onClose={() => setPhotoPreview(null)}
+          />
+        ) : null}
 
         <section className="hidden">
           <div className="bd-glass-card-strong rounded-[40px] p-5 sm:p-8">
@@ -1248,7 +1271,7 @@ function PhotoBox({
           <span className="truncate">{uploading ? "Uploading..." : url ? "Replace photo" : "Add photo"}</span>
           <input
             type="file"
-            accept="image/*"
+            accept={Array.from(safeImageUploadMimeTypes).join(",")}
             disabled={uploading || disabled}
             onChange={(event) => {
               const file = event.target.files?.[0];

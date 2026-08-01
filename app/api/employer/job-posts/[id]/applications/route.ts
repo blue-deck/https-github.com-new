@@ -1,26 +1,43 @@
 import { NextRequest } from "next/server";
-import { isUuid } from "../../../../../lib/employerAccessServer";
+import {
+  cleanText,
+  isRecord,
+  isUuid,
+} from "../../../../../lib/employerAccessServer";
 import {
   applicationCandidatePreviewKey,
   applicationResponse,
   authenticatedApplicationClients,
-  canManageJobApplications,
   employerJobApplicationFromRow,
   jobApplicationSummaryFromRow,
-  listAuthorizedJobApplications,
   loadApplicationCandidatePreviews,
   logJobApplicationError,
 } from "../../../../../lib/jobApplicationsServer";
+import { consumeRequestRateLimit } from "../../../../../lib/requestRateLimitServer";
+import { getClientIp } from "../../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
+const applicationPageSize = 50;
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
+  const ipLimit = consumeRequestRateLimit(
+    `managed-applications:get:ip:${getClientIp(request) || "unknown"}`,
+    180,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const jobPostId = (await context.params).id.trim().toLowerCase();
   if (!isUuid(jobPostId)) {
     return applicationResponse({ ok: false, error: "Job post not found." }, 404);
+  }
+
+  const query = parseApplicationQuery(request.nextUrl.searchParams);
+  if (!query) {
+    return applicationResponse({ ok: false, error: "Invalid application query." }, 400);
   }
 
   const clients = await authenticatedApplicationClients(request);
@@ -30,8 +47,14 @@ export async function GET(
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `managed-applications:get:user:${clients.user.id}`,
+    120,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
-  const [jobResult, authority, applicationResult] = await Promise.all([
+  const [jobResult, pageResult] = await Promise.all([
     clients.serviceClient
       .from("job_posts")
       .select(
@@ -39,27 +62,24 @@ export async function GET(
       )
       .eq("id", jobPostId)
       .maybeSingle(),
-    canManageJobApplications(
-      clients.serviceClient,
-      clients.user.id,
-      jobPostId,
-    ),
-    listAuthorizedJobApplications(
-      clients.serviceClient,
-      clients.user.id,
-      jobPostId,
-    ),
+    clients.serviceClient.rpc("bluedeck_job_applications_page", {
+      p_actor_user_id: clients.user.id,
+      p_job_post_id: jobPostId,
+      p_before_submitted_at: query.cursor?.submittedAt || null,
+      p_before_id: query.cursor?.id || null,
+      p_limit: query.summary ? 1 : applicationPageSize,
+    }),
   ]);
 
-  if (jobResult.error || !authority.ok) {
+  if (jobResult.error || pageResult.error) {
     logJobApplicationError(
       "managed_application_workspace_lookup_failed",
-      jobResult.error,
+      jobResult.error || pageResult.error,
       { actorUserId: clients.user.id, jobPostId },
     );
     return applicationResponse(
       { ok: false, error: "Applications could not be loaded." },
-      500,
+      cleanText(pageResult.error?.code) === "42501" ? 403 : 500,
     );
   }
 
@@ -67,30 +87,27 @@ export async function GET(
   if (!job) {
     return applicationResponse({ ok: false, error: "Job post not found." }, 404);
   }
-  if (!authority.allowed) {
+  const page = parseAuthorizedApplicationPage(pageResult.data);
+  if (!page) {
     return applicationResponse(
-      { ok: false, error: "You cannot manage applications for this job post." },
-      403,
-    );
-  }
-  if (!applicationResult.ok) {
-    return applicationResponse(
-      { ok: false, error: applicationResult.error },
-      applicationResult.forbidden ? 403 : 500,
+      { ok: false, error: "Applications could not be loaded." },
+      500,
     );
   }
 
-  if (request.nextUrl.searchParams.get("summary") === "1") {
+  if (query.summary) {
     return applicationResponse({
       ok: true,
       job,
-      total: applicationResult.rows.length,
+      total: page.total,
     });
   }
 
+  const applicationRows = page.rows;
+
   const candidatePreviews = await loadApplicationCandidatePreviews(
     clients.serviceClient,
-    applicationResult.rows,
+    applicationRows,
   );
   if (!candidatePreviews.ok) {
     return applicationResponse(
@@ -99,7 +116,7 @@ export async function GET(
     );
   }
 
-  const applications = applicationResult.rows
+  const applications = applicationRows
     .map((row) =>
       employerJobApplicationFromRow(
         row,
@@ -111,8 +128,22 @@ export async function GET(
       (left, right) =>
         Date.parse(right.submittedAt) - Date.parse(left.submittedAt),
     );
-  if (applications.length !== applicationResult.rows.length) {
+  if (applications.length !== applicationRows.length) {
     logJobApplicationError("invalid_managed_application_record", undefined, {
+      actorUserId: clients.user.id,
+      jobPostId,
+    });
+    return applicationResponse(
+      { ok: false, error: "Applications could not be loaded." },
+      500,
+    );
+  }
+
+  const nextCursor = page.hasMore
+    ? encodeApplicationCursor(applicationRows.at(-1))
+    : null;
+  if (page.hasMore && !nextCursor) {
+    logJobApplicationError("invalid_managed_application_cursor", undefined, {
       actorUserId: clients.user.id,
       jobPostId,
     });
@@ -125,7 +156,10 @@ export async function GET(
   return applicationResponse({
     ok: true,
     job,
-    total: applications.length,
+    total: page.total,
+    nextCursor,
+    limit: applicationPageSize,
+    hasMore: page.hasMore,
     candidateAccess: {
       level: "preview",
       contactDetails: "locked",
@@ -134,4 +168,77 @@ export async function GET(
     },
     applications,
   });
+}
+
+function parseApplicationQuery(searchParams: URLSearchParams) {
+  if (
+    Array.from(searchParams.keys()).some(
+      (key) => key !== "summary" && key !== "cursor",
+    )
+  ) {
+    return null;
+  }
+  const summaries = searchParams.getAll("summary");
+  const cursors = searchParams.getAll("cursor");
+  if (summaries.length > 1 || cursors.length > 1) return null;
+  if (summaries.length === 1 && summaries[0] !== "1") return null;
+  if (summaries.length === 1 && cursors.length > 0) return null;
+  const cursor = cursors.length === 1 ? decodeApplicationCursor(cursors[0]) : null;
+  if (cursors.length === 1 && !cursor) return null;
+  return { summary: summaries[0] === "1", cursor };
+}
+
+function parseAuthorizedApplicationPage(value: unknown) {
+  if (!isRecord(value) || !Array.isArray(value.rows)) return null;
+  const total = value.total;
+  if (
+    typeof total !== "number" ||
+    !Number.isSafeInteger(total) ||
+    total < 0 ||
+    typeof value.has_more !== "boolean" ||
+    value.rows.length > applicationPageSize ||
+    (value.has_more && value.rows.length !== applicationPageSize)
+  ) {
+    return null;
+  }
+  return { total, rows: value.rows, hasMore: value.has_more };
+}
+
+function encodeApplicationCursor(value: unknown) {
+  if (!isRecord(value)) return null;
+  const submittedAt = normalizeCursorTimestamp(value.submitted_at);
+  const id = cleanText(value.id).toLowerCase();
+  if (!submittedAt || !isUuid(id)) return null;
+  return Buffer.from(JSON.stringify([submittedAt, id]), "utf8").toString(
+    "base64url",
+  );
+}
+
+function decodeApplicationCursor(value: string) {
+  if (!/^[A-Za-z0-9_-]{1,256}$/.test(value)) return null;
+  try {
+    const parsed = JSON.parse(
+      Buffer.from(value, "base64url").toString("utf8"),
+    ) as unknown;
+    if (!Array.isArray(parsed) || parsed.length !== 2) return null;
+    const submittedAt = normalizeCursorTimestamp(parsed[0]);
+    const id = cleanText(parsed[1]).toLowerCase();
+    return submittedAt && isUuid(id) ? { submittedAt, id } : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeCursorTimestamp(value: unknown) {
+  if (typeof value !== "string" || value.length > 64) return "";
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : "";
+}
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return applicationResponse(
+    { ok: false, error: "Too many application review requests." },
+    429,
+    { "Retry-After": String(retryAfterSeconds) },
+  );
 }

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { cache, type ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import {
   BriefcaseBusiness,
   MapPin,
@@ -10,15 +9,13 @@ import {
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import { CvScaleFrame } from "../../components/CvScaleFrame";
 import {
-  getPublicCrewDiscoverySettings,
-  normalizePublicCrewId,
   publicStringArray,
   redactPublicContactDetails,
   safeOwnedPublicMediaUrl,
 } from "../../lib/publicCrewSafety";
-import { loadMarketplaceEntitlement } from "../../lib/marketplaceEntitlementsServer";
+import { maskedPersonName } from "../../lib/crewCandidateDataServer";
+import { loadEligiblePublicCrewContext } from "../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../lib/site";
-import { resolveSupabaseUrl } from "../../lib/supabaseConfig";
 
 export const dynamic = "force-dynamic";
 
@@ -39,9 +36,6 @@ type CrewCvData = {
   experiences: Row[];
   references: Row[];
 };
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { crewId } = await params;
@@ -338,41 +332,10 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 }
 
 const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Promise<CrewCvData | null> {
-  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
-
-  const cleanCrewId = normalizePublicCrewId(crewId);
-  if (!cleanCrewId) return null;
-
-  const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), supabaseServiceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-
-  const { data: profile, error } = await serviceClient
-    .from("crew_profiles")
-    .select(
-      "id,user_id,public_crew_id,full_name,profile_photo_url,current_position,current_positions,location,nationality,bio,languages,personal_skills,personal_characteristics,work_preferences,notes",
-    )
-    .eq("public_crew_id", cleanCrewId)
-    .maybeSingle();
-
-  if (error || !profile?.id) return null;
-
-  const entitlementResult = await loadMarketplaceEntitlement(
-    serviceClient,
-    text(profile as Row, "user_id"),
-  );
-  if (
-    !entitlementResult.ok ||
-    !entitlementResult.entitlement?.canUseCrewWorkspace
-  ) {
-    return null;
-  }
-
-  const discovery = getPublicCrewDiscoverySettings(profile?.notes);
-  if (!discovery) return null;
+  const context = await loadEligiblePublicCrewContext(crewId);
+  if (!context) return null;
+  const { crewId: cleanCrewId, serviceClient } = context;
+  const profile = context.profile as Row;
 
   const profileId = String(profile.id);
   const [documentRes, initialExperienceRes, referenceRes] = await Promise.all([
@@ -428,7 +391,10 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   return {
     profile: {
       public_crew_id: cleanCrewId,
-      full_name: redactPublicContactDetails(profile.full_name, 120),
+      full_name: maskedPersonName(
+        redactPublicContactDetails(profile.full_name, 120) ||
+          "BlueDeck candidate",
+      ),
       profile_photo_url: safeOwnedPublicMediaUrl(profile.profile_photo_url, [
         profileId,
         profile.user_id,

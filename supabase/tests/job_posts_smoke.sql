@@ -15,6 +15,13 @@ begin
   from public.marketplace_entitlements as entitlement
   inner join auth.users as account
     on account.id = entitlement.user_id
+  inner join public.employer_access as access
+    on access.user_id = entitlement.user_id
+   and access.status = 'verified'
+   and access.can_post_jobs is true
+  inner join public.yachts as yacht
+    on yacht.id = access.yacht_id
+   and yacht.owner_id = entitlement.user_id
   where entitlement.account_role in ('captain', 'owner', 'management')
     and entitlement.posting_status = 'enabled'
     and account.email_confirmed_at is not null

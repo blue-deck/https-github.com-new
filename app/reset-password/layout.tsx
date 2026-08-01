@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   description: "Securely choose a new password for your BlueDeck account.",
   alternates: { canonical: "/reset-password" },
   robots: { index: false, follow: false },
+  referrer: "no-referrer",
 };
 
 export default function ResetPasswordLayout({ children }: { children: ReactNode }) {

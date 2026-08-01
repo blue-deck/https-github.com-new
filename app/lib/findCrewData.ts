@@ -1,6 +1,16 @@
 import "server-only";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "node:crypto";
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from "@supabase/supabase-js";
 import { cache } from "react";
 import {
   loadCandidateExperienceRows,
@@ -74,67 +84,110 @@ export type DiscoverableCrewProfile = DiscoverableCrewPreview & {
   discovery: CrewDiscoverySettings;
 };
 
+export type DiscoverableCrewPage = {
+  profiles: DiscoverableCrewPreview[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
 type CrewProfileRow = Record<string, unknown> & {
   id?: string;
   user_id?: string;
   public_crew_id?: string;
   notes?: string;
+  _cursor_updated_at?: string;
+  _cursor_id?: string;
+  _experiences?: unknown;
+  _experience_years?: unknown;
+};
+
+export type EligiblePublicCrewContext = {
+  crewId: string;
+  profile: CrewProfileRow;
+  account: User;
+  discovery: CrewDiscoverySettings;
+  serviceClient: SupabaseClient;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const crewProfilePageSize = 500;
-const authUserPageSize = 1_000;
-const entitlementBatchSize = 100;
+const publicCrewPageSize = 48;
 const crewProfileSelect =
   "id,user_id,public_crew_id,status,full_name,email,phone,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,gender,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at,updated_at";
 
 export async function listDiscoverableCrew(): Promise<
   DiscoverableCrewPreview[]
 > {
-  // Visibility is privacy-sensitive, so every request reads the canonical
-  // discovery setting instead of serving a stale directory snapshot.
-  return loadDiscoverableCrewList();
+  return (await listDiscoverableCrewPage()).profiles;
 }
 
-async function loadDiscoverableCrewList(): Promise<
-  DiscoverableCrewPreview[]
-> {
+export async function listDiscoverableCrewPage(
+  cursor = "",
+): Promise<DiscoverableCrewPage> {
   const serviceClient = createServiceClient();
   if (!serviceClient) {
     throw new Error("find_crew_service_unavailable");
   }
 
-  const rows = await listActiveCrewProfileRows(serviceClient);
-  const eligibleRows = await filterEligibleCrewProfiles(serviceClient, rows);
-  const visibleRows = eligibleRows.filter((row) =>
-    Boolean(getPublicCrewDiscoverySettings(row.notes)),
-  );
-  const profileIds = visibleRows.map((row) => text(row.id)).filter(isUuid);
-  const experienceResult = await loadCandidateExperienceRows(
-    serviceClient,
-    profileIds,
-  );
-
-  if (experienceResult.error) {
-    console.error(
-      "Find Crew experience could not be loaded",
-      safeErrorMessage(experienceResult.error),
-    );
-    throw new Error("find_crew_experience_unavailable");
+  const decodedCursor = cursor ? decodePublicCrewCursor(cursor) : null;
+  if (cursor && !decodedCursor) {
+    throw new Error("find_crew_cursor_invalid");
   }
 
-  const experiencesByProfile = groupExperiences(experienceResult.rows);
-  const profiles = visibleRows
+  const { data, error } = await serviceClient.rpc(
+    "bluedeck_public_crew_page",
+    {
+      p_before_updated_at: decodedCursor?.updatedAt || null,
+      p_before_id: decodedCursor?.id || null,
+      p_limit: publicCrewPageSize,
+    },
+  );
+  if (error) {
+    console.error(
+      "Find Crew directory page could not be loaded",
+      safeErrorMessage(error),
+    );
+    throw new Error("find_crew_profiles_unavailable");
+  }
+
+  if (!isRecord(data) || !Array.isArray(data.rows) || typeof data.has_more !== "boolean") {
+    throw new Error("find_crew_profiles_invalid");
+  }
+  const rows = data.rows as CrewProfileRow[];
+  if (
+    rows.length > publicCrewPageSize ||
+    (data.has_more && rows.length !== publicCrewPageSize)
+  ) {
+    throw new Error("find_crew_profiles_invalid");
+  }
+
+  const profiles = rows
     .map((row) =>
       toDiscoverableCrewPreview(
         row,
-        experiencesByProfile.get(text(row.id)) || [],
+        Array.isArray(row._experiences)
+          ? (row._experiences as CandidateExperienceRow[])
+          : [],
       ),
     )
     .filter((profile): profile is DiscoverableCrewPreview => Boolean(profile));
+  const uniqueProfiles = uniqueCrewIdProfiles(profiles);
+  const nextCursor = data.has_more
+    ? encodePublicCrewCursor(rows.at(-1))
+    : null;
+  if (
+    profiles.length !== rows.length ||
+    uniqueProfiles.length !== profiles.length ||
+    (data.has_more && !nextCursor)
+  ) {
+    throw new Error("find_crew_profiles_invalid");
+  }
 
-  return mixCrewProfiles(uniqueCrewIdProfiles(profiles));
+  return {
+    profiles: uniqueProfiles,
+    nextCursor,
+    hasMore: data.has_more,
+  };
 }
 
 export const getDiscoverableCrew = cache(async function getDiscoverableCrew(
@@ -146,22 +199,14 @@ export const getDiscoverableCrew = cache(async function getDiscoverableCrew(
 async function loadDiscoverableCrewProfile(
   crewId: string,
 ): Promise<DiscoverableCrewProfile | null> {
-  const cleanCrewId = normalizePublicCrewId(crewId);
-  if (!cleanCrewId) return null;
-
-  const serviceClient = createServiceClient();
-  if (!serviceClient) {
-    throw new Error("find_crew_service_unavailable");
-  }
-
-  const row = await loadActiveCrewProfile(serviceClient, cleanCrewId);
-  if (!row) return null;
-
-  const account = await loadEligibleCrewAccount(serviceClient, row);
-  if (!account) return null;
-
-  const discovery = getPublicCrewDiscoverySettings(row.notes);
-  if (!discovery) return null;
+  const context = await loadEligiblePublicCrewContext(crewId);
+  if (!context) return null;
+  const {
+    account,
+    discovery,
+    profile: row,
+    serviceClient,
+  } = context;
 
   const profileId = text(row.id);
   if (!isUuid(profileId)) return null;
@@ -309,18 +354,41 @@ async function loadDiscoverableCrewProfile(
 }
 
 export async function isActiveDirectoryCrew(crewId: string) {
+  return Boolean(await loadEligiblePublicCrewContext(crewId));
+}
+
+/**
+ * Single public-crew privacy boundary used by the directory, CV, gallery,
+ * metadata and media routes. Every call verifies the current profile state,
+ * explicit discovery consent, workspace entitlement and live Auth account.
+ */
+export async function loadEligiblePublicCrewContext(
+  crewId: string,
+): Promise<EligiblePublicCrewContext | null> {
   const cleanCrewId = normalizePublicCrewId(crewId);
-  if (!cleanCrewId) return false;
+  if (!cleanCrewId) return null;
 
   const serviceClient = createServiceClient();
   if (!serviceClient) {
     throw new Error("find_crew_service_unavailable");
   }
 
-  const row = await loadActiveCrewProfile(serviceClient, cleanCrewId);
-  if (!row) return false;
-  if (!getPublicCrewDiscoverySettings(row.notes)) return false;
-  return Boolean(await loadEligibleCrewAccount(serviceClient, row));
+  const profile = await loadActiveCrewProfile(serviceClient, cleanCrewId);
+  if (!profile) return null;
+
+  const discovery = getPublicCrewDiscoverySettings(profile.notes);
+  if (!discovery) return null;
+
+  const account = await loadEligibleCrewAccount(serviceClient, profile);
+  if (!account) return null;
+
+  return {
+    crewId: cleanCrewId,
+    profile,
+    account,
+    discovery,
+    serviceClient,
+  };
 }
 
 export async function loadActiveDirectoryCrewMediaSource(
@@ -387,19 +455,9 @@ export async function loadActiveDirectoryCrewRecordMediaSource(
 }
 
 async function loadActiveDirectoryMediaProfile(crewId: string) {
-  const serviceClient = createServiceClient();
-  if (!serviceClient) {
-    throw new Error("find_crew_service_unavailable");
-  }
-
-  const row = await loadActiveCrewProfile(serviceClient, crewId);
-  if (
-    !row ||
-    !getPublicCrewDiscoverySettings(row.notes) ||
-    !(await loadEligibleCrewAccount(serviceClient, row))
-  ) {
-    return null;
-  }
+  const context = await loadEligiblePublicCrewContext(crewId);
+  if (!context) return null;
+  const row = context.profile;
 
   const profileId = text(row.id);
   if (!isUuid(profileId)) return null;
@@ -448,28 +506,6 @@ function createServiceClient() {
   });
 }
 
-async function listActiveCrewProfileRows(serviceClient: SupabaseClient) {
-  const rows: CrewProfileRow[] = [];
-
-  for (let offset = 0; ; offset += crewProfilePageSize) {
-    const { data, error } = await serviceClient
-      .from("crew_profiles")
-      .select(crewProfileSelect)
-      .eq("status", "active")
-      .order("id", { ascending: true })
-      .range(offset, offset + crewProfilePageSize - 1);
-
-    if (error) {
-      console.error("Find Crew profiles could not be loaded", error.message);
-      throw new Error("find_crew_profiles_unavailable");
-    }
-
-    const page = (data || []) as CrewProfileRow[];
-    rows.push(...page);
-    if (page.length < crewProfilePageSize) return rows;
-  }
-}
-
 async function loadActiveCrewProfile(
   serviceClient: SupabaseClient,
   crewId: string,
@@ -491,27 +527,6 @@ async function loadActiveCrewProfile(
 
   const matches = (data || []) as CrewProfileRow[];
   return matches.length === 1 ? matches[0] : null;
-}
-
-async function filterEligibleCrewProfiles(
-  serviceClient: SupabaseClient,
-  rows: CrewProfileRow[],
-) {
-  const userIds = Array.from(
-    new Set(rows.map((row) => text(row.user_id)).filter(isUuid)),
-  );
-  if (userIds.length === 0) return [];
-
-  const entitledUserIds = await loadCrewWorkspaceUserIds(
-    serviceClient,
-    userIds,
-  );
-  const confirmedUserIds = await loadConfirmedActiveUserIds(
-    serviceClient,
-    Array.from(entitledUserIds),
-  );
-
-  return rows.filter((row) => confirmedUserIds.has(text(row.user_id)));
 }
 
 async function loadEligibleCrewAccount(
@@ -543,73 +558,6 @@ async function loadEligibleCrewAccount(
   }
 
   return isConfirmedActiveUser(data.user) ? data.user : null;
-}
-
-async function loadCrewWorkspaceUserIds(
-  serviceClient: SupabaseClient,
-  userIds: string[],
-) {
-  const eligibleUserIds = new Set<string>();
-
-  for (
-    let index = 0;
-    index < userIds.length;
-    index += entitlementBatchSize
-  ) {
-    const batch = userIds.slice(index, index + entitlementBatchSize);
-    const { data, error } = await serviceClient
-      .from("marketplace_entitlements")
-      .select("user_id,account_role")
-      .in("user_id", batch);
-
-    if (error) {
-      console.error("Find Crew roles could not be verified", error.message);
-      throw new Error("find_crew_roles_unavailable");
-    }
-
-    for (const entitlement of data || []) {
-      const userId = text(entitlement.user_id);
-      if (userId && canUseCrewWorkspace(entitlement.account_role)) {
-        eligibleUserIds.add(userId);
-      }
-    }
-  }
-
-  return eligibleUserIds;
-}
-
-async function loadConfirmedActiveUserIds(
-  serviceClient: SupabaseClient,
-  userIds: string[],
-) {
-  const targetUserIds = new Set(userIds);
-  const eligibleUserIds = new Set<string>();
-  if (targetUserIds.size === 0) return eligibleUserIds;
-
-  for (let page = 1; ; page += 1) {
-    const { data, error } = await serviceClient.auth.admin.listUsers({
-      page,
-      perPage: authUserPageSize,
-    });
-
-    if (error) {
-      console.error("Find Crew accounts could not be verified", error.message);
-      throw new Error("find_crew_accounts_unavailable");
-    }
-
-    for (const user of data.users) {
-      if (!targetUserIds.has(user.id)) continue;
-      targetUserIds.delete(user.id);
-      if (isConfirmedActiveUser(user)) eligibleUserIds.add(user.id);
-    }
-
-    if (
-      targetUserIds.size === 0 ||
-      data.users.length < authUserPageSize
-    ) {
-      return eligibleUserIds;
-    }
-  }
 }
 
 function toDiscoverableCrewPreview(
@@ -693,24 +641,15 @@ function toDiscoverableCrewPreview(
       30,
       120,
     ),
-    experienceYears: crewExperienceYears(experiences),
+    experienceYears:
+      typeof row._experience_years === "number" &&
+      Number.isSafeInteger(row._experience_years) &&
+      row._experience_years > 0
+        ? row._experience_years
+        : crewExperienceYears(experiences),
     premiumProfile: isPremiumCrewProfile(completionPercent),
     memberSince: databaseTimestamp(row.created_at),
   };
-}
-
-function groupExperiences(rows: CandidateExperienceRow[]) {
-  const experiencesByProfile = new Map<string, CandidateExperienceRow[]>();
-
-  for (const experience of rows) {
-    const profileId = text(experience.crew_profile_id);
-    if (!isUuid(profileId)) continue;
-    const current = experiencesByProfile.get(profileId) || [];
-    current.push(experience);
-    experiencesByProfile.set(profileId, current);
-  }
-
-  return experiencesByProfile;
 }
 
 function uniqueCrewIdProfiles(profiles: DiscoverableCrewPreview[]) {
@@ -719,16 +658,6 @@ function uniqueCrewIdProfiles(profiles: DiscoverableCrewPreview[]) {
     counts.set(profile.crewId, (counts.get(profile.crewId) || 0) + 1);
   }
   return profiles.filter((profile) => counts.get(profile.crewId) === 1);
-}
-
-function mixCrewProfiles(profiles: DiscoverableCrewPreview[]) {
-  const dailySeed = new Date().toISOString().slice(0, 10);
-  return [...profiles].sort((first, second) => {
-    const firstRank = stableTextHash(`${dailySeed}:${first.crewId}`);
-    const secondRank = stableTextHash(`${dailySeed}:${second.crewId}`);
-    if (firstRank !== secondRank) return firstRank - secondRank;
-    return first.crewId.localeCompare(second.crewId);
-  });
 }
 
 function publicCrewMediaUrl(
@@ -758,15 +687,6 @@ function databaseTimestamp(value: unknown) {
   if (typeof value !== "string" || !value.trim()) return "";
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? "" : new Date(parsed).toISOString();
-}
-
-function stableTextHash(value: string) {
-  let hash = 2166136261;
-  for (const character of value) {
-    hash ^= character.codePointAt(0) || 0;
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
 }
 
 function isUuid(value: string) {
@@ -803,6 +723,10 @@ function identitySafeStringArray(
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function text(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -813,4 +737,69 @@ function safeErrorMessage(error: unknown) {
     return text((error as { message?: unknown }).message).slice(0, 240);
   }
   return "Unknown database error";
+}
+
+function encodePublicCrewCursor(value: unknown) {
+  if (!isRecord(value)) return null;
+  const updatedAt = databaseTimestamp(value._cursor_updated_at);
+  const id = text(value._cursor_id).toLowerCase();
+  if (!updatedAt || !isUuid(id)) return null;
+  try {
+    const initializationVector = randomBytes(12);
+    const cipher = createCipheriv(
+      "aes-256-gcm",
+      publicCrewCursorKey(),
+      initializationVector,
+    );
+    const encrypted = Buffer.concat([
+      cipher.update(JSON.stringify([updatedAt, id]), "utf8"),
+      cipher.final(),
+    ]);
+    return [
+      "v1",
+      initializationVector.toString("base64url"),
+      encrypted.toString("base64url"),
+      cipher.getAuthTag().toString("base64url"),
+    ].join(".");
+  } catch {
+    return null;
+  }
+}
+
+function decodePublicCrewCursor(value: string) {
+  if (!/^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,192}\.[A-Za-z0-9_-]{22}$/.test(value)) {
+    return null;
+  }
+  try {
+    const [, encodedInitializationVector, encodedCiphertext, encodedTag] =
+      value.split(".");
+    const decipher = createDecipheriv(
+      "aes-256-gcm",
+      publicCrewCursorKey(),
+      Buffer.from(encodedInitializationVector, "base64url"),
+    );
+    decipher.setAuthTag(Buffer.from(encodedTag, "base64url"));
+    const decoded = JSON.parse(
+      Buffer.concat([
+        decipher.update(Buffer.from(encodedCiphertext, "base64url")),
+        decipher.final(),
+      ]).toString("utf8"),
+    ) as unknown;
+    if (!Array.isArray(decoded) || decoded.length !== 2) return null;
+    const updatedAt = databaseTimestamp(decoded[0]);
+    const id = text(decoded[1]).toLowerCase();
+    return updatedAt && isUuid(id) ? { updatedAt, id } : null;
+  } catch {
+    return null;
+  }
+}
+
+function publicCrewCursorKey() {
+  if (!supabaseServiceRoleKey) {
+    throw new Error("find_crew_service_unavailable");
+  }
+  return createHash("sha256")
+    .update("bluedeck-find-crew-cursor\0", "utf8")
+    .update(supabaseServiceRoleKey, "utf8")
+    .digest();
 }

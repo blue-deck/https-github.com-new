@@ -1,34 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
-import type { EmailOtpType } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { BlueDeckLogoLink } from "../../components/BlueDeckLogo";
+import { hasValidSignupProofAmr } from "../../lib/activeBearerClaims";
 import { safeInternalPath } from "../../lib/site";
-import { supabase } from "../../lib/supabase";
-
-function getHashParams() {
-  if (typeof window === "undefined") return new URLSearchParams();
-  return new URLSearchParams(window.location.hash.replace(/^#/, ""));
-}
+import { resolveSupabaseUrl } from "../../lib/supabaseConfig";
 
 export default function ConfirmAuthPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Confirming your BlueDeck account...");
   const [loginHref, setLoginHref] = useState("/login");
+  const started = useRef(false);
 
   useEffect(() => {
-    async function finishSuccess() {
-      await supabase.auth.signOut();
+    if (started.current) return;
+    started.current = true;
+    let active = true;
+
+    function finishSuccess() {
+      if (!active) return;
       setStatus("success");
       setMessage("Your BlueDeck account has been activated. Please login with your email and password to open My Dashboard.");
     }
 
     async function confirmAccount() {
       const searchParams = new URLSearchParams(window.location.search);
-      const hashParams = getHashParams();
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const nextPath = safeInternalPath(searchParams.get("next"));
+      window.history.replaceState(null, "", "/auth/confirm");
       setLoginHref(`/login?next=${encodeURIComponent(nextPath)}`);
       const errorDescription =
         searchParams.get("error_description") ||
@@ -44,62 +46,103 @@ export default function ConfirmAuthPage() {
         return;
       }
 
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type") as EmailOtpType | null;
-      const code = searchParams.get("code");
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !anonKey) {
+        throw new Error("Account confirmation is unavailable");
+      }
+      const confirmationClient = createClient(
+        resolveSupabaseUrl(supabaseUrl),
+        anonKey,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false,
+          },
+        },
+      );
 
-      if (tokenHash && type) {
-        const { error } = await supabase.auth.verifyOtp({
+      const tokenHashes = searchParams.getAll("token_hash");
+      const codes = searchParams.getAll("code");
+      const types = [
+        ...searchParams.getAll("type"),
+        ...hashParams.getAll("type"),
+      ];
+      const tokenHash = tokenHashes.length === 1 ? tokenHashes[0] : "";
+      const code = codes.length === 1 ? codes[0] : "";
+      const type = types.length === 1 ? types[0] : "";
+      const accessTokens = hashParams.getAll("access_token");
+      const refreshTokens = hashParams.getAll("refresh_token");
+      const accessToken = accessTokens.length === 1 ? accessTokens[0] : "";
+      const refreshToken = refreshTokens.length === 1 ? refreshTokens[0] : "";
+      let signupProofFlow: "implicit_or_token_hash" | "pkce";
+
+      if (type !== "signup") {
+        throw new Error("The confirmation proof is not a signup proof");
+      }
+
+      if (tokenHash) {
+        signupProofFlow = "implicit_or_token_hash";
+        const { error } = await confirmationClient.auth.verifyOtp({
           token_hash: tokenHash,
-          type,
+          type: "signup",
         });
-
-        if (error) {
-          setStatus("error");
-          setMessage(
-            "This confirmation link could not be verified. Please request a new BlueDeck confirmation email.",
-          );
-          return;
-        }
+        if (error) throw error;
       } else if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (error) {
-          setStatus("error");
-          setMessage(
-            "This confirmation link could not be verified. Please request a new BlueDeck confirmation email.",
-          );
-          return;
+        signupProofFlow = "pkce";
+        const { data, error } =
+          await confirmationClient.auth.exchangeCodeForSession(code);
+        const redirectType = (
+          data as typeof data & { redirectType?: string | null }
+        ).redirectType;
+        if (error || redirectType !== "signup") {
+          throw error || new Error("The authorization code is not for signup");
         }
+      } else if (accessToken && refreshToken) {
+        signupProofFlow = "implicit_or_token_hash";
+        const { error } = await confirmationClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) throw error;
       } else {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session) {
-          await finishSuccess();
-          return;
-        }
-
-        setStatus("error");
-        setMessage("This confirmation link is incomplete or expired. Please request a new BlueDeck confirmation email.");
-        return;
+        throw new Error("The signup confirmation proof is incomplete");
       }
 
       const {
         data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session) {
-        await finishSuccess();
-        return;
+      } = await confirmationClient.auth.getSession();
+      if (!session) {
+        throw new Error("The signup confirmation session is missing");
+      }
+      const { data: claimsData, error: claimsError } =
+        await confirmationClient.auth.getClaims(session.access_token);
+      const amr = Array.isArray(claimsData?.claims?.amr)
+        ? claimsData.claims.amr
+        : [];
+      if (
+        claimsError ||
+        !hasValidSignupProofAmr(amr, signupProofFlow)
+      ) {
+        await confirmationClient.auth.signOut({ scope: "local" });
+        throw new Error("The verified session is not a signup session");
       }
 
-      setStatus("success");
-      setMessage("Your BlueDeck account has been activated. Please login with your email and password to open My Dashboard.");
+      await confirmationClient.auth.signOut({ scope: "local" });
+      finishSuccess();
     }
 
-    confirmAccount();
+    void confirmAccount().catch(() => {
+      if (!active) return;
+      setStatus("error");
+      setMessage(
+        "This confirmation link could not be verified. Please request a new BlueDeck confirmation email.",
+      );
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   return (

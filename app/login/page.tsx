@@ -9,12 +9,13 @@ import { PublicHeader } from "../components/PublicSiteChrome";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useLanguage } from "../components/LanguageProvider";
 import type { TranslationKey } from "../lib/i18n";
-import { authConfirmUrl, safeInternalPath } from "../lib/site";
+import { safeInternalPath } from "../lib/site";
 import { supabase } from "../lib/supabase";
+import { currentLegalAcceptance } from "../lib/legalPolicies";
 import { useTurnstileConfiguration } from "../lib/useTurnstileConfiguration";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 
-type AuthMode = "login" | "signup" | "recovery";
+type AuthMode = "login" | "signup";
 
 const roleAccessCopy: Record<string, TranslationKey> = {
   crew: "login.roleCrewAccess",
@@ -38,6 +39,7 @@ const employerFeatureBullets = [
 export default function LoginPage() {
   const { t } = useLanguage();
   const {
+    ready: turnstileReady,
     enabled: turnstileEnabled,
     siteKey: turnstileSiteKey,
   } = useTurnstileConfiguration();
@@ -48,10 +50,8 @@ export default function LoginPage() {
   const positionId = useId();
   const emailId = useId();
   const passwordId = useId();
-  const confirmPasswordId = useId();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
   const [position, setPosition] = useState("");
@@ -85,7 +85,9 @@ export default function LoginPage() {
       hashParams.get("type") === "recovery";
 
     if (isPasswordRecovery) {
-      window.location.replace(`/reset-password${window.location.search}${window.location.hash}`);
+      window.location.replace(
+        `/reset-password${window.location.search}${window.location.hash}`,
+      );
       return;
     }
 
@@ -136,46 +138,6 @@ export default function LoginPage() {
   async function submit() {
     setNotice("");
 
-    if (mode === "recovery") {
-      if (!password || !confirmPassword) {
-        setNotice(t("login.notice.newPasswordTwice"));
-        return;
-      }
-
-      if (!hasSignupPasswordRequirements(password)) {
-        setNotice(t("login.notice.signupPassword"));
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        setNotice(t("login.notice.passwordMismatch"));
-        return;
-      }
-
-      setLoading(true);
-
-      try {
-        const { error } = await supabase.auth.updateUser({ password });
-
-        if (error) {
-          setNotice(t("login.notice.resetFailed"));
-          return;
-        }
-
-        await supabase.auth.signOut();
-        setPassword("");
-        setConfirmPassword("");
-        setMode("login");
-        setNotice(t("login.notice.passwordUpdated"));
-      } catch {
-        setNotice(t("login.notice.resetFailed"));
-      } finally {
-        setLoading(false);
-      }
-
-      return;
-    }
-
     if (!email || !password) {
       setNotice(t("login.notice.emailPassword"));
       return;
@@ -196,7 +158,7 @@ export default function LoginPage() {
       return;
     }
 
-    if (mode === "signup" && turnstileEnabled && !captchaToken) {
+    if (!turnstileReady || (turnstileEnabled && !captchaToken)) {
       setNotice(t("login.notice.completeSecurity"));
       return;
     }
@@ -205,17 +167,34 @@ export default function LoginPage() {
 
     if (mode === "login") {
       try {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim().toLowerCase(),
-          password,
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            password,
+            captchaToken,
+          }),
         });
+        const result = (await response.json()) as {
+          error?: string;
+          code?: string;
+          accessToken?: string;
+          refreshToken?: string;
+        };
 
-        setLoading(false);
-
-        if (error) {
+        if (
+          !response.ok ||
+          result.error ||
+          !result.accessToken ||
+          !result.refreshToken
+        ) {
+          setLoading(false);
+          setCaptchaToken("");
+          setCaptchaAttempt((attempt) => attempt + 1);
           setNotice(
             authNotice(
-              error.code,
+              result.code,
               t,
               "login.notice.loginService",
             ),
@@ -223,9 +202,23 @@ export default function LoginPage() {
           return;
         }
 
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: result.accessToken,
+          refresh_token: result.refreshToken,
+        });
+        setLoading(false);
+        if (sessionError) {
+          setCaptchaToken("");
+          setCaptchaAttempt((attempt) => attempt + 1);
+          setNotice(t("login.notice.loginService"));
+          return;
+        }
+
         window.location.href = nextPath;
       } catch {
         setLoading(false);
+        setCaptchaToken("");
+        setCaptchaAttempt((attempt) => attempt + 1);
         setNotice(t("login.notice.loginService"));
       }
 
@@ -245,6 +238,7 @@ export default function LoginPage() {
           next: nextPath,
           captchaToken,
           website,
+          legalAcceptance: currentLegalAcceptance(),
         }),
       });
 
@@ -267,11 +261,15 @@ export default function LoginPage() {
 
       if (result.needsEmailConfirmation) {
         setNotice(t("login.notice.confirmEmail"));
+        setCaptchaToken("");
+        setCaptchaAttempt((attempt) => attempt + 1);
         setMode("login");
         return;
       }
 
       setNotice(t("login.notice.accountCreated"));
+      setCaptchaToken("");
+      setCaptchaAttempt((attempt) => attempt + 1);
       setMode("login");
     } catch {
       setLoading(false);
@@ -286,21 +284,39 @@ export default function LoginPage() {
       setNotice(t("login.notice.enterEmail"));
       return;
     }
+    if (!turnstileReady || (turnstileEnabled && !captchaToken)) {
+      setNotice(t("login.notice.completeSecurity"));
+      return;
+    }
 
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: authConfirmUrl(nextPath) },
+      const response = await fetch("/api/auth/resend-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          next: nextPath,
+          captchaToken,
+        }),
       });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        code?: string;
+      };
 
       setNotice(
-        error
-          ? authNotice(error.code, t, "login.notice.resendFailed")
+        !response.ok || result.error || result.ok !== true
+          ? authNotice(result.code, t, "login.notice.resendFailed")
           : t("login.notice.confirmationSent"),
       );
     } catch {
       setNotice(t("login.notice.resendFailed"));
+    } finally {
+      setLoading(false);
+      setCaptchaToken("");
+      setCaptchaAttempt((attempt) => attempt + 1);
     }
   }
 
@@ -346,58 +362,41 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {mode === "recovery" ? (
+          <div
+            role="group"
+            aria-label={t("login.secureAccess")}
+            className="mt-7 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1"
+          >
             <button
               type="button"
               onClick={() => {
                 setMode("login");
-                setNotice("");
+                setCaptchaToken("");
               }}
-              className="bd-focus mt-7 min-h-11 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-cyan-700 transition hover:border-cyan-300 hover:bg-cyan-50"
+              aria-pressed={mode === "login"}
+              className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "login" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
             >
-              {t("login.backToLogin")}
+              {t("login.tabLogin")}
             </button>
-          ) : (
-            <div
-              role="group"
-              aria-label={t("login.secureAccess")}
-              className="mt-7 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-1"
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signup");
+                setCaptchaToken("");
+                setCaptchaAttempt((attempt) => attempt + 1);
+              }}
+              aria-pressed={mode === "signup"}
+              className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "signup" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  setCaptchaToken("");
-                }}
-                aria-pressed={mode === "login"}
-                className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "login" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
-              >
-                {t("login.tabLogin")}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signup");
-                  setCaptchaToken("");
-                  setCaptchaAttempt((attempt) => attempt + 1);
-                }}
-                aria-pressed={mode === "signup"}
-                className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "signup" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
-              >
-                {t("login.tabSignup")}
-              </button>
-            </div>
-          )}
+              {t("login.tabSignup")}
+            </button>
+          </div>
 
           <h1 id={formTitleId} className="mt-7 text-3xl font-semibold text-slate-950">
-            {mode === "login" ? t("login.welcomeBack") : mode === "recovery" ? t("login.newPasswordTitle") : t("login.createTitle")}
+            {mode === "login" ? t("login.welcomeBack") : t("login.createTitle")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">
-            {mode === "login"
-              ? t("login.loginIntro")
-              : mode === "recovery"
-                ? t("login.recoveryIntro")
-              : t("login.signupIntro")}
+            {mode === "login" ? t("login.loginIntro") : t("login.signupIntro")}
           </p>
 
           <div className="mt-6 space-y-4">
@@ -480,30 +479,28 @@ export default function LoginPage() {
               </>
             )}
 
-            {mode !== "recovery" && (
-              <AuthField
-                htmlFor={emailId}
-                icon={<Mail className="h-5 w-5" aria-hidden />}
-                label={t("login.email")}
+            <AuthField
+              htmlFor={emailId}
+              icon={<Mail className="h-5 w-5" aria-hidden />}
+              label={t("login.email")}
+              required
+            >
+              <input
+                id={emailId}
+                value={email}
+                type="email"
                 required
-              >
-                <input
-                  id={emailId}
-                  value={email}
-                  type="email"
-                  required
-                  autoComplete="email"
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                  placeholder="you@example.com"
-                />
-              </AuthField>
-            )}
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
+                placeholder="you@example.com"
+              />
+            </AuthField>
 
             <AuthField
               htmlFor={passwordId}
               icon={<LockKeyhole className="h-5 w-5" aria-hidden />}
-              label={mode === "recovery" ? t("login.newPassword") : t("login.password")}
+              label={t("login.password")}
               required
             >
               <input
@@ -517,20 +514,14 @@ export default function LoginPage() {
                 placeholder={
                   mode === "login"
                     ? t("login.password")
-                    : mode === "signup"
-                      ? t("login.minimumSignupPassword")
-                      : t("login.minimumPassword")
+                    : t("login.minimumSignupPassword")
                 }
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? t("settings.hidePassword") : t("settings.showPassword")}
-                aria-controls={
-                  mode === "recovery"
-                    ? `${passwordId} ${confirmPasswordId}`
-                    : passwordId
-                }
+                aria-controls={passwordId}
                 aria-pressed={showPassword}
                 className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-cyan-700"
               >
@@ -538,36 +529,12 @@ export default function LoginPage() {
               </button>
             </AuthField>
 
-            {(mode === "signup" || mode === "recovery") && (
+            {mode === "signup" && (
               <>
                 <PasswordStrengthMeter strength={passwordStrength} />
-                {mode === "signup" && (
-                  <p className="rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
-                    {t("login.passwordRequirements")}
-                  </p>
-                )}
-              </>
-            )}
-
-            {mode === "recovery" && (
-              <>
-                <AuthField
-                  htmlFor={confirmPasswordId}
-                  icon={<LockKeyhole className="h-5 w-5" aria-hidden />}
-                  label={t("login.repeatPassword")}
-                  required
-                >
-                  <input
-                    id={confirmPasswordId}
-                    value={confirmPassword}
-                    type={showPassword ? "text" : "password"}
-                    required
-                    autoComplete="new-password"
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    className="min-h-12 w-full bg-transparent text-slate-950 outline-none placeholder:text-slate-400"
-                    placeholder={t("login.samePassword")}
-                  />
-                </AuthField>
+                <p className="rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                  {t("login.passwordRequirements")}
+                </p>
               </>
             )}
 
@@ -581,9 +548,13 @@ export default function LoginPage() {
                   className="mt-1 h-4 w-4 accent-cyan-600"
                 />
                 <span>
-                  {t("login.privacyAgree")}{" "}
+                  {t("login.legalAgree")}{" "}
                   <Link href="/privacy" className="bd-focus rounded-sm font-semibold text-cyan-700">
                     {t("login.privacyPolicy")}
+                  </Link>
+                  {" "}{t("login.legalAnd")}{" "}
+                  <Link href="/terms" className="bd-focus rounded-sm font-semibold text-cyan-700">
+                    {t("login.termsOfUse")}
                   </Link>
                   . <span aria-hidden="true" className="text-rose-500">*</span>
                 </span>
@@ -591,42 +562,40 @@ export default function LoginPage() {
             )}
 
             {mode === "signup" && (
-              <>
-                <input
-                  name="website"
-                  tabIndex={-1}
-                  aria-hidden="true"
-                  value={website}
-                  onChange={(event) => setWebsite(event.target.value)}
-                  className="pointer-events-none absolute -left-[10000px] h-px w-px opacity-0"
-                  autoComplete="off"
-                />
-
-                {turnstileEnabled && turnstileSiteKey ? (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                      <ShieldCheck className="h-4 w-4 text-cyan-700" aria-hidden />
-                      {t("login.security")}
-                    </div>
-                    <TurnstileWidget
-                      key={captchaAttempt}
-                      siteKey={turnstileSiteKey}
-                      action="signup"
-                      className="min-h-[65px]"
-                      onVerify={(token) => {
-                        setCaptchaToken(token);
-                        setNotice("");
-                      }}
-                      onExpire={() => setCaptchaToken("")}
-                      onError={() => {
-                        setCaptchaToken("");
-                        setNotice(t("login.notice.securityError"));
-                      }}
-                    />
-                  </div>
-                ) : null}
-              </>
+              <input
+                name="website"
+                tabIndex={-1}
+                aria-hidden="true"
+                value={website}
+                onChange={(event) => setWebsite(event.target.value)}
+                className="pointer-events-none absolute -left-[10000px] h-px w-px opacity-0"
+                autoComplete="off"
+              />
             )}
+
+            {turnstileEnabled && turnstileSiteKey ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <ShieldCheck className="h-4 w-4 text-cyan-700" aria-hidden />
+                  {t("login.security")}
+                </div>
+                <TurnstileWidget
+                  key={`${mode}-${captchaAttempt}`}
+                  siteKey={turnstileSiteKey}
+                  action={mode === "signup" ? "signup" : "account_access"}
+                  className="min-h-[65px]"
+                  onVerify={(token) => {
+                    setCaptchaToken(token);
+                    setNotice("");
+                  }}
+                  onExpire={() => setCaptchaToken("")}
+                  onError={() => {
+                    setCaptchaToken("");
+                    setNotice(t("login.notice.securityError"));
+                  }}
+                />
+              </div>
+            ) : null}
 
             {notice && (
               <div
@@ -641,23 +610,21 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !turnstileReady}
               aria-busy={loading}
               className="bd-focus min-h-12 w-full rounded-xl bg-[#071f3c] px-5 py-3 font-bold text-white transition hover:bg-[#0d355f] disabled:cursor-wait disabled:opacity-60"
             >
-              {loading ? t("login.wait") : mode === "login" ? t("login.loginButton") : mode === "recovery" ? t("login.savePassword") : t("login.createButton")}
+              {loading ? t("login.wait") : mode === "login" ? t("login.loginButton") : t("login.createButton")}
             </button>
 
-            {mode !== "recovery" && (
-              <div className="flex flex-wrap justify-between gap-3 text-sm">
-                <Link href={forgotPasswordHref} className="bd-focus inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-cyan-700">
-                  {t("login.forgot")}
-                </Link>
-                <button type="button" onClick={resendConfirmation} className="bd-focus min-h-11 rounded-lg px-1 font-semibold text-slate-600">
-                  {t("login.resend")}
-                </button>
-              </div>
-            )}
+            <div className="flex flex-wrap justify-between gap-3 text-sm">
+              <Link href={forgotPasswordHref} className="bd-focus inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-cyan-700">
+                {t("login.forgot")}
+              </Link>
+              <button type="button" disabled={loading || !turnstileReady} onClick={resendConfirmation} className="bd-focus min-h-11 rounded-lg px-1 font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50">
+                {t("login.resend")}
+              </button>
+            </div>
 
             <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
@@ -782,7 +749,17 @@ function authNotice(
   if (code === "email_not_confirmed") {
     return t("login.notice.emailNotConfirmed");
   }
+  if (code === "weak_password") {
+    return t("login.notice.passwordUpgrade");
+  }
+  if (code === "captcha_required") {
+    return t("login.notice.completeSecurity");
+  }
+  if (code === "captcha_failed") {
+    return t("login.notice.securityError");
+  }
   if (
+    code === "rate_limited" ||
     code === "over_email_send_rate_limit" ||
     code === "over_request_rate_limit"
   ) {

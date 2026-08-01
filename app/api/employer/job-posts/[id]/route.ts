@@ -13,6 +13,8 @@ import {
   readJobPostBody,
   verifyJobManagementAuthority,
 } from "../../../../lib/jobPostsServer";
+import { consumeRequestRateLimit } from "../../../../lib/requestRateLimitServer";
+import { getClientIp } from "../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +22,13 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
+  const ipLimit = consumeRequestRateLimit(
+    `employer-job-post:patch:ip:${getClientIp(request) || "unknown"}`,
+    90,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const jobPostId = (await context.params).id.trim().toLowerCase();
   if (!isUuid(jobPostId)) {
     return employerResponse({ ok: false, error: "Job post not found." }, 404);
@@ -32,6 +41,12 @@ export async function PATCH(
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `employer-job-post:patch:user:${clients.user.id}`,
+    60,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const { data: existingData, error: existingError } =
     await clients.serviceClient
@@ -159,13 +174,25 @@ export async function PATCH(
   return employerResponse({ ok: true, job });
 }
 
-function employerResponse(body: object, status = 200) {
+function employerResponse(
+  body: object,
+  status = 200,
+  extraHeaders?: HeadersInit,
+) {
+  const headers = new Headers(extraHeaders);
+  headers.set("Cache-Control", "private, no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Vary", "Authorization");
   return NextResponse.json(body, {
     status,
-    headers: {
-      "Cache-Control": "private, no-store, max-age=0",
-      "X-Content-Type-Options": "nosniff",
-      Vary: "Authorization",
-    },
+    headers,
   });
+}
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return employerResponse(
+    { ok: false, error: "Too many job-posting requests." },
+    429,
+    { "Retry-After": String(retryAfterSeconds) },
+  );
 }

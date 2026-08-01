@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { FindCrewClient } from "./FindCrewClient";
-import { listDiscoverableCrew } from "../lib/findCrewData";
+import { listDiscoverableCrewPage } from "../lib/findCrewData";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,12 @@ export const metadata: Metadata = {
 };
 
 export default async function FindCrewPage() {
-  const profiles = await listDiscoverableCrew();
-  return <FindCrewClient profiles={profiles} />;
+  const page = await listDiscoverableCrewPage();
+  return (
+    <FindCrewClient
+      profiles={page.profiles}
+      initialNextCursor={page.nextCursor}
+      initialHasMore={page.hasMore}
+    />
+  );
 }

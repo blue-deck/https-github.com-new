@@ -13,10 +13,20 @@ import {
   readJobPostBody,
   verifyJobPostingAuthority,
 } from "../../../lib/jobPostsServer";
+import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
+import { getClientIp } from "../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
+const maximumJobPostsPerAccount = 250;
 
 export async function GET(request: NextRequest) {
+  const ipLimit = consumeRequestRateLimit(
+    `employer-job-posts:get:ip:${getClientIp(request) || "unknown"}`,
+    180,
+    10 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const clients = await authenticatedEmployerClients(request);
   if ("error" in clients) {
     return employerResponse(
@@ -24,6 +34,12 @@ export async function GET(request: NextRequest) {
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `employer-job-posts:get:user:${clients.user.id}`,
+    120,
+    10 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const authority = await loadJobPostingWorkspaceAuthority(
     clients.serviceClient,
@@ -43,7 +59,7 @@ export async function GET(request: NextRequest) {
     .select(employerJobPostSelect)
     .eq("created_by", clients.user.id)
     .order("updated_at", { ascending: false })
-    .limit(250);
+    .limit(maximumJobPostsPerAccount + 1);
 
   if (error) {
     logJobPostError("employer_job_listing_load_failed", error, {
@@ -52,6 +68,19 @@ export async function GET(request: NextRequest) {
     return employerResponse(
       { ok: false, error: "Your job posts could not be loaded." },
       500,
+    );
+  }
+  if ((data || []).length > maximumJobPostsPerAccount) {
+    logJobPostError("employer_job_listing_limit_exceeded", undefined, {
+      actorUserId: clients.user.id,
+    });
+    return employerResponse(
+      {
+        ok: false,
+        error:
+          "This account has more job records than the workspace can safely display. Contact BlueDeck support.",
+      },
+      409,
     );
   }
 
@@ -81,21 +110,14 @@ export async function GET(request: NextRequest) {
     const authorizedJobIds = new Set(jobs.map((job) => job.id));
 
     try {
-      const {
-        data: applicationRows,
-        error: applicationError,
-        count: applicationRowCount,
-      } = await clients.serviceClient
-        .from("job_applications")
-        .select("job_post_id", { count: "exact" })
-        .in("job_post_id", [...authorizedJobIds])
-        .limit(50_000);
+      const { data: applicationRows, error: applicationError } =
+        await clients.serviceClient.rpc("bluedeck_job_application_counts", {
+          p_actor_user_id: clients.user.id,
+        });
 
       if (
         applicationError ||
-        !Array.isArray(applicationRows) ||
-        typeof applicationRowCount !== "number" ||
-        applicationRows.length !== applicationRowCount
+        !Array.isArray(applicationRows)
       ) {
         throw (
           applicationError ||
@@ -109,10 +131,17 @@ export async function GET(request: NextRequest) {
 
       for (const row of applicationRows) {
         const jobPostId = cleanText(row.job_post_id);
-        if (!authorizedJobIds.has(jobPostId)) {
+        const applicationCount = row.application_count;
+        if (
+          !authorizedJobIds.has(jobPostId) ||
+          (typeof applicationCount !== "number" &&
+            typeof applicationCount !== "string") ||
+          !/^\d+$/.test(String(applicationCount)) ||
+          !Number.isSafeInteger(Number(applicationCount))
+        ) {
           throw new Error("The application count result was invalid.");
         }
-        nextCounts[jobPostId] += 1;
+        nextCounts[jobPostId] = Number(applicationCount);
       }
 
       applicationCounts = nextCounts;
@@ -136,6 +165,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ipLimit = consumeRequestRateLimit(
+    `employer-job-posts:post:ip:${getClientIp(request) || "unknown"}`,
+    45,
+    60 * 60 * 1_000,
+  );
+  if (!ipLimit.allowed) return rateLimitedResponse(ipLimit.retryAfterSeconds);
+
   const clients = await authenticatedEmployerClients(request);
   if ("error" in clients) {
     return employerResponse(
@@ -143,6 +179,12 @@ export async function POST(request: NextRequest) {
       clients.status,
     );
   }
+  const userLimit = consumeRequestRateLimit(
+    `employer-job-posts:post:user:${clients.user.id}`,
+    15,
+    60 * 60 * 1_000,
+  );
+  if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
   const body = await readJobPostBody(request);
   if (!body.ok) {
@@ -213,13 +255,25 @@ export async function POST(request: NextRequest) {
   return employerResponse({ ok: true, job }, 201);
 }
 
-function employerResponse(body: object, status = 200) {
+function employerResponse(
+  body: object,
+  status = 200,
+  extraHeaders?: HeadersInit,
+) {
+  const headers = new Headers(extraHeaders);
+  headers.set("Cache-Control", "private, no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Vary", "Authorization");
   return NextResponse.json(body, {
     status,
-    headers: {
-      "Cache-Control": "private, no-store, max-age=0",
-      "X-Content-Type-Options": "nosniff",
-      Vary: "Authorization",
-    },
+    headers,
   });
+}
+
+function rateLimitedResponse(retryAfterSeconds: number) {
+  return employerResponse(
+    { ok: false, error: "Too many job-posting requests." },
+    429,
+    { "Retry-After": String(retryAfterSeconds) },
+  );
 }

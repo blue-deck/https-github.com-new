@@ -43,6 +43,7 @@ import {
   type PublicJobCard,
   type PublicJobPost,
 } from "./jobPosts";
+import { readLimitedJsonObjectDetailed } from "./requestBodyServer";
 import {
   cleanText,
   isRecord,
@@ -50,7 +51,6 @@ import {
 } from "./employerAccessServer";
 import type { MarketplaceCapabilities } from "./marketplaceCapabilities";
 import {
-  isMarketplaceSchemaUnavailable,
   loadOrEnsureMarketplaceEntitlement,
   type MarketplaceEntitlement,
 } from "./marketplaceEntitlementsServer";
@@ -281,8 +281,11 @@ export async function loadPublicJobPost(
 export async function readJobPostBody(
   request: NextRequest,
 ): Promise<ReadBodyResult> {
-  const contentType = request.headers.get("content-type") || "";
-  if (!contentType.toLowerCase().includes("application/json")) {
+  const result = await readLimitedJsonObjectDetailed(
+    request,
+    maximumJobPostRequestBytes,
+  );
+  if (!result.ok && result.error === "content-type") {
     return {
       ok: false,
       error: "The request must use JSON.",
@@ -290,11 +293,7 @@ export async function readJobPostBody(
     };
   }
 
-  const declaredLength = Number(request.headers.get("content-length") || "0");
-  if (
-    Number.isFinite(declaredLength) &&
-    declaredLength > maximumJobPostRequestBytes
-  ) {
+  if (!result.ok && result.error === "too-large") {
     return {
       ok: false,
       error: "The job post request is too large.",
@@ -302,35 +301,14 @@ export async function readJobPostBody(
     };
   }
 
-  try {
-    const text = await request.text();
-    if (
-      new TextEncoder().encode(text).byteLength > maximumJobPostRequestBytes
-    ) {
-      return {
-        ok: false,
-        error: "The job post request is too large.",
-        status: 413,
-      };
-    }
-
-    const value: unknown = JSON.parse(text);
-    if (!isRecord(value)) {
-      return {
-        ok: false,
-        error: "The job post request must be an object.",
-        status: 400,
-      };
-    }
-
-    return { ok: true, value };
-  } catch {
+  if (!result.ok) {
     return {
       ok: false,
       error: "The job post request contains invalid JSON.",
       status: 400,
     };
   }
+  return { ok: true, value: result.value };
 }
 
 export function parseJobPostMutation(
@@ -577,7 +555,9 @@ export async function verifyJobPostingAuthority(
     return {
       ok: false,
       error:
-        workspace.capabilities.postingStatus === "suspended"
+        workspace.capabilities.requiresAdminApproval
+          ? "Verified BlueDeck hiring access is required before publishing job posts."
+          : workspace.capabilities.postingStatus === "suspended"
           ? "Job posting is paused for this account."
           : "This account is not eligible to publish job posts.",
       status: 403,
@@ -598,25 +578,6 @@ export async function verifyJobManagementAuthority(
   });
 
   if (response.error) {
-    if (isMarketplaceSchemaUnavailable(response.error)) {
-      const [postingAuthority, jobResponse] = await Promise.all([
-        verifyJobPostingAuthority(client, userId),
-        client
-          .from("job_posts")
-          .select("created_by")
-          .eq("id", jobPostId)
-          .maybeSingle(),
-      ]);
-      if (!postingAuthority.ok) return postingAuthority;
-      return cleanText(jobResponse.data?.created_by) === userId
-        ? { ok: true }
-        : {
-            ok: false,
-            error: "Only the account that created this job post may manage it.",
-            status: 403,
-          };
-    }
-
     logJobPostError("job_management_authority_failed", response.error, {
       actorUserId: userId,
       jobPostId,
@@ -667,21 +628,46 @@ export async function loadJobPostingWorkspaceAuthority(
       status: 500,
     };
   }
+
+  const publisherAuthority = await client.rpc("bluedeck_can_publish_jobs", {
+    p_actor_user_id: userId,
+  });
+  if (publisherAuthority.error) {
+    logJobPostError(
+      "job_publisher_authority_lookup_failed",
+      publisherAuthority.error,
+      { actorUserId: userId },
+    );
+    return {
+      ok: false,
+      error: "Your verified hiring access could not be checked.",
+      status: 503,
+    };
+  }
+
   return {
     ok: true,
-    capabilities: workspaceCapabilities(entitlement),
+    capabilities: workspaceCapabilities(
+      entitlement,
+      publisherAuthority.data === true,
+    ),
   };
 }
 
 function workspaceCapabilities(
   entitlement: MarketplaceEntitlement,
+  hasPublisherAuthority: boolean,
 ): JobPostingWorkspaceCapabilities {
+  const roleCanPost = entitlement.canPostJobs;
   return {
     role: entitlement.role,
-    canPostJobs: entitlement.canPostJobs,
+    canPostJobs: roleCanPost && hasPublisherAuthority,
     canApplyJobs: entitlement.canApplyJobs,
     canUseCrewWorkspace: entitlement.canUseCrewWorkspace,
-    requiresAdminApproval: false,
+    requiresAdminApproval:
+      roleCanPost &&
+      entitlement.postingStatus === "enabled" &&
+      !hasPublisherAuthority,
     postingStatus: entitlement.postingStatus,
     planCode: entitlement.planCode,
   };
@@ -712,68 +698,28 @@ export async function currentPublicJobPostIds(
     return { ok: true, jobPostIds: new Set() };
   }
 
-  const creatorIds = [...new Set(authorityRows.map((row) => row.createdBy))];
-  const authorizedCreators = new Set<string>();
-  let publisherFunctionUnavailable = false;
-
-  for (let index = 0; index < creatorIds.length; index += 12) {
-    const batch = creatorIds.slice(index, index + 12);
-    const results = await Promise.all(
-      batch.map(async (userId) => ({
-        userId,
-        response: await client.rpc("bluedeck_can_publish_jobs", {
-          p_actor_user_id: userId,
-        }),
-      })),
+  const response = await client.rpc("bluedeck_current_public_job_post_ids", {
+    p_job_post_ids: authorityRows.map((row) => row.jobPostId),
+  });
+  if (response.error || !Array.isArray(response.data)) {
+    logJobPostError(
+      "current_public_marketplace_authority_failed",
+      response.error,
     );
-
-    for (const result of results) {
-      if (result.response.error) {
-        if (isMarketplaceSchemaUnavailable(result.response.error)) {
-          publisherFunctionUnavailable = true;
-          break;
-        }
-        logJobPostError(
-          "current_public_marketplace_authority_failed",
-          result.response.error,
-        );
-        return {
-          ok: false,
-          error: "Current employer authority could not be verified.",
-        };
-      }
-      if (result.response.data === true) {
-        authorizedCreators.add(result.userId);
-      }
-    }
-
-    if (publisherFunctionUnavailable) break;
+    return {
+      ok: false,
+      error: "Current employer authority could not be verified.",
+    };
   }
 
-  if (publisherFunctionUnavailable) {
-    const entitlementResponse = await client
-      .from("marketplace_entitlements")
-      .select("user_id,account_role,posting_status")
-      .in("user_id", creatorIds)
-      .in("account_role", ["captain", "owner", "management"])
-      .eq("posting_status", "enabled");
-    if (entitlementResponse.error) {
-      return {
-        ok: false,
-        error: "Current employer authority could not be verified.",
-      };
-    }
-    for (const row of entitlementResponse.data || []) {
-      const userId = cleanText(row.user_id);
-      if (isUuid(userId)) authorizedCreators.add(userId);
-    }
-  }
-
+  const requestedIds = new Set(authorityRows.map((row) => row.jobPostId));
   const jobPostIds = new Set<string>();
-  for (const row of authorityRows) {
-    if (authorizedCreators.has(row.createdBy)) {
-      jobPostIds.add(row.jobPostId);
+  for (const value of response.data) {
+    const jobPostId = isRecord(value) ? cleanText(value.job_post_id) : "";
+    if (!isUuid(jobPostId) || !requestedIds.has(jobPostId)) {
+      return { ok: false, error: "Invalid job post authority response." };
     }
+    jobPostIds.add(jobPostId);
   }
 
   return { ok: true, jobPostIds };
