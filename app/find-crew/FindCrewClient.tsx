@@ -140,7 +140,7 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
 
       <main id="main-content">
         <section className="border-b border-slate-200 bg-white">
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)] lg:items-end lg:px-10 lg:py-16">
+          <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
             <div>
               <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
                 <ShieldCheck className="h-4 w-4" aria-hidden />
@@ -153,15 +153,6 @@ export function FindCrewClient({ profiles }: FindCrewClientProps) {
                 {c.intro}
               </p>
             </div>
-
-            <aside className="border-l-2 border-cyan-600 pl-5">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                {c.privacyTitle}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {c.privacyText}
-              </p>
-            </aside>
           </div>
         </section>
 
@@ -391,9 +382,6 @@ const copy = {
     title: "Meet active BlueDeck crew.",
     intro:
       "Browse active, email-confirmed Crew and Captain accounts through the same profile card experience used in BlueDeck hiring.",
-    privacyTitle: "Name and contact protected",
-    privacyText:
-      "Profile and gallery photos may show a crew member's face, and selected professional and physical details are visible. Full names, contact details and private documents stay hidden.",
     filters: "Search and filters",
     search: "Search crew",
     searchPlaceholder: "Position, skill or location",
@@ -429,9 +417,6 @@ const copy = {
     title: "Aktif BlueDeck crew profillerini keşfedin.",
     intro:
       "Aktif ve e-posta adresi onaylanmış Crew ile Captain hesaplarını, BlueDeck işe alım alanındakiyle aynı profil kartı deneyimi üzerinden inceleyin.",
-    privacyTitle: "Ad ve iletişim bilgileri korumalı",
-    privacyText:
-      "Profil ve galeri fotoğraflarında crew üyesinin yüzü görünebilir; seçili profesyonel ve fiziksel bilgiler herkese açıktır. Tam adlar, iletişim bilgileri ve özel belgeler gizli kalır.",
     filters: "Arama ve filtreler",
     search: "Crew ara",
     searchPlaceholder: "Pozisyon, beceri veya konum",
