@@ -13,7 +13,6 @@ import {
   RefreshCw,
   Ruler,
   Search,
-  ShieldCheck,
   Ship,
   SlidersHorizontal,
   UserRoundPlus,
@@ -201,7 +200,7 @@ export function JobsClient() {
 
       <main id="main-content">
         <section className="border-b border-slate-200 bg-white">
-          <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-12 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(260px,360px)] lg:items-end lg:px-10 lg:py-16">
+          <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
             <div>
               <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
                 <Compass className="h-4 w-4" aria-hidden />
@@ -214,14 +213,6 @@ export function JobsClient() {
                 {c.intro}
               </p>
             </div>
-
-            <aside className="border-l-2 border-cyan-600 pl-5">
-              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                <ShieldCheck className="h-4 w-4" aria-hidden />
-                {c.trustTitle}
-              </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{c.trustText}</p>
-            </aside>
           </div>
         </section>
 
@@ -608,9 +599,6 @@ const copy = {
     title: "Your next role may already be on deck.",
     intro:
       "Explore current yacht crew opportunities with clear role, location, start and employment details.",
-    trustTitle: "Purposeful public listings",
-    trustText:
-      "Only active role information is shown here. Candidate contact details and private hiring conversations stay outside the public page.",
     filters: "Search and filters",
     search: "Search jobs",
     searchPlaceholder: "Role, yacht type or location",
@@ -645,9 +633,6 @@ const copy = {
     title: "Sıradaki göreviniz güvertede sizi bekliyor olabilir.",
     intro:
       "Pozisyon, konum, başlangıç ve çalışma biçimi açıkça belirtilen güncel yat mürettebatı fırsatlarını keşfedin.",
-    trustTitle: "Amaca uygun herkese açık ilanlar",
-    trustText:
-      "Burada yalnızca aktif ilana ait bilgiler gösterilir. Aday iletişim bilgileri ve özel işe alım görüşmeleri herkese açık sayfanın dışında kalır.",
     filters: "Arama ve filtreler",
     search: "İlan ara",
     searchPlaceholder: "Pozisyon, yat türü veya konum",
