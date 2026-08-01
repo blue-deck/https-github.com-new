@@ -1,6 +1,24 @@
 import type { Language } from "./i18n";
 
 export const generatedPhraseTranslations: Record<string, Partial<Record<Language, string>>> = {
+  "Auto-saved": {
+    "tr": "Otomatik kaydedildi",
+  },
+  "Find Crew visibility": {
+    "tr": "Find Crew görünürlüğü",
+  },
+  "Private by default. Your contact details are never shown publicly.": {
+    "tr": "Varsayılan olarak gizlidir. İletişim bilgileriniz hiçbir zaman herkese açık gösterilmez.",
+  },
+  "Public": {
+    "tr": "Herkese açık",
+  },
+  "Saving": {
+    "tr": "Kaydediliyor",
+  },
+  "Shown to employers on your job applications.": {
+    "tr": "İş başvurularınızda işverenlere gösterilir.",
+  },
   "· Crew ID": {
     "tr": "· Mürettebat kimliği",
   },

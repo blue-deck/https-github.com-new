@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { selectPublicCrewGallerySources } from "./publicCrewSafety";
+import { selectOwnedPublicCrewGallerySources } from "./publicCrewSafety";
 
 export const employerApplicationMediaKinds = ["avatar", "gallery"] as const;
 
@@ -119,9 +119,14 @@ export function hasEmployerApplicationMediaSigningSecret() {
 export function selectEmployerApplicationGallerySources(
   rows: unknown[],
   applicationId: string,
+  ownerIds: unknown[],
 ) {
   if (!uuidPattern.test(applicationId)) return [];
-  return selectPublicCrewGallerySources(rows, applicationId);
+  return selectOwnedPublicCrewGallerySources(
+    rows,
+    applicationId,
+    ownerIds,
+  );
 }
 
 function normalizeMediaIdentity(input: MediaUrlInput) {
@@ -182,8 +187,13 @@ function mediaSigningSecret() {
       : "";
   }
 
-  const serviceRoleSecret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
-  return serviceRoleSecret.length >= minimumSigningSecretLength
-    ? serviceRoleSecret
-    : "";
+  if (process.env.NODE_ENV !== "production") {
+    const serviceRoleSecret =
+      process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
+    return serviceRoleSecret.length >= minimumSigningSecretLength
+      ? serviceRoleSecret
+      : "";
+  }
+
+  return "";
 }

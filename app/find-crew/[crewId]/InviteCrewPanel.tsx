@@ -897,6 +897,8 @@ const publicProfileCopy = {
     galleryHelp:
       "Four selected professional photos from this crew member’s My Blue profile.",
     galleryPhoto: "gallery photo",
+    openGalleryPhoto: "Open gallery photo",
+    closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "This crew member has not added gallery photos yet.",
     years: "years",
     noExperience: "Not added",
@@ -942,6 +944,8 @@ const publicProfileCopy = {
     galleryHelp:
       "Bu crew üyesinin My Blue profilinden seçilen dört profesyonel fotoğraf.",
     galleryPhoto: "galeri fotoğrafı",
+    openGalleryPhoto: "Galeri fotoğrafını aç",
+    closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
     noGalleryPhotos: "Bu crew üyesi henüz galeri fotoğrafı eklememiş.",
     years: "yıl",
     noExperience: "Eklenmedi",

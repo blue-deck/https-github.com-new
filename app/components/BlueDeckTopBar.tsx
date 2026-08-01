@@ -20,12 +20,12 @@ import {
   X,
 } from "lucide-react";
 import {
-  dashboardPhotoFromMetadata,
   loadAccountIdentity,
   subscribeDashboardPhotoUpdates,
   type AccountIdentity,
 } from "../lib/accountIdentity";
 import { languages } from "../lib/i18n";
+import { clearLegacySensitiveClientStorage } from "../lib/clientStorageSecurity";
 import { canUseCrewWorkspace } from "../lib/marketplaceCapabilities";
 import { supabase } from "../lib/supabase";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
@@ -96,24 +96,7 @@ export function BlueDeckTopBar() {
       }
 
       if (event === "USER_UPDATED" && session?.user) {
-        const metadata = session.user.user_metadata as Record<string, unknown> | undefined;
-
-        setIdentity((current) => {
-          if (!current || current.userId !== session.user.id) return current;
-
-          const nextName =
-            typeof metadata?.full_name === "string" && metadata.full_name.trim()
-              ? metadata.full_name.trim()
-              : current.fullName;
-          return {
-            ...current,
-            fullName: nextName,
-            dashboardPhotoUrl: dashboardPhotoFromMetadata(
-              metadata,
-              current.profilePhotoUrl,
-            ),
-          };
-        });
+        window.setTimeout(() => void refreshIdentity(), 0);
         return;
       }
 
@@ -271,6 +254,7 @@ export function BlueDeckTopBar() {
   ];
 
   async function logout() {
+    clearLegacySensitiveClientStorage();
     await supabase.auth.signOut();
     window.location.href = "/login";
   }

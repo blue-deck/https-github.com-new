@@ -1,11 +1,12 @@
 const CACHE_PREFIX = "bluedeck-yachtos";
-const CACHE_NAME = `${CACHE_PREFIX}-shell-v6`;
+const CACHE_NAME = `${CACHE_PREFIX}-shell-v7`;
+const PWA_ASSET_REVISION = "2026-08-01-1";
+const OFFLINE_ICON_URL = `/app-icon-192.png?v=${PWA_ASSET_REVISION}`;
 
 const urlsToCache = [
-  "/manifest.webmanifest",
-  "/app-icon-192.png",
-  "/app-icon-512.png"
+  OFFLINE_ICON_URL
 ];
+const shellAssetUrls = new Set(urlsToCache);
 
 const OFFLINE_FALLBACK_HTML = `<!doctype html>
 <html lang="en">
@@ -20,7 +21,7 @@ const OFFLINE_FALLBACK_HTML = `<!doctype html>
   </head>
   <body>
     <main class="card">
-      <img src="/app-icon-192.png" alt="BlueDeck" />
+      <img src="${OFFLINE_ICON_URL}" alt="BlueDeck" />
       <h1>BlueDeck Offline</h1>
       <p>Connection is unavailable. Reconnect to continue with live yacht data.</p>
       <button type="button" onclick="location.reload()">Try again</button>
@@ -66,17 +67,13 @@ self.addEventListener("fetch", function (event) {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // API responses can contain account data or short-lived signed media.
+  // Never let any current or future API route enter CacheStorage.
+  if (url.pathname.startsWith("/api/")) return;
+
   // Next.js owns the caching and invalidation of its generated assets.
   // Intercepting these paths can mix modules from different deployments.
   if (url.pathname.startsWith("/_next/")) return;
-
-  // Employer application media uses short-lived capabilities and must never
-  // outlive its private, no-store response in CacheStorage.
-  if (/^\/api\/employer\/job-posts\/[^/]+\/applications\/[^/]+\/media$/.test(url.pathname)) return;
-
-  // Public crew photos have short server-side eligibility and revocation
-  // windows. Let the media route and HTTP cache headers own their lifetime.
-  if (/^\/api\/find-crew\/[^/]+\/media$/.test(url.pathname)) return;
 
   if (request.mode === "navigate") {
     event.respondWith(
@@ -98,16 +95,12 @@ self.addEventListener("fetch", function (event) {
     return;
   }
 
-  if (["font", "image"].includes(request.destination)) {
+  const requestCacheKey = `${url.pathname}${url.search}`;
+  if (shellAssetUrls.has(requestCacheKey)) {
     event.respondWith(
-      caches.match(request).then(function (cachedResponse) {
-        if (cachedResponse) return cachedResponse;
-
-        return fetch(request).then(function (networkResponse) {
-          if (!networkResponse || !networkResponse.ok) return networkResponse;
-
-          const cacheControl = networkResponse.headers.get("Cache-Control") || "";
-          if (/\b(?:no-store|private)\b/i.test(cacheControl)) return networkResponse;
+      fetch(request, { cache: "no-cache" })
+        .then(function (networkResponse) {
+          if (!isSafeShellResponse(networkResponse)) return networkResponse;
 
           const responseToCache = networkResponse.clone();
           event.waitUntil(
@@ -116,8 +109,19 @@ self.addEventListener("fetch", function (event) {
             })
           );
           return networkResponse;
-        });
-      })
+        })
+        .catch(function () {
+          return caches.match(request).then(function (cachedResponse) {
+            return cachedResponse || Response.error();
+          });
+        })
     );
   }
 });
+
+function isSafeShellResponse(response) {
+  if (!response || !response.ok) return false;
+
+  const cacheControl = response.headers.get("Cache-Control") || "";
+  return !/\b(?:no-store|private)\b/i.test(cacheControl);
+}

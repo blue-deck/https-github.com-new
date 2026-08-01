@@ -26,6 +26,8 @@ import {
   formatJobEmploymentType,
   formatJobYachtLength,
   formatJobYachtType,
+  isJobEmploymentType,
+  jobEmploymentTypes,
 } from "../lib/jobPosts";
 import {
   formatJobDate,
@@ -52,6 +54,19 @@ export function JobsClient() {
   const [location, setLocation] = useState("");
   const [employmentType, setEmploymentType] = useState("");
   const viewer = useJobListingViewer();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedEmploymentType = params.get("employmentType") || "";
+
+    setQuery((params.get("query") || "").slice(0, 120));
+    setLocation((params.get("location") || "").slice(0, 120));
+    setEmploymentType(
+      isJobEmploymentType(requestedEmploymentType)
+        ? requestedEmploymentType
+        : "",
+    );
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -99,17 +114,19 @@ export function JobsClient() {
     [jobs, language],
   );
   const locations = useMemo(
-    () => uniqueSorted(jobs.map((job) => job.location), language),
-    [jobs, language],
+    () =>
+      uniqueSorted(
+        [...jobs.map((job) => job.location), ...(location ? [location] : [])],
+        language,
+      ),
+    [jobs, language, location],
   );
-  const employmentTypes = useMemo(
-    () => uniqueSorted(jobs.map((job) => job.employmentType), language),
-    [jobs, language],
-  );
+  const employmentTypes = jobEmploymentTypes;
 
   const filteredJobs = useMemo(() => {
     const locale = language === "tr" ? "tr-TR" : "en-US";
     const normalizedQuery = query.trim().toLocaleLowerCase(locale);
+    const normalizedLocation = location.trim().toLocaleLowerCase(locale);
 
     return jobs.filter((job) => {
       const yachtType = job.yachtType
@@ -141,7 +158,12 @@ export function JobsClient() {
         return false;
       }
       if (position && job.position !== position) return false;
-      if (location && job.location !== location) return false;
+      if (
+        normalizedLocation &&
+        !job.location.toLocaleLowerCase(locale).includes(normalizedLocation)
+      ) {
+        return false;
+      }
       if (employmentType && job.employmentType !== employmentType) return false;
       return true;
     });
@@ -170,6 +192,7 @@ export function JobsClient() {
     setPosition("");
     setLocation("");
     setEmploymentType("");
+    window.history.replaceState(null, "", "/jobs");
   }
 
   return (
@@ -203,6 +226,7 @@ export function JobsClient() {
         </section>
 
         <section
+          id="jobs-board"
           aria-label={c.results}
           className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12"
         >
@@ -267,6 +291,11 @@ export function JobsClient() {
                     label={c.employmentType}
                     value={employmentType}
                     options={employmentTypes}
+                    optionLabel={(option) =>
+                      isJobEmploymentType(option)
+                        ? formatJobEmploymentType(option, language)
+                        : option
+                    }
                     onChange={setEmploymentType}
                   />
                 </div>
@@ -428,11 +457,13 @@ function FilterSelect({
   label,
   value,
   options,
+  optionLabel = (option) => option,
   onChange,
 }: {
   label: string;
   value: string;
-  options: string[];
+  options: readonly string[];
+  optionLabel?: (option: string) => string;
   onChange: (value: string) => void;
 }) {
   return (
@@ -448,7 +479,7 @@ function FilterSelect({
         <option value="">{label}</option>
         {options.map((option) => (
           <option data-i18n-ignore key={option} value={option}>
-            {option}
+            {optionLabel(option)}
           </option>
         ))}
       </select>

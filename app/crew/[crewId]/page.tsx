@@ -14,7 +14,7 @@ import {
   normalizePublicCrewId,
   publicStringArray,
   redactPublicContactDetails,
-  safePublicMediaUrl,
+  safeOwnedPublicMediaUrl,
 } from "../../lib/publicCrewSafety";
 import { loadMarketplaceEntitlement } from "../../lib/marketplaceEntitlementsServer";
 import { absoluteSiteUrl } from "../../lib/site";
@@ -95,9 +95,9 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <CvScaleFrame>
+      <CvScaleFrame responsiveOnMobile>
       <section id="bluedeck-cv" className="bd-cv-root bd-cv-public-sheet mx-auto w-[980px] max-w-none overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
+        <div className="bd-cv-public-toolbar flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
           <div className="flex items-center gap-3">
             <BlueDeckMark className="h-12 w-16 rounded-2xl border-slate-200 bg-slate-950" imageClassName="p-1" />
             <div>
@@ -113,15 +113,61 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </a>
         </div>
 
+        <section className="bd-cv-mobile-hero" aria-labelledby="bd-cv-mobile-name">
+          <div className="bd-cv-mobile-profile">
+            <div className="bd-cv-mobile-avatar">
+              {text(profile, "profile_photo_url") ? (
+                <img
+                  src={text(profile, "profile_photo_url")}
+                  alt={`${name} profile photo`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-[#edf3f5] text-[#2d7482]">
+                  <UserRound className="h-12 w-12" aria-hidden="true" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8ed8e6]">
+                Verified Crew Profile
+              </p>
+              <h1
+                id="bd-cv-mobile-name"
+                className="mt-2 break-words text-3xl font-black uppercase leading-tight text-white"
+              >
+                {name}
+              </h1>
+              <p className="mt-2 text-sm font-bold uppercase tracking-[0.12em] text-white/80">
+                {position}
+              </p>
+            </div>
+          </div>
+          <dl className="bd-cv-mobile-facts">
+            <div>
+              <dt>Current location</dt>
+              <dd>{text(profile, "location") || "-"}</dd>
+            </div>
+            <div>
+              <dt>Nationality</dt>
+              <dd>{text(profile, "nationality") || "-"}</dd>
+            </div>
+          </dl>
+        </section>
+
         <div className="bd-cv-layout grid min-h-[1120px] grid-cols-[320px_1fr] bg-white print:min-h-0 print:grid-cols-[300px_1fr]">
           <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
             <CvSidebarSignature />
             <div className="bd-cv-avatar absolute right-[-42px] top-8 z-20 h-44 w-44 translate-x-0 overflow-hidden rounded-full border-[10px] border-white bg-white shadow-xl shadow-slate-950/12">
               {text(profile, "profile_photo_url") ? (
-                <img src={text(profile, "profile_photo_url")} alt={name} className="h-full w-full rounded-full object-cover" />
+                <img
+                  src={text(profile, "profile_photo_url")}
+                  alt={`${name} profile photo`}
+                  className="h-full w-full rounded-full object-cover"
+                />
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded-full bg-[#edf3f5] text-[#2d7482]">
-                  <UserRound className="h-16 w-16" />
+                  <UserRound className="h-16 w-16" aria-hidden="true" />
                 </div>
               )}
             </div>
@@ -203,7 +249,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 </p>
               </CvSection>
 
-              <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" />}>
+              <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />}>
               <div className="bd-cv-experience-list space-y-4">
                 {experiences.length === 0 && (
                   <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
@@ -219,7 +265,11 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                       <div className="bd-cv-experience-grid grid items-stretch sm:grid-cols-[136px_1fr]">
                         <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-white p-3">
                           {text(experience, "photo_url") ? (
-                            <img src={text(experience, "photo_url")} alt={yachtName} className="h-24 w-full rounded-lg object-cover" />
+                            <img
+                              src={text(experience, "photo_url")}
+                              alt={`${yachtName} yacht work experience`}
+                              className="h-24 w-full rounded-lg object-cover"
+                            />
                           ) : (
                             <div className="h-24 rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)]" />
                           )}
@@ -232,7 +282,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                             <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
                             {experienceText(experience, "location") && (
                               <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
-                                <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+                                <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
                                 <span>{experienceText(experience, "location")}</span>
                               </p>
                             )}
@@ -379,7 +429,12 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
     profile: {
       public_crew_id: cleanCrewId,
       full_name: redactPublicContactDetails(profile.full_name, 120),
-      profile_photo_url: safePublicMediaUrl(profile.profile_photo_url),
+      profile_photo_url: safeOwnedPublicMediaUrl(profile.profile_photo_url, [
+        profileId,
+        profile.user_id,
+      ])
+        ? publicCrewMediaProxyUrl(cleanCrewId, "avatar")
+        : "",
       current_position: redactPublicContactDetails(
         profile.current_position,
         120,
@@ -414,7 +469,11 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       no_expiry: document.no_expiry === true,
     })),
     experiences: (experienceRows || []).map((experience) =>
-      publicExperienceRow(experience as Row),
+      publicExperienceRow(
+        experience as Row,
+        cleanCrewId,
+        [profileId, profile.user_id],
+      ),
     ),
     references: (referenceRes.data || []).map((reference) => ({
       id: text(reference as Row, "id"),
@@ -505,11 +564,19 @@ function publicLanguageEntries(value: unknown) {
   }));
 }
 
-function publicExperienceRow(row: Row): Row {
+function publicExperienceRow(
+  row: Row,
+  crewId: string,
+  ownerIds: unknown[],
+): Row {
   const parsedDescription = splitExperienceDescription(text(row, "description"));
+  const experienceId = text(row, "id");
+  const hasPhoto = Boolean(
+    safeOwnedPublicMediaUrl(text(row, "photo_url"), ownerIds),
+  );
 
   return {
-    id: text(row, "id"),
+    id: experienceId,
     yacht_name: redactPublicContactDetails(text(row, "yacht_name"), 160),
     yacht_type: redactPublicContactDetails(
       text(row, "yacht_type") || parsedDescription.meta.yacht_type,
@@ -534,8 +601,27 @@ function publicExperienceRow(row: Row): Row {
       parsedDescription.description,
       4_000,
     ),
-    photo_url: safePublicMediaUrl(text(row, "photo_url")),
+    photo_url:
+      hasPhoto && isUuid(experienceId)
+        ? publicCrewMediaProxyUrl(crewId, "experience", experienceId)
+        : "",
   };
+}
+
+function publicCrewMediaProxyUrl(
+  crewId: string,
+  kind: "avatar" | "experience",
+  id?: string,
+) {
+  const search = new URLSearchParams({ kind });
+  if (id) search.set("id", id);
+  return `/api/find-crew/${encodeURIComponent(crewId)}/media?${search.toString()}`;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 function totalExperienceYears(experiences: Row[]) {

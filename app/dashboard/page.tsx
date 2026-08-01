@@ -27,7 +27,12 @@ import {
   loadAccountCapabilities,
   type AccountCapabilities,
 } from "../lib/accountCapabilities";
+import {
+  normalizeCrewPortfolioStoragePath,
+  signCrewPortfolioReferences,
+} from "../lib/crewPortfolioStorage";
 import { supabase } from "../lib/supabase";
+import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 
 type DashboardProfile = {
   id?: string;
@@ -422,9 +427,27 @@ export default function DashboardPage() {
     }
 
     const userMetadata = user.user_metadata as Record<string, unknown> | undefined;
-    const dashboardPhotoUrl = dashboardPhotoFromMetadata(userMetadata, crewProfile?.profile_photo_url);
+    const rawProfilePhotoUrl = crewProfile?.profile_photo_url || "";
+    const rawDashboardPhotoUrl = dashboardPhotoFromMetadata(
+      userMetadata,
+      rawProfilePhotoUrl,
+    );
+    const [profilePhotoUrl, dashboardPhotoUrl] =
+      await signCrewPortfolioReferences(
+        supabase,
+        [rawProfilePhotoUrl, rawDashboardPhotoUrl],
+        [user.id, crewProfile?.id],
+        resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      );
     if (!userMetadata || !Object.prototype.hasOwnProperty.call(userMetadata, "avatar_url")) {
-      await supabase.auth.updateUser({ data: { avatar_url: dashboardPhotoUrl } });
+      const stableAvatarPath = normalizeCrewPortfolioStoragePath(
+        rawDashboardPhotoUrl,
+        [user.id, crewProfile?.id],
+        resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      );
+      if (stableAvatarPath) {
+        await supabase.auth.updateUser({ data: { avatar_url: stableAvatarPath } });
+      }
     }
 
     setProfile({
@@ -435,7 +458,7 @@ export default function DashboardPage() {
       email: profileData?.email || crewProfile?.email || user.email,
       phone: profileData?.phone || crewProfile?.phone || user.user_metadata?.phone || "",
       is_admin: user.app_metadata?.bluedeck_admin === true,
-      profile_photo_url: crewProfile?.profile_photo_url || "",
+      profile_photo_url: profilePhotoUrl,
       dashboard_photo_url: dashboardPhotoUrl,
     });
     setAccountCapabilities(capabilities);

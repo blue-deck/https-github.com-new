@@ -1,7 +1,6 @@
 import "server-only";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import {
   loadCandidateExperienceRows,
@@ -87,23 +86,15 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const crewProfilePageSize = 500;
 const authUserPageSize = 1_000;
 const entitlementBatchSize = 100;
-const directoryCacheSeconds = 300;
 const crewProfileSelect =
   "id,user_id,public_crew_id,status,full_name,email,phone,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,gender,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at,updated_at";
-
-const loadCachedCrewDirectory = unstable_cache(
-  loadDiscoverableCrewList,
-  ["find-crew-directory-v3"],
-  {
-    revalidate: directoryCacheSeconds,
-    tags: ["find-crew-directory"],
-  },
-);
 
 export async function listDiscoverableCrew(): Promise<
   DiscoverableCrewPreview[]
 > {
-  return loadCachedCrewDirectory();
+  // Visibility is privacy-sensitive, so every request reads the canonical
+  // discovery setting instead of serving a stale directory snapshot.
+  return loadDiscoverableCrewList();
 }
 
 async function loadDiscoverableCrewList(): Promise<
@@ -116,7 +107,10 @@ async function loadDiscoverableCrewList(): Promise<
 
   const rows = await listActiveCrewProfileRows(serviceClient);
   const eligibleRows = await filterEligibleCrewProfiles(serviceClient, rows);
-  const profileIds = eligibleRows.map((row) => text(row.id)).filter(isUuid);
+  const visibleRows = eligibleRows.filter((row) =>
+    Boolean(getPublicCrewDiscoverySettings(row.notes)),
+  );
+  const profileIds = visibleRows.map((row) => text(row.id)).filter(isUuid);
   const experienceResult = await loadCandidateExperienceRows(
     serviceClient,
     profileIds,
@@ -131,7 +125,7 @@ async function loadDiscoverableCrewList(): Promise<
   }
 
   const experiencesByProfile = groupExperiences(experienceResult.rows);
-  const profiles = eligibleRows
+  const profiles = visibleRows
     .map((row) =>
       toDiscoverableCrewPreview(
         row,
@@ -143,37 +137,10 @@ async function loadDiscoverableCrewList(): Promise<
   return mixCrewProfiles(uniqueCrewIdProfiles(profiles));
 }
 
-const loadCachedDiscoverableCrew = unstable_cache(
-  loadDiscoverableCrewProfile,
-  ["find-crew-profile-v3"],
-  {
-    revalidate: directoryCacheSeconds,
-    tags: ["find-crew-directory"],
-  },
-);
-
-const loadCachedDirectoryMediaProfile = unstable_cache(
-  loadActiveDirectoryMediaProfile,
-  ["find-crew-media-profile-v3"],
-  {
-    revalidate: directoryCacheSeconds,
-    tags: ["find-crew-directory"],
-  },
-);
-
-const loadCachedDirectoryGallerySources = unstable_cache(
-  loadActiveDirectoryGallerySources,
-  ["find-crew-media-gallery-v3"],
-  {
-    revalidate: directoryCacheSeconds,
-    tags: ["find-crew-directory"],
-  },
-);
-
 export const getDiscoverableCrew = cache(async function getDiscoverableCrew(
   crewId: string,
 ): Promise<DiscoverableCrewProfile | null> {
-  return loadCachedDiscoverableCrew(crewId);
+  return loadDiscoverableCrewProfile(crewId);
 });
 
 async function loadDiscoverableCrewProfile(
@@ -192,6 +159,9 @@ async function loadDiscoverableCrewProfile(
 
   const account = await loadEligibleCrewAccount(serviceClient, row);
   if (!account) return null;
+
+  const discovery = getPublicCrewDiscoverySettings(row.notes);
+  if (!discovery) return null;
 
   const profileId = text(row.id);
   if (!isUuid(profileId)) return null;
@@ -241,7 +211,6 @@ async function loadDiscoverableCrewProfile(
       profileIdentity,
       60,
     );
-  const discovery = parseCrewDiscoverySettings(text(row.notes));
   const safeDiscovery = {
     ...discovery,
     availabilityStatus: identitySafeProfileField(
@@ -263,9 +232,7 @@ async function loadDiscoverableCrewProfile(
     ),
   };
   const publicCrewId = normalizePublicCrewId(text(row.public_crew_id));
-  const portalAvailable = Boolean(
-    publicCrewId && getPublicCrewDiscoverySettings(row.notes),
-  );
+  const portalAvailable = Boolean(publicCrewId);
   const professionalSummary = redactCandidateProfileText(
     row.bio,
     profileIdentity || preview.displayName,
@@ -352,6 +319,7 @@ export async function isActiveDirectoryCrew(crewId: string) {
 
   const row = await loadActiveCrewProfile(serviceClient, cleanCrewId);
   if (!row) return false;
+  if (!getPublicCrewDiscoverySettings(row.notes)) return false;
   return Boolean(await loadEligibleCrewAccount(serviceClient, row));
 }
 
@@ -373,14 +341,49 @@ export async function loadActiveDirectoryCrewMediaSource(
     return "";
   }
 
-  const mediaProfile = await loadCachedDirectoryMediaProfile(cleanCrewId);
+  const mediaProfile = await loadActiveDirectoryMediaProfile(cleanCrewId);
   if (!mediaProfile) return "";
   if (kind === "avatar") return mediaProfile.avatarSource;
 
-  const selected = await loadCachedDirectoryGallerySources(
+  const selected = await loadActiveDirectoryGallerySources(
     mediaProfile.profileId,
   );
   return slot === null ? "" : selected[slot] || "";
+}
+
+export async function loadActiveDirectoryCrewRecordMediaSource(
+  crewId: string,
+  kind: "experience" | "portfolio",
+  mediaId: string,
+) {
+  const cleanCrewId = normalizePublicCrewId(crewId);
+  if (!cleanCrewId || !isUuid(mediaId)) return "";
+
+  const mediaProfile = await loadActiveDirectoryMediaProfile(cleanCrewId);
+  if (!mediaProfile) return "";
+
+  const serviceClient = createServiceClient();
+  if (!serviceClient) {
+    throw new Error("find_crew_service_unavailable");
+  }
+
+  const table = kind === "experience" ? "crew_experiences" : "crew_portfolio_photos";
+  const column = kind === "experience" ? "photo_url" : "image_url";
+  const { data, error } = await serviceClient
+    .from(table)
+    .select(column)
+    .eq("id", mediaId)
+    .eq("crew_profile_id", mediaProfile.profileId)
+    .maybeSingle();
+  if (error || !data) return "";
+
+  return safeOwnedPublicMediaUrl(
+    (data as unknown as Record<string, unknown>)[column],
+    [
+    mediaProfile.profileId,
+    mediaProfile.userId,
+    ],
+  );
 }
 
 async function loadActiveDirectoryMediaProfile(crewId: string) {
@@ -390,12 +393,19 @@ async function loadActiveDirectoryMediaProfile(crewId: string) {
   }
 
   const row = await loadActiveCrewProfile(serviceClient, crewId);
-  if (!row || !(await loadEligibleCrewAccount(serviceClient, row))) return null;
+  if (
+    !row ||
+    !getPublicCrewDiscoverySettings(row.notes) ||
+    !(await loadEligibleCrewAccount(serviceClient, row))
+  ) {
+    return null;
+  }
 
   const profileId = text(row.id);
   if (!isUuid(profileId)) return null;
   return {
     profileId,
+    userId: text(row.user_id),
     avatarSource: safeOwnedPublicMediaUrl(row.profile_photo_url, [
       profileId,
       row.user_id,

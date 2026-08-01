@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { absoluteSiteUrl } from "../../../lib/site";
 import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
+import { readLimitedJsonObject } from "../../../lib/requestBodyServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 import {
   getClientIp,
@@ -12,30 +13,11 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const minuteMs = 60 * 1_000;
+const maximumForgotPasswordRequestBytes = 8 * 1024;
 
 export async function POST(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey) {
     return forgotPasswordError("service_unavailable", 503);
-  }
-
-  let body: ForgotPasswordRequestBody;
-
-  try {
-    body = (await request.json()) as ForgotPasswordRequestBody;
-  } catch {
-    return forgotPasswordError("invalid_request", 400);
-  }
-
-  const email = body.email?.trim().toLowerCase() || "";
-  const captchaToken = body.captchaToken?.trim() || "";
-  const website = body.website?.trim() || "";
-
-  if (website) {
-    return NextResponse.json({ ok: true });
-  }
-
-  if (!isValidEmail(email)) {
-    return forgotPasswordError("invalid_email", 400);
   }
 
   const turnstileConfigured = isTurnstileConfigured();
@@ -48,6 +30,27 @@ export async function POST(request: NextRequest) {
   );
   if (!ipLimit.allowed) {
     return forgotPasswordRateLimitResponse(ipLimit.retryAfterSeconds);
+  }
+
+  const rawBody = await readLimitedJsonObject(
+    request,
+    maximumForgotPasswordRequestBytes,
+  );
+  if (!rawBody) {
+    return forgotPasswordError("invalid_request", 400);
+  }
+  const body = rawBody as ForgotPasswordRequestBody;
+
+  const email = requestText(body.email).toLowerCase();
+  const captchaToken = requestText(body.captchaToken);
+  const website = requestText(body.website);
+
+  if (website) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (!isValidEmail(email)) {
+    return forgotPasswordError("invalid_email", 400);
   }
 
   const emailLimit = consumeRequestRateLimit(
@@ -99,6 +102,10 @@ type ForgotPasswordRequestBody = {
   captchaToken?: string;
   website?: string;
 };
+
+function requestText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 function forgotPasswordRateLimitResponse(retryAfterSeconds: number) {
   return NextResponse.json(

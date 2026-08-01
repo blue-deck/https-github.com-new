@@ -937,11 +937,6 @@ export default function CrewPage({
     [activeManualCategory?.id, manualTaskDraft]
   );
 
-  const contractDraftStorageKey = useMemo(
-    () => (yachtId ? `bluedeck:contract-studio-draft:${yachtId}` : ""),
-    [yachtId]
-  );
-
   const selectedContractMember = useMemo(
     () => crew.find((item) => item.id === selectedCrew),
     [crew, selectedCrew]
@@ -1103,20 +1098,6 @@ export default function CrewPage({
   const loadSavedContractDraft = useCallback(async () => {
     if (!yachtId) return;
 
-    let localDraft = null as ReturnType<typeof parseStoredContractDraftPayload>;
-
-    if (contractDraftStorageKey) {
-      try {
-        localDraft = parseStoredContractDraftPayload(window.localStorage.getItem(contractDraftStorageKey));
-      } catch (error) {
-        console.warn("Contract draft local load failed", error);
-      }
-
-      if (localDraft) {
-        applySavedContractDraft(localDraft.savedDraft, localDraft.savedSectionKeys);
-      }
-    }
-
     const response = await supabase
       .from("yacht_contracts")
       .select("id, contract_text")
@@ -1139,44 +1120,16 @@ export default function CrewPage({
 
     const storedDraft = parseStoredContractDraftPayload(response.data?.contract_text);
     if (storedDraft) {
-      const localSavedTime = Date.parse(localDraft?.savedAt || "");
-      const remoteSavedTime = Date.parse(storedDraft.savedAt || "");
-      const shouldUseRemoteDraft =
-        !localDraft || !localSavedTime || (remoteSavedTime > 0 && remoteSavedTime >= localSavedTime);
-
-      if (!shouldUseRemoteDraft) return;
-
       applySavedContractDraft(storedDraft.savedDraft, storedDraft.savedSectionKeys, response.data?.id || "");
-      if (contractDraftStorageKey) {
-        try {
-          window.localStorage.setItem(
-            contractDraftStorageKey,
-            serializeContractDraftPayload(storedDraft.savedDraft, storedDraft.savedSectionKeys)
-          );
-        } catch (error) {
-          console.warn("Contract draft local sync failed", error);
-        }
-      }
     }
-  }, [applySavedContractDraft, contractDraftStorageKey, yachtId]);
+  }, [applySavedContractDraft, yachtId]);
 
   async function persistSavedContractDraft(
     nextSavedDraft: ContractDraft,
     nextSavedSectionKeys: Partial<Record<ContractSaveSectionKey, string>>
   ) {
     const contractText = serializeContractDraftPayload(nextSavedDraft, nextSavedSectionKeys);
-    let localSaved = false;
-
-    if (contractDraftStorageKey) {
-      try {
-        window.localStorage.setItem(contractDraftStorageKey, contractText);
-        localSaved = true;
-      } catch (error) {
-        console.warn("Contract draft local save failed", error);
-      }
-    }
-
-    if (!yachtId) return localSaved;
+    if (!yachtId) return false;
 
     let recordId = contractDraftRecordId;
 
@@ -1210,7 +1163,7 @@ export default function CrewPage({
 
       if (!error) return true;
       console.warn("Contract draft update failed", error.message);
-      return localSaved;
+      return false;
     }
 
     const { data, error } = await supabase
@@ -1230,7 +1183,7 @@ export default function CrewPage({
     }
 
     console.warn("Contract draft insert failed", error.message);
-    return localSaved;
+    return false;
   }
 
   async function saveContractSection(sectionKey: ContractSaveSectionKey, fields: ContractDraftField[]) {

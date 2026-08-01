@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 
-const appIcon = "/app-icon-192.png";
+// Keep this revision aligned with public/sw.js when PWA brand assets change.
+const pwaAssetRevision = "2026-08-01-1";
+const versionedAsset = (path: string) => `${path}?v=${pwaAssetRevision}`;
+const appIcon = versionedAsset("/app-icon-192.png");
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -27,19 +30,19 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
       {
-        src: "/app-icon-512.png",
+        src: versionedAsset("/app-icon-512.png"),
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/app-icon-maskable-192.png",
+        src: versionedAsset("/app-icon-maskable-192.png"),
         sizes: "192x192",
         type: "image/png",
         purpose: "maskable",
       },
       {
-        src: "/app-icon-maskable-512.png",
+        src: versionedAsset("/app-icon-maskable-512.png"),
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

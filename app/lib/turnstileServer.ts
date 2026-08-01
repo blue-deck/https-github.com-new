@@ -1,5 +1,7 @@
 import "server-only";
 
+import { isIP } from "node:net";
+
 type TurnstileVerifyResponse = {
   success?: boolean;
   action?: string;
@@ -59,14 +61,38 @@ export async function verifyTurnstileToken(
 }
 
 export function getClientIp(request: Request) {
-  const cloudflareIp = request.headers.get("cf-connecting-ip")?.trim();
+  const cloudflareIp = validIp(
+    request.headers.get("cf-connecting-ip")?.trim(),
+  );
   if (cloudflareIp) return cloudflareIp;
 
-  const forwardedFor = request.headers
-    .get("x-forwarded-for")
-    ?.split(",")[0]
-    ?.trim();
-  return forwardedFor || request.headers.get("x-real-ip")?.trim() || undefined;
+  // Vercel overwrites these forwarding headers at its trusted edge. Only use
+  // them when the runtime itself confirms that requests are running there.
+  if (process.env.VERCEL === "1") {
+    const vercelForwardedFor = validIp(
+      request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim(),
+    );
+    if (vercelForwardedFor) return vercelForwardedFor;
+
+    const forwardedFor = validIp(
+      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    );
+    if (forwardedFor) return forwardedFor;
+  }
+
+  // Sites runs behind Cloudflare, which supplies cf-connecting-ip. In an
+  // unknown production environment, caller-controlled forwarding headers
+  // are not trusted.
+  if (process.env.NODE_ENV === "production") return undefined;
+
+  const forwardedFor = validIp(
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+  );
+  return forwardedFor || validIp(request.headers.get("x-real-ip")?.trim());
+}
+
+function validIp(value?: string) {
+  return value && value.length <= 64 && isIP(value) ? value : undefined;
 }
 
 function turnstileSecretKey() {

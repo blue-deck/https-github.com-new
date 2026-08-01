@@ -2,9 +2,11 @@
 
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { loadAccountCapabilities } from "./accountCapabilities";
+import { signCrewPortfolioReferences } from "./crewPortfolioStorage";
 import { isPlatformAdmin } from "./employerAccess";
 import { createSafeStoragePath } from "./storage";
 import { supabase } from "./supabase";
+import { resolveSupabaseUrl } from "./supabaseConfig";
 
 export const DASHBOARD_PHOTO_EVENT = "bluedeck:dashboard-photo-updated";
 export const DASHBOARD_PHOTO_CHANNEL = "bluedeck:dashboard-photo";
@@ -138,7 +140,18 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
     email
   );
   const role = firstText(capabilities?.role, baseProfile?.role, "crew");
-  const profilePhotoUrl = firstText(crewProfile?.profile_photo_url);
+  const rawProfilePhotoUrl = firstText(crewProfile?.profile_photo_url);
+  const rawDashboardPhotoUrl = dashboardPhotoFromMetadata(
+    metadata,
+    rawProfilePhotoUrl,
+  );
+  const [profilePhotoUrl, dashboardPhotoUrl] =
+    await signCrewPortfolioReferences(
+      client,
+      [rawProfilePhotoUrl, rawDashboardPhotoUrl],
+      [user.id, crewProfile?.id],
+      resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    );
 
   return {
     userId: user.id,
@@ -150,7 +163,7 @@ export async function loadAccountIdentity(client: SupabaseClient = supabase) {
       user.app_metadata as Record<string, unknown> | undefined,
     ),
     profilePhotoUrl,
-    dashboardPhotoUrl: dashboardPhotoFromMetadata(metadata, profilePhotoUrl),
+    dashboardPhotoUrl,
   } satisfies AccountIdentity;
 }
 
@@ -171,7 +184,16 @@ export async function saveDashboardPhoto({
 
   if (uploadError) throw uploadError;
 
-  const photoUrl = storage.getPublicUrl(path).data.publicUrl;
+  const [photoUrl] = await signCrewPortfolioReferences(
+    client,
+    [path],
+    [user.id],
+    resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  );
+  if (!photoUrl) {
+    await storage.remove([path]);
+    throw new Error("Photo access could not be secured.");
+  }
   const resolvedEmail = firstText(currentUser.email, email);
   const resolvedFullName = firstDisplayName(
     currentUser.user_metadata?.full_name,
@@ -180,7 +202,7 @@ export async function saveDashboardPhoto({
   );
   const cleanupPaths = dashboardCleanupPaths(currentUser, user.id);
   const metadataUpdate = compactRecord({
-    avatar_url: photoUrl,
+    avatar_url: path,
     avatar_path: path,
     avatar_cleanup_paths: cleanupPaths.join(","),
   });

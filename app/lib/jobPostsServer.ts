@@ -157,6 +157,10 @@ type ServiceClientResult =
   | { ok: true; client: SupabaseClient }
   | { ok: false; error: string };
 
+export type PublicJobPostLoadResult =
+  | { ok: true; job: PublicJobPost }
+  | { ok: false; error: string; status: 404 | 500 | 503 };
+
 type ReadBodyResult =
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; error: string; status: number };
@@ -203,6 +207,75 @@ export function jobPostServiceClient(): ServiceClientResult {
       auth: { persistSession: false, autoRefreshToken: false },
     }),
   };
+}
+
+export async function loadPublicJobPost(
+  jobPostId: string,
+): Promise<PublicJobPostLoadResult> {
+  const id = cleanText(jobPostId).toLowerCase();
+  if (!isUuid(id)) {
+    return { ok: false, error: "Job post not found.", status: 404 };
+  }
+
+  const service = jobPostServiceClient();
+  if (!service.ok) {
+    return { ok: false, error: service.error, status: 503 };
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await service.client
+    .from("job_posts")
+    .select(publicJobPostServiceSelect)
+    .eq("id", id)
+    .eq("status", "published")
+    .lte("published_at", now)
+    .gt("closes_at", now)
+    .maybeSingle();
+
+  if (error) {
+    logJobPostError("public_detail_load_failed", error, { jobPostId: id });
+    return {
+      ok: false,
+      error: "The job post could not be loaded.",
+      status: 503,
+    };
+  }
+
+  if (!data) {
+    return { ok: false, error: "Job post not found.", status: 404 };
+  }
+
+  const currentAuthority = await currentPublicJobPostIds(
+    service.client,
+    [data],
+  );
+  if (!currentAuthority.ok) {
+    logJobPostError("public_detail_authority_failed", currentAuthority.error, {
+      jobPostId: id,
+    });
+    return {
+      ok: false,
+      error: "The job post could not be loaded.",
+      status: 503,
+    };
+  }
+  if (!currentAuthority.jobPostIds.has(id)) {
+    return { ok: false, error: "Job post not found.", status: 404 };
+  }
+
+  const job = publicJobPostFromRow(data);
+  if (!job) {
+    logJobPostError("invalid_public_job_record", undefined, {
+      jobPostId: id,
+    });
+    return {
+      ok: false,
+      error: "The job post could not be loaded.",
+      status: 500,
+    };
+  }
+
+  return { ok: true, job };
 }
 
 export async function readJobPostBody(

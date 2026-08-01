@@ -4,7 +4,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 const cvDesignWidth = 980;
 
-export function CvScaleFrame({ children }: { children: ReactNode }) {
+export function CvScaleFrame({
+  children,
+  responsiveOnMobile = false,
+}: {
+  children: ReactNode;
+  responsiveOnMobile?: boolean;
+}) {
   const frameRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -15,6 +21,15 @@ export function CvScaleFrame({ children }: { children: ReactNode }) {
       const frame = frameRef.current;
       const content = contentRef.current;
       if (!frame || !content) return;
+
+      if (
+        responsiveOnMobile &&
+        window.matchMedia("screen and (max-width: 900px)").matches
+      ) {
+        setScale(1);
+        setHeight(null);
+        return;
+      }
 
       const frameStyle = window.getComputedStyle(frame);
       const horizontalPadding = parseFloat(frameStyle.paddingLeft) + parseFloat(frameStyle.paddingRight);
@@ -42,12 +57,14 @@ export function CvScaleFrame({ children }: { children: ReactNode }) {
       window.removeEventListener("resize", updateFrame);
       window.removeEventListener("orientationchange", updateFrame);
     };
-  }, []);
+  }, [responsiveOnMobile]);
 
   return (
     <div
       ref={frameRef}
-      className="bd-cv-scale-wrap bg-[#f3f7f8] p-3 sm:p-5 print:p-0"
+      className={`bd-cv-scale-wrap bg-[#f3f7f8] p-3 sm:p-5 print:p-0 ${
+        responsiveOnMobile ? "bd-cv-scale-wrap-mobile-readable" : ""
+      }`}
       style={{ height: height ? `${height}px` : undefined }}
     >
       <div

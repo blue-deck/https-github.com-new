@@ -8,6 +8,10 @@ import {
   type EmployerApplicationMediaKind,
 } from "../../../../../../../lib/jobApplicationMediaServer";
 import { isUuid } from "../../../../../../../lib/employerAccessServer";
+import {
+  crewPortfolioProxySignedUrlLifetimeSeconds,
+  signCrewPortfolioReference,
+} from "../../../../../../../lib/crewPortfolioStorage";
 import { safePublicMediaUrl } from "../../../../../../../lib/publicCrewSafety";
 import { resolveSupabaseUrl } from "../../../../../../../lib/supabaseConfig";
 
@@ -115,6 +119,7 @@ export async function GET(request: Request, context: RouteContext) {
     const selected = selectEmployerApplicationGallerySources(
       photos || [],
       capability.applicationId,
+      [crewProfileId, applicantUserId],
     );
     source = capability.slot === null ? "" : selected[capability.slot] || "";
   }
@@ -122,7 +127,16 @@ export async function GET(request: Request, context: RouteContext) {
   const safeSource = safePublicMediaUrl(source);
   if (!safeSource) return mediaError("Media not found.", 404);
 
-  return proxyMedia(safeSource);
+  const signedSource = await signCrewPortfolioReference(
+    serviceClient,
+    safeSource,
+    [crewProfileId, applicantUserId],
+    resolveSupabaseUrl(supabaseUrl),
+    crewPortfolioProxySignedUrlLifetimeSeconds,
+  );
+  if (!signedSource) return mediaError("Media not found.", 404);
+
+  return proxyMedia(signedSource);
 }
 
 function mediaCapabilityFromRequest(

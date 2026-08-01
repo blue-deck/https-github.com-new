@@ -32,6 +32,7 @@ import {
   type OwnJobApplication,
 } from "./jobApplications";
 import {
+  buildEmployerApplicationMediaUrl,
   selectEmployerApplicationGallerySources,
 } from "./jobApplicationMediaServer";
 import {
@@ -46,9 +47,9 @@ import {
 import {
   getPublicCrewDiscoverySettings,
   normalizePublicCrewId,
-  safePublicMediaUrl,
   publicStructuredProfileField,
   publicStructuredStringArray,
+  safeOwnedPublicMediaUrl,
 } from "./publicCrewSafety";
 
 export const maximumApplicationRequestBytes = 8_192;
@@ -232,6 +233,7 @@ export async function loadApplicationCandidatePreviews(
 ): Promise<CandidatePreviewResult> {
   const targets: Array<{
     applicationId: string;
+    jobPostId: string;
     applicantUserId: string;
     crewProfileId: string;
   }> = [];
@@ -241,12 +243,17 @@ export async function loadApplicationCandidatePreviews(
       return { ok: false, error: "Candidate profiles could not be loaded." };
     }
     const applicationId = cleanText(value.id);
+    const jobPostId = cleanText(value.job_post_id);
     const applicantUserId = cleanText(value.applicant_user_id);
     const crewProfileId = cleanText(value.crew_profile_id);
-    if (!isUuid(applicationId) || !isUuid(applicantUserId)) {
+    if (
+      !isUuid(applicationId) ||
+      !isUuid(jobPostId) ||
+      !isUuid(applicantUserId)
+    ) {
       return { ok: false, error: "Candidate profiles could not be loaded." };
     }
-    targets.push({ applicationId, applicantUserId, crewProfileId });
+    targets.push({ applicationId, jobPostId, applicantUserId, crewProfileId });
   }
 
   const previews = new Map<string, ApplicationCandidatePreview>();
@@ -318,11 +325,23 @@ export async function loadApplicationCandidatePreviews(
         profile: row,
         experiences,
       });
+      const hasAvatar = Boolean(
+        safeOwnedPublicMediaUrl(row.profile_photo_url, [
+          profileId,
+          target.applicantUserId,
+        ]),
+      );
 
       previews.set(target.applicationId, {
         displayName: "",
         initials: "",
-        profilePhotoUrl: safePublicMediaUrl(row.profile_photo_url),
+        profilePhotoUrl: hasAvatar
+          ? buildEmployerApplicationMediaUrl({
+              jobPostId: target.jobPostId,
+              applicationId: target.applicationId,
+              kind: "avatar",
+            })
+          : "",
         currentPosition:
           publicStructuredStringArray(row.current_positions, 1, 120)[0] ||
           publicStructuredProfileField(row.current_position, 120),
@@ -478,10 +497,14 @@ export async function loadApplicationCandidateDetails(
     publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
     publicStructuredProfileField(profile.current_position, 120) ||
     snapshotPosition;
-  const avatarSource = safePublicMediaUrl(profile.profile_photo_url);
+  const avatarSource = safeOwnedPublicMediaUrl(profile.profile_photo_url, [
+    crewProfileId,
+    applicantUserId,
+  ]);
   const gallerySources = selectEmployerApplicationGallerySources(
     photoResult.data || [],
     applicationId,
+    [crewProfileId, applicantUserId],
   );
 
   return {
@@ -491,7 +514,13 @@ export async function loadApplicationCandidateDetails(
       candidate: {
         displayName: maskedPersonName(snapshotName),
         initials: personInitials(snapshotName),
-        profilePhotoUrl: avatarSource,
+        profilePhotoUrl: avatarSource
+          ? buildEmployerApplicationMediaUrl({
+              jobPostId,
+              applicationId,
+              kind: "avatar",
+            })
+          : "",
         currentPosition,
         nationality: publicStructuredProfileField(profile.nationality, 80),
         location: publicStructuredProfileField(profile.location, 120),
@@ -531,7 +560,14 @@ export async function loadApplicationCandidateDetails(
           .map((item) => publicStructuredProfileField(item, 120))
           .filter(Boolean),
         languages: publicCandidateLanguageEntries(profile.languages),
-        galleryPhotos: gallerySources,
+        galleryPhotos: gallerySources.map((_source, slot) =>
+          buildEmployerApplicationMediaUrl({
+            jobPostId,
+            applicationId,
+            kind: "gallery",
+            slot,
+          }),
+        ).filter(Boolean),
         referenceCount: countExperienceReferences(
           experiences,
           referenceResult.data || [],

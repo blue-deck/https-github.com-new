@@ -5,6 +5,12 @@ import {
   signCrewDocumentRow,
   signCrewDocumentRows,
 } from "../../../lib/crewDocumentStorage";
+import {
+  crewPortfolioBucket,
+  normalizeCrewPortfolioStoragePath,
+  signCrewPortfolioReference,
+  signCrewPortfolioReferences,
+} from "../../../lib/crewPortfolioStorage";
 import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
 
@@ -108,13 +114,32 @@ export async function GET(request: NextRequest) {
     profileId,
     resolvedSupabaseUrl,
   );
+  const experienceRows = experienceRes.data || [];
+  const portfolioRows = portfolioRes.data || [];
+  const signedMedia = await signCrewPortfolioReferences(
+    serviceClient,
+    [
+      ...experienceRows.map((row) => row.photo_url),
+      ...portfolioRows.map((row) => row.image_url),
+    ],
+    [profileId],
+    resolvedSupabaseUrl,
+  );
+  const experiences = experienceRows.map((row, index) => ({
+    ...row,
+    photo_url: signedMedia[index] || "",
+  }));
+  const portfolio = portfolioRows.map((row, index) => ({
+    ...row,
+    image_url: signedMedia[experienceRows.length + index] || "",
+  }));
 
   return jsonResponse({
     ok: true,
     documents,
-    experiences: experienceRes.data || [],
+    experiences,
     references: referenceRes.data || [],
-    portfolio: portfolioRes.data || [],
+    portfolio,
   });
 }
 
@@ -216,6 +241,21 @@ export async function POST(request: NextRequest) {
       return jsonError("Record id is required.", 400);
     }
 
+    const mediaColumn =
+      kind === "experience"
+        ? "photo_url"
+        : kind === "portfolio"
+          ? "image_url"
+          : "";
+    const mediaRecord = mediaColumn
+      ? await serviceClient
+          .from(config.table)
+          .select(mediaColumn)
+          .eq("id", id)
+          .eq("crew_profile_id", profileId)
+          .maybeSingle()
+      : null;
+
     const { error } = await serviceClient
       .from(config.table)
       .delete()
@@ -223,6 +263,22 @@ export async function POST(request: NextRequest) {
       .eq("crew_profile_id", profileId);
 
     if (error) return jsonError("Crew profile record could not be deleted.", 500);
+
+    if (mediaColumn && mediaRecord?.data) {
+      const storagePath = normalizeCrewPortfolioStoragePath(
+        (mediaRecord.data as unknown as Record<string, unknown>)[mediaColumn],
+        [profileId],
+        resolvedSupabaseUrl,
+      );
+      if (storagePath) {
+        const { error: removeError } = await serviceClient.storage
+          .from(crewPortfolioBucket)
+          .remove([storagePath]);
+        if (removeError) {
+          console.error("Crew media cleanup failed", removeError.message);
+        }
+      }
+    }
     return jsonResponse({ ok: true });
   }
 
@@ -244,6 +300,27 @@ export async function POST(request: NextRequest) {
       return jsonError("Invalid crew document file reference.", 400);
     }
     payload.file_url = storagePath;
+  }
+
+  const portfolioColumn =
+    kind === "experience"
+      ? "photo_url"
+      : kind === "portfolio"
+        ? "image_url"
+        : "";
+  if (portfolioColumn && Object.hasOwn(payload, portfolioColumn)) {
+    const rawReference = payload[portfolioColumn];
+    if (rawReference !== "" && rawReference !== null) {
+      const storagePath = normalizeCrewPortfolioStoragePath(
+        rawReference,
+        [profileId],
+        resolvedSupabaseUrl,
+      );
+      if (!storagePath) {
+        return jsonError("Invalid crew portfolio file reference.", 400);
+      }
+      payload[portfolioColumn] = storagePath;
+    }
   }
 
   const row = { ...payload, crew_profile_id: profileId };
@@ -275,15 +352,25 @@ export async function POST(request: NextRequest) {
     return jsonError("Crew profile record could not be saved.", 500);
   }
 
-  const data =
-    kind === "document"
-      ? await signCrewDocumentRow(
-          serviceClient,
-          response.data,
-          profileId,
-          resolvedSupabaseUrl,
-        )
-      : response.data;
+  let data = response.data;
+  if (kind === "document") {
+    data = await signCrewDocumentRow(
+      serviceClient,
+      response.data,
+      profileId,
+      resolvedSupabaseUrl,
+    );
+  } else if (portfolioColumn) {
+    data = {
+      ...response.data,
+      [portfolioColumn]: await signCrewPortfolioReference(
+        serviceClient,
+        response.data[portfolioColumn],
+        [profileId],
+        resolvedSupabaseUrl,
+      ),
+    };
+  }
 
   return jsonResponse({ ok: true, data });
 }

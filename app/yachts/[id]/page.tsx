@@ -14,7 +14,6 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { BLUEDECK } from "../../config";
 import { loadAccountCapabilities } from "../../lib/accountCapabilities";
 import {
   daysUntilExpiry,
@@ -56,6 +55,23 @@ type YachtModule = {
   meta: string;
 };
 
+type OverviewLoadState = "loading" | "ready" | "not-found" | "forbidden" | "error";
+
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, message: string) {
+  let timeoutId: number | undefined;
+
+  try {
+    return await Promise.race([
+      Promise.resolve(promise),
+      new Promise<never>((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+}
+
 const emptyStats: OverviewStats = {
   crewCount: 0,
   invitedCrew: 0,
@@ -71,142 +87,313 @@ const emptyStats: OverviewStats = {
 
 export default function YachtDashboard() {
   const params = useParams();
-  const yachtId = String(params?.id || BLUEDECK.yachtId);
+  const yachtId = String(params?.id || "").trim().toLowerCase();
   const [yacht, setYacht] = useState<YachtRecord | null>(null);
   const [stats, setStats] = useState<OverviewStats>(emptyStats);
   const [loadError, setLoadError] = useState("");
+  const [loadState, setLoadState] = useState<OverviewLoadState>("loading");
   const [hasCrewWorkspace, setHasCrewWorkspace] = useState(false);
+  const [reloadAttempt, setReloadAttempt] = useState(0);
 
-  async function loadOverview() {
-    setLoadError("");
+  useEffect(() => {
+    let active = true;
+    let refreshTimer: number | undefined;
+    let hasLoadedOverview = false;
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    async function loadOverview(isBackgroundRefresh = false) {
+      let shouldRefresh = false;
 
-    if (!session?.access_token) {
-      window.location.href = `/login?next=${encodeURIComponent(`/yachts/${yachtId}`)}`;
-      return;
+      if (!yachtId) {
+        setYacht(null);
+        setStats(emptyStats);
+        setLoadError("This yacht link is invalid.");
+        setLoadState("not-found");
+        return;
+      }
+
+      if (!isBackgroundRefresh) {
+        setYacht(null);
+        setStats(emptyStats);
+        setHasCrewWorkspace(false);
+        setLoadError("");
+        setLoadState("loading");
+      }
+
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await withTimeout(
+          supabase.auth.getSession(),
+          12000,
+          "Session verification timed out.",
+        );
+
+        if (!active) return;
+        if (sessionError) throw sessionError;
+
+        if (!session?.access_token) {
+          window.location.replace(
+            `/login?next=${encodeURIComponent(`/yachts/${yachtId}`)}`,
+          );
+          return;
+        }
+
+        const [
+          crewDataResponse,
+          invitationResponse,
+          documentResponse,
+          capabilities,
+        ] = await withTimeout(
+          Promise.all([
+            fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+              cache: "no-store",
+            }),
+            supabase
+              .from("crew_invitations")
+              .select("id,status,position,department,invited_email,created_at")
+              .eq("yacht_id", yachtId)
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("yacht_documents")
+              .select("id,title,file_name,category,expiry_date,created_at")
+              .eq("yacht_id", yachtId)
+              .order("created_at", { ascending: false }),
+            loadAccountCapabilities().catch(() => null),
+          ]),
+          20000,
+          "Yacht overview request timed out.",
+        );
+
+        if (!active) return;
+
+        const crewPayload: unknown = await crewDataResponse.json().catch(() => null);
+        if (!active) return;
+
+        const crewRecord =
+          crewPayload && typeof crewPayload === "object"
+            ? (crewPayload as Record<string, unknown>)
+            : {};
+        const responseError =
+          typeof crewRecord.error === "string" ? crewRecord.error : "";
+
+        if (crewDataResponse.status === 401) {
+          window.location.replace(
+            `/login?next=${encodeURIComponent(`/yachts/${yachtId}`)}`,
+          );
+          return;
+        }
+
+        if (crewDataResponse.status === 404) {
+          setYacht(null);
+          setStats(emptyStats);
+          setLoadError(responseError || "This yacht workspace could not be found.");
+          setLoadState("not-found");
+          return;
+        }
+
+        if (crewDataResponse.status === 403) {
+          setYacht(null);
+          setStats(emptyStats);
+          setLoadError(responseError || "Your account does not have access to this yacht workspace.");
+          setLoadState("forbidden");
+          return;
+        }
+
+        if (!crewDataResponse.ok) {
+          console.error("Yacht overview request failed", {
+            status: crewDataResponse.status,
+            error: responseError,
+          });
+          setYacht(null);
+          setStats(emptyStats);
+          setLoadError("The yacht overview could not be loaded. Please try again.");
+          setLoadState("error");
+          return;
+        }
+
+        const loadedYacht =
+          crewRecord.yacht && typeof crewRecord.yacht === "object"
+            ? (crewRecord.yacht as YachtRecord)
+            : null;
+        const loadedYachtId = String(loadedYacht?.id || "").trim().toLowerCase();
+
+        if (!loadedYachtId || loadedYachtId !== yachtId) {
+          console.error("Yacht overview response did not include the requested yacht record");
+          setYacht(null);
+          setStats(emptyStats);
+          setLoadError("The yacht overview returned incomplete data. Please try again.");
+          setLoadState("error");
+          return;
+        }
+
+        const supplementalErrors = [invitationResponse, documentResponse]
+          .map((response) => response.error?.message)
+          .filter(Boolean);
+
+        if (supplementalErrors.length) {
+          console.error("Some yacht overview details could not be loaded", supplementalErrors);
+        }
+
+        const crew = Array.isArray(crewRecord.crew) ? crewRecord.crew : [];
+        const checklists = Array.isArray(crewRecord.checklists)
+          ? crewRecord.checklists
+          : [];
+        const invitations = invitationResponse.data || [];
+        const documents = documentResponse.data || [];
+        const taskItems = checklists.flatMap(
+          (checklist: any) => checklist.yacht_checklist_items || [],
+        );
+        const completedTasks = taskItems.filter((task: any) => task.completed).length;
+        const pendingInvites = invitations.filter((item: any) => item.status === "pending").length;
+        const expiringDocuments = documents.filter((item: any) => {
+          const days = daysUntilExpiry(item.expiry_date);
+          return (
+            days !== null &&
+            days >= 0 &&
+            isInsideThreeMonthAlertWindow(item.expiry_date)
+          );
+        }).length;
+        const criticalDocuments = documents.filter((item: any) => {
+          const days = daysUntilExpiry(item.expiry_date);
+          return days !== null && days <= 30;
+        }).length;
+
+        const recent: ActivityItem[] = [
+          ...crew.slice(0, 3).map((member: any) => ({
+            title: member.crew_profiles?.full_name || member.invited_email || "Crew member",
+            text: `${member.position || "Crew"} ${member.status === "invited" ? "invited" : "added"} to YACHT-OS`,
+            date: member.created_at,
+            tone: "cyan" as const,
+          })),
+          ...checklists.slice(0, 3).map((checklist: any) => ({
+            title: checklist.title || "Checklist",
+            text: `${checklist.department || "Operation"} checklist assigned`,
+            date: checklist.created_at,
+            tone: "emerald" as const,
+          })),
+          ...documents.slice(0, 2).map((document: any) => ({
+            title: document.title || document.file_name || "Document",
+            text: `${document.category || "Yacht"} document saved`,
+            date: document.created_at,
+            tone: "gold" as const,
+          })),
+        ]
+          .sort(
+            (first, second) =>
+              new Date(second.date || 0).getTime() - new Date(first.date || 0).getTime(),
+          )
+          .slice(0, 5);
+
+        setHasCrewWorkspace(capabilities?.canUseCrewWorkspace === true);
+        setStats({
+          crewCount: crew.length,
+          invitedCrew: pendingInvites,
+          checklistCount: checklists.length,
+          openChecklists: checklists.filter((item: any) => item.status !== "completed").length,
+          completedTasks,
+          totalTasks: taskItems.length,
+          documentCount: documents.length,
+          expiringDocuments,
+          criticalDocuments,
+          recent,
+        });
+        setYacht({ ...loadedYacht, id: loadedYachtId });
+        setLoadError(
+          supplementalErrors.length
+            ? "Some invitation or document details could not be refreshed."
+            : "",
+        );
+        setLoadState("ready");
+        hasLoadedOverview = true;
+        shouldRefresh = true;
+      } catch (error) {
+        console.error("Yacht overview loading failed", error);
+        if (!active) return;
+
+        if (isBackgroundRefresh && hasLoadedOverview) {
+          setLoadError("The latest yacht data could not be refreshed. Your current overview is still shown.");
+          shouldRefresh = true;
+          return;
+        }
+
+        setYacht(null);
+        setStats(emptyStats);
+        setLoadError("The yacht workspace could not be loaded. Check your connection and try again.");
+        setLoadState("error");
+      } finally {
+        if (active && shouldRefresh) {
+          refreshTimer = window.setTimeout(() => {
+            void loadOverview(true);
+          }, 15000);
+        }
+      }
     }
 
-    const [
-      crewDataResponse,
-      invitationResponse,
-      documentResponse,
-      capabilities,
-    ] =
-      await Promise.all([
-        fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          cache: "no-store",
-        }),
-        supabase
-          .from("crew_invitations")
-          .select("id,status,position,department,invited_email,created_at")
-          .eq("yacht_id", yachtId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("yacht_documents")
-          .select("id,title,file_name,category,expiry_date,created_at")
-          .eq("yacht_id", yachtId)
-          .order("created_at", { ascending: false }),
-        loadAccountCapabilities(),
-      ]);
-    setHasCrewWorkspace(capabilities?.canUseCrewWorkspace === true);
+    void loadOverview();
 
-    const crewPayload: unknown = await crewDataResponse.json();
-    const crewRecord =
-      crewPayload && typeof crewPayload === "object"
-        ? (crewPayload as Record<string, unknown>)
-        : {};
+    return () => {
+      active = false;
+      if (refreshTimer !== undefined) window.clearTimeout(refreshTimer);
+    };
+  }, [reloadAttempt, yachtId]);
 
-    const errors = [invitationResponse, documentResponse]
-      .map((response) => response.error?.message)
-      .filter(Boolean);
-
-    if (!crewDataResponse.ok) {
-      errors.unshift(
-        typeof crewRecord.error === "string"
-          ? crewRecord.error
-          : "Crew overview could not be loaded.",
-      );
-    }
-
-    if (errors.length) {
-      setLoadError(errors[0] || "Overview data could not be loaded.");
-    }
-
-    const crew = Array.isArray(crewRecord.crew) ? crewRecord.crew : [];
-    const checklists = Array.isArray(crewRecord.checklists)
-      ? crewRecord.checklists
-      : [];
-    const invitations = invitationResponse.data || [];
-    const documents = documentResponse.data || [];
-    const taskItems = checklists.flatMap((checklist: any) => checklist.yacht_checklist_items || []);
-    const completedTasks = taskItems.filter((task: any) => task.completed).length;
-    const pendingInvites = invitations.filter((item: any) => item.status === "pending").length;
-    const expiringDocuments = documents.filter((item: any) => {
-      const days = daysUntilExpiry(item.expiry_date);
-      return (
-        days !== null &&
-        days >= 0 &&
-        isInsideThreeMonthAlertWindow(item.expiry_date)
-      );
-    }).length;
-    const criticalDocuments = documents.filter((item: any) => {
-      const days = daysUntilExpiry(item.expiry_date);
-      return days !== null && days <= 30;
-    }).length;
-
-    const recent: ActivityItem[] = [
-      ...crew.slice(0, 3).map((member: any) => ({
-        title: member.crew_profiles?.full_name || member.invited_email || "Crew member",
-        text: `${member.position || "Crew"} ${member.status === "invited" ? "invited" : "added"} to YACHT-OS`,
-        date: member.created_at,
-        tone: "cyan" as const,
-      })),
-      ...checklists.slice(0, 3).map((checklist: any) => ({
-        title: checklist.title || "Checklist",
-        text: `${checklist.department || "Operation"} checklist assigned`,
-        date: checklist.created_at,
-        tone: "emerald" as const,
-      })),
-      ...documents.slice(0, 2).map((document: any) => ({
-        title: document.title || document.file_name || "Document",
-        text: `${document.category || "Yacht"} document saved`,
-        date: document.created_at,
-        tone: "gold" as const,
-      })),
-    ]
-      .sort((first, second) => new Date(second.date || 0).getTime() - new Date(first.date || 0).getTime())
-      .slice(0, 5);
-
-    setStats({
-      crewCount: crew.length,
-      invitedCrew: pendingInvites,
-      checklistCount: checklists.length,
-      openChecklists: checklists.filter((item: any) => item.status !== "completed").length,
-      completedTasks,
-      totalTasks: taskItems.length,
-      documentCount: documents.length,
-      expiringDocuments,
-      criticalDocuments,
-      recent,
-    });
-    setYacht(
-      crewRecord.yacht && typeof crewRecord.yacht === "object"
-        ? (crewRecord.yacht as YachtRecord)
-        : null,
+  if (
+    loadState === "loading" ||
+    (loadState === "ready" && yacht !== null && yacht.id !== yachtId)
+  ) {
+    return (
+      <YachtOverviewState
+        state="loading"
+        title="Loading yacht workspace..."
+        text="Verifying access and preparing the latest yacht operations data."
+      />
     );
   }
 
-  useEffect(() => {
-    loadOverview();
-    const interval = window.setInterval(() => loadOverview(), 15000);
-    return () => window.clearInterval(interval);
-  }, [yachtId]);
+  if (loadState !== "ready") {
+    const copyByState: Record<
+      Exclude<OverviewLoadState, "loading" | "ready">,
+      { title: string; text: string }
+    > = {
+      "not-found": {
+        title: "Yacht workspace not found",
+        text: loadError || "This link may be invalid or the yacht may no longer be available.",
+      },
+      forbidden: {
+        title: "You do not have access to this yacht",
+        text: loadError || "Ask the registered yacht owner to confirm your access.",
+      },
+      error: {
+        title: "Yacht workspace unavailable",
+        text: loadError || "The workspace could not be loaded. Please try again.",
+      },
+    };
+    const copy = copyByState[loadState];
+
+    return (
+      <YachtOverviewState
+        state={loadState}
+        title={copy.title}
+        text={copy.text}
+        onRetry={loadState === "error" ? () => setReloadAttempt((current) => current + 1) : undefined}
+      />
+    );
+  }
+
+  if (!yacht) {
+    return (
+      <YachtOverviewState
+        state="error"
+        title="Yacht workspace unavailable"
+        text="The yacht overview returned incomplete data. Please try again."
+        onRetry={() => setReloadAttempt((current) => current + 1)}
+      />
+    );
+  }
 
   const taskProgress = stats.totalTasks
     ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
@@ -287,7 +474,7 @@ export default function YachtDashboard() {
               <div>
                 <p className="bd-kicker">Private Yacht Command</p>
                 <h1 className="mt-4 max-w-4xl text-5xl font-black leading-[0.95] text-slate-950 sm:text-7xl">
-                  {yacht?.name || BLUEDECK.yachtName}
+                  {yacht.name || "Unnamed yacht"}
                 </h1>
                 <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-600">
                   Captain dashboard for crew invitations, duty proof, compliance
@@ -370,6 +557,59 @@ export default function YachtDashboard() {
             </div>
           </div>
         </section>
+      </div>
+    </main>
+  );
+}
+
+function YachtOverviewState({
+  state,
+  title,
+  text,
+  onRetry,
+}: {
+  state: Exclude<OverviewLoadState, "ready">;
+  title: string;
+  text: string;
+  onRetry?: () => void;
+}) {
+  const loading = state === "loading";
+
+  return (
+    <main
+      className="bd-app-page min-h-screen px-5 py-12 text-slate-950 sm:px-8 lg:px-10"
+      aria-busy={loading || undefined}
+    >
+      <div
+        className="mx-auto max-w-3xl rounded-[32px] border border-slate-200 bg-white p-7 shadow-xl shadow-cyan-950/5 sm:p-10"
+        role={state === "error" ? "alert" : "status"}
+        aria-live="polite"
+      >
+        <p className="bd-kicker">Private Yacht Command</p>
+        <h1 className="mt-4 text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
+          {title}
+        </h1>
+        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">{text}</p>
+
+        {!loading ? (
+          <div className="mt-7 flex flex-wrap gap-3">
+            {onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-cyan-800"
+              >
+                Try again
+              </button>
+            ) : null}
+            <Link
+              href="/yachts"
+              className="bd-focus rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-800 transition hover:border-cyan-400"
+            >
+              Back to fleet
+            </Link>
+          </div>
+        ) : null}
       </div>
     </main>
   );

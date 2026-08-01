@@ -2,6 +2,7 @@
 
 import { WifiOff } from "lucide-react";
 import { useEffect, useState } from "react";
+import { clearLegacySensitiveClientStorage } from "../lib/clientStorageSecurity";
 import { useLanguage } from "./LanguageProvider";
 
 type IOSNavigator = Navigator & {
@@ -19,6 +20,10 @@ function getDisplayMode() {
 export function PlatformBridge() {
   const { language } = useLanguage();
   const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    clearLegacySensitiveClientStorage();
+  }, []);
 
   useEffect(() => {
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");

@@ -12,6 +12,21 @@ import { useLanguage } from "../../components/LanguageProvider";
 import { translatePhrase } from "../../lib/i18n";
 import { supabase } from "../../lib/supabase";
 
+async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, message: string) {
+  let timeoutId: number | undefined;
+
+  try {
+    return await Promise.race([
+      Promise.resolve(promise),
+      new Promise<never>((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+}
+
 export default function YachtAppLayout({
   children,
 }: {
@@ -21,35 +36,52 @@ export default function YachtAppLayout({
   const pathname = usePathname();
   const { language } = useLanguage();
   const yachtId = String(params?.id || "");
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<"checking" | "ready" | "error">("checking");
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
 
   useEffect(() => {
     let active = true;
 
     async function verifyAccess() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      setSessionStatus((current) => current === "ready" ? current : "checking");
 
-      if (!active) return;
-
-      if (!session) {
-        const returnPath = pathname || (yachtId ? `/yachts/${yachtId}` : "/yachts");
-        window.location.replace(
-          `/login?next=${encodeURIComponent(returnPath)}`,
+      try {
+        const {
+          data: { session },
+          error,
+        } = await withTimeout(
+          supabase.auth.getSession(),
+          12000,
+          "Session verification timed out.",
         );
-        return;
-      }
 
-      setSessionChecked(true);
+        if (!active) return;
+        if (error) throw error;
+
+        if (!session) {
+          const returnPath =
+            window.location.pathname || (yachtId ? `/yachts/${yachtId}` : "/yachts");
+          window.location.replace(
+            `/login?next=${encodeURIComponent(returnPath)}`,
+          );
+          return;
+        }
+
+        setSessionStatus("ready");
+      } catch (error) {
+        console.error("Yacht workspace session verification failed", error);
+        if (!active) return;
+
+        setSessionStatus("error");
+      }
     }
 
-    verifyAccess();
+    void verifyAccess();
 
     return () => {
       active = false;
     };
-  }, [pathname, yachtId]);
+  }, [pathname, verificationAttempt, yachtId]);
 
   const nav = [
     { label: translatePhrase("Overview", language), href: `/yachts/${yachtId}`, icon: Home },
@@ -61,12 +93,55 @@ export default function YachtAppLayout({
       ? pathname === href
       : pathname === href || Boolean(pathname?.startsWith(`${href}/`));
 
-  if (!sessionChecked) {
+  if (sessionStatus === "error") {
     return (
       <main className="bd-app-page min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12">
+        <div
+          className="mx-auto max-w-3xl rounded-[32px] border border-rose-200 bg-white p-7 shadow-xl shadow-cyan-950/5 sm:p-10"
+          role="alert"
+        >
+          <p className="bd-kicker">BlueDeck Secure Access</p>
+          <h1 className="bd-serif mt-4 text-4xl sm:text-5xl">
+            {language === "tr" ? "Oturum doğrulanamadı" : "Session verification failed"}
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
+            {language === "tr"
+              ? "Oturumunuz doğrulanamadı. Bağlantınızı kontrol edip yeniden deneyin."
+              : "We could not verify your session. Check your connection and try again."}
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setVerificationAttempt((current) => current + 1)}
+              className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-cyan-800"
+            >
+              {language === "tr" ? "Yeniden dene" : "Try again"}
+            </button>
+            <Link
+              href="/yachts"
+              className="bd-focus rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-800 transition hover:border-cyan-400"
+            >
+              {language === "tr" ? "Filoya dön" : "Back to fleet"}
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (sessionStatus === "checking") {
+    return (
+      <main
+        className="bd-app-page min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12"
+        aria-busy="true"
+      >
         <div className="mx-auto max-w-[1500px]">
           <p className="bd-kicker">BlueDeck Secure Access</p>
-          <h1 className="bd-serif mt-4 text-5xl">Opening private yacht workspace...</h1>
+          <h1 className="bd-serif mt-4 text-4xl sm:text-5xl" role="status">
+            {language === "tr"
+              ? "Özel yacht çalışma alanı açılıyor..."
+              : "Opening private yacht workspace..."}
+          </h1>
         </div>
       </main>
     );

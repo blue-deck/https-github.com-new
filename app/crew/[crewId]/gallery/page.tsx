@@ -9,7 +9,7 @@ import {
   normalizePublicCrewId,
   publicStringArray,
   redactPublicContactDetails,
-  safePublicMediaUrl,
+  safeOwnedPublicMediaUrl,
 } from "../../../lib/publicCrewSafety";
 import { loadMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { absoluteSiteUrl } from "../../../lib/site";
@@ -83,10 +83,14 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
             <div className="flex items-center gap-4">
               <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25">
                 {profilePhoto ? (
-                  <img src={profilePhoto} alt={name} className="h-full w-full object-cover" />
+                  <img
+                    src={profilePhoto}
+                    alt={`${name} profile photo`}
+                    className="h-full w-full object-cover"
+                  />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-[#2d7482]">
-                    <UserRound className="h-9 w-9" />
+                    <UserRound className="h-9 w-9" aria-hidden="true" />
                   </div>
                 )}
               </div>
@@ -124,7 +128,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
                 href={absoluteSiteUrl(`/crew/${encodeURIComponent(publicCrewId)}`)}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#173f4a] px-4 py-3 text-sm font-black text-white shadow-lg shadow-[#173f4a]/15 transition hover:bg-[#235f6f]"
               >
-                <Ship className="h-4 w-4" />
+                <Ship className="h-4 w-4" aria-hidden="true" />
                 Open CV
               </a>
             </div>
@@ -133,7 +137,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
           <section className="p-4 sm:p-6 lg:p-7">
             <div className="mb-5 flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#173f4a] text-white shadow-lg shadow-[#173f4a]/15">
-                <Camera className="h-5 w-5" />
+                <Camera className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
                 <h2 className="text-lg font-black text-[#06111f]">Photo Gallery</h2>
@@ -187,7 +191,7 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
 
   const { data: photos, error: photosError } = await serviceClient
     .from("crew_portfolio_photos")
-    .select("image_url,created_at,location")
+    .select("id,image_url,created_at,location")
     .eq("crew_profile_id", String(profile.id))
     .not("image_url", "is", null)
     .order("created_at", { ascending: false })
@@ -199,7 +203,12 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
     profile: {
       public_crew_id: cleanCrewId,
       full_name: redactPublicContactDetails(profile.full_name, 120),
-      profile_photo_url: safePublicMediaUrl(profile.profile_photo_url),
+      profile_photo_url: safeOwnedPublicMediaUrl(profile.profile_photo_url, [
+        profile.id,
+        profile.user_id,
+      ])
+        ? publicCrewMediaProxyUrl(cleanCrewId, "avatar")
+        : "",
       current_position: redactPublicContactDetails(
         profile.current_position,
         120,
@@ -212,9 +221,14 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
     },
     photos: (photos || [])
       .map((photo) => {
-        const imageUrl = safePublicMediaUrl(photo.image_url);
+        const photoId = text(photo as Row, "id");
+        const imageUrl =
+          isUuid(photoId) &&
+          safeOwnedPublicMediaUrl(photo.image_url, [profile.id, profile.user_id])
+            ? publicCrewMediaProxyUrl(cleanCrewId, "portfolio", photoId)
+            : "";
         return {
-          id: imageUrl,
+          id: photoId,
           imageUrl,
           order: gallerySortValue(photo as Row),
         };
@@ -263,5 +277,21 @@ function InfoLine({ label, value }: { label: string; value: string }) {
       <span className="font-semibold text-[#65727a]">{label}</span>
       <span className="text-right font-black text-[#06111f]">{value}</span>
     </div>
+  );
+}
+
+function publicCrewMediaProxyUrl(
+  crewId: string,
+  kind: "avatar" | "portfolio",
+  id?: string,
+) {
+  const search = new URLSearchParams({ kind });
+  if (id) search.set("id", id);
+  return `/api/find-crew/${encodeURIComponent(crewId)}/media?${search.toString()}`;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
   );
 }

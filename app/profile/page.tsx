@@ -27,10 +27,6 @@ import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
 import { PhoneInput } from "../components/PhoneInput";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
-import {
-  dashboardPhotoFromMetadata,
-  publishDashboardPhotoUpdate,
-} from "../lib/accountIdentity";
 import { blueDeckCountries, nationalityOptions } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import {
@@ -47,10 +43,15 @@ import {
   crewExperienceYears,
   isPremiumCrewProfile,
 } from "../lib/crewProfileCompletion";
+import {
+  normalizeCrewPortfolioStoragePath,
+  signCrewPortfolioReference,
+} from "../lib/crewPortfolioStorage";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
 import { absoluteSiteUrl } from "../lib/site";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
+import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 import { yachtPositionTitles } from "../lib/yachtOperations";
 import { downloadCvPages } from "../lib/cvPdfDownload";
 
@@ -505,6 +506,8 @@ export default function ProfilePage() {
   const [documentDraft, setDocumentDraft] = useState<CrewDocument>(newDocumentDraft());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+  const [visibilityError, setVisibilityError] = useState("");
   const [savedProfile, setSavedProfile] = useState<CrewProfile>({});
   const [referenceSaving, setReferenceSaving] = useState(false);
   const [referenceStatus, setReferenceStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -522,6 +525,8 @@ export default function ProfilePage() {
   const newYachtExperienceFormId = useId();
   const newOtherWorkExperienceFormId = useId();
   const uploadRunRef = useRef(0);
+  const profileSaveQueueRef = useRef<Promise<boolean>>(Promise.resolve(true));
+  const profileSaveSequenceRef = useRef(0);
 
   const sortedDocuments = useMemo(() => sortCrewDocuments(documents), [documents]);
   const cvDocuments = sortedDocuments.filter((item) => item.show_on_cv).slice(0, maxCvDocuments);
@@ -644,7 +649,63 @@ export default function ProfilePage() {
       }),
     };
     setProfile(nextProfile);
-    if (autoSave) void saveProfile(nextProfile);
+    if (autoSave) {
+      void saveProfile(nextProfile, { syncIdentity: false });
+    }
+  }
+
+  async function updateFindCrewVisibility(discoverable: boolean) {
+    if (visibilitySaving) return;
+
+    const previousNotes = profile.notes || "";
+    const nextProfile = {
+      ...profile,
+      notes: writeCrewDiscoverySettings(profile.notes, {
+        ...discoverySettings,
+        discoverable,
+        contactVisibility: "request_only",
+      }),
+    };
+
+    setVisibilitySaving(true);
+    setVisibilityError("");
+    setProfile(nextProfile);
+
+    const saved = await saveProfile(nextProfile, {
+      notifyOnError: false,
+      syncIdentity: false,
+    });
+
+    if (!saved) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const authoritativeResult = user?.id
+        ? await supabase
+            .from("crew_profiles")
+            .select("notes")
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : null;
+      const authoritativeNotes =
+        authoritativeResult && !authoritativeResult.error
+          ? String(authoritativeResult.data?.notes || "")
+          : previousNotes;
+
+      setProfile((current) => ({ ...current, notes: authoritativeNotes }));
+      setSavedProfile((current) => ({ ...current, notes: authoritativeNotes }));
+
+      if (
+        parseCrewDiscoverySettings(authoritativeNotes).discoverable !==
+        discoverable
+      ) {
+        setVisibilityError(
+          "Visibility could not be changed. Your previous setting is still active.",
+        );
+      }
+    }
+
+    setVisibilitySaving(false);
   }
 
   async function loadProfile() {
@@ -675,6 +736,12 @@ export default function ProfilePage() {
         email: existingProfile.email || user.email || "",
         gender: existingProfile.gender || user.user_metadata?.gender || "",
       });
+      normalizedProfile.profile_photo_url = await signCrewPortfolioReference(
+        supabase,
+        existingProfile.profile_photo_url,
+        [existingProfile.id, user.id],
+        resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      );
       setProfile(normalizedProfile);
       setSavedProfile(normalizedProfile);
       await loadRelated(existingProfile.id);
@@ -747,14 +814,48 @@ export default function ProfilePage() {
     setPortfolio(sortPortfolioPhotos((result.portfolio || []).map(normalizePortfolioRecord)));
   }
 
-  async function saveProfile(nextProfile: CrewProfile = profile) {
+  function saveProfile(
+    nextProfile: CrewProfile = profile,
+    options: { notifyOnError?: boolean; syncIdentity?: boolean } = {},
+  ) {
+    const sequence = ++profileSaveSequenceRef.current;
     setSaving(true);
+    const queuedSave = profileSaveQueueRef.current
+      .catch(() => false)
+      .then(async () => {
+        try {
+          return await persistProfile(nextProfile, sequence, options);
+        } catch (error) {
+          if (sequence === profileSaveSequenceRef.current) {
+            if (options.notifyOnError !== false) {
+              alert(
+                error instanceof Error
+                  ? error.message
+                  : "Your profile could not be saved.",
+              );
+            }
+          }
+          return false;
+        } finally {
+          if (sequence === profileSaveSequenceRef.current) {
+            setSaving(false);
+          }
+        }
+      });
+    profileSaveQueueRef.current = queuedSave;
+    return queuedSave;
+  }
+
+  async function persistProfile(
+    nextProfile: CrewProfile,
+    sequence: number,
+    options: { notifyOnError?: boolean; syncIdentity?: boolean },
+  ) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user?.id) {
-      setSaving(false);
       window.location.href = "/login";
       return false;
     }
@@ -765,6 +866,13 @@ export default function ProfilePage() {
       email: normalizedForSave.email || user.email,
       public_crew_id: normalizedForSave.public_crew_id || user.id.slice(0, 8).toUpperCase(),
     };
+    profilePayload.profile_photo_url = normalizedForSave.profile_photo_url
+      ? normalizeCrewPortfolioStoragePath(
+          normalizedForSave.profile_photo_url,
+          [normalizedForSave.id, user.id],
+          resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        ) || ""
+      : "";
     delete profilePayload.id;
 
     let { data, error } = await saveCrewProfileByUserId<CrewProfile>(
@@ -785,52 +893,54 @@ export default function ProfilePage() {
     }
 
     if (error) {
-      setSaving(false);
-      alert(error.message);
+      if (
+        sequence === profileSaveSequenceRef.current &&
+        options.notifyOnError !== false
+      ) {
+        alert(error.message);
+      }
       return false;
     }
 
-    const [baseProfileResult, authResult] = await Promise.all([
-      saveBaseProfileById(supabase, {
-        id: user.id,
-        email: user.email || "",
-        full_name: normalizedForSave.full_name || user.email,
-        phone: normalizedForSave.phone || "",
-      }),
-      supabase.auth.updateUser({
-        data: {
+    if (options.syncIdentity !== false) {
+      const [baseProfileResult, authResult] = await Promise.all([
+        saveBaseProfileById(supabase, {
+          id: user.id,
+          email: user.email || "",
           full_name: normalizedForSave.full_name || user.email,
           phone: normalizedForSave.phone || "",
-          gender: normalizedForSave.gender || "",
-        },
-      }),
-    ]);
+        }),
+        supabase.auth.updateUser({
+          data: {
+            full_name: normalizedForSave.full_name || user.email,
+            phone: normalizedForSave.phone || "",
+            gender: normalizedForSave.gender || "",
+          },
+        }),
+      ]);
 
-    const linkedProfileError = baseProfileResult.error || authResult.error;
-    if (linkedProfileError) {
-      setSaving(false);
-      alert(linkedProfileError.message);
-      return false;
+      const linkedProfileError = baseProfileResult.error || authResult.error;
+      if (linkedProfileError) {
+        if (
+          sequence === profileSaveSequenceRef.current &&
+          options.notifyOnError !== false
+        ) {
+          alert(linkedProfileError.message);
+        }
+        return false;
+      }
     }
-
-    const updatedUser = authResult.data.user || user;
-    publishDashboardPhotoUpdate({
-      userId: user.id,
-      photoUrl: dashboardPhotoFromMetadata(
-        updatedUser.user_metadata as Record<string, unknown> | undefined,
-        normalizedForSave.profile_photo_url,
-      ),
-      fullName: normalizedForSave.full_name || user.email || "",
-    });
 
     const normalizedProfile = normalizeProfile({
       ...normalizedForSave,
       ...(data || {}),
       user_id: user.id,
+      profile_photo_url: normalizedForSave.profile_photo_url,
     });
-    setProfile(normalizedProfile);
-    setSavedProfile(normalizedProfile);
-    setSaving(false);
+    if (sequence === profileSaveSequenceRef.current) {
+      setProfile(normalizedProfile);
+      setSavedProfile(normalizedProfile);
+    }
     return true;
   }
 
@@ -975,6 +1085,15 @@ export default function ProfilePage() {
         return "";
       }
 
+      if (bucket === "crew-portfolio") {
+        return signCrewPortfolioReference(
+          supabase,
+          path,
+          [profile.id],
+          resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        );
+      }
+
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);
       return data.publicUrl;
     } finally {
@@ -1066,36 +1185,74 @@ export default function ProfilePage() {
                 </p>
               </div>
 
-              <label className="block rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
-                <span className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
-                    Availability
+              <div className="grid gap-3">
+                <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
+                        Find Crew visibility
+                      </p>
+                      <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                        Private by default. Your contact details are never shown publicly.
+                      </p>
+                    </div>
+                    <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 transition hover:border-cyan-300 has-[:disabled]:cursor-wait has-[:disabled]:opacity-70">
+                      <input
+                        type="checkbox"
+                        checked={discoverySettings.discoverable}
+                        disabled={visibilitySaving}
+                        onChange={(event) =>
+                          void updateFindCrewVisibility(event.target.checked)
+                        }
+                        className="h-5 w-5 accent-cyan-700"
+                      />
+                      <span aria-live="polite" className="text-sm font-bold text-slate-800">
+                        {visibilitySaving
+                          ? "Saving…"
+                          : discoverySettings.discoverable
+                            ? "Public"
+                            : "Private"}
+                      </span>
+                    </label>
+                  </div>
+                  {visibilityError ? (
+                    <p className="mt-3 text-xs font-semibold leading-5 text-rose-700" role="alert">
+                      {visibilityError}
+                    </p>
+                  ) : null}
+                </section>
+
+                <label className="block rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
+                      Availability
+                    </span>
+                    <span aria-live="polite" className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+                      {saving ? "Saving" : "Auto-saved"}
+                    </span>
                   </span>
-                  <span aria-live="polite" className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
-                    {saving ? "Saving" : "Auto-saved"}
+                  <span className="relative mt-2 block">
+                    <select
+                      value={discoverySettings.availabilityStatus}
+                      onChange={(event) =>
+                        updateDiscoverySettings({
+                          availabilityStatus: event.target.value,
+                        })
+                      }
+                      className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-10 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm"
+                    >
+                      {crewAvailabilityStatuses.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
                   </span>
-                </span>
-                <span className="relative mt-2 block">
-                  <select
-                    value={discoverySettings.availabilityStatus}
-                    onChange={(event) =>
-                      updateDiscoverySettings({
-                        availabilityStatus: event.target.value,
-                      })
-                    }
-                    className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-10 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm"
-                  >
-                    {crewAvailabilityStatuses.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
-                </span>
-                <span className="mt-2 block text-xs leading-5 text-slate-500">
-                  Shown to employers on your job applications.
-                </span>
-              </label>
+                  <span className="mt-2 block text-xs leading-5 text-slate-500">
+                    Shown to employers on your job applications.
+                  </span>
+                </label>
+              </div>
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />

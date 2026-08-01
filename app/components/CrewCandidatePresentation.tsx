@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { EmployerJobApplicationDetails } from "../lib/jobApplications";
+import { AccessibleImageLightbox } from "./AccessibleImageLightbox";
 
 export type CrewCandidateCardProfile = {
   displayName: string;
@@ -46,6 +47,8 @@ export type CrewCandidateProfileCopy = {
   gallery: string;
   galleryHelp: string;
   galleryPhoto: string;
+  openGalleryPhoto: string;
+  closeGalleryPhoto: string;
   noGalleryPhotos: string;
   years: string;
   noExperience: string;
@@ -296,6 +299,12 @@ export function CrewCandidateProfileBody({
   children?: ReactNode;
   sectionHeadingLevel?: "h2" | "h3";
 }) {
+  const [activeGalleryPhoto, setActiveGalleryPhoto] = useState<{
+    source: string;
+    alt: string;
+    index: number;
+  } | null>(null);
+
   return (
     <div className="space-y-6 p-4 sm:p-7 lg:p-8">
       <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
@@ -311,7 +320,15 @@ export function CrewCandidateProfileBody({
               <GalleryPhoto
                 key={photo}
                 source={photo}
-                alt={`${candidate.displayName} ${copy.galleryPhoto} ${index + 1}`}
+                alt={`${candidate.displayName} ${copy.galleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`}
+                openLabel={`${copy.openGalleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`}
+                onOpen={() =>
+                  setActiveGalleryPhoto({
+                    source: photo,
+                    alt: `${candidate.displayName} ${copy.galleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`,
+                    index,
+                  })
+                }
               />
             ))}
           </div>
@@ -321,6 +338,16 @@ export function CrewCandidateProfileBody({
           </div>
         )}
       </section>
+
+      {activeGalleryPhoto ? (
+        <AccessibleImageLightbox
+          source={candidateMediaSource(activeGalleryPhoto.source, 1600, 1200)}
+          imageAlt={activeGalleryPhoto.alt}
+          dialogLabel={`${copy.gallery}: ${activeGalleryPhoto.index + 1} / ${candidate.galleryPhotos.length}`}
+          closeLabel={copy.closeGalleryPhoto}
+          onClose={() => setActiveGalleryPhoto(null)}
+        />
+      ) : null}
 
       <section className="grid gap-3 sm:grid-cols-3">
         <ProfileMetric
@@ -508,7 +535,7 @@ export function CandidateAvatar({
       >
         <img
           src={candidateMediaSource(profilePhotoUrl, mediaSize, mediaSize)}
-          alt={displayName}
+          alt={`${displayName} profile photo`}
           className="h-full w-full object-cover"
           loading="lazy"
           decoding="async"
@@ -523,7 +550,7 @@ export function CandidateAvatar({
     <span
       className={`flex shrink-0 items-center justify-center bg-[linear-gradient(145deg,#d8f8ff,#73bffc)] font-black text-[#071631] ${className} ${textClassName}`}
       role="img"
-      aria-label={displayName}
+      aria-label={`${displayName} profile placeholder`}
     >
       {initials || "BD"}
     </span>
@@ -611,29 +638,49 @@ export function SectionHeading({
   );
 }
 
-function GalleryPhoto({ source, alt }: { source: string; alt: string }) {
+function GalleryPhoto({
+  source,
+  alt,
+  openLabel,
+  onOpen,
+}: {
+  source: string;
+  alt: string;
+  openLabel: string;
+  onOpen: () => void;
+}) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
     return (
-      <span className="grid aspect-[4/3] place-items-center rounded-2xl bg-slate-100 text-slate-400">
+      <span
+        className="grid aspect-[4/3] place-items-center rounded-2xl bg-slate-100 text-slate-400"
+        role="img"
+        aria-label={alt}
+      >
         <Camera className="h-7 w-7" aria-hidden />
       </span>
     );
   }
 
   return (
-    <span className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="bd-focus group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-2xl bg-slate-100"
+      aria-label={openLabel}
+      aria-haspopup="dialog"
+    >
       <img
         src={candidateMediaSource(source, 720, 540)}
         alt={alt}
-        className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         loading="lazy"
         decoding="async"
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
       />
-    </span>
+    </button>
   );
 }
 

@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
+import { clearLegacySensitiveClientStorage } from "../lib/clientStorageSecurity";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -112,6 +113,7 @@ export function PublicHeader() {
   }, [menuOpen]);
 
   async function logout() {
+    clearLegacySensitiveClientStorage();
     const { supabase } = await import("../lib/supabase");
     await supabase.auth.signOut();
     window.location.assign("/login");
@@ -153,7 +155,10 @@ export function PublicHeader() {
           />
         </div>
 
-        <nav className="bd-public-navigation" aria-label="BlueDeck">
+        <nav
+          className="bd-public-navigation"
+          aria-label={language === "tr" ? "Ana gezinme" : "Primary navigation"}
+        >
           {publicNavigation
             .filter((item) => item.desktop)
             .map((item) => {
@@ -196,13 +201,13 @@ export function PublicHeader() {
             <>
               <Link
                 href="/login"
-                className="bd-focus bd-public-action bd-public-action-quiet"
+                className="bd-focus bd-public-action bd-public-action-quiet bd-public-auth-action"
               >
                 {t("auth.login")}
               </Link>
               <Link
                 href="/login?mode=signup"
-                className="bd-focus bd-public-action bd-public-action-primary"
+                className="bd-focus bd-public-action bd-public-action-primary bd-public-auth-action"
               >
                 {t("auth.signUp")}
               </Link>
@@ -216,9 +221,8 @@ export function PublicHeader() {
             ref={menuPanelRef}
             id={menuId}
             className="bd-public-mobile-panel"
-            aria-label={language === "tr" ? "Ana menü" : "Main menu"}
           >
-            <nav>
+            <nav aria-label={language === "tr" ? "Mobil ana gezinme" : "Mobile primary navigation"}>
               {publicNavigation.map((item) => {
                 const active = isCurrentRoute(pathname, item.href);
                 return (
@@ -233,6 +237,28 @@ export function PublicHeader() {
                   </Link>
                 );
               })}
+              {!sessionEmail ? (
+                <div
+                  className="bd-public-mobile-auth"
+                  role="group"
+                  aria-label={language === "tr" ? "Hesap" : "Account"}
+                >
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
+                  >
+                    {t("auth.login")}
+                  </Link>
+                  <Link
+                    href="/login?mode=signup"
+                    onClick={() => setMenuOpen(false)}
+                    className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link bd-public-mobile-auth-primary"
+                  >
+                    {t("auth.signUp")}
+                  </Link>
+                </div>
+              ) : null}
             </nav>
           </div>
         ) : null}
@@ -242,7 +268,7 @@ export function PublicHeader() {
 }
 
 export function PublicFooter() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   return (
     <footer className="bd-public-footer">
@@ -294,7 +320,7 @@ export function PublicFooter() {
           <p>
             © {new Date().getFullYear()} BlueDeck. {t("footer.rights")}
           </p>
-          <nav aria-label="Legal">
+          <nav aria-label={language === "tr" ? "Yasal bağlantılar" : "Legal links"}>
             <Link href="/privacy">{t("footer.privacy")}</Link>
             <Link href="/terms">{t("footer.terms")}</Link>
           </nav>
@@ -314,7 +340,7 @@ function FooterColumn({
   return (
     <div>
       <p className="bd-public-footer-title">{title}</p>
-      <nav className="bd-public-footer-links">
+      <nav className="bd-public-footer-links" aria-label={title}>
         {links.map(([label, href]) => (
           <Link key={href} href={href}>
             {label}

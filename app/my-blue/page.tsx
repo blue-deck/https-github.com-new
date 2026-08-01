@@ -33,8 +33,10 @@ import {
   X,
 } from "lucide-react";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
+import { signCrewPortfolioReference } from "../lib/crewPortfolioStorage";
 import { createSafeStoragePath } from "../lib/storage";
 import { supabase } from "../lib/supabase";
+import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 
 type CrewProfileSummary = {
   id: string;
@@ -429,8 +431,12 @@ export default function MyBluePage() {
         return "";
       }
 
-      const { data } = supabase.storage.from("crew-portfolio").getPublicUrl(path);
-      return data.publicUrl;
+      return signCrewPortfolioReference(
+        supabase,
+        path,
+        [profile.id],
+        resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      );
     } finally {
       if (uploadRun === uploadRunRef.current) setUploading(false);
     }

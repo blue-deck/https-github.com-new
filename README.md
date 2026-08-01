@@ -15,7 +15,8 @@ Open `http://localhost:3000`.
 
 ## Required Environment
 
-The app expects these values in `.env.local` locally and in Vercel production:
+The app expects these values in `.env.local` locally and in the production
+hosting environment:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://www.bluedeck.app
@@ -24,32 +25,44 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 NEXT_PUBLIC_TURNSTILE_SITE_KEY=...
 TURNSTILE_SECRET_KEY=...
+JOB_APPLICATION_MEDIA_SIGNING_SECRET=...
+CRON_SECRET=...
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` is server-only. Never expose it in browser code.
 `TURNSTILE_SECRET_KEY` is also server-only and is used to verify real password
 reset security challenges before BlueDeck sends reset emails.
+`JOB_APPLICATION_MEDIA_SIGNING_SECRET` is a dedicated random secret (at least
+32 characters) used for short-lived employer media capabilities. `CRON_SECRET`
+protects the optional manual checklist-renewal endpoint; the durable production
+schedule itself runs inside Postgres through `pg_cron`.
 
-## Production Foundation
+## Database Changes
 
-Run `supabase-production-hardening.sql` in Supabase SQL Editor after the initial
-database setup. It is idempotent and keeps the critical production foundation in
-one place:
+The ordered files in `supabase/migrations/` are the only production database
+source of truth. Do not run legacy root-level SQL setup scripts or recreate
+policies manually in the SQL Editor; doing so can overwrite later RLS and
+private-storage hardening.
 
-- required profile, crew, yacht, invitation, checklist and contract columns
-- unique indexes used by profile sync and yacht membership flows
-- storage buckets for crew documents, portfolio photos, task proof and yacht files
-- baseline RLS/storage policies for authenticated BlueDeck users
+Review pending migrations before applying them, then use the linked Supabase
+CLI project:
+
+```bash
+npx supabase migration list
+npx supabase db push --dry-run
+npx supabase db push
+```
+
+Run the transactional checks in `supabase/tests/` against a disposable or
+staging database before production changes.
 
 ## Verification
 
 ```bash
-npm run build
-npx eslint app/page.tsx app/login/page.tsx app/api/auth/signup/route.ts app/api/health/route.ts
+npm run check
 ```
 
-The full repository contains older operational modules, so broad linting can
-surface legacy warnings. Production build must stay clean before deployment.
+Lint, type checking and the production build must all pass before deployment.
 
 ## Operational Checks
 

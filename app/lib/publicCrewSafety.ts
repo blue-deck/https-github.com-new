@@ -4,6 +4,7 @@ import {
   parseCrewDiscoverySettings,
   type CrewDiscoverySettings,
 } from "./crewDiscovery";
+import { normalizeCrewPortfolioStoragePath } from "./crewPortfolioStorage";
 import { resolveSupabaseUrl } from "./supabaseConfig";
 
 const publicCrewIdPattern = /^[A-Z0-9_-]{1,64}$/;
@@ -20,7 +21,6 @@ const structuredContactKeywordPattern = /\b(?:contact|discord|dm|email|facebook|
 const structuredIdentifierPattern = /[A-Z0-9][._][A-Z0-9]/i;
 const structuredUnsafeSymbolPattern = /[@:=#<>\[\]{}|\\]/;
 const contactWithheldText = "Contact details withheld";
-const publicCrewPortfolioPath = "/storage/v1/object/public/crew-portfolio/";
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -89,68 +89,30 @@ export function redactPublicContactDetails(value: unknown, maxLength = 2_000) {
 }
 
 export function safePublicMediaUrl(value: unknown) {
-  if (
-    typeof value !== "string" ||
-    !value.trim() ||
-    value.trim().length > 2_048
-  ) {
-    return "";
-  }
-
-  try {
-    const url = new URL(value.trim());
-    if (url.protocol !== "https:" || url.username || url.password) return "";
-    const configuredStorageOrigins = publicStorageOrigins();
-    if (
-      !configuredStorageOrigins.includes(url.origin) ||
-      !url.pathname.startsWith(publicCrewPortfolioPath)
-    ) {
-      return "";
-    }
-    url.hash = "";
-    return url.toString();
-  } catch {
-    return "";
-  }
+  return (
+    normalizeCrewPortfolioStoragePath(
+      value,
+      [],
+      resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    ) || ""
+  );
 }
 
 export function safeOwnedPublicMediaUrl(
   value: unknown,
   ownerIds: unknown[],
 ) {
-  const safeUrl = safePublicMediaUrl(value);
-  if (!safeUrl) return "";
-
-  const allowedOwners = new Set(
-    ownerIds
-      .filter((ownerId): ownerId is string => typeof ownerId === "string")
-      .map((ownerId) => ownerId.trim().toLowerCase())
-      .filter((ownerId) => uuidPattern.test(ownerId)),
-  );
-  if (allowedOwners.size === 0) return "";
-
-  try {
-    const url = new URL(safeUrl);
-    const encodedPath = url.pathname.slice(publicCrewPortfolioPath.length);
-    const decodedPath = decodeURIComponent(encodedPath);
-    const segments = decodedPath.split("/");
-    if (
-      segments.length < 2 ||
-      segments.some(
-        (segment) =>
-          !segment ||
-          segment === "." ||
-          segment === ".." ||
-          segment.includes("\\"),
-      )
-    ) {
-      return "";
-    }
-
-    return allowedOwners.has(segments[0].toLowerCase()) ? safeUrl : "";
-  } catch {
+  if (!ownerIds.some((ownerId) => typeof ownerId === "string" && uuidPattern.test(ownerId.trim()))) {
     return "";
   }
+
+  return (
+    normalizeCrewPortfolioStoragePath(
+      value,
+      ownerIds,
+      resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+    ) || ""
+  );
 }
 
 export function selectPublicCrewGallerySources(
@@ -204,29 +166,6 @@ function selectCrewGallerySources(
   }
 
   return selected;
-}
-
-function publicStorageOrigins() {
-  const configuredUrls = [
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_URL,
-  ].filter((candidate): candidate is string => Boolean(candidate?.trim()));
-  const resolvedUrls =
-    configuredUrls.length > 0
-      ? configuredUrls.map((candidate) => resolveSupabaseUrl(candidate))
-      : [resolveSupabaseUrl()];
-
-  return Array.from(
-    new Set(
-      resolvedUrls.flatMap((candidate) => {
-        try {
-          return [new URL(candidate).origin];
-        } catch {
-          return [];
-        }
-      }),
-    ),
-  );
 }
 
 export function publicStructuredProfileField(

@@ -849,6 +849,28 @@ textarea:-webkit-autofill:focus {
   color: #ffffff;
 }
 
+.bd-public-mobile-auth {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-top: 0.65rem;
+}
+
+.bd-public-mobile-auth-link {
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  padding-inline: 0.6rem;
+}
+
+.bd-public-mobile-auth-primary,
+.bd-public-mobile-auth-primary:hover {
+  border-color: #0a6fc6;
+  background: #075fad;
+  color: #ffffff;
+}
+
 .bd-public-container,
 .bd-section {
   width: min(100% - 2.5rem, 1280px);
@@ -1970,7 +1992,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     display: none;
   }
 
-  .bd-public-header .bd-public-actions > a[href="/login?mode=signup"] {
+  .bd-public-auth-action {
     display: none;
   }
 
@@ -2214,9 +2236,6 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     font-size: 0.72rem;
   }
 
-  .bd-public-action-quiet {
-    display: none;
-  }
 }
 
 @media (pointer: coarse) {
@@ -2255,6 +2274,10 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   will-change: transform;
 }
 
+.bd-cv-mobile-hero {
+  display: none;
+}
+
 body.bd-pdf-exporting #bluedeck-cv .bd-cv-sheet,
 body.bd-pdf-exporting #bluedeck-cv.bd-cv-root,
 body.bd-pdf-exporting .bd-cv-scale-content {
@@ -2288,26 +2311,195 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 }
 
 @media screen and (max-width: 767px) {
-  #bluedeck-cv .bd-cv-sheet,
-  #bluedeck-cv.bd-cv-public-sheet {
+  .bd-cv-scale-wrap:not(.bd-cv-scale-wrap-mobile-readable) .bd-cv-sheet {
     width: 980px !important;
     max-width: none !important;
   }
 
-  #bluedeck-cv .bd-cv-layout {
+  .bd-cv-scale-wrap:not(.bd-cv-scale-wrap-mobile-readable) .bd-cv-layout {
     display: grid !important;
     grid-template-columns: 320px 1fr !important;
     align-items: start !important;
   }
 
-  #bluedeck-cv .bd-cv-experience-grid {
+  .bd-cv-scale-wrap:not(.bd-cv-scale-wrap-mobile-readable) .bd-cv-experience-grid {
     display: grid !important;
     grid-template-columns: 136px 1fr !important;
     align-items: stretch !important;
   }
 
-  #bluedeck-cv .bd-cv-crew-name {
+  .bd-cv-scale-wrap:not(.bd-cv-scale-wrap-mobile-readable) .bd-cv-crew-name {
     white-space: nowrap !important;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .bd-cv-scale-wrap-mobile-readable {
+    height: auto !important;
+    max-width: none;
+    overflow: visible;
+    padding: 0 !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable .bd-cv-scale-content {
+    width: 100% !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv.bd-cv-public-sheet {
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 20px;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-public-toolbar {
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-public-toolbar > div {
+    min-width: 0;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-public-toolbar > a {
+    align-self: flex-start;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-hero {
+    display: block;
+    padding: 1.25rem;
+    background: #20242a;
+    color: #ffffff;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-profile {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-avatar {
+    width: 6rem;
+    height: 6rem;
+    flex: 0 0 6rem;
+    overflow: hidden;
+    border: 5px solid #ffffff;
+    border-radius: 999px;
+    background: #ffffff;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-facts > div {
+    min-width: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-facts dt {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 0.65rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-facts dd {
+    margin-top: 0.35rem;
+    overflow-wrap: anywhere;
+    color: #ffffff;
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-layout {
+    display: block !important;
+    min-height: 0 !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-sidebar {
+    padding: 1.5rem !important;
+    background: #eef3f4;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-avatar,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-sidebar-signature,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-header {
+    display: none !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-main {
+    padding: 1.5rem !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-meta {
+    border-right: 0;
+    border-bottom: 1px solid #d8e2e6;
+    padding: 1rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-meta > img,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-meta > div:first-child {
+    height: 10rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-meta p,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-document-row p {
+    overflow: visible;
+    font-size: 0.75rem !important;
+    line-height: 1.125rem !important;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-body {
+    padding: 1rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-titlebar {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-titlebar h2 {
+    overflow: visible;
+    font-size: 1.125rem !important;
+    line-height: 1.35 !important;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-titlebar span {
+    justify-self: start;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-body > p:first-of-type {
+    font-size: 0.7rem !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-body > p:nth-of-type(2) {
+    font-size: 0.875rem !important;
+    line-height: 1.5rem !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-pill-list span,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-side-section p {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
   }
 }
 

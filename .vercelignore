@@ -1,0 +1,9 @@
+.git
+.next
+.open-next
+dist
+node_modules
+tmp
+coverage
+output
+.DS_Store

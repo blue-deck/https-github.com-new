@@ -41,18 +41,27 @@ type LoadState = "loading" | "ready" | "not-found" | "error";
 
 export function JobDetailClient({
   jobId,
+  initialJob = null,
   embedded = false,
 }: {
   jobId: string;
+  initialJob?: PublicJob | null;
   embedded?: boolean;
 }) {
   const { language } = useLanguage();
   const c = copy[language];
-  const [loadState, setLoadState] = useState<LoadState>("loading");
-  const [job, setJob] = useState<PublicJob | null>(null);
+  const hasInitialJob = initialJob?.id === jobId;
+  const [loadState, setLoadState] = useState<LoadState>(
+    hasInitialJob ? "ready" : "loading",
+  );
+  const [job, setJob] = useState<PublicJob | null>(
+    hasInitialJob ? initialJob : null,
+  );
   const [requestVersion, setRequestVersion] = useState(0);
 
   useEffect(() => {
+    if (hasInitialJob && requestVersion === 0) return;
+
     const controller = new AbortController();
 
     async function loadJob() {
@@ -96,7 +105,7 @@ export function JobDetailClient({
 
     void loadJob();
     return () => controller.abort();
-  }, [jobId, requestVersion]);
+  }, [hasInitialJob, jobId, requestVersion]);
 
   useEffect(() => {
     if (loadState !== "ready" || !job || window.location.hash !== "#apply") {

@@ -1,7 +1,16 @@
 import "server-only";
 
-import { loadActiveDirectoryCrewMediaSource } from "../../../../lib/findCrewData";
+import { createClient } from "@supabase/supabase-js";
+import {
+  crewPortfolioProxySignedUrlLifetimeSeconds,
+  signCrewPortfolioReference,
+} from "../../../../lib/crewPortfolioStorage";
+import {
+  loadActiveDirectoryCrewMediaSource,
+  loadActiveDirectoryCrewRecordMediaSource,
+} from "../../../../lib/findCrewData";
 import { safePublicMediaUrl } from "../../../../lib/publicCrewSafety";
+import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -33,11 +42,18 @@ export async function GET(request: Request, context: RouteContext) {
 
   let source = "";
   try {
-    source = await loadActiveDirectoryCrewMediaSource(
-      crewId,
-      mediaRequest.kind,
-      mediaRequest.slot,
-    );
+    source =
+      mediaRequest.kind === "avatar" || mediaRequest.kind === "gallery"
+        ? await loadActiveDirectoryCrewMediaSource(
+            crewId,
+            mediaRequest.kind,
+            mediaRequest.slot,
+          )
+        : await loadActiveDirectoryCrewRecordMediaSource(
+            crewId,
+            mediaRequest.kind,
+            mediaRequest.id,
+          );
   } catch (error) {
     console.error(
       "Find Crew media request failed",
@@ -48,9 +64,26 @@ export async function GET(request: Request, context: RouteContext) {
 
   const safeSource = safePublicMediaUrl(source);
   if (!safeSource) return mediaError(404);
-  return proxyMedia(
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "";
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
+  if (!supabaseUrl || !serviceRoleKey) return mediaError(503);
+
+  const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const signedSource = await signCrewPortfolioReference(
+    serviceClient,
     safeSource,
-    mediaRequest.kind,
+    [],
+    resolveSupabaseUrl(supabaseUrl),
+    crewPortfolioProxySignedUrlLifetimeSeconds,
+  );
+  if (!signedSource) return mediaError(404);
+
+  return proxyMedia(
+    signedSource,
+    mediaRequest.kind === "avatar" ? "avatar" : "gallery",
     safeUpstreamAccept(request.headers.get("accept")),
   );
 }
@@ -59,32 +92,51 @@ function parseMediaRequest(request: Request) {
   const searchParams = new URL(request.url).searchParams;
   if (
     Array.from(searchParams.keys()).some(
-      (key) => key !== "kind" && key !== "slot",
+      (key) => key !== "kind" && key !== "slot" && key !== "id",
     )
   ) {
     return null;
   }
   const kinds = searchParams.getAll("kind");
   const slots = searchParams.getAll("slot");
+  const ids = searchParams.getAll("id");
   if (
     kinds.length !== 1 ||
-    (kinds[0] === "avatar" && slots.length > 0)
+    (kinds[0] === "avatar" && (slots.length > 0 || ids.length > 0))
   ) {
     return null;
   }
 
   if (kinds[0] === "avatar") {
-    return { kind: "avatar" as const, slot: null };
+    return { kind: "avatar" as const, slot: null, id: "" };
   }
-  if (
-    kinds[0] !== "gallery" ||
-    slots.length !== 1 ||
-    !/^[0-3]$/.test(slots[0])
-  ) {
-    return null;
+  if (kinds[0] === "gallery") {
+    if (
+      slots.length !== 1 ||
+      ids.length > 0 ||
+      !/^[0-3]$/.test(slots[0])
+    ) {
+      return null;
+    }
+    return { kind: "gallery" as const, slot: Number(slots[0]), id: "" };
   }
 
-  return { kind: "gallery" as const, slot: Number(slots[0]) };
+  if (
+    (kinds[0] === "experience" || kinds[0] === "portfolio") &&
+    slots.length === 0 &&
+    ids.length === 1 &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      ids[0],
+    )
+  ) {
+    return {
+      kind: kinds[0] as "experience" | "portfolio",
+      slot: null,
+      id: ids[0].toLowerCase(),
+    };
+  }
+
+  return null;
 }
 
 async function proxyMedia(
@@ -138,8 +190,7 @@ async function proxyMedia(
       status: 200,
       headers: {
         ...safeResponseHeaders,
-        "Cache-Control":
-          "public, max-age=300, s-maxage=300, stale-while-revalidate=60",
+        "Cache-Control": "private, no-store, max-age=0",
         "Content-Length": String(sourceBytes.byteLength),
         "Content-Type": contentType,
         Vary: "Accept",
@@ -160,10 +211,9 @@ function transformedStorageSource(
 ) {
   const transformed = new URL(source);
   transformed.pathname = transformed.pathname.replace(
-    "/storage/v1/object/public/",
-    "/storage/v1/render/image/public/",
+    "/storage/v1/object/sign/",
+    "/storage/v1/render/image/sign/",
   );
-  transformed.search = "";
   transformed.searchParams.set("width", kind === "avatar" ? "320" : "960");
   transformed.searchParams.set("height", kind === "avatar" ? "320" : "720");
   transformed.searchParams.set("resize", "cover");

@@ -25,7 +25,6 @@ export default function robots(): MetadataRoute.Robots {
           "/crew",
           "/dashboard",
           "/hiring",
-          "/homepage-concepts",
           "/invitations/",
           "/my-blue",
           "/offline",

@@ -9,7 +9,7 @@
     "preview:cloudflare": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node scripts/clean-next-dev-types.mjs && next typegen && tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm run build:cloudflare",
     "icons": "node scripts/generate-app-icons.mjs"
   },
@@ -18,9 +18,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "^2.106.0",
-    "framer-motion": "^12.40.0",
     "html2canvas": "^1.4.1",
-    "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.16.0",
@@ -29,7 +27,6 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
-    "recharts": "^3.8.1",
     "sharp": "^0.35.3",
     "world-countries": "^5.1.0"
   },

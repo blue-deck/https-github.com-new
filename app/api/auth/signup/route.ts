@@ -11,6 +11,7 @@ import {
 import { ensureMarketplaceEntitlement } from "../../../lib/marketplaceEntitlementsServer";
 import { getDefaultPositionForAccountType, yachtPositionTitles } from "../../../lib/yachtOperations";
 import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
+import { readLimitedJsonObject } from "../../../lib/requestBodyServer";
 import {
   getClientIp,
   isTurnstileConfigured,
@@ -21,29 +22,43 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const minuteMs = 60 * 1_000;
+const maximumSignupRequestBytes = 16 * 1024;
 
 export async function POST(request: NextRequest) {
   if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
     return signupError("service_unavailable", 503);
   }
 
-  let body: SignupRequestBody;
+  const turnstileConfigured = isTurnstileConfigured();
+  const clientIp = getClientIp(request) || "unknown";
+  const ipLimit = consumeRequestRateLimit(
+    "signup:" +
+      (turnstileConfigured ? "verified" : "fallback") +
+      ":ip:" +
+      clientIp,
+    turnstileConfigured ? 6 : 5,
+    (turnstileConfigured ? 10 : 30) * minuteMs,
+  );
+  if (!ipLimit.allowed) return signupRateLimitResponse(ipLimit.retryAfterSeconds);
 
-  try {
-    body = (await request.json()) as SignupRequestBody;
-  } catch {
+  const rawBody = await readLimitedJsonObject(
+    request,
+    maximumSignupRequestBytes,
+  );
+  if (!rawBody) {
     return signupError("invalid_request", 400);
   }
+  const body = rawBody as SignupRequestBody;
 
-  const email = body.email?.trim().toLowerCase();
-  const password = body.password || "";
-  const fullName = body.fullName?.trim() || "";
+  const email = requestText(body.email).toLowerCase();
+  const password = typeof body.password === "string" ? body.password : "";
+  const fullName = requestText(body.fullName);
   const role = isMarketplaceAccountRole(body.role) ? body.role : "";
-  const requestedPosition = body.position?.trim() || getDefaultPositionForAccountType(role);
+  const requestedPosition = requestText(body.position) || getDefaultPositionForAccountType(role);
   const position = yachtPositionTitles.includes(requestedPosition) ? requestedPosition : "";
-  const nextPath = safeInternalPath(body.next);
-  const captchaToken = body.captchaToken?.trim() || "";
-  const website = body.website?.trim() || "";
+  const nextPath = safeInternalPath(requestText(body.next));
+  const captchaToken = requestText(body.captchaToken);
+  const website = requestText(body.website);
 
   if (website) {
     return NextResponse.json({
@@ -64,18 +79,6 @@ export async function POST(request: NextRequest) {
   if (!hasSignupPasswordRequirements(password)) {
     return signupError("weak_password", 400);
   }
-
-  const turnstileConfigured = isTurnstileConfigured();
-  const clientIp = getClientIp(request) || "unknown";
-  const ipLimit = consumeRequestRateLimit(
-    "signup:" +
-      (turnstileConfigured ? "verified" : "fallback") +
-      ":ip:" +
-      clientIp,
-    turnstileConfigured ? 6 : 5,
-    (turnstileConfigured ? 10 : 30) * minuteMs,
-  );
-  if (!ipLimit.allowed) return signupRateLimitResponse(ipLimit.retryAfterSeconds);
 
   const emailLimit = consumeRequestRateLimit(
     "signup:" +
@@ -230,6 +233,10 @@ type SignupRequestBody = {
   captchaToken?: string;
   website?: string;
 };
+
+function requestText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
 
 function signupRateLimitResponse(retryAfterSeconds: number) {
   return NextResponse.json(
