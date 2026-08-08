@@ -21,6 +21,30 @@ test("browser chrome stays white across regular, installed, and offline routes",
   assert.doesNotMatch(layout, /themeColor:\s*"#071631"/);
 
   assert.match(globalStyles, /html\s*\{[^}]*background:\s*#ffffff;/);
+  assert.match(
+    globalStyles,
+    /\.bd-public-header\s*\{[^}]*position:\s*relative;/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /\.bd-public-header\s*\{[^}]*position:\s*(?:fixed|sticky);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.bd-app-topbar\s*\{[^}]*position:\s*relative;/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /\.bd-app-topbar\s*\{[^}]*position:\s*(?:fixed|sticky);/,
+  );
+  assert.match(
+    globalStyles,
+    /\.bd-app-topbar-placeholder\s*\{[^}]*position:\s*relative;/,
+  );
+  assert.doesNotMatch(
+    globalStyles,
+    /\.bd-app-topbar-placeholder\s*\{[^}]*position:\s*(?:fixed|sticky);/,
+  );
 
   assert.match(manifest, /theme_color:\s*"#ffffff"/);
   assert.doesNotMatch(manifest, /theme_color:\s*"#071631"/);
