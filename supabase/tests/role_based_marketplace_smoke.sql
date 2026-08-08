@@ -86,7 +86,7 @@ begin
       'public.bluedeck_can_manage_job(uuid,uuid)',
       'execute'
     )
-    or not has_function_privilege(
+    or has_function_privilege(
       'authenticated',
       'public.bluedeck_can_apply_to_job(uuid,uuid)',
       'execute'
@@ -473,8 +473,8 @@ begin
     raise exception 'Captain Workspace yacht authority matrix failed.';
   end if;
 
-  -- A publisher role is necessary but not sufficient: each actor below also
-  -- has administrator-reviewed employer access for a yacht they still own.
+  -- Account-level publishing is self-service for the three publisher roles;
+  -- Captain Workspace yacht authority remains a separate capability.
   if not public.bluedeck_can_publish_jobs(owner_a)
     or not public.bluedeck_can_publish_jobs(owner_b)
     or not public.bluedeck_can_publish_jobs(captain_a)
@@ -482,7 +482,7 @@ begin
     or public.bluedeck_can_publish_jobs(crew_a)
     or public.bluedeck_can_publish_jobs(crew_b)
   then
-    raise exception 'Verified job publishing role matrix failed.';
+    raise exception 'Self-service job publishing role matrix failed.';
   end if;
 
   insert into public.job_posts (

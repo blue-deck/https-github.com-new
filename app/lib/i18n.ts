@@ -201,7 +201,7 @@ const en = {
   "contact.loginBlueDeck": "Login to BlueDeck",
   "login.heroEyebrow": "BlueDeck YACHT-OS",
   "login.heroTitle": "Secure yacht profiles, documents and crew operations.",
-  "login.bullet1": "Private crew ID and dashboard",
+  "login.bullet1": "Professional crew ID and dashboard",
   "login.bullet2": "Professional CV and document vault",
   "login.bullet3": "Captain invitations, contracts and checklists",
   "login.employerBullet1": "Job publishing and candidate management",
@@ -226,9 +226,10 @@ const en = {
   "login.roleCaptain": "Captain",
   "login.roleOwner": "Owner / Employer",
   "login.roleManagement": "Management",
-  "login.roleCrewAccess": "Find roles and apply to published yacht jobs.",
+  "login.roleCrewAccess":
+    "After email confirmation, your active Crew account is automatically listed in Find Crew with a masked, privacy-protected professional profile. You can also find roles and apply to published yacht jobs.",
   "login.roleCaptainAccess":
-    "Find and apply to roles, or publish and manage jobs for your yachts.",
+    "After email confirmation, your active Captain account is automatically listed in Find Crew with a masked, privacy-protected professional profile. You can also apply to roles or publish and manage jobs for your yachts.",
   "login.roleOwnerAccess":
     "Publish and manage jobs for your yachts without waiting for admin approval.",
   "login.roleManagementAccess":
@@ -577,7 +578,7 @@ const tr: Record<TranslationKey, string> = {
   "contact.loginBlueDeck": "BlueDeck’e giriş",
   "login.heroEyebrow": "BlueDeck YACHT-OS",
   "login.heroTitle": "Güvenli yat profilleri, belgeler ve mürettebat operasyonları.",
-  "login.bullet1": "Özel crew ID ve dashboard",
+  "login.bullet1": "Profesyonel crew ID ve dashboard",
   "login.bullet2": "Profesyonel CV ve belge kasası",
   "login.bullet3": "Kaptan davetleri, kontratlar ve checklistler",
   "login.employerBullet1": "İş ilanı yayınlama ve aday yönetimi",
@@ -601,9 +602,10 @@ const tr: Record<TranslationKey, string> = {
   "login.roleCaptain": "Kaptan",
   "login.roleOwner": "Sahip / İşveren",
   "login.roleManagement": "Yönetim",
-  "login.roleCrewAccess": "İlanları bulun ve yayınlanmış yat işlerine başvurun.",
+  "login.roleCrewAccess":
+    "E-posta onayından sonra aktif Crew hesabınız, maskelenmiş ve gizlilik korumalı profesyonel profiliyle Find Crew’da otomatik olarak listelenir. Ayrıca ilanları bulabilir ve yayınlanmış yat işlerine başvurabilirsiniz.",
   "login.roleCaptainAccess":
-    "İşlere başvurun; ayrıca yatlarınız için ilan yayınlayıp yönetin.",
+    "E-posta onayından sonra aktif Captain hesabınız, maskelenmiş ve gizlilik korumalı profesyonel profiliyle Find Crew’da otomatik olarak listelenir. Ayrıca işlere başvurabilir veya yatlarınız için ilan yayınlayıp yönetebilirsiniz.",
   "login.roleOwnerAccess":
     "Admin onayı beklemeden yatlarınız için ilan yayınlayıp yönetin.",
   "login.roleManagementAccess":
@@ -785,11 +787,11 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Finding the right crew.": { tr: "Doğru crew aranıyor." },
   "Crew profiles are loading.": { tr: "Crew profilleri yükleniyor." },
   "Public Crew Directory": { tr: "Herkese Açık Crew Dizini" },
-  "Active, email-confirmed crew accounts may appear in the public Find Crew directory. Profile and gallery photos may show a crew member's face, and selected professional and physical profile fields can be public. Full legal names, email addresses, phone numbers, private documents, reference identities and private file links are not shown there.": {
-    tr: "Aktif ve e-posta adresi onaylanmış crew hesapları herkese açık Find Crew dizininde yer alabilir. Profil ve galeri fotoğraflarında crew üyesinin yüzü görünebilir; seçili profesyonel ve fiziksel profil alanları herkese açık olabilir. Tam yasal adlar, e-posta adresleri, telefon numaraları, özel belgeler, referans kişilerin kimlikleri ve özel dosya bağlantıları bu dizinde gösterilmez.",
+  "Active, email-confirmed Crew and Captain accounts are automatically included in the public Find Crew directory. Profile and gallery photos may show a crew member's face, and selected professional and physical profile fields can be public. Full legal names, email addresses, phone numbers, private document files, reference contact details and private file links are not shown there.": {
+    tr: "Aktif ve e-posta adresi onaylanmış Crew ve Captain hesapları herkese açık Find Crew dizinine otomatik olarak dahil edilir. Profil ve galeri fotoğraflarında crew üyesinin yüzü görünebilir; seçili profesyonel ve fiziksel profil alanları herkese açık olabilir. Tam yasal adlar, e-posta adresleri, telefon numaraları, özel belge dosyaları, referans iletişim bilgileri ve özel dosya bağlantıları burada gösterilmez.",
   },
-  "BlueDeck organizes yacht operations, crew profiles, documents, contracts, checklist activity and related records. Active, email-confirmed crew profiles may appear in the public Find Crew directory, where profile and gallery photos plus selected professional and physical details can be visible. Full legal names, contact details, private documents and yacht workspaces remain protected or access-controlled.": {
-    tr: "BlueDeck; yat operasyonlarını, crew profillerini, belgeleri, kontratları, kontrol listesi aktivitelerini ve ilgili kayıtları düzenler. Aktif ve e-posta adresi onaylanmış crew profilleri herkese açık Find Crew dizininde yer alabilir; burada profil ve galeri fotoğrafları ile seçili profesyonel ve fiziksel bilgiler görünür olabilir. Tam yasal adlar, iletişim bilgileri, özel belgeler ve yat çalışma alanları korumalı veya erişim kontrollü kalır.",
+  "BlueDeck organizes yacht operations, crew profiles, documents, contracts, checklist activity and related records. Active, email-confirmed Crew and Captain profiles are automatically included in the public Find Crew directory, where profile and gallery photos plus selected professional and physical details can be visible. Full legal names, contact details, private document files and yacht workspaces remain protected or access-controlled.": {
+    tr: "BlueDeck; yat operasyonlarını, crew profillerini, belgeleri, kontratları, kontrol listesi aktivitelerini ve ilgili kayıtları düzenler. Aktif ve e-posta adresi onaylanmış Crew ve Captain profilleri herkese açık Find Crew dizinine otomatik olarak dahil edilir; burada profil ve galeri fotoğrafları ile seçili profesyonel ve fiziksel bilgiler görünür olabilir. Tam yasal adlar, iletişim bilgileri, özel belge dosyaları ve yat çalışma alanları korumalı veya erişim kontrollü kalır.",
   },
   "Overview": { tr: "Genel Bakış" },
   "Checklist": { tr: "Kontrol Listesi" },

@@ -360,7 +360,9 @@ export async function isActiveDirectoryCrew(crewId: string) {
 /**
  * Single public-crew privacy boundary used by the directory, CV, gallery,
  * metadata and media routes. Every call verifies the current profile state,
- * explicit discovery consent, workspace entitlement and live Auth account.
+ * workspace entitlement and live Auth account. Crew and Captain directory
+ * eligibility is automatic; discovery settings only provide optional public
+ * availability and work-preference values.
  */
 export async function loadEligiblePublicCrewContext(
   crewId: string,
@@ -377,7 +379,6 @@ export async function loadEligiblePublicCrewContext(
   if (!profile) return null;
 
   const discovery = getPublicCrewDiscoverySettings(profile.notes);
-  if (!discovery) return null;
 
   const account = await loadEligibleCrewAccount(serviceClient, profile);
   if (!account) return null;

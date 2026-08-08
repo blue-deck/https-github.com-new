@@ -215,6 +215,7 @@ export type PublicJobCard = Pick<
   | "location"
   | "startDate"
   | "salary"
+  | "publishedAt"
 >;
 
 export type EmployerJobPost = Omit<PublicJobPost, "publishedAt"> & {

@@ -26,14 +26,15 @@ const sections = [
     title: "Why we use information",
     paragraphs: [
       "We use information to create and secure accounts, provide crew and yacht workspaces, publish authorized job posts, process applications, generate CVs, manage invitations and contracts, maintain operational records, prevent abuse, provide support and comply with legal obligations.",
-      "Depending on the context, processing is necessary to provide the service you requested, to protect BlueDeck and its users, to comply with law, or because you chose to publish or otherwise consented to a specific use.",
+      "Depending on the context, processing is necessary to provide the service described when you select an account role, to protect BlueDeck and its users, to comply with law, or because you made a specific CV or content-display selection.",
     ],
   },
   {
     title: "Public crew directory",
     paragraphs: [
-      "Crew profiles are private by default. A profile can appear in Find Crew only after its owner deliberately enables public visibility and the account remains active and email-confirmed.",
-      "Public results use a masked display name and may show selected professional details and approved profile or gallery images. Legal names, email addresses, phone numbers, references, private documents, storage paths and yacht workspaces are not included in the public directory.",
+      "Active, email-confirmed accounts registered as Crew or Captain are automatically included in the public Find Crew directory while they remain eligible. Find Crew can be viewed without creating or signing in to a BlueDeck account.",
+      "Public results use a masked display name and may show selected professional and physical profile details, availability, work preferences, profile and gallery images, and counts of completed profile records. A linked Crew ID CV or gallery may also show CV-selected certificate metadata, work-experience details and reference role, vessel or company information.",
+      "Full legal names, email addresses, phone numbers, reference contact details, private document files, storage paths and yacht workspaces are not included in the public directory.",
     ],
   },
   {
@@ -76,7 +77,7 @@ const sections = [
   {
     title: "Your choices and rights",
     paragraphs: [
-      "You can update most profile information in BlueDeck and can turn public crew visibility off at any time. Depending on applicable law, you may request access, correction, deletion, restriction, objection or a portable copy of your personal information, and may complain to the relevant data-protection authority.",
+      "You can update most profile information in BlueDeck. Public directory inclusion follows the active Crew or Captain role associated with your account. Depending on applicable law, you may request access, correction, deletion, restriction, objection or a portable copy of your personal information, and may complain to the relevant data-protection authority.",
       "We may need to verify your identity and authority over a yacht or account before acting on a request. Send requests to info@bluedeck.app.",
     ],
   },

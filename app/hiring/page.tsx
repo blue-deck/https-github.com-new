@@ -66,9 +66,6 @@ const copy = {
     readOnlyTitle: "Posting access is currently paused",
     readOnlyText:
       "Job posting and hiring management will return when access is restored.",
-    approvalTitle: "Hiring verification is required",
-    approvalText:
-      "BlueDeck reviews employer access before any account can publish recruitment listings. Complete your yacht and hiring-access request from your dashboard.",
     crewTitle: "This is an employer workspace",
     crewText:
       "Crew accounts can browse and apply to roles. Captain, Owner / Employer and Management accounts can publish job posts.",
@@ -117,9 +114,6 @@ const copy = {
     readOnlyTitle: "İlan yayınlama yetkisi şu anda duraklatıldı",
     readOnlyText:
       "Yetki yeniden açıldığında iş ilanı ve işe alım yönetimine tekrar erişebilirsiniz.",
-    approvalTitle: "İşe alım doğrulaması gerekli",
-    approvalText:
-      "BlueDeck, herhangi bir hesabın ilan yayınlamasına izin vermeden önce işveren erişimini doğrular. Yat ve işe alım erişimi talebinizi panelinizden tamamlayın.",
     crewTitle: "Bu alan işveren hesapları içindir",
     crewText:
       "Crew hesapları ilanları görüntüleyip başvurabilir. Captain, Owner / Employer ve Management hesapları iş ilanı yayınlayabilir.",
@@ -291,7 +285,6 @@ export default function HiringPage() {
   const canPostJobs = capabilities?.canPostJobs === true;
   const canCreateJob = canPostJobs;
   const isPublisherRole = role !== "crew";
-  const requiresApproval = capabilities?.requiresAdminApproval === true;
 
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-5 pb-24 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
@@ -352,20 +345,8 @@ export default function HiringPage() {
                 <BriefcaseBusiness className="h-5 w-5" aria-hidden />
               )
             }
-            title={
-              isPublisherRole
-                ? requiresApproval
-                  ? c.approvalTitle
-                  : c.readOnlyTitle
-                : c.crewTitle
-            }
-            text={
-              isPublisherRole
-                ? requiresApproval
-                  ? c.approvalText
-                  : c.readOnlyText
-                : c.crewText
-            }
+            title={isPublisherRole ? c.readOnlyTitle : c.crewTitle}
+            text={isPublisherRole ? c.readOnlyText : c.crewText}
             action={
               !isPublisherRole && capabilities?.canApplyJobs ? (
                 <Link

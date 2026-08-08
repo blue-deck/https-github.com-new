@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
       code: cleanText(publisherAuthority.error.code) || undefined,
     });
     return accountResponse(
-      { ok: false, error: "Your verified hiring access could not be checked." },
+      { ok: false, error: "Your job publishing access could not be checked." },
       503,
     );
   }

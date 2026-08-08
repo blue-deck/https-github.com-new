@@ -91,6 +91,7 @@ export type PublicJobCard = Pick<
   | "yachtLength"
   | "yachtLengthUnit"
   | "salary"
+  | "publishedAt"
 >;
 
 type UnknownRecord = Record<string, unknown>;
@@ -258,10 +259,12 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
   const yachtLengthUnit = isJobYachtLengthUnit(yachtLengthUnitValue)
     ? yachtLengthUnitValue
     : null;
+  const publishedAt = readString(value, "publishedAt", "published_at");
 
   if (
     !id ||
     !position ||
+    !publishedAt ||
     !isJobEmploymentType(employmentTypeValue) ||
     !isJobCandidateType(candidateTypeValue)
   ) {
@@ -275,6 +278,7 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
     candidateType: candidateTypeValue,
     location: readString(value, "location"),
     startDate: readString(value, "startDate", "start_date"),
+    publishedAt,
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
     yachtLength:
       yachtLengthValue !== null && yachtLengthUnit !== null

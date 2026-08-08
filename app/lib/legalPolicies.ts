@@ -1,5 +1,5 @@
-export const privacyPolicyVersion = "2026-08-01";
-export const termsOfUseVersion = "2026-08-01";
+export const privacyPolicyVersion = "2026-08-08";
+export const termsOfUseVersion = "2026-08-08";
 
 export type LegalAcceptance = {
   accepted: true;

@@ -27,23 +27,30 @@ export default function FindCrewLoading() {
           aria-hidden="true"
         >
           <div className="h-14 max-w-3xl rounded-xl border border-slate-200 bg-white" />
-          <div className="mt-8 grid gap-3 xl:grid-cols-2 xl:gap-4">
-            {[0, 1, 2, 3, 4, 5].map((item) => (
+          <div className="mt-8 grid gap-5">
+            {[0, 1, 2].map((item) => (
               <div
                 key={item}
-                className="min-h-64 rounded-2xl border border-slate-200 bg-white p-6"
+                className="grid min-h-[250px] overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white lg:min-h-[190px] lg:grid-cols-[minmax(17rem,1fr)_minmax(24rem,1.55fr)_minmax(14rem,0.75fr)]"
               >
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-xl bg-slate-100" />
-                  <div className="flex-1 space-y-3">
-                    <div className="h-4 w-3/4 rounded-full bg-slate-100" />
-                    <div className="h-3 w-1/2 rounded-full bg-slate-100" />
+                <div className="flex items-center gap-4 px-5 py-6 sm:px-7 lg:border-r lg:border-slate-100 lg:py-7 xl:px-8">
+                  <div className="h-20 w-20 shrink-0 rounded-2xl bg-slate-100 sm:h-24 sm:w-24 lg:h-20 lg:w-20 xl:h-24 xl:w-24" />
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="h-6 w-3/4 rounded bg-slate-100" />
+                    <div className="h-4 w-1/2 rounded bg-slate-100" />
+                    <div className="h-5 w-2/3 rounded-full bg-slate-100" />
                   </div>
                 </div>
-                <div className="mt-7 space-y-3">
-                  <div className="h-3 rounded-full bg-slate-100" />
-                  <div className="h-3 w-5/6 rounded-full bg-slate-100" />
-                  <div className="h-11 w-2/5 rounded-lg bg-slate-100" />
+                <div className="grid grid-cols-2 content-center gap-x-7 gap-y-5 border-t border-slate-100 px-5 py-6 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10">
+                  {[0, 1, 2, 3].map((fact) => (
+                    <div key={fact} className="space-y-2">
+                      <div className="h-3 w-2/3 rounded bg-slate-100" />
+                      <div className="h-4 w-5/6 rounded bg-slate-100" />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center border-t border-slate-100 px-5 py-6 sm:px-7 lg:border-l lg:border-t-0 lg:px-6 lg:py-7 xl:px-7">
+                  <div className="h-14 w-full rounded-xl bg-slate-100" />
                 </div>
               </div>
             ))}

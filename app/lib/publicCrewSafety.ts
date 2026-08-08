@@ -39,16 +39,10 @@ export function normalizePublicCrewId(value: string) {
 
 export function getPublicCrewDiscoverySettings(
   notes: unknown,
-): CrewDiscoverySettings | null {
-  const settings = parseCrewDiscoverySettings(
+): CrewDiscoverySettings {
+  return parseCrewDiscoverySettings(
     typeof notes === "string" ? notes : "",
   );
-
-  if (!settings.discoverable || settings.contactVisibility === "hidden") {
-    return null;
-  }
-
-  return settings;
 }
 
 export function redactPublicContactDetails(value: unknown, maxLength = 2_000) {

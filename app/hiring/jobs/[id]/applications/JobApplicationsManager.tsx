@@ -4,28 +4,24 @@ import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
-  BadgeCheck,
-  BriefcaseBusiness,
   CalendarDays,
-  Camera,
   CheckCircle2,
   Clock3,
   ExternalLink,
-  FileText,
-  Languages,
   LoaderCircle,
   LockKeyhole,
   RefreshCw,
   RotateCcw,
   Send,
-  UserRound,
   UsersRound,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CrewCandidatePassportCard,
+  CrewCandidateProfileBody,
   CrewCandidateProfileIdentity,
+  SectionHeading,
 } from "../../../../components/CrewCandidatePresentation";
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
@@ -510,7 +506,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           <section className="mt-6">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
               <div>
-                <p className="bd-kicker">{c.candidates}</p>
+                <h2 className="bd-kicker">{c.candidates}</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {visibleApplications.length} {c.results}
                 </p>
@@ -525,7 +521,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
                 {c.noFilterResults}
               </div>
             ) : (
-              <div className="grid gap-3 xl:grid-cols-2 xl:gap-4">
+              <div className="grid gap-5">
                 {visibleApplications.map((application) => (
                   <CrewPassportCard
                     key={application.id}
@@ -753,164 +749,7 @@ function CandidateProfileModal({
             </button>
           </div>
         ) : (
-          <div className="space-y-6 p-4 sm:p-7 lg:p-8">
-            <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-              <SectionHeading
-                icon={<Camera />}
-                title={c.gallery}
-                text={c.galleryHelp}
-              />
-              {candidate.galleryPhotos.length > 0 ? (
-                <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-                  {candidate.galleryPhotos.map((photo, index) => (
-                    <GalleryPhoto
-                      key={photo}
-                      source={photo}
-                      alt={`${candidate.displayName} ${c.galleryPhoto} ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-                  {c.noGalleryPhotos}
-                </div>
-              )}
-            </section>
-
-            <section className="grid gap-3 sm:grid-cols-3">
-              <ProfileMetric
-                icon={<BriefcaseBusiness />}
-                value={
-                  candidate.experienceYears > 0
-                    ? `${candidate.experienceYears}+ ${c.years}`
-                    : c.noExperience
-                }
-                label={c.experiences}
-              />
-              <ProfileMetric
-                icon={<UsersRound />}
-                value={candidate.referenceCount}
-                label={c.references}
-              />
-              <ProfileMetric
-                icon={<FileText />}
-                value={candidate.documentCount}
-                label={c.documents}
-              />
-            </section>
-
-            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-              <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <SectionHeading
-                  icon={<UserRound />}
-                  title={c.personalDetails}
-                />
-                <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-2">
-                  <DetailFact label={c.gender} value={candidate.gender} fallback={c.notProvided} />
-                  <DetailFact
-                    label={c.height}
-                    value={candidate.heightCm ? `${candidate.heightCm} cm` : ""}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact
-                    label={c.weight}
-                    value={candidate.weightKg ? `${candidate.weightKg} kg` : ""}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact label={c.smoker} value={candidate.smoker} fallback={c.notProvided} />
-                  <DetailFact
-                    label={c.visibleTattoos}
-                    value={candidate.visibleTattoos}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact
-                    label={c.nationality}
-                    value={candidate.nationality}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact
-                    label={c.location}
-                    value={candidate.location}
-                    fallback={c.notProvided}
-                    wide
-                  />
-                </dl>
-              </section>
-
-              <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <SectionHeading
-                  icon={<FileText />}
-                  title={c.professionalSummary}
-                />
-                <p
-                  data-i18n-ignore
-                  className="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base"
-                >
-                  {candidate.professionalSummary || c.noProfessionalSummary}
-                </p>
-              </section>
-            </div>
-
-            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <SectionHeading
-                icon={<BadgeCheck />}
-                title={c.skillsCharacteristics}
-                text={c.skillsHelp}
-              />
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
-                <TagGroup label={c.skills} items={candidate.skills} empty={c.notProvided} />
-                <TagGroup
-                  label={c.characteristics}
-                  items={candidate.characteristics}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.seekingPositions}
-                  items={candidate.seekingPositions}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.workPreferences}
-                  items={candidate.workPreferences}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.employmentTypes}
-                  items={candidate.employmentTypes}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.preferredLocations}
-                  items={candidate.preferredLocations}
-                  empty={c.notProvided}
-                />
-              </div>
-            </section>
-
-            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <SectionHeading icon={<Languages />} title={c.languages} />
-              {candidate.languages.length > 0 ? (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {candidate.languages.map((item) => (
-                    <div
-                      key={`${item.name}-${item.level}`}
-                      data-i18n-ignore
-                      className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
-                    >
-                      <span className="min-w-0 break-words font-black text-[#071631]">
-                        {item.name}
-                      </span>
-                      <span className="max-w-[48%] shrink-0 break-words rounded-full bg-cyan-50 px-2.5 py-1 text-right text-[10px] font-black uppercase tracking-[0.1em] text-cyan-800">
-                        {item.level}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-5 text-sm text-slate-500">{c.noLanguages}</p>
-              )}
-            </section>
-
+          <CrewCandidateProfileBody candidate={candidate} copy={c}>
             <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-2xl">
@@ -1023,159 +862,9 @@ function CandidateProfileModal({
             <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-xs leading-5 text-cyan-950">
               {c.privacyNote}
             </p>
-          </div>
+          </CrewCandidateProfileBody>
         )}
       </article>
-    </div>
-  );
-}
-
-function GalleryPhoto({ source, alt }: { source: string; alt: string }) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <span className="grid aspect-[4/3] place-items-center rounded-2xl bg-slate-100 text-slate-400">
-        <Camera className="h-7 w-7" aria-hidden />
-      </span>
-    );
-  }
-
-  return (
-    <span className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
-      <img
-        src={candidateMediaSource(source, 720, 540)}
-        alt={alt}
-        className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
-      />
-    </span>
-  );
-}
-
-function candidateMediaSource(source: string, width: number, height: number) {
-  if (
-    /^\/api\/employer\/job-posts\/[0-9a-f-]+\/applications\/[0-9a-f-]+\/media\?/i.test(
-      source,
-    )
-  ) {
-    return source;
-  }
-  if (source.startsWith("https://")) return source;
-
-  const search = new URLSearchParams({
-    src: source,
-    w: String(width),
-    h: String(height),
-    fit: "cover",
-  });
-  return `/api/cv-image?${search.toString()}`;
-}
-
-function SectionHeading({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text?: string;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071631] text-cyan-100 [&>svg]:h-5 [&>svg]:w-5">
-        {icon}
-      </span>
-      <div>
-        <h3 className="text-lg font-black text-[#071631]">{title}</h3>
-        {text ? <p className="mt-1 text-xs leading-5 text-slate-500">{text}</p> : null}
-      </div>
-    </div>
-  );
-}
-
-function ProfileMetric({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: number | string;
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800 [&>svg]:h-5 [&>svg]:w-5">
-        {icon}
-      </span>
-      <div>
-        <p className="text-2xl font-black tabular-nums text-[#071631]">{value}</p>
-        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
-          {label}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function DetailFact({
-  label,
-  value,
-  fallback,
-  wide = false,
-}: {
-  label: string;
-  value: string;
-  fallback: string;
-  wide?: boolean;
-}) {
-  return (
-    <div className={`min-w-0 bg-white p-4 ${wide ? "sm:col-span-2" : ""}`}>
-      <dt className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-500">
-        {label}
-      </dt>
-      <dd
-        data-i18n-ignore
-        className="mt-1.5 break-words font-black text-[#071631]"
-      >
-        {value || fallback}
-      </dd>
-    </div>
-  );
-}
-
-function TagGroup({
-  label,
-  items,
-  empty,
-}: {
-  label: string;
-  items: string[];
-  empty: string;
-}) {
-  return (
-    <div>
-      <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-800">
-        {label}
-      </h4>
-      {items.length > 0 ? (
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {items.map((item) => (
-            <span
-              key={item}
-              data-i18n-ignore
-              className="max-w-full break-words rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-slate-400">{empty}</p>
-      )}
     </div>
   );
 }
@@ -1197,7 +886,7 @@ function StatusBadge({
   };
   return (
     <span
-      className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
+      className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
     >
       {statusLabel(status, language)}
     </span>
@@ -1582,6 +1271,8 @@ const copy = {
     gallery: "My Blue gallery",
     galleryHelp: "Four selected photos shared by the candidate in My Blue.",
     galleryPhoto: "gallery photo",
+    openGalleryPhoto: "Open gallery photo",
+    closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "The candidate has not shared gallery photos yet.",
     references: "References",
     documents: "Documents",
@@ -1610,7 +1301,7 @@ const copy = {
     crewPortalHelp:
       "This opens the same gallery linked by the CV QR code, with access to the public CV.",
     crewPortalUnavailable:
-      "The candidate has not enabled their public Crew Portal yet.",
+      "The public Crew Portal is unavailable for this candidate profile.",
     openCrewPortal: "Open Crew Portal / CV",
     decision: "Application status",
     decisionHelp: "Move the candidate through a clear, private hiring pipeline.",
@@ -1665,6 +1356,8 @@ const copy = {
     gallery: "My Blue galerisi",
     galleryHelp: "Adayın My Blue bölümünde paylaştığı dört seçilmiş fotoğraf.",
     galleryPhoto: "galeri fotoğrafı",
+    openGalleryPhoto: "Galeri fotoğrafını aç",
+    closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
     noGalleryPhotos: "Aday henüz galeri fotoğrafı paylaşmamış.",
     references: "Referans",
     documents: "Doküman",
@@ -1693,7 +1386,7 @@ const copy = {
     crewPortalHelp:
       "CV üzerindeki QR koduyla aynı galeriyi açar ve herkese açık CV’ye erişim sağlar.",
     crewPortalUnavailable:
-      "Aday herkese açık Crew Portal görünürlüğünü henüz etkinleştirmemiş.",
+      "Bu aday profili için herkese açık Crew Portal kullanılamıyor.",
     openCrewPortal: "Crew Portal / CV’yi aç",
     decision: "Başvuru durumu",
     decisionHelp: "Adayı sade ve özel işe alım sürecinde ilerletin.",

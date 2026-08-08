@@ -1,20 +1,32 @@
 import type { Language } from "./i18n";
 
 export const generatedPhraseTranslations: Record<string, Partial<Record<Language, string>>> = {
+  "Active, email-confirmed Crew and Captain accounts are listed automatically with a masked name, selected professional profile fields and approved photos. Email, phone, private files and reference contact details stay hidden.": {
+    "tr": "Aktif ve e-posta adresi onaylanmış Crew ve Captain hesapları; maskelenmiş ad, seçili profesyonel profil alanları ve onaylanmış fotoğraflarla otomatik olarak listelenir. E-posta, telefon, özel dosyalar ve referans iletişim bilgileri gizli kalır.",
+  },
+  "Automatic": {
+    "tr": "Otomatik",
+  },
   "Auto-saved": {
     "tr": "Otomatik kaydedildi",
   },
-  "Find Crew visibility": {
-    "tr": "Find Crew görünürlüğü",
+  "Find Crew directory": {
+    "tr": "Find Crew rehberi",
   },
-  "Private by default. Your contact details are never shown publicly.": {
-    "tr": "Varsayılan olarak gizlidir. İletişim bilgileriniz hiçbir zaman herkese açık gösterilmez.",
+  "For active Crew and Captain accounts, this appears automatically in the public Find Crew profile and Crew ID CV portal.": {
+    "tr": "Aktif Crew ve Captain hesaplarında bu fotoğraf, herkese açık Find Crew profilinde ve Crew ID CV portalında otomatik olarak görünür.",
   },
   "Public": {
     "tr": "Herkese açık",
   },
+  "Review public-profile privacy details": {
+    "tr": "Herkese açık profil gizlilik ayrıntılarını inceleyin",
+  },
   "Saving": {
     "tr": "Kaydediliyor",
+  },
+  "Select availability": {
+    "tr": "Müsaitlik durumu seçin",
   },
   "Shown to employers on your job applications.": {
     "tr": "İş başvurularınızda işverenlere gösterilir.",
@@ -3655,8 +3667,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Selected file:": {
     "tr": "Seçilen dosya:",
   },
-  "Selected photos may appear on your public Find Crew profile.": {
-    "tr": "Seçilen fotoğraflar herkese açık Find Crew profilinizde görünebilir.",
+  "Selected photos appear on the public Find Crew profile for active Crew and Captain accounts.": {
+    "tr": "Seçilen fotoğraflar aktif Crew ve Captain hesaplarının herkese açık Find Crew profilinde görünür.",
   },
   "Send Contract for Signature": {
     "tr": "İmza için Sözleşme Gönder",

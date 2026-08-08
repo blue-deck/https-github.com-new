@@ -299,7 +299,7 @@ export function FindCrewClient({
           </div>
 
           {filteredProfiles.length > 0 ? (
-            <div className="mt-5 grid gap-3 xl:grid-cols-2 xl:gap-4">
+            <div className="mt-5 grid gap-5">
               {filteredProfiles.map((profile) => (
                 <CrewCandidatePassportCard
                   key={profile.crewId}
@@ -313,7 +313,7 @@ export function FindCrewClient({
                       : c.notProvided
                   }
                   primaryBadge={
-                    <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] text-emerald-800">
+                    <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-emerald-800">
                       {c.activeProfile}
                     </span>
                   }
@@ -514,7 +514,7 @@ const copy = {
     eyebrow: "Public crew directory",
     title: "Meet active BlueDeck crew.",
     intro:
-      "Browse Crew and Captain accounts that explicitly enabled their privacy-protected Find Crew profile.",
+      "Browse active, email-confirmed Crew and Captain accounts, automatically listed with privacy-protected professional profiles.",
     filters: "Search and filters",
     search: "Search crew",
     searchPlaceholder: "Position, skill or location",
@@ -552,7 +552,7 @@ const copy = {
     eyebrow: "Herkese açık crew rehberi",
     title: "Aktif BlueDeck crew profillerini keşfedin.",
     intro:
-      "Gizlilik korumalı Mürettebat Bul profilini açıkça etkinleştiren Crew ve Captain hesaplarını inceleyin.",
+      "Gizlilik korumalı profesyonel profilleriyle otomatik olarak listelenen aktif ve e-posta adresi onaylanmış Crew ve Captain hesaplarını inceleyin.",
     filters: "Arama ve filtreler",
     search: "Crew ara",
     searchPlaceholder: "Pozisyon, beceri veya konum",

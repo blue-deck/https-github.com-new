@@ -15,7 +15,7 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import type { EmployerJobApplicationDetails } from "../lib/jobApplications";
 import { AccessibleImageLightbox } from "./AccessibleImageLightbox";
 
@@ -123,102 +123,116 @@ export function CrewCandidatePassportCard({
   profileHref?: string;
   onView?: () => void;
 }) {
+  const titleId = useId();
+  const actionLabel = `${copy.viewProfile}: ${candidate.displayName}`;
   const actionContent = (
     <>
       <span className="inline-flex items-center gap-2">
-        <Eye className="h-4 w-4" aria-hidden />
+        <Eye className="h-5 w-5" aria-hidden />
         {copy.viewProfile}
       </span>
-      <ArrowRight className="h-4 w-4" aria-hidden />
+      <ArrowRight
+        className="h-5 w-5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
+        aria-hidden
+      />
     </>
   );
   const actionClassName =
-    "bd-focus mt-3 flex min-h-11 w-full items-center justify-between rounded-xl bg-[#071631] px-4 text-sm font-black text-white transition hover:bg-[#0d3e72]";
+    "bd-focus flex min-h-14 w-full items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800";
 
   return (
-    <article className="group flex min-h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04] transition hover:border-cyan-300 hover:shadow-md hover:shadow-slate-950/[0.06]">
-      <div className="h-1 bg-gradient-to-r from-[#071631] via-cyan-700 to-cyan-300" />
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <div className="flex min-w-0 items-start gap-3.5 sm:gap-4">
-          <CandidateAvatar
-            profilePhotoUrl={candidate.profilePhotoUrl}
-            displayName={candidate.displayName}
-            initials={candidate.initials}
-            className="h-[72px] w-[72px] rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-20 sm:w-20"
-            textClassName="text-lg sm:text-xl"
-            mediaSize={160}
-          />
+    <article
+      aria-labelledby={titleId}
+      className="group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] focus-within:border-cyan-400 motion-reduce:transform-none lg:min-h-[190px] lg:grid-cols-[minmax(17rem,1fr)_minmax(24rem,1.55fr)_minmax(14rem,0.75fr)]"
+    >
+      <div className="flex min-w-0 items-center gap-4 px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 lg:px-7 lg:py-7 xl:px-8">
+        <CandidateAvatar
+          profilePhotoUrl={candidate.profilePhotoUrl}
+          displayName={candidate.displayName}
+          initials={candidate.initials}
+          className="h-20 w-20 rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-24 sm:w-24 lg:h-20 lg:w-20 xl:h-24 xl:w-24"
+          textClassName="text-lg sm:text-xl"
+          mediaSize={192}
+          decorative
+        />
 
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-1.5 pt-0.5">
-              <h2
-                data-i18n-ignore
-                className="truncate text-lg font-semibold tracking-[-0.025em] text-[#071631] sm:text-xl"
-                title={candidate.displayName}
-              >
-                {candidate.displayName}
-              </h2>
-              <LockKeyhole
-                className="h-3.5 w-3.5 shrink-0 text-slate-400"
-                aria-label={copy.nameLocked}
-              />
-            </div>
-            <p
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-start gap-2">
+            <h3
+              id={titleId}
               data-i18n-ignore
-              className="mt-1 truncate text-sm font-semibold text-cyan-800"
+              className="min-w-0 break-words text-xl font-semibold tracking-[-0.03em] text-[#071631] sm:text-2xl"
             >
-              {candidate.currentPosition || copy.crewMember}
-            </p>
+              {candidate.displayName}
+              <span className="sr-only"> — {copy.nameLocked}</span>
+            </h3>
+            <LockKeyhole
+              className="mt-1 h-4 w-4 shrink-0 text-slate-400"
+              aria-hidden
+            />
+          </div>
+          <p
+            data-i18n-ignore
+            className="mt-1.5 break-words text-sm font-black leading-6 text-cyan-800"
+          >
+            {candidate.currentPosition || copy.crewMember}
+          </p>
 
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {primaryBadge}
-              {candidate.premiumProfile ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-900">
-                  <BadgeCheck className="h-3 w-3" aria-hidden />
-                  {copy.premium}
-                </span>
-              ) : null}
-            </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {primaryBadge}
+            {candidate.premiumProfile ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-cyan-900">
+                <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                {copy.premium}
+              </span>
+            ) : null}
           </div>
         </div>
+      </div>
 
-        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-slate-100 py-4 sm:grid-cols-4">
-          <PassportFact
-            icon={<Flag />}
-            label={copy.nationality}
-            value={candidate.nationality || copy.notProvided}
-          />
-          <PassportFact
-            icon={<CalendarDays />}
-            label={copy.availableToStart}
-            value={availabilityValue || copy.notProvided}
-          />
-          <PassportFact
-            icon={<BriefcaseBusiness />}
-            label={copy.experience}
-            value={
-              candidate.experienceYears > 0
-                ? candidate.experienceYears < 1
-                  ? copy.lessThanOneYear
-                  : `${candidate.experienceYears}+ ${copy.years}`
-                : copy.noExperience
-            }
-          />
-          <PassportFact
-            icon={fourthFact.icon}
-            label={fourthFact.label}
-            value={fourthFact.value}
-          />
-        </dl>
+      <dl className="grid min-w-0 grid-cols-2 content-center gap-x-7 gap-y-5 border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10">
+        <PassportFact
+          icon={<Flag />}
+          label={copy.nationality}
+          value={candidate.nationality || copy.notProvided}
+        />
+        <PassportFact
+          icon={<CalendarDays />}
+          label={copy.availableToStart}
+          value={availabilityValue || copy.notProvided}
+        />
+        <PassportFact
+          icon={<BriefcaseBusiness />}
+          label={copy.experience}
+          value={
+            candidate.experienceYears > 0
+              ? candidate.experienceYears < 1
+                ? copy.lessThanOneYear
+                : `${candidate.experienceYears}+ ${copy.years}`
+              : copy.noExperience
+          }
+        />
+        <PassportFact
+          icon={fourthFact.icon}
+          label={fourthFact.label}
+          value={fourthFact.value}
+        />
+      </dl>
 
+      <div className="flex min-w-0 flex-col justify-center border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-l lg:border-t-0 lg:px-6 lg:py-7 xl:px-7">
         {profileHref ? (
-          <Link href={profileHref} className={actionClassName}>
+          <Link
+            href={profileHref}
+            aria-label={actionLabel}
+            className={actionClassName}
+          >
             {actionContent}
           </Link>
         ) : (
           <button
             type="button"
             onClick={onView}
+            aria-label={actionLabel}
             className={actionClassName}
           >
             {actionContent}
@@ -514,6 +528,7 @@ export function CandidateAvatar({
   className,
   textClassName,
   mediaSize = 420,
+  decorative = false,
 }: {
   profilePhotoUrl: string;
   displayName: string;
@@ -521,6 +536,7 @@ export function CandidateAvatar({
   className: string;
   textClassName: string;
   mediaSize?: number;
+  decorative?: boolean;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -535,7 +551,7 @@ export function CandidateAvatar({
       >
         <img
           src={candidateMediaSource(profilePhotoUrl, mediaSize, mediaSize)}
-          alt={`${displayName} profile photo`}
+          alt={decorative ? "" : `${displayName} profile photo`}
           className="h-full w-full object-cover"
           loading="lazy"
           decoding="async"
@@ -549,8 +565,9 @@ export function CandidateAvatar({
   return (
     <span
       className={`flex shrink-0 items-center justify-center bg-[linear-gradient(145deg,#d8f8ff,#73bffc)] font-black text-[#071631] ${className} ${textClassName}`}
-      role="img"
-      aria-label={`${displayName} profile placeholder`}
+      role={decorative ? undefined : "img"}
+      aria-hidden={decorative ? true : undefined}
+      aria-label={decorative ? undefined : `${displayName} profile placeholder`}
     >
       {initials || "BD"}
     </span>
@@ -567,22 +584,24 @@ export function PassportFact({
   value: string;
 }) {
   return (
-    <div className="flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 shrink-0 text-cyan-800 [&>svg]:h-3.5 [&>svg]:w-3.5">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <dt className="truncate text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
-          {label}
-        </dt>
-        <dd
-          data-i18n-ignore
-          className="mt-0.5 truncate text-xs font-semibold text-[#071631]"
-          title={value}
+    <div className="min-w-0">
+      <dt className="flex min-w-0 items-start gap-2 text-[10px] font-black uppercase leading-4 tracking-[0.1em] text-slate-500 sm:text-[11px]">
+        <span
+          className="mt-px shrink-0 text-cyan-800 [&>svg]:h-4 [&>svg]:w-4"
+          aria-hidden
         >
-          {value}
-        </dd>
-      </div>
+          {icon}
+        </span>
+        <span className="min-w-0 break-words">
+          {label}
+        </span>
+      </dt>
+      <dd
+        data-i18n-ignore
+        className="mt-1 break-words pl-6 text-sm font-semibold leading-5 text-[#071631]"
+      >
+        {value}
+      </dd>
     </div>
   );
 }

@@ -499,7 +499,7 @@ export default function MyBluePage() {
                     Photo Gallery
                   </h1>
                   <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                    Selected photos may appear on your public Find Crew profile.
+                    Selected photos appear on the public Find Crew profile for active Crew and Captain accounts.
                   </p>
                 </div>
               </div>
