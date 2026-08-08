@@ -21,16 +21,16 @@ export default function ContractsPage() {
       error: userError,
     } = await supabase.auth.getUser();
 
-    if (userError) {
-      setLoadError("Your contracts could not be loaded. Check your connection and try again.");
-      setLoading(false);
-      return;
-    }
-
     if (!user?.email) {
       window.location.replace(
         `/login?next=${encodeURIComponent("/contracts")}`,
       );
+      return;
+    }
+
+    if (userError) {
+      setLoadError("Your contracts could not be loaded. Check your connection and try again.");
+      setLoading(false);
       return;
     }
 

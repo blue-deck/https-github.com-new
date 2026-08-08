@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
-import { privatePageMetadata } from "../lib/privatePageMetadata";
+import { createPrivatePageMetadata } from "../lib/privatePageMetadata";
 
-export const metadata = privatePageMetadata;
+export const metadata = createPrivatePageMetadata(
+  "Secure Account Access | BlueDeck",
+  "Complete a secure BlueDeck account access flow.",
+);
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return children;
