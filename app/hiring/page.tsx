@@ -77,7 +77,6 @@ const copy = {
     listingNumber: "Listing",
     applicants: "Applicants",
     viewApplicants: "View Applicants",
-    viewApplicantsShort: "View",
     editPost: "Edit Job Post",
     viewLive: "View Live Listing",
     livePreview: "Live listing preview",
@@ -125,9 +124,8 @@ const copy = {
     listingNumber: "İlan",
     applicants: "Başvuru",
     viewApplicants: "Başvuranları Gör",
-    viewApplicantsShort: "Gör",
     editPost: "İlanı Düzenle",
-    viewLive: "Yayındaki İlanı Gör",
+    viewLive: "İlanı Gör",
     livePreview: "Canlı ilan önizlemesi",
     livePreviewHint:
       "Yayındaki ilanınızın BlueDeck'te nasıl göründüğünü inceleyin.",
@@ -410,7 +408,7 @@ export default function HiringPage() {
               </div>
             ) : null}
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <div className="mt-5 grid gap-4">
               {jobs.map((job) => (
                 <JobPostCard
                   key={job.id}
@@ -457,105 +455,124 @@ function JobPostCard({
   const status = jobStatus(job, language);
   const expired = isEmployerJobPostExpired(job);
   const terminal = expired || job.status === "closed";
+  const title = job.position || job.title;
+  const titleId = `job-post-title-${job.id}`;
+  const canEditPost = canEdit && !terminal;
+  const canViewLive = job.status === "published" && !expired;
+  const secondaryActionCount = Number(canEditPost) + Number(canViewLive);
+
   return (
-    <article className="group flex min-h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04] transition hover:border-cyan-300 hover:shadow-md hover:shadow-slate-950/[0.06]">
-      <div className="h-1 bg-gradient-to-r from-[#071f3c] via-cyan-700 to-cyan-300" />
-      <div className="flex flex-1 flex-col p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p
-              data-i18n-ignore
-              aria-label={`${c.listingNumber} ${formatJobListingNumber(job.listingNumber)}`}
-              className="font-mono text-[11px] font-black tracking-[0.13em] text-cyan-800"
-            >
-              {formatJobListingNumber(job.listingNumber)}
-            </p>
-            <h3
-              data-i18n-ignore
-              className="mt-2 text-[1.7rem] font-semibold leading-tight tracking-[-0.035em] text-[#071f3c]"
-            >
-              {job.position || job.title}
-            </h3>
-          </div>
+    <article
+      aria-labelledby={titleId}
+      className="group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] motion-reduce:transform-none motion-reduce:transition-none lg:min-h-[13.5rem] lg:grid-cols-[minmax(13rem,0.8fr)_minmax(23rem,1.45fr)_minmax(18.5rem,0.9fr)]"
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-1 bg-gradient-to-r from-[#071f3c] via-cyan-700 to-cyan-300" />
+
+      <div className="flex min-w-0 flex-col justify-center px-5 pb-6 pt-7 sm:px-7 lg:border-r lg:border-slate-200 lg:py-7">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p
+            data-i18n-ignore
+            className="font-mono text-[11px] font-black tracking-[0.13em] text-cyan-800"
+          >
+            <span className="sr-only">{c.listingNumber} </span>
+            {formatJobListingNumber(job.listingNumber)}
+          </p>
           <span
             className={`shrink-0 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.11em] ${status.className}`}
           >
             {status.label}
           </span>
         </div>
+        <h3
+          id={titleId}
+          data-i18n-ignore
+          className="mt-3 min-w-0 break-words text-2xl font-semibold leading-tight tracking-[-0.035em] text-[#071f3c] sm:text-[1.75rem]"
+        >
+          {title}
+        </h3>
+      </div>
 
-        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-slate-100 py-4 text-sm">
-          <JobDetail
-            icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden />}
-            label={c.employmentType}
-            value={formatJobEmploymentType(job.employmentType, language)}
-          />
-          <JobDetail
-            icon={<MapPin className="h-4 w-4" aria-hidden />}
-            label={c.location}
-            value={job.location || c.notSpecified}
-          />
-          <JobDetail
-            icon={<CalendarDays className="h-4 w-4" aria-hidden />}
-            label={c.startDate}
-            value={
-              job.startDate
-                ? formatDate(job.startDate, language)
-                : c.notSpecified
-            }
-          />
-          <JobDetail
-            icon={<Clock3 className="h-4 w-4" aria-hidden />}
-            label={c.updated}
-            value={formatDate(job.updatedAt, language)}
-          />
-        </dl>
+      <dl className="grid min-w-0 gap-x-8 gap-y-4 border-t border-slate-200 px-5 py-6 text-sm sm:grid-cols-2 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10">
+        <JobDetail
+          icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden />}
+          label={c.employmentType}
+          value={formatJobEmploymentType(job.employmentType, language)}
+        />
+        <JobDetail
+          icon={<MapPin className="h-4 w-4" aria-hidden />}
+          label={c.location}
+          value={job.location || c.notSpecified}
+        />
+        <JobDetail
+          icon={<CalendarDays className="h-4 w-4" aria-hidden />}
+          label={c.startDate}
+          value={
+            job.startDate ? formatDate(job.startDate, language) : c.notSpecified
+          }
+        />
+        <JobDetail
+          icon={<Clock3 className="h-4 w-4" aria-hidden />}
+          label={c.updated}
+          value={formatDate(job.updatedAt, language)}
+        />
+      </dl>
 
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-[#f2f9fb] p-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-800 shadow-sm">
-              <UsersRound className="h-5 w-5" aria-hidden />
+      <div className="flex min-w-0 flex-col justify-center gap-2 border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-l lg:border-t-0 lg:px-6 lg:py-7 xl:px-7">
+        <div className="flex min-h-12 items-center gap-3 rounded-xl border border-cyan-100 bg-cyan-50/70 px-3.5 py-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-cyan-800 shadow-sm">
+            <UsersRound className="h-[1.15rem] w-[1.15rem]" aria-hidden />
+          </span>
+          <p className="min-w-0 text-sm font-black text-[#071f3c]">
+            <span className="mr-1.5 text-xl leading-none text-cyan-800">
+              {applicantCount ?? "—"}
             </span>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-black text-[#071f3c] sm:text-sm">
-                <span className="mr-1.5 text-xl leading-none text-cyan-800">
-                  {applicantCount ?? "—"}
-                </span>
-                {c.applicants}
-              </p>
-            </div>
-          </div>
-          <Link
-            href={`/hiring/jobs/${encodeURIComponent(job.id)}/applications`}
-            className="bd-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-3.5 text-xs font-black text-white transition hover:bg-cyan-800 sm:px-4 sm:text-sm"
-          >
-            <span className="sm:hidden">{c.viewApplicantsShort}</span>
-            <span className="hidden sm:inline">{c.viewApplicants}</span>
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+            {c.applicants}
+          </p>
         </div>
 
-        <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-          {canEdit && !terminal ? (
-            <Link
-              href={`/hiring/jobs?job=${encodeURIComponent(job.id)}`}
-              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 sm:text-sm"
-            >
-              <FilePenLine className="h-4 w-4" aria-hidden />
-              {c.editPost}
-            </Link>
-          ) : null}
-          {job.status === "published" && !expired ? (
-            <button
-              type="button"
-              onClick={onViewLive}
-              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 sm:text-sm"
-            >
-              <Eye className="h-4 w-4" aria-hidden />
-              {c.viewLive}
-            </button>
-          ) : null}
-        </div>
+        <Link
+          href={`/hiring/jobs/${encodeURIComponent(job.id)}/applications`}
+          aria-label={`${c.viewApplicants}: ${title}`}
+          className="bd-focus flex min-h-14 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800 motion-reduce:transition-none"
+        >
+          {c.viewApplicants}
+          <ArrowRight
+            className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none"
+            aria-hidden
+          />
+        </Link>
+
+        {secondaryActionCount > 0 ? (
+          <div
+            className={`grid gap-2 ${
+              secondaryActionCount === 2
+                ? "sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"
+                : "grid-cols-1"
+            }`}
+          >
+            {canEditPost ? (
+              <Link
+                href={`/hiring/jobs?job=${encodeURIComponent(job.id)}`}
+                aria-label={`${c.editPost}: ${title}`}
+                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-center text-xs font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 motion-reduce:transition-none"
+              >
+                <FilePenLine className="h-4 w-4 shrink-0" aria-hidden />
+                {c.editPost}
+              </Link>
+            ) : null}
+            {canViewLive ? (
+              <button
+                type="button"
+                onClick={onViewLive}
+                aria-label={`${c.viewLive}: ${title}`}
+                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-center text-xs font-black text-[#071f3c] transition hover:border-cyan-300 hover:bg-cyan-50 motion-reduce:transition-none"
+              >
+                <Eye className="h-4 w-4 shrink-0" aria-hidden />
+                {c.viewLive}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -676,21 +693,19 @@ function JobDetail({
   value: string;
 }) {
   return (
-    <div className="flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 text-cyan-700 [&>svg]:h-3.5 [&>svg]:w-3.5">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <dt className="text-[9px] font-black uppercase tracking-[0.1em] text-slate-500 sm:text-[10px]">
-          {label}
-        </dt>
-        <dd
-          data-i18n-ignore
-          className="mt-0.5 truncate text-xs font-semibold text-slate-800 sm:text-sm"
-        >
-          {value}
-        </dd>
-      </div>
+    <div className="min-w-0">
+      <dt className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.1em] text-slate-500 sm:text-[10px]">
+        <span className="shrink-0 text-cyan-700 [&>svg]:h-3.5 [&>svg]:w-3.5">
+          {icon}
+        </span>
+        {label}
+      </dt>
+      <dd
+        data-i18n-ignore
+        className="mt-0.5 break-words pl-[1.375rem] text-xs font-semibold leading-5 text-slate-800 sm:text-sm"
+      >
+        {value}
+      </dd>
     </div>
   );
 }
