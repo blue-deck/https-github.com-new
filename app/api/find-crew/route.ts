@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
+import {
+  crewSearchParamKeys,
+  parseCrewSearchFilters,
+} from "../../lib/crewSearch";
 import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
 import { getClientIp } from "../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  if (
-    Array.from(request.nextUrl.searchParams.keys()).some(
-      (key) => key !== "cursor",
-    ) ||
-    request.nextUrl.searchParams.getAll("cursor").length > 1
-  ) {
+  const searchParams = request.nextUrl.searchParams;
+  if (!isValidCrewSearchRequest(searchParams)) {
     return directoryResponse(
       { ok: false, error: "Invalid crew directory request." },
       400,
@@ -32,9 +32,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cursor = request.nextUrl.searchParams.get("cursor") || "";
+  const cursor = searchParams.get("cursor") || "";
+  const filters = parseCrewSearchFilters(searchParams);
   try {
-    const page = await listDiscoverableCrewPage(cursor);
+    const page = await listDiscoverableCrewPage(cursor, filters);
     return directoryResponse({ ok: true, ...page });
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
@@ -52,6 +53,58 @@ export async function GET(request: NextRequest) {
       503,
     );
   }
+}
+
+function isValidCrewSearchRequest(searchParams: URLSearchParams) {
+  const keys = Array.from(new Set(searchParams.keys()));
+  if (
+    keys.some(
+      (key) =>
+        !crewSearchParamKeys.has(key) ||
+        searchParams.getAll(key).length !== 1,
+    ) ||
+    Array.from(searchParams.values()).some((value) => value.length > 256)
+  ) {
+    return false;
+  }
+
+  for (const key of ["experienceMin", "experienceMax"]) {
+    const value = searchParams.get(key);
+    if (
+      value !== null &&
+      (!/^\d+(?:\.\d)?$/.test(value) || Number(value) > 60)
+    ) {
+      return false;
+    }
+  }
+  const minimumExperience = searchParams.get("experienceMin");
+  const maximumExperience = searchParams.get("experienceMax");
+  if (
+    minimumExperience !== null &&
+    maximumExperience !== null &&
+    Number(maximumExperience) < Number(minimumExperience)
+  ) {
+    return false;
+  }
+  const memberSince = searchParams.get("memberSince");
+  if (memberSince !== null && !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(memberSince)) {
+    return false;
+  }
+  for (const key of [
+    "premium",
+    "photo",
+    "gallery",
+    "references",
+    "documents",
+  ]) {
+    const value = searchParams.get(key);
+    if (value !== null && value !== "1") return false;
+  }
+  const cursor = searchParams.get("cursor");
+  return cursor === null ||
+    /^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/.test(
+      cursor,
+    );
 }
 
 function directoryResponse(

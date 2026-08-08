@@ -18,7 +18,7 @@ export type CandidateExperienceRow = CompletionExperience & {
   created_at?: unknown;
 };
 
-const experienceProfileBatchSize = 25;
+const experienceProfileBatchSize = 100;
 const experiencePageSize = 500;
 const richExperienceSelect =
   "id,crew_profile_id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,created_at";
@@ -137,12 +137,17 @@ export function redactCandidateProfileText(
 ) {
   let redacted = redactPublicContactDetails(value, maxLength);
   const identityParts = identity.trim().split(/\s+/).filter(Boolean);
-  if (!redacted || identityParts.length < 2) return redacted;
+  if (!redacted || identityParts.length === 0) return redacted;
 
   const identityCandidates = Array.from(
     new Set([
-      identityParts.join(" "),
-      `${identityParts[0]} ${identityParts.at(-1) || ""}`.trim(),
+      ...(identityParts.length > 1
+        ? [
+            identityParts.join(" "),
+            `${identityParts[0]} ${identityParts.at(-1) || ""}`.trim(),
+          ]
+        : []),
+      ...identityParts.filter((part) => Array.from(part).length >= 3),
     ]),
   ).sort((first, second) => second.length - first.length);
 

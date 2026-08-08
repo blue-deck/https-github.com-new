@@ -51,6 +51,7 @@ export type CrewCandidateProfileCopy = {
   closeGalleryPhoto: string;
   noGalleryPhotos: string;
   years: string;
+  lessThanOneYear: string;
   noExperience: string;
   experiences: string;
   references: string;
@@ -366,11 +367,12 @@ export function CrewCandidateProfileBody({
       <section className="grid gap-3 sm:grid-cols-3">
         <ProfileMetric
           icon={<BriefcaseBusiness />}
-          value={
-            candidate.experienceYears > 0
-              ? `${candidate.experienceYears}+ ${copy.years}`
-              : copy.noExperience
-          }
+          value={profileExperienceLabel(
+            candidate.experienceYears,
+            copy.years,
+            copy.lessThanOneYear,
+            copy.noExperience,
+          )}
           label={copy.experiences}
         />
         <ProfileMetric
@@ -519,6 +521,17 @@ export function CrewCandidateProfileBody({
       {children}
     </div>
   );
+}
+
+function profileExperienceLabel(
+  experienceYears: number,
+  yearsLabel: string,
+  lessThanOneYearLabel: string,
+  noExperienceLabel: string,
+) {
+  if (experienceYears <= 0) return noExperienceLabel;
+  if (experienceYears < 1) return lessThanOneYearLabel;
+  return `${experienceYears}+ ${yearsLabel}`;
 }
 
 export function CandidateAvatar({

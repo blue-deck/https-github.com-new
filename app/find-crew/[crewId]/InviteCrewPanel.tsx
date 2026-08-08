@@ -150,7 +150,11 @@ export function CrewProfileContent({
                 label={c.yachtExperience}
                 value={
                   profile.experienceYears > 0
-                    ? `${profile.experienceYears}+ ${c.years}`
+                    ? profile.experienceYears < 1
+                      ? language === "tr"
+                        ? "1 yıldan az"
+                        : "Less than 1 year"
+                      : `${profile.experienceYears}+ ${c.years}`
                     : c.notSpecified
                 }
               />
@@ -907,6 +911,7 @@ const publicProfileCopy = {
     closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "This crew member has not added gallery photos yet.",
     years: "years",
+    lessThanOneYear: "Less than 1 year",
     noExperience: "Not added",
     experiences: "Experiences",
     references: "References",
@@ -954,6 +959,7 @@ const publicProfileCopy = {
     closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
     noGalleryPhotos: "Bu crew üyesi henüz galeri fotoğrafı eklememiş.",
     years: "yıl",
+    lessThanOneYear: "1 yıldan az",
     noExperience: "Eklenmedi",
     experiences: "Deneyim",
     references: "Referans",

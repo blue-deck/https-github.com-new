@@ -278,7 +278,7 @@ export function formatJobCandidateType(
   language: "en" | "tr",
 ) {
   const labels = {
-    team: { en: "Team / Couple", tr: "Team / Couple" },
+    team: { en: "Team / Couple", tr: "Ekip / Çift" },
     couple: { en: "Couple", tr: "Çift" },
   } as const;
   return labels[value][language];
