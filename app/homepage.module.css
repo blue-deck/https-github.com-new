@@ -137,7 +137,6 @@
 .darkButton svg,
 .sectionLink svg,
 .jobsEmpty a svg,
-.jobPrimaryAction svg,
 .rolePrompt a svg {
   width: 1rem;
   height: 1rem;
@@ -210,188 +209,9 @@
 
 .jobsGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
   margin-top: 2.25rem;
-}
-
-.jobCard {
-  display: flex;
-  min-height: 100%;
-  flex-direction: column;
-  border: 1px solid var(--home-line);
-  border-radius: 0.9rem;
-  background: #fff;
-  padding: 1.35rem;
-  box-shadow: 0 8px 24px rgba(7, 24, 45, 0.05);
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.jobCard:hover {
-  border-color: rgba(7, 95, 173, 0.28);
-  box-shadow: 0 12px 32px rgba(7, 24, 45, 0.07);
-}
-
-.jobHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.jobHeader > svg {
-  width: 1.2rem;
-  height: 1.2rem;
-  flex: 0 0 auto;
-  color: #0e7490;
-}
-
-.jobPill {
-  display: inline-flex;
-  border-radius: 999px;
-  background: #eaf7fa;
-  padding: 0.3rem 0.55rem;
-  color: #155e75;
-  font-size: 0.67rem;
-  font-weight: 800;
-}
-
-.jobCard h3 {
-  margin-top: 0.15rem;
-  color: var(--home-ink);
-  font-size: 1.35rem;
-  font-weight: 750;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-}
-
-.jobPill + h3 {
-  margin-top: 0.65rem;
-}
-
-.jobEmployment {
-  margin-top: 0.45rem;
-  color: #0e7490;
-  font-size: 0.78rem;
-  font-weight: 750;
-}
-
-.jobMeta {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem 0.8rem;
-  margin-top: 1.2rem;
-  color: var(--home-muted);
-  font-size: 0.78rem;
-}
-
-.jobMeta span {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.45rem;
-  overflow-wrap: anywhere;
-}
-
-.jobMeta svg {
-  width: 0.92rem;
-  height: 0.92rem;
-  flex: 0 0 auto;
-  color: #0e7490;
-}
-
-.jobFooter {
-  display: grid;
-  gap: 1rem;
-  margin-top: auto;
-  border-top: 1px solid var(--home-line);
-  padding-top: 1.2rem;
-}
-
-.jobFooter > strong {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--home-ink);
-  font-size: 0.82rem;
-}
-
-.jobFooter > strong svg {
-  width: 1rem;
-  height: 1rem;
-  color: #0e7490;
-}
-
-.jobActions {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.jobPrimaryAction {
-  display: flex;
-  min-height: 2.75rem;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 0.6rem;
-  background: var(--home-ink);
-  padding: 0 0.85rem;
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.jobPrimaryAction:hover {
-  background: #123d63;
-}
-
-.jobSecondaryAction {
-  display: inline-flex;
-  min-height: 2.5rem;
-  align-items: center;
-  justify-content: center;
-  color: #075fad;
-  font-size: 0.74rem;
-  font-weight: 750;
-}
-
-.jobSecondaryAction:hover {
-  color: #064f91;
-  text-decoration: underline;
-  text-underline-offset: 0.2rem;
-}
-
-.jobSkeleton {
-  display: grid;
-  min-height: 330px;
-  align-content: start;
-  gap: 1rem;
-  border: 1px solid var(--home-line);
-  border-radius: 0.9rem;
-  background: #fff;
-  padding: 1.35rem;
-}
-
-.jobSkeleton span {
-  display: block;
-  height: 1rem;
-  border-radius: 0.35rem;
-  background: #edf1f5;
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-.jobSkeleton span:first-child {
-  width: 62%;
-  height: 1.65rem;
-}
-
-.jobSkeleton span:nth-child(2) {
-  width: 82%;
-}
-
-.jobSkeleton span:nth-child(3) {
-  width: 45%;
 }
 
 .jobsEmpty {
@@ -449,13 +269,6 @@
   padding: 1.35rem;
 }
 
-.rolePrompt[data-span="2"] {
-  grid-column: span 2;
-}
-
-.rolePrompt[data-span="3"] {
-  grid-column: span 3;
-}
 
 .rolePrompt > svg {
   width: 1.35rem;
@@ -691,28 +504,9 @@
   background: #e9f6fb;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-
-  50% {
-    opacity: 1;
-  }
-}
-
 @media (max-width: 900px) {
   .heroCopy {
     width: min(700px, 76%);
-  }
-
-  .jobsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .rolePrompt[data-span="3"] {
-    grid-column: span 2;
   }
 
   .platformGrid,
@@ -773,25 +567,12 @@
     gap: 1rem;
   }
 
-  .jobsGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .rolePrompt[data-span="2"],
-  .rolePrompt[data-span="3"] {
-    grid-column: span 1;
-  }
-
   .jobsEmpty {
     grid-template-columns: 1fr;
   }
 
   .jobsEmpty a {
     justify-content: center;
-  }
-
-  .jobMeta {
-    grid-template-columns: 1fr;
   }
 
   .platformVisual {
@@ -818,14 +599,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .jobSkeleton span {
-    animation: none;
-  }
-
   .primaryButton,
   .secondaryButton,
-  .darkButton,
-  .jobCard {
+  .darkButton {
     transition: none;
   }
 }

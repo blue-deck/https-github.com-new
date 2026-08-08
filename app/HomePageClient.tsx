@@ -5,36 +5,21 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  BriefcaseBusiness,
-  CalendarDays,
   Check,
-  CircleDollarSign,
   ClipboardCheck,
   FileCheck2,
-  MapPin,
-  Ruler,
   Search,
   ShieldCheck,
-  Ship,
   UsersRound,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
+import { parsePublicJobCards, type PublicJobCard } from "./jobs/job-data";
+import { useJobListingViewer } from "./jobs/JobListingAction";
 import {
-  formatJobCandidateType,
-  formatJobDate,
-  formatJobEmploymentType,
-  formatJobSalary,
-  formatJobYachtLength,
-  formatJobYachtType,
-  parsePublicJobCards,
-  type PublicJobCard,
-} from "./jobs/job-card-data";
-import {
-  getJobListingAction,
-  useJobListingViewer,
-  type JobListingViewer,
-} from "./jobs/JobListingAction";
+  PublicJobListingCard,
+  PublicJobListingSkeleton,
+} from "./jobs/PublicJobListingCard";
 import styles from "./homepage.module.css";
 
 type LoadState = "loading" | "ready" | "error";
@@ -68,10 +53,6 @@ const copy = {
     jobsErrorTitle: "Roles are temporarily unavailable.",
     jobsErrorText: "Open the full jobs board to try again.",
     openJobs: "Open jobs board",
-    viewRole: "View role",
-    start: "Start",
-    notSpecified: "Not specified",
-    salaryNotSpecified: "Salary on application",
     profilePromptEyebrow: "Stay ready",
     profilePromptTitle: "Make your experience easy to trust.",
     profilePromptText:
@@ -135,10 +116,6 @@ const copy = {
     jobsErrorTitle: "İlanlara şu anda ulaşılamıyor.",
     jobsErrorText: "Tekrar denemek için tam ilan panosunu açın.",
     openJobs: "İlan panosunu aç",
-    viewRole: "İlanı incele",
-    start: "Başlangıç",
-    notSpecified: "Belirtilmedi",
-    salaryNotSpecified: "Maaş başvuruda paylaşılır",
     profilePromptEyebrow: "Hazır kalın",
     profilePromptTitle: "Deneyiminizi güvenilir biçimde sunun.",
     profilePromptText:
@@ -323,28 +300,23 @@ export default function HomePageClient() {
             <div className={styles.jobsGrid} aria-live="polite">
               {loadState === "loading" ? (
                 <>
-                  {[0, 1, 2].map((item) => (
-                    <div key={item} className={styles.jobSkeleton}>
-                      <span />
-                      <span />
-                      <span />
-                    </div>
+                  {[0, 1].map((item) => (
+                    <PublicJobListingSkeleton key={item} />
                   ))}
                   <span className="sr-only">{c.loadingJobs}</span>
                 </>
               ) : loadState === "ready" && jobs.length > 0 ? (
                 <>
                   {jobs.map((job) => (
-                    <JobCard
+                    <PublicJobListingCard
                       key={job.id}
                       job={job}
                       language={language}
                       viewer={jobViewer}
-                      copy={c}
                     />
                   ))}
                   {jobs.length < 3 && rolePrompt ? (
-                    <RolePrompt span={3 - jobs.length} {...rolePrompt} />
+                    <RolePrompt {...rolePrompt} />
                   ) : null}
                 </>
               ) : (
@@ -473,88 +445,6 @@ export default function HomePageClient() {
   );
 }
 
-function JobCard({
-  job,
-  language,
-  viewer,
-  copy: c,
-}: {
-  job: PublicJobCard;
-  language: "en" | "tr";
-  viewer: JobListingViewer;
-  copy: (typeof copy)["en"] | (typeof copy)["tr"];
-}) {
-  const yachtType = job.yachtType
-    ? formatJobYachtType(job.yachtType, language)
-    : "";
-  const yachtLength =
-    job.yachtLength !== null && job.yachtLengthUnit
-      ? formatJobYachtLength(job.yachtLength, job.yachtLengthUnit, language)
-      : "";
-  const salary = formatJobSalary(job.salary, language);
-  const action = getJobListingAction(job.id, viewer, language);
-  const detailHref = `/jobs/${encodeURIComponent(job.id)}`;
-
-  return (
-    <article className={styles.jobCard}>
-      <div className={styles.jobHeader}>
-        <div>
-          {job.candidateType !== "individual" ? (
-            <span className={styles.jobPill}>
-              {formatJobCandidateType(job.candidateType, language)}
-            </span>
-          ) : null}
-          <h3>{job.position}</h3>
-        </div>
-        <BriefcaseBusiness aria-hidden />
-      </div>
-      <p className={styles.jobEmployment}>
-        {formatJobEmploymentType(job.employmentType, language)}
-      </p>
-      <div className={styles.jobMeta}>
-        <span>
-          <Ship aria-hidden />
-          {yachtType || c.notSpecified}
-        </span>
-        <span>
-          <Ruler aria-hidden />
-          {yachtLength || c.notSpecified}
-        </span>
-        <span>
-          <MapPin aria-hidden />
-          {job.location || c.notSpecified}
-        </span>
-        <span>
-          <CalendarDays aria-hidden />
-          {job.startDate
-            ? formatJobDate(job.startDate, language, {
-                day: "numeric",
-                month: "short",
-              })
-            : c.notSpecified}
-        </span>
-      </div>
-      <div className={styles.jobFooter}>
-        <strong>
-          <CircleDollarSign aria-hidden />
-          {salary || c.salaryNotSpecified}
-        </strong>
-        <div className={styles.jobActions}>
-          <Link href={detailHref} className={styles.jobPrimaryAction}>
-            {c.viewRole}
-            <ArrowRight aria-hidden />
-          </Link>
-          {action.intent === "apply" || action.intent === "signup" ? (
-            <Link href={action.href} className={styles.jobSecondaryAction}>
-              {action.label}
-            </Link>
-          ) : null}
-        </div>
-      </div>
-    </article>
-  );
-}
-
 function FeatureRow({
   icon,
   title,
@@ -576,14 +466,12 @@ function FeatureRow({
 }
 
 function RolePrompt({
-  span,
   eyebrow,
   title,
   text,
   action,
   href,
 }: {
-  span: number;
   eyebrow: string;
   title: string;
   text: string;
@@ -591,7 +479,7 @@ function RolePrompt({
   href: string;
 }) {
   return (
-    <aside className={styles.rolePrompt} data-span={span}>
+    <aside className={styles.rolePrompt}>
       <ShieldCheck aria-hidden />
       <div>
         <p>{eyebrow}</p>
