@@ -2,14 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Check,
   ClipboardCheck,
   FileCheck2,
-  Pause,
-  Play,
   Search,
   ShieldCheck,
   UsersRound,
@@ -37,8 +35,6 @@ const copy = {
     findCrew: "Find professional crew",
     heroTrust:
       "Visible profiles. Protected names, contacts and private records.",
-    pauseHeroVideo: "Pause background video",
-    playHeroVideo: "Play background video",
     jobsEyebrow: "Latest opportunities",
     jobsTitle: "A focused path to your next role.",
     jobsIntro:
@@ -102,8 +98,6 @@ const copy = {
     findCrew: "Profesyonel mürettebat bul",
     heroTrust:
       "Görünür profiller. Korumalı adlar, iletişim bilgileri ve özel kayıtlar.",
-    pauseHeroVideo: "Arka plan videosunu duraklat",
-    playHeroVideo: "Arka plan videosunu oynat",
     jobsEyebrow: "Güncel fırsatlar",
     jobsTitle: "Sıradaki görevinize giden sade yol.",
     jobsIntro:
@@ -163,12 +157,8 @@ export default function HomePageClient() {
   const { language } = useLanguage();
   const c = copy[language];
   const jobViewer = useJobListingViewer();
-  const heroVideoRef = useRef<HTMLVideoElement>(null);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [jobs, setJobs] = useState<PublicJobCard[]>([]);
-  const [heroMotionAllowed, setHeroMotionAllowed] = useState(false);
-  const [heroVideoPlaying, setHeroVideoPlaying] = useState(false);
-  const [heroVideoReady, setHeroVideoReady] = useState(false);
   const isEmployerViewer =
     jobViewer.kind === "signed-in" &&
     (jobViewer.role === "owner" || jobViewer.role === "management");
@@ -221,31 +211,6 @@ export default function HomePageClient() {
         : { href: "/login?mode=signup", label: c.getStarted };
 
   useEffect(() => {
-    const motionPreference = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
-
-    function syncMotionPreference() {
-      const motionAllowed = !motionPreference.matches;
-
-      if (!motionAllowed) {
-        heroVideoRef.current?.pause();
-        setHeroVideoPlaying(false);
-        setHeroVideoReady(false);
-      }
-
-      setHeroMotionAllowed(motionAllowed);
-    }
-
-    syncMotionPreference();
-    motionPreference.addEventListener("change", syncMotionPreference);
-
-    return () => {
-      motionPreference.removeEventListener("change", syncMotionPreference);
-    };
-  }, []);
-
-  useEffect(() => {
     const controller = new AbortController();
 
     async function loadJobs() {
@@ -276,66 +241,23 @@ export default function HomePageClient() {
     return () => controller.abort();
   }, []);
 
-  async function toggleHeroVideo() {
-    const video = heroVideoRef.current;
-    if (!video) return;
-
-    if (video.paused) {
-      try {
-        await video.play();
-      } catch {
-        setHeroVideoPlaying(false);
-      }
-      return;
-    }
-
-    video.pause();
-  }
-
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page}`}>
       <PublicHeader />
 
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
-          <Image
-            src="/media/bluedeck-yacht-wake-hero-poster-v1.webp"
-            alt=""
-            fill
-            preload
-            sizes="100vw"
-            className={styles.heroImage}
-          />
-          {heroMotionAllowed ? (
-            <video
-              ref={heroVideoRef}
-              className={`${styles.heroVideo} ${heroVideoReady ? styles.heroVideoReady : ""}`}
-              autoPlay
-              loop
-              muted
-              playsInline
-              preload="metadata"
-              poster="/media/bluedeck-yacht-wake-hero-poster-v1.webp"
-              disablePictureInPicture
-              aria-hidden="true"
-              tabIndex={-1}
-              onCanPlay={() => setHeroVideoReady(true)}
-              onPlay={() => setHeroVideoPlaying(true)}
-              onPause={() => setHeroVideoPlaying(false)}
-              onError={() => {
-                setHeroMotionAllowed(false);
-                setHeroVideoPlaying(false);
-                setHeroVideoReady(false);
-              }}
-            >
-              <source
-                src="/media/bluedeck-yacht-wake-hero-v1.mp4"
-                type="video/mp4"
-              />
-            </video>
-          ) : null}
-          <div className={styles.heroOverlay} />
-          <div className={styles.heroFoamTransition} aria-hidden="true" />
+          <div className={styles.heroVisual} aria-hidden="true">
+            <Image
+              src="/media/bluedeck-yacht-hero-v2.webp"
+              alt=""
+              fill
+              preload
+              sizes="100vw"
+              className={styles.heroImage}
+            />
+            <div className={styles.heroOverlay} />
+          </div>
           <div className={`${styles.container} ${styles.heroInner}`}>
             <div className={styles.heroCopy}>
               <p className={styles.eyebrow}>{c.eyebrow}</p>
@@ -359,19 +281,6 @@ export default function HomePageClient() {
               </p>
             </div>
           </div>
-          {heroMotionAllowed ? (
-            <button
-              type="button"
-              className={styles.heroVideoControl}
-              onClick={() => void toggleHeroVideo()}
-              aria-label={
-                heroVideoPlaying ? c.pauseHeroVideo : c.playHeroVideo
-              }
-              title={heroVideoPlaying ? c.pauseHeroVideo : c.playHeroVideo}
-            >
-              {heroVideoPlaying ? <Pause aria-hidden /> : <Play aria-hidden />}
-            </button>
-          ) : null}
         </section>
 
         <section className={styles.jobsSection} aria-labelledby="jobs-heading">
