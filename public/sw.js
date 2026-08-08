@@ -13,7 +13,7 @@ const OFFLINE_FALLBACK_HTML = `<!doctype html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#071631" />
+    <meta name="theme-color" content="#ffffff" />
     <title>BlueDeck Offline</title>
     <style>
       *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{display:grid;min-height:100dvh;place-items:center;background:linear-gradient(145deg,#eef9fd,#fff);padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));color:#071631;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.card{width:min(100%,520px);border:1px solid rgba(7,22,49,.12);border-radius:32px;background:rgba(255,255,255,.94);padding:36px;text-align:center;box-shadow:0 28px 80px rgba(7,22,49,.14)}img{width:96px;height:96px;border-radius:22px}h1{margin:24px 0 0;font-family:Georgia,serif;font-size:clamp(38px,10vw,56px);font-weight:400}p{margin:16px auto 0;max-width:390px;color:#5b7088;font-size:17px;line-height:1.6}button{min-width:44px;min-height:48px;margin-top:24px;border:0;border-radius:16px;background:#071631;padding:12px 24px;color:#fff;font:800 16px/1.2 inherit}

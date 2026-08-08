@@ -81,7 +81,7 @@ body {
 html {
   min-height: 100%;
   scroll-padding-top: calc(var(--public-header-height) + var(--safe-area-top));
-  background: #071631;
+  background: #ffffff;
 }
 
 html[data-display-mode="standalone"] body {
