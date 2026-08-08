@@ -15,42 +15,89 @@
 
 .hero {
   position: relative;
-  min-height: clamp(620px, calc(100dvh - var(--public-header-height)), 780px);
+  isolation: isolate;
+  min-height: clamp(
+    720px,
+    calc(100dvh - var(--public-header-height) + 48px),
+    840px
+  );
   overflow: hidden;
   background: #031127;
   color: #fff;
 }
 
-.heroImage {
+.heroImage,
+.heroVideo {
+  width: 108% !important;
+  max-width: none;
+  z-index: 0;
   object-fit: cover;
-  object-position: center;
+  object-position: 50% 48%;
+}
+
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 108%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 520ms ease;
+}
+
+.heroVideoReady {
+  opacity: 1;
 }
 
 .heroOverlay {
   position: absolute;
+  z-index: 1;
   inset: 0;
   background:
     linear-gradient(
       90deg,
-      rgba(2, 11, 27, 0.98) 0%,
-      rgba(3, 18, 42, 0.9) 38%,
-      rgba(3, 18, 42, 0.38) 68%,
-      rgba(2, 11, 27, 0.1) 100%
+      rgba(2, 11, 27, 0.99) 0%,
+      rgba(3, 18, 42, 0.94) 34%,
+      rgba(3, 18, 42, 0.48) 61%,
+      rgba(2, 11, 27, 0.08) 100%
     ),
-    linear-gradient(0deg, rgba(2, 9, 22, 0.32), transparent 42%);
+    linear-gradient(0deg, rgba(2, 9, 22, 0.18), transparent 44%);
+}
+
+.heroFoamTransition {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: clamp(180px, 26vh, 300px);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      80% 120% at 54% 115%,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(255, 255, 255, 0.72) 52%,
+      rgba(255, 255, 255, 0) 78%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(242, 248, 251, 0.08) 25%,
+      rgba(255, 255, 255, 0.55) 72%,
+      #fff 100%
+    );
 }
 
 .heroInner {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   min-height: inherit;
   align-items: center;
-  padding-block: clamp(5rem, 10vw, 8rem);
+  padding-block: clamp(4.5rem, 8vw, 6.5rem) clamp(10rem, 17vw, 13rem);
 }
 
 .heroCopy {
-  width: min(700px, 61%);
+  width: min(680px, 56%);
 }
 
 .eyebrow {
@@ -66,9 +113,9 @@
 }
 
 .heroTitle {
-  max-width: 760px;
+  max-width: 700px;
   margin-top: 1.35rem;
-  font-size: clamp(3.6rem, 6vw, 6.5rem);
+  font-size: clamp(3.45rem, 5vw, 5.4rem);
   font-weight: 650;
   letter-spacing: -0.055em;
   line-height: 0.96;
@@ -158,13 +205,47 @@
   color: #8be9f7;
 }
 
+.heroVideoControl {
+  position: absolute;
+  right: clamp(1.25rem, 3vw, 2.75rem);
+  bottom: clamp(2rem, 4vw, 3.5rem);
+  z-index: 4;
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: rgba(4, 23, 43, 0.58);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(2, 11, 27, 0.2);
+  backdrop-filter: blur(10px);
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.heroVideoControl:hover {
+  border-color: #fff;
+  background: rgba(7, 95, 173, 0.82);
+  transform: translateY(-1px);
+}
+
+.heroVideoControl svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: currentColor;
+}
+
 .jobsSection,
 .platformSection {
   padding-block: clamp(4.5rem, 8vw, 7rem);
 }
 
 .jobsSection {
-  background: #f7f9fc;
+  position: relative;
+  background: linear-gradient(180deg, #fff 0%, #f7f9fc 14rem, #f7f9fc 100%);
 }
 
 .sectionHeadingRow {
@@ -506,7 +587,7 @@
 
 @media (max-width: 900px) {
   .heroCopy {
-    width: min(700px, 76%);
+    width: min(650px, 72%);
   }
 
   .platformGrid,
@@ -525,11 +606,13 @@
   }
 
   .hero {
-    min-height: 650px;
+    min-height: 780px;
   }
 
-  .heroImage {
-    object-position: 64% center;
+  .heroImage,
+  .heroVideo {
+    width: 100% !important;
+    object-position: 50% 50%;
   }
 
   .heroOverlay {
@@ -537,10 +620,15 @@
       linear-gradient(
         90deg,
         rgba(2, 11, 27, 0.98) 0%,
-        rgba(3, 18, 42, 0.9) 58%,
-        rgba(3, 18, 42, 0.5) 100%
+        rgba(3, 18, 42, 0.92) 56%,
+        rgba(3, 18, 42, 0.54) 100%
       ),
-      linear-gradient(0deg, rgba(2, 9, 22, 0.44), transparent 48%);
+      linear-gradient(0deg, rgba(2, 9, 22, 0.18), transparent 48%);
+  }
+
+  .heroInner {
+    align-items: flex-start;
+    padding-block: 4.5rem 10.5rem;
   }
 
   .heroCopy {
@@ -548,7 +636,7 @@
   }
 
   .heroTitle {
-    font-size: clamp(3rem, 15vw, 4.4rem);
+    font-size: clamp(2.85rem, 14vw, 4.15rem);
   }
 
   .heroActions {
@@ -559,6 +647,17 @@
   .primaryButton,
   .secondaryButton {
     width: 100%;
+  }
+
+  .heroVideoControl {
+    right: 1rem;
+    bottom: 2.5rem;
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .heroFoamTransition {
+    height: 190px;
   }
 
   .sectionHeadingRow {
@@ -599,6 +698,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .heroVideo,
+  .heroVideoControl,
   .primaryButton,
   .secondaryButton,
   .darkButton {
