@@ -247,15 +247,17 @@ export default function HomePageClient() {
 
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
-          <Image
-            src="/bluedeck-hero-home.webp"
-            alt=""
-            fill
-            preload
-            sizes="100vw"
-            className={styles.heroImage}
-          />
-          <div className={styles.heroOverlay} />
+          <div className={styles.heroVisual} aria-hidden="true">
+            <Image
+              src="/media/bluedeck-yacht-hero-v2.webp"
+              alt=""
+              fill
+              preload
+              sizes="100vw"
+              className={styles.heroImage}
+            />
+            <div className={styles.heroOverlay} />
+          </div>
           <div className={`${styles.container} ${styles.heroInner}`}>
             <div className={styles.heroCopy}>
               <p className={styles.eyebrow}>{c.eyebrow}</p>
