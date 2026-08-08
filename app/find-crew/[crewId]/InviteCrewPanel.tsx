@@ -575,6 +575,8 @@ export function InviteCrewPanel({
     }
   }
 
+  if (!sessionToken) return null;
+
   return (
     <aside
       aria-labelledby="hiring-actions-heading"
