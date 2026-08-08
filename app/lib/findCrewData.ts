@@ -585,12 +585,6 @@ function crewSearchRecordMatches(
     return false;
   }
   if (
-    filters.maximumExperience !== null &&
-    preview.experienceYears > filters.maximumExperience
-  ) {
-    return false;
-  }
-  if (
     filters.memberSince &&
     preview.memberSince.slice(0, 7) < filters.memberSince
   ) {

@@ -11,7 +11,6 @@ export type CrewSearchFilters = {
   language: string;
   languageLevel: string;
   minimumExperience: number | null;
-  maximumExperience: number | null;
   memberSince: string;
   premiumOnly: boolean;
   hasPhoto: boolean;
@@ -59,7 +58,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   language: "",
   languageLevel: "",
   minimumExperience: null,
-  maximumExperience: null,
   memberSince: "",
   premiumOnly: false,
   hasPhoto: false,
@@ -81,7 +79,6 @@ export const crewSearchParamKeys = new Set([
   "language",
   "level",
   "experienceMin",
-  "experienceMax",
   "memberSince",
   "premium",
   "photo",
@@ -103,12 +100,6 @@ export function parseCrewSearchFilters(
     0,
     60,
   );
-  const maximumExperience = boundedNumber(
-    readSearchParam(source, "experienceMax"),
-    0,
-    60,
-  );
-
   return normalizeCrewSearchFilters({
     query: limitedText(readSearchParam(source, "q"), 120),
     position: limitedText(readSearchParam(source, "position"), 120),
@@ -131,7 +122,6 @@ export function parseCrewSearchFilters(
     language: limitedText(readSearchParam(source, "language"), 80),
     languageLevel: limitedText(readSearchParam(source, "level"), 80),
     minimumExperience,
-    maximumExperience,
     memberSince: validMonth(readSearchParam(source, "memberSince")),
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
@@ -149,12 +139,6 @@ export function normalizeCrewSearchFilters(
     0,
     60,
   );
-  const maximumExperience = boundedNumberValue(
-    value.maximumExperience,
-    0,
-    60,
-  );
-
   return {
     query: limitedText(value.query, 120),
     position: limitedText(value.position, 120),
@@ -168,12 +152,6 @@ export function normalizeCrewSearchFilters(
     language: limitedText(value.language, 80),
     languageLevel: limitedText(value.languageLevel, 80),
     minimumExperience,
-    maximumExperience:
-      minimumExperience !== null &&
-      maximumExperience !== null &&
-      maximumExperience < minimumExperience
-        ? minimumExperience
-        : maximumExperience,
     memberSince: validMonth(value.memberSince),
     premiumOnly: value.premiumOnly === true,
     hasPhoto: value.hasPhoto === true,
@@ -198,7 +176,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "language", normalized.language);
   setText(params, "level", normalized.languageLevel);
   setNumber(params, "experienceMin", normalized.minimumExperience);
-  setNumber(params, "experienceMax", normalized.maximumExperience);
   setText(params, "memberSince", normalized.memberSince);
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);

@@ -370,12 +370,6 @@ export function FindCrewClient({
                     onChange={(value) => setFilter("minimumExperience", value)}
                     language={language}
                   />
-                  <NumberFilterSelect
-                    label={c.maximumExperience}
-                    value={filters.maximumExperience}
-                    onChange={(value) => setFilter("maximumExperience", value)}
-                    language={language}
-                  />
                   <FilterSelect
                     label={c.skill}
                     value={filters.skill}
@@ -781,7 +775,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     language: filters.language,
     languageLevel: filters.languageLevel,
     minimumExperience: filters.minimumExperience,
-    maximumExperience: filters.maximumExperience,
     memberSince: filters.memberSince,
     premiumOnly: filters.premiumOnly,
     hasPhoto: filters.hasPhoto,
@@ -932,7 +925,6 @@ const copy = {
     contract: "Any contract",
     nationalityFilter: "Any nationality",
     minimumExperience: "Minimum experience",
-    maximumExperience: "Maximum experience",
     skill: "Any skill",
     characteristic: "Any professional trait",
     workPreference: "Any work preference",
@@ -994,7 +986,6 @@ const copy = {
     contract: "Tüm çalışma türleri",
     nationalityFilter: "Tüm uyruklar",
     minimumExperience: "Minimum deneyim",
-    maximumExperience: "Maksimum deneyim",
     skill: "Tüm beceriler",
     characteristic: "Tüm profesyonel özellikler",
     workPreference: "Tüm çalışma tercihleri",

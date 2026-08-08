@@ -68,7 +68,7 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     return false;
   }
 
-  for (const key of ["experienceMin", "experienceMax"]) {
+  for (const key of ["experienceMin"]) {
     const value = searchParams.get(key);
     if (
       value !== null &&
@@ -76,15 +76,6 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     ) {
       return false;
     }
-  }
-  const minimumExperience = searchParams.get("experienceMin");
-  const maximumExperience = searchParams.get("experienceMax");
-  if (
-    minimumExperience !== null &&
-    maximumExperience !== null &&
-    Number(maximumExperience) < Number(minimumExperience)
-  ) {
-    return false;
   }
   const memberSince = searchParams.get("memberSince");
   if (memberSince !== null && !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(memberSince)) {
