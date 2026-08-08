@@ -378,13 +378,6 @@ export function FindCrewClient({
                     language={language}
                   />
                   <FilterSelect
-                    label={c.characteristic}
-                    value={filters.characteristic}
-                    onChange={(value) => setFilter("characteristic", value)}
-                    options={facets.characteristics}
-                    language={language}
-                  />
-                  <FilterSelect
                     label={c.workPreference}
                     value={filters.workPreference}
                     onChange={(value) => setFilter("workPreference", value)}
@@ -687,7 +680,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     ...defaultCrewSearchFilters,
     nationality: filters.nationality,
     skill: filters.skill,
-    characteristic: filters.characteristic,
     workPreference: filters.workPreference,
     language: filters.language,
     minimumExperience: filters.minimumExperience,
@@ -761,7 +753,6 @@ function isCrewSearchFacets(value: unknown): value is CrewSearchFacets {
     "employmentTypes",
     "nationalities",
     "skills",
-    "characteristics",
     "workPreferences",
     "languages",
   ].every(
@@ -836,7 +827,6 @@ const copy = {
     nationalityFilter: "Any nationality",
     minimumExperience: "Minimum experience",
     skill: "Any skill",
-    characteristic: "Any professional trait",
     workPreference: "Any work preference",
     language: "Any language",
     memberSinceFilter: "Joined on or after",
@@ -890,7 +880,6 @@ const copy = {
     nationalityFilter: "Tüm uyruklar",
     minimumExperience: "Minimum deneyim",
     skill: "Tüm beceriler",
-    characteristic: "Tüm profesyonel özellikler",
     workPreference: "Tüm çalışma tercihleri",
     language: "Tüm diller",
     memberSinceFilter: "Bu tarihten sonra üye",

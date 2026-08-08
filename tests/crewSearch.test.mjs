@@ -16,7 +16,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     contract: "Permanent",
     nationality: "Turkish",
     skill: "Silver service",
-    characteristic: "Team player",
     preference: "Motor yacht",
     language: "English",
     experienceMin: "3",
@@ -32,7 +31,7 @@ test("round-trips every public crew search criterion through the URL contract", 
     crewSearchParams(filters).toString(),
     normalizedSource.toString(),
   );
-  assert.equal(crewSearchFilterCount(filters), 12);
+  assert.equal(crewSearchFilterCount(filters), 11);
 });
 
 test("bounds malformed minimum experience and month values without widening a request", () => {

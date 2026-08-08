@@ -6,7 +6,6 @@ export type CrewSearchFilters = {
   employmentType: string;
   nationality: string;
   skill: string;
-  characteristic: string;
   workPreference: string;
   language: string;
   minimumExperience: number | null;
@@ -20,7 +19,6 @@ export type CrewSearchFacets = {
   employmentTypes: string[];
   nationalities: string[];
   skills: string[];
-  characteristics: string[];
   workPreferences: string[];
   languages: string[];
 };
@@ -32,7 +30,6 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
   employmentTypes: [],
   nationalities: [],
   skills: [],
-  characteristics: [],
   workPreferences: [],
   languages: [],
 };
@@ -45,7 +42,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   employmentType: "",
   nationality: "",
   skill: "",
-  characteristic: "",
   workPreference: "",
   language: "",
   minimumExperience: null,
@@ -60,7 +56,6 @@ export const crewSearchParamKeys = new Set([
   "contract",
   "nationality",
   "skill",
-  "characteristic",
   "preference",
   "language",
   "experienceMin",
@@ -91,10 +86,6 @@ export function parseCrewSearchFilters(
     employmentType: limitedText(readSearchParam(source, "contract"), 120),
     nationality: limitedText(readSearchParam(source, "nationality"), 80),
     skill: limitedText(readSearchParam(source, "skill"), 120),
-    characteristic: limitedText(
-      readSearchParam(source, "characteristic"),
-      120,
-    ),
     workPreference: limitedText(
       readSearchParam(source, "preference"),
       120,
@@ -121,7 +112,6 @@ export function normalizeCrewSearchFilters(
     employmentType: limitedText(value.employmentType, 120),
     nationality: limitedText(value.nationality, 80),
     skill: limitedText(value.skill, 120),
-    characteristic: limitedText(value.characteristic, 120),
     workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
     minimumExperience,
@@ -139,7 +129,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "contract", normalized.employmentType);
   setText(params, "nationality", normalized.nationality);
   setText(params, "skill", normalized.skill);
-  setText(params, "characteristic", normalized.characteristic);
   setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
   setNumber(params, "experienceMin", normalized.minimumExperience);

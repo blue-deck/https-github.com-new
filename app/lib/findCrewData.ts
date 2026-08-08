@@ -547,12 +547,6 @@ function crewSearchRecordMatches(
     return false;
   }
   if (
-    filters.characteristic &&
-    !hasExactCrewValue(record.characteristics, filters.characteristic)
-  ) {
-    return false;
-  }
-  if (
     filters.workPreference &&
     !hasExactCrewValue(record.workPreferences, filters.workPreference)
   ) {
@@ -631,9 +625,6 @@ function crewSearchFacets(records: CrewSearchRecord[]): CrewSearchFacets {
     ),
     skills: sortedCrewFacet(
       records.flatMap((record) => record.preview.personalSkills),
-    ),
-    characteristics: sortedCrewFacet(
-      records.flatMap((record) => record.characteristics),
     ),
     workPreferences: sortedCrewFacet(
       records.flatMap((record) => record.workPreferences),
