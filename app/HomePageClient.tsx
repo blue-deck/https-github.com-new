@@ -23,18 +23,22 @@ import {
 import styles from "./homepage.module.css";
 
 type LoadState = "loading" | "ready" | "error";
+type HeroPathKey = "jobs" | "crew" | "yacht";
 
 const copy = {
   en: {
-    eyebrow: "Yacht careers · hiring · operations",
-    titleLine1: "Build the right crew.",
-    titleLine2: "Run a better yacht.",
+    eyebrow: "BlueDeck · Yacht careers & operations",
+    titleLine1: "One platform.",
+    titleLine2: "Every step on deck.",
     intro:
-      "Find trusted yacht roles, hire with clarity and keep essential onboard work connected in one focused platform.",
+      "Find work, hire trusted crew and bring yacht operations into one connected place.",
     browseJobs: "Explore open roles",
     findCrew: "Find professional crew",
-    heroTrust:
-      "Visible profiles. Protected names, contacts and private records.",
+    heroPathLabel: "Choose your BlueDeck path",
+    heroJobs: "I need a role",
+    heroCrew: "I need crew",
+    heroYacht: "I manage a yacht",
+    howItWorks: "How BlueDeck works",
     jobsEyebrow: "Latest opportunities",
     jobsTitle: "A focused path to your next role.",
     jobsIntro:
@@ -89,15 +93,18 @@ const copy = {
     getStarted: "Create a BlueDeck account",
   },
   tr: {
-    eyebrow: "Yat kariyeri · işe alım · operasyon",
-    titleLine1: "Doğru ekibi kurun.",
-    titleLine2: "Yatı daha iyi yönetin.",
+    eyebrow: "BlueDeck · Yat kariyeri ve operasyon",
+    titleLine1: "Tek platform.",
+    titleLine2: "Güvertede her adım.",
     intro:
-      "Güvenilir yat ilanlarını bulun, doğru bilgilerle işe alım yapın ve teknedeki temel işleri tek, odaklı platformda yönetin.",
+      "İş bulun, güvenilir mürettebatı işe alın ve yat operasyonlarını tek bağlantılı yapıda yönetin.",
     browseJobs: "Açık ilanları keşfet",
     findCrew: "Profesyonel mürettebat bul",
-    heroTrust:
-      "Görünür profiller. Korumalı adlar, iletişim bilgileri ve özel kayıtlar.",
+    heroPathLabel: "BlueDeck yolunuzu seçin",
+    heroJobs: "İş arıyorum",
+    heroCrew: "Mürettebat arıyorum",
+    heroYacht: "Yat yönetiyorum",
+    howItWorks: "BlueDeck nasıl çalışır?",
     jobsEyebrow: "Güncel fırsatlar",
     jobsTitle: "Sıradaki görevinize giden sade yol.",
     jobsIntro:
@@ -159,6 +166,33 @@ export default function HomePageClient() {
   const jobViewer = useJobListingViewer();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [jobs, setJobs] = useState<PublicJobCard[]>([]);
+  const [heroPath, setHeroPath] = useState<HeroPathKey>("jobs");
+  const heroPathOptions = [
+    {
+      key: "jobs" as const,
+      label: c.heroJobs,
+      action: c.browseJobs,
+      href: "/jobs",
+      icon: Search,
+    },
+    {
+      key: "crew" as const,
+      label: c.heroCrew,
+      action: c.findCrew,
+      href: "/find-crew",
+      icon: UsersRound,
+    },
+    {
+      key: "yacht" as const,
+      label: c.heroYacht,
+      action: c.explorePlatform,
+      href: "/yacht-os",
+      icon: ClipboardCheck,
+    },
+  ];
+  const activeHeroPath =
+    heroPathOptions.find((option) => option.key === heroPath) ??
+    heroPathOptions[0];
   const isEmployerViewer =
     jobViewer.kind === "signed-in" &&
     (jobViewer.role === "owner" || jobViewer.role === "management");
@@ -248,7 +282,7 @@ export default function HomePageClient() {
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
           <Image
-            src="/bluedeck-hero-home.webp"
+            src="/media/bluedeck-aft-wake-hero-v3.webp"
             alt=""
             fill
             preload
@@ -263,20 +297,41 @@ export default function HomePageClient() {
                 <span>{c.titleLine1}</span>
                 <span>{c.titleLine2}</span>
               </h1>
+              <span className={styles.heroDivider} aria-hidden="true" />
               <p className={styles.heroIntro}>{c.intro}</p>
+              <div
+                className={styles.heroPathSelector}
+                role="group"
+                aria-label={c.heroPathLabel}
+              >
+                {heroPathOptions.map((option) => {
+                  const Icon = option.icon;
+                  const isActive = option.key === heroPath;
+
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={styles.heroPathButton}
+                      data-active={isActive ? "true" : "false"}
+                      aria-pressed={isActive}
+                      onClick={() => setHeroPath(option.key)}
+                    >
+                      <Icon aria-hidden="true" />
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
               <div className={styles.heroActions}>
-                <Link href="/jobs" className={styles.primaryButton}>
-                  {c.browseJobs}
+                <Link href={activeHeroPath.href} className={styles.primaryButton}>
+                  {activeHeroPath.action}
                   <ArrowRight aria-hidden />
                 </Link>
-                <Link href="/find-crew" className={styles.secondaryButton}>
-                  {c.findCrew}
+                <Link href="#platform" className={styles.secondaryButton}>
+                  {c.howItWorks}
                 </Link>
               </div>
-              <p className={styles.heroTrust}>
-                <ShieldCheck aria-hidden />
-                {c.heroTrust}
-              </p>
             </div>
           </div>
         </section>
@@ -349,6 +404,7 @@ export default function HomePageClient() {
         </section>
 
         <section
+          id="platform"
           className={styles.platformSection}
           aria-labelledby="platform-heading"
         >

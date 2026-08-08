@@ -15,29 +15,37 @@
 
 .hero {
   position: relative;
-  min-height: clamp(620px, calc(100dvh - var(--public-header-height)), 780px);
+  isolation: isolate;
+  min-height: clamp(700px, calc(100dvh - var(--public-header-height)), 830px);
   overflow: hidden;
-  background: #031127;
+  background: #021324;
   color: #fff;
 }
 
 .heroImage {
+  z-index: 0;
   object-fit: cover;
-  object-position: center;
+  object-position: 50% 52%;
 }
 
 .heroOverlay {
   position: absolute;
+  z-index: 1;
   inset: 0;
   background:
     linear-gradient(
-      90deg,
-      rgba(2, 11, 27, 0.98) 0%,
-      rgba(3, 18, 42, 0.9) 38%,
-      rgba(3, 18, 42, 0.38) 68%,
-      rgba(2, 11, 27, 0.1) 100%
+      180deg,
+      rgba(1, 13, 27, 0.72) 0%,
+      rgba(2, 17, 33, 0.3) 34%,
+      rgba(2, 14, 28, 0.46) 67%,
+      rgba(1, 11, 23, 0.82) 100%
     ),
-    linear-gradient(0deg, rgba(2, 9, 22, 0.32), transparent 42%);
+    radial-gradient(
+      ellipse at 50% 46%,
+      rgba(2, 18, 35, 0.08) 0%,
+      rgba(2, 16, 31, 0.32) 55%,
+      rgba(1, 12, 25, 0.66) 100%
+    );
 }
 
 .heroInner {
@@ -46,11 +54,13 @@
   display: flex;
   min-height: inherit;
   align-items: center;
-  padding-block: clamp(5rem, 10vw, 8rem);
+  justify-content: center;
+  padding-block: clamp(4.5rem, 8vw, 6.5rem);
 }
 
 .heroCopy {
-  width: min(700px, 61%);
+  width: min(940px, 100%);
+  text-align: center;
 }
 
 .eyebrow {
@@ -66,12 +76,14 @@
 }
 
 .heroTitle {
-  max-width: 760px;
-  margin-top: 1.35rem;
-  font-size: clamp(3.6rem, 6vw, 6.5rem);
-  font-weight: 650;
-  letter-spacing: -0.055em;
-  line-height: 0.96;
+  max-width: 940px;
+  margin: 1.2rem auto 0;
+  font-family: "Iowan Old Style", Baskerville, "Times New Roman", serif;
+  font-size: clamp(3.6rem, 6.2vw, 6.25rem);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  text-shadow: 0 2px 24px rgba(0, 12, 28, 0.34);
   text-wrap: balance;
 }
 
@@ -79,19 +91,85 @@
   display: block;
 }
 
+.heroDivider {
+  display: block;
+  width: 3rem;
+  height: 3px;
+  margin: 1.4rem auto 0;
+  border-radius: 999px;
+  background: #33d4ee;
+  box-shadow: 0 0 22px rgba(51, 212, 238, 0.34);
+}
+
 .heroIntro {
   max-width: 620px;
-  margin-top: 1.75rem;
-  color: rgba(239, 248, 255, 0.78);
-  font-size: clamp(1rem, 1.4vw, 1.18rem);
-  line-height: 1.7;
+  margin: 1.15rem auto 0;
+  color: rgba(244, 250, 255, 0.9);
+  font-size: clamp(1rem, 1.35vw, 1.16rem);
+  line-height: 1.65;
+  text-shadow: 0 1px 14px rgba(0, 12, 28, 0.45);
+}
+
+.heroPathSelector {
+  display: grid;
+  width: min(760px, 100%);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin: 1.9rem auto 0;
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 0.85rem;
+  background: rgba(2, 18, 36, 0.48);
+  padding: 0.35rem;
+  box-shadow: 0 18px 48px rgba(0, 10, 24, 0.22);
+  backdrop-filter: blur(12px);
+}
+
+.heroPathButton {
+  display: inline-flex;
+  min-height: 3.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.8rem;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 0.88rem;
+  font-weight: 750;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.heroPathButton:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+}
+
+.heroPathButton[data-active="true"] {
+  background: linear-gradient(135deg, #0877db, #0b93ee);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(0, 95, 189, 0.28);
+}
+
+.heroPathButton:focus-visible {
+  outline: 2px solid #8be9f7;
+  outline-offset: 2px;
+}
+
+.heroPathButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
 }
 
 .heroActions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
-  margin-top: 2rem;
+  margin-top: 1.25rem;
 }
 
 .primaryButton,
@@ -122,6 +200,20 @@
   transform: translateY(-1px);
 }
 
+.heroActions .primaryButton,
+.heroActions .secondaryButton {
+  min-width: 12.5rem;
+}
+
+.heroActions .primaryButton {
+  background: linear-gradient(135deg, #0877db, #0b93ee);
+  box-shadow: 0 12px 30px rgba(0, 84, 171, 0.24);
+}
+
+.heroActions .primaryButton:hover {
+  background: linear-gradient(135deg, #096cc3, #087fd0);
+}
+
 .secondaryButton {
   border: 1px solid rgba(255, 255, 255, 0.56);
   background: rgba(3, 17, 39, 0.3);
@@ -142,29 +234,13 @@
   height: 1rem;
 }
 
-.heroTrust {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  margin-top: 2rem;
-  color: rgba(239, 248, 255, 0.66);
-  font-size: 0.8rem;
-  line-height: 1.5;
-}
-
-.heroTrust svg {
-  width: 1.15rem;
-  height: 1.15rem;
-  color: #8be9f7;
-}
-
 .jobsSection,
 .platformSection {
   padding-block: clamp(4.5rem, 8vw, 7rem);
 }
 
 .jobsSection {
-  background: #f7f9fc;
+  background: linear-gradient(180deg, #fff 0%, #f7f9fc 12rem, #f7f9fc 100%);
 }
 
 .sectionHeadingRow {
@@ -506,7 +582,7 @@
 
 @media (max-width: 900px) {
   .heroCopy {
-    width: min(700px, 76%);
+    width: min(760px, 100%);
   }
 
   .platformGrid,
@@ -525,22 +601,30 @@
   }
 
   .hero {
-    min-height: 650px;
+    min-height: 730px;
   }
 
   .heroImage {
-    object-position: 64% center;
+    object-position: 50% 50%;
   }
 
   .heroOverlay {
     background:
       linear-gradient(
-        90deg,
-        rgba(2, 11, 27, 0.98) 0%,
-        rgba(3, 18, 42, 0.9) 58%,
-        rgba(3, 18, 42, 0.5) 100%
+        180deg,
+        rgba(1, 13, 27, 0.76) 0%,
+        rgba(2, 16, 31, 0.48) 42%,
+        rgba(1, 11, 23, 0.86) 100%
       ),
-      linear-gradient(0deg, rgba(2, 9, 22, 0.44), transparent 48%);
+      radial-gradient(
+        ellipse at 50% 44%,
+        rgba(2, 18, 35, 0.14) 0%,
+        rgba(1, 12, 25, 0.7) 100%
+      );
+  }
+
+  .heroInner {
+    padding-block: 3.6rem;
   }
 
   .heroCopy {
@@ -548,7 +632,31 @@
   }
 
   .heroTitle {
-    font-size: clamp(3rem, 15vw, 4.4rem);
+    font-size: clamp(2.8rem, 13vw, 4rem);
+  }
+
+  .heroIntro {
+    font-size: 0.98rem;
+  }
+
+  .heroPathSelector {
+    gap: 0.2rem;
+    margin-top: 1.5rem;
+    padding: 0.25rem;
+  }
+
+  .heroPathButton {
+    min-height: 4.35rem;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.55rem 0.25rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+
+  .heroPathButton svg {
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
   .heroActions {
@@ -599,6 +707,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .heroPathButton,
   .primaryButton,
   .secondaryButton,
   .darkButton {
