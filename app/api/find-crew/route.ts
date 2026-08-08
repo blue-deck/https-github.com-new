@@ -81,16 +81,6 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
   if (memberSince !== null && !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(memberSince)) {
     return false;
   }
-  for (const key of [
-    "premium",
-    "photo",
-    "gallery",
-    "references",
-    "documents",
-  ]) {
-    const value = searchParams.get(key);
-    if (value !== null && value !== "1") return false;
-  }
   const cursor = searchParams.get("cursor");
   return cursor === null ||
     /^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/.test(

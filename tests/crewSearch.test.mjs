@@ -19,27 +19,20 @@ test("round-trips every public crew search criterion through the URL contract", 
     characteristic: "Team player",
     preference: "Motor yacht",
     language: "English",
-    level: "Advanced",
     experienceMin: "3",
     memberSince: "2024-05",
-    premium: "1",
-    photo: "1",
-    gallery: "1",
-    references: "1",
-    documents: "1",
   });
 
   const filters = parseCrewSearchFilters(source);
   assert.equal(filters.query, "Chief Stewardess");
   assert.equal(filters.minimumExperience, 3);
-  assert.equal(filters.hasReferences, true);
   const normalizedSource = new URLSearchParams(source);
   normalizedSource.set("q", "Chief Stewardess");
   assert.equal(
     crewSearchParams(filters).toString(),
     normalizedSource.toString(),
   );
-  assert.equal(crewSearchFilterCount(filters), 18);
+  assert.equal(crewSearchFilterCount(filters), 12);
 });
 
 test("bounds malformed minimum experience and month values without widening a request", () => {
@@ -47,13 +40,11 @@ test("bounds malformed minimum experience and month values without widening a re
     new URLSearchParams({
       experienceMin: "8",
       memberSince: "2024-19",
-      premium: "true",
     }),
   );
 
   assert.equal(filters.minimumExperience, 8);
   assert.equal(filters.memberSince, "");
-  assert.equal(filters.premiumOnly, false);
 });
 
 test("merges exact yacht-work days without overstating short or overlapping roles", () => {

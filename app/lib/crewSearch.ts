@@ -9,14 +9,8 @@ export type CrewSearchFilters = {
   characteristic: string;
   workPreference: string;
   language: string;
-  languageLevel: string;
   minimumExperience: number | null;
   memberSince: string;
-  premiumOnly: boolean;
-  hasPhoto: boolean;
-  hasGallery: boolean;
-  hasReferences: boolean;
-  hasDocuments: boolean;
 };
 
 export type CrewSearchFacets = {
@@ -29,7 +23,6 @@ export type CrewSearchFacets = {
   characteristics: string[];
   workPreferences: string[];
   languages: string[];
-  languageLevels: string[];
 };
 
 export const emptyCrewSearchFacets: CrewSearchFacets = {
@@ -42,7 +35,6 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
   characteristics: [],
   workPreferences: [],
   languages: [],
-  languageLevels: [],
 };
 
 export const defaultCrewSearchFilters: CrewSearchFilters = {
@@ -56,14 +48,8 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   characteristic: "",
   workPreference: "",
   language: "",
-  languageLevel: "",
   minimumExperience: null,
   memberSince: "",
-  premiumOnly: false,
-  hasPhoto: false,
-  hasGallery: false,
-  hasReferences: false,
-  hasDocuments: false,
 };
 
 export const crewSearchParamKeys = new Set([
@@ -77,14 +63,8 @@ export const crewSearchParamKeys = new Set([
   "characteristic",
   "preference",
   "language",
-  "level",
   "experienceMin",
   "memberSince",
-  "premium",
-  "photo",
-  "gallery",
-  "references",
-  "documents",
   "cursor",
 ]);
 
@@ -120,14 +100,8 @@ export function parseCrewSearchFilters(
       120,
     ),
     language: limitedText(readSearchParam(source, "language"), 80),
-    languageLevel: limitedText(readSearchParam(source, "level"), 80),
     minimumExperience,
     memberSince: validMonth(readSearchParam(source, "memberSince")),
-    premiumOnly: readSearchParam(source, "premium") === "1",
-    hasPhoto: readSearchParam(source, "photo") === "1",
-    hasGallery: readSearchParam(source, "gallery") === "1",
-    hasReferences: readSearchParam(source, "references") === "1",
-    hasDocuments: readSearchParam(source, "documents") === "1",
   });
 }
 
@@ -150,14 +124,8 @@ export function normalizeCrewSearchFilters(
     characteristic: limitedText(value.characteristic, 120),
     workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
-    languageLevel: limitedText(value.languageLevel, 80),
     minimumExperience,
     memberSince: validMonth(value.memberSince),
-    premiumOnly: value.premiumOnly === true,
-    hasPhoto: value.hasPhoto === true,
-    hasGallery: value.hasGallery === true,
-    hasReferences: value.hasReferences === true,
-    hasDocuments: value.hasDocuments === true,
   };
 }
 
@@ -174,14 +142,8 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "characteristic", normalized.characteristic);
   setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
-  setText(params, "level", normalized.languageLevel);
   setNumber(params, "experienceMin", normalized.minimumExperience);
   setText(params, "memberSince", normalized.memberSince);
-  setBoolean(params, "premium", normalized.premiumOnly);
-  setBoolean(params, "photo", normalized.hasPhoto);
-  setBoolean(params, "gallery", normalized.hasGallery);
-  setBoolean(params, "references", normalized.hasReferences);
-  setBoolean(params, "documents", normalized.hasDocuments);
   return params;
 }
 
@@ -240,8 +202,4 @@ function setNumber(
   value: number | null,
 ) {
   if (value !== null) params.set(key, String(value));
-}
-
-function setBoolean(params: URLSearchParams, key: string, value: boolean) {
-  if (value) params.set(key, "1");
 }

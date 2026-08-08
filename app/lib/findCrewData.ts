@@ -561,19 +561,7 @@ function crewSearchRecordMatches(
   if (
     filters.language &&
     !record.languages.some(
-      (item) =>
-        sameCrewValue(item.name, filters.language) &&
-        (!filters.languageLevel ||
-          languageLevelAtLeast(item.level, filters.languageLevel)),
-    )
-  ) {
-    return false;
-  }
-  if (
-    !filters.language &&
-    filters.languageLevel &&
-    !record.languages.some((item) =>
-      languageLevelAtLeast(item.level, filters.languageLevel),
+      (item) => sameCrewValue(item.name, filters.language),
     )
   ) {
     return false;
@@ -590,32 +578,7 @@ function crewSearchRecordMatches(
   ) {
     return false;
   }
-  if (filters.premiumOnly && !preview.premiumProfile) return false;
-  if (filters.hasPhoto && !preview.profilePhotoUrl) return false;
-  if (filters.hasGallery && record.galleryCount === 0) return false;
-  if (filters.hasReferences && record.referenceCount === 0) return false;
-  if (filters.hasDocuments && record.documentCount === 0) return false;
   return true;
-}
-
-const crewLanguageLevels = [
-  "Basic",
-  "Intermediate",
-  "Advanced",
-  "Fluent",
-  "Native",
-] as const;
-
-function languageLevelAtLeast(value: string, minimum: string) {
-  const valueIndex = crewLanguageLevels.findIndex((item) =>
-    sameCrewValue(item, value),
-  );
-  const minimumIndex = crewLanguageLevels.findIndex((item) =>
-    sameCrewValue(item, minimum),
-  );
-  return minimumIndex === -1
-    ? sameCrewValue(value, minimum)
-    : valueIndex >= minimumIndex;
 }
 
 function hasExactCrewValue(values: string[], expected: string) {
@@ -677,11 +640,6 @@ function crewSearchFacets(records: CrewSearchRecord[]): CrewSearchFacets {
     ),
     languages: sortedCrewFacet(
       records.flatMap((record) => record.languages.map((item) => item.name)),
-    ),
-    languageLevels: crewLanguageLevels.filter((level) =>
-      records.some((record) =>
-        record.languages.some((item) => sameCrewValue(item.level, level)),
-      ),
     ),
   };
 }
