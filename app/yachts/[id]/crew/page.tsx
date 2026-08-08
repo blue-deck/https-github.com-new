@@ -2460,6 +2460,7 @@ export default function CrewPage({
 
   return (
     <main className="bd-app-page bd-crew-command-page min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
+      <h1 className="sr-only">Yacht crew and operations</h1>
       <div className="mx-auto w-full min-w-0 max-w-[1700px]">
         {isCrewCommand && (
           <div className="mb-8 min-w-0 space-y-5 sm:mb-10">

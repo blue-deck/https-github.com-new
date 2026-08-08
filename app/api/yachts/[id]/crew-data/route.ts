@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { authenticateActiveBearer } from "../../../../lib/activeBearerServer";
+import { privateNextResponse as NextResponse } from "../../../../lib/privateApiResponse";
 import { signChecklistTaskPhotoUrls } from "../../../../lib/privateStorageUrls";
 import { resolveSupabaseUrl } from "../../../../lib/supabaseConfig";
 import { readLimitedJsonObjectDetailed } from "../../../../lib/requestBodyServer";

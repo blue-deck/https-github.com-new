@@ -2,7 +2,9 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { RefreshCcw, ShieldAlert } from "lucide-react";
+import { isAuthenticatedAppRoute } from "./components/AuthenticatedTopBar";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 
 export default function ErrorPage({
@@ -12,13 +14,16 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const pathname = usePathname() || "/";
+  const usesAccountShell = isAuthenticatedAppRoute(pathname);
+
   useEffect(() => {
     console.error(error);
   }, [error]);
 
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
+      {!usesAccountShell && <PublicHeader />}
       <main id="main-content">
         <section className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-3xl items-center px-5 py-16 text-center sm:px-8">
           <div className="bd-editorial-card w-full p-8 sm:p-12">
@@ -30,8 +35,8 @@ export default function ErrorPage({
               We could not complete this request.
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#5b7088]" role="alert">
-              The page stayed protected and the request did not change your account.
-              Try again, or return to the dashboard and continue from there.
+              We could not load the latest page state. Try again, or return to
+              the dashboard and continue from there.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <button type="button" onClick={reset} className="bd-primary-cta">
@@ -45,7 +50,7 @@ export default function ErrorPage({
           </div>
         </section>
       </main>
-      <PublicFooter />
+      {!usesAccountShell && <PublicFooter />}
     </div>
   );
 }

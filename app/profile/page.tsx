@@ -2828,7 +2828,7 @@ function SeazoneStyleCvPreview({
                 </div>
               </header>
 
-              <main className="bd-cv-main p-6 sm:p-8 print:p-7">
+              <div className="bd-cv-main p-6 sm:p-8 print:p-7">
                 <SeazoneSection title="About Me" className="mt-0">
                   <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[18px] font-semibold leading-7 text-[#17232c]">
                     {professionalSummary}
@@ -2871,7 +2871,7 @@ function SeazoneStyleCvPreview({
               <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
                 This CV is generated from verified BlueDeck profile data and can be updated from any device.
               </footer>
-            </main>
+            </div>
             </div>
           </div>
         </div>
@@ -3059,7 +3059,7 @@ function PrintableCvPages({
             )}
           </aside>
 
-          <main className={`bd-print-main ${pageIndex > 0 ? "bd-print-main-continuation" : ""}`}>
+          <div className={`bd-print-main ${pageIndex > 0 ? "bd-print-main-continuation" : ""}`}>
             {pageIndex === 0 ? (
               <>
                 <PrintableHero profile={profile} crewName={crewName} primaryPosition={primaryPosition} />
@@ -3079,7 +3079,7 @@ function PrintableCvPages({
               </div>
             )}
             <PrintablePageFooter />
-          </main>
+          </div>
         </section>
       ))}
     </div>

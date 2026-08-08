@@ -19,7 +19,7 @@ const authenticatedAppRoutePrefixes = [
   "/yachts",
 ] as const;
 
-function isAuthenticatedAppRoute(pathname: string) {
+export function isAuthenticatedAppRoute(pathname: string) {
   return authenticatedAppRoutePrefixes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );

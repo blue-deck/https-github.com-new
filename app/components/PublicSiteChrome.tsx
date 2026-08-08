@@ -140,7 +140,7 @@ export function PublicHeader() {
                   : "Open menu"
             }
             aria-expanded={menuOpen}
-            aria-controls={menuId}
+            aria-controls={menuOpen ? menuId : undefined}
             onClick={() => setMenuOpen((current) => !current)}
             className="bd-focus bd-public-menu-button"
           >

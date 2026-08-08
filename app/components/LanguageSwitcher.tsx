@@ -115,7 +115,7 @@ export function LanguageSwitcher({
         aria-label={t("language.select")}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-controls={menuId}
+        aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((current) => !current)}
         className={`bd-focus inline-flex items-center justify-center rounded-full border text-lg font-black transition ${
           isCompact ? "h-10 w-10" : "h-11 w-11"

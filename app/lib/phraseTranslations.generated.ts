@@ -596,7 +596,7 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
     "tr": "Doğrulanmış profil verileri, belgeler, iş tercihleri, beceriler, referanslar ve portföyden temiz bir yatçılık CV'si oluşturun.",
   },
   "Build Captain": {
-    "tr": "Kaptan inşa et",
+    "tr": "Yeni İnşa Kaptanı",
   },
   "Bulgarian": {
     "tr": "Bulgarca",
@@ -1961,7 +1961,7 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
     "tr": "Misafir ayakkabısı, çantası ve havluları hazırlandı",
   },
   "Guest Tender Transfer": {
-    "tr": "Misafir İhale Transferi",
+    "tr": "Misafir Tender Transferi",
   },
   "Guest Toys": {
     "tr": "Misafir Oyuncakları",
@@ -3473,10 +3473,10 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
     "tr": "Güvenli",
   },
   "Safe and polished guest movement by tender.": {
-    "tr": "İhale ile güvenli ve cilalı misafir hareketi.",
+    "tr": "Tender botuyla güvenli ve özenli misafir transferi.",
   },
   "Safe launch, operation and recovery of tenders.": {
-    "tr": "İhalelerin güvenli başlatılması, işletilmesi ve kurtarılması.",
+    "tr": "Tender botlarının güvenli indirilmesi, kullanımı ve geri alınması.",
   },
   "Safe receipt and storage of provisions.": {
     "tr": "Erzakların güvenli bir şekilde alınması ve saklanması.",
@@ -3965,49 +3965,49 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
     "tr": "Geçici",
   },
   "Tender": {
-    "tr": "İhale",
+    "tr": "Tender Botu",
   },
   "Tender and toys secured": {
-    "tr": "İhale ve oyuncaklar güvence altına alındı",
+    "tr": "Tender botu ve su oyuncakları emniyete alındı",
   },
   "Tender Driver": {
-    "tr": "İhale Sürücüsü",
+    "tr": "Tender Botu Kaptanı",
   },
   "Tender driving": {
-    "tr": "İhale sürüşü",
+    "tr": "Tender botu kullanımı",
   },
   "Tender ETA and pickup point confirmed": {
-    "tr": "İhale ETA'sı ve teslim alma noktası onaylandı",
+    "tr": "Tender botunun varış zamanı ve buluşma noktası onaylandı",
   },
   "Tender fuel and battery checked": {
-    "tr": "İhale yakıtı ve aküsü kontrol edildi",
+    "tr": "Tender botunun yakıtı ve aküsü kontrol edildi",
   },
   "Tender garage or beach club tidied": {
-    "tr": "İhale garajı veya plaj kulübü düzenlendi",
+    "tr": "Tender garajı veya beach club düzenlendi",
   },
   "Tender Launch and Recovery": {
-    "tr": "İhale Başlatma ve Kurtarma",
+    "tr": "Tender Botunu İndirme ve Geri Alma",
   },
   "Tender log updated": {
-    "tr": "İhale günlüğü güncellendi",
+    "tr": "Tender botu günlüğü güncellendi",
   },
   "Tender Operator": {
-    "tr": "İhale Operatörü",
+    "tr": "Tender Botu Operatörü",
   },
   "Tender or rescue craft on standby": {
-    "tr": "İhale veya kurtarma gemisi beklemede",
+    "tr": "Tender veya kurtarma botu hazır bekliyor",
   },
   "Tender rinsed and secured after use": {
-    "tr": "İhale kullanımdan sonra durulanır ve emniyete alınır",
+    "tr": "Tender botu kullanımdan sonra durulandı ve emniyete alındı",
   },
   "Tender support confirmed": {
-    "tr": "İhale desteği onaylandı",
+    "tr": "Tender botu desteği onaylandı",
   },
   "Tender, toys and loose deck gear secured": {
-    "tr": "İhale, oyuncaklar ve gevşek güverte teçhizatı emniyete alındı",
+    "tr": "Tender botu, su oyuncakları ve gevşek güverte ekipmanı emniyete alındı",
   },
   "Tenders, toys and deck gear checked": {
-    "tr": "İhaleler, oyuncaklar ve güverte teçhizatı kontrol edildi",
+    "tr": "Tender botları, su oyuncakları ve güverte ekipmanı kontrol edildi",
   },
   "Terms": {
     "tr": "Şartlar",

@@ -307,7 +307,7 @@ export function BlueDeckTopBar() {
             type="button"
             aria-label={menuOpen ? t("topbar.closeMenu") : t("topbar.openMenu")}
             aria-expanded={menuOpen}
-            aria-controls={menuId}
+            aria-controls={menuOpen ? menuId : undefined}
             onClick={() => setMenuOpen((current) => !current)}
             className={`bd-focus bd-topbar-menu-button relative z-[60] inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/7 text-white shadow-lg shadow-slate-950/16 transition hover:border-cyan-200 hover:bg-white/13 ${
               menuOpen ? "invisible pointer-events-none" : ""

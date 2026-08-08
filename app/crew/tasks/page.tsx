@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { signChecklistTaskPhotoUrls } from "../../lib/privateStorageUrls";
@@ -899,7 +900,7 @@ export default function CrewTasksPage() {
                     <h3 className="mt-2 text-xl font-black text-slate-950" data-i18n-ignore>{yachts[contract.yacht_id]?.name || "Seafarer Employment Agreement"}</h3>
                     <p className="mt-2 text-sm text-slate-500">Received {formatPortalDate(contract.sent_at || contract.created_at)}</p>
                   </div>
-                  <a href="/contracts" className="rounded-xl bg-[#071631] px-5 py-3 text-center text-sm font-black text-white">Open Contract</a>
+                  <Link href="/contracts" className="rounded-xl bg-[#071631] px-5 py-3 text-center text-sm font-black text-white">Open Contract</Link>
                 </div>
               </article>
             ))}
