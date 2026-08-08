@@ -566,12 +566,6 @@ function crewSearchRecordMatches(
   ) {
     return false;
   }
-  if (
-    filters.memberSince &&
-    preview.memberSince.slice(0, 7) < filters.memberSince
-  ) {
-    return false;
-  }
   return true;
 }
 

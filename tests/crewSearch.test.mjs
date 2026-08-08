@@ -19,7 +19,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     preference: "Motor yacht",
     language: "English",
     experienceMin: "3",
-    memberSince: "2024-05",
   });
 
   const filters = parseCrewSearchFilters(source);
@@ -31,19 +30,17 @@ test("round-trips every public crew search criterion through the URL contract", 
     crewSearchParams(filters).toString(),
     normalizedSource.toString(),
   );
-  assert.equal(crewSearchFilterCount(filters), 11);
+  assert.equal(crewSearchFilterCount(filters), 10);
 });
 
 test("bounds malformed minimum experience and month values without widening a request", () => {
   const filters = parseCrewSearchFilters(
     new URLSearchParams({
       experienceMin: "8",
-      memberSince: "2024-19",
     }),
   );
 
   assert.equal(filters.minimumExperience, 8);
-  assert.equal(filters.memberSince, "");
 });
 
 test("merges exact yacht-work days without overstating short or overlapping roles", () => {

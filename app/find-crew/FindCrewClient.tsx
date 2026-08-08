@@ -391,19 +391,6 @@ export function FindCrewClient({
                     options={facets.languages}
                     language={language}
                   />
-                  <label className="block">
-                    <span className="mb-1.5 block text-xs font-bold text-slate-600">
-                      {c.memberSinceFilter}
-                    </span>
-                    <input
-                      type="month"
-                      value={filters.memberSince}
-                      onChange={(event) =>
-                        setFilter("memberSince", event.target.value)
-                      }
-                      className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-                    />
-                  </label>
                 </div>
 
                 <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
@@ -683,7 +670,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     workPreference: filters.workPreference,
     language: filters.language,
     minimumExperience: filters.minimumExperience,
-    memberSince: filters.memberSince,
   };
   return crewSearchFilterCount(advanced);
 }
@@ -829,7 +815,6 @@ const copy = {
     skill: "Any skill",
     workPreference: "Any work preference",
     language: "Any language",
-    memberSinceFilter: "Joined on or after",
     fairHiringNote:
       "Sensitive personal attributes are intentionally excluded from hiring filters; use role-relevant professional criteria.",
     results: "Matching crew",
@@ -882,7 +867,6 @@ const copy = {
     skill: "Tüm beceriler",
     workPreference: "Tüm çalışma tercihleri",
     language: "Tüm diller",
-    memberSinceFilter: "Bu tarihten sonra üye",
     fairHiringNote:
       "Hassas kişisel özellikler işe alım filtrelerine bilinçli olarak dahil edilmez; pozisyonla ilgili mesleki kriterleri kullanın.",
     results: "Eşleşen crew",

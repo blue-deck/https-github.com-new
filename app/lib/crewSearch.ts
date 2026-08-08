@@ -9,7 +9,6 @@ export type CrewSearchFilters = {
   workPreference: string;
   language: string;
   minimumExperience: number | null;
-  memberSince: string;
 };
 
 export type CrewSearchFacets = {
@@ -45,7 +44,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   workPreference: "",
   language: "",
   minimumExperience: null,
-  memberSince: "",
 };
 
 export const crewSearchParamKeys = new Set([
@@ -59,7 +57,6 @@ export const crewSearchParamKeys = new Set([
   "preference",
   "language",
   "experienceMin",
-  "memberSince",
   "cursor",
 ]);
 
@@ -92,7 +89,6 @@ export function parseCrewSearchFilters(
     ),
     language: limitedText(readSearchParam(source, "language"), 80),
     minimumExperience,
-    memberSince: validMonth(readSearchParam(source, "memberSince")),
   });
 }
 
@@ -115,7 +111,6 @@ export function normalizeCrewSearchFilters(
     workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
     minimumExperience,
-    memberSince: validMonth(value.memberSince),
   };
 }
 
@@ -132,7 +127,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
   setNumber(params, "experienceMin", normalized.minimumExperience);
-  setText(params, "memberSince", normalized.memberSince);
   return params;
 }
 
@@ -173,12 +167,6 @@ function boundedNumberValue(
     value <= maximum
     ? Math.round(value * 10) / 10
     : null;
-}
-
-function validMonth(value: unknown) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}$/.test(value)) return "";
-  const month = Number(value.slice(5));
-  return month >= 1 && month <= 12 ? value : "";
 }
 
 function setText(params: URLSearchParams, key: string, value: string) {
