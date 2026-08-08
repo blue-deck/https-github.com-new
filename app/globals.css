@@ -80,7 +80,7 @@ body {
 
 html {
   min-height: 100%;
-  scroll-padding-top: calc(var(--public-header-height) + var(--safe-area-top));
+  scroll-padding-top: var(--safe-area-top);
   background: #ffffff;
 }
 
@@ -289,7 +289,7 @@ textarea:-webkit-autofill:focus {
 .bd-site-shell {
   position: relative;
   isolation: isolate;
-  padding-top: calc(var(--public-header-height) + var(--safe-area-top));
+  padding-top: 0;
   background:
     radial-gradient(circle at 90% 10%, rgba(13, 37, 79, 0.07), transparent 28rem),
     radial-gradient(circle at 8% 72%, rgba(15, 121, 236, 0.035), transparent 34rem),
@@ -298,8 +298,7 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-public-header {
-  position: fixed;
-  inset: 0 0 auto 0;
+  position: relative;
   z-index: 70;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: var(--bluedeck-header-surface);
@@ -657,7 +656,7 @@ textarea:-webkit-autofill:focus {
 
 /* Unified public product surface */
 .bd-site-shell {
-  padding-top: calc(var(--public-header-height) + var(--safe-area-top));
+  padding-top: 0;
   background: #f7f9fc;
   color: #07182d;
 }
@@ -1117,16 +1116,12 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-home-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 50;
 }
 
 .bd-app-topbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 60;
   width: 100%;
   background: var(--bluedeck-header-surface);
@@ -1136,8 +1131,7 @@ textarea:-webkit-autofill:focus {
 }
 
 .bd-app-topbar-placeholder {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 60;
   width: 100%;
   height: calc(var(--topbar-height) + var(--safe-area-top));
@@ -1253,7 +1247,7 @@ textarea:-webkit-autofill:focus {
 
 .bd-yacht-section-nav {
   display: block;
-  top: calc(var(--topbar-height) + var(--safe-area-top)) !important;
+  top: 0 !important;
   background: rgba(250, 252, 255, 0.94) !important;
   box-shadow:
     0 1px 0 var(--bluedeck-line),
@@ -1552,7 +1546,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   }
 
   html[data-authenticated][data-account-shell] {
-    scroll-padding-top: calc(var(--topbar-height) + var(--safe-area-top));
+    scroll-padding-top: var(--safe-area-top);
   }
 
   html[data-authenticated][data-account-shell] .bd-public-header {
@@ -1933,7 +1927,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 
   .bd-yacht-section-nav {
     display: block;
-    top: calc(var(--topbar-height) + var(--safe-area-top)) !important;
+    top: 0 !important;
   }
 
   input,
