@@ -16,35 +16,33 @@
 .hero {
   position: relative;
   isolation: isolate;
-  min-height: clamp(700px, calc(100dvh - var(--public-header-height)), 830px);
-  overflow: hidden;
-  background: #021324;
-  color: #fff;
+  min-height: clamp(560px, 64svh, 660px);
+  background: #9fd2f2;
+  color: var(--home-ink);
 }
 
 .heroImage {
   z-index: 0;
   object-fit: cover;
-  object-position: 50% 52%;
+  object-position: 50% 50%;
 }
 
 .heroOverlay {
   position: absolute;
   z-index: 1;
   inset: 0;
+  pointer-events: none;
   background:
     linear-gradient(
       180deg,
-      rgba(1, 13, 27, 0.72) 0%,
-      rgba(2, 17, 33, 0.3) 34%,
-      rgba(2, 14, 28, 0.46) 67%,
-      rgba(1, 11, 23, 0.82) 100%
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.015) 58%,
+      rgba(5, 37, 71, 0.04) 100%
     ),
     radial-gradient(
-      ellipse at 50% 46%,
-      rgba(2, 18, 35, 0.08) 0%,
-      rgba(2, 16, 31, 0.32) 55%,
-      rgba(1, 12, 25, 0.66) 100%
+      ellipse at 50% 22%,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0) 48%
     );
 }
 
@@ -53,13 +51,14 @@
   z-index: 2;
   display: flex;
   min-height: inherit;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding-block: clamp(4.5rem, 8vw, 6.5rem);
+  padding-top: clamp(3.5rem, 7vh, 5.2rem);
+  padding-bottom: 11rem;
 }
 
 .heroCopy {
-  width: min(940px, 100%);
+  width: min(980px, 100%);
   text-align: center;
 }
 
@@ -72,69 +71,91 @@
 }
 
 .hero .eyebrow {
-  color: #8be9f7;
+  color: #0b7fa3;
+  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.72);
 }
 
 .heroTitle {
-  max-width: 940px;
-  margin: 1.2rem auto 0;
-  font-family: "Iowan Old Style", Baskerville, "Times New Roman", serif;
-  font-size: clamp(3.6rem, 6.2vw, 6.25rem);
-  font-weight: 400;
-  letter-spacing: -0.035em;
-  line-height: 0.98;
-  text-shadow: 0 2px 24px rgba(0, 12, 28, 0.34);
+  max-width: 980px;
+  margin: 0.8rem auto 0;
+  color: #06152f;
+  font-size: clamp(3.15rem, 5vw, 5.3rem);
+  font-weight: 720;
+  letter-spacing: -0.052em;
+  line-height: 0.96;
+  text-shadow: 0 2px 24px rgba(255, 255, 255, 0.34);
   text-wrap: balance;
 }
 
-.heroTitle span {
+.heroTitle > span {
   display: block;
 }
 
-.heroDivider {
-  display: block;
-  width: 3rem;
-  height: 3px;
-  margin: 1.4rem auto 0;
-  border-radius: 999px;
-  background: #33d4ee;
-  box-shadow: 0 0 22px rgba(51, 212, 238, 0.34);
+.heroAccent {
+  position: relative;
+  display: inline-block;
+  color: #0968e8;
+  white-space: nowrap;
+}
+
+.heroAccentWave {
+  position: absolute;
+  right: 0.02em;
+  bottom: -0.14em;
+  width: 1.72em;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.7;
+  opacity: 0.8;
 }
 
 .heroIntro {
-  max-width: 620px;
-  margin: 1.15rem auto 0;
-  color: rgba(244, 250, 255, 0.9);
-  font-size: clamp(1rem, 1.35vw, 1.16rem);
-  line-height: 1.65;
-  text-shadow: 0 1px 14px rgba(0, 12, 28, 0.45);
+  max-width: 760px;
+  margin: 1.25rem auto 0;
+  color: #345782;
+  font-size: clamp(1rem, 1.25vw, 1.14rem);
+  font-weight: 520;
+  line-height: 1.6;
+  text-shadow: 0 1px 14px rgba(255, 255, 255, 0.72);
 }
 
-.heroPathSelector {
+.heroSearchRegion {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  bottom: -5.2rem;
+  left: 0;
+}
+
+.heroTabs {
+  position: relative;
+  z-index: 2;
   display: grid;
-  width: min(760px, 100%);
+  width: min(620px, calc(100% - 3rem));
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.3rem;
-  margin: 1.9rem auto 0;
-  border: 1px solid rgba(255, 255, 255, 0.44);
-  border-radius: 0.85rem;
-  background: rgba(2, 18, 36, 0.48);
-  padding: 0.35rem;
-  box-shadow: 0 18px 48px rgba(0, 10, 24, 0.22);
-  backdrop-filter: blur(12px);
+  gap: 0.25rem;
+  margin: 0 auto;
+  border: 1px solid rgba(7, 24, 45, 0.13);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0.3rem;
+  box-shadow: 0 16px 40px rgba(7, 24, 45, 0.15);
+  backdrop-filter: blur(18px);
 }
 
-.heroPathButton {
+.heroTab {
   display: inline-flex;
-  min-height: 3.55rem;
+  min-height: 3.35rem;
   align-items: center;
   justify-content: center;
-  gap: 0.65rem;
-  border-radius: 0.6rem;
+  border-radius: 0.68rem;
   padding: 0.7rem 0.8rem;
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 0.88rem;
-  font-weight: 750;
+  color: #172943;
+  font-size: 0.9rem;
+  font-weight: 720;
   transition:
     background-color 160ms ease,
     box-shadow 160ms ease,
@@ -142,38 +163,261 @@
     transform 160ms ease;
 }
 
-.heroPathButton:hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: #fff;
+.heroTab:hover {
+  background: #f0f5fb;
+  color: #075fad;
 }
 
-.heroPathButton[data-active="true"] {
-  background: linear-gradient(135deg, #0877db, #0b93ee);
+.heroTab[data-active="true"] {
+  background: #0b68e8;
   color: #fff;
-  box-shadow: 0 10px 28px rgba(0, 95, 189, 0.28);
+  box-shadow: 0 8px 22px rgba(11, 104, 232, 0.26);
 }
 
-.heroPathButton:focus-visible {
-  outline: 2px solid #8be9f7;
+.heroTab:focus-visible {
+  outline: 3px solid rgba(11, 104, 232, 0.32);
   outline-offset: 2px;
 }
 
-.heroPathButton svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.heroSearchRegion [role="tabpanel"][hidden] {
+  display: none;
+}
+
+.heroSearchForm {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.18fr)
+    minmax(0, 1.18fr)
+    minmax(0, 1fr)
+    minmax(180px, 0.66fr);
+  align-items: stretch;
+  gap: 0;
+  margin-top: 0.4rem;
+  border: 1px solid rgba(7, 24, 45, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 0.5rem;
+  box-shadow:
+    0 24px 60px rgba(7, 24, 45, 0.17),
+    0 3px 10px rgba(7, 24, 45, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.heroSearchField {
+  display: flex;
+  min-width: 0;
+  min-height: 4.5rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.28rem;
+  border-right: 1px solid rgba(7, 24, 45, 0.11);
+  border-radius: 0.7rem;
+  padding: 0.56rem 1rem;
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.heroSearchField:focus-within {
+  background: #f4f8fe;
+  box-shadow: inset 0 0 0 1px rgba(11, 104, 232, 0.22);
+}
+
+.heroSearchField > span:first-child {
+  color: #11243e;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.heroSearchControl {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.heroSearchControl input,
+.heroSearchControl select {
+  width: 100%;
+  min-width: 0;
+  height: 1.65rem;
+  appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #344e70;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.heroSearchControl select {
+  cursor: pointer;
+  padding-right: 1.55rem;
+}
+
+.heroSearchControl input::placeholder {
+  color: #71849e;
+  opacity: 1;
+}
+
+.heroSearchControl svg {
+  position: absolute;
+  right: 0;
+  width: 0.92rem;
+  height: 0.92rem;
+  pointer-events: none;
+  color: #526b8c;
+}
+
+.heroSearchSubmit {
+  display: inline-flex;
+  min-height: 4.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  border-radius: 0.72rem;
+  background: #0b68e8;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 760;
+  box-shadow: 0 9px 24px rgba(11, 104, 232, 0.22);
+  transition:
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.heroSearchSubmit:hover {
+  background: #075bcf;
+  box-shadow: 0 12px 28px rgba(11, 104, 232, 0.28);
+  transform: translateY(-1px);
+}
+
+.heroSearchSubmit:focus-visible {
+  outline: 3px solid rgba(11, 104, 232, 0.28);
+  outline-offset: 3px;
+}
+
+.heroSearchSubmit svg,
+.yachtPanelAction svg {
+  width: 1.05rem;
+  height: 1.05rem;
   flex: 0 0 auto;
 }
 
-.heroActions {
+.yachtPanel {
+  display: flex;
+  min-height: 5.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 0.4rem;
+  border: 1px solid rgba(7, 24, 45, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 0.85rem 1rem 0.85rem 1.25rem;
+  box-shadow:
+    0 24px 60px rgba(7, 24, 45, 0.17),
+    0 3px 10px rgba(7, 24, 45, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.yachtPanel > div {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  gap: 0.18rem 0.7rem;
+}
+
+.yachtPanel span {
+  grid-column: 1 / -1;
+  color: #0b7fa3;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.yachtPanel strong {
+  color: #0a1c36;
+  font-size: 1rem;
+  font-weight: 780;
+}
+
+.yachtPanel p {
+  color: #5c6f88;
+  font-size: 0.82rem;
+}
+
+.yachtPanelAction {
+  display: inline-flex;
+  min-height: 3.85rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: 0.72rem;
+  background: #0b68e8;
+  padding-inline: 1.25rem;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 780;
+}
+
+.popularSearchBand {
+  min-height: 8.15rem;
+  background: #fff;
+  padding-top: 6.15rem;
+  padding-bottom: 1rem;
+}
+
+.popularSearches {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  color: #172943;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.popularSearches > div {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.75rem;
-  margin-top: 1.25rem;
+  gap: 0.45rem;
+}
+
+.popularSearches a {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(42, 85, 137, 0.18);
+  border-radius: 999px;
+  background: #fff;
+  padding: 0.35rem 0.78rem;
+  color: #223b5d;
+  font-size: 0.73rem;
+  font-weight: 650;
+  box-shadow: 0 2px 8px rgba(7, 24, 45, 0.035);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.popularSearches a:hover {
+  border-color: rgba(11, 104, 232, 0.36);
+  background: #f5f9ff;
+  color: #075bcf;
 }
 
 .primaryButton,
-.secondaryButton,
 .darkButton {
   display: inline-flex;
   min-height: 3.25rem;
@@ -200,46 +444,20 @@
   transform: translateY(-1px);
 }
 
-.heroActions .primaryButton,
-.heroActions .secondaryButton {
-  min-width: 12.5rem;
-}
-
-.heroActions .primaryButton {
-  background: linear-gradient(135deg, #0877db, #0b93ee);
-  box-shadow: 0 12px 30px rgba(0, 84, 171, 0.24);
-}
-
-.heroActions .primaryButton:hover {
-  background: linear-gradient(135deg, #096cc3, #087fd0);
-}
-
-.secondaryButton {
-  border: 1px solid rgba(255, 255, 255, 0.56);
-  background: rgba(3, 17, 39, 0.3);
-  color: #fff;
-}
-
-.secondaryButton:hover {
-  border-color: #fff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
 .primaryButton svg,
 .darkButton svg,
 .sectionLink svg,
-.jobsEmpty a svg,
-.rolePrompt a svg {
+.jobsEmpty a svg {
   width: 1rem;
   height: 1rem;
 }
 
-.jobsSection,
 .platformSection {
   padding-block: clamp(4.5rem, 8vw, 7rem);
 }
 
 .jobsSection {
+  padding-block: clamp(2.4rem, 4.5vw, 4.75rem);
   background: linear-gradient(180deg, #fff 0%, #f7f9fc 12rem, #f7f9fc 100%);
 }
 
@@ -287,7 +505,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 1.25rem;
-  margin-top: 2.25rem;
+  margin-top: 1.7rem;
 }
 
 .jobsEmpty {
@@ -329,60 +547,6 @@
   background: var(--home-ink);
   padding-inline: 0.9rem;
   color: #fff;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.rolePrompt {
-  display: grid;
-  min-height: 100%;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.9rem 1rem;
-  align-content: center;
-  border: 1px solid rgba(14, 116, 144, 0.22);
-  border-radius: 0.9rem;
-  background: #edf8fa;
-  padding: 1.35rem;
-}
-
-
-.rolePrompt > svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  color: #0e7490;
-}
-
-.rolePrompt p {
-  color: #0e7490;
-  font-size: 0.69rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.rolePrompt h3 {
-  margin-top: 0.4rem;
-  font-size: 1.25rem;
-  font-weight: 750;
-  letter-spacing: -0.02em;
-}
-
-.rolePrompt span {
-  display: block;
-  margin-top: 0.45rem;
-  color: var(--home-muted);
-  font-size: 0.84rem;
-  line-height: 1.55;
-}
-
-.rolePrompt a {
-  display: inline-flex;
-  min-height: 2.6rem;
-  grid-column: 2;
-  align-items: center;
-  gap: 0.5rem;
-  justify-self: start;
-  color: #075fad;
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -581,8 +745,37 @@
 }
 
 @media (max-width: 900px) {
+  .hero {
+    min-height: 640px;
+  }
+
   .heroCopy {
     width: min(760px, 100%);
+  }
+
+  .heroSearchRegion {
+    bottom: -7.35rem;
+  }
+
+  .heroSearchForm {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heroSearchField:nth-of-type(2) {
+    border-right: 0;
+  }
+
+  .heroSearchSubmit {
+    min-height: 4rem;
+  }
+
+  .popularSearchBand {
+    min-height: 10.2rem;
+    padding-top: 8.25rem;
+  }
+
+  .yachtPanel > div {
+    grid-template-columns: 1fr;
   }
 
   .platformGrid,
@@ -601,30 +794,32 @@
   }
 
   .hero {
-    min-height: 730px;
+    min-height: 0;
   }
 
   .heroImage {
-    object-position: 50% 50%;
+    object-position: 50% 52%;
   }
 
   .heroOverlay {
     background:
       linear-gradient(
         180deg,
-        rgba(1, 13, 27, 0.76) 0%,
-        rgba(2, 16, 31, 0.48) 42%,
-        rgba(1, 11, 23, 0.86) 100%
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.02) 58%,
+        rgba(5, 37, 71, 0.08) 100%
       ),
       radial-gradient(
-        ellipse at 50% 44%,
-        rgba(2, 18, 35, 0.14) 0%,
-        rgba(1, 12, 25, 0.7) 100%
+        ellipse at 50% 18%,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0) 48%
       );
   }
 
   .heroInner {
-    padding-block: 3.6rem;
+    min-height: 540px;
+    padding-top: 3.1rem;
+    padding-bottom: 10rem;
   }
 
   .heroCopy {
@@ -632,40 +827,92 @@
   }
 
   .heroTitle {
-    font-size: clamp(2.8rem, 13vw, 4rem);
+    font-size: clamp(2.55rem, 11.8vw, 3.5rem);
+    line-height: 1;
   }
 
   .heroIntro {
-    font-size: 0.98rem;
+    max-width: 34rem;
+    margin-top: 1.15rem;
+    font-size: 0.94rem;
+    line-height: 1.55;
   }
 
-  .heroPathSelector {
-    gap: 0.2rem;
-    margin-top: 1.5rem;
+  .heroSearchRegion {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin-top: -7.3rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .heroTabs {
+    width: 100%;
+    gap: 0.18rem;
     padding: 0.25rem;
   }
 
-  .heroPathButton {
-    min-height: 4.35rem;
-    flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.55rem 0.25rem;
-    font-size: 0.7rem;
-    line-height: 1.2;
+  .heroTab {
+    min-height: 3rem;
+    padding-inline: 0.4rem;
+    font-size: 0.78rem;
   }
 
-  .heroPathButton svg {
-    width: 1.15rem;
-    height: 1.15rem;
+  .heroSearchForm {
+    grid-template-columns: 1fr;
+    padding: 0.42rem;
   }
 
-  .heroActions {
+  .heroSearchField,
+  .heroSearchField:nth-of-type(2) {
+    min-height: 3.95rem;
+    border-right: 0;
+    border-bottom: 1px solid rgba(7, 24, 45, 0.1);
+    padding: 0.5rem 0.8rem;
+  }
+
+  .heroSearchField:nth-of-type(3) {
+    border-bottom: 0;
+  }
+
+  .heroSearchSubmit {
+    min-height: 3.7rem;
+    margin-top: 0.32rem;
+  }
+
+  .yachtPanel {
     align-items: stretch;
     flex-direction: column;
+    gap: 0.85rem;
+    padding: 1rem;
   }
 
-  .primaryButton,
-  .secondaryButton {
+  .yachtPanelAction {
+    width: 100%;
+  }
+
+  .popularSearchBand {
+    min-height: 0;
+    padding-top: 1.15rem;
+    padding-bottom: 1.4rem;
+  }
+
+  .popularSearches {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .popularSearches > div {
+    justify-content: flex-start;
+  }
+
+  .popularSearches a {
+    min-height: 2.15rem;
+  }
+
+  .primaryButton {
     width: 100%;
   }
 
@@ -707,9 +954,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .heroPathButton,
+  .heroTab,
+  .heroSearchSubmit,
   .primaryButton,
-  .secondaryButton,
   .darkButton {
     transition: none;
   }

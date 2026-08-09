@@ -2,18 +2,36 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowRight,
   Check,
+  ChevronDown,
   ClipboardCheck,
   FileCheck2,
   Search,
-  ShieldCheck,
   UsersRound,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
+import { crewEmploymentTypes } from "./lib/crewDiscovery";
+import {
+  buildHomeCrewSearchHref,
+  buildHomeJobSearchHref,
+  type HomeHeroSearchValues,
+} from "./lib/homeHeroSearch";
+import {
+  formatJobEmploymentType,
+  jobEmploymentTypes,
+} from "./lib/jobPosts";
+import { yachtPositionTitles } from "./lib/yachtOperations";
 import { parsePublicJobCards, type PublicJobCard } from "./jobs/job-data";
 import { useJobListingViewer } from "./jobs/JobListingAction";
 import {
@@ -23,22 +41,48 @@ import {
 import styles from "./homepage.module.css";
 
 type LoadState = "loading" | "ready" | "error";
-type HeroPathKey = "jobs" | "crew" | "yacht";
+type HeroSearchMode = "jobs" | "crew" | "yacht";
+
+const emptyHeroSearch: HomeHeroSearchValues = {
+  position: "",
+  location: "",
+  employmentType: "",
+};
+
+const popularPositions = [
+  "Deckhand",
+  "Chief Stewardess",
+  "Engineer",
+  "Captain",
+  "Bosun",
+] as const;
 
 const copy = {
   en: {
     eyebrow: "BlueDeck · Yacht careers & operations",
     titleLine1: "One platform.",
-    titleLine2: "Every step on deck.",
+    titleLine2Lead: "Every step on",
+    titleAccent: "deck.",
     intro:
       "Find work, hire trusted crew and bring yacht operations into one connected place.",
-    browseJobs: "Explore open roles",
-    findCrew: "Find professional crew",
-    heroPathLabel: "Choose your BlueDeck path",
-    heroJobs: "I need a role",
-    heroCrew: "I need crew",
-    heroYacht: "I manage a yacht",
-    howItWorks: "How BlueDeck works",
+    heroPathLabel: "Choose a BlueDeck service",
+    heroJobs: "Find Jobs",
+    heroCrew: "Find Crew",
+    heroYacht: "Yacht-OS",
+    position: "Position",
+    positionPlaceholder: "e.g. Stewardess",
+    location: "Location",
+    locationPlaceholder: "e.g. Mediterranean",
+    contract: "Contract type",
+    contractPlaceholder: "Any contract",
+    searchJobs: "Search jobs",
+    searchCrew: "Search crew",
+    popularSearches: "Popular searches:",
+    yachtPanelEyebrow: "One connected workspace",
+    yachtPanelTitle: "Run yacht operations with clarity.",
+    yachtPanelText:
+      "Bring crew, records and daily workflows into a private Yacht-OS workspace.",
+    openYachtOs: "Open Yacht-OS",
     jobsEyebrow: "Latest opportunities",
     jobsIntro:
       "Review the newest opportunities first. Create an account only when you are ready to apply.",
@@ -56,14 +100,6 @@ const copy = {
     jobsErrorTitle: "Roles are temporarily unavailable.",
     jobsErrorText: "Open the full jobs board to try again.",
     openJobs: "Open jobs board",
-    profilePromptEyebrow: "Stay ready",
-    profilePromptTitle: "Make your experience easy to trust.",
-    profilePromptText:
-      "Keep your role, availability and essential records in one professional crew profile.",
-    hiringPromptEyebrow: "Build your team",
-    hiringPromptTitle: "Publish and manage roles in one place.",
-    hiringPromptText:
-      "Create listings, review applications and keep every shortlist organized.",
     platformEyebrow: "BlueDeck Yacht-OS",
     platformTitle: "The work behind a well-run yacht, finally connected.",
     platformIntro:
@@ -94,16 +130,28 @@ const copy = {
   tr: {
     eyebrow: "BlueDeck · Yat kariyeri ve operasyon",
     titleLine1: "Tek platform.",
-    titleLine2: "Güvertede her adım.",
+    titleLine2Lead: "Her adım",
+    titleAccent: "güvertede.",
     intro:
       "İş bulun, güvenilir mürettebatı işe alın ve yat operasyonlarını tek bağlantılı yapıda yönetin.",
-    browseJobs: "Açık ilanları keşfet",
-    findCrew: "Profesyonel mürettebat bul",
-    heroPathLabel: "BlueDeck yolunuzu seçin",
-    heroJobs: "İş arıyorum",
-    heroCrew: "Mürettebat arıyorum",
-    heroYacht: "Yat yönetiyorum",
-    howItWorks: "BlueDeck nasıl çalışır?",
+    heroPathLabel: "BlueDeck hizmetini seçin",
+    heroJobs: "İş Bul",
+    heroCrew: "Mürettebat Bul",
+    heroYacht: "Yacht-OS",
+    position: "Pozisyon",
+    positionPlaceholder: "örn. Stewardess",
+    location: "Konum",
+    locationPlaceholder: "örn. Akdeniz",
+    contract: "Çalışma biçimi",
+    contractPlaceholder: "Tüm çalışma türleri",
+    searchJobs: "İlanlarda ara",
+    searchCrew: "Mürettebat ara",
+    popularSearches: "Popüler aramalar:",
+    yachtPanelEyebrow: "Tek bağlantılı çalışma alanı",
+    yachtPanelTitle: "Yat operasyonlarını netlikle yönetin.",
+    yachtPanelText:
+      "Mürettebatı, kayıtları ve günlük iş akışlarını özel bir Yacht-OS alanında birleştirin.",
+    openYachtOs: "Yacht-OS’u aç",
     jobsEyebrow: "Güncel fırsatlar",
     jobsIntro:
       "Önce en yeni fırsatları inceleyin. Yalnızca başvurmaya hazır olduğunuzda hesap oluşturun.",
@@ -121,14 +169,6 @@ const copy = {
     jobsErrorTitle: "İlanlara şu anda ulaşılamıyor.",
     jobsErrorText: "Tekrar denemek için tam ilan panosunu açın.",
     openJobs: "İlan panosunu aç",
-    profilePromptEyebrow: "Hazır kalın",
-    profilePromptTitle: "Deneyiminizi güvenilir biçimde sunun.",
-    profilePromptText:
-      "Pozisyonunuzu, müsaitliğinizi ve temel kayıtlarınızı tek profesyonel profilde tutun.",
-    hiringPromptEyebrow: "Ekibinizi kurun",
-    hiringPromptTitle: "İlanları tek yerden yayınlayın ve yönetin.",
-    hiringPromptText:
-      "İlan oluşturun, başvuruları inceleyin ve aday listelerinizi düzenli tutun.",
     platformEyebrow: "BlueDeck Yacht-OS",
     platformTitle: "İyi yönetilen bir yatın arkasındaki işler, artık bağlantılı.",
     platformIntro:
@@ -161,62 +201,32 @@ const copy = {
 export default function HomePageClient() {
   const { language } = useLanguage();
   const c = copy[language];
+  const router = useRouter();
   const jobViewer = useJobListingViewer();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [jobs, setJobs] = useState<PublicJobCard[]>([]);
-  const [heroPath, setHeroPath] = useState<HeroPathKey>("jobs");
-  const heroPathOptions = [
-    {
-      key: "jobs" as const,
-      label: c.heroJobs,
-      action: c.browseJobs,
-      href: "/jobs",
-      icon: Search,
-    },
-    {
-      key: "crew" as const,
-      label: c.heroCrew,
-      action: c.findCrew,
-      href: "/find-crew",
-      icon: UsersRound,
-    },
-    {
-      key: "yacht" as const,
-      label: c.heroYacht,
-      action: c.explorePlatform,
-      href: "/yacht-os",
-      icon: ClipboardCheck,
-    },
+  const [heroMode, setHeroMode] = useState<HeroSearchMode>("jobs");
+  const [jobSearch, setJobSearch] =
+    useState<HomeHeroSearchValues>(emptyHeroSearch);
+  const [crewSearch, setCrewSearch] =
+    useState<HomeHeroSearchValues>(emptyHeroSearch);
+  const heroTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const heroTabs = [
+    { key: "jobs" as const, label: c.heroJobs },
+    { key: "crew" as const, label: c.heroCrew },
+    { key: "yacht" as const, label: c.heroYacht },
   ];
-  const activeHeroPath =
-    heroPathOptions.find((option) => option.key === heroPath) ??
-    heroPathOptions[0];
+  const jobContractOptions = jobEmploymentTypes.map((value) => ({
+    value,
+    label: formatJobEmploymentType(value, language),
+  }));
+  const crewContractOptions = crewEmploymentTypes.map((value) => ({
+    value,
+    label: formatCrewEmploymentType(value, language),
+  }));
   const isEmployerViewer =
     jobViewer.kind === "signed-in" &&
     (jobViewer.role === "owner" || jobViewer.role === "management");
-  const rolePrompt = isEmployerViewer
-    ? {
-        eyebrow: c.hiringPromptEyebrow,
-        title: c.hiringPromptTitle,
-        text: c.hiringPromptText,
-        action: c.openHiring,
-        href: "/hiring",
-      }
-    : jobViewer.kind === "signed-out" ||
-        (jobViewer.kind === "signed-in" &&
-          (jobViewer.role === "crew" || jobViewer.role === "captain"))
-      ? {
-          eyebrow: c.profilePromptEyebrow,
-          title: c.profilePromptTitle,
-          text: c.profilePromptText,
-          action:
-            jobViewer.kind === "signed-in" ? c.manageProfile : c.createProfile,
-          href:
-            jobViewer.kind === "signed-in"
-              ? "/profile"
-              : "/login?mode=signup&role=crew",
-        }
-      : null;
   const noJobsAction =
     loadState === "error"
       ? { href: "/jobs", label: c.openJobs }
@@ -242,12 +252,43 @@ export default function HomePageClient() {
         ? { href: "/dashboard", label: c.openDashboard }
         : { href: "/login?mode=signup", label: c.getStarted };
 
+  function handleHeroTabKeyDown(
+    event: KeyboardEvent<HTMLButtonElement>,
+    tabIndex: number,
+  ) {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") {
+      nextIndex = (tabIndex + 1) % heroTabs.length;
+    } else if (event.key === "ArrowLeft") {
+      nextIndex = (tabIndex - 1 + heroTabs.length) % heroTabs.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = heroTabs.length - 1;
+    }
+
+    if (nextIndex === null) return;
+    event.preventDefault();
+    setHeroMode(heroTabs[nextIndex].key);
+    heroTabRefs.current[nextIndex]?.focus();
+  }
+
+  function submitJobSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(buildHomeJobSearchHref(jobSearch));
+  }
+
+  function submitCrewSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(buildHomeCrewSearchHref(crewSearch));
+  }
+
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadJobs() {
       try {
-        const response = await fetch("/api/jobs", {
+        const response = await fetch("/api/jobs?limit=1", {
           cache: "no-store",
           headers: { Accept: "application/json" },
           signal: controller.signal,
@@ -261,7 +302,7 @@ export default function HomePageClient() {
         const parsedJobs = parsePublicJobCards(payload.jobs);
         if (!parsedJobs) throw new Error("jobs_response_invalid");
 
-        setJobs(parsedJobs.slice(0, 3));
+        setJobs(parsedJobs.slice(0, 1));
         setLoadState("ready");
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -280,10 +321,11 @@ export default function HomePageClient() {
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
           <Image
-            src="/media/bluedeck-aft-wake-hero-v3.webp"
+            src="/media/bluedeck-aft-wake-hero-v4.webp"
             alt=""
             fill
             preload
+            quality={90}
             sizes="100vw"
             className={styles.heroImage}
           />
@@ -293,46 +335,150 @@ export default function HomePageClient() {
               <p className={styles.eyebrow}>{c.eyebrow}</p>
               <h1 id="home-heading" className={styles.heroTitle}>
                 <span>{c.titleLine1}</span>
-                <span>{c.titleLine2}</span>
-              </h1>
-              <span className={styles.heroDivider} aria-hidden="true" />
-              <p className={styles.heroIntro}>{c.intro}</p>
-              <div
-                className={styles.heroPathSelector}
-                role="group"
-                aria-label={c.heroPathLabel}
-              >
-                {heroPathOptions.map((option) => {
-                  const Icon = option.icon;
-                  const isActive = option.key === heroPath;
-
-                  return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={styles.heroPathButton}
-                      data-active={isActive ? "true" : "false"}
-                      aria-pressed={isActive}
-                      onClick={() => setHeroPath(option.key)}
+                <span>
+                  {c.titleLine2Lead}{" "}
+                  <span className={styles.heroAccent}>
+                    {c.titleAccent}
+                    <svg
+                      viewBox="0 0 140 14"
+                      aria-hidden="true"
+                      className={styles.heroAccentWave}
                     >
-                      <Icon aria-hidden="true" />
-                      <span>{option.label}</span>
-                    </button>
-                  );
-                })}
+                      <path d="M2 5c18 8 34 8 52 0s34-8 52 0 22 7 32 3" />
+                      <path d="M18 11c15 3 27 2 40-3 13-4 27-4 42 1 14 4 25 4 36 0" />
+                    </svg>
+                  </span>
+                </span>
+              </h1>
+              <p className={styles.heroIntro}>{c.intro}</p>
+            </div>
+          </div>
+
+          <div className={[styles.container, styles.heroSearchRegion].join(" ")}>
+            <div
+              className={styles.heroTabs}
+              role="tablist"
+              aria-label={c.heroPathLabel}
+            >
+              {heroTabs.map((tab, index) => {
+                const isActive = tab.key === heroMode;
+                return (
+                  <button
+                    key={tab.key}
+                    ref={(node) => {
+                      heroTabRefs.current[index] = node;
+                    }}
+                    id={"home-hero-tab-" + tab.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    aria-controls={"home-hero-panel-" + tab.key}
+                    tabIndex={isActive ? 0 : -1}
+                    className={styles.heroTab}
+                    data-active={isActive ? "true" : "false"}
+                    onClick={() => setHeroMode(tab.key)}
+                    onKeyDown={(event) => handleHeroTabKeyDown(event, index)}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              id="home-hero-panel-jobs"
+              role="tabpanel"
+              aria-labelledby="home-hero-tab-jobs"
+              hidden={heroMode !== "jobs"}
+            >
+              <HeroSearchForm
+                values={jobSearch}
+                onChange={setJobSearch}
+                onSubmit={submitJobSearch}
+                positionLabel={c.position}
+                positionPlaceholder={c.positionPlaceholder}
+                locationLabel={c.location}
+                locationPlaceholder={c.locationPlaceholder}
+                contractLabel={c.contract}
+                contractPlaceholder={c.contractPlaceholder}
+                contractOptions={jobContractOptions}
+                submitLabel={c.searchJobs}
+              />
+            </div>
+
+            <div
+              id="home-hero-panel-crew"
+              role="tabpanel"
+              aria-labelledby="home-hero-tab-crew"
+              hidden={heroMode !== "crew"}
+            >
+              <HeroSearchForm
+                values={crewSearch}
+                onChange={setCrewSearch}
+                onSubmit={submitCrewSearch}
+                positionLabel={c.position}
+                positionPlaceholder={c.positionPlaceholder}
+                locationLabel={c.location}
+                locationPlaceholder={c.locationPlaceholder}
+                contractLabel={c.contract}
+                contractPlaceholder={c.contractPlaceholder}
+                contractOptions={crewContractOptions}
+                submitLabel={c.searchCrew}
+              />
+            </div>
+
+            <div
+              id="home-hero-panel-yacht"
+              role="tabpanel"
+              aria-labelledby="home-hero-tab-yacht"
+              hidden={heroMode !== "yacht"}
+              className={styles.yachtPanel}
+            >
+              <div>
+                <span>{c.yachtPanelEyebrow}</span>
+                <strong>{c.yachtPanelTitle}</strong>
+                <p>{c.yachtPanelText}</p>
               </div>
-              <div className={styles.heroActions}>
-                <Link href={activeHeroPath.href} className={styles.primaryButton}>
-                  {activeHeroPath.action}
-                  <ArrowRight aria-hidden />
-                </Link>
-                <Link href="#platform" className={styles.secondaryButton}>
-                  {c.howItWorks}
-                </Link>
-              </div>
+              <Link href="/yacht-os" className={styles.yachtPanelAction}>
+                {c.openYachtOs}
+                <ArrowRight aria-hidden />
+              </Link>
             </div>
           </div>
         </section>
+
+        <div className={styles.popularSearchBand}>
+          {heroMode !== "yacht" ? (
+            <nav
+              className={[styles.container, styles.popularSearches].join(" ")}
+              aria-label={c.popularSearches}
+            >
+              <span>{c.popularSearches}</span>
+              <div>
+                {popularPositions.map((position) => (
+                  <Link
+                    key={position}
+                    href={
+                      heroMode === "crew"
+                        ? buildHomeCrewSearchHref({
+                            ...emptyHeroSearch,
+                            position,
+                          })
+                        : buildHomeJobSearchHref({
+                            ...emptyHeroSearch,
+                            position,
+                          })
+                    }
+                  >
+                    {position}
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+        </div>
 
         <section className={styles.jobsSection} aria-labelledby="jobs-heading">
           <div className={styles.container}>
@@ -352,25 +498,18 @@ export default function HomePageClient() {
             <div className={styles.jobsGrid} aria-live="polite">
               {loadState === "loading" ? (
                 <>
-                  {[0, 1].map((item) => (
-                    <PublicJobListingSkeleton key={item} />
-                  ))}
+                  <PublicJobListingSkeleton />
                   <span className="sr-only">{c.loadingJobs}</span>
                 </>
               ) : loadState === "ready" && jobs.length > 0 ? (
-                <>
-                  {jobs.map((job) => (
-                    <PublicJobListingCard
-                      key={job.id}
-                      job={job}
-                      language={language}
-                      viewer={jobViewer}
-                    />
-                  ))}
-                  {jobs.length < 3 && rolePrompt ? (
-                    <RolePrompt {...rolePrompt} />
-                  ) : null}
-                </>
+                jobs.map((job) => (
+                  <PublicJobListingCard
+                    key={job.id}
+                    job={job}
+                    language={language}
+                    viewer={jobViewer}
+                  />
+                ))
               ) : (
                 <div className={styles.jobsEmpty}>
                   <Search aria-hidden />
@@ -518,33 +657,109 @@ function FeatureRow({
   );
 }
 
-function RolePrompt({
-  eyebrow,
-  title,
-  text,
-  action,
-  href,
+function HeroSearchForm({
+  values,
+  onChange,
+  onSubmit,
+  positionLabel,
+  positionPlaceholder,
+  locationLabel,
+  locationPlaceholder,
+  contractLabel,
+  contractPlaceholder,
+  contractOptions,
+  submitLabel,
 }: {
-  eyebrow: string;
-  title: string;
-  text: string;
-  action: string;
-  href: string;
+  values: HomeHeroSearchValues;
+  onChange: (values: HomeHeroSearchValues) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  positionLabel: string;
+  positionPlaceholder: string;
+  locationLabel: string;
+  locationPlaceholder: string;
+  contractLabel: string;
+  contractPlaceholder: string;
+  contractOptions: ReadonlyArray<{ value: string; label: string }>;
+  submitLabel: string;
 }) {
   return (
-    <aside className={styles.rolePrompt}>
-      <ShieldCheck aria-hidden />
-      <div>
-        <p>{eyebrow}</p>
-        <h3>{title}</h3>
-        <span>{text}</span>
-      </div>
-      <Link href={href}>
-        {action}
-        <ArrowRight aria-hidden />
-      </Link>
-    </aside>
+    <form className={styles.heroSearchForm} onSubmit={onSubmit}>
+      <label className={styles.heroSearchField}>
+        <span>{positionLabel}</span>
+        <span className={styles.heroSearchControl}>
+          <select
+            value={values.position}
+            onChange={(event) =>
+              onChange({ ...values, position: event.target.value })
+            }
+          >
+            <option value="">{positionPlaceholder}</option>
+            {yachtPositionTitles.map((position) => (
+              <option key={position} value={position}>
+                {position}
+              </option>
+            ))}
+          </select>
+          <ChevronDown aria-hidden />
+        </span>
+      </label>
+
+      <label className={styles.heroSearchField}>
+        <span>{locationLabel}</span>
+        <span className={styles.heroSearchControl}>
+          <input
+            type="search"
+            value={values.location}
+            maxLength={120}
+            autoComplete="address-level2"
+            placeholder={locationPlaceholder}
+            onChange={(event) =>
+              onChange({ ...values, location: event.target.value })
+            }
+          />
+        </span>
+      </label>
+
+      <label className={styles.heroSearchField}>
+        <span>{contractLabel}</span>
+        <span className={styles.heroSearchControl}>
+          <select
+            value={values.employmentType}
+            onChange={(event) =>
+              onChange({ ...values, employmentType: event.target.value })
+            }
+          >
+            <option value="">{contractPlaceholder}</option>
+            {contractOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown aria-hidden />
+        </span>
+      </label>
+
+      <button type="submit" className={styles.heroSearchSubmit}>
+        <span>{submitLabel}</span>
+        <Search aria-hidden />
+      </button>
+    </form>
   );
+}
+
+function formatCrewEmploymentType(
+  value: (typeof crewEmploymentTypes)[number],
+  language: "en" | "tr",
+) {
+  const labels = {
+    Permanent: { en: "Permanent", tr: "Sürekli" },
+    Seasonal: { en: "Seasonal", tr: "Sezonluk" },
+    Rotational: { en: "Rotational", tr: "Rotasyonlu" },
+    Temporary: { en: "Temporary", tr: "Geçici" },
+    Delivery: { en: "Delivery", tr: "Teslim seyri" },
+  } as const;
+  return labels[value][language];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
