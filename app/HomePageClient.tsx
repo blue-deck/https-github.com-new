@@ -321,17 +321,17 @@ export default function HomePageClient() {
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
           <Image
-            src="/media/bluedeck-aft-wake-hero-v4.webp"
+            src="/media/bluedeck-aft-wake-hero-v5.webp"
             alt=""
             fill
             preload
-            quality={90}
+            quality={95}
             sizes="100vw"
             className={styles.heroImage}
           />
           <div className={styles.heroOverlay} />
           <div className={`${styles.container} ${styles.heroInner}`}>
-            <div className={styles.heroCopy}>
+            <div className={styles.heroCopy} data-home-hero-copy>
               <p className={styles.eyebrow}>{c.eyebrow}</p>
               <h1 id="home-heading" className={styles.heroTitle}>
                 <span>{c.titleLine1}</span>
@@ -354,9 +354,13 @@ export default function HomePageClient() {
             </div>
           </div>
 
-          <div className={[styles.container, styles.heroSearchRegion].join(" ")}>
+          <div
+            className={[styles.container, styles.heroSearchRegion].join(" ")}
+            data-home-hero-search-region
+          >
             <div
               className={styles.heroTabs}
+              data-home-hero-tabs
               role="tablist"
               aria-label={c.heroPathLabel}
             >
@@ -683,7 +687,11 @@ function HeroSearchForm({
   submitLabel: string;
 }) {
   return (
-    <form className={styles.heroSearchForm} onSubmit={onSubmit}>
+    <form
+      className={styles.heroSearchForm}
+      data-home-hero-search
+      onSubmit={onSubmit}
+    >
       <label className={styles.heroSearchField}>
         <span>{positionLabel}</span>
         <span className={styles.heroSearchControl}>

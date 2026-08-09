@@ -4,6 +4,7 @@
   --home-blue: #075fad;
   --home-blue-hover: #064f91;
   --home-line: rgba(7, 24, 45, 0.12);
+  --hero-axis-shift: clamp(6px, 0.469vw, 18px);
   background: #f7f9fc;
   color: var(--home-ink);
 }
@@ -24,7 +25,7 @@
 .heroImage {
   z-index: 0;
   object-fit: cover;
-  object-position: 50% 50%;
+  object-position: 50% 40%;
 }
 
 .heroOverlay {
@@ -32,18 +33,12 @@
   z-index: 1;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      rgba(255, 255, 255, 0.015) 58%,
-      rgba(5, 37, 71, 0.04) 100%
-    ),
-    radial-gradient(
-      ellipse at 50% 22%,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0) 48%
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.025) 0%,
+    rgba(255, 255, 255, 0) 58%,
+    rgba(5, 37, 71, 0.015) 100%
+  );
 }
 
 .heroInner {
@@ -60,6 +55,7 @@
 .heroCopy {
   width: min(980px, 100%);
   text-align: center;
+  transform: translateX(var(--hero-axis-shift));
 }
 
 .eyebrow {
@@ -126,24 +122,28 @@
   position: absolute;
   z-index: 4;
   right: 0;
-  bottom: -5.2rem;
+  bottom: 0;
   left: 0;
+  transform: translate(var(--hero-axis-shift), 50%);
 }
 
 .heroTabs {
-  position: relative;
+  position: absolute;
   z-index: 2;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
   display: grid;
   width: min(620px, calc(100% - 3rem));
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.25rem;
-  margin: 0 auto;
+  margin: 0;
   border: 1px solid rgba(7, 24, 45, 0.13);
   border-radius: 0.95rem;
   background: rgba(255, 255, 255, 0.96);
   padding: 0.3rem;
   box-shadow: 0 16px 40px rgba(7, 24, 45, 0.15);
   backdrop-filter: blur(18px);
+  transform: translateX(-50%);
 }
 
 .heroTab {
@@ -192,7 +192,7 @@
     minmax(180px, 0.66fr);
   align-items: stretch;
   gap: 0;
-  margin-top: 0.4rem;
+  margin-top: 0;
   border: 1px solid rgba(7, 24, 45, 0.14);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.98);
@@ -314,7 +314,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  margin-top: 0.4rem;
+  margin-top: 0;
   border: 1px solid rgba(7, 24, 45, 0.14);
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.98);
@@ -368,9 +368,9 @@
 }
 
 .popularSearchBand {
-  min-height: 8.15rem;
+  min-height: 6.2rem;
   background: #fff;
-  padding-top: 6.15rem;
+  padding-top: 3.75rem;
   padding-bottom: 1rem;
 }
 
@@ -753,10 +753,6 @@
     width: min(760px, 100%);
   }
 
-  .heroSearchRegion {
-    bottom: -7.35rem;
-  }
-
   .heroSearchForm {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -770,8 +766,8 @@
   }
 
   .popularSearchBand {
-    min-height: 10.2rem;
-    padding-top: 8.25rem;
+    min-height: 8.4rem;
+    padding-top: 6rem;
   }
 
   .yachtPanel > div {
@@ -798,22 +794,16 @@
   }
 
   .heroImage {
-    object-position: 50% 52%;
+    object-position: 50% 48%;
   }
 
   .heroOverlay {
-    background:
-      linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.02) 58%,
-        rgba(5, 37, 71, 0.08) 100%
-      ),
-      radial-gradient(
-        ellipse at 50% 18%,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(255, 255, 255, 0) 48%
-      );
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.035) 0%,
+      rgba(255, 255, 255, 0) 58%,
+      rgba(5, 37, 71, 0.025) 100%
+    );
   }
 
   .heroInner {
@@ -824,6 +814,7 @@
 
   .heroCopy {
     width: 100%;
+    transform: none;
   }
 
   .heroTitle {
@@ -834,17 +825,21 @@
   .heroIntro {
     max-width: 34rem;
     margin-top: 1.15rem;
+    color: rgba(244, 249, 255, 0.96);
     font-size: 0.94rem;
+    font-weight: 600;
     line-height: 1.55;
+    text-shadow: 0 1px 12px rgba(3, 21, 43, 0.78);
   }
 
   .heroSearchRegion {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    margin-top: -7.3rem;
-    padding-bottom: 1.25rem;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    margin-top: 0;
+    padding-bottom: 0;
+    transform: translate(0, 50%);
   }
 
   .heroTabs {
@@ -894,7 +889,7 @@
 
   .popularSearchBand {
     min-height: 0;
-    padding-top: 1.15rem;
+    padding-top: 9.5rem;
     padding-bottom: 1.4rem;
   }
 
