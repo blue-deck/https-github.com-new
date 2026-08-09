@@ -4,7 +4,7 @@
   --home-blue: #075fad;
   --home-blue-hover: #064f91;
   --home-line: rgba(7, 24, 45, 0.12);
-  --hero-axis-shift: clamp(6px, 0.469vw, 18px);
+  --hero-axis-shift: 0px;
   background: #f7f9fc;
   color: var(--home-ink);
 }
@@ -17,39 +17,35 @@
 .hero {
   position: relative;
   isolation: isolate;
-  min-height: clamp(560px, 64svh, 660px);
-  background: #9fd2f2;
+  min-height: 0;
+  aspect-ratio: 2057 / 764;
+  background: #438fd0;
   color: var(--home-ink);
 }
 
-.heroImage {
+.heroMedia {
+  position: absolute;
   z-index: 0;
-  object-fit: cover;
-  object-position: 50% 40%;
+  inset: 0;
+  display: block;
+  overflow: hidden;
 }
 
-.heroOverlay {
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.025) 0%,
-    rgba(255, 255, 255, 0) 58%,
-    rgba(5, 37, 71, 0.015) 100%
-  );
+.heroImage {
+  object-fit: contain;
+  object-position: 50% 50%;
 }
 
 .heroInner {
   position: relative;
   z-index: 2;
   display: flex;
-  min-height: inherit;
+  height: 100%;
+  min-height: 0;
   align-items: flex-start;
   justify-content: center;
   padding-top: clamp(3.5rem, 7vh, 5.2rem);
-  padding-bottom: 11rem;
+  padding-bottom: 0;
 }
 
 .heroCopy {
@@ -68,7 +64,6 @@
 
 .hero .eyebrow {
   color: #0b7fa3;
-  text-shadow: 0 1px 12px rgba(255, 255, 255, 0.72);
 }
 
 .heroTitle {
@@ -79,7 +74,6 @@
   font-weight: 720;
   letter-spacing: -0.052em;
   line-height: 0.96;
-  text-shadow: 0 2px 24px rgba(255, 255, 255, 0.34);
   text-wrap: balance;
 }
 
@@ -111,11 +105,10 @@
 .heroIntro {
   max-width: 760px;
   margin: 1.25rem auto 0;
-  color: #345782;
+  color: #173d68;
   font-size: clamp(1rem, 1.25vw, 1.14rem);
-  font-weight: 520;
+  font-weight: 600;
   line-height: 1.6;
-  text-shadow: 0 1px 14px rgba(255, 255, 255, 0.72);
 }
 
 .heroSearchRegion {
@@ -744,15 +737,88 @@
   background: #e9f6fb;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .hero {
-    min-height: 640px;
+    display: flex;
+    min-height: 0;
+    aspect-ratio: auto;
+    flex-direction: column;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .heroInner {
+    order: 1;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    padding-top: clamp(2.5rem, 6vw, 4rem);
+    padding-right: 1.25rem;
+    padding-bottom: clamp(2.25rem, 5vw, 3.5rem);
+    padding-left: 1.25rem;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(220, 239, 251, 0.94) 0%,
+        rgba(145, 201, 237, 0.4) 66%,
+        transparent 100%
+      ),
+      radial-gradient(
+        ellipse at 50% 100%,
+        #4898db 0%,
+        #3f8fd2 58%,
+        #3483c9 100%
+      );
   }
 
   .heroCopy {
     width: min(760px, 100%);
+    margin-inline: auto;
+    transform: none;
   }
 
+  .heroMedia {
+    position: relative;
+    inset: auto;
+    order: 2;
+    width: 100%;
+    aspect-ratio: 2057 / 764;
+  }
+
+  .heroImage {
+    object-fit: contain;
+    object-position: 50% 50%;
+  }
+
+  .heroSearchRegion {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    order: 3;
+    margin-top: 0;
+    padding-top: 0.75rem;
+    padding-bottom: 1rem;
+    transform: none;
+  }
+
+  .heroTabs {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: min(620px, 100%);
+    margin: 0 auto 0.5rem;
+    transform: none;
+  }
+
+  .popularSearchBand {
+    min-height: 0;
+    padding-top: 0.5rem;
+    padding-bottom: 1.25rem;
+  }
+}
+
+@media (max-width: 900px) {
   .heroSearchForm {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -766,8 +832,8 @@
   }
 
   .popularSearchBand {
-    min-height: 8.4rem;
-    padding-top: 6rem;
+    min-height: 0;
+    padding-top: 0.5rem;
   }
 
   .yachtPanel > div {
@@ -789,27 +855,11 @@
     width: min(100% - 2rem, 1280px);
   }
 
-  .hero {
-    min-height: 0;
-  }
-
-  .heroImage {
-    object-position: 50% 48%;
-  }
-
-  .heroOverlay {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.035) 0%,
-      rgba(255, 255, 255, 0) 58%,
-      rgba(5, 37, 71, 0.025) 100%
-    );
-  }
-
   .heroInner {
-    min-height: 540px;
-    padding-top: 3.1rem;
-    padding-bottom: 10rem;
+    width: 100%;
+    min-height: 0;
+    margin-inline: 0;
+    padding: 2.5rem 1rem 2rem;
   }
 
   .heroCopy {
@@ -825,21 +875,22 @@
   .heroIntro {
     max-width: 34rem;
     margin-top: 1.15rem;
-    color: rgba(244, 249, 255, 0.96);
+    color: #173d68;
     font-size: 0.94rem;
     font-weight: 600;
     line-height: 1.55;
-    text-shadow: 0 1px 12px rgba(3, 21, 43, 0.78);
+    text-shadow: none;
   }
 
   .heroSearchRegion {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
     margin-top: 0;
-    padding-bottom: 0;
-    transform: translate(0, 50%);
+    padding-top: 0.35rem;
+    padding-bottom: 1rem;
+    transform: none;
   }
 
   .heroTabs {
@@ -889,7 +940,7 @@
 
   .popularSearchBand {
     min-height: 0;
-    padding-top: 9.5rem;
+    padding-top: 0.35rem;
     padding-bottom: 1.4rem;
   }
 

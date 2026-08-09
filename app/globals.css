@@ -508,15 +508,6 @@ textarea:-webkit-autofill:focus {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.bd-home-hero {
-  position: relative;
-  min-height: calc(100dvh - var(--public-header-height) - var(--safe-area-top));
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(241, 250, 255, 0.88) 35%, rgba(255, 255, 255, 0.34) 64%, rgba(148, 205, 238, 0.16) 100%),
-    url("/bluedeck-ocean-hero.png") center bottom / cover no-repeat,
-    #f6fbff;
-}
-
 .bd-public-page-intro {
   border-bottom: 1px solid var(--bluedeck-line);
   background:
@@ -1080,13 +1071,6 @@ textarea:-webkit-autofill:focus {
 .bd-ocean-shell > * {
   position: relative;
   z-index: 1;
-}
-
-.bd-home-shell {
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.96) 0%, rgba(236, 249, 255, 0.86) 36%, rgba(255, 255, 255, 0.38) 63%, rgba(168, 218, 246, 0.18) 100%),
-    url("/bluedeck-ocean-hero.png") center bottom / cover no-repeat,
-    #f5fbff;
 }
 
 .bd-ocean-content {

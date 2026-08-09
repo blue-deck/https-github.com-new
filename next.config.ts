@@ -28,7 +28,7 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
-    qualities: [75, 90, 95],
+    qualities: [75],
   },
   async redirects() {
     return [
