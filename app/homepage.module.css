@@ -4,7 +4,6 @@
   --home-blue: #075fad;
   --home-blue-hover: #064f91;
   --home-line: rgba(7, 24, 45, 0.12);
-  --hero-axis-shift: 0px;
   background: #f7f9fc;
   color: var(--home-ink);
 }
@@ -17,10 +16,14 @@
 .hero {
   position: relative;
   isolation: isolate;
-  min-height: 0;
-  aspect-ratio: 2057 / 764;
-  background: #438fd0;
-  color: var(--home-ink);
+  min-height: clamp(
+    600px,
+    calc(100svh - var(--public-header-height) - 32px),
+    720px
+  );
+  overflow: visible;
+  background: #041328;
+  color: #fff;
 }
 
 .heroMedia {
@@ -31,12 +34,29 @@
   overflow: hidden;
 }
 
+.heroMedia::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(2, 11, 27, 0.86) 0%,
+      rgba(3, 18, 42, 0.7) 34%,
+      rgba(3, 18, 42, 0.22) 62%,
+      rgba(2, 11, 27, 0.03) 100%
+    ),
+    linear-gradient(0deg, rgba(2, 11, 27, 0.3) 0%, transparent 30%);
+}
+
 .heroImage {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: 50% 50%;
+  object-fit: cover;
+  object-position: 72% 62%;
 }
 
 .heroInner {
@@ -45,16 +65,15 @@
   display: flex;
   height: 100%;
   min-height: 0;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: clamp(3.5rem, 7vh, 5.2rem);
-  padding-bottom: 0;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: clamp(4rem, 8vh, 6rem);
+  padding-bottom: clamp(10rem, 18vh, 12rem);
 }
 
 .heroCopy {
-  width: min(980px, 100%);
-  text-align: center;
-  transform: translateX(var(--hero-axis-shift));
+  width: min(660px, 52%);
+  text-align: left;
 }
 
 .eyebrow {
@@ -66,14 +85,14 @@
 }
 
 .hero .eyebrow {
-  color: #0b7fa3;
+  color: #8be9f7;
 }
 
 .heroTitle {
-  max-width: 980px;
-  margin: 0.8rem auto 0;
-  color: #06152f;
-  font-size: clamp(3.15rem, 5vw, 5.3rem);
+  max-width: 700px;
+  margin: 0.8rem 0 0;
+  color: #fff;
+  font-size: clamp(3.15rem, 5vw, 5.15rem);
   font-weight: 720;
   letter-spacing: -0.052em;
   line-height: 0.96;
@@ -87,7 +106,7 @@
 .heroAccent {
   position: relative;
   display: inline-block;
-  color: #0968e8;
+  color: #6ee7ff;
   white-space: nowrap;
 }
 
@@ -106,9 +125,9 @@
 }
 
 .heroIntro {
-  max-width: 760px;
-  margin: 1.25rem auto 0;
-  color: #173d68;
+  max-width: 590px;
+  margin: 1.25rem 0 0;
+  color: rgba(239, 248, 255, 0.82);
   font-size: clamp(1rem, 1.25vw, 1.14rem);
   font-weight: 600;
   line-height: 1.6;
@@ -120,7 +139,7 @@
   right: 0;
   bottom: 0;
   left: 0;
-  transform: translate(var(--hero-axis-shift), 50%);
+  transform: translateY(50%);
 }
 
 .heroTabs {
@@ -747,7 +766,7 @@
     aspect-ratio: auto;
     flex-direction: column;
     overflow: visible;
-    background: #fff;
+    background: #041328;
   }
 
   .heroInner {
@@ -762,22 +781,29 @@
     background:
       linear-gradient(
         180deg,
-        rgba(220, 239, 251, 0.94) 0%,
-        rgba(145, 201, 237, 0.4) 66%,
-        transparent 100%
+        rgba(4, 19, 40, 0.98) 0%,
+        rgba(5, 28, 55, 0.96) 66%,
+        rgba(6, 37, 67, 0.94) 100%
       ),
       radial-gradient(
         ellipse at 50% 100%,
-        #4898db 0%,
-        #3f8fd2 58%,
-        #3483c9 100%
+        #0d5b83 0%,
+        #082f52 58%,
+        #041328 100%
       );
   }
 
   .heroCopy {
     width: min(760px, 100%);
     margin-inline: auto;
+    text-align: center;
     transform: none;
+  }
+
+  .heroTitle,
+  .heroIntro {
+    margin-right: auto;
+    margin-left: auto;
   }
 
   .heroMedia {
@@ -785,12 +811,20 @@
     inset: auto;
     order: 2;
     width: 100%;
-    aspect-ratio: 2057 / 764;
+    aspect-ratio: 1672 / 941;
+  }
+
+  .heroMedia::after {
+    background: linear-gradient(
+      180deg,
+      rgba(2, 11, 27, 0.05) 0%,
+      rgba(2, 11, 27, 0.2) 100%
+    );
   }
 
   .heroImage {
-    object-fit: contain;
-    object-position: 50% 50%;
+    object-fit: cover;
+    object-position: 72% 48%;
   }
 
   .heroSearchRegion {
@@ -859,38 +893,40 @@
   }
 
   .hero {
-    display: block;
+    display: flex;
     width: 100%;
-    height: clamp(42rem, 177.7vw, 47rem);
+    height: auto;
     min-height: 0;
     aspect-ratio: auto;
-    overflow: hidden;
-    background: #fff;
+    flex-direction: column;
+    overflow: visible;
+    background: #041328;
   }
 
   .heroMedia {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    inset: auto;
+    order: 2;
     width: 100%;
-    height: 100%;
-    aspect-ratio: auto;
+    height: auto;
+    aspect-ratio: 4 / 3;
   }
 
   .heroImage {
     object-fit: cover;
-    object-position: 50% 50%;
+    object-position: 72% 48%;
   }
 
   .heroInner {
-    position: absolute;
+    position: relative;
     z-index: 2;
-    inset: 0 0 auto;
+    inset: auto;
+    order: 1;
     width: 100%;
     height: auto;
     min-height: 0;
     margin-inline: 0;
-    padding: 3.5rem 1rem 0;
-    background: transparent;
+    padding: 3rem 1rem 2.5rem;
   }
 
   .heroCopy {
@@ -899,7 +935,7 @@
   }
 
   .hero .eyebrow {
-    color: #0d335e;
+    color: #8be9f7;
     font-size: clamp(0.68rem, 2.8vw, 0.74rem);
     font-weight: 700;
     letter-spacing: 0.11em;
@@ -907,6 +943,7 @@
 
   .heroTitle {
     margin-top: 0.65rem;
+    color: #fff;
     font-size: clamp(2.2rem, 9.6vw, 2.7rem);
     line-height: 1.02;
   }
@@ -914,7 +951,7 @@
   .heroIntro {
     max-width: 21rem;
     margin-top: 0.9rem;
-    color: #173d68;
+    color: rgba(239, 248, 255, 0.8);
     font-size: 0.8rem;
     font-weight: 600;
     line-height: 1.45;
@@ -922,14 +959,15 @@
   }
 
   .heroSearchRegion {
-    position: absolute;
+    position: relative;
     z-index: 4;
-    top: 54%;
+    top: auto;
     right: auto;
     bottom: auto;
-    left: 50%;
+    left: auto;
+    order: 3;
     width: calc(100% - 2rem);
-    margin: 0;
+    margin: -2.75rem auto 0;
     border: 1px solid rgba(7, 24, 45, 0.12);
     border-radius: 1.15rem;
     background: rgba(255, 255, 255, 0.985);
@@ -937,7 +975,7 @@
     box-shadow:
       0 24px 58px rgba(7, 24, 45, 0.18),
       0 3px 10px rgba(7, 24, 45, 0.08);
-    transform: translateX(-50%);
+    transform: none;
   }
 
   .heroTabs {

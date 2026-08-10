@@ -1,6 +1,6 @@
 "use client";
 
-import Image, { getImageProps } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -56,28 +56,6 @@ const popularPositions = [
   "Captain",
   "Bosun",
 ] as const;
-
-const heroImageCommon = {
-  alt: "",
-  sizes: "100vw",
-  unoptimized: true,
-  loading: "eager",
-  fetchPriority: "high",
-} as const;
-
-const { props: desktopHeroImageProps } = getImageProps({
-  ...heroImageCommon,
-  src: "/media/bluedeck-home-hero-original-20260809.png",
-  width: 2057,
-  height: 764,
-});
-
-const { props: mobileHeroImageProps } = getImageProps({
-  ...heroImageCommon,
-  src: "/media/bluedeck-home-hero-mobile-041ea7f0.png",
-  width: 941,
-  height: 1672,
-});
 
 const copy = {
   en: {
@@ -342,19 +320,17 @@ export default function HomePageClient() {
 
       <main id="main-content">
         <section className={styles.hero} aria-labelledby="home-heading">
-          <picture className={styles.heroMedia}>
-            <source
-              media="(min-width: 641px)"
-              srcSet={
-                desktopHeroImageProps.srcSet ?? desktopHeroImageProps.src
-              }
-            />
-            <img
-              {...mobileHeroImageProps}
+          <div className={styles.heroMedia} aria-hidden="true">
+            <Image
+              src="/media/bluedeck-home-hero-yacht-20260810.png"
               alt=""
+              fill
+              preload
+              sizes="100vw"
+              unoptimized
               className={styles.heroImage}
             />
-          </picture>
+          </div>
           <div className={`${styles.container} ${styles.heroInner}`}>
             <div className={styles.heroCopy} data-home-hero-copy>
               <p className={styles.eyebrow}>{c.eyebrow}</p>
