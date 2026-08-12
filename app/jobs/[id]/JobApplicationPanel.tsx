@@ -94,7 +94,10 @@ export function JobApplicationPanel({
         }
 
         if (!active) return;
-        setApplication(parseApplication(payload.application));
+        const loadedApplication = parseApplication(payload.application);
+        setApplication(
+          loadedApplication?.status === "withdrawn" ? null : loadedApplication,
+        );
         setState({
           kind: "ready",
           eligible: payload.eligible === true,
@@ -200,11 +203,16 @@ export function JobApplicationPanel({
         .catch(() => null)) as ApplicationResponse | null;
       const nextApplication = parseApplication(payload?.application);
 
-      if (!response.ok || !payload?.ok || !nextApplication) {
+      if (
+        !response.ok ||
+        !payload?.ok ||
+        !nextApplication ||
+        nextApplication.status !== "withdrawn"
+      ) {
         throw new Error(payload?.error || c.withdrawError);
       }
 
-      setApplication(nextApplication);
+      setApplication(null);
       setNotice({ tone: "success", message: c.withdrawn });
     } catch (error) {
       setNotice({
@@ -368,7 +376,10 @@ export function JobApplicationPanel({
         {c.applyHelp}
       </p>
       {notice ? (
-        <p className="mt-3 text-xs font-semibold leading-5 text-rose-700" role="alert">
+        <p
+          className={`mt-3 text-xs font-semibold leading-5 ${notice.tone === "success" ? "text-emerald-800" : "text-rose-700"}`}
+          role={notice.tone === "error" ? "alert" : "status"}
+        >
           {notice.message}
         </p>
       ) : null}
@@ -440,7 +451,7 @@ const copy = {
     statusHelp: "The employer will update this status inside BlueDeck.",
     withdraw: "Withdraw application",
     withdrawError: "Your application could not be withdrawn.",
-    withdrawn: "Your application has been withdrawn.",
+    withdrawn: "Your application has been withdrawn. You can apply again now.",
     publisherCannotApply:
       "A Captain cannot apply to a role on a yacht they currently publish or manage for.",
   },
@@ -463,7 +474,7 @@ const copy = {
     statusHelp: "İşveren başvuru durumunu BlueDeck üzerinden güncelleyecek.",
     withdraw: "Başvuruyu geri çek",
     withdrawError: "Başvurunuz geri çekilemedi.",
-    withdrawn: "Başvurunuz geri çekildi.",
+    withdrawn: "Başvurunuz geri çekildi. Şimdi yeniden başvurabilirsiniz.",
     publisherCannotApply:
       "Captain hesabı, ilan yayınladığı veya yönettiği yatın kendi ilanına başvuramaz.",
   },
