@@ -22,8 +22,8 @@ import {
   UserRound,
 } from "lucide-react";
 import {
+  CrewCandidateEmployerProfileOverview,
   CrewCandidateProfileBody,
-  CrewCandidateProfileIdentity,
 } from "../../components/CrewCandidatePresentation";
 import { useLanguage } from "../../components/LanguageProvider";
 import type { DiscoverableCrewProfile } from "../../lib/findCrewData";
@@ -281,20 +281,21 @@ export function PublicCrewProfileContent({
         </nav>
 
         <article className="mt-6 overflow-hidden rounded-[26px] border border-white/15 bg-[#f6f9fd] shadow-2xl shadow-slate-950/10 sm:rounded-[34px]">
-          <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
-            <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
-            <CrewCandidateProfileIdentity
-              candidate={profile}
-              kicker={p.candidateProfile}
-              titleId="crew-profile-heading"
-              premiumLabel={p.premiumProfile}
-              headingLevel="h1"
-            />
-          </header>
+          <CrewCandidateEmployerProfileOverview
+            candidate={profile}
+            copy={p}
+            kicker={p.candidateProfile}
+            titleId="crew-profile-heading"
+            premiumLabel={p.premiumProfile}
+            roleFallback={p.roleFallback}
+            headingLevel="h1"
+            reserveTrailingActionSpace={false}
+          />
 
           <CrewCandidateProfileBody
             candidate={profile}
             copy={p}
+            variant="public"
             sectionHeadingLevel="h2"
           >
             <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
@@ -903,9 +904,9 @@ const publicProfileCopy = {
   en: {
     candidateProfile: "Crew profile",
     premiumProfile: "Premium profile",
-    gallery: "My Blue gallery",
-    galleryHelp:
-      "Four selected professional photos from this crew member’s My Blue profile.",
+    roleFallback: "Yacht crew",
+    gallery: "Blue Gallery",
+    galleryHelp: "Selected professional photos shared by this crew member.",
     galleryPhoto: "gallery photo",
     openGalleryPhoto: "Open gallery photo",
     closeGalleryPhoto: "Close photo preview",
@@ -913,7 +914,7 @@ const publicProfileCopy = {
     years: "years",
     lessThanOneYear: "Less than 1 year",
     noExperience: "Not added",
-    experiences: "Experiences",
+    experiences: "Experience",
     references: "References",
     documents: "Documents",
     personalDetails: "Personal details",
@@ -929,7 +930,7 @@ const publicProfileCopy = {
     noProfessionalSummary: "No professional summary has been added yet.",
     skillsCharacteristics: "Skills & characteristics",
     skillsHelp:
-      "Structured career preferences shared in the BlueDeck profile.",
+      "Skills, strengths and career preferences shared by this crew member.",
     skills: "Skills",
     characteristics: "Characteristics",
     seekingPositions: "Seeking positions",
@@ -951,9 +952,10 @@ const publicProfileCopy = {
   tr: {
     candidateProfile: "Crew profili",
     premiumProfile: "Premium profil",
-    gallery: "My Blue galerisi",
+    roleFallback: "Yat mürettebatı",
+    gallery: "Blue Gallery",
     galleryHelp:
-      "Bu crew üyesinin My Blue profilinden seçilen dört profesyonel fotoğraf.",
+      "Bu crew üyesinin paylaştığı seçilmiş profesyonel fotoğraflar.",
     galleryPhoto: "galeri fotoğrafı",
     openGalleryPhoto: "Galeri fotoğrafını aç",
     closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
@@ -977,7 +979,7 @@ const publicProfileCopy = {
     noProfessionalSummary: "Henüz profesyonel özet eklenmemiş.",
     skillsCharacteristics: "Beceriler ve özellikler",
     skillsHelp:
-      "BlueDeck profilinde paylaşılan yapılandırılmış kariyer tercihleri.",
+      "Bu crew üyesinin paylaştığı beceriler, güçlü yönler ve kariyer tercihleri.",
     skills: "Beceriler",
     characteristics: "Kişisel özellikler",
     seekingPositions: "Aranan pozisyonlar",
