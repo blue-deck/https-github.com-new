@@ -6,17 +6,9 @@ export type CrewSearchFilters = {
   employmentType: string;
   nationality: string;
   skill: string;
-  characteristic: string;
   workPreference: string;
   language: string;
-  languageLevel: string;
   minimumExperience: number | null;
-  memberSince: string;
-  premiumOnly: boolean;
-  hasPhoto: boolean;
-  hasGallery: boolean;
-  hasReferences: boolean;
-  hasDocuments: boolean;
 };
 
 export type CrewSearchFacets = {
@@ -26,10 +18,8 @@ export type CrewSearchFacets = {
   employmentTypes: string[];
   nationalities: string[];
   skills: string[];
-  characteristics: string[];
   workPreferences: string[];
   languages: string[];
-  languageLevels: string[];
 };
 
 export const emptyCrewSearchFacets: CrewSearchFacets = {
@@ -39,10 +29,8 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
   employmentTypes: [],
   nationalities: [],
   skills: [],
-  characteristics: [],
   workPreferences: [],
   languages: [],
-  languageLevels: [],
 };
 
 export const defaultCrewSearchFilters: CrewSearchFilters = {
@@ -53,17 +41,9 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   employmentType: "",
   nationality: "",
   skill: "",
-  characteristic: "",
   workPreference: "",
   language: "",
-  languageLevel: "",
   minimumExperience: null,
-  memberSince: "",
-  premiumOnly: false,
-  hasPhoto: false,
-  hasGallery: false,
-  hasReferences: false,
-  hasDocuments: false,
 };
 
 export const crewSearchParamKeys = new Set([
@@ -74,17 +54,9 @@ export const crewSearchParamKeys = new Set([
   "contract",
   "nationality",
   "skill",
-  "characteristic",
   "preference",
   "language",
-  "level",
   "experienceMin",
-  "memberSince",
-  "premium",
-  "photo",
-  "gallery",
-  "references",
-  "documents",
   "cursor",
 ]);
 
@@ -111,23 +83,12 @@ export function parseCrewSearchFilters(
     employmentType: limitedText(readSearchParam(source, "contract"), 120),
     nationality: limitedText(readSearchParam(source, "nationality"), 80),
     skill: limitedText(readSearchParam(source, "skill"), 120),
-    characteristic: limitedText(
-      readSearchParam(source, "characteristic"),
-      120,
-    ),
     workPreference: limitedText(
       readSearchParam(source, "preference"),
       120,
     ),
     language: limitedText(readSearchParam(source, "language"), 80),
-    languageLevel: limitedText(readSearchParam(source, "level"), 80),
     minimumExperience,
-    memberSince: validMonth(readSearchParam(source, "memberSince")),
-    premiumOnly: readSearchParam(source, "premium") === "1",
-    hasPhoto: readSearchParam(source, "photo") === "1",
-    hasGallery: readSearchParam(source, "gallery") === "1",
-    hasReferences: readSearchParam(source, "references") === "1",
-    hasDocuments: readSearchParam(source, "documents") === "1",
   });
 }
 
@@ -147,17 +108,9 @@ export function normalizeCrewSearchFilters(
     employmentType: limitedText(value.employmentType, 120),
     nationality: limitedText(value.nationality, 80),
     skill: limitedText(value.skill, 120),
-    characteristic: limitedText(value.characteristic, 120),
     workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
-    languageLevel: limitedText(value.languageLevel, 80),
     minimumExperience,
-    memberSince: validMonth(value.memberSince),
-    premiumOnly: value.premiumOnly === true,
-    hasPhoto: value.hasPhoto === true,
-    hasGallery: value.hasGallery === true,
-    hasReferences: value.hasReferences === true,
-    hasDocuments: value.hasDocuments === true,
   };
 }
 
@@ -171,17 +124,9 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "contract", normalized.employmentType);
   setText(params, "nationality", normalized.nationality);
   setText(params, "skill", normalized.skill);
-  setText(params, "characteristic", normalized.characteristic);
   setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
-  setText(params, "level", normalized.languageLevel);
   setNumber(params, "experienceMin", normalized.minimumExperience);
-  setText(params, "memberSince", normalized.memberSince);
-  setBoolean(params, "premium", normalized.premiumOnly);
-  setBoolean(params, "photo", normalized.hasPhoto);
-  setBoolean(params, "gallery", normalized.hasGallery);
-  setBoolean(params, "references", normalized.hasReferences);
-  setBoolean(params, "documents", normalized.hasDocuments);
   return params;
 }
 
@@ -224,12 +169,6 @@ function boundedNumberValue(
     : null;
 }
 
-function validMonth(value: unknown) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}$/.test(value)) return "";
-  const month = Number(value.slice(5));
-  return month >= 1 && month <= 12 ? value : "";
-}
-
 function setText(params: URLSearchParams, key: string, value: string) {
   if (value) params.set(key, value);
 }
@@ -240,8 +179,4 @@ function setNumber(
   value: number | null,
 ) {
   if (value !== null) params.set(key, String(value));
-}
-
-function setBoolean(params: URLSearchParams, key: string, value: boolean) {
-  if (value) params.set(key, "1");
 }

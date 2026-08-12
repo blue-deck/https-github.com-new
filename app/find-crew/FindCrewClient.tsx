@@ -378,13 +378,6 @@ export function FindCrewClient({
                     language={language}
                   />
                   <FilterSelect
-                    label={c.characteristic}
-                    value={filters.characteristic}
-                    onChange={(value) => setFilter("characteristic", value)}
-                    options={facets.characteristics}
-                    language={language}
-                  />
-                  <FilterSelect
                     label={c.workPreference}
                     value={filters.workPreference}
                     onChange={(value) => setFilter("workPreference", value)}
@@ -398,65 +391,8 @@ export function FindCrewClient({
                     options={facets.languages}
                     language={language}
                   />
-                  <FilterSelect
-                    label={c.languageLevel}
-                    value={filters.languageLevel}
-                    onChange={(value) => setFilter("languageLevel", value)}
-                    options={facets.languageLevels}
-                    language={language}
-                    optionKind="languageLevel"
-                  />
-                  <label className="block">
-                    <span className="mb-1.5 block text-xs font-bold text-slate-600">
-                      {c.memberSinceFilter}
-                    </span>
-                    <input
-                      type="month"
-                      value={filters.memberSince}
-                      onChange={(event) =>
-                        setFilter("memberSince", event.target.value)
-                      }
-                      className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-                    />
-                  </label>
                 </div>
 
-                <fieldset className="mt-5">
-                  <legend className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
-                    {c.profileQuality}
-                  </legend>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-                    <FilterToggle
-                      label={c.premiumOnly}
-                      checked={filters.premiumOnly}
-                      onChange={(checked) => setFilter("premiumOnly", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasPhoto}
-                      checked={filters.hasPhoto}
-                      onChange={(checked) => setFilter("hasPhoto", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasGallery}
-                      checked={filters.hasGallery}
-                      onChange={(checked) => setFilter("hasGallery", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasReferences}
-                      checked={filters.hasReferences}
-                      onChange={(checked) =>
-                        setFilter("hasReferences", checked)
-                      }
-                    />
-                    <FilterToggle
-                      label={c.hasDocuments}
-                      checked={filters.hasDocuments}
-                      onChange={(checked) =>
-                        setFilter("hasDocuments", checked)
-                      }
-                    />
-                  </div>
-                </fieldset>
                 <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
                   <ShieldCheck
                     className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700"
@@ -627,7 +563,7 @@ function FilterSelect({
   options: string[];
   onChange: (value: string) => void;
   language: Language;
-  optionKind?: "default" | "nationality" | "languageLevel";
+  optionKind?: "default" | "nationality";
 }) {
   const visibleOptions =
     value && !options.includes(value) ? [value, ...options] : options;
@@ -655,20 +591,9 @@ function FilterSelect({
 function formatFilterOption(
   option: string,
   language: Language,
-  kind: "default" | "nationality" | "languageLevel",
+  kind: "default" | "nationality",
 ) {
   if (language === "en") return option;
-  if (kind === "languageLevel") {
-    return (
-      {
-        Basic: "Temel",
-        Intermediate: "Orta",
-        Advanced: "İleri",
-        Fluent: "Akıcı",
-        Native: "Ana dil",
-      }[option] || translatePhrase(option, language)
-    );
-  }
   if (kind === "nationality") {
     return (
       {
@@ -733,34 +658,6 @@ function NumberFilterSelect({
   );
 }
 
-function FilterToggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <label
-      className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3.5 text-sm font-bold transition ${
-        checked
-          ? "border-cyan-500 bg-cyan-50 text-cyan-950"
-          : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300"
-      }`}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 accent-cyan-700"
-      />
-      <span>{label}</span>
-    </label>
-  );
-}
-
 function hasAdvancedCrewFilters(filters: CrewSearchFilters) {
   return countAdvancedCrewFilters(filters) > 0;
 }
@@ -770,17 +667,9 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     ...defaultCrewSearchFilters,
     nationality: filters.nationality,
     skill: filters.skill,
-    characteristic: filters.characteristic,
     workPreference: filters.workPreference,
     language: filters.language,
-    languageLevel: filters.languageLevel,
     minimumExperience: filters.minimumExperience,
-    memberSince: filters.memberSince,
-    premiumOnly: filters.premiumOnly,
-    hasPhoto: filters.hasPhoto,
-    hasGallery: filters.hasGallery,
-    hasReferences: filters.hasReferences,
-    hasDocuments: filters.hasDocuments,
   };
   return crewSearchFilterCount(advanced);
 }
@@ -850,10 +739,8 @@ function isCrewSearchFacets(value: unknown): value is CrewSearchFacets {
     "employmentTypes",
     "nationalities",
     "skills",
-    "characteristics",
     "workPreferences",
     "languages",
-    "languageLevels",
   ].every(
     (key) =>
       Array.isArray(facets[key]) &&
@@ -913,7 +800,7 @@ const copy = {
     eyebrow: "Public crew directory",
     title: "Find the right yacht crew with precision.",
     intro:
-      "Search privacy-protected Crew and Captain profiles by professional experience, position, location, language, skills, work preferences and profile readiness.",
+      "Search privacy-protected Crew and Captain profiles by professional experience, position, location, language, skills and work preferences.",
     filters: "Search and filters",
     filterHint: "Results update automatically as you refine the criteria.",
     advanced: "More filters",
@@ -926,17 +813,8 @@ const copy = {
     nationalityFilter: "Any nationality",
     minimumExperience: "Minimum experience",
     skill: "Any skill",
-    characteristic: "Any professional trait",
     workPreference: "Any work preference",
     language: "Any language",
-    languageLevel: "Minimum language level",
-    memberSinceFilter: "Joined on or after",
-    profileQuality: "Profile readiness",
-    premiumOnly: "Premium profiles",
-    hasPhoto: "Profile photo",
-    hasGallery: "Portfolio gallery",
-    hasReferences: "Public references",
-    hasDocuments: "Public documents",
     fairHiringNote:
       "Sensitive personal attributes are intentionally excluded from hiring filters; use role-relevant professional criteria.",
     results: "Matching crew",
@@ -974,7 +852,7 @@ const copy = {
     eyebrow: "Herkese açık crew rehberi",
     title: "Doğru yat mürettebatını hassasiyetle bulun.",
     intro:
-      "Gizliliği korunan Crew ve Captain profillerini mesleki deneyim, pozisyon, konum, dil, beceri, çalışma tercihi ve profil yeterliliğine göre arayın.",
+      "Gizliliği korunan Crew ve Captain profillerini mesleki deneyim, pozisyon, konum, dil, beceri ve çalışma tercihine göre arayın.",
     filters: "Arama ve filtreler",
     filterHint: "Kriterleri değiştirdikçe sonuçlar otomatik güncellenir.",
     advanced: "Daha fazla filtre",
@@ -987,17 +865,8 @@ const copy = {
     nationalityFilter: "Tüm uyruklar",
     minimumExperience: "Minimum deneyim",
     skill: "Tüm beceriler",
-    characteristic: "Tüm profesyonel özellikler",
     workPreference: "Tüm çalışma tercihleri",
     language: "Tüm diller",
-    languageLevel: "Minimum dil seviyesi",
-    memberSinceFilter: "Bu tarihten sonra üye",
-    profileQuality: "Profil yeterliliği",
-    premiumOnly: "Premium profiller",
-    hasPhoto: "Profil fotoğrafı",
-    hasGallery: "Portfolyo galerisi",
-    hasReferences: "Herkese açık referans",
-    hasDocuments: "Herkese açık belge",
     fairHiringNote:
       "Hassas kişisel özellikler işe alım filtrelerine bilinçli olarak dahil edilmez; pozisyonla ilgili mesleki kriterleri kullanın.",
     results: "Eşleşen crew",
