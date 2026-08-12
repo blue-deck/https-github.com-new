@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CrewCandidateEmployerProfileOverview,
   CrewCandidatePassportCard,
   CrewCandidateProfileBody,
   CrewCandidateProfileIdentity,
@@ -51,6 +52,7 @@ type WorkspaceResponse = {
   applications?: unknown[];
   application?: unknown;
   details?: unknown;
+  refreshRequired?: boolean;
 };
 
 type Filter = "all" | JobApplicationStatus;
@@ -78,6 +80,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [profileDetails, setProfileDetails] =
     useState<EmployerJobApplicationDetails | null>(null);
   const profileRequestRef = useRef<AbortController | null>(null);
+  const initialLoadCompleteRef = useRef(false);
 
   const selected = useMemo(
     () => applications.find((application) => application.id === selectedId) || null,
@@ -102,8 +105,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     let active = true;
 
     async function loadApplications() {
-      setLoading(true);
-      setError("");
+      const isInitialLoad = !initialLoadCompleteRef.current;
+      if (isInitialLoad) {
+        setLoading(true);
+        setError("");
+      }
 
       const {
         data: { session },
@@ -160,6 +166,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         }
 
         if (!active) return;
+        initialLoadCompleteRef.current = true;
         setJob(parsedJob);
         setApplications(parsedApplications);
         setTotalApplications(payload.total);
@@ -172,9 +179,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         );
       } catch (loadError) {
         if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : c.loadError);
+        if (isInitialLoad) {
+          setError(loadError instanceof Error ? loadError.message : c.loadError);
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active && isInitialLoad) setLoading(false);
       }
     }
 
@@ -183,6 +192,23 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       active = false;
     };
   }, [c.loadError, jobId, reloadVersion]);
+
+  useEffect(() => {
+    function refreshVisibleWorkspace() {
+      if (document.visibilityState === "visible") {
+        setReloadVersion((current) => current + 1);
+      }
+    }
+
+    const interval = window.setInterval(refreshVisibleWorkspace, 15_000);
+    window.addEventListener("focus", refreshVisibleWorkspace);
+    document.addEventListener("visibilitychange", refreshVisibleWorkspace);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshVisibleWorkspace);
+      document.removeEventListener("visibilitychange", refreshVisibleWorkspace);
+    };
+  }, [jobId]);
 
   async function loadMoreApplications() {
     if (loadingMore || !hasMore || !nextCursor) return;
@@ -276,6 +302,16 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!profileOpen || selected) return;
+    profileRequestRef.current?.abort();
+    profileRequestRef.current = null;
+    setProfileOpen(false);
+    setProfileLoading(false);
+    setProfileError("");
+    setProfileDetails(null);
+  }, [profileOpen, selected]);
 
   async function openProfile(application: EmployerJobApplication) {
     profileRequestRef.current?.abort();
@@ -372,6 +408,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       const payload = (await response
         .json()
         .catch(() => null)) as WorkspaceResponse | null;
+      if (response.ok && payload?.ok && payload.refreshRequired === true) {
+        setNotice({ tone: "success", message: c.updated });
+        setReloadVersion((current) => current + 1);
+        return;
+      }
       const updated = parseEmployerApplication(payload?.application);
       if (!response.ok || !payload?.ok || !updated) {
         throw new Error(payload?.error || c.updateError);
@@ -594,9 +635,7 @@ function CrewPassportCard({
     <CrewCandidatePassportCard
       candidate={candidate}
       availabilityValue={startValue}
-      primaryBadge={
-        <StatusBadge status={application.status} language={language} />
-      }
+      primaryBadge={<StatusBadge status={application.status} language={language} />}
       fourthFact={{
         icon: <Clock3 />,
         label: c.applied,
@@ -692,32 +731,29 @@ function CandidateProfileModal({
       }}
     >
       <article className="relative max-h-[96dvh] w-full max-w-[1180px] overflow-x-hidden overflow-y-auto rounded-[26px] border border-white/15 bg-[#f6f9fd] shadow-2xl shadow-black/40 sm:rounded-[34px]">
-        <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
-          <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            className="bd-focus absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
-            aria-label={c.close}
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          className="bd-focus absolute right-3 top-3 z-30 grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-[#071631]/65 text-white shadow-lg shadow-black/15 backdrop-blur-md transition hover:bg-[#071631]/85 sm:right-4 sm:top-4 lg:border-slate-200 lg:bg-white/95 lg:text-[#071631] lg:hover:bg-white"
+          aria-label={c.close}
+        >
+          <X className="h-5 w-5" aria-hidden />
+        </button>
 
+        {loading || error || !candidate ? (
+          <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
+            <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
           <div className="pr-12">
             <CrewCandidateProfileIdentity
               candidate={{
-                displayName:
-                  candidate?.displayName || cardCandidate.displayName,
-                initials: candidate?.initials || cardCandidate.initials,
-                profilePhotoUrl:
-                  candidate?.profilePhotoUrl || cardCandidate.profilePhotoUrl,
+                displayName: cardCandidate.displayName,
+                initials: cardCandidate.initials,
+                profilePhotoUrl: cardCandidate.profilePhotoUrl,
                 currentPosition:
-                  candidate?.currentPosition ||
                   cardCandidate.currentPosition ||
                   c.crewMember,
-                premiumProfile:
-                  candidate?.premiumProfile || cardCandidate.premiumProfile,
+                premiumProfile: cardCandidate.premiumProfile,
               }}
               kicker={c.candidateProfile}
               titleId="candidate-profile-title"
@@ -725,7 +761,17 @@ function CandidateProfileModal({
               headingLevel="h2"
             />
           </div>
-        </header>
+          </header>
+        ) : (
+          <CrewCandidateEmployerProfileOverview
+            candidate={candidate}
+            copy={c}
+            kicker={c.candidateProfile}
+            titleId="candidate-profile-title"
+            premiumLabel={c.premiumProfile}
+            roleFallback={c.crewMember}
+          />
+        )}
 
         {loading ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center p-10 text-center">
@@ -749,7 +795,7 @@ function CandidateProfileModal({
             </button>
           </div>
         ) : (
-          <CrewCandidateProfileBody candidate={candidate} copy={c}>
+          <CrewCandidateProfileBody candidate={candidate} copy={c} variant="employer">
             <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-2xl">
@@ -1266,17 +1312,17 @@ const copy = {
     nameLocked: "Candidate name protected",
     maskedIdentity: "Identity protected by BlueDeck",
     viewProfile: "View profile",
-    candidateProfile: "Applicant profile",
+    candidateProfile: "Crew profile",
     close: "Close profile",
-    gallery: "My Blue gallery",
-    galleryHelp: "Four selected photos shared by the candidate in My Blue.",
+    gallery: "Blue Gallery",
+    galleryHelp: "Selected professional photos shared by the candidate.",
     galleryPhoto: "gallery photo",
     openGalleryPhoto: "Open gallery photo",
     closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "The candidate has not shared gallery photos yet.",
     references: "References",
     documents: "Documents",
-    experiences: "Experiences",
+    experiences: "Experience",
     personalDetails: "Personal details",
     gender: "Gender",
     height: "Height",
@@ -1287,7 +1333,7 @@ const copy = {
     professionalSummary: "Professional summary",
     noProfessionalSummary: "No professional summary has been added yet.",
     skillsCharacteristics: "Skills & characteristics",
-    skillsHelp: "All structured career preferences shared in My Profile.",
+    skillsHelp: "Skills, strengths and career preferences shared by the candidate.",
     skills: "Skills",
     characteristics: "Characteristics",
     seekingPositions: "Seeking positions",
@@ -1351,10 +1397,10 @@ const copy = {
     nameLocked: "Aday adı korumalı",
     maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
     viewProfile: "Profili görüntüle",
-    candidateProfile: "Başvuran profili",
+    candidateProfile: "Crew profili",
     close: "Profili kapat",
-    gallery: "My Blue galerisi",
-    galleryHelp: "Adayın My Blue bölümünde paylaştığı dört seçilmiş fotoğraf.",
+    gallery: "Blue Gallery",
+    galleryHelp: "Adayın paylaştığı seçilmiş profesyonel fotoğraflar.",
     galleryPhoto: "galeri fotoğrafı",
     openGalleryPhoto: "Galeri fotoğrafını aç",
     closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
@@ -1372,7 +1418,7 @@ const copy = {
     professionalSummary: "Profesyonel özet",
     noProfessionalSummary: "Henüz profesyonel özet eklenmemiş.",
     skillsCharacteristics: "Beceriler ve özellikler",
-    skillsHelp: "My Profile içinde paylaşılan tüm yapılandırılmış kariyer tercihleri.",
+    skillsHelp: "Adayın paylaştığı beceriler, güçlü yönler ve kariyer tercihleri.",
     skills: "Beceriler",
     characteristics: "Kişisel özellikler",
     seekingPositions: "Aranan pozisyonlar",
