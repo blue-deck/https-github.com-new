@@ -36,7 +36,7 @@ type RouteContext = {
 export async function GET(request: Request, context: RouteContext) {
   const rateLimit = consumeRequestRateLimit(
     `find-crew-media:${getClientIp(request) || "unknown"}`,
-    90,
+    150,
     60_000,
   );
   if (!rateLimit.allowed) {

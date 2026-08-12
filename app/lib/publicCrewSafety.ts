@@ -37,6 +37,29 @@ export function normalizePublicCrewId(value: string) {
   return publicCrewIdPattern.test(normalized) ? normalized : "";
 }
 
+export function publicCrewMediaUrl(
+  crewId: string,
+  kind: "avatar" | "gallery",
+  slot?: number,
+) {
+  const normalizedCrewId = normalizePublicCrewId(crewId);
+  if (
+    !normalizedCrewId ||
+    (kind === "avatar" && slot !== undefined) ||
+    (kind === "gallery" &&
+      (slot === undefined ||
+        !Number.isSafeInteger(slot) ||
+        slot < 0 ||
+        slot > 3))
+  ) {
+    return "";
+  }
+
+  const search = new URLSearchParams({ kind });
+  if (kind === "gallery") search.set("slot", String(slot));
+  return `/api/find-crew/${encodeURIComponent(normalizedCrewId)}/media?${search.toString()}`;
+}
+
 export function getPublicCrewDiscoverySettings(
   notes: unknown,
 ): CrewDiscoverySettings {

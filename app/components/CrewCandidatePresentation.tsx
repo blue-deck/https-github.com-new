@@ -557,6 +557,7 @@ export function CrewCandidateProfileBody({
           value={candidate.location}
           fallback={copy.notProvided}
           compact={compactVariant}
+          wide={compactVariant}
         />
       </dl>
     </section>
@@ -982,14 +983,18 @@ function DetailFact({
   value,
   fallback,
   compact = false,
+  wide = false,
 }: {
   label: string;
   value: string;
   fallback: string;
   compact?: boolean;
+  wide?: boolean;
 }) {
   return (
-    <div className={`min-w-0 bg-white ${compact ? "p-3" : "p-4"}`}>
+    <div
+      className={`min-w-0 bg-white ${compact ? "p-3" : "p-4"} ${wide ? (compact ? "col-span-2" : "sm:col-span-2") : ""}`}
+    >
       <dt className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-500">
         {label}
       </dt>
