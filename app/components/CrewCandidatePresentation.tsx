@@ -103,7 +103,7 @@ type CrewCandidateProfileDetails = Pick<
   | "languages"
 >;
 
-type CrewCandidateEmployerOverviewDetails = Pick<
+type CrewCandidateProfileOverviewDetails = Pick<
   EmployerJobApplicationDetails["candidate"],
   | "displayName"
   | "initials"
@@ -322,14 +322,20 @@ export function CrewCandidateEmployerProfileOverview({
   titleId,
   premiumLabel,
   roleFallback,
+  headingLevel = "h2",
+  reserveTrailingActionSpace = true,
 }: {
-  candidate: CrewCandidateEmployerOverviewDetails;
+  candidate: CrewCandidateProfileOverviewDetails;
   copy: CrewCandidateProfileCopy;
   kicker: string;
   titleId: string;
   premiumLabel: string;
   roleFallback: string;
+  headingLevel?: "h1" | "h2";
+  reserveTrailingActionSpace?: boolean;
 }) {
+  const Heading = headingLevel;
+  const summaryHeadingLevel = headingLevel === "h1" ? "h2" : "h3";
   const experienceValue = profileExperienceLabel(
     candidate.experienceYears,
     copy.years,
@@ -342,7 +348,9 @@ export function CrewCandidateEmployerProfileOverview({
       <div className="relative isolate flex min-h-[248px] overflow-hidden bg-[radial-gradient(circle_at_14%_8%,rgba(34,211,238,0.15),transparent_34%),linear-gradient(132deg,#031126,#071631_56%,#0d254f)] text-white sm:min-h-[290px] lg:min-h-[340px] lg:border-r lg:border-cyan-900/10">
         <BlueDeckYachtBlueprint />
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-          <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-5 pr-14 min-[390px]:gap-4 sm:gap-6 sm:px-7 sm:py-7 sm:pr-7 xl:px-8">
+          <div
+            className={`flex min-w-0 flex-1 items-center gap-3 px-4 py-5 min-[390px]:gap-4 sm:gap-6 sm:px-7 sm:py-7 xl:px-8 ${reserveTrailingActionSpace ? "pr-14 sm:pr-7" : ""}`}
+          >
             <CandidateAvatar
               profilePhotoUrl={candidate.profilePhotoUrl}
               displayName={candidate.displayName}
@@ -370,13 +378,13 @@ export function CrewCandidateEmployerProfileOverview({
               </div>
 
               <div className="mt-3 flex min-w-0 items-start gap-2 sm:mt-4 sm:gap-3">
-                <h2
+                <Heading
                   id={titleId}
                   data-i18n-ignore
                   className="min-w-0 break-words text-[clamp(1.45rem,7vw,2.25rem)] font-black uppercase leading-[0.98] tracking-[-0.045em] sm:text-4xl lg:text-[2rem] xl:text-[2.55rem]"
                 >
                   {candidate.displayName}
-                </h2>
+                </Heading>
                 <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-white/55 sm:h-5 sm:w-5" aria-hidden />
               </div>
 
@@ -403,11 +411,13 @@ export function CrewCandidateEmployerProfileOverview({
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-col justify-center bg-[linear-gradient(145deg,#ffffff,#f4f9fb)] px-5 py-6 sm:px-8 sm:py-8 lg:min-h-[340px] lg:pr-20 xl:px-10 xl:pr-20">
+      <div
+        className={`flex min-w-0 flex-col justify-center bg-[linear-gradient(145deg,#ffffff,#f4f9fb)] px-5 py-6 sm:px-8 sm:py-8 lg:min-h-[340px] ${reserveTrailingActionSpace ? "lg:pr-20 xl:px-10 xl:pr-20" : "lg:px-8 xl:px-10"}`}
+      >
         <SectionHeading
           icon={<FileText />}
           title={copy.professionalSummary}
-          headingLevel="h3"
+          headingLevel={summaryHeadingLevel}
           compact
         />
         <p
@@ -431,7 +441,7 @@ export function CrewCandidateProfileBody({
   candidate: CrewCandidateProfileDetails;
   copy: CrewCandidateProfileCopy;
   children?: ReactNode;
-  variant?: "default" | "employer";
+  variant?: "default" | "employer" | "public";
   sectionHeadingLevel?: "h2" | "h3";
 }) {
   const [activeGalleryPhoto, setActiveGalleryPhoto] = useState<{
@@ -440,8 +450,9 @@ export function CrewCandidateProfileBody({
     index: number;
   } | null>(null);
 
-  const employerVariant = variant === "employer";
-  const sectionClassName = employerVariant
+  const compactVariant = variant !== "default";
+  const tagGroupHeadingLevel = sectionHeadingLevel === "h2" ? "h3" : "h4";
+  const sectionClassName = compactVariant
     ? "overflow-hidden rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_18px_46px_-40px_rgba(7,31,60,0.55)] sm:p-5"
     : "overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6";
 
@@ -452,11 +463,11 @@ export function CrewCandidateProfileBody({
         title={copy.gallery}
         text={copy.galleryHelp}
         headingLevel={sectionHeadingLevel}
-        compact={employerVariant}
+        compact={compactVariant}
       />
       {candidate.galleryPhotos.length > 0 ? (
         <div
-          className={`${employerVariant ? "mt-4" : "mt-5"} grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4`}
+          className={`${compactVariant ? "mt-4" : "mt-5"} grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4`}
         >
           {candidate.galleryPhotos.map((photo, index) => (
             <GalleryPhoto
@@ -476,7 +487,7 @@ export function CrewCandidateProfileBody({
         </div>
       ) : (
         <div
-          className={`${employerVariant ? "mt-4 py-6" : "mt-5 py-10"} rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center text-sm text-slate-500`}
+          className={`${compactVariant ? "mt-4 py-6" : "mt-5 py-10"} rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center text-sm text-slate-500`}
         >
           {copy.noGalleryPhotos}
         </div>
@@ -500,52 +511,52 @@ export function CrewCandidateProfileBody({
         icon={<UserRound />}
         title={copy.personalDetails}
         headingLevel={sectionHeadingLevel}
-        compact={employerVariant}
+        compact={compactVariant}
       />
       <dl
-        className={`${employerVariant ? "mt-4 grid-cols-2 sm:grid-cols-4" : "mt-5 sm:grid-cols-2"} grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200`}
+        className={`${compactVariant ? "mt-4 grid-cols-2 sm:grid-cols-4" : "mt-5 sm:grid-cols-2"} grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200`}
       >
         <DetailFact
           label={copy.gender}
           value={candidate.gender}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.height}
           value={candidate.heightCm ? `${candidate.heightCm} cm` : ""}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.weight}
           value={candidate.weightKg ? `${candidate.weightKg} kg` : ""}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.smoker}
           value={candidate.smoker}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.visibleTattoos}
           value={candidate.visibleTattoos}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.nationality}
           value={candidate.nationality}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.location}
           value={candidate.location}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
       </dl>
     </section>
@@ -574,46 +585,52 @@ export function CrewCandidateProfileBody({
         title={copy.skillsCharacteristics}
         text={copy.skillsHelp}
         headingLevel={sectionHeadingLevel}
-        compact={employerVariant}
+        compact={compactVariant}
       />
       <div
-        className={`${employerVariant ? "mt-4 gap-4 xl:grid-cols-3" : "mt-5 gap-5"} grid md:grid-cols-2`}
+        className={`${compactVariant ? "mt-4 gap-4 xl:grid-cols-3" : "mt-5 gap-5"} grid md:grid-cols-2`}
       >
         <TagGroup
           label={copy.skills}
           items={candidate.skills}
           empty={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
+          headingLevel={tagGroupHeadingLevel}
         />
         <TagGroup
           label={copy.characteristics}
           items={candidate.characteristics}
           empty={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
+          headingLevel={tagGroupHeadingLevel}
         />
         <TagGroup
           label={copy.seekingPositions}
           items={candidate.seekingPositions}
           empty={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
+          headingLevel={tagGroupHeadingLevel}
         />
         <TagGroup
           label={copy.workPreferences}
           items={candidate.workPreferences}
           empty={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
+          headingLevel={tagGroupHeadingLevel}
         />
         <TagGroup
           label={copy.employmentTypes}
           items={candidate.employmentTypes}
           empty={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
+          headingLevel={tagGroupHeadingLevel}
         />
         <TagGroup
           label={copy.preferredLocations}
           items={candidate.preferredLocations}
           empty={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
+          headingLevel={tagGroupHeadingLevel}
         />
       </div>
     </section>
@@ -625,17 +642,17 @@ export function CrewCandidateProfileBody({
         icon={<Languages />}
         title={copy.languages}
         headingLevel={sectionHeadingLevel}
-        compact={employerVariant}
+        compact={compactVariant}
       />
       {candidate.languages.length > 0 ? (
         <ul
-          className={`${employerVariant ? "mt-4 gap-2" : "mt-5 gap-3"} grid sm:grid-cols-2 lg:grid-cols-3`}
+          className={`${compactVariant ? "mt-4 gap-2" : "mt-5 gap-3"} grid sm:grid-cols-2 lg:grid-cols-3`}
         >
           {candidate.languages.map((item, index) => (
             <li
               key={`${item.name}-${item.level}-${index}`}
               data-i18n-ignore
-              className={`flex min-w-0 items-center justify-between gap-3 border border-slate-200 bg-slate-50 ${employerVariant ? "rounded-xl px-3 py-2.5" : "rounded-2xl px-4 py-3"}`}
+              className={`flex min-w-0 items-center justify-between gap-3 border border-slate-200 bg-slate-50 ${compactVariant ? "rounded-xl px-3 py-2.5" : "rounded-2xl px-4 py-3"}`}
             >
               <span className="min-w-0 break-words font-black text-[#071631]">
                 {item.name}
@@ -650,7 +667,7 @@ export function CrewCandidateProfileBody({
         </ul>
       ) : (
         <p
-          className={`${employerVariant ? "mt-4" : "mt-5"} text-sm text-slate-500`}
+          className={`${compactVariant ? "mt-4" : "mt-5"} text-sm text-slate-500`}
         >
           {copy.noLanguages}
         </p>
@@ -658,7 +675,7 @@ export function CrewCandidateProfileBody({
     </section>
   );
 
-  if (employerVariant) {
+  if (compactVariant) {
     return (
       <div className="space-y-4 p-3 sm:p-5 lg:p-6">
         {gallerySection}
@@ -850,6 +867,7 @@ export function SectionHeading({
     <div className={`flex items-start ${compact ? "gap-2.5" : "gap-3"}`}>
       <span
         className={`flex shrink-0 items-center justify-center bg-[#071631] text-cyan-100 ${compact ? "h-9 w-9 rounded-[10px] [&>svg]:h-4 [&>svg]:w-4" : "h-10 w-10 rounded-xl [&>svg]:h-5 [&>svg]:w-5"}`}
+        aria-hidden
       >
         {icon}
       </span>
@@ -990,24 +1008,28 @@ function TagGroup({
   items,
   empty,
   compact = false,
+  headingLevel = "h4",
 }: {
   label: string;
   items: string[];
   empty: string;
   compact?: boolean;
+  headingLevel?: "h3" | "h4";
 }) {
+  const Heading = headingLevel;
+
   return (
     <div>
-      <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-800">
+      <Heading className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-800">
         {label}
-      </h4>
+      </Heading>
       {items.length > 0 ? (
         <ul
           className={`${compact ? "mt-2 gap-1.5" : "mt-2.5 gap-2"} flex flex-wrap`}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li
-              key={item}
+              key={`${item}-${index}`}
               data-i18n-ignore
               className={`max-w-full break-words rounded-full border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 ${compact ? "px-2.5 py-1" : "px-3 py-1.5"}`}
             >
