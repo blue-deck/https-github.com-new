@@ -5,12 +5,11 @@ import {
   isUuid,
 } from "../../../../../lib/employerAccessServer";
 import {
-  applicationCandidatePreviewKey,
   applicationResponse,
   authenticatedApplicationClients,
   employerJobApplicationFromRow,
   jobApplicationSummaryFromRow,
-  loadApplicationCandidatePreviews,
+  loadApplicationTeamMembers,
   logJobApplicationError,
 } from "../../../../../lib/jobApplicationsServer";
 import { consumeRequestRateLimit } from "../../../../../lib/requestRateLimitServer";
@@ -105,13 +104,13 @@ export async function GET(
 
   const applicationRows = page.rows;
 
-  const candidatePreviews = await loadApplicationCandidatePreviews(
+  const candidateMembers = await loadApplicationTeamMembers(
     clients.serviceClient,
     applicationRows,
   );
-  if (!candidatePreviews.ok) {
+  if (!candidateMembers.ok) {
     return applicationResponse(
-      { ok: false, error: candidatePreviews.error },
+      { ok: false, error: candidateMembers.error },
       500,
     );
   }
@@ -120,7 +119,9 @@ export async function GET(
     .map((row) =>
       employerJobApplicationFromRow(
         row,
-        candidatePreviews.previews.get(applicationCandidatePreviewKey(row)),
+        candidateMembers.members.get(
+          cleanText(isRecord(row) ? row.id : ""),
+        ) || [],
       ),
     )
     .filter((application) => application !== null)

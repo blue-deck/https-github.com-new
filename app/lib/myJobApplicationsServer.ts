@@ -36,17 +36,45 @@ export async function listOwnJobApplications(
     };
   }
 
-  // This filter is intentionally derived only from the server-verified access
-  // token. The service client bypasses RLS, so accepting a user id from the
-  // request body or query string here would expose another applicant's data.
-  const { data: applicationRows, error: applicationError } =
-    await serviceClient
-      .from("job_applications")
-      .select(ownPortalApplicationSelect)
-      .eq("applicant_user_id", authenticatedUserId)
-      .order("updated_at", { ascending: false })
-      .order("id", { ascending: true })
-      .limit(maximumOwnApplicationResults);
+  // Membership is derived only from the server-verified access token. The
+  // service client bypasses RLS, so no user id from request input is accepted.
+  // A Team/Couple teammate sees the same canonical parent application without
+  // receiving authority to withdraw the primary applicant's submission.
+  const { data: membershipRows, error: membershipError } = await serviceClient
+    .from("job_application_team_members")
+    .select("application_id")
+    .eq("member_user_id", authenticatedUserId)
+    .order("created_at", { ascending: false })
+    .limit(maximumOwnApplicationResults);
+
+  if (membershipError) {
+    logJobApplicationError("own_application_membership_list_failed", membershipError, {
+      actorUserId: authenticatedUserId,
+    });
+    return {
+      ok: false as const,
+      error: "Your applications could not be loaded.",
+    };
+  }
+
+  const applicationIds = Array.from(
+    new Set(
+      (membershipRows || [])
+        .map((row) => cleanText(row.application_id).toLowerCase())
+        .filter(isUuid),
+    ),
+  );
+  if (!applicationIds.length) {
+    return { ok: true as const, applications: [] as MyJobApplication[] };
+  }
+
+  const { data: applicationRows, error: applicationError } = await serviceClient
+    .from("job_applications")
+    .select(ownPortalApplicationSelect)
+    .in("id", applicationIds)
+    .order("updated_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(maximumOwnApplicationResults);
 
   if (applicationError) {
     logJobApplicationError(
@@ -63,8 +91,7 @@ export async function listOwnJobApplications(
   if (
     (applicationRows || []).some(
       (row) =>
-        !isRecord(row) ||
-        cleanText(row.applicant_user_id) !== authenticatedUserId,
+        !isRecord(row) || !applicationIds.includes(cleanText(row.id).toLowerCase()),
     )
   ) {
     logJobApplicationError("own_application_portal_scope_violation", undefined, {
@@ -76,7 +103,17 @@ export async function listOwnJobApplications(
     };
   }
 
-  const applications = (applicationRows || []).map(ownJobApplicationFromRow);
+  const applications = (applicationRows || []).map((row) => {
+    const application = ownJobApplicationFromRow(row);
+    if (!application || !isRecord(row)) return application;
+    const primaryApplicantUserId = cleanText(
+      row.applicant_user_id,
+    ).toLowerCase();
+    if (!isUuid(primaryApplicantUserId)) return null;
+    return primaryApplicantUserId === authenticatedUserId
+      ? application
+      : { ...application, coverNote: "" };
+  });
   if (applications.some((application) => !application)) {
     logJobApplicationError("invalid_own_application_portal_record", undefined, {
       actorUserId: authenticatedUserId,
@@ -91,6 +128,15 @@ export async function listOwnJobApplications(
     (application): application is NonNullable<typeof application> =>
       application !== null,
   );
+  if (validApplications.length !== applicationIds.length) {
+    logJobApplicationError("own_application_membership_parent_missing", undefined, {
+      actorUserId: authenticatedUserId,
+    });
+    return {
+      ok: false as const,
+      error: "Your applications could not be loaded.",
+    };
+  }
   if (!validApplications.length) {
     return { ok: true as const, applications: [] as MyJobApplication[] };
   }

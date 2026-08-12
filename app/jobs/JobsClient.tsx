@@ -17,7 +17,6 @@ import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import { formatCountryWithFlag, nationalityOptions } from "../lib/countries";
 import {
-  formatJobCandidateType,
   formatJobEmploymentType,
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
@@ -25,13 +24,13 @@ import {
   formatJobVisa,
   formatJobVisibleTattooPolicy,
   formatJobYachtType,
+  isJobTeamCouple,
   type PublicJobCard as ServerPublicJobCard,
 } from "../lib/jobPosts";
 import {
   createDefaultPublicJobSearchFilters,
   hasPublicJobSearchFilters,
   parsePublicJobSearchParams,
-  publicJobPostedWithinOptions,
   publicJobSearchParams,
   type PublicJobSearchFilters,
   type PublicJobSearchSort,
@@ -49,6 +48,7 @@ import {
 
 type LoadState = "loading" | "ready" | "error";
 type Language = "en" | "tr";
+type TeamCoupleFilterValue = "" | "yes" | "no";
 type SelectOption = { value: string; label: string };
 type ActiveFilterChip = {
   id: string;
@@ -74,6 +74,7 @@ export type JobsClientProps = {
 };
 
 const cursorPattern = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,2000}$/;
+const jobMultiSelectSelector = 'details[data-job-multi-select="true"]';
 
 export function JobsClient({
   initialFilters,
@@ -155,6 +156,34 @@ export function JobsClient({
   );
 
   useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest(jobMultiSelectSelector)
+      ) {
+        return;
+      }
+      closeOpenJobMultiSelects();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const openDetails = document.querySelector<HTMLDetailsElement>(
+        `${jobMultiSelectSelector}[open]`,
+      );
+      if (!openDetails) return;
+      closeOpenJobMultiSelects();
+      openDetails.querySelector<HTMLElement>("summary")?.focus();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  useEffect(() => {
     function applyUrl(allowInitialPage: boolean) {
       const params = new URLSearchParams(window.location.search);
 
@@ -165,9 +194,9 @@ export function JobsClient({
       params.delete("query");
 
       const parsed = parsePublicJobSearchParams(params, publicJobSearchTaxonomy);
-      const nextFilters = parsed.ok
-        ? parsed.filters
-        : createDefaultPublicJobSearchFilters();
+      const nextFilters = normalizeTeamCoupleFilters(
+        parsed.ok ? parsed.filters : createDefaultPublicJobSearchFilters(),
+      );
 
       const serverFilters = initialFiltersRef.current;
       const serverPage = initialPageRef.current;
@@ -508,17 +537,18 @@ export function JobsClient({
                           }))
                         }
                       />
-                      <MultiSelectField
-                        label={c.candidateType}
-                        placeholder={c.allCandidateTypes}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.candidateTypes}
-                        values={filters.candidateTypes}
-                        onChange={(candidateTypes) =>
+                      <FilterSelect
+                        allowEmpty
+                        label={c.teamCouple}
+                        placeholder={c.anyTeamCouple}
+                        options={optionSets.teamCouple}
+                        value={teamCoupleFilterValue(filters.candidateTypes)}
+                        onChange={(value) =>
                           updateFilters((current) => ({
                             ...current,
-                            candidateTypes: candidateTypes as PublicJobSearchFilters["candidateTypes"],
+                            candidateTypes: candidateTypesForTeamCouple(
+                              value as TeamCoupleFilterValue,
+                            ),
                           }))
                         }
                       />
@@ -584,7 +614,7 @@ export function JobsClient({
                         }
                       />
                     </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       <RangeField
                         label={c.yachtLength}
                         unit={c.metres}
@@ -605,28 +635,6 @@ export function JobsClient({
                           updateFilters((current) => ({
                             ...current,
                             yachtLengthMaxMetres,
-                          }))
-                        }
-                      />
-                      <RangeField
-                        label={c.buildYear}
-                        minimum={filters.yachtBuildYearMin}
-                        maximum={filters.yachtBuildYearMax}
-                        minValue={1800}
-                        maxValue={2100}
-                        step={1}
-                        minLabel={c.minimum}
-                        maxLabel={c.maximum}
-                        onMinimumChange={(yachtBuildYearMin) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            yachtBuildYearMin,
-                          }))
-                        }
-                        onMaximumChange={(yachtBuildYearMax) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            yachtBuildYearMax,
                           }))
                         }
                       />
@@ -761,48 +769,6 @@ export function JobsClient({
                     </div>
                   </FilterGroup>
 
-                  <FilterGroup title={c.dates}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <TextField
-                        label={c.startFrom}
-                        type="date"
-                        value={filters.startDateFrom}
-                        onChange={(startDateFrom) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            startDateFrom,
-                          }))
-                        }
-                      />
-                      <TextField
-                        label={c.startTo}
-                        type="date"
-                        value={filters.startDateTo}
-                        onChange={(startDateTo) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            startDateTo,
-                          }))
-                        }
-                      />
-                      <FilterSelect
-                        label={c.published}
-                        placeholder={c.anyTime}
-                        value={filters.postedWithinDays?.toString() || ""}
-                        options={publicJobPostedWithinOptions.map((days) => ({
-                          value: String(days),
-                          label: c.days(days),
-                        }))}
-                        onChange={(value) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            postedWithinDays: value ? Number(value) : null,
-                          }))
-                        }
-                      />
-                    </div>
-                  </FilterGroup>
-
                   <FilterGroup title={c.salaryAndDisplay}>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <FilterSelect
@@ -870,25 +836,6 @@ export function JobsClient({
                               salaryMax !== null && !current.salaryPeriod
                                 ? "month"
                                 : current.salaryPeriod,
-                          }))
-                        }
-                      />
-                      <FilterSelect
-                        label={c.pageSize}
-                        placeholder={c.pageSize}
-                        value={String(filters.limit)}
-                        options={Array.from(
-                          new Set([10, 20, 30, 50, filters.limit]),
-                        )
-                          .sort((left, right) => left - right)
-                          .map((limit) => ({
-                          value: String(limit),
-                          label: c.perPage(limit),
-                          }))}
-                        onChange={(value) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            limit: Number(value),
                           }))
                         }
                       />
@@ -1230,6 +1177,7 @@ function FilterSelect({
   options,
   placeholder,
   compact = false,
+  allowEmpty = false,
   onChange,
 }: {
   label: string;
@@ -1237,6 +1185,7 @@ function FilterSelect({
   options: readonly SelectOption[];
   placeholder: string;
   compact?: boolean;
+  allowEmpty?: boolean;
   onChange: (value: string) => void;
 }) {
   return (
@@ -1249,7 +1198,7 @@ function FilterSelect({
         onChange={(event) => onChange(event.target.value)}
         className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
       >
-        {!value ? <option value="">{placeholder}</option> : null}
+        {!value || allowEmpty ? <option value="">{placeholder}</option> : null}
         {options.map((option) => (
           <option data-i18n-ignore key={option.value} value={option.value}>
             {option.label}
@@ -1298,7 +1247,16 @@ function MultiSelectField({
       <span className="mb-1.5 block text-xs font-bold text-slate-600">
         {label}
       </span>
-      <details className="group relative">
+      <details
+        name="job-multi-select"
+        data-job-multi-select="true"
+        className="group relative"
+        onToggle={(event) => {
+          if (event.currentTarget.open) {
+            closeOpenJobMultiSelects(event.currentTarget);
+          }
+        }}
+      >
         <summary
           aria-label={`${label}: ${selectionSummary}`}
           className="bd-focus flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden"
@@ -1362,6 +1320,14 @@ function MultiSelectField({
       </details>
     </div>
   );
+}
+
+function closeOpenJobMultiSelects(except?: HTMLDetailsElement) {
+  document
+    .querySelectorAll<HTMLDetailsElement>(`${jobMultiSelectSelector}[open]`)
+    .forEach((details) => {
+      if (details !== except) details.open = false;
+    });
 }
 
 function JobsLoadingState({ label }: { label: string }) {
@@ -1525,9 +1491,7 @@ function buildOptionSets(language: Language, c: SearchCopy) {
     employmentTypes: publicJobSearchTaxonomy.employmentTypes.map((value) =>
       option(value, formatJobEmploymentType(value, language)),
     ),
-    candidateTypes: publicJobSearchTaxonomy.candidateTypes.map((value) =>
-      option(value, formatCandidateType(value, language)),
-    ),
+    teamCouple: [option("yes", c.yes), option("no", c.no)],
     yachtTypes: publicJobSearchTaxonomy.yachtTypes.map((value) =>
       option(value, formatJobYachtType(value, language)),
     ),
@@ -1616,12 +1580,13 @@ function buildActiveFilterChips(
       }),
     ),
   );
-  filters.candidateTypes.forEach((value) =>
-    add(`candidate-${value}`, formatCandidateType(value, language), (current) => ({
+  const teamCouple = teamCoupleFilterValue(filters.candidateTypes);
+  if (teamCouple) {
+    add("team-couple", `${c.teamCouple}: ${c[teamCouple]}`, (current) => ({
       ...current,
-      candidateTypes: current.candidateTypes.filter((item) => item !== value),
-    })),
-  );
+      candidateTypes: [],
+    }));
+  }
   filters.yachtTypes.forEach((value) =>
     add(`yacht-type-${value}`, formatJobYachtType(value, language), (current) => ({
       ...current,
@@ -1658,22 +1623,6 @@ function buildActiveFilterChips(
     `${c.yachtLength} ≤`,
     c.metres,
     (current) => ({ ...current, yachtLengthMaxMetres: null }),
-  );
-  addNumberChip(
-    chips,
-    "year-min",
-    filters.yachtBuildYearMin,
-    `${c.buildYear} ≥`,
-    "",
-    (current) => ({ ...current, yachtBuildYearMin: null }),
-  );
-  addNumberChip(
-    chips,
-    "year-max",
-    filters.yachtBuildYearMax,
-    `${c.buildYear} ≤`,
-    "",
-    (current) => ({ ...current, yachtBuildYearMax: null }),
   );
   addNumberChip(
     chips,
@@ -1767,25 +1716,6 @@ function buildActiveFilterChips(
     ),
   );
 
-  if (filters.startDateFrom) {
-    add("start-from", `${c.startFrom}: ${filters.startDateFrom}`, (current) => ({
-      ...current,
-      startDateFrom: "",
-    }));
-  }
-  if (filters.startDateTo) {
-    add("start-to", `${c.startTo}: ${filters.startDateTo}`, (current) => ({
-      ...current,
-      startDateTo: "",
-    }));
-  }
-  if (filters.postedWithinDays !== null) {
-    add(
-      "posted-within",
-      c.days(filters.postedWithinDays),
-      (current) => ({ ...current, postedWithinDays: null }),
-    );
-  }
   if (filters.salaryCurrency) {
     add("salary-currency", filters.salaryCurrency, (current) =>
       clearSalaryDependency(current, { salaryCurrency: null }),
@@ -1886,8 +1816,6 @@ function validateFilterRanges(
   if (
     outside(filters.yachtLengthMinMetres, 0.01, 999) ||
     outside(filters.yachtLengthMaxMetres, 0.01, 999) ||
-    outside(filters.yachtBuildYearMin, 1800, 2100, true) ||
-    outside(filters.yachtBuildYearMax, 1800, 2100, true) ||
     outside(filters.crewMemberCountMin, 1, 200, true) ||
     outside(filters.crewMemberCountMax, 1, 200, true) ||
     outside(filters.salaryMin, 0, 99_999_999.99) ||
@@ -1901,12 +1829,8 @@ function validateFilterRanges(
   }
   if (
     reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
-    reversed(filters.yachtBuildYearMin, filters.yachtBuildYearMax) ||
     reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
-    reversed(filters.salaryMin, filters.salaryMax) ||
-    (filters.startDateFrom &&
-      filters.startDateTo &&
-      filters.startDateFrom > filters.startDateTo)
+    reversed(filters.salaryMin, filters.salaryMax)
   ) {
     return c.rangeError;
   }
@@ -1930,8 +1854,6 @@ function hasAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
       filters.yachtFlagCountryCodes.length ||
       filters.yachtLengthMinMetres !== null ||
       filters.yachtLengthMaxMetres !== null ||
-      filters.yachtBuildYearMin !== null ||
-      filters.yachtBuildYearMax !== null ||
       filters.crewMemberCountMin !== null ||
       filters.crewMemberCountMax !== null ||
       filters.minimumYachtExperiences.length ||
@@ -1942,25 +1864,39 @@ function hasAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
       filters.requiredVisas.length ||
       filters.smokerPolicies.length ||
       filters.visibleTattooPolicies.length ||
-      filters.startDateFrom ||
-      filters.startDateTo ||
-      filters.postedWithinDays !== null ||
       filters.salaryCurrency ||
       filters.salaryPeriod ||
       filters.salaryMin !== null ||
-      filters.salaryMax !== null ||
-      filters.limit !== createDefaultPublicJobSearchFilters().limit
+      filters.salaryMax !== null
   );
 }
 
-function formatCandidateType(
-  value: PublicJobSearchFilters["candidateTypes"][number],
-  language: Language,
-) {
-  if (value === "individual") {
-    return language === "tr" ? "Bireysel" : "Individual";
-  }
-  return formatJobCandidateType(value, language);
+function teamCoupleFilterValue(
+  candidateTypes: PublicJobSearchFilters["candidateTypes"],
+): TeamCoupleFilterValue {
+  const includesNo = candidateTypes.includes("individual");
+  const includesYes = candidateTypes.some(isJobTeamCouple);
+  if (includesNo === includesYes) return "";
+  return includesYes ? "yes" : "no";
+}
+
+function candidateTypesForTeamCouple(
+  value: TeamCoupleFilterValue,
+): PublicJobSearchFilters["candidateTypes"] {
+  if (value === "yes") return ["team", "couple"];
+  if (value === "no") return ["individual"];
+  return [];
+}
+
+function normalizeTeamCoupleFilters(
+  filters: PublicJobSearchFilters,
+): PublicJobSearchFilters {
+  return {
+    ...filters,
+    candidateTypes: candidateTypesForTeamCouple(
+      teamCoupleFilterValue(filters.candidateTypes),
+    ),
+  };
 }
 
 function formatDepartment(value: string, language: Language) {
@@ -2079,8 +2015,10 @@ const copy = {
     roleAndContract: "Role and contract",
     department: "Department",
     allDepartments: "All departments",
-    candidateType: "Candidate type",
-    allCandidateTypes: "All candidate types",
+    teamCouple: "Team/Couple",
+    anyTeamCouple: "Any",
+    yes: "Yes",
+    no: "No",
     yachtDetails: "Yacht and experience",
     yachtType: "Yacht type",
     allYachtTypes: "All yacht types",
@@ -2091,7 +2029,6 @@ const copy = {
     searchFlags: "Search flags",
     yachtLength: "Yacht length",
     metres: "m",
-    buildYear: "Build year",
     crewCount: "Crew size",
     minimumExperience: "Minimum yacht experience",
     anyExperience: "Any experience",
@@ -2114,12 +2051,6 @@ const copy = {
     smoking: "Smoking policy",
     visibleTattoos: "Visible tattoo policy",
     anyPolicy: "Any policy",
-    dates: "Dates and recency",
-    startFrom: "Start date from",
-    startTo: "Start date to",
-    published: "Published",
-    anyTime: "Any time",
-    days: (days: number) => `Last ${days} days`,
     salaryAndDisplay: "Salary and display",
     currency: "Salary currency",
     anyCurrency: "Any currency",
@@ -2127,8 +2058,6 @@ const copy = {
     anyPeriod: "Any period",
     minimumSalary: "Minimum salary",
     maximumSalary: "Maximum salary",
-    pageSize: "Results per page",
-    perPage: (count: number) => `${count} per page`,
     results: "Current opportunities",
     roles: "open roles",
     updating: "Updating results…",
@@ -2194,8 +2123,10 @@ const copy = {
     roleAndContract: "Pozisyon ve sözleşme",
     department: "Departman",
     allDepartments: "Tüm departmanlar",
-    candidateType: "Aday türü",
-    allCandidateTypes: "Tüm aday türleri",
+    teamCouple: "Team/Couple",
+    anyTeamCouple: "Tümü",
+    yes: "Evet",
+    no: "Hayır",
     yachtDetails: "Yat ve deneyim",
     yachtType: "Yat türü",
     allYachtTypes: "Tüm yat türleri",
@@ -2206,7 +2137,6 @@ const copy = {
     searchFlags: "Bayrak ara",
     yachtLength: "Yat uzunluğu",
     metres: "m",
-    buildYear: "Yapım yılı",
     crewCount: "Mürettebat sayısı",
     minimumExperience: "Minimum yat deneyimi",
     anyExperience: "Tüm deneyim düzeyleri",
@@ -2229,12 +2159,6 @@ const copy = {
     smoking: "Sigara politikası",
     visibleTattoos: "Görünür dövme politikası",
     anyPolicy: "Tüm politikalar",
-    dates: "Tarih ve güncellik",
-    startFrom: "Başlangıç tarihi — en erken",
-    startTo: "Başlangıç tarihi — en geç",
-    published: "Yayınlanma",
-    anyTime: "Tüm zamanlar",
-    days: (days: number) => `Son ${days} gün`,
     salaryAndDisplay: "Ücret ve görünüm",
     currency: "Ücret para birimi",
     anyCurrency: "Tüm para birimleri",
@@ -2242,8 +2166,6 @@ const copy = {
     anyPeriod: "Tüm dönemler",
     minimumSalary: "Minimum ücret",
     maximumSalary: "Maksimum ücret",
-    pageSize: "Sayfa başına sonuç",
-    perPage: (count: number) => `Sayfa başına ${count}`,
     results: "Güncel fırsatlar",
     roles: "açık pozisyon",
     updating: "Sonuçlar güncelleniyor…",

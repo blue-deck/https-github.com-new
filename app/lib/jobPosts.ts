@@ -284,6 +284,20 @@ export function formatJobCandidateType(
   return labels[value][language];
 }
 
+export function isJobTeamCouple(value: JobCandidateType) {
+  return value !== "individual";
+}
+
+export function formatJobTeamCoupleAnswer(
+  value: JobCandidateType,
+  language: "en" | "tr",
+) {
+  if (isJobTeamCouple(value)) {
+    return language === "tr" ? "Evet" : "Yes";
+  }
+  return language === "tr" ? "Hayır" : "No";
+}
+
 export function isJobCandidateType(value: unknown): value is JobCandidateType {
   return jobCandidateTypes.includes(value as JobCandidateType);
 }

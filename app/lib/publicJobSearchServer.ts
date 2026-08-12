@@ -195,7 +195,7 @@ export async function searchPublicJobs(
         status: 500,
       };
     }
-    if (matchesPublicJobSearch(job, filters, snapshotAt)) matches.push(job);
+    if (matchesPublicJobSearch(job, filters)) matches.push(job);
   }
 
   matches.sort((left, right) => comparePublicJobs(left, right, filters.sort));

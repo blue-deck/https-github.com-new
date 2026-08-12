@@ -17,8 +17,8 @@ import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
 import { useLanguage } from "../../components/LanguageProvider";
 import { formatCountryWithFlag } from "../../lib/countries";
 import {
-  formatJobCandidateType,
   formatJobEmploymentType,
+  formatJobTeamCoupleAnswer,
   formatJobMinimumYachtExperience,
   formatJobCrewMemberCount,
   formatJobListingNumber,
@@ -225,11 +225,8 @@ function JobDetail({
 
   const candidateDetails: DefinitionItem[] = [
     {
-      label: c.candidateType,
-      value:
-        job.candidateType === "individual"
-          ? c.individualCandidate
-          : formatJobCandidateType(job.candidateType, language),
+      label: c.teamCouple,
+      value: formatJobTeamCoupleAnswer(job.candidateType, language),
     },
   ];
   if (minimumYachtExperience) {
@@ -340,7 +337,7 @@ function JobDetail({
       </section>
 
       <section className="bg-[#f7f9fc]">
-        <div className="mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 lg:px-10 lg:py-12">
+        <div className="mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 lg:px-10 lg:py-12 xl:max-w-[1240px] xl:grid-cols-[minmax(0,1fr)_360px]">
           <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm shadow-slate-950/5 sm:px-8 sm:py-8 lg:col-start-1 lg:row-start-1">
             {roleOverview ? (
               <DetailSection title={c.description} first>
@@ -407,11 +404,11 @@ function JobDetail({
             ) : null}
           </article>
 
-          <aside className="lg:col-start-2 lg:row-start-1 lg:sticky lg:top-[calc(var(--public-header-height)+1.5rem)]">
+          <aside className="min-w-0 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:self-start">
             <section
               id="apply"
               aria-labelledby="apply-title"
-              className="scroll-mt-[calc(var(--public-header-height)+1.5rem)] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:p-6"
+              className="min-w-0 scroll-mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:p-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]"
             >
               <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
                 {c.applicationEyebrow}
@@ -423,9 +420,6 @@ function JobDetail({
               >
                 {c.secureTitle}
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {c.secureText}
-              </p>
               <JobApplicationPanel jobId={job.id} language={language} />
             </section>
           </aside>
@@ -675,8 +669,7 @@ const copy = {
     minimumYachtExperience: "Minimum yacht experience",
     location: "Location",
     employmentType: "Employment",
-    candidateType: "Candidate type",
-    individualCandidate: "Individual",
+    teamCouple: "Team/Couple",
     smoker: "Smoking",
     visibleTattoos: "Visible tattoos",
     languages: "Required languages",
@@ -695,8 +688,6 @@ const copy = {
     benefits: "Benefits",
     applicationEyebrow: "Private application",
     secureTitle: "Apply for this role",
-    secureText:
-      "Apply with your BlueDeck profile. Your private documents stay protected.",
     loading: "Loading role details…",
     notFoundTitle: "This role is no longer available",
     notFoundText:
@@ -718,8 +709,7 @@ const copy = {
     minimumYachtExperience: "Minimum yat deneyimi",
     location: "Konum",
     employmentType: "Çalışma biçimi",
-    candidateType: "Aday türü",
-    individualCandidate: "Bireysel",
+    teamCouple: "Team/Couple",
     smoker: "Sigara",
     visibleTattoos: "Görünür dövme",
     languages: "Gerekli diller",
@@ -738,8 +728,6 @@ const copy = {
     benefits: "Yan haklar",
     applicationEyebrow: "Özel başvuru",
     secureTitle: "Bu ilana başvur",
-    secureText:
-      "BlueDeck profilinizle başvurun. Özel belgeleriniz korunmaya devam eder.",
     loading: "İlan ayrıntıları yükleniyor…",
     notFoundTitle: "Bu pozisyon artık açık değil",
     notFoundText:

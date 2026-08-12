@@ -5,6 +5,7 @@ export type CrewSearchFilters = {
   availability: string;
   employmentType: string;
   nationality: string;
+  maritalStatus: string;
   skill: string;
   characteristic: string;
   workPreference: string;
@@ -25,6 +26,7 @@ export type CrewSearchFacets = {
   availabilities: string[];
   employmentTypes: string[];
   nationalities: string[];
+  maritalStatuses: string[];
   skills: string[];
   characteristics: string[];
   workPreferences: string[];
@@ -32,12 +34,15 @@ export type CrewSearchFacets = {
   languageLevels: string[];
 };
 
+export const crewMaritalStatuses = ["Single", "Married"] as const;
+
 export const emptyCrewSearchFacets: CrewSearchFacets = {
   positions: [],
   locations: [],
   availabilities: [],
   employmentTypes: [],
   nationalities: [],
+  maritalStatuses: [],
   skills: [],
   characteristics: [],
   workPreferences: [],
@@ -52,6 +57,7 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   availability: "",
   employmentType: "",
   nationality: "",
+  maritalStatus: "",
   skill: "",
   characteristic: "",
   workPreference: "",
@@ -73,6 +79,7 @@ export const crewSearchParamKeys = new Set([
   "availability",
   "contract",
   "nationality",
+  "maritalStatus",
   "skill",
   "characteristic",
   "preference",
@@ -110,6 +117,9 @@ export function parseCrewSearchFilters(
     ),
     employmentType: limitedText(readSearchParam(source, "contract"), 120),
     nationality: limitedText(readSearchParam(source, "nationality"), 80),
+    maritalStatus: normalizedMaritalStatus(
+      readSearchParam(source, "maritalStatus"),
+    ),
     skill: limitedText(readSearchParam(source, "skill"), 120),
     characteristic: limitedText(
       readSearchParam(source, "characteristic"),
@@ -126,8 +136,8 @@ export function parseCrewSearchFilters(
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
     hasGallery: readSearchParam(source, "gallery") === "1",
-    hasReferences: readSearchParam(source, "references") === "1",
-    hasDocuments: readSearchParam(source, "documents") === "1",
+    hasReferences: false,
+    hasDocuments: false,
   });
 }
 
@@ -146,6 +156,7 @@ export function normalizeCrewSearchFilters(
     availability: limitedText(value.availability, 120),
     employmentType: limitedText(value.employmentType, 120),
     nationality: limitedText(value.nationality, 80),
+    maritalStatus: normalizedMaritalStatus(value.maritalStatus),
     skill: limitedText(value.skill, 120),
     characteristic: limitedText(value.characteristic, 120),
     workPreference: limitedText(value.workPreference, 120),
@@ -170,6 +181,7 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "availability", normalized.availability);
   setText(params, "contract", normalized.employmentType);
   setText(params, "nationality", normalized.nationality);
+  setText(params, "maritalStatus", normalized.maritalStatus);
   setText(params, "skill", normalized.skill);
   setText(params, "characteristic", normalized.characteristic);
   setText(params, "preference", normalized.workPreference);
@@ -180,8 +192,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);
   setBoolean(params, "gallery", normalized.hasGallery);
-  setBoolean(params, "references", normalized.hasReferences);
-  setBoolean(params, "documents", normalized.hasDocuments);
   return params;
 }
 
@@ -203,6 +213,15 @@ function readSearchParam(source: SearchParamSource, key: string) {
 function limitedText(value: unknown, maximumLength: number) {
   return typeof value === "string"
     ? value.trim().replace(/\s+/g, " ").slice(0, maximumLength)
+    : "";
+}
+
+function normalizedMaritalStatus(value: unknown) {
+  const normalized = limitedText(value, 16);
+  return crewMaritalStatuses.includes(
+    normalized as (typeof crewMaritalStatuses)[number],
+  )
+    ? normalized
     : "";
 }
 

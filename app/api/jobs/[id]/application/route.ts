@@ -13,6 +13,7 @@ import {
 import { canWithdrawJobApplication } from "../../../../lib/jobApplications";
 import { cleanText, isRecord, isUuid } from "../../../../lib/employerAccessServer";
 import { consumeRequestRateLimit } from "../../../../lib/requestRateLimitServer";
+import { parseTeamCoupleDashboard } from "../../../../lib/teamCouple";
 import { getClientIp } from "../../../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
@@ -46,17 +47,54 @@ export async function GET(request: NextRequest, context: RouteContext) {
   );
   if (!userLimit.allowed) return rateLimitedResponse(userLimit.retryAfterSeconds);
 
-  const [roleResult, applicationResult, eligibility] = await Promise.all([
+  const [roleResult, membershipResult, eligibility, jobResult, teamResult] =
+    await Promise.all([
     accountRole(clients.serviceClient, clients.user.id),
-    clients.serviceClient
-      .from("job_applications")
-      .select(ownJobApplicationSelect)
-      .eq("job_post_id", jobPostId)
-      .eq("applicant_user_id", clients.user.id)
-      .neq("status", "withdrawn")
-      .maybeSingle(),
+    clients.serviceClient.rpc("bluedeck_current_job_application_membership", {
+      p_actor_user_id: clients.user.id,
+      p_job_post_id: jobPostId,
+    }),
     canApplyToJob(clients.serviceClient, clients.user.id, jobPostId),
+    clients.serviceClient
+      .from("job_posts")
+      .select("candidate_type")
+      .eq("id", jobPostId)
+      .maybeSingle(),
+    clients.serviceClient.rpc("bluedeck_team_couple_dashboard", {
+      p_actor_user_id: clients.user.id,
+    }),
   ]);
+
+  if (membershipResult.error || jobResult.error) {
+    logJobApplicationError(
+      "own_application_membership_lookup_failed",
+      membershipResult.error || jobResult.error,
+      { actorUserId: clients.user.id, jobPostId },
+    );
+    return applicationResponse(
+      { ok: false, error: "Your application could not be loaded." },
+      500,
+    );
+  }
+
+  const membershipRow = firstRow(membershipResult.data);
+  const membershipApplicationId = cleanText(
+    membershipRow?.application_id,
+  ).toLowerCase();
+  const applicationResult = membershipApplicationId
+    ? await clients.serviceClient
+        .from("job_applications")
+        .select(ownJobApplicationSelect)
+        .eq("id", membershipApplicationId)
+        .eq("job_post_id", jobPostId)
+        .maybeSingle()
+    : await clients.serviceClient
+        .from("job_applications")
+        .select(ownJobApplicationSelect)
+        .eq("job_post_id", jobPostId)
+        .eq("applicant_user_id", clients.user.id)
+        .neq("status", "withdrawn")
+        .maybeSingle();
 
   if (applicationResult.error) {
     logJobApplicationError(
@@ -93,11 +131,35 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 
+  const teamDashboard = teamResult.error
+    ? null
+    : parseTeamCoupleDashboard(teamResult.data);
+  if (teamResult.error) {
+    logJobApplicationError("application_team_options_load_failed", teamResult.error, {
+      actorUserId: clients.user.id,
+      jobPostId,
+    });
+  }
+  const teamApplicationAllowed = ["team", "couple"].includes(
+    cleanText(jobResult.data?.candidate_type).toLowerCase(),
+  );
+  const availableTeamMembers =
+    teamDashboard?.members.filter((member) => member.isAvailable) || [];
+  const isPrimaryApplicant = membershipRow
+    ? membershipRow.is_primary === true
+    : true;
+
   return applicationResponse({
     ok: true,
     eligible: eligibility.allowed,
     role: roleResult.role,
-    application,
+    application:
+      application && !isPrimaryApplicant
+        ? { ...application, coverNote: "" }
+        : application,
+    canWithdraw: Boolean(application) && isPrimaryApplicant,
+    teamApplicationAllowed,
+    teamMembers: teamApplicationAllowed ? availableTeamMembers : [],
   });
 }
 
@@ -157,11 +219,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const { data, error } = await clients.serviceClient.rpc(
-    "bluedeck_submit_job_application",
+    "bluedeck_submit_job_application_v2",
     {
       p_job_post_id: jobPostId,
       p_applicant_user_id: clients.user.id,
       p_cover_note: parsed.coverNote,
+      p_apply_as_team: parsed.applyAsTeam,
     },
   );
 
@@ -177,12 +240,26 @@ export async function POST(request: NextRequest, context: RouteContext) {
         ok: false,
         error:
           code === "23505"
-            ? "You have already applied to this role."
+            ? "You or a Team/Couple member have already applied to this role."
             : code === "42501"
-              ? "This role is not accepting applications."
+              ? parsed.applyAsTeam
+                ? "This Team/Couple application is not eligible for the role."
+                : "This role is not accepting applications."
+              : code === "22023"
+                ? "Team/Couple applications are not available for this role."
+                : code === "54000"
+                  ? "An application limit has been reached. Please try again later."
               : "Your application could not be submitted.",
       },
-      code === "23505" ? 409 : code === "42501" ? 403 : 500,
+      code === "54000"
+        ? 429
+        : code === "23505"
+        ? 409
+        : code === "42501"
+          ? 403
+          : code === "22023"
+            ? 400
+            : 500,
     );
   }
 

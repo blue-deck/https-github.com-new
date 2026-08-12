@@ -44,6 +44,7 @@ import { canUseCrewWorkspace } from "./marketplaceCapabilities";
 import {
   getPublicCrewDiscoverySettings,
   normalizePublicCrewId,
+  publicCrewMediaUrl,
   publicStructuredProfileField,
   publicStructuredStringArray,
   safeOwnedPublicMediaUrl,
@@ -73,6 +74,7 @@ export type DiscoverableCrewProfile = DiscoverableCrewPreview & {
   fullName: string;
   bio: string;
   gender: string;
+  maritalStatus: string;
   heightCm: number | null;
   weightKg: number | null;
   smoker: string;
@@ -117,6 +119,7 @@ type CrewSearchRecord = {
   characteristics: string[];
   workPreferences: string[];
   languages: Array<{ name: string; level: string }>;
+  maritalStatus: string;
   referenceCount: number;
   documentCount: number;
   galleryCount: number;
@@ -144,7 +147,7 @@ let crewSearchRecordsCache: {
   promise: Promise<CrewSearchRecord[]>;
 } | null = null;
 const crewProfileSelect =
-  "id,user_id,public_crew_id,status,full_name,email,phone,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,gender,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at,updated_at";
+  "id,user_id,public_crew_id,status,full_name,email,phone,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,gender,marital_status,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at,updated_at";
 
 export async function listDiscoverableCrew(): Promise<
   DiscoverableCrewPreview[]
@@ -237,6 +240,7 @@ type CrewSearchRelatedData = {
   referencesByProfile: Map<string, Array<{ vessel?: unknown }>>;
   documentCounts: Map<string, number>;
   photosByProfile: Map<string, Record<string, unknown>[]>;
+  maritalStatuses: Map<string, string>;
 };
 
 async function loadAllDiscoverableCrewRows(serviceClient: SupabaseClient) {
@@ -317,6 +321,7 @@ async function loadCrewSearchRelatedData(
     documentRows,
     referenceRows,
     photoRows,
+    maritalStatuses,
   ] =
     await Promise.all([
       loadCandidateExperienceRows(serviceClient, profileIds),
@@ -341,6 +346,7 @@ async function loadCrewSearchRelatedData(
         profileIds,
         false,
       ),
+      loadCrewMaritalStatuses(serviceClient, profileIds),
     ]);
   if (experienceResult.error) {
     console.error(
@@ -372,7 +378,46 @@ async function loadCrewSearchRelatedData(
     referencesByProfile,
     documentCounts,
     photosByProfile,
+    maritalStatuses,
   };
+}
+
+async function loadCrewMaritalStatuses(
+  serviceClient: SupabaseClient,
+  profileIds: string[],
+) {
+  const statuses = new Map<string, string>();
+  for (
+    let profileIndex = 0;
+    profileIndex < profileIds.length;
+    profileIndex += relatedProfileBatchSize
+  ) {
+    const { data, error } = await serviceClient
+      .from("crew_profiles")
+      .select("id,marital_status")
+      .in(
+        "id",
+        profileIds.slice(
+          profileIndex,
+          profileIndex + relatedProfileBatchSize,
+        ),
+      );
+    if (error) {
+      console.error(
+        "Find Crew marital status filters could not be loaded",
+        safeErrorMessage(error),
+      );
+      throw new Error("find_crew_profiles_unavailable");
+    }
+    for (const row of data || []) {
+      const profileId = text(row.id);
+      const maritalStatus = text(row.marital_status);
+      if (isUuid(profileId) && maritalStatus) {
+        statuses.set(profileId, maritalStatus);
+      }
+    }
+  }
+  return statuses;
 }
 
 type ArrayElement<Value> = Value extends Array<infer Item> ? Item : never;
@@ -442,6 +487,11 @@ function toCrewSearchRecord(
   const preview = toDiscoverableCrewPreview(row, experiences);
   if (!preview) return null;
   const profileIdentity = text(row.full_name).slice(0, 120);
+  const maritalStatus = identitySafeProfileField(
+    related.maritalStatuses.get(profileId),
+    profileIdentity,
+    16,
+  );
   const characteristics = identitySafeStringArray(
     row.personal_characteristics,
     profileIdentity,
@@ -493,6 +543,7 @@ function toCrewSearchRecord(
     characteristics,
     workPreferences,
     languages,
+    maritalStatus,
     referenceCount,
     documentCount,
     galleryCount,
@@ -540,6 +591,12 @@ function crewSearchRecordMatches(
   if (
     filters.nationality &&
     !sameCrewValue(preview.nationality, filters.nationality)
+  ) {
+    return false;
+  }
+  if (
+    filters.maritalStatus &&
+    !sameCrewValue(record.maritalStatus, filters.maritalStatus)
   ) {
     return false;
   }
@@ -665,6 +722,9 @@ function crewSearchFacets(records: CrewSearchRecord[]): CrewSearchFacets {
     ),
     nationalities: sortedCrewFacet(
       records.map((record) => record.preview.nationality),
+    ),
+    maritalStatuses: sortedCrewFacet(
+      records.map((record) => record.maritalStatus),
     ),
     skills: sortedCrewFacet(
       records.flatMap((record) => record.preview.personalSkills),
@@ -825,6 +885,11 @@ async function loadDiscoverableCrewProfile(
     fullName: preview.displayName,
     bio: professionalSummary,
     gender: rawGender,
+    maritalStatus: identitySafeProfileField(
+      row.marital_status,
+      profileIdentity,
+      16,
+    ),
     heightCm: safeCandidateMeasurement(row.height_cm, 80, 260),
     weightKg: safeCandidateMeasurement(row.weight_kg, 20, 400),
     smoker: identitySafeProfileField(row.smoker, profileIdentity, 60),
@@ -947,6 +1012,7 @@ export async function loadActiveDirectoryCrewMediaSource(
 
   const selected = await loadActiveDirectoryGallerySources(
     mediaProfile.profileId,
+    mediaProfile.userId,
   );
   return slot === null ? "" : selected[slot] || "";
 }
@@ -1003,8 +1069,11 @@ async function loadActiveDirectoryMediaProfile(crewId: string) {
   };
 }
 
-async function loadActiveDirectoryGallerySources(profileId: string) {
-  if (!isUuid(profileId)) return [];
+async function loadActiveDirectoryGallerySources(
+  profileId: string,
+  userId: string,
+) {
+  if (!isUuid(profileId) || !isUuid(userId)) return [];
   const serviceClient = createServiceClient();
   if (!serviceClient) {
     throw new Error("find_crew_service_unavailable");
@@ -1024,6 +1093,7 @@ async function loadActiveDirectoryGallerySources(profileId: string) {
 
   return selectOwnedPublicCrewGallerySources(data || [], profileId, [
     profileId,
+    userId,
   ]);
 }
 
@@ -1177,18 +1247,6 @@ function toDiscoverableCrewPreview(
     premiumProfile: isPremiumCrewProfile(completionPercent),
     memberSince: databaseTimestamp(row.created_at),
   };
-}
-
-function publicCrewMediaUrl(
-  crewId: string,
-  kind: "avatar" | "gallery",
-  slot?: number,
-) {
-  const search = new URLSearchParams({ kind });
-  if (kind === "gallery" && slot !== undefined) {
-    search.set("slot", String(slot));
-  }
-  return `/api/find-crew/${encodeURIComponent(crewId)}/media?${search.toString()}`;
 }
 
 function isConfirmedActiveUser(value: {

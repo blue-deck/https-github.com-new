@@ -17,6 +17,7 @@ import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 import {
+  crewMaritalStatuses,
   crewSearchFilterCount,
   crewSearchParams,
   defaultCrewSearchFilters,
@@ -364,6 +365,13 @@ export function FindCrewClient({
                     language={language}
                     optionKind="nationality"
                   />
+                  <FilterSelect
+                    label={c.maritalStatus}
+                    value={filters.maritalStatus}
+                    onChange={(value) => setFilter("maritalStatus", value)}
+                    options={crewMaritalStatuses}
+                    language={language}
+                  />
                   <NumberFilterSelect
                     label={c.minimumExperience}
                     value={filters.minimumExperience}
@@ -425,7 +433,7 @@ export function FindCrewClient({
                   <legend className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     {c.profileQuality}
                   </legend>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     <FilterToggle
                       label={c.premiumOnly}
                       checked={filters.premiumOnly}
@@ -440,20 +448,6 @@ export function FindCrewClient({
                       label={c.hasGallery}
                       checked={filters.hasGallery}
                       onChange={(checked) => setFilter("hasGallery", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasReferences}
-                      checked={filters.hasReferences}
-                      onChange={(checked) =>
-                        setFilter("hasReferences", checked)
-                      }
-                    />
-                    <FilterToggle
-                      label={c.hasDocuments}
-                      checked={filters.hasDocuments}
-                      onChange={(checked) =>
-                        setFilter("hasDocuments", checked)
-                      }
                     />
                   </div>
                 </fieldset>
@@ -624,7 +618,7 @@ function FilterSelect({
 }: {
   label: string;
   value: string;
-  options: string[];
+  options: readonly string[];
   onChange: (value: string) => void;
   language: Language;
   optionKind?: "default" | "nationality" | "languageLevel";
@@ -769,6 +763,7 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
   const advanced: CrewSearchFilters = {
     ...defaultCrewSearchFilters,
     nationality: filters.nationality,
+    maritalStatus: filters.maritalStatus,
     skill: filters.skill,
     characteristic: filters.characteristic,
     workPreference: filters.workPreference,
@@ -779,8 +774,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     premiumOnly: filters.premiumOnly,
     hasPhoto: filters.hasPhoto,
     hasGallery: filters.hasGallery,
-    hasReferences: filters.hasReferences,
-    hasDocuments: filters.hasDocuments,
   };
   return crewSearchFilterCount(advanced);
 }
@@ -849,6 +842,7 @@ function isCrewSearchFacets(value: unknown): value is CrewSearchFacets {
     "availabilities",
     "employmentTypes",
     "nationalities",
+    "maritalStatuses",
     "skills",
     "characteristics",
     "workPreferences",
@@ -924,6 +918,7 @@ const copy = {
     availability: "Any availability",
     contract: "Any contract",
     nationalityFilter: "Any nationality",
+    maritalStatus: "Any marital status",
     minimumExperience: "Minimum experience",
     skill: "Any skill",
     characteristic: "Any professional trait",
@@ -935,10 +930,8 @@ const copy = {
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
     hasGallery: "Portfolio gallery",
-    hasReferences: "Public references",
-    hasDocuments: "Public documents",
     fairHiringNote:
-      "Sensitive personal attributes are intentionally excluded from hiring filters; use role-relevant professional criteria.",
+      "Use all personal filters responsibly and only where relevant and lawful.",
     results: "Matching crew",
     profiles: "crew profiles",
     searching: "Searching crew",
@@ -985,6 +978,7 @@ const copy = {
     availability: "Tüm müsaitlik durumları",
     contract: "Tüm çalışma türleri",
     nationalityFilter: "Tüm uyruklar",
+    maritalStatus: "Tüm medeni durumlar",
     minimumExperience: "Minimum deneyim",
     skill: "Tüm beceriler",
     characteristic: "Tüm profesyonel özellikler",
@@ -996,10 +990,8 @@ const copy = {
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",
     hasGallery: "Portfolyo galerisi",
-    hasReferences: "Herkese açık referans",
-    hasDocuments: "Herkese açık belge",
     fairHiringNote:
-      "Hassas kişisel özellikler işe alım filtrelerine bilinçli olarak dahil edilmez; pozisyonla ilgili mesleki kriterleri kullanın.",
+      "Kişisel filtreleri yalnızca ilgili ve hukuka uygun olduğunda sorumlu biçimde kullanın.",
     results: "Eşleşen crew",
     profiles: "crew profili",
     searching: "Crew aranıyor",

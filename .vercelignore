@@ -6,4 +6,5 @@ node_modules
 tmp
 coverage
 output
+.codex-*
 .DS_Store

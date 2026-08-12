@@ -33,6 +33,7 @@ import {
 } from "../lib/crewPortfolioStorage";
 import { supabase } from "../lib/supabase";
 import { resolveSupabaseUrl } from "../lib/supabaseConfig";
+import TeamCouplePanel from "./TeamCouplePanel";
 
 type DashboardProfile = {
   id?: string;
@@ -668,9 +669,12 @@ export default function DashboardPage() {
                 <span className="font-medium text-slate-500">{t("dashboard.welcome")}, </span>
                 <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
               </h1>
-              <div className="mt-3 inline-flex min-h-8 items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50/70 px-3 text-xs">
-                <span className="font-semibold text-slate-500">{t("dashboard.role")}</span>
-                <span data-i18n-ignore className="font-bold text-[#173f4a]">{roleLabel}</span>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="inline-flex min-h-8 items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50/70 px-3 text-xs">
+                  <span className="font-semibold text-slate-500">{t("dashboard.role")}</span>
+                  <span data-i18n-ignore className="font-bold text-[#173f4a]">{roleLabel}</span>
+                </div>
+                {hasCrewWorkspace ? <TeamCouplePanel /> : null}
               </div>
             </div>
 

@@ -27,6 +27,7 @@ import {
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
   employerJobApplicationStatuses,
+  isJobApplicationMode,
   isJobApplicationJobAvailability,
   isJobApplicationStatus,
   type EmployerJobApplication,
@@ -79,6 +80,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [profileError, setProfileError] = useState("");
   const [profileDetails, setProfileDetails] =
     useState<EmployerJobApplicationDetails | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
   const profileRequestRef = useRef<AbortController | null>(null);
   const initialLoadCompleteRef = useRef(false);
 
@@ -311,9 +313,14 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     setProfileLoading(false);
     setProfileError("");
     setProfileDetails(null);
+    setSelectedMemberId("");
   }, [profileOpen, selected]);
 
-  async function openProfile(application: EmployerJobApplication) {
+  async function openProfile(
+    application: EmployerJobApplication,
+    memberId = application.members.find((member) => member.isPrimary)?.id || "",
+  ) {
+    if (!memberId) return;
     profileRequestRef.current?.abort();
     const controller = new AbortController();
     profileRequestRef.current = controller;
@@ -324,6 +331,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     setProfileLoading(true);
     setProfileError("");
     setProfileDetails(null);
+    setSelectedMemberId(memberId);
 
     const {
       data: { session },
@@ -337,7 +345,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
 
     try {
       const response = await fetch(
-        `/api/employer/job-posts/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(application.id)}`,
+        `/api/employer/job-posts/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(application.id)}?member=${encodeURIComponent(memberId)}`,
         {
           headers: {
             Accept: "application/json",
@@ -355,7 +363,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       }
 
       const parsedDetails = parseCandidateDetails(payload.details);
-      if (!parsedDetails || parsedDetails.applicationId !== application.id) {
+      if (
+        !parsedDetails ||
+        parsedDetails.applicationId !== application.id ||
+        parsedDetails.memberId !== memberId
+      ) {
         throw new Error(c.profileLoadError);
       }
       if (!controller.signal.aborted) setProfileDetails(parsedDetails);
@@ -375,6 +387,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     setProfileOpen(false);
     setProfileLoading(false);
     setProfileError("");
+    setSelectedMemberId("");
   }
 
   async function updateStatus(status: EmployerJobApplicationStatus) {
@@ -607,8 +620,10 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           error={profileError}
           updating={updating}
           notice={notice}
+          selectedMemberId={selectedMemberId}
           onClose={closeProfile}
-          onRetry={() => void openProfile(selected)}
+          onRetry={() => void openProfile(selected, selectedMemberId)}
+          onSelectMember={(memberId) => void openProfile(selected, memberId)}
           onUpdate={updateStatus}
         />
       ) : null}
@@ -635,7 +650,29 @@ function CrewPassportCard({
     <CrewCandidatePassportCard
       candidate={candidate}
       availabilityValue={startValue}
-      primaryBadge={<StatusBadge status={application.status} language={language} />}
+      primaryBadge={
+        <>
+          <StatusBadge status={application.status} language={language} />
+          {application.applicationMode === "team_couple" ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-cyan-900">
+              <UsersRound className="h-3.5 w-3.5" aria-hidden />
+              {c.teamCouple} · {application.members.length}
+            </span>
+          ) : null}
+          {application.applicationMode === "team_couple"
+            ? application.members.map((member) => (
+                <span
+                  key={member.id}
+                  data-i18n-ignore
+                  className="max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600"
+                  title={`${member.candidate.displayName} · ${member.candidate.currentPosition || c.crewMember}`}
+                >
+                  {member.candidate.displayName} · {member.candidate.currentPosition || c.crewMember}
+                </span>
+              ))
+            : null}
+        </>
+      }
       fourthFact={{
         icon: <Clock3 />,
         label: c.applied,
@@ -655,8 +692,10 @@ function CandidateProfileModal({
   error,
   updating,
   notice,
+  selectedMemberId,
   onClose,
   onRetry,
+  onSelectMember,
   onUpdate,
 }: {
   application: EmployerJobApplication;
@@ -666,15 +705,21 @@ function CandidateProfileModal({
   error: string;
   updating: boolean;
   notice: Notice | null;
+  selectedMemberId: string;
   onClose: () => void;
   onRetry: () => void;
+  onSelectMember: (memberId: string) => void;
   onUpdate: (status: EmployerJobApplicationStatus) => void;
 }) {
   const c = copy[language];
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const candidate = details?.candidate;
-  const cardCandidate = application.candidate;
+  const selectedMember =
+    application.members.find((member) => member.id === selectedMemberId) ||
+    application.members.find((member) => member.isPrimary) ||
+    application.members[0];
+  const cardCandidate = selectedMember?.candidate || application.candidate;
   const isRejected = application.status === "rejected";
   const isFinal = ["withdrawn", "hired"].includes(application.status);
 
@@ -772,6 +817,45 @@ function CandidateProfileModal({
             roleFallback={c.crewMember}
           />
         )}
+
+        {application.members.length > 1 ? (
+          <section className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-800">
+              {c.teamMembers}
+            </p>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1" role="tablist">
+              {application.members.map((member) => {
+                const active = member.id === selectedMemberId;
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => onSelectMember(member.id)}
+                    disabled={loading && active}
+                    className={`bd-focus min-w-44 shrink-0 rounded-xl border px-3.5 py-3 text-left transition disabled:cursor-wait ${
+                      active
+                        ? "border-[#071631] bg-[#071631] text-white"
+                        : "border-slate-200 bg-slate-50 text-[#071631] hover:border-cyan-300 hover:bg-cyan-50"
+                    }`}
+                  >
+                    <span data-i18n-ignore className="block truncate text-xs font-black">
+                      {member.candidate.displayName}
+                      {member.isPrimary ? ` · ${c.primaryApplicant}` : ""}
+                    </span>
+                    <span
+                      data-i18n-ignore
+                      className={`mt-1 block truncate text-[11px] ${active ? "text-cyan-100" : "text-slate-500"}`}
+                    >
+                      {member.candidate.currentPosition || c.crewMember}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {loading ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center p-10 text-center">
@@ -1082,21 +1166,44 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
   if (!isRecord(value) || !isRecord(value.candidate)) return null;
   const status = value.status;
   const applicantRole = value.applicantRole;
-  const candidate = value.candidate;
+  const applicationMode = value.applicationMode;
+  const candidate = parseEmployerCandidate(value.candidate);
+  const members = Array.isArray(value.members)
+    ? value.members.map((member) => {
+        if (!isRecord(member) || !isRecord(member.candidate)) return null;
+        const memberCandidate = parseEmployerCandidate(member.candidate);
+        if (
+          typeof member.id !== "string" ||
+          (member.applicantRole !== "crew" && member.applicantRole !== "captain") ||
+          typeof member.isPrimary !== "boolean" ||
+          !memberCandidate
+        ) {
+          return null;
+        }
+        return {
+          id: member.id,
+          applicantRole: member.applicantRole as "crew" | "captain",
+          isPrimary: member.isPrimary,
+          candidate: memberCandidate,
+        };
+      })
+    : [];
   if (
+    !candidate ||
     typeof value.id !== "string" ||
     typeof value.jobPostId !== "string" ||
+    !isJobApplicationMode(applicationMode) ||
     !isJobApplicationStatus(status) ||
     (applicantRole !== "crew" && applicantRole !== "captain") ||
     typeof value.submittedAt !== "string" ||
     typeof value.updatedAt !== "string" ||
     typeof value.version !== "number" ||
     typeof value.privateNoteAvailable !== "boolean" ||
-    typeof candidate.displayName !== "string" ||
-    typeof candidate.initials !== "string" ||
-    typeof candidate.experienceYears !== "number" ||
-    typeof candidate.cvCompletionPercent !== "number" ||
-    typeof candidate.premiumProfile !== "boolean"
+    members.some((member) => member === null) ||
+    members.filter((member) => member?.isPrimary).length !== 1 ||
+    (applicationMode === "individual" && members.length !== 1) ||
+    (applicationMode === "team_couple" &&
+      (members.length < 2 || members.length > 8))
   ) {
     return null;
   }
@@ -1104,6 +1211,7 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
   return {
     id: value.id,
     jobPostId: value.jobPostId,
+    applicationMode,
     status,
     coverNote: typeof value.coverNote === "string" ? value.coverNote : "",
     submittedAt: value.submittedAt,
@@ -1112,23 +1220,38 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
     version: value.version,
     applicantRole,
     privateNoteAvailable: value.privateNoteAvailable,
-    candidate: {
-      displayName: candidate.displayName,
-      initials: candidate.initials,
-      profilePhotoUrl: stringValue(candidate.profilePhotoUrl),
-      currentPosition: stringValue(candidate.currentPosition),
-      nationality: stringValue(candidate.nationality),
-      availabilityStatus: stringValue(candidate.availabilityStatus),
-      experienceYears:
-        candidate.experienceYears > 0 && candidate.experienceYears < 1
-          ? 0.5
-          : Math.max(0, Math.floor(candidate.experienceYears)),
-      cvCompletionPercent: Math.max(
-        0,
-        Math.min(100, Math.round(candidate.cvCompletionPercent)),
-      ),
-      premiumProfile: candidate.premiumProfile,
-    },
+    candidate,
+    members: members.filter((member) => member !== null),
+  };
+}
+
+function parseEmployerCandidate(value: unknown) {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.displayName !== "string" ||
+    typeof value.initials !== "string" ||
+    typeof value.experienceYears !== "number" ||
+    typeof value.cvCompletionPercent !== "number" ||
+    typeof value.premiumProfile !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    displayName: value.displayName,
+    initials: value.initials,
+    profilePhotoUrl: stringValue(value.profilePhotoUrl),
+    currentPosition: stringValue(value.currentPosition),
+    nationality: stringValue(value.nationality),
+    availabilityStatus: stringValue(value.availabilityStatus),
+    experienceYears:
+      value.experienceYears > 0 && value.experienceYears < 1
+        ? 0.5
+        : Math.max(0, Math.floor(value.experienceYears)),
+    cvCompletionPercent: Math.max(
+      0,
+      Math.min(100, Math.round(value.cvCompletionPercent)),
+    ),
+    premiumProfile: value.premiumProfile,
   };
 }
 
@@ -1137,6 +1260,8 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
   const candidate = value.candidate;
   if (
     typeof value.applicationId !== "string" ||
+    typeof value.memberId !== "string" ||
+    typeof value.isPrimaryMember !== "boolean" ||
     typeof candidate.displayName !== "string" ||
     typeof candidate.initials !== "string" ||
     typeof candidate.premiumProfile !== "boolean" ||
@@ -1148,6 +1273,8 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
 
   return {
     applicationId: value.applicationId,
+    memberId: value.memberId,
+    isPrimaryMember: value.isPrimaryMember,
     candidate: {
       displayName: candidate.displayName,
       initials: candidate.initials,
@@ -1156,6 +1283,7 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
       nationality: stringValue(candidate.nationality),
       location: stringValue(candidate.location),
       gender: stringValue(candidate.gender),
+      maritalStatus: stringValue(candidate.maritalStatus),
       heightCm: nullableSafeNumber(candidate.heightCm),
       weightKg: nullableSafeNumber(candidate.weightKg),
       smoker: stringValue(candidate.smoker),
@@ -1311,6 +1439,9 @@ const copy = {
     premium: "Premium",
     nameLocked: "Candidate name protected",
     maskedIdentity: "Identity protected by BlueDeck",
+    teamCouple: "Team/Couple",
+    teamMembers: "Team/Couple members",
+    primaryApplicant: "Primary",
     viewProfile: "View profile",
     candidateProfile: "Crew profile",
     close: "Close profile",
@@ -1325,6 +1456,7 @@ const copy = {
     experiences: "Experience",
     personalDetails: "Personal details",
     gender: "Gender",
+    maritalStatus: "Marital status",
     height: "Height",
     weight: "Weight",
     smoker: "Smoker",
@@ -1396,6 +1528,9 @@ const copy = {
     premium: "Premium",
     nameLocked: "Aday adı korumalı",
     maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
+    teamCouple: "Team/Couple",
+    teamMembers: "Team/Couple üyeleri",
+    primaryApplicant: "Başvuran",
     viewProfile: "Profili görüntüle",
     candidateProfile: "Crew profili",
     close: "Profili kapat",
@@ -1410,6 +1545,7 @@ const copy = {
     experiences: "Deneyim",
     personalDetails: "Kişisel bilgiler",
     gender: "Cinsiyet",
+    maritalStatus: "Medeni durum",
     height: "Boy",
     weight: "Kilo",
     smoker: "Sigara kullanımı",

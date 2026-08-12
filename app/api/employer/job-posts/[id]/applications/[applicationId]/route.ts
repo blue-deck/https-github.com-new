@@ -5,13 +5,12 @@ import {
 } from "../../../../../../lib/employerAccessServer";
 import { isEmployerJobApplicationStatus } from "../../../../../../lib/jobApplications";
 import {
-  applicationCandidatePreviewKey,
   applicationResponse,
   authenticatedApplicationClients,
   canManageJobApplications,
   employerJobApplicationFromRow,
   loadApplicationCandidateDetails,
-  loadApplicationCandidatePreviews,
+  loadApplicationTeamMembers,
   logJobApplicationError,
   readApplicationBody,
 } from "../../../../../../lib/jobApplicationsServer";
@@ -36,6 +35,10 @@ export async function GET(
   const applicationId = params.applicationId.trim().toLowerCase();
   if (!isUuid(jobPostId) || !isUuid(applicationId)) {
     return applicationResponse({ ok: false, error: "Application not found." }, 404);
+  }
+  const requestedMemberId = parseRequestedMemberId(request.nextUrl.searchParams);
+  if (requestedMemberId === null) {
+    return applicationResponse({ ok: false, error: "Invalid profile query." }, 400);
   }
 
   const clients = await authenticatedApplicationClients(request);
@@ -74,7 +77,7 @@ export async function GET(
     await clients.serviceClient
       .from("job_applications")
       .select(
-        "id,job_post_id,applicant_user_id,crew_profile_id,applicant_name_snapshot,applicant_position_snapshot",
+        "id,job_post_id,application_mode,applicant_user_id,crew_profile_id,applicant_name_snapshot,applicant_position_snapshot",
       )
       .eq("id", applicationId)
       .eq("job_post_id", jobPostId)
@@ -99,6 +102,7 @@ export async function GET(
   const candidateDetails = await loadApplicationCandidateDetails(
     clients.serviceClient,
     applicationRow,
+    requestedMemberId,
   );
   if (!candidateDetails.ok) {
     return applicationResponse(
@@ -249,7 +253,7 @@ export async function PATCH(
   }
 
   const updatedRows = Array.isArray(data) ? data : [];
-  const candidatePreviews = await loadApplicationCandidatePreviews(
+  const candidateMembers = await loadApplicationTeamMembers(
     clients.serviceClient,
     updatedRows,
   );
@@ -257,9 +261,9 @@ export async function PATCH(
   const updatedRow = updatedRows[0] || null;
   const application = employerJobApplicationFromRow(
     updatedRow,
-    candidatePreviews.ok
-      ? candidatePreviews.previews.get(applicationCandidatePreviewKey(updatedRow))
-      : undefined,
+    candidateMembers.ok && updatedRow
+      ? candidateMembers.members.get(cleanText(updatedRow.id)) || []
+      : [],
   );
   if (!application) {
     logJobApplicationError(
@@ -268,12 +272,28 @@ export async function PATCH(
       { actorUserId: clients.user.id, jobPostId, applicationId },
     );
     return applicationResponse(
-      { ok: false, error: "The updated application could not be loaded." },
-      500,
+      {
+        ok: true,
+        refreshRequired: true,
+        message:
+          "The application status was updated. Refresh to load the latest candidate preview.",
+      },
+      202,
     );
   }
 
   return applicationResponse({ ok: true, application });
+}
+
+function parseRequestedMemberId(searchParams: URLSearchParams) {
+  if (Array.from(searchParams.keys()).some((key) => key !== "member")) {
+    return null;
+  }
+  const values = searchParams.getAll("member");
+  if (values.length === 0) return "";
+  if (values.length !== 1) return null;
+  const memberId = values[0].trim().toLowerCase();
+  return isUuid(memberId) ? memberId : null;
 }
 
 function rateLimitedResponse(retryAfterSeconds: number) {

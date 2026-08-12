@@ -36,7 +36,6 @@ const copy = {
     heroTrust:
       "Visible profiles. Protected names, contacts and private records.",
     jobsEyebrow: "Latest opportunities",
-    jobsTitle: "A focused path to your next role.",
     jobsIntro:
       "Review the newest opportunities first. Create an account only when you are ready to apply.",
     allJobs: "View all roles",
@@ -99,7 +98,6 @@ const copy = {
     heroTrust:
       "Görünür profiller. Korumalı adlar, iletişim bilgileri ve özel kayıtlar.",
     jobsEyebrow: "Güncel fırsatlar",
-    jobsTitle: "Sıradaki görevinize giden sade yol.",
     jobsIntro:
       "Önce en yeni fırsatları inceleyin. Yalnızca başvurmaya hazır olduğunuzda hesap oluşturun.",
     allJobs: "Tüm ilanları gör",
@@ -287,9 +285,8 @@ export default function HomePageClient() {
           <div className={styles.container}>
             <div className={styles.sectionHeadingRow}>
               <div>
-                <p className={styles.eyebrow}>{c.jobsEyebrow}</p>
-                <h2 id="jobs-heading" className={styles.sectionTitle}>
-                  {c.jobsTitle}
+                <h2 id="jobs-heading" className={styles.eyebrow}>
+                  {c.jobsEyebrow}
                 </h2>
                 <p className={styles.sectionIntro}>{c.jobsIntro}</p>
               </div>

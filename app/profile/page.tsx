@@ -75,6 +75,7 @@ type CrewProfile = {
   profile_photo_url?: string;
   phone?: string;
   gender?: string;
+  marital_status?: string;
   nationality?: string;
   current_position?: string;
   location?: string;
@@ -818,6 +819,7 @@ export default function ProfilePage() {
       email: normalizedForSave.email || user.email,
       public_crew_id: normalizedForSave.public_crew_id || user.id.slice(0, 8).toUpperCase(),
     };
+    profilePayload.marital_status = normalizedForSave.marital_status || null;
     profilePayload.profile_photo_url = normalizedForSave.profile_photo_url
       ? normalizeCrewPortfolioStoragePath(
           normalizedForSave.profile_photo_url,
@@ -1364,10 +1366,11 @@ export default function ProfilePage() {
                   <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-5 md:grid-cols-5 [&>*]:min-w-0">
+                <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-5 md:grid-cols-6 [&>*]:min-w-0">
                   <div className="col-span-2 md:col-span-1">
                     <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
                   </div>
+                  <SelectField label="Marital status" value={profile.marital_status || ""} options={["Single", "Married"]} onChange={(value) => setProfile({ ...profile, marital_status: value })} />
                   <Field
                     label="Height cm"
                     value={String(profile.height_cm || "")}
@@ -2462,6 +2465,7 @@ function profileSaveState(profile: CrewProfile) {
     email: cleanSaveText(profile.email),
     phone: cleanSaveText(profile.phone),
     gender: cleanSaveText(profile.gender),
+    marital_status: cleanSaveText(profile.marital_status),
     nationality: cleanSaveText(profile.nationality),
     current_position: currentPosition,
     location: cleanSaveText(profile.location),
@@ -2669,6 +2673,7 @@ function SeazoneStyleCvPreview({
                     <SeazoneSidebarLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
                     <SeazoneSidebarLine label="Nationality" value={profile.nationality || "-"} />
                     <SeazoneSidebarLine label="Gender" value={profile.gender || "-"} />
+                    <SeazoneSidebarLine label="Marital status" value={profile.marital_status || "-"} />
                     <SeazoneSidebarLine label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
                     <SeazoneSidebarLine label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
                     <SeazoneSidebarLine label="Smoker" value={profile.smoker || "-"} />
@@ -3075,6 +3080,7 @@ function PrintablePrimarySidebar({
         <PrintableSideLine label="Date of Birth" value={formatCvDate(profile.date_of_birth)} />
         <PrintableSideLine label="Nationality" value={profile.nationality || "-"} />
         <PrintableSideLine label="Gender" value={profile.gender || "-"} />
+        <PrintableSideLine label="Marital status" value={profile.marital_status || "-"} />
         <PrintableSideLine label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
         <PrintableSideLine label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
         <PrintableSideLine label="Smoker" value={profile.smoker || "-"} />
@@ -5515,6 +5521,7 @@ function normalizeProfile(profile: CrewProfile) {
     ...profile,
     bio: cleanLimitedText(profile.bio, professionalSummaryMaxLength),
     gender: cleanSaveText(profile.gender),
+    marital_status: cleanSaveText(profile.marital_status),
     current_position: currentPosition,
     current_positions: currentPosition ? [currentPosition] : [],
     seeking_positions: cleanSaveList(profile.seeking_positions),

@@ -13,6 +13,22 @@ declare
   storage_lock_needle constant text :=
     'perform private.bluedeck_lock_resource_quota';
 begin
+  if private.bluedeck_storage_object_size_bytes(
+      '{"mimetype":"image/png","contentLength":843425}'::jsonb
+    ) is distinct from 843425
+    or private.bluedeck_storage_object_size_bytes(
+      '{"contentLength":"843425"}'::jsonb
+    ) is distinct from 843425
+    or private.bluedeck_storage_object_size_bytes(
+      '{"size":123,"contentLength":843425}'::jsonb
+    ) is distinct from 123
+    or private.bluedeck_storage_object_size_bytes(
+      '{"size":"NaN","contentLength":843425}'::jsonb
+    ) is not null
+  then
+    raise exception 'Storage preflight contentLength compatibility is broken or masks an invalid final size.';
+  end if;
+
   if to_regprocedure('public.touch_updated_at()') is null then
     raise exception 'touch_updated_at() is missing.';
   end if;
@@ -343,6 +359,7 @@ from (
     ('crew_documents_bytes', 'crew'),
     ('task_photos_count', 'yacht'),
     ('task_photos_bytes', 'yacht'),
+    ('documents_preflight', 'yacht'),
     ('documents_count', 'yacht'),
     ('documents_bytes', 'yacht')
 ) as tenant(label, tenant_kind);
@@ -1240,6 +1257,33 @@ begin
     jsonb_build_object('size', 1, 'mimetype', 'image/jpeg')
   );
 
+  -- Supabase Storage checks RLS with a provisional INSERT before it uploads
+  -- bytes. That row has contentLength but receives its final size only during
+  -- the completion upsert. Exercise the real provisional metadata shape.
+  select tenant_id into tenant
+  from quota_test_storage_tenants where label = 'documents_preflight';
+
+  insert into storage.objects (
+    bucket_id,
+    name,
+    owner_id,
+    version,
+    metadata
+  ) values (
+    'documents',
+    tenant::text || '/preflight.png',
+    owner_id::text,
+    '1',
+    jsonb_build_object(
+      'mimetype', 'image/png',
+      'contentLength', 843425
+    )
+  );
+
+  delete from storage.objects
+  where bucket_id = 'documents'
+    and name = tenant::text || '/preflight.png';
+
   select tenant_id into tenant
   from quota_test_storage_tenants where label = 'crew_portfolio_count';
   rejected := false;
@@ -1535,7 +1579,11 @@ begin
     insert into storage.objects (bucket_id, name, owner_id, metadata)
     values (
       'crew-portfolio', tenant::text || '/invalid-size.jpg', owner_id::text,
-      jsonb_build_object('size', 'NaN', 'mimetype', 'image/jpeg')
+      jsonb_build_object(
+        'size', 'NaN',
+        'contentLength', 1,
+        'mimetype', 'image/jpeg'
+      )
     );
   exception
     when check_violation then

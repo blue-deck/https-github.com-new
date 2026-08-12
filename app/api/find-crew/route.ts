@@ -91,6 +91,14 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     const value = searchParams.get(key);
     if (value !== null && value !== "1") return false;
   }
+  const maritalStatus = searchParams.get("maritalStatus");
+  if (
+    maritalStatus !== null &&
+    maritalStatus !== "Single" &&
+    maritalStatus !== "Married"
+  ) {
+    return false;
+  }
   const cursor = searchParams.get("cursor");
   return cursor === null ||
     /^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/.test(

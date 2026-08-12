@@ -58,6 +58,7 @@ export type CrewCandidateProfileCopy = {
   documents: string;
   personalDetails: string;
   gender: string;
+  maritalStatus: string;
   height: string;
   weight: string;
   smoker: string;
@@ -87,6 +88,7 @@ type CrewCandidateProfileDetails = Pick<
   | "referenceCount"
   | "documentCount"
   | "gender"
+  | "maritalStatus"
   | "heightCm"
   | "weightKg"
   | "smoker"
@@ -519,6 +521,12 @@ export function CrewCandidateProfileBody({
         <DetailFact
           label={copy.gender}
           value={candidate.gender}
+          fallback={copy.notProvided}
+          compact={compactVariant}
+        />
+        <DetailFact
+          label={copy.maritalStatus}
+          value={candidate.maritalStatus}
           fallback={copy.notProvided}
           compact={compactVariant}
         />
