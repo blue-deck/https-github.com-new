@@ -50,3 +50,18 @@ test("public media route supports a full application page without immediate thro
 
   assert.match(route, /find-crew-media:[\s\S]*?150,[\s\S]*?60_000/);
 });
+
+test("compact Personal Details fills every cell without a grey placeholder", async () => {
+  const presentation = await source(
+    "app/components/CrewCandidatePresentation.tsx",
+  );
+  const details = presentation.match(
+    /const personalDetailsSection = \([\s\S]*?const professionalSummarySection/,
+  )?.[0];
+
+  assert.ok(details);
+  assert.match(details, /label=\{copy\.maritalStatus\}/);
+  assert.match(details, /label=\{copy\.location\}/);
+  assert.doesNotMatch(details, /wide=|col-span-2/);
+  assert.equal((details.match(/<DetailFact/g) || []).length, 8);
+});
