@@ -67,7 +67,7 @@ export const publicJobPostServiceSelect =
   `${publicJobPostSelect},created_by`;
 
 export const publicJobCardSelect =
-  "id,position,employment_type,candidate_type,yacht_type,yacht_length,yacht_length_unit,location,start_date,salary_visible,salary_min,salary_max,salary_currency,salary_period";
+  "id,position,employment_type,candidate_type,yacht_type,yacht_length,yacht_length_unit,location,start_date,salary_visible,salary_min,salary_max,salary_currency,salary_period,published_at";
 export const publicJobCardServiceSelect = `${publicJobCardSelect},created_by`;
 
 export const employerJobPostSelect =
@@ -555,9 +555,7 @@ export async function verifyJobPostingAuthority(
     return {
       ok: false,
       error:
-        workspace.capabilities.requiresAdminApproval
-          ? "Verified BlueDeck hiring access is required before publishing job posts."
-          : workspace.capabilities.postingStatus === "suspended"
+        workspace.capabilities.postingStatus === "suspended"
           ? "Job posting is paused for this account."
           : "This account is not eligible to publish job posts.",
       status: 403,
@@ -640,7 +638,7 @@ export async function loadJobPostingWorkspaceAuthority(
     );
     return {
       ok: false,
-      error: "Your verified hiring access could not be checked.",
+      error: "Your job publishing access could not be checked.",
       status: 503,
     };
   }
@@ -664,10 +662,7 @@ function workspaceCapabilities(
     canPostJobs: roleCanPost && hasPublisherAuthority,
     canApplyJobs: entitlement.canApplyJobs,
     canUseCrewWorkspace: entitlement.canUseCrewWorkspace,
-    requiresAdminApproval:
-      roleCanPost &&
-      entitlement.postingStatus === "enabled" &&
-      !hasPublisherAuthority,
+    requiresAdminApproval: false,
     postingStatus: entitlement.postingStatus,
     planCode: entitlement.planCode,
   };
@@ -772,6 +767,7 @@ export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
   const startDate = optionalDatabaseDate(value.start_date);
+  const publishedAt = timestamp(value.published_at);
   const salaryMin = databaseMoney(value.salary_min);
   const salaryMax = databaseMoney(value.salary_max);
 
@@ -786,6 +782,7 @@ export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
     (yachtLength === null) !== (yachtLengthUnit === null) ||
     !cleanText(value.location) ||
     startDate === undefined ||
+    !publishedAt ||
     typeof value.salary_visible !== "boolean" ||
     salaryMin === undefined ||
     salaryMax === undefined ||
@@ -805,6 +802,7 @@ export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
     yachtLengthUnit,
     location: cleanText(value.location),
     startDate,
+    publishedAt,
     salary: value.salary_visible
       ? {
           min: salaryMin,

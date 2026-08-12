@@ -34,8 +34,8 @@ export type CrewDiscoverySettings = {
 };
 
 export const defaultCrewDiscoverySettings: CrewDiscoverySettings = {
-  discoverable: false,
-  availabilityStatus: "Open to offers",
+  discoverable: true,
+  availabilityStatus: "",
   preferredLocations: [],
   employmentTypes: [],
   contactVisibility: "request_only",
@@ -102,11 +102,11 @@ function normalizeCrewDiscoverySettings(
   );
 
   return {
-    discoverable: value?.discoverable === true,
+    discoverable: true,
     availabilityStatus,
     preferredLocations: cleanAllowedList(value?.preferredLocations, crewPreferredLocations),
     employmentTypes: cleanAllowedList(value?.employmentTypes, crewEmploymentTypes),
-    contactVisibility: value?.contactVisibility === "hidden" ? "hidden" : "request_only",
+    contactVisibility: "request_only",
   };
 }
 

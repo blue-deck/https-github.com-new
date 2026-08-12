@@ -1,4 +1,5 @@
 import { parseCrewDiscoverySettings } from "./crewDiscovery";
+import { crewExperienceYearsFromDateRanges } from "./crewExperience";
 
 export const premiumProfileCompletionThreshold = 85;
 
@@ -118,18 +119,12 @@ export function calculateCrewProfileCompletion({
 
 export function crewExperienceYears(
   experiences: CompletionExperience[],
-  currentYear = new Date().getUTCFullYear(),
+  currentDate = new Date(),
 ) {
-  const firstYear = experiences
-    .map(normalizeCompletionExperience)
-    .filter(
-      (experience) => text(experience.yacht_type) !== otherWorkExperienceMarker,
-    )
-    .map((experience) => Number(text(experience.start_date).slice(0, 4)))
-    .filter((year) => Number.isInteger(year) && year > 0)
-    .sort((left, right) => left - right)[0];
-
-  return firstYear ? Math.max(currentYear - firstYear, 1) : 0;
+  return crewExperienceYearsFromDateRanges(
+    experiences.map(normalizeCompletionExperience),
+    currentDate,
+  );
 }
 
 export function countExperienceReferences(

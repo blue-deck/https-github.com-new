@@ -22,10 +22,12 @@ declare
   poisoned_email_profile uuid := gen_random_uuid();
   access_id uuid;
   invitation jsonb;
+  automatic_crew_invitation jsonb;
   second_invitation jsonb;
   placeholder_invitation jsonb;
   acceptance jsonb;
   token text := gen_random_uuid()::text;
+  automatic_crew_token text := gen_random_uuid()::text;
   second_token text := gen_random_uuid()::text;
   blocked_token text := gen_random_uuid()::text;
   deletion_token text := gen_random_uuid()::text;
@@ -40,6 +42,7 @@ declare
   legacy_email text := 'legacy-reissue-' || gen_random_uuid() || '@example.invalid';
   poisoned_email text := 'poisoned-' || gen_random_uuid() || '@example.invalid';
   preaccount_email text := 'preaccount-' || gen_random_uuid() || '@example.invalid';
+  automatic_crew_id text;
   banned_issue_rejected boolean := false;
   legacy_insert_rejected boolean := false;
   poisoned_email_rejected boolean := false;
@@ -107,7 +110,7 @@ begin
       'Invitation Attacker',
       'invite-attacker-profile-' || attacker_id || '@example.invalid',
       'Deckhand',
-      '__BLUDECK_FIND_CREW__{"discoverable":false,"availabilityStatus":"Available","preferredLocations":[],"employmentTypes":[],"contactVisibility":"request_only"}',
+      'PRIVATE NONDIRECTORY INVITATION NOTES',
       'active'
     ),
     (
@@ -119,6 +122,11 @@ begin
       '__BLUDECK_FIND_CREW__{"discoverable":false,"availabilityStatus":"Available","preferredLocations":[],"employmentTypes":[],"contactVisibility":"request_only"}',
       'active'
     );
+
+  select public_crew_id
+  into automatic_crew_id
+  from public.crew_profiles
+  where id = attacker_profile;
 
   insert into public.crew_profiles (
     id, email, full_name, current_position, status
@@ -242,6 +250,35 @@ begin
     jsonb_build_object('role', 'service_role')::text,
     true
   );
+
+  select public.bluedeck_issue_crew_invitation(
+    issuer_id,
+    fixture_yacht_id,
+    automatic_crew_id,
+    null,
+    'Deckhand',
+    'Deck',
+    automatic_crew_token,
+    'https://www.bluedeck.app/invitations/' || automatic_crew_token
+  ) into automatic_crew_invitation;
+
+  if automatic_crew_invitation ->> 'crew_profile_id' <> attacker_profile::text
+    or not exists (
+      select 1
+      from public.crew_invitations as row
+      inner join private.crew_invitation_targets as target
+        on target.invitation_id = row.id
+      where row.id = (automatic_crew_invitation ->> 'id')::uuid
+        and row.identity_mode = 'crew_id'
+        and row.public_crew_id = automatic_crew_id
+        and row.invited_email is null
+        and row.crew_profile_id = attacker_profile
+        and target.target_user_id = attacker_id
+    )
+  then
+    raise exception 'An automatically discoverable Crew ID could not be invited.';
+  end if;
+
   begin
     select public.bluedeck_issue_crew_invitation(
       issuer_id,

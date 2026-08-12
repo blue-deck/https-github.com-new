@@ -514,8 +514,6 @@ export default function ProfilePage() {
   const [documentDraft, setDocumentDraft] = useState<CrewDocument>(newDocumentDraft());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [visibilitySaving, setVisibilitySaving] = useState(false);
-  const [visibilityError, setVisibilityError] = useState("");
   const [savedProfile, setSavedProfile] = useState<CrewProfile>({});
   const [referenceSaving, setReferenceSaving] = useState(false);
   const [referenceStatus, setReferenceStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -660,60 +658,6 @@ export default function ProfilePage() {
     if (autoSave) {
       void saveProfile(nextProfile, { syncIdentity: false });
     }
-  }
-
-  async function updateFindCrewVisibility(discoverable: boolean) {
-    if (visibilitySaving) return;
-
-    const previousNotes = profile.notes || "";
-    const nextProfile = {
-      ...profile,
-      notes: writeCrewDiscoverySettings(profile.notes, {
-        ...discoverySettings,
-        discoverable,
-        contactVisibility: "request_only",
-      }),
-    };
-
-    setVisibilitySaving(true);
-    setVisibilityError("");
-    setProfile(nextProfile);
-
-    const saved = await saveProfile(nextProfile, {
-      notifyOnError: false,
-      syncIdentity: false,
-    });
-
-    if (!saved) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const authoritativeResult = user?.id
-        ? await supabase
-            .from("crew_profiles")
-            .select("notes")
-            .eq("user_id", user.id)
-            .maybeSingle()
-        : null;
-      const authoritativeNotes =
-        authoritativeResult && !authoritativeResult.error
-          ? String(authoritativeResult.data?.notes || "")
-          : previousNotes;
-
-      setProfile((current) => ({ ...current, notes: authoritativeNotes }));
-      setSavedProfile((current) => ({ ...current, notes: authoritativeNotes }));
-
-      if (
-        parseCrewDiscoverySettings(authoritativeNotes).discoverable !==
-        discoverable
-      ) {
-        setVisibilityError(
-          "Visibility could not be changed. Your previous setting is still active.",
-        );
-      }
-    }
-
-    setVisibilitySaving(false);
   }
 
   async function loadProfile() {
@@ -1213,10 +1157,10 @@ export default function ProfilePage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <p className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
-                        Find Crew visibility
+                        Find Crew directory
                       </p>
                       <p className="mt-1.5 text-xs leading-5 text-slate-500">
-                        Private by default. Turning this on publishes your masked Find Crew profile and a Crew ID portal containing your masked name, selected CV fields and selected gallery photos. Email, phone, private documents and reference contact details stay hidden. Turn it off at any time to remove every public crew page.
+                        Active, email-confirmed Crew and Captain accounts are listed automatically with a masked name, selected professional profile fields and approved photos. Email, phone, private files and reference contact details stay hidden.
                       </p>
                       <a
                         href="/privacy"
@@ -1225,30 +1169,11 @@ export default function ProfilePage() {
                         Review public-profile privacy details
                       </a>
                     </div>
-                    <label className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-3 transition hover:border-cyan-300 has-[:disabled]:cursor-wait has-[:disabled]:opacity-70">
-                      <input
-                        type="checkbox"
-                        checked={discoverySettings.discoverable}
-                        disabled={visibilitySaving}
-                        onChange={(event) =>
-                          void updateFindCrewVisibility(event.target.checked)
-                        }
-                        className="h-5 w-5 accent-cyan-700"
-                      />
-                      <span aria-live="polite" className="text-sm font-bold text-slate-800">
-                        {visibilitySaving
-                          ? "Saving…"
-                          : discoverySettings.discoverable
-                            ? "Public"
-                            : "Private"}
-                      </span>
-                    </label>
+                    <span className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-800">
+                      <Check className="h-4 w-4" aria-hidden />
+                      Automatic
+                    </span>
                   </div>
-                  {visibilityError ? (
-                    <p className="mt-3 text-xs font-semibold leading-5 text-rose-700" role="alert">
-                      {visibilityError}
-                    </p>
-                  ) : null}
                 </section>
 
                 <label className="block rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
@@ -1271,6 +1196,7 @@ export default function ProfilePage() {
                       }
                       className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-10 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm"
                     >
+                      <option value="">Select availability</option>
                       {crewAvailabilityStatuses.map((option) => (
                         <option key={option} value={option}>{option}</option>
                       ))}
@@ -3670,7 +3596,7 @@ function ProfilePhoto({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-950">Profile photo</p>
-        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "When Find Crew visibility is on, this appears in your public CV portal and Find Crew profile."}</p>
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "For active Crew and Captain accounts, this appears automatically in the public Find Crew profile and Crew ID CV portal."}</p>
       </div>
     </div>
   );

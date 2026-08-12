@@ -11,6 +11,8 @@ import {
   isJobCharacteristic,
   isJobMinimumYachtExperience,
   isJobRequiredLanguage,
+  isJobSalaryCurrency,
+  isJobSalaryPeriod,
   isJobSkill,
   isJobSmokerPolicy,
   isJobVisa,
@@ -91,9 +93,13 @@ export type PublicJobCard = Pick<
   | "yachtLength"
   | "yachtLengthUnit"
   | "salary"
+  | "publishedAt"
 >;
 
 type UnknownRecord = Record<string, unknown>;
+
+const canonicalUuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function parsePublicJob(value: unknown): PublicJob | null {
   if (!isRecord(value)) return null;
@@ -247,8 +253,9 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
     "candidate_type",
   );
   const yachtTypeValue = readValue(value, "yachtType", "yacht_type");
+  const yachtLengthRaw = readValue(value, "yachtLength", "yacht_length");
   const yachtLengthValue = readPositiveNullableNumber(
-    readValue(value, "yachtLength", "yacht_length"),
+    yachtLengthRaw,
   );
   const yachtLengthUnitValue = readValue(
     value,
@@ -258,12 +265,27 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
   const yachtLengthUnit = isJobYachtLengthUnit(yachtLengthUnitValue)
     ? yachtLengthUnitValue
     : null;
+  const publishedAt = readString(value, "publishedAt", "published_at");
+  const location = readString(value, "location");
+  const startDateRaw = readValue(value, "startDate", "start_date");
+  const startDate = startDateRaw === null ? "" : startDateRaw;
+  const salary = parseStrictCardSalary(value.salary);
 
   if (
-    !id ||
+    !canonicalUuidPattern.test(id) ||
     !position ||
+    !location ||
+    !validTimestamp(publishedAt) ||
     !isJobEmploymentType(employmentTypeValue) ||
-    !isJobCandidateType(candidateTypeValue)
+    !isJobCandidateType(candidateTypeValue) ||
+    (yachtTypeValue !== null && !isJobYachtType(yachtTypeValue)) ||
+    (yachtLengthRaw !== null && yachtLengthValue === null) ||
+    (yachtLengthUnitValue !== null &&
+      !isJobYachtLengthUnit(yachtLengthUnitValue)) ||
+    (yachtLengthValue === null) !== (yachtLengthUnit === null) ||
+    (startDate !== "" &&
+      (typeof startDate !== "string" || !validDate(startDate))) ||
+    salary === undefined
   ) {
     return null;
   }
@@ -273,8 +295,9 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
     position,
     employmentType: employmentTypeValue,
     candidateType: candidateTypeValue,
-    location: readString(value, "location"),
-    startDate: readString(value, "startDate", "start_date"),
+    location,
+    startDate,
+    publishedAt,
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
     yachtLength:
       yachtLengthValue !== null && yachtLengthUnit !== null
@@ -284,7 +307,7 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
       yachtLengthValue !== null && yachtLengthUnit !== null
         ? yachtLengthUnit
         : null,
-    salary: parseSalary(value.salary),
+    salary,
   };
 }
 
@@ -416,6 +439,33 @@ function parseSalary(value: unknown): PublicJobSalary | null {
   };
 }
 
+function parseStrictCardSalary(
+  value: unknown,
+): PublicJobSalary | null | undefined {
+  if (value === null) return null;
+  if (!isRecord(value)) return undefined;
+
+  const min = strictNullableMoney(value.min);
+  const max = strictNullableMoney(value.max);
+  if (
+    min === undefined ||
+    max === undefined ||
+    (min === null && max === null) ||
+    (min !== null && max !== null && min > max) ||
+    !isJobSalaryCurrency(value.currency) ||
+    !isJobSalaryPeriod(value.period)
+  ) {
+    return undefined;
+  }
+
+  return {
+    min,
+    max,
+    currency: value.currency,
+    period: value.period,
+  };
+}
+
 function formatSalaryPeriod(value: string, language: "en" | "tr") {
   const normalized = value.trim().toLocaleLowerCase("en-US");
   const periods: Record<string, { en: string; tr: string }> = {
@@ -495,6 +545,27 @@ function readJobOptions<Option extends string>(
 
 function readNullableNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function strictNullableMoney(value: unknown) {
+  if (value === null) return null;
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 99_999_999.99
+    ? value
+    : undefined;
+}
+
+function validDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value;
+}
+
+function validTimestamp(value: string) {
+  return value.length <= 64 && Number.isFinite(Date.parse(value));
 }
 
 function readPositiveNullableNumber(value: unknown) {

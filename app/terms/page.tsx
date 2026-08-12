@@ -23,7 +23,7 @@ const sections = [
   {
     title: "Profiles and public visibility",
     paragraphs: [
-      "Crew profiles are private by default. If you deliberately enable Find Crew visibility, you authorize BlueDeck to display the approved public profile fields and images until you turn visibility off. You remain responsible for having the right to upload and publish every image and statement you submit.",
+      "By creating or using an active Crew or Captain account, you authorize BlueDeck to list its masked, privacy-protected professional profile automatically in the public Find Crew directory after email confirmation. The public profile may include selected professional and physical fields, availability and approved images, and may link to a Crew ID CV or gallery containing CV-selected materials. Full legal names, direct contact details, private files and reference contact details remain protected as described in the Privacy Policy. You remain responsible for having the right to upload and publish every image and statement you submit.",
     ],
   },
   {
@@ -53,7 +53,7 @@ const sections = [
   {
     title: "Your content",
     paragraphs: [
-      "You keep ownership of content you submit. You grant BlueDeck a limited, worldwide right to host, copy, transform and display that content only as needed to provide, secure and improve the service and to follow your visibility choices. You confirm that your content is accurate, lawful and does not violate another person's privacy, confidentiality or intellectual-property rights.",
+      "You keep ownership of content you submit. You grant BlueDeck a limited, worldwide right to host, copy, transform and display that content only as needed to provide, secure and improve the service and to follow your account role and CV display selections. You confirm that your content is accurate, lawful and does not violate another person's privacy, confidentiality or intellectual-property rights.",
     ],
   },
   {

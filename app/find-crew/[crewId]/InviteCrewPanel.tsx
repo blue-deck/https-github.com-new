@@ -136,17 +136,25 @@ export function CrewProfileContent({
               <ProfileFact
                 icon={<CalendarDays aria-hidden />}
                 label={c.availability}
-                value={translatePhrase(
-                  profile.discovery.availabilityStatus,
-                  language,
-                )}
+                value={
+                  profile.discovery.availabilityStatus
+                    ? translatePhrase(
+                        profile.discovery.availabilityStatus,
+                        language,
+                      )
+                    : c.notSpecified
+                }
               />
               <ProfileFact
                 icon={<BriefcaseBusiness aria-hidden />}
                 label={c.yachtExperience}
                 value={
                   profile.experienceYears > 0
-                    ? `${profile.experienceYears}+ ${c.years}`
+                    ? profile.experienceYears < 1
+                      ? language === "tr"
+                        ? "1 yıldan az"
+                        : "Less than 1 year"
+                      : `${profile.experienceYears}+ ${c.years}`
                     : c.notSpecified
                 }
               />
@@ -903,6 +911,7 @@ const publicProfileCopy = {
     closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "This crew member has not added gallery photos yet.",
     years: "years",
+    lessThanOneYear: "Less than 1 year",
     noExperience: "Not added",
     experiences: "Experiences",
     references: "References",
@@ -934,7 +943,7 @@ const publicProfileCopy = {
     crewPortalHelp:
       "This opens the same gallery linked by the CV QR code, with access to the public CV.",
     crewPortalUnavailable:
-      "This crew member has not enabled their public Crew Portal yet.",
+      "The public Crew Portal is unavailable for this profile.",
     openCrewPortal: "Open Crew Portal / CV",
     privacyNote:
       "Full names, stored contact fields, document files and reference identities are not included here. Photos and selected professional profile fields are public.",
@@ -950,6 +959,7 @@ const publicProfileCopy = {
     closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
     noGalleryPhotos: "Bu crew üyesi henüz galeri fotoğrafı eklememiş.",
     years: "yıl",
+    lessThanOneYear: "1 yıldan az",
     noExperience: "Eklenmedi",
     experiences: "Deneyim",
     references: "Referans",
@@ -981,7 +991,7 @@ const publicProfileCopy = {
     crewPortalHelp:
       "CV üzerindeki QR koduyla aynı galeriyi açar ve herkese açık CV’ye erişim sağlar.",
     crewPortalUnavailable:
-      "Bu crew üyesi herkese açık Crew Portal görünürlüğünü henüz etkinleştirmemiş.",
+      "Bu profil için herkese açık Crew Portal kullanılamıyor.",
     openCrewPortal: "Crew Portal / CV’yi aç",
     privacyNote:
       "Tam adlar, kayıtlı iletişim alanları, doküman dosyaları ve referans kimlikleri burada gösterilmez. Fotoğraflar ve seçili profesyonel profil alanları herkese açıktır.",

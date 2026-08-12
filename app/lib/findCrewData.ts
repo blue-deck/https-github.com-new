@@ -33,6 +33,13 @@ import {
   parseCrewDiscoverySettings,
   type CrewDiscoverySettings,
 } from "./crewDiscovery";
+import {
+  crewSearchFingerprintInput,
+  defaultCrewSearchFilters,
+  normalizeCrewSearchFilters,
+  type CrewSearchFacets,
+  type CrewSearchFilters,
+} from "./crewSearch";
 import { canUseCrewWorkspace } from "./marketplaceCapabilities";
 import {
   getPublicCrewDiscoverySettings,
@@ -88,6 +95,8 @@ export type DiscoverableCrewPage = {
   profiles: DiscoverableCrewPreview[];
   nextCursor: string | null;
   hasMore: boolean;
+  total: number;
+  facets: CrewSearchFacets;
 };
 
 type CrewProfileRow = Record<string, unknown> & {
@@ -101,6 +110,19 @@ type CrewProfileRow = Record<string, unknown> & {
   _experience_years?: unknown;
 };
 
+type CrewSearchRecord = {
+  profileId: string;
+  userId: string;
+  preview: DiscoverableCrewPreview;
+  characteristics: string[];
+  workPreferences: string[];
+  languages: Array<{ name: string; level: string }>;
+  referenceCount: number;
+  documentCount: number;
+  galleryCount: number;
+  searchText: string;
+};
+
 export type EligiblePublicCrewContext = {
   crewId: string;
   profile: CrewProfileRow;
@@ -111,7 +133,16 @@ export type EligiblePublicCrewContext = {
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const publicCrewPageSize = 48;
+const publicCrewPageSize = 24;
+const publicCrewScanPageSize = 48;
+const maximumPublicCrewScanRows = 2_400;
+const relatedProfileBatchSize = 100;
+const relatedPageSize = 500;
+const crewSearchCacheLifetimeMs = 15_000;
+let crewSearchRecordsCache: {
+  expiresAt: number;
+  promise: Promise<CrewSearchRecord[]>;
+} | null = null;
 const crewProfileSelect =
   "id,user_id,public_crew_id,status,full_name,email,phone,profile_photo_url,current_position,current_positions,seeking_positions,location,nationality,gender,date_of_birth,height_cm,weight_kg,smoker,visible_tattoos,bio,languages,personal_skills,personal_characteristics,work_preferences,notes,created_at,updated_at";
 
@@ -123,71 +154,569 @@ export async function listDiscoverableCrew(): Promise<
 
 export async function listDiscoverableCrewPage(
   cursor = "",
+  requestedFilters: CrewSearchFilters = defaultCrewSearchFilters,
 ): Promise<DiscoverableCrewPage> {
-  const serviceClient = createServiceClient();
-  if (!serviceClient) {
-    throw new Error("find_crew_service_unavailable");
-  }
-
-  const decodedCursor = cursor ? decodePublicCrewCursor(cursor) : null;
+  const filters = normalizeCrewSearchFilters(requestedFilters);
+  const filterFingerprint = crewSearchFingerprint(filters);
+  const decodedCursor = cursor
+    ? decodePublicCrewCursor(cursor, filterFingerprint)
+    : null;
   if (cursor && !decodedCursor) {
     throw new Error("find_crew_cursor_invalid");
   }
 
-  const { data, error } = await serviceClient.rpc(
-    "bluedeck_public_crew_page",
-    {
-      p_before_updated_at: decodedCursor?.updatedAt || null,
-      p_before_id: decodedCursor?.id || null,
-      p_limit: publicCrewPageSize,
-    },
-  );
-  if (error) {
-    console.error(
-      "Find Crew directory page could not be loaded",
-      safeErrorMessage(error),
-    );
-    throw new Error("find_crew_profiles_unavailable");
-  }
+  const safeRecords = await cachedCrewSearchRecords();
 
-  if (!isRecord(data) || !Array.isArray(data.rows) || typeof data.has_more !== "boolean") {
-    throw new Error("find_crew_profiles_invalid");
-  }
-  const rows = data.rows as CrewProfileRow[];
-  if (
-    rows.length > publicCrewPageSize ||
-    (data.has_more && rows.length !== publicCrewPageSize)
-  ) {
-    throw new Error("find_crew_profiles_invalid");
-  }
-
-  const profiles = rows
-    .map((row) =>
-      toDiscoverableCrewPreview(
-        row,
-        Array.isArray(row._experiences)
-          ? (row._experiences as CandidateExperienceRow[])
-          : [],
-      ),
-    )
-    .filter((profile): profile is DiscoverableCrewPreview => Boolean(profile));
-  const uniqueProfiles = uniqueCrewIdProfiles(profiles);
-  const nextCursor = data.has_more
-    ? encodePublicCrewCursor(rows.at(-1))
+  const filtered = safeRecords
+    .filter((record) => crewSearchRecordMatches(record, filters))
+    .sort(compareCrewSearchRecords);
+  const remaining = decodedCursor
+    ? filtered.filter((record) => isRecordAfterCrewCursor(record, decodedCursor))
+    : filtered;
+  const selected = remaining.slice(0, publicCrewPageSize);
+  const hasMore = remaining.length > publicCrewPageSize;
+  const nextCursor = hasMore
+    ? encodePublicCrewCursor(selected.at(-1), filterFingerprint)
     : null;
-  if (
-    profiles.length !== rows.length ||
-    uniqueProfiles.length !== profiles.length ||
-    (data.has_more && !nextCursor)
-  ) {
+  if (hasMore && !nextCursor) {
     throw new Error("find_crew_profiles_invalid");
   }
 
   return {
-    profiles: uniqueProfiles,
+    profiles: selected.map((record) => record.preview),
     nextCursor,
-    hasMore: data.has_more,
+    hasMore,
+    total: filtered.length,
+    facets: crewSearchFacets(safeRecords),
   };
+}
+
+async function cachedCrewSearchRecords() {
+  const now = Date.now();
+  if (crewSearchRecordsCache && crewSearchRecordsCache.expiresAt > now) {
+    return crewSearchRecordsCache.promise;
+  }
+
+  const promise = loadCrewSearchRecords();
+  const cacheEntry = {
+    expiresAt: now + crewSearchCacheLifetimeMs,
+    promise,
+  };
+  crewSearchRecordsCache = cacheEntry;
+  try {
+    return await promise;
+  } catch (error) {
+    if (crewSearchRecordsCache === cacheEntry) crewSearchRecordsCache = null;
+    throw error;
+  }
+}
+
+async function loadCrewSearchRecords() {
+  const serviceClient = createServiceClient();
+  if (!serviceClient) {
+    throw new Error("find_crew_service_unavailable");
+  }
+  const rows = await loadAllDiscoverableCrewRows(serviceClient);
+  const related = await loadCrewSearchRelatedData(serviceClient, rows);
+  const records = rows.map((row) => toCrewSearchRecord(row, related));
+  if (records.some((record) => !record)) {
+    throw new Error("find_crew_profiles_invalid");
+  }
+  const safeRecords = records as CrewSearchRecord[];
+  const uniqueCrewIds = new Set(
+    safeRecords.map((record) => record.preview.crewId),
+  );
+  if (uniqueCrewIds.size !== safeRecords.length) {
+    throw new Error("find_crew_profiles_invalid");
+  }
+  return safeRecords;
+}
+
+type CrewSearchRelatedData = {
+  experiencesByProfile: Map<string, CandidateExperienceRow[]>;
+  referencesByProfile: Map<string, Array<{ vessel?: unknown }>>;
+  documentCounts: Map<string, number>;
+  photosByProfile: Map<string, Record<string, unknown>[]>;
+};
+
+async function loadAllDiscoverableCrewRows(serviceClient: SupabaseClient) {
+  const rows: CrewProfileRow[] = [];
+  const seenCursors = new Set<string>();
+  let beforeUpdatedAt: string | null = null;
+  let beforeId: string | null = null;
+
+  for (;;) {
+    const { data, error } = await serviceClient.rpc(
+      "bluedeck_public_crew_page",
+      {
+        p_before_updated_at: beforeUpdatedAt,
+        p_before_id: beforeId,
+        p_limit: publicCrewScanPageSize,
+      },
+    );
+    if (error) {
+      console.error(
+        "Find Crew directory page could not be loaded",
+        safeErrorMessage(error),
+      );
+      throw new Error("find_crew_profiles_unavailable");
+    }
+    if (
+      !isRecord(data) ||
+      !Array.isArray(data.rows) ||
+      typeof data.has_more !== "boolean"
+    ) {
+      throw new Error("find_crew_profiles_invalid");
+    }
+
+    const pageRows = data.rows as CrewProfileRow[];
+    if (
+      pageRows.length > publicCrewScanPageSize ||
+      (data.has_more && pageRows.length !== publicCrewScanPageSize) ||
+      rows.length + pageRows.length > maximumPublicCrewScanRows
+    ) {
+      throw new Error(
+        rows.length + pageRows.length > maximumPublicCrewScanRows
+          ? "find_crew_directory_capacity_exceeded"
+          : "find_crew_profiles_invalid",
+      );
+    }
+    rows.push(...pageRows);
+    if (!data.has_more) return rows;
+
+    const last = pageRows.at(-1);
+    const nextUpdatedAt = last
+      ? databaseTimestamp(last._cursor_updated_at)
+      : "";
+    const nextId = last ? text(last._cursor_id).toLowerCase() : "";
+    const cursorKey = `${nextUpdatedAt}:${nextId}`;
+    if (
+      !nextUpdatedAt ||
+      !isUuid(nextId) ||
+      seenCursors.has(cursorKey)
+    ) {
+      throw new Error("find_crew_profiles_invalid");
+    }
+    seenCursors.add(cursorKey);
+    beforeUpdatedAt = nextUpdatedAt;
+    beforeId = nextId;
+  }
+}
+
+async function loadCrewSearchRelatedData(
+  serviceClient: SupabaseClient,
+  rows: CrewProfileRow[],
+): Promise<CrewSearchRelatedData> {
+  const profileIds = rows.map((row) => text(row.id)).filter(isUuid);
+  if (profileIds.length !== rows.length) {
+    throw new Error("find_crew_profiles_invalid");
+  }
+
+  const [
+    experienceResult,
+    documentRows,
+    referenceRows,
+    photoRows,
+  ] =
+    await Promise.all([
+      loadCandidateExperienceRows(serviceClient, profileIds),
+      loadCrewRelatedRows(
+        serviceClient,
+        "crew_documents",
+        "id,crew_profile_id,created_at",
+        profileIds,
+        true,
+      ),
+      loadCrewRelatedRows(
+        serviceClient,
+        "crew_references",
+        "id,crew_profile_id,vessel,created_at",
+        profileIds,
+        true,
+      ),
+      loadCrewRelatedRows(
+        serviceClient,
+        "crew_portfolio_photos",
+        "id,crew_profile_id,image_url,created_at",
+        profileIds,
+        false,
+      ),
+    ]);
+  if (experienceResult.error) {
+    console.error(
+      "Find Crew experience filters could not be loaded",
+      safeErrorMessage(experienceResult.error),
+    );
+    throw new Error("find_crew_profiles_unavailable");
+  }
+
+  const experiencesByProfile = groupRelatedRows<CandidateExperienceRow>(
+    experienceResult.rows,
+  );
+  const referencesByProfile = groupRelatedRows<ArrayElement<typeof referenceRows>>(
+    referenceRows,
+  );
+  const photosByProfile = groupRelatedRows<ArrayElement<typeof photoRows>>(
+    photoRows,
+  );
+  const documentCounts = new Map<string, number>();
+  for (const row of documentRows) {
+    const profileId = text(row.crew_profile_id);
+    if (isUuid(profileId)) {
+      documentCounts.set(profileId, (documentCounts.get(profileId) || 0) + 1);
+    }
+  }
+
+  return {
+    experiencesByProfile,
+    referencesByProfile,
+    documentCounts,
+    photosByProfile,
+  };
+}
+
+type ArrayElement<Value> = Value extends Array<infer Item> ? Item : never;
+
+async function loadCrewRelatedRows(
+  serviceClient: SupabaseClient,
+  table: "crew_documents" | "crew_references" | "crew_portfolio_photos",
+  selection: string,
+  profileIds: string[],
+  publicOnly: boolean,
+) {
+  const rows: Record<string, unknown>[] = [];
+  for (
+    let profileIndex = 0;
+    profileIndex < profileIds.length;
+    profileIndex += relatedProfileBatchSize
+  ) {
+    const profileBatch = profileIds.slice(
+      profileIndex,
+      profileIndex + relatedProfileBatchSize,
+    );
+    for (let offset = 0; ; offset += relatedPageSize) {
+      let query = serviceClient
+        .from(table)
+        .select(selection)
+        .in("crew_profile_id", profileBatch)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + relatedPageSize - 1);
+      if (publicOnly) query = query.eq("show_on_cv", true);
+      const { data, error } = await query;
+      if (error) {
+        console.error(
+          "Find Crew public career records could not be loaded",
+          safeErrorMessage(error),
+        );
+        throw new Error("find_crew_profiles_unavailable");
+      }
+      const page = (data || []) as unknown as Record<string, unknown>[];
+      rows.push(...page);
+      if (page.length < relatedPageSize) break;
+    }
+  }
+  return rows;
+}
+
+function groupRelatedRows<Row extends Record<string, unknown>>(rows: Row[]) {
+  const grouped = new Map<string, Row[]>();
+  for (const row of rows) {
+    const profileId = text(row.crew_profile_id);
+    if (!isUuid(profileId)) continue;
+    const profileRows = grouped.get(profileId) || [];
+    profileRows.push(row);
+    grouped.set(profileId, profileRows);
+  }
+  return grouped;
+}
+
+function toCrewSearchRecord(
+  row: CrewProfileRow,
+  related: CrewSearchRelatedData,
+): CrewSearchRecord | null {
+  const profileId = text(row.id);
+  const userId = text(row.user_id);
+  if (!isUuid(profileId) || !isUuid(userId)) return null;
+
+  const experiences = related.experiencesByProfile.get(profileId) || [];
+  const preview = toDiscoverableCrewPreview(row, experiences);
+  if (!preview) return null;
+  const profileIdentity = text(row.full_name).slice(0, 120);
+  const characteristics = identitySafeStringArray(
+    row.personal_characteristics,
+    profileIdentity,
+    30,
+    120,
+  );
+  const workPreferences = identitySafeStringArray(
+    row.work_preferences,
+    profileIdentity,
+    30,
+    120,
+  );
+  const languages = publicCandidateLanguageEntries(row.languages).map(
+    (item) => ({
+      name: identitySafeProfileField(item.name, profileIdentity, 80),
+      level: identitySafeProfileField(item.level, profileIdentity, 80),
+    }),
+  );
+  const references = related.referencesByProfile.get(profileId) || [];
+  const referenceCount = countExperienceReferences(experiences, references);
+  const documentCount = related.documentCounts.get(profileId) || 0;
+  const galleryRows = related.photosByProfile.get(profileId) || [];
+  const galleryCount = selectOwnedPublicCrewGallerySources(
+    galleryRows,
+    profileId,
+    [profileId, userId],
+  ).length;
+  const searchText = normalizeCrewSearchText(
+    [
+      preview.displayName,
+      preview.currentPosition,
+      ...preview.seekingPositions,
+      preview.location,
+      ...preview.preferredLocations,
+      preview.nationality,
+      preview.availabilityStatus,
+      ...preview.employmentTypes,
+      ...preview.personalSkills,
+      ...characteristics,
+      ...workPreferences,
+      ...languages.flatMap((item) => [item.name, item.level]),
+    ].join(" "),
+  );
+
+  return {
+    profileId,
+    userId,
+    preview,
+    characteristics,
+    workPreferences,
+    languages,
+    referenceCount,
+    documentCount,
+    galleryCount,
+    searchText,
+  };
+}
+
+function crewSearchRecordMatches(
+  record: CrewSearchRecord,
+  filters: CrewSearchFilters,
+) {
+  const preview = record.preview;
+  const terms = normalizeCrewSearchText(filters.query).split(" ").filter(Boolean);
+  if (terms.some((term) => !record.searchText.includes(term))) return false;
+  if (
+    filters.position &&
+    !hasExactCrewValue(
+      [preview.currentPosition, ...preview.seekingPositions],
+      filters.position,
+    )
+  ) {
+    return false;
+  }
+  if (
+    filters.location &&
+    !hasPartialCrewValue(
+      [preview.location, ...preview.preferredLocations],
+      filters.location,
+    )
+  ) {
+    return false;
+  }
+  if (
+    filters.availability &&
+    !sameCrewValue(preview.availabilityStatus, filters.availability)
+  ) {
+    return false;
+  }
+  if (
+    filters.employmentType &&
+    !hasExactCrewValue(preview.employmentTypes, filters.employmentType)
+  ) {
+    return false;
+  }
+  if (
+    filters.nationality &&
+    !sameCrewValue(preview.nationality, filters.nationality)
+  ) {
+    return false;
+  }
+  if (filters.skill && !hasExactCrewValue(preview.personalSkills, filters.skill)) {
+    return false;
+  }
+  if (
+    filters.characteristic &&
+    !hasExactCrewValue(record.characteristics, filters.characteristic)
+  ) {
+    return false;
+  }
+  if (
+    filters.workPreference &&
+    !hasExactCrewValue(record.workPreferences, filters.workPreference)
+  ) {
+    return false;
+  }
+  if (
+    filters.language &&
+    !record.languages.some(
+      (item) =>
+        sameCrewValue(item.name, filters.language) &&
+        (!filters.languageLevel ||
+          languageLevelAtLeast(item.level, filters.languageLevel)),
+    )
+  ) {
+    return false;
+  }
+  if (
+    !filters.language &&
+    filters.languageLevel &&
+    !record.languages.some((item) =>
+      languageLevelAtLeast(item.level, filters.languageLevel),
+    )
+  ) {
+    return false;
+  }
+  if (
+    filters.minimumExperience !== null &&
+    preview.experienceYears < filters.minimumExperience
+  ) {
+    return false;
+  }
+  if (
+    filters.memberSince &&
+    preview.memberSince.slice(0, 7) < filters.memberSince
+  ) {
+    return false;
+  }
+  if (filters.premiumOnly && !preview.premiumProfile) return false;
+  if (filters.hasPhoto && !preview.profilePhotoUrl) return false;
+  if (filters.hasGallery && record.galleryCount === 0) return false;
+  if (filters.hasReferences && record.referenceCount === 0) return false;
+  if (filters.hasDocuments && record.documentCount === 0) return false;
+  return true;
+}
+
+const crewLanguageLevels = [
+  "Basic",
+  "Intermediate",
+  "Advanced",
+  "Fluent",
+  "Native",
+] as const;
+
+function languageLevelAtLeast(value: string, minimum: string) {
+  const valueIndex = crewLanguageLevels.findIndex((item) =>
+    sameCrewValue(item, value),
+  );
+  const minimumIndex = crewLanguageLevels.findIndex((item) =>
+    sameCrewValue(item, minimum),
+  );
+  return minimumIndex === -1
+    ? sameCrewValue(value, minimum)
+    : valueIndex >= minimumIndex;
+}
+
+function hasExactCrewValue(values: string[], expected: string) {
+  return values.some((value) => sameCrewValue(value, expected));
+}
+
+function hasPartialCrewValue(values: string[], expected: string) {
+  const normalizedExpected = normalizeCrewSearchText(expected);
+  return values.some((value) =>
+    normalizeCrewSearchText(value).includes(normalizedExpected),
+  );
+}
+
+function sameCrewValue(left: string, right: string) {
+  return normalizeCrewSearchText(left) === normalizeCrewSearchText(right);
+}
+
+function normalizeCrewSearchText(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("en-US")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function crewSearchFacets(records: CrewSearchRecord[]): CrewSearchFacets {
+  return {
+    positions: sortedCrewFacet(
+      records.flatMap((record) => [
+        record.preview.currentPosition,
+        ...record.preview.seekingPositions,
+      ]),
+    ),
+    locations: sortedCrewFacet(
+      records.flatMap((record) => [
+        record.preview.location,
+        ...record.preview.preferredLocations,
+      ]),
+    ),
+    availabilities: sortedCrewFacet(
+      records.map((record) => record.preview.availabilityStatus),
+    ),
+    employmentTypes: sortedCrewFacet(
+      records.flatMap((record) => record.preview.employmentTypes),
+    ),
+    nationalities: sortedCrewFacet(
+      records.map((record) => record.preview.nationality),
+    ),
+    skills: sortedCrewFacet(
+      records.flatMap((record) => record.preview.personalSkills),
+    ),
+    characteristics: sortedCrewFacet(
+      records.flatMap((record) => record.characteristics),
+    ),
+    workPreferences: sortedCrewFacet(
+      records.flatMap((record) => record.workPreferences),
+    ),
+    languages: sortedCrewFacet(
+      records.flatMap((record) => record.languages.map((item) => item.name)),
+    ),
+    languageLevels: crewLanguageLevels.filter((level) =>
+      records.some((record) =>
+        record.languages.some((item) => sameCrewValue(item.level, level)),
+      ),
+    ),
+  };
+}
+
+function sortedCrewFacet(values: string[]) {
+  return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)))
+    .sort((left, right) => left.localeCompare(right, "en-US"))
+    .slice(0, 250);
+}
+
+function compareCrewSearchRecords(left: CrewSearchRecord, right: CrewSearchRecord) {
+  const dateOrder =
+    databaseTimestamp(right.preview.memberSince).localeCompare(
+      databaseTimestamp(left.preview.memberSince),
+    );
+  return dateOrder || right.preview.crewId.localeCompare(left.preview.crewId);
+}
+
+function isRecordAfterCrewCursor(
+  record: CrewSearchRecord,
+  cursor: { memberSince: string; crewId: string },
+) {
+  const memberSince = databaseTimestamp(record.preview.memberSince);
+  return (
+    memberSince < cursor.memberSince ||
+    (memberSince === cursor.memberSince &&
+      record.preview.crewId.localeCompare(cursor.crewId) < 0)
+  );
+}
+
+function crewSearchFingerprint(filters: CrewSearchFilters) {
+  return createHash("sha256")
+    .update(crewSearchFingerprintInput(filters), "utf8")
+    .digest("base64url")
+    .slice(0, 24);
 }
 
 export const getDiscoverableCrew = cache(async function getDiscoverableCrew(
@@ -223,11 +752,13 @@ async function loadDiscoverableCrewProfile(
       serviceClient
         .from("crew_documents")
         .select("id", { count: "exact", head: true })
-        .eq("crew_profile_id", profileId),
+        .eq("crew_profile_id", profileId)
+        .eq("show_on_cv", true),
       serviceClient
         .from("crew_references")
         .select("id,vessel")
-        .eq("crew_profile_id", profileId),
+        .eq("crew_profile_id", profileId)
+        .eq("show_on_cv", true),
       loadCandidateExperienceRows(serviceClient, [profileId]),
     ]);
 
@@ -360,7 +891,9 @@ export async function isActiveDirectoryCrew(crewId: string) {
 /**
  * Single public-crew privacy boundary used by the directory, CV, gallery,
  * metadata and media routes. Every call verifies the current profile state,
- * explicit discovery consent, workspace entitlement and live Auth account.
+ * workspace entitlement and live Auth account. Crew and Captain directory
+ * eligibility is automatic; discovery settings only provide optional public
+ * availability and work-preference values.
  */
 export async function loadEligiblePublicCrewContext(
   crewId: string,
@@ -377,7 +910,6 @@ export async function loadEligiblePublicCrewContext(
   if (!profile) return null;
 
   const discovery = getPublicCrewDiscoverySettings(profile.notes);
-  if (!discovery) return null;
 
   const account = await loadEligibleCrewAccount(serviceClient, profile);
   if (!account) return null;
@@ -641,23 +1173,10 @@ function toDiscoverableCrewPreview(
       30,
       120,
     ),
-    experienceYears:
-      typeof row._experience_years === "number" &&
-      Number.isSafeInteger(row._experience_years) &&
-      row._experience_years > 0
-        ? row._experience_years
-        : crewExperienceYears(experiences),
+    experienceYears: crewExperienceYears(experiences),
     premiumProfile: isPremiumCrewProfile(completionPercent),
     memberSince: databaseTimestamp(row.created_at),
   };
-}
-
-function uniqueCrewIdProfiles(profiles: DiscoverableCrewPreview[]) {
-  const counts = new Map<string, number>();
-  for (const profile of profiles) {
-    counts.set(profile.crewId, (counts.get(profile.crewId) || 0) + 1);
-  }
-  return profiles.filter((profile) => counts.get(profile.crewId) === 1);
 }
 
 function publicCrewMediaUrl(
@@ -739,11 +1258,14 @@ function safeErrorMessage(error: unknown) {
   return "Unknown database error";
 }
 
-function encodePublicCrewCursor(value: unknown) {
-  if (!isRecord(value)) return null;
-  const updatedAt = databaseTimestamp(value._cursor_updated_at);
-  const id = text(value._cursor_id).toLowerCase();
-  if (!updatedAt || !isUuid(id)) return null;
+function encodePublicCrewCursor(
+  record: CrewSearchRecord | undefined,
+  filterFingerprint: string,
+) {
+  if (!record) return null;
+  const memberSince = databaseTimestamp(record.preview.memberSince);
+  const crewId = normalizePublicCrewId(record.preview.crewId);
+  if (!memberSince || !crewId || !filterFingerprint) return null;
   try {
     const initializationVector = randomBytes(12);
     const cipher = createCipheriv(
@@ -752,11 +1274,14 @@ function encodePublicCrewCursor(value: unknown) {
       initializationVector,
     );
     const encrypted = Buffer.concat([
-      cipher.update(JSON.stringify([updatedAt, id]), "utf8"),
+      cipher.update(
+        JSON.stringify([filterFingerprint, memberSince, crewId]),
+        "utf8",
+      ),
       cipher.final(),
     ]);
     return [
-      "v1",
+      "v2",
       initializationVector.toString("base64url"),
       encrypted.toString("base64url"),
       cipher.getAuthTag().toString("base64url"),
@@ -766,8 +1291,11 @@ function encodePublicCrewCursor(value: unknown) {
   }
 }
 
-function decodePublicCrewCursor(value: string) {
-  if (!/^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,192}\.[A-Za-z0-9_-]{22}$/.test(value)) {
+function decodePublicCrewCursor(
+  value: string,
+  expectedFilterFingerprint: string,
+) {
+  if (!/^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/.test(value)) {
     return null;
   }
   try {
@@ -785,10 +1313,15 @@ function decodePublicCrewCursor(value: string) {
         decipher.final(),
       ]).toString("utf8"),
     ) as unknown;
-    if (!Array.isArray(decoded) || decoded.length !== 2) return null;
-    const updatedAt = databaseTimestamp(decoded[0]);
-    const id = text(decoded[1]).toLowerCase();
-    return updatedAt && isUuid(id) ? { updatedAt, id } : null;
+    if (!Array.isArray(decoded) || decoded.length !== 3) return null;
+    const filterFingerprint = text(decoded[0]);
+    const memberSince = databaseTimestamp(decoded[1]);
+    const crewId = normalizePublicCrewId(text(decoded[2]));
+    return filterFingerprint === expectedFilterFingerprint &&
+      memberSince &&
+      crewId
+      ? { memberSince, crewId }
+      : null;
   } catch {
     return null;
   }

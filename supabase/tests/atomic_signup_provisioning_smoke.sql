@@ -4,6 +4,13 @@ do $test$
 declare
   account_id uuid := gen_random_uuid();
   account_email text := 'signup-provision-' || gen_random_uuid() || '@example.invalid';
+  crew_account_id uuid := gen_random_uuid();
+  crew_account_email text := 'signup-auto-crew-' || gen_random_uuid() || '@example.invalid';
+  captain_account_id uuid := gen_random_uuid();
+  captain_account_email text := 'signup-auto-captain-' || gen_random_uuid() || '@example.invalid';
+  crew_profile_id uuid;
+  captain_profile_id uuid;
+  directory_page jsonb;
   provisioned boolean;
 begin
   insert into auth.users (
@@ -28,8 +35,8 @@ begin
       'role', 'owner',
       'bluedeck_legal_acceptance', jsonb_build_object(
         'accepted', true,
-        'privacyVersion', '2026-08-01',
-        'termsVersion', '2026-08-01'
+        'privacyVersion', '2026-08-08',
+        'termsVersion', '2026-08-08'
       )
     ),
     statement_timestamp(),
@@ -51,16 +58,36 @@ begin
 
   if not exists (
     select 1
-    from pg_catalog.pg_trigger as trigger
-    where trigger.tgrelid = 'auth.users'::regclass
-      and trigger.tgname = 'bluedeck_zz_capture_signup_legal_acceptance'
+    from pg_catalog.pg_trigger as auth_trigger
+    where auth_trigger.tgrelid = 'auth.users'::regclass
+      and auth_trigger.tgname = 'bluedeck_00_validate_signup_legal_acceptance'
+      and auth_trigger.tgfoid =
+        'private.bluedeck_validate_signup_legal_acceptance()'::regprocedure
+      and auth_trigger.tgtype = 7
+      and auth_trigger.tgenabled = 'O'
+      and not auth_trigger.tgisinternal
   ) or not exists (
     select 1
-    from pg_catalog.pg_trigger as trigger
-    where trigger.tgrelid = 'auth.users'::regclass
-      and trigger.tgname = 'bluedeck_zzz_provision_default_email_signup'
-  ) or 'bluedeck_zz_capture_signup_legal_acceptance'
-      >= 'bluedeck_zzz_provision_default_email_signup'
+    from pg_catalog.pg_trigger as auth_trigger
+    where auth_trigger.tgrelid = 'auth.users'::regclass
+      and auth_trigger.tgname = 'bluedeck_zz_capture_signup_legal_acceptance'
+      and auth_trigger.tgfoid =
+        'private.bluedeck_capture_signup_legal_acceptance()'::regprocedure
+      and auth_trigger.tgtype = 5
+      and auth_trigger.tgenabled = 'O'
+      and not auth_trigger.tgisinternal
+  ) or not exists (
+    select 1
+    from pg_catalog.pg_trigger as auth_trigger
+    where auth_trigger.tgrelid = 'auth.users'::regclass
+      and auth_trigger.tgname = 'bluedeck_zzz_provision_default_email_signup'
+      and auth_trigger.tgfoid =
+        'private.bluedeck_provision_default_email_signup()'::regprocedure
+      and auth_trigger.tgtype = 5
+      and auth_trigger.tgenabled = 'O'
+      and not auth_trigger.tgisinternal
+  ) or 'bluedeck_zz_capture_signup_legal_acceptance' collate "C"
+      >= 'bluedeck_zzz_provision_default_email_signup' collate "C"
   then
     raise exception 'Signup trigger ordering is not fail-closed.';
   end if;
@@ -131,6 +158,102 @@ begin
     'EXECUTE'
   ) then
     raise exception 'Atomic signup provisioning ACLs are unsafe.';
+  end if;
+
+  insert into auth.users (
+    id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+  ) values
+    (
+      crew_account_id,
+      'authenticated',
+      'authenticated',
+      crew_account_email,
+      '',
+      statement_timestamp(),
+      jsonb_build_object('provider', 'email', 'providers', array['email']),
+      jsonb_build_object(
+        'full_name', 'Automatic Crew Signup',
+        'bluedeck_legal_acceptance', jsonb_build_object(
+          'accepted', true,
+          'privacyVersion', '2026-08-08',
+          'termsVersion', '2026-08-08'
+        )
+      ),
+      statement_timestamp(),
+      statement_timestamp()
+    ),
+    (
+      captain_account_id,
+      'authenticated',
+      'authenticated',
+      captain_account_email,
+      '',
+      statement_timestamp(),
+      jsonb_build_object('provider', 'email', 'providers', array['email']),
+      jsonb_build_object(
+        'full_name', 'Automatic Captain Signup',
+        'bluedeck_legal_acceptance', jsonb_build_object(
+          'accepted', true,
+          'privacyVersion', '2026-08-08',
+          'termsVersion', '2026-08-08'
+        )
+      ),
+      statement_timestamp(),
+      statement_timestamp()
+    );
+
+  if not public.bluedeck_provision_signup_account(
+    crew_account_id,
+    crew_account_email,
+    'Automatic Crew Signup',
+    'crew',
+    'Deckhand'
+  ) or not public.bluedeck_provision_signup_account(
+    captain_account_id,
+    captain_account_email,
+    'Automatic Captain Signup',
+    'captain',
+    'Captain'
+  ) then
+    raise exception 'Crew/Captain signup provisioning failed.';
+  end if;
+
+  select id into crew_profile_id
+  from public.crew_profiles where user_id = crew_account_id;
+  select id into captain_profile_id
+  from public.crew_profiles where user_id = captain_account_id;
+
+  if exists (
+    select 1
+    from public.crew_profiles
+    where id in (crew_profile_id, captain_profile_id)
+      and coalesce(notes, '') like '__BLUDECK_FIND_CREW__%'
+  ) then
+    raise exception 'Automatic directory eligibility unexpectedly depends on saved visibility settings.';
+  end if;
+
+  select public.bluedeck_public_crew_page(null, null, 48)
+  into directory_page;
+
+  if not exists (
+    select 1
+    from jsonb_array_elements(directory_page -> 'rows') as row_data
+    where row_data ->> 'id' = crew_profile_id::text
+  ) or not exists (
+    select 1
+    from jsonb_array_elements(directory_page -> 'rows') as row_data
+    where row_data ->> 'id' = captain_profile_id::text
+  ) then
+    raise exception 'New confirmed Crew/Captain signups were not listed automatically.';
   end if;
 end;
 $test$;

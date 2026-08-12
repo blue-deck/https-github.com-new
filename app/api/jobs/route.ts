@@ -1,81 +1,64 @@
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import {
-  currentPublicJobPostIds,
-  jobPostServiceClient,
-  logJobPostError,
-  maximumPublicJobResults,
-  publicJobCardFromRow,
-  publicJobCardServiceSelect,
-} from "../../lib/jobPostsServer";
+import { parsePublicJobSearchParams } from "../../lib/publicJobSearch";
+import { publicJobSearchTaxonomy } from "../../lib/publicJobSearchConfig";
+import { searchPublicJobs } from "../../lib/publicJobSearchServer";
+import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
+import { getClientIp } from "../../lib/turnstileServer";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const service = jobPostServiceClient();
-  if (!service.ok) {
-    return publicResponse({ ok: false, error: service.error }, 503);
-  }
-
-  const now = new Date().toISOString();
-  const { data, error } = await service.client
-    .from("job_posts")
-    .select(publicJobCardServiceSelect)
-    .eq("status", "published")
-    .lte("published_at", now)
-    .gt("closes_at", now)
-    .order("published_at", { ascending: false })
-    .limit(maximumPublicJobResults);
-
-  if (error) {
-    logJobPostError("public_listing_load_failed", error);
-    return publicResponse(
-      { ok: false, error: "Job posts could not be loaded." },
-      503,
-    );
-  }
-
-  const currentAuthority = await currentPublicJobPostIds(
-    service.client,
-    data || [],
+export async function GET(request: NextRequest) {
+  const parsed = parsePublicJobSearchParams(
+    request.nextUrl.searchParams,
+    publicJobSearchTaxonomy,
   );
-  if (!currentAuthority.ok) {
+  if (!parsed.ok) {
+    return publicResponse({ ok: false, error: parsed.error }, 400);
+  }
+
+  const clientIp = getClientIp(request) || "unknown";
+  const rateLimit = consumeRequestRateLimit(
+    `public-job-search:${clientIp}`,
+    120,
+    10 * 60 * 1_000,
+  );
+  if (!rateLimit.allowed) {
     return publicResponse(
-      { ok: false, error: "Job posts could not be loaded." },
-      503,
+      { ok: false, error: "Too many job search requests." },
+      429,
+      { "Retry-After": String(rateLimit.retryAfterSeconds) },
     );
   }
 
-  const jobs = [];
-  for (const row of data || []) {
-    if (
-      typeof row.id !== "string" ||
-      !currentAuthority.jobPostIds.has(row.id)
-    ) {
-      continue;
-    }
-    const job = publicJobCardFromRow(row);
-    if (!job) {
-      logJobPostError("invalid_public_job_record", undefined, {
-        recordId:
-          typeof row.id === "string" && row.id ? row.id : "unknown",
-      });
-      return publicResponse(
-        { ok: false, error: "Job posts could not be loaded." },
-        500,
-      );
-    }
-    jobs.push(job);
+  const result = await searchPublicJobs(parsed.filters, parsed.cursor);
+  if (!result.ok) {
+    return publicResponse(
+      { ok: false, error: result.error },
+      result.status,
+    );
   }
 
-  return publicResponse({ ok: true, jobs });
+  return publicResponse({
+    ok: true,
+    jobs: result.jobs,
+    total: result.total,
+    limit: result.limit,
+    nextCursor: result.nextCursor,
+    hasMore: result.hasMore,
+  });
 }
 
-function publicResponse(body: object, status = 200) {
+function publicResponse(
+  body: object,
+  status = 200,
+  extraHeaders?: HeadersInit,
+) {
+  const headers = new Headers(extraHeaders);
+  headers.set("Cache-Control", "no-store, max-age=0");
+  headers.set("X-Content-Type-Options", "nosniff");
   return NextResponse.json(body, {
     status,
-    headers: {
-      "Cache-Control": "no-store, max-age=0",
-      "X-Content-Type-Options": "nosniff",
-    },
+    headers,
   });
 }

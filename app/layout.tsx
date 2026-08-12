@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "BlueDeck",
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
   },
   openGraph: {
     title: "BlueDeck | Yacht Careers, Crew & Operations",
@@ -75,7 +75,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   colorScheme: "light",
-  themeColor: "#071631",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({

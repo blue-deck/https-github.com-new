@@ -15,7 +15,7 @@ import {
   UserRound,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import type { EmployerJobApplicationDetails } from "../lib/jobApplications";
 import { AccessibleImageLightbox } from "./AccessibleImageLightbox";
 
@@ -51,6 +51,7 @@ export type CrewCandidateProfileCopy = {
   closeGalleryPhoto: string;
   noGalleryPhotos: string;
   years: string;
+  lessThanOneYear: string;
   noExperience: string;
   experiences: string;
   references: string;
@@ -102,6 +103,18 @@ type CrewCandidateProfileDetails = Pick<
   | "languages"
 >;
 
+type CrewCandidateEmployerOverviewDetails = Pick<
+  EmployerJobApplicationDetails["candidate"],
+  | "displayName"
+  | "initials"
+  | "profilePhotoUrl"
+  | "currentPosition"
+  | "premiumProfile"
+  | "experienceYears"
+  | "referenceCount"
+  | "professionalSummary"
+>;
+
 export function CrewCandidatePassportCard({
   candidate,
   availabilityValue,
@@ -123,102 +136,116 @@ export function CrewCandidatePassportCard({
   profileHref?: string;
   onView?: () => void;
 }) {
+  const titleId = useId();
+  const actionLabel = `${copy.viewProfile}: ${candidate.displayName}`;
   const actionContent = (
     <>
       <span className="inline-flex items-center gap-2">
-        <Eye className="h-4 w-4" aria-hidden />
+        <Eye className="h-5 w-5" aria-hidden />
         {copy.viewProfile}
       </span>
-      <ArrowRight className="h-4 w-4" aria-hidden />
+      <ArrowRight
+        className="h-5 w-5 transition-transform group-hover:translate-x-0.5 motion-reduce:transform-none"
+        aria-hidden
+      />
     </>
   );
   const actionClassName =
-    "bd-focus mt-3 flex min-h-11 w-full items-center justify-between rounded-xl bg-[#071631] px-4 text-sm font-black text-white transition hover:bg-[#0d3e72]";
+    "bd-focus flex min-h-14 w-full items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800";
 
   return (
-    <article className="group flex min-h-full flex-col overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm shadow-slate-950/[0.04] transition hover:border-cyan-300 hover:shadow-md hover:shadow-slate-950/[0.06]">
-      <div className="h-1 bg-gradient-to-r from-[#071631] via-cyan-700 to-cyan-300" />
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <div className="flex min-w-0 items-start gap-3.5 sm:gap-4">
-          <CandidateAvatar
-            profilePhotoUrl={candidate.profilePhotoUrl}
-            displayName={candidate.displayName}
-            initials={candidate.initials}
-            className="h-[72px] w-[72px] rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-20 sm:w-20"
-            textClassName="text-lg sm:text-xl"
-            mediaSize={160}
-          />
+    <article
+      aria-labelledby={titleId}
+      className="group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] focus-within:border-cyan-400 motion-reduce:transform-none lg:min-h-[190px] lg:grid-cols-[minmax(17rem,1fr)_minmax(24rem,1.55fr)_minmax(14rem,0.75fr)]"
+    >
+      <div className="flex min-w-0 items-center gap-4 px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 lg:px-7 lg:py-7 xl:px-8">
+        <CandidateAvatar
+          profilePhotoUrl={candidate.profilePhotoUrl}
+          displayName={candidate.displayName}
+          initials={candidate.initials}
+          className="h-20 w-20 rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-24 sm:w-24 lg:h-20 lg:w-20 xl:h-24 xl:w-24"
+          textClassName="text-lg sm:text-xl"
+          mediaSize={192}
+          decorative
+        />
 
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-1.5 pt-0.5">
-              <h2
-                data-i18n-ignore
-                className="truncate text-lg font-semibold tracking-[-0.025em] text-[#071631] sm:text-xl"
-                title={candidate.displayName}
-              >
-                {candidate.displayName}
-              </h2>
-              <LockKeyhole
-                className="h-3.5 w-3.5 shrink-0 text-slate-400"
-                aria-label={copy.nameLocked}
-              />
-            </div>
-            <p
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-start gap-2">
+            <h3
+              id={titleId}
               data-i18n-ignore
-              className="mt-1 truncate text-sm font-semibold text-cyan-800"
+              className="min-w-0 break-words text-xl font-semibold tracking-[-0.03em] text-[#071631] sm:text-2xl"
             >
-              {candidate.currentPosition || copy.crewMember}
-            </p>
+              {candidate.displayName}
+              <span className="sr-only"> — {copy.nameLocked}</span>
+            </h3>
+            <LockKeyhole
+              className="mt-1 h-4 w-4 shrink-0 text-slate-400"
+              aria-hidden
+            />
+          </div>
+          <p
+            data-i18n-ignore
+            className="mt-1.5 break-words text-sm font-black leading-6 text-cyan-800"
+          >
+            {candidate.currentPosition || copy.crewMember}
+          </p>
 
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              {primaryBadge}
-              {candidate.premiumProfile ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2 py-1 text-[8px] font-black uppercase tracking-[0.1em] text-cyan-900">
-                  <BadgeCheck className="h-3 w-3" aria-hidden />
-                  {copy.premium}
-                </span>
-              ) : null}
-            </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {primaryBadge}
+            {candidate.premiumProfile ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-cyan-900">
+                <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
+                {copy.premium}
+              </span>
+            ) : null}
           </div>
         </div>
+      </div>
 
-        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-slate-100 py-4 sm:grid-cols-4">
-          <PassportFact
-            icon={<Flag />}
-            label={copy.nationality}
-            value={candidate.nationality || copy.notProvided}
-          />
-          <PassportFact
-            icon={<CalendarDays />}
-            label={copy.availableToStart}
-            value={availabilityValue || copy.notProvided}
-          />
-          <PassportFact
-            icon={<BriefcaseBusiness />}
-            label={copy.experience}
-            value={
-              candidate.experienceYears > 0
-                ? candidate.experienceYears < 1
-                  ? copy.lessThanOneYear
-                  : `${candidate.experienceYears}+ ${copy.years}`
-                : copy.noExperience
-            }
-          />
-          <PassportFact
-            icon={fourthFact.icon}
-            label={fourthFact.label}
-            value={fourthFact.value}
-          />
-        </dl>
+      <dl className="grid min-w-0 grid-cols-2 content-center gap-x-7 gap-y-5 border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10">
+        <PassportFact
+          icon={<Flag />}
+          label={copy.nationality}
+          value={candidate.nationality || copy.notProvided}
+        />
+        <PassportFact
+          icon={<CalendarDays />}
+          label={copy.availableToStart}
+          value={availabilityValue || copy.notProvided}
+        />
+        <PassportFact
+          icon={<BriefcaseBusiness />}
+          label={copy.experience}
+          value={
+            candidate.experienceYears > 0
+              ? candidate.experienceYears < 1
+                ? copy.lessThanOneYear
+                : `${candidate.experienceYears}+ ${copy.years}`
+              : copy.noExperience
+          }
+        />
+        <PassportFact
+          icon={fourthFact.icon}
+          label={fourthFact.label}
+          value={fourthFact.value}
+        />
+      </dl>
 
+      <div className="flex min-w-0 flex-col justify-center border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-l lg:border-t-0 lg:px-6 lg:py-7 xl:px-7">
         {profileHref ? (
-          <Link href={profileHref} className={actionClassName}>
+          <Link
+            href={profileHref}
+            aria-label={actionLabel}
+            className={actionClassName}
+          >
             {actionContent}
           </Link>
         ) : (
           <button
             type="button"
             onClick={onView}
+            aria-label={actionLabel}
             className={actionClassName}
           >
             {actionContent}
@@ -288,15 +315,123 @@ export function CrewCandidateProfileIdentity({
   );
 }
 
+export function CrewCandidateEmployerProfileOverview({
+  candidate,
+  copy,
+  kicker,
+  titleId,
+  premiumLabel,
+  roleFallback,
+}: {
+  candidate: CrewCandidateEmployerOverviewDetails;
+  copy: CrewCandidateProfileCopy;
+  kicker: string;
+  titleId: string;
+  premiumLabel: string;
+  roleFallback: string;
+}) {
+  const experienceValue = profileExperienceLabel(
+    candidate.experienceYears,
+    copy.years,
+    copy.lessThanOneYear,
+    copy.noExperience,
+  );
+
+  return (
+    <section className="grid overflow-hidden border-b border-slate-200 bg-white lg:grid-cols-2">
+      <div className="relative isolate flex min-h-[248px] overflow-hidden bg-[radial-gradient(circle_at_14%_8%,rgba(34,211,238,0.15),transparent_34%),linear-gradient(132deg,#031126,#071631_56%,#0d254f)] text-white sm:min-h-[290px] lg:min-h-[340px] lg:border-r lg:border-cyan-900/10">
+        <BlueDeckYachtBlueprint />
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 items-center gap-3 px-4 py-5 pr-14 min-[390px]:gap-4 sm:gap-6 sm:px-7 sm:py-7 sm:pr-7 xl:px-8">
+            <CandidateAvatar
+              profilePhotoUrl={candidate.profilePhotoUrl}
+              displayName={candidate.displayName}
+              initials={candidate.initials}
+              className="h-20 w-20 rounded-full border-[3px] border-[#071631] ring-2 ring-cyan-200/70 ring-offset-2 ring-offset-[#071631] shadow-xl shadow-black/30 min-[390px]:h-[92px] min-[390px]:w-[92px] sm:h-28 sm:w-28 xl:h-32 xl:w-32"
+              textClassName="text-xl sm:text-2xl"
+              mediaSize={320}
+              eager
+            />
+
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <p className="min-w-0 text-[9px] font-black uppercase tracking-[0.2em] text-cyan-200 sm:text-[10px] sm:tracking-[0.24em]">
+                  {kicker}
+                </p>
+                {candidate.premiumProfile ? (
+                  <span
+                    className="inline-flex shrink-0 text-cyan-100"
+                    title={premiumLabel}
+                  >
+                    <BadgeCheck className="h-[18px] w-[18px] sm:h-5 sm:w-5" aria-hidden />
+                    <span className="sr-only">{premiumLabel}</span>
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-3 flex min-w-0 items-start gap-2 sm:mt-4 sm:gap-3">
+                <h2
+                  id={titleId}
+                  data-i18n-ignore
+                  className="min-w-0 break-words text-[clamp(1.45rem,7vw,2.25rem)] font-black uppercase leading-[0.98] tracking-[-0.045em] sm:text-4xl lg:text-[2rem] xl:text-[2.55rem]"
+                >
+                  {candidate.displayName}
+                </h2>
+                <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-white/55 sm:h-5 sm:w-5" aria-hidden />
+              </div>
+
+              <p
+                data-i18n-ignore
+                className="mt-4 inline-flex max-w-full break-words rounded-full border border-cyan-200/75 px-3.5 py-1.5 text-left text-[10px] font-black uppercase leading-4 tracking-[0.16em] text-cyan-100 sm:px-4 sm:text-xs"
+              >
+                {candidate.currentPosition || roleFallback}
+              </p>
+            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 border-t border-cyan-100/30 bg-[#020f22]/20">
+            <EmployerHeroMetric
+              label={copy.experiences}
+              value={experienceValue}
+            />
+            <EmployerHeroMetric
+              label={copy.references}
+              value={candidate.referenceCount}
+              divided
+            />
+          </dl>
+        </div>
+      </div>
+
+      <div className="flex min-w-0 flex-col justify-center bg-[linear-gradient(145deg,#ffffff,#f4f9fb)] px-5 py-6 sm:px-8 sm:py-8 lg:min-h-[340px] lg:pr-20 xl:px-10 xl:pr-20">
+        <SectionHeading
+          icon={<FileText />}
+          title={copy.professionalSummary}
+          headingLevel="h3"
+          compact
+        />
+        <p
+          data-i18n-ignore
+          className="mt-4 max-w-[68ch] whitespace-pre-line break-words text-sm leading-7 text-slate-600 [overflow-wrap:anywhere] sm:text-[15px]"
+        >
+          {candidate.professionalSummary || copy.noProfessionalSummary}
+        </p>
+      </div>
+    </section>
+  );
+}
+
 export function CrewCandidateProfileBody({
   candidate,
   copy,
   children,
+  variant = "default",
   sectionHeadingLevel = "h3",
 }: {
   candidate: CrewCandidateProfileDetails;
   copy: CrewCandidateProfileCopy;
   children?: ReactNode;
+  variant?: "default" | "employer";
   sectionHeadingLevel?: "h2" | "h3";
 }) {
   const [activeGalleryPhoto, setActiveGalleryPhoto] = useState<{
@@ -305,58 +440,251 @@ export function CrewCandidateProfileBody({
     index: number;
   } | null>(null);
 
+  const employerVariant = variant === "employer";
+  const sectionClassName = employerVariant
+    ? "overflow-hidden rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_18px_46px_-40px_rgba(7,31,60,0.55)] sm:p-5"
+    : "overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6";
+
+  const gallerySection = (
+    <section className={sectionClassName}>
+      <SectionHeading
+        icon={<Camera />}
+        title={copy.gallery}
+        text={copy.galleryHelp}
+        headingLevel={sectionHeadingLevel}
+        compact={employerVariant}
+      />
+      {candidate.galleryPhotos.length > 0 ? (
+        <div
+          className={`${employerVariant ? "mt-4" : "mt-5"} grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4`}
+        >
+          {candidate.galleryPhotos.map((photo, index) => (
+            <GalleryPhoto
+              key={`${photo}-${index}`}
+              source={photo}
+              alt={`${candidate.displayName} ${copy.galleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`}
+              openLabel={`${copy.openGalleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`}
+              onOpen={() =>
+                setActiveGalleryPhoto({
+                  source: photo,
+                  alt: `${candidate.displayName} ${copy.galleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`,
+                  index,
+                })
+              }
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          className={`${employerVariant ? "mt-4 py-6" : "mt-5 py-10"} rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 text-center text-sm text-slate-500`}
+        >
+          {copy.noGalleryPhotos}
+        </div>
+      )}
+    </section>
+  );
+
+  const galleryLightbox = activeGalleryPhoto ? (
+    <AccessibleImageLightbox
+      source={candidateMediaSource(activeGalleryPhoto.source, 1600, 1200)}
+      imageAlt={activeGalleryPhoto.alt}
+      dialogLabel={`${copy.gallery}: ${activeGalleryPhoto.index + 1} / ${candidate.galleryPhotos.length}`}
+      closeLabel={copy.closeGalleryPhoto}
+      onClose={() => setActiveGalleryPhoto(null)}
+    />
+  ) : null;
+
+  const personalDetailsSection = (
+    <section className={sectionClassName}>
+      <SectionHeading
+        icon={<UserRound />}
+        title={copy.personalDetails}
+        headingLevel={sectionHeadingLevel}
+        compact={employerVariant}
+      />
+      <dl
+        className={`${employerVariant ? "mt-4 grid-cols-2 sm:grid-cols-4" : "mt-5 sm:grid-cols-2"} grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200`}
+      >
+        <DetailFact
+          label={copy.gender}
+          value={candidate.gender}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+        <DetailFact
+          label={copy.height}
+          value={candidate.heightCm ? `${candidate.heightCm} cm` : ""}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+        <DetailFact
+          label={copy.weight}
+          value={candidate.weightKg ? `${candidate.weightKg} kg` : ""}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+        <DetailFact
+          label={copy.smoker}
+          value={candidate.smoker}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+        <DetailFact
+          label={copy.visibleTattoos}
+          value={candidate.visibleTattoos}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+        <DetailFact
+          label={copy.nationality}
+          value={candidate.nationality}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+        <DetailFact
+          label={copy.location}
+          value={candidate.location}
+          fallback={copy.notProvided}
+          compact={employerVariant}
+        />
+      </dl>
+    </section>
+  );
+
+  const professionalSummarySection = (
+    <section className={sectionClassName}>
+      <SectionHeading
+        icon={<FileText />}
+        title={copy.professionalSummary}
+        headingLevel={sectionHeadingLevel}
+      />
+      <p
+        data-i18n-ignore
+        className="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base"
+      >
+        {candidate.professionalSummary || copy.noProfessionalSummary}
+      </p>
+    </section>
+  );
+
+  const skillsSection = (
+    <section className={sectionClassName}>
+      <SectionHeading
+        icon={<BadgeCheck />}
+        title={copy.skillsCharacteristics}
+        text={copy.skillsHelp}
+        headingLevel={sectionHeadingLevel}
+        compact={employerVariant}
+      />
+      <div
+        className={`${employerVariant ? "mt-4 gap-4 xl:grid-cols-3" : "mt-5 gap-5"} grid md:grid-cols-2`}
+      >
+        <TagGroup
+          label={copy.skills}
+          items={candidate.skills}
+          empty={copy.notProvided}
+          compact={employerVariant}
+        />
+        <TagGroup
+          label={copy.characteristics}
+          items={candidate.characteristics}
+          empty={copy.notProvided}
+          compact={employerVariant}
+        />
+        <TagGroup
+          label={copy.seekingPositions}
+          items={candidate.seekingPositions}
+          empty={copy.notProvided}
+          compact={employerVariant}
+        />
+        <TagGroup
+          label={copy.workPreferences}
+          items={candidate.workPreferences}
+          empty={copy.notProvided}
+          compact={employerVariant}
+        />
+        <TagGroup
+          label={copy.employmentTypes}
+          items={candidate.employmentTypes}
+          empty={copy.notProvided}
+          compact={employerVariant}
+        />
+        <TagGroup
+          label={copy.preferredLocations}
+          items={candidate.preferredLocations}
+          empty={copy.notProvided}
+          compact={employerVariant}
+        />
+      </div>
+    </section>
+  );
+
+  const languagesSection = (
+    <section className={sectionClassName}>
+      <SectionHeading
+        icon={<Languages />}
+        title={copy.languages}
+        headingLevel={sectionHeadingLevel}
+        compact={employerVariant}
+      />
+      {candidate.languages.length > 0 ? (
+        <ul
+          className={`${employerVariant ? "mt-4 gap-2" : "mt-5 gap-3"} grid sm:grid-cols-2 lg:grid-cols-3`}
+        >
+          {candidate.languages.map((item, index) => (
+            <li
+              key={`${item.name}-${item.level}-${index}`}
+              data-i18n-ignore
+              className={`flex min-w-0 items-center justify-between gap-3 border border-slate-200 bg-slate-50 ${employerVariant ? "rounded-xl px-3 py-2.5" : "rounded-2xl px-4 py-3"}`}
+            >
+              <span className="min-w-0 break-words font-black text-[#071631]">
+                {item.name}
+              </span>
+              {item.level ? (
+                <span className="max-w-[48%] shrink-0 break-words rounded-full bg-cyan-50 px-2.5 py-1 text-right text-[10px] font-black uppercase tracking-[0.1em] text-cyan-800">
+                  {item.level}
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p
+          className={`${employerVariant ? "mt-4" : "mt-5"} text-sm text-slate-500`}
+        >
+          {copy.noLanguages}
+        </p>
+      )}
+    </section>
+  );
+
+  if (employerVariant) {
+    return (
+      <div className="space-y-4 p-3 sm:p-5 lg:p-6">
+        {gallerySection}
+        {galleryLightbox}
+        {personalDetailsSection}
+        {languagesSection}
+        {skillsSection}
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 sm:p-7 lg:p-8">
-      <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <SectionHeading
-          icon={<Camera />}
-          title={copy.gallery}
-          text={copy.galleryHelp}
-          headingLevel={sectionHeadingLevel}
-        />
-        {candidate.galleryPhotos.length > 0 ? (
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-            {candidate.galleryPhotos.map((photo, index) => (
-              <GalleryPhoto
-                key={photo}
-                source={photo}
-                alt={`${candidate.displayName} ${copy.galleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`}
-                openLabel={`${copy.openGalleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`}
-                onOpen={() =>
-                  setActiveGalleryPhoto({
-                    source: photo,
-                    alt: `${candidate.displayName} ${copy.galleryPhoto} ${index + 1} / ${candidate.galleryPhotos.length}`,
-                    index,
-                  })
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-            {copy.noGalleryPhotos}
-          </div>
-        )}
-      </section>
-
-      {activeGalleryPhoto ? (
-        <AccessibleImageLightbox
-          source={candidateMediaSource(activeGalleryPhoto.source, 1600, 1200)}
-          imageAlt={activeGalleryPhoto.alt}
-          dialogLabel={`${copy.gallery}: ${activeGalleryPhoto.index + 1} / ${candidate.galleryPhotos.length}`}
-          closeLabel={copy.closeGalleryPhoto}
-          onClose={() => setActiveGalleryPhoto(null)}
-        />
-      ) : null}
+      {gallerySection}
+      {galleryLightbox}
 
       <section className="grid gap-3 sm:grid-cols-3">
         <ProfileMetric
           icon={<BriefcaseBusiness />}
-          value={
-            candidate.experienceYears > 0
-              ? `${candidate.experienceYears}+ ${copy.years}`
-              : copy.noExperience
-          }
+          value={profileExperienceLabel(
+            candidate.experienceYears,
+            copy.years,
+            copy.lessThanOneYear,
+            copy.noExperience,
+          )}
           label={copy.experiences}
         />
         <ProfileMetric
@@ -372,139 +700,27 @@ export function CrewCandidateProfileBody({
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-        <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <SectionHeading
-            icon={<UserRound />}
-            title={copy.personalDetails}
-            headingLevel={sectionHeadingLevel}
-          />
-          <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-2">
-            <DetailFact
-              label={copy.gender}
-              value={candidate.gender}
-              fallback={copy.notProvided}
-            />
-            <DetailFact
-              label={copy.height}
-              value={candidate.heightCm ? `${candidate.heightCm} cm` : ""}
-              fallback={copy.notProvided}
-            />
-            <DetailFact
-              label={copy.weight}
-              value={candidate.weightKg ? `${candidate.weightKg} kg` : ""}
-              fallback={copy.notProvided}
-            />
-            <DetailFact
-              label={copy.smoker}
-              value={candidate.smoker}
-              fallback={copy.notProvided}
-            />
-            <DetailFact
-              label={copy.visibleTattoos}
-              value={candidate.visibleTattoos}
-              fallback={copy.notProvided}
-            />
-            <DetailFact
-              label={copy.nationality}
-              value={candidate.nationality}
-              fallback={copy.notProvided}
-            />
-            <DetailFact
-              label={copy.location}
-              value={candidate.location}
-              fallback={copy.notProvided}
-              wide
-            />
-          </dl>
-        </section>
-
-        <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <SectionHeading
-            icon={<FileText />}
-            title={copy.professionalSummary}
-            headingLevel={sectionHeadingLevel}
-          />
-          <p
-            data-i18n-ignore
-            className="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base"
-          >
-            {candidate.professionalSummary || copy.noProfessionalSummary}
-          </p>
-        </section>
+        {personalDetailsSection}
+        {professionalSummarySection}
       </div>
 
-      <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <SectionHeading
-          icon={<BadgeCheck />}
-          title={copy.skillsCharacteristics}
-          text={copy.skillsHelp}
-          headingLevel={sectionHeadingLevel}
-        />
-        <div className="mt-5 grid gap-5 md:grid-cols-2">
-          <TagGroup
-            label={copy.skills}
-            items={candidate.skills}
-            empty={copy.notProvided}
-          />
-          <TagGroup
-            label={copy.characteristics}
-            items={candidate.characteristics}
-            empty={copy.notProvided}
-          />
-          <TagGroup
-            label={copy.seekingPositions}
-            items={candidate.seekingPositions}
-            empty={copy.notProvided}
-          />
-          <TagGroup
-            label={copy.workPreferences}
-            items={candidate.workPreferences}
-            empty={copy.notProvided}
-          />
-          <TagGroup
-            label={copy.employmentTypes}
-            items={candidate.employmentTypes}
-            empty={copy.notProvided}
-          />
-          <TagGroup
-            label={copy.preferredLocations}
-            items={candidate.preferredLocations}
-            empty={copy.notProvided}
-          />
-        </div>
-      </section>
-
-      <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <SectionHeading
-          icon={<Languages />}
-          title={copy.languages}
-          headingLevel={sectionHeadingLevel}
-        />
-        {candidate.languages.length > 0 ? (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {candidate.languages.map((item) => (
-              <div
-                key={`${item.name}-${item.level}`}
-                data-i18n-ignore
-                className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
-              >
-                <span className="min-w-0 break-words font-black text-[#071631]">
-                  {item.name}
-                </span>
-                <span className="max-w-[48%] shrink-0 break-words rounded-full bg-cyan-50 px-2.5 py-1 text-right text-[10px] font-black uppercase tracking-[0.1em] text-cyan-800">
-                  {item.level}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-5 text-sm text-slate-500">{copy.noLanguages}</p>
-        )}
-      </section>
+      {skillsSection}
+      {languagesSection}
 
       {children}
     </div>
   );
+}
+
+function profileExperienceLabel(
+  experienceYears: number,
+  yearsLabel: string,
+  lessThanOneYearLabel: string,
+  noExperienceLabel: string,
+) {
+  if (experienceYears <= 0) return noExperienceLabel;
+  if (experienceYears < 1) return lessThanOneYearLabel;
+  return `${experienceYears}+ ${yearsLabel}`;
 }
 
 export function CandidateAvatar({
@@ -514,6 +730,8 @@ export function CandidateAvatar({
   className,
   textClassName,
   mediaSize = 420,
+  decorative = false,
+  eager = false,
 }: {
   profilePhotoUrl: string;
   displayName: string;
@@ -521,6 +739,8 @@ export function CandidateAvatar({
   className: string;
   textClassName: string;
   mediaSize?: number;
+  decorative?: boolean;
+  eager?: boolean;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -535,9 +755,9 @@ export function CandidateAvatar({
       >
         <img
           src={candidateMediaSource(profilePhotoUrl, mediaSize, mediaSize)}
-          alt={`${displayName} profile photo`}
+          alt={decorative ? "" : `${displayName} profile photo`}
           className="h-full w-full object-cover"
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
           decoding="async"
           referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}
@@ -549,8 +769,9 @@ export function CandidateAvatar({
   return (
     <span
       className={`flex shrink-0 items-center justify-center bg-[linear-gradient(145deg,#d8f8ff,#73bffc)] font-black text-[#071631] ${className} ${textClassName}`}
-      role="img"
-      aria-label={`${displayName} profile placeholder`}
+      role={decorative ? undefined : "img"}
+      aria-hidden={decorative ? true : undefined}
+      aria-label={decorative ? undefined : `${displayName} profile placeholder`}
     >
       {initials || "BD"}
     </span>
@@ -567,22 +788,24 @@ export function PassportFact({
   value: string;
 }) {
   return (
-    <div className="flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 shrink-0 text-cyan-800 [&>svg]:h-3.5 [&>svg]:w-3.5">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <dt className="truncate text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
-          {label}
-        </dt>
-        <dd
-          data-i18n-ignore
-          className="mt-0.5 truncate text-xs font-semibold text-[#071631]"
-          title={value}
+    <div className="min-w-0">
+      <dt className="flex min-w-0 items-start gap-2 text-[10px] font-black uppercase leading-4 tracking-[0.1em] text-slate-500 sm:text-[11px]">
+        <span
+          className="mt-px shrink-0 text-cyan-800 [&>svg]:h-4 [&>svg]:w-4"
+          aria-hidden
         >
-          {value}
-        </dd>
-      </div>
+          {icon}
+        </span>
+        <span className="min-w-0 break-words">
+          {label}
+        </span>
+      </dt>
+      <dd
+        data-i18n-ignore
+        className="mt-1 break-words pl-6 text-sm font-semibold leading-5 text-[#071631]"
+      >
+        {value}
+      </dd>
     </div>
   );
 }
@@ -612,22 +835,28 @@ export function SectionHeading({
   icon,
   title,
   text,
+  compact = false,
   headingLevel = "h3",
 }: {
   icon: ReactNode;
   title: string;
   text?: string;
+  compact?: boolean;
   headingLevel?: "h2" | "h3";
 }) {
   const Heading = headingLevel;
 
   return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071631] text-cyan-100 [&>svg]:h-5 [&>svg]:w-5">
+    <div className={`flex items-start ${compact ? "gap-2.5" : "gap-3"}`}>
+      <span
+        className={`flex shrink-0 items-center justify-center bg-[#071631] text-cyan-100 ${compact ? "h-9 w-9 rounded-[10px] [&>svg]:h-4 [&>svg]:w-4" : "h-10 w-10 rounded-xl [&>svg]:h-5 [&>svg]:w-5"}`}
+      >
         {icon}
       </span>
-      <div>
-        <Heading className="text-lg font-black text-[#071631]">
+      <div className="min-w-0">
+        <Heading
+          className={`${compact ? "text-base" : "text-lg"} break-words font-black text-[#071631] [overflow-wrap:anywhere]`}
+        >
           {title}
         </Heading>
         {text ? (
@@ -734,21 +963,21 @@ function DetailFact({
   label,
   value,
   fallback,
-  wide = false,
+  compact = false,
 }: {
   label: string;
   value: string;
   fallback: string;
-  wide?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <div className={`min-w-0 bg-white p-4 ${wide ? "sm:col-span-2" : ""}`}>
+    <div className={`min-w-0 bg-white ${compact ? "p-3" : "p-4"}`}>
       <dt className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-500">
         {label}
       </dt>
       <dd
         data-i18n-ignore
-        className="mt-1.5 break-words font-black text-[#071631]"
+        className={`${compact ? "mt-1 text-sm font-semibold" : "mt-1.5 font-black"} break-words text-[#071631]`}
       >
         {value || fallback}
       </dd>
@@ -760,10 +989,12 @@ function TagGroup({
   label,
   items,
   empty,
+  compact = false,
 }: {
   label: string;
   items: string[];
   empty: string;
+  compact?: boolean;
 }) {
   return (
     <div>
@@ -771,20 +1002,72 @@ function TagGroup({
         {label}
       </h4>
       {items.length > 0 ? (
-        <div className="mt-2.5 flex flex-wrap gap-2">
+        <ul
+          className={`${compact ? "mt-2 gap-1.5" : "mt-2.5 gap-2"} flex flex-wrap`}
+        >
           {items.map((item) => (
-            <span
+            <li
               key={item}
               data-i18n-ignore
-              className="max-w-full break-words rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
+              className={`max-w-full break-words rounded-full border border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 ${compact ? "px-2.5 py-1" : "px-3 py-1.5"}`}
             >
               {item}
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <p className="mt-2 text-sm text-slate-400">{empty}</p>
       )}
     </div>
+  );
+}
+
+function EmployerHeroMetric({
+  label,
+  value,
+  divided = false,
+}: {
+  label: string;
+  value: number | string;
+  divided?: boolean;
+}) {
+  return (
+    <div
+      className={`min-w-0 px-5 py-4 sm:px-7 ${divided ? "border-l border-cyan-100/30" : ""}`}
+    >
+      <dt className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-200 sm:text-[10px]">
+        {label}
+      </dt>
+      <dd
+        data-i18n-ignore
+        className="mt-1 break-words text-lg font-semibold uppercase tracking-[0.06em] tabular-nums text-white sm:text-xl"
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function BlueDeckYachtBlueprint() {
+  return (
+    <svg
+      viewBox="0 0 320 800"
+      fill="none"
+      className="pointer-events-none absolute -right-[22%] -top-[32%] h-[160%] w-[78%] rotate-[18deg] text-cyan-100 opacity-[0.075]"
+      aria-hidden
+    >
+      <g stroke="currentColor" strokeWidth="2">
+        <path d="M160 18C116 43 82 102 70 180L42 610c-5 78 40 142 118 169 78-27 123-91 118-169l-28-430C238 102 204 43 160 18Z" />
+        <path d="M160 48c-31 24-54 71-62 131L74 594c-4 64 25 116 86 150 61-34 90-86 86-150l-24-415c-8-60-31-107-62-131Z" />
+        <path d="M101 174c38-18 80-18 118 0l-8 111c-32 18-70 18-102 0l-8-111Z" />
+        <path d="M104 310h112l7 132c-39 22-87 22-126 0l7-132Z" />
+        <path d="M95 468c43 19 87 19 130 0l8 139c-45 28-101 28-146 0l8-139Z" />
+        <path d="M112 630c32 16 64 16 96 0l13 55c-38 24-84 24-122 0l13-55Z" />
+        <path d="M119 103h82M111 132h98M100 214h120M96 252h128M100 351h120M96 399h128M93 520h134M90 566h140" />
+        <path d="M125 187h28v58h-28zM167 187h28v58h-28zM122 329h76v78h-76zM112 489h96v80h-96z" />
+        <path d="M160 48v72M160 285v25M160 442v26M160 607v23" />
+        <path d="M80 194 58 604M240 194l22 410M89 628l-20 17M231 628l20 17" strokeDasharray="8 10" />
+      </g>
+    </svg>
   );
 }

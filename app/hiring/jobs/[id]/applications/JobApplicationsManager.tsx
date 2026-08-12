@@ -4,28 +4,25 @@ import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
-  BadgeCheck,
-  BriefcaseBusiness,
   CalendarDays,
-  Camera,
   CheckCircle2,
   Clock3,
   ExternalLink,
-  FileText,
-  Languages,
   LoaderCircle,
   LockKeyhole,
   RefreshCw,
   RotateCcw,
   Send,
-  UserRound,
   UsersRound,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CrewCandidateEmployerProfileOverview,
   CrewCandidatePassportCard,
+  CrewCandidateProfileBody,
   CrewCandidateProfileIdentity,
+  SectionHeading,
 } from "../../../../components/CrewCandidatePresentation";
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
@@ -55,6 +52,7 @@ type WorkspaceResponse = {
   applications?: unknown[];
   application?: unknown;
   details?: unknown;
+  refreshRequired?: boolean;
 };
 
 type Filter = "all" | JobApplicationStatus;
@@ -82,6 +80,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [profileDetails, setProfileDetails] =
     useState<EmployerJobApplicationDetails | null>(null);
   const profileRequestRef = useRef<AbortController | null>(null);
+  const initialLoadCompleteRef = useRef(false);
 
   const selected = useMemo(
     () => applications.find((application) => application.id === selectedId) || null,
@@ -106,8 +105,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     let active = true;
 
     async function loadApplications() {
-      setLoading(true);
-      setError("");
+      const isInitialLoad = !initialLoadCompleteRef.current;
+      if (isInitialLoad) {
+        setLoading(true);
+        setError("");
+      }
 
       const {
         data: { session },
@@ -164,6 +166,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         }
 
         if (!active) return;
+        initialLoadCompleteRef.current = true;
         setJob(parsedJob);
         setApplications(parsedApplications);
         setTotalApplications(payload.total);
@@ -176,9 +179,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         );
       } catch (loadError) {
         if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : c.loadError);
+        if (isInitialLoad) {
+          setError(loadError instanceof Error ? loadError.message : c.loadError);
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active && isInitialLoad) setLoading(false);
       }
     }
 
@@ -187,6 +192,23 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       active = false;
     };
   }, [c.loadError, jobId, reloadVersion]);
+
+  useEffect(() => {
+    function refreshVisibleWorkspace() {
+      if (document.visibilityState === "visible") {
+        setReloadVersion((current) => current + 1);
+      }
+    }
+
+    const interval = window.setInterval(refreshVisibleWorkspace, 15_000);
+    window.addEventListener("focus", refreshVisibleWorkspace);
+    document.addEventListener("visibilitychange", refreshVisibleWorkspace);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshVisibleWorkspace);
+      document.removeEventListener("visibilitychange", refreshVisibleWorkspace);
+    };
+  }, [jobId]);
 
   async function loadMoreApplications() {
     if (loadingMore || !hasMore || !nextCursor) return;
@@ -280,6 +302,16 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!profileOpen || selected) return;
+    profileRequestRef.current?.abort();
+    profileRequestRef.current = null;
+    setProfileOpen(false);
+    setProfileLoading(false);
+    setProfileError("");
+    setProfileDetails(null);
+  }, [profileOpen, selected]);
 
   async function openProfile(application: EmployerJobApplication) {
     profileRequestRef.current?.abort();
@@ -376,6 +408,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       const payload = (await response
         .json()
         .catch(() => null)) as WorkspaceResponse | null;
+      if (response.ok && payload?.ok && payload.refreshRequired === true) {
+        setNotice({ tone: "success", message: c.updated });
+        setReloadVersion((current) => current + 1);
+        return;
+      }
       const updated = parseEmployerApplication(payload?.application);
       if (!response.ok || !payload?.ok || !updated) {
         throw new Error(payload?.error || c.updateError);
@@ -510,7 +547,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           <section className="mt-6">
             <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
               <div>
-                <p className="bd-kicker">{c.candidates}</p>
+                <h2 className="bd-kicker">{c.candidates}</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {visibleApplications.length} {c.results}
                 </p>
@@ -525,7 +562,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
                 {c.noFilterResults}
               </div>
             ) : (
-              <div className="grid gap-3 xl:grid-cols-2 xl:gap-4">
+              <div className="grid gap-5">
                 {visibleApplications.map((application) => (
                   <CrewPassportCard
                     key={application.id}
@@ -598,9 +635,7 @@ function CrewPassportCard({
     <CrewCandidatePassportCard
       candidate={candidate}
       availabilityValue={startValue}
-      primaryBadge={
-        <StatusBadge status={application.status} language={language} />
-      }
+      primaryBadge={<StatusBadge status={application.status} language={language} />}
       fourthFact={{
         icon: <Clock3 />,
         label: c.applied,
@@ -696,32 +731,29 @@ function CandidateProfileModal({
       }}
     >
       <article className="relative max-h-[96dvh] w-full max-w-[1180px] overflow-x-hidden overflow-y-auto rounded-[26px] border border-white/15 bg-[#f6f9fd] shadow-2xl shadow-black/40 sm:rounded-[34px]">
-        <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
-          <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            className="bd-focus absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
-            aria-label={c.close}
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          className="bd-focus absolute right-3 top-3 z-30 grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-[#071631]/65 text-white shadow-lg shadow-black/15 backdrop-blur-md transition hover:bg-[#071631]/85 sm:right-4 sm:top-4 lg:border-slate-200 lg:bg-white/95 lg:text-[#071631] lg:hover:bg-white"
+          aria-label={c.close}
+        >
+          <X className="h-5 w-5" aria-hidden />
+        </button>
 
+        {loading || error || !candidate ? (
+          <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
+            <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
           <div className="pr-12">
             <CrewCandidateProfileIdentity
               candidate={{
-                displayName:
-                  candidate?.displayName || cardCandidate.displayName,
-                initials: candidate?.initials || cardCandidate.initials,
-                profilePhotoUrl:
-                  candidate?.profilePhotoUrl || cardCandidate.profilePhotoUrl,
+                displayName: cardCandidate.displayName,
+                initials: cardCandidate.initials,
+                profilePhotoUrl: cardCandidate.profilePhotoUrl,
                 currentPosition:
-                  candidate?.currentPosition ||
                   cardCandidate.currentPosition ||
                   c.crewMember,
-                premiumProfile:
-                  candidate?.premiumProfile || cardCandidate.premiumProfile,
+                premiumProfile: cardCandidate.premiumProfile,
               }}
               kicker={c.candidateProfile}
               titleId="candidate-profile-title"
@@ -729,7 +761,17 @@ function CandidateProfileModal({
               headingLevel="h2"
             />
           </div>
-        </header>
+          </header>
+        ) : (
+          <CrewCandidateEmployerProfileOverview
+            candidate={candidate}
+            copy={c}
+            kicker={c.candidateProfile}
+            titleId="candidate-profile-title"
+            premiumLabel={c.premiumProfile}
+            roleFallback={c.crewMember}
+          />
+        )}
 
         {loading ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center p-10 text-center">
@@ -753,164 +795,7 @@ function CandidateProfileModal({
             </button>
           </div>
         ) : (
-          <div className="space-y-6 p-4 sm:p-7 lg:p-8">
-            <section className="overflow-hidden rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-              <SectionHeading
-                icon={<Camera />}
-                title={c.gallery}
-                text={c.galleryHelp}
-              />
-              {candidate.galleryPhotos.length > 0 ? (
-                <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-                  {candidate.galleryPhotos.map((photo, index) => (
-                    <GalleryPhoto
-                      key={photo}
-                      source={photo}
-                      alt={`${candidate.displayName} ${c.galleryPhoto} ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10 text-center text-sm text-slate-500">
-                  {c.noGalleryPhotos}
-                </div>
-              )}
-            </section>
-
-            <section className="grid gap-3 sm:grid-cols-3">
-              <ProfileMetric
-                icon={<BriefcaseBusiness />}
-                value={
-                  candidate.experienceYears > 0
-                    ? `${candidate.experienceYears}+ ${c.years}`
-                    : c.noExperience
-                }
-                label={c.experiences}
-              />
-              <ProfileMetric
-                icon={<UsersRound />}
-                value={candidate.referenceCount}
-                label={c.references}
-              />
-              <ProfileMetric
-                icon={<FileText />}
-                value={candidate.documentCount}
-                label={c.documents}
-              />
-            </section>
-
-            <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-              <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <SectionHeading
-                  icon={<UserRound />}
-                  title={c.personalDetails}
-                />
-                <dl className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 sm:grid-cols-2">
-                  <DetailFact label={c.gender} value={candidate.gender} fallback={c.notProvided} />
-                  <DetailFact
-                    label={c.height}
-                    value={candidate.heightCm ? `${candidate.heightCm} cm` : ""}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact
-                    label={c.weight}
-                    value={candidate.weightKg ? `${candidate.weightKg} kg` : ""}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact label={c.smoker} value={candidate.smoker} fallback={c.notProvided} />
-                  <DetailFact
-                    label={c.visibleTattoos}
-                    value={candidate.visibleTattoos}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact
-                    label={c.nationality}
-                    value={candidate.nationality}
-                    fallback={c.notProvided}
-                  />
-                  <DetailFact
-                    label={c.location}
-                    value={candidate.location}
-                    fallback={c.notProvided}
-                    wide
-                  />
-                </dl>
-              </section>
-
-              <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <SectionHeading
-                  icon={<FileText />}
-                  title={c.professionalSummary}
-                />
-                <p
-                  data-i18n-ignore
-                  className="mt-5 whitespace-pre-line text-sm leading-7 text-slate-600 sm:text-base"
-                >
-                  {candidate.professionalSummary || c.noProfessionalSummary}
-                </p>
-              </section>
-            </div>
-
-            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <SectionHeading
-                icon={<BadgeCheck />}
-                title={c.skillsCharacteristics}
-                text={c.skillsHelp}
-              />
-              <div className="mt-5 grid gap-5 md:grid-cols-2">
-                <TagGroup label={c.skills} items={candidate.skills} empty={c.notProvided} />
-                <TagGroup
-                  label={c.characteristics}
-                  items={candidate.characteristics}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.seekingPositions}
-                  items={candidate.seekingPositions}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.workPreferences}
-                  items={candidate.workPreferences}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.employmentTypes}
-                  items={candidate.employmentTypes}
-                  empty={c.notProvided}
-                />
-                <TagGroup
-                  label={c.preferredLocations}
-                  items={candidate.preferredLocations}
-                  empty={c.notProvided}
-                />
-              </div>
-            </section>
-
-            <section className="rounded-[26px] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <SectionHeading icon={<Languages />} title={c.languages} />
-              {candidate.languages.length > 0 ? (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {candidate.languages.map((item) => (
-                    <div
-                      key={`${item.name}-${item.level}`}
-                      data-i18n-ignore
-                      className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
-                    >
-                      <span className="min-w-0 break-words font-black text-[#071631]">
-                        {item.name}
-                      </span>
-                      <span className="max-w-[48%] shrink-0 break-words rounded-full bg-cyan-50 px-2.5 py-1 text-right text-[10px] font-black uppercase tracking-[0.1em] text-cyan-800">
-                        {item.level}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-5 text-sm text-slate-500">{c.noLanguages}</p>
-              )}
-            </section>
-
+          <CrewCandidateProfileBody candidate={candidate} copy={c} variant="employer">
             <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-2xl">
@@ -1023,159 +908,9 @@ function CandidateProfileModal({
             <p className="rounded-2xl border border-cyan-100 bg-cyan-50/70 p-4 text-xs leading-5 text-cyan-950">
               {c.privacyNote}
             </p>
-          </div>
+          </CrewCandidateProfileBody>
         )}
       </article>
-    </div>
-  );
-}
-
-function GalleryPhoto({ source, alt }: { source: string; alt: string }) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed) {
-    return (
-      <span className="grid aspect-[4/3] place-items-center rounded-2xl bg-slate-100 text-slate-400">
-        <Camera className="h-7 w-7" aria-hidden />
-      </span>
-    );
-  }
-
-  return (
-    <span className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
-      <img
-        src={candidateMediaSource(source, 720, 540)}
-        alt={alt}
-        className="h-full w-full object-cover transition duration-500 hover:scale-[1.03]"
-        loading="lazy"
-        decoding="async"
-        referrerPolicy="no-referrer"
-        onError={() => setFailed(true)}
-      />
-    </span>
-  );
-}
-
-function candidateMediaSource(source: string, width: number, height: number) {
-  if (
-    /^\/api\/employer\/job-posts\/[0-9a-f-]+\/applications\/[0-9a-f-]+\/media\?/i.test(
-      source,
-    )
-  ) {
-    return source;
-  }
-  if (source.startsWith("https://")) return source;
-
-  const search = new URLSearchParams({
-    src: source,
-    w: String(width),
-    h: String(height),
-    fit: "cover",
-  });
-  return `/api/cv-image?${search.toString()}`;
-}
-
-function SectionHeading({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text?: string;
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#071631] text-cyan-100 [&>svg]:h-5 [&>svg]:w-5">
-        {icon}
-      </span>
-      <div>
-        <h3 className="text-lg font-black text-[#071631]">{title}</h3>
-        {text ? <p className="mt-1 text-xs leading-5 text-slate-500">{text}</p> : null}
-      </div>
-    </div>
-  );
-}
-
-function ProfileMetric({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: number | string;
-  label: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-800 [&>svg]:h-5 [&>svg]:w-5">
-        {icon}
-      </span>
-      <div>
-        <p className="text-2xl font-black tabular-nums text-[#071631]">{value}</p>
-        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
-          {label}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function DetailFact({
-  label,
-  value,
-  fallback,
-  wide = false,
-}: {
-  label: string;
-  value: string;
-  fallback: string;
-  wide?: boolean;
-}) {
-  return (
-    <div className={`min-w-0 bg-white p-4 ${wide ? "sm:col-span-2" : ""}`}>
-      <dt className="text-[10px] font-black uppercase tracking-[0.13em] text-slate-500">
-        {label}
-      </dt>
-      <dd
-        data-i18n-ignore
-        className="mt-1.5 break-words font-black text-[#071631]"
-      >
-        {value || fallback}
-      </dd>
-    </div>
-  );
-}
-
-function TagGroup({
-  label,
-  items,
-  empty,
-}: {
-  label: string;
-  items: string[];
-  empty: string;
-}) {
-  return (
-    <div>
-      <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-cyan-800">
-        {label}
-      </h4>
-      {items.length > 0 ? (
-        <div className="mt-2.5 flex flex-wrap gap-2">
-          {items.map((item) => (
-            <span
-              key={item}
-              data-i18n-ignore
-              className="max-w-full break-words rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-            >
-              {item}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-2 text-sm text-slate-400">{empty}</p>
-      )}
     </div>
   );
 }
@@ -1197,7 +932,7 @@ function StatusBadge({
   };
   return (
     <span
-      className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
+      className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${tones[status]}`}
     >
       {statusLabel(status, language)}
     </span>
@@ -1577,15 +1312,17 @@ const copy = {
     nameLocked: "Candidate name protected",
     maskedIdentity: "Identity protected by BlueDeck",
     viewProfile: "View profile",
-    candidateProfile: "Applicant profile",
+    candidateProfile: "Crew profile",
     close: "Close profile",
-    gallery: "My Blue gallery",
-    galleryHelp: "Four selected photos shared by the candidate in My Blue.",
+    gallery: "Blue Gallery",
+    galleryHelp: "Selected professional photos shared by the candidate.",
     galleryPhoto: "gallery photo",
+    openGalleryPhoto: "Open gallery photo",
+    closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "The candidate has not shared gallery photos yet.",
     references: "References",
     documents: "Documents",
-    experiences: "Experiences",
+    experiences: "Experience",
     personalDetails: "Personal details",
     gender: "Gender",
     height: "Height",
@@ -1596,7 +1333,7 @@ const copy = {
     professionalSummary: "Professional summary",
     noProfessionalSummary: "No professional summary has been added yet.",
     skillsCharacteristics: "Skills & characteristics",
-    skillsHelp: "All structured career preferences shared in My Profile.",
+    skillsHelp: "Skills, strengths and career preferences shared by the candidate.",
     skills: "Skills",
     characteristics: "Characteristics",
     seekingPositions: "Seeking positions",
@@ -1610,7 +1347,7 @@ const copy = {
     crewPortalHelp:
       "This opens the same gallery linked by the CV QR code, with access to the public CV.",
     crewPortalUnavailable:
-      "The candidate has not enabled their public Crew Portal yet.",
+      "The public Crew Portal is unavailable for this candidate profile.",
     openCrewPortal: "Open Crew Portal / CV",
     decision: "Application status",
     decisionHelp: "Move the candidate through a clear, private hiring pipeline.",
@@ -1660,11 +1397,13 @@ const copy = {
     nameLocked: "Aday adı korumalı",
     maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
     viewProfile: "Profili görüntüle",
-    candidateProfile: "Başvuran profili",
+    candidateProfile: "Crew profili",
     close: "Profili kapat",
-    gallery: "My Blue galerisi",
-    galleryHelp: "Adayın My Blue bölümünde paylaştığı dört seçilmiş fotoğraf.",
+    gallery: "Blue Gallery",
+    galleryHelp: "Adayın paylaştığı seçilmiş profesyonel fotoğraflar.",
     galleryPhoto: "galeri fotoğrafı",
+    openGalleryPhoto: "Galeri fotoğrafını aç",
+    closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
     noGalleryPhotos: "Aday henüz galeri fotoğrafı paylaşmamış.",
     references: "Referans",
     documents: "Doküman",
@@ -1679,7 +1418,7 @@ const copy = {
     professionalSummary: "Profesyonel özet",
     noProfessionalSummary: "Henüz profesyonel özet eklenmemiş.",
     skillsCharacteristics: "Beceriler ve özellikler",
-    skillsHelp: "My Profile içinde paylaşılan tüm yapılandırılmış kariyer tercihleri.",
+    skillsHelp: "Adayın paylaştığı beceriler, güçlü yönler ve kariyer tercihleri.",
     skills: "Beceriler",
     characteristics: "Kişisel özellikler",
     seekingPositions: "Aranan pozisyonlar",
@@ -1693,7 +1432,7 @@ const copy = {
     crewPortalHelp:
       "CV üzerindeki QR koduyla aynı galeriyi açar ve herkese açık CV’ye erişim sağlar.",
     crewPortalUnavailable:
-      "Aday herkese açık Crew Portal görünürlüğünü henüz etkinleştirmemiş.",
+      "Bu aday profili için herkese açık Crew Portal kullanılamıyor.",
     openCrewPortal: "Crew Portal / CV’yi aç",
     decision: "Başvuru durumu",
     decisionHelp: "Adayı sade ve özel işe alım sürecinde ilerletin.",
