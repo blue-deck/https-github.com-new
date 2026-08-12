@@ -44,6 +44,7 @@ import { canUseCrewWorkspace } from "./marketplaceCapabilities";
 import {
   getPublicCrewDiscoverySettings,
   normalizePublicCrewId,
+  publicCrewMediaUrl,
   publicStructuredProfileField,
   publicStructuredStringArray,
   safeOwnedPublicMediaUrl,
@@ -1011,6 +1012,7 @@ export async function loadActiveDirectoryCrewMediaSource(
 
   const selected = await loadActiveDirectoryGallerySources(
     mediaProfile.profileId,
+    mediaProfile.userId,
   );
   return slot === null ? "" : selected[slot] || "";
 }
@@ -1067,8 +1069,11 @@ async function loadActiveDirectoryMediaProfile(crewId: string) {
   };
 }
 
-async function loadActiveDirectoryGallerySources(profileId: string) {
-  if (!isUuid(profileId)) return [];
+async function loadActiveDirectoryGallerySources(
+  profileId: string,
+  userId: string,
+) {
+  if (!isUuid(profileId) || !isUuid(userId)) return [];
   const serviceClient = createServiceClient();
   if (!serviceClient) {
     throw new Error("find_crew_service_unavailable");
@@ -1088,6 +1093,7 @@ async function loadActiveDirectoryGallerySources(profileId: string) {
 
   return selectOwnedPublicCrewGallerySources(data || [], profileId, [
     profileId,
+    userId,
   ]);
 }
 
@@ -1241,18 +1247,6 @@ function toDiscoverableCrewPreview(
     premiumProfile: isPremiumCrewProfile(completionPercent),
     memberSince: databaseTimestamp(row.created_at),
   };
-}
-
-function publicCrewMediaUrl(
-  crewId: string,
-  kind: "avatar" | "gallery",
-  slot?: number,
-) {
-  const search = new URLSearchParams({ kind });
-  if (kind === "gallery" && slot !== undefined) {
-    search.set("slot", String(slot));
-  }
-  return `/api/find-crew/${encodeURIComponent(crewId)}/media?${search.toString()}`;
 }
 
 function isConfirmedActiveUser(value: {

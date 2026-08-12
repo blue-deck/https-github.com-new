@@ -87,15 +87,21 @@ test("primary media falls back to its child snapshot only after a clean legacy m
 });
 
 test("member identity is signed into every employer media capability", async () => {
-  const media = await source("app/lib/jobApplicationMediaServer.ts");
+  const [server, primitives] = await Promise.all([
+    source("app/lib/jobApplicationMediaServer.ts"),
+    source("app/lib/jobApplicationMediaPrimitives.ts"),
+  ]);
 
-  assert.match(media, /member: normalized\.memberId/);
+  assert.match(server, /buildEmployerApplicationMediaUrlWithSecret/);
+  assert.match(server, /verifyEmployerApplicationMediaCapabilityWithSecret/);
+  assert.match(primitives, /const mediaCapabilityVersion = "3"/);
+  assert.match(primitives, /member: normalized\.memberId/);
   assert.match(
-    media,
+    primitives,
     /normalized\.jobPostId,[\s\S]*?normalized\.applicationId,[\s\S]*?normalized\.memberId,[\s\S]*?normalized\.kind/,
   );
   assert.match(
-    media,
+    primitives,
     /jobPostId,[\s\S]*?applicationId,[\s\S]*?memberId,[\s\S]*?kind,[\s\S]*?revision,[\s\S]*?String\(expiresAt\)/,
   );
 });

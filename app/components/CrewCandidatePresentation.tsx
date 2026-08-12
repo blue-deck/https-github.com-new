@@ -528,7 +528,7 @@ export function CrewCandidateProfileBody({
           label={copy.maritalStatus}
           value={candidate.maritalStatus}
           fallback={copy.notProvided}
-          compact={employerVariant}
+          compact={compactVariant}
         />
         <DetailFact
           label={copy.height}
