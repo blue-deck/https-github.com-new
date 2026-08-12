@@ -93,6 +93,7 @@ export async function GET(request: Request, context: RouteContext) {
     .select("applicant_user_id,crew_profile_id")
     .eq("id", capability.applicationId)
     .eq("job_post_id", capability.jobPostId)
+    .neq("status", "withdrawn")
     .maybeSingle<ApplicationMediaRow>();
 
   const applicantUserId = text(application?.applicant_user_id).toLowerCase();

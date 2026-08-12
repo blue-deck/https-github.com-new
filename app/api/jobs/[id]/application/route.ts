@@ -53,6 +53,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       .select(ownJobApplicationSelect)
       .eq("job_post_id", jobPostId)
       .eq("applicant_user_id", clients.user.id)
+      .neq("status", "withdrawn")
       .maybeSingle(),
     canApplyToJob(clients.serviceClient, clients.user.id, jobPostId),
   ]);
@@ -264,6 +265,7 @@ async function withdrawOwnApplication(
       .select(ownJobApplicationSelect)
       .eq("job_post_id", jobPostId)
       .eq("applicant_user_id", clients.user.id)
+      .neq("status", "withdrawn")
       .maybeSingle();
 
   if (existingError) {

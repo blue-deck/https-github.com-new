@@ -78,6 +78,7 @@ export async function GET(
       )
       .eq("id", applicationId)
       .eq("job_post_id", jobPostId)
+      .neq("status", "withdrawn")
       .maybeSingle();
 
   if (applicationError) {
@@ -169,6 +170,7 @@ export async function PATCH(
       .select("id,job_post_id,version,status")
       .eq("id", applicationId)
       .eq("job_post_id", jobPostId)
+      .neq("status", "withdrawn")
       .maybeSingle(),
     canManageJobApplications(
       clients.serviceClient,
