@@ -41,6 +41,7 @@ type RouteContext = {
 type MediaCapability = {
   jobPostId: string;
   applicationId: string;
+  memberId: string;
   kind: EmployerApplicationMediaKind;
   slot: number | null;
   expiresAt: number;
@@ -48,9 +49,16 @@ type MediaCapability = {
 };
 
 type ApplicationMediaRow = {
-  applicant_user_id?: unknown;
+  member_user_id?: unknown;
   crew_profile_id?: unknown;
+  is_primary?: unknown;
+  media_snapshot?: unknown;
+  captured_at?: unknown;
+  expires_at?: unknown;
+  purged_at?: unknown;
 };
+
+type VisibleApplicationRow = { id?: unknown };
 
 export async function GET(request: Request, context: RouteContext) {
   const rateLimit = consumeRequestRateLimit(
@@ -88,36 +96,59 @@ export async function GET(request: Request, context: RouteContext) {
       auth: { persistSession: false, autoRefreshToken: false },
     },
   );
-  const { data: application, error: applicationError } = await serviceClient
-    .from("job_applications")
-    .select("applicant_user_id,crew_profile_id")
-    .eq("id", capability.applicationId)
-    .eq("job_post_id", capability.jobPostId)
-    .maybeSingle<ApplicationMediaRow>();
+  const [applicationResult, memberResult] = await Promise.all([
+    serviceClient
+      .from("job_applications")
+      .select("id")
+      .eq("id", capability.applicationId)
+      .eq("job_post_id", capability.jobPostId)
+      .neq("status", "withdrawn")
+      .maybeSingle<VisibleApplicationRow>(),
+    serviceClient
+      .from("job_application_team_members")
+      .select(
+        "member_user_id,crew_profile_id,is_primary,media_snapshot,captured_at,expires_at,purged_at",
+      )
+      .eq("id", capability.memberId)
+      .eq("application_id", capability.applicationId)
+      .eq("job_post_id", capability.jobPostId)
+      .maybeSingle<ApplicationMediaRow>(),
+  ]);
+  const member = memberResult.data;
 
-  const applicantUserId = text(application?.applicant_user_id).toLowerCase();
-  const crewProfileId = text(application?.crew_profile_id).toLowerCase();
+  const applicantUserId = text(member?.member_user_id).toLowerCase();
+  const crewProfileId = text(member?.crew_profile_id).toLowerCase();
   if (
-    applicationError ||
-    !application ||
+    applicationResult.error ||
+    !applicationResult.data ||
+    memberResult.error ||
+    !member ||
     !isUuid(applicantUserId) ||
-    !isUuid(crewProfileId)
+    !isUuid(crewProfileId) ||
+    typeof member.is_primary !== "boolean"
   ) {
     return mediaError("Media not found.", 404);
   }
 
-  const { data: snapshot, error: snapshotError } = await serviceClient
-    .from("job_application_snapshots")
-    .select("media_snapshot,captured_at,expires_at,purged_at")
-    .eq("application_id", capability.applicationId)
-    .is("purged_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
+  let snapshot: ApplicationMediaRow | null = member;
+  if (member.is_primary) {
+    const result = await serviceClient
+      .from("job_application_snapshots")
+      .select("media_snapshot,captured_at,expires_at,purged_at")
+      .eq("application_id", capability.applicationId)
+      .is("purged_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle<ApplicationMediaRow>();
+    if (result.error) return mediaError("Media not found.", 404);
+    if (result.data) snapshot = result.data;
+  }
   if (
-    snapshotError ||
     !snapshot ||
     !isRecord(snapshot.media_snapshot) ||
-    typeof snapshot.captured_at !== "string"
+    typeof snapshot.captured_at !== "string" ||
+    typeof snapshot.expires_at !== "string" ||
+    Date.parse(snapshot.expires_at) <= Date.now() ||
+    snapshot.purged_at !== null
   ) {
     return mediaError("Media not found.", 404);
   }
@@ -133,7 +164,7 @@ export async function GET(request: Request, context: RouteContext) {
       Array.isArray(snapshot.media_snapshot.gallery)
         ? snapshot.media_snapshot.gallery
         : [],
-      capability.applicationId,
+      capability.memberId,
       [crewProfileId, applicantUserId],
     );
     source = capability.slot === null ? "" : selected[capability.slot] || "";
@@ -176,6 +207,7 @@ function mediaCapabilityFromRequest(
   const version = singleSearchValue(requestUrl.searchParams, "v");
   const kind = singleSearchValue(requestUrl.searchParams, "kind");
   const rawSlot = singleSearchValue(requestUrl.searchParams, "slot", true);
+  const memberId = singleSearchValue(requestUrl.searchParams, "member");
   const expires = singleSearchValue(requestUrl.searchParams, "expires");
   const token = singleSearchValue(requestUrl.searchParams, "token");
   const revision = singleSearchValue(requestUrl.searchParams, "revision");
@@ -183,6 +215,7 @@ function mediaCapabilityFromRequest(
     version === null ||
     kind === null ||
     rawSlot === null ||
+    memberId === null ||
     expires === null ||
     token === null ||
     revision === null ||
@@ -197,6 +230,7 @@ function mediaCapabilityFromRequest(
   return verifyEmployerApplicationMediaCapability({
     jobPostId,
     applicationId,
+    memberId,
     kind,
     slot: kind === "gallery" ? Number(rawSlot) : undefined,
     expires,

@@ -13,12 +13,16 @@ import {
   publicJobSearchResultFingerprint,
   publicJobYachtLengthMetres,
 } from "../app/lib/publicJobSearch.ts";
+import {
+  formatJobTeamCoupleAnswer,
+  isJobTeamCouple,
+} from "../app/lib/jobPosts.ts";
 
 const taxonomy = {
   positions: ["Captain", "Chief Stewardess"],
   departments: ["Command", "Interior"],
   employmentTypes: ["permanent", "rotation"],
-  candidateTypes: ["individual", "couple"],
+  candidateTypes: ["individual", "team", "couple"],
   yachtTypes: ["motor_yacht", "sailing_yacht"],
   minimumYachtExperiences: ["3_5_years", "5_plus_years"],
   requiredLanguages: ["English", "Turkish"],
@@ -47,8 +51,6 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["yachtFlag", "tr"],
     ["lengthMin", "40"],
     ["lengthMax", "70.5"],
-    ["buildYearMin", "2018"],
-    ["buildYearMax", "2026"],
     ["crewMin", "8"],
     ["crewMax", "20"],
     ["minimumExperience", "3_5_years"],
@@ -59,15 +61,11 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["visa", "Schengen Visa"],
     ["smoker", "non_smoker"],
     ["tattoo", "not_accepted"],
-    ["startFrom", "2026-09-01"],
-    ["startTo", "2026-10-01"],
-    ["postedWithin", "14"],
     ["salaryCurrency", "EUR"],
     ["salaryPeriod", "month"],
     ["salaryMin", "6000"],
     ["salaryMax", "9000"],
     ["sort", "salary_highest"],
-    ["limit", "25"],
   ]) {
     source.append(key, value);
   }
@@ -119,17 +117,30 @@ test("rejects unknown, duplicated, invalid, and logically unsafe filters", () =>
   );
 });
 
-test("rejects malformed decimals, negative values, non-finite tokens, and invalid dates", () => {
+test("rejects malformed decimals, negative values, and non-finite tokens", () => {
   for (const query of [
     "lengthMin=-1",
     "lengthMin=NaN",
     "lengthMin=1.234",
     "salaryMax=Infinity&salaryCurrency=EUR&salaryPeriod=month",
     "crewMin=1.5",
-    "buildYearMax=2101",
-    "startFrom=2026-02-30",
-    "startTo=2026-08-08T12%3A00%3A00Z",
-    "postedWithin=6",
+  ]) {
+    assert.equal(
+      parsePublicJobSearchParams(new URLSearchParams(query), taxonomy).ok,
+      false,
+      query,
+    );
+  }
+});
+
+test("rejects removed build-year, date-recency, and page-size filters", () => {
+  for (const query of [
+    "buildYearMin=2018",
+    "buildYearMax=2026",
+    "startFrom=2026-09-01",
+    "startTo=2026-10-01",
+    "postedWithin=14",
+    "limit=50",
   ]) {
     assert.equal(
       parsePublicJobSearchParams(new URLSearchParams(query), taxonomy).ok,
@@ -153,8 +164,6 @@ test("matches every structured public-detail category with normalized yacht unit
     yachtFlagCountryCodes: ["TR"],
     yachtLengthMinMetres: 49.9,
     yachtLengthMaxMetres: 50.1,
-    yachtBuildYearMin: 2020,
-    yachtBuildYearMax: 2024,
     crewMemberCountMin: 10,
     crewMemberCountMax: 15,
     minimumYachtExperiences: ["3_5_years"],
@@ -165,9 +174,6 @@ test("matches every structured public-detail category with normalized yacht unit
     requiredVisas: ["Schengen Visa"],
     smokerPolicies: ["non_smoker"],
     visibleTattooPolicies: ["not_accepted"],
-    startDateFrom: "2026-09-01",
-    startDateTo: "2026-09-30",
-    postedWithinDays: 7,
     salaryCurrency: "EUR",
     salaryPeriod: "month",
     salaryMin: 6_000,
@@ -189,6 +195,45 @@ test("matches every structured public-detail category with normalized yacht unit
   );
 });
 
+test("Team/Couple uses one binary meaning for current and legacy candidate values", () => {
+  const yesFilters = createDefaultPublicJobSearchFilters();
+  yesFilters.candidateTypes = ["team", "couple"];
+  const noFilters = createDefaultPublicJobSearchFilters();
+  noFilters.candidateTypes = ["individual"];
+
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ candidateType: "team" }), yesFilters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ candidateType: "couple" }), yesFilters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ candidateType: "individual" }),
+      yesFilters,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ candidateType: "individual" }),
+      noFilters,
+    ),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ candidateType: "team" }), noFilters),
+    false,
+  );
+  assert.equal(isJobTeamCouple("individual"), false);
+  assert.equal(isJobTeamCouple("team"), true);
+  assert.equal(isJobTeamCouple("couple"), true);
+  assert.equal(formatJobTeamCoupleAnswer("team", "en"), "Yes");
+  assert.equal(formatJobTeamCoupleAnswer("individual", "tr"), "Hayır");
+});
+
 test("uses OR within a category, AND between categories, inclusive ranges, and fails null fields closed", () => {
   const filters = createDefaultPublicJobSearchFilters();
   Object.assign(filters, {
@@ -197,8 +242,6 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
     requiredLanguages: ["Turkish"],
     yachtLengthMinMetres: 49.9994,
     yachtLengthMaxMetres: 49.9994,
-    startDateFrom: "2026-09-15",
-    startDateTo: "2026-09-15",
     salaryCurrency: "EUR",
     salaryPeriod: "month",
     salaryMin: 8_000,
@@ -218,14 +261,6 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
   assert.equal(
     matchesPublicJobSearch(
       { ...sampleJob(), yachtLength: null, yachtLengthUnit: null },
-      filters,
-      snapshot,
-    ),
-    false,
-  );
-  assert.equal(
-    matchesPublicJobSearch(
-      { ...sampleJob(), startDate: null },
       filters,
       snapshot,
     ),

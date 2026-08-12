@@ -16,12 +16,14 @@ import {
   Search,
   Ship,
   Sparkles,
+  UsersRound,
   UserRoundPlus,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { useLanguage } from "../../components/LanguageProvider";
 import {
+  isJobApplicationMode,
   isJobApplicationStatus,
   type JobApplicationStatus,
 } from "../../lib/jobApplications";
@@ -335,6 +337,12 @@ function ApplicationCard({
             </span>
           </div>
           <div className="flex max-w-[72%] flex-wrap justify-end gap-1.5">
+            {application.applicationMode === "team_couple" ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.13em] text-cyan-800">
+                <UsersRound className="h-3.5 w-3.5" aria-hidden />
+                {c.teamApplication}
+              </span>
+            ) : null}
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.13em] ${badge.className}`}
             >
@@ -623,6 +631,7 @@ function isMyJobApplication(value: unknown): value is MyJobApplication {
   if (
     typeof application.id !== "string" ||
     typeof application.jobPostId !== "string" ||
+    !isJobApplicationMode(application.applicationMode) ||
     !isJobApplicationStatus(application.status) ||
     typeof application.submittedAt !== "string" ||
     typeof application.updatedAt !== "string" ||
@@ -693,6 +702,7 @@ const copy = {
     flexible: "Flexible",
     appliedAt: "Applied",
     lastUpdate: "Last update",
+    teamApplication: "Team/Couple",
     withdrawnHelp:
       "You withdrew this application. It remains in your history for a clear record of your activity.",
     viewJob: "View job",
@@ -744,6 +754,7 @@ const copy = {
     flexible: "Esnek",
     appliedAt: "Başvuru tarihi",
     lastUpdate: "Son güncelleme",
+    teamApplication: "Team/Couple",
     withdrawnHelp:
       "Bu başvuruyu geri çektiniz. İşlem geçmişinizin net kalması için portalınızda gösterilmeye devam eder.",
     viewJob: "İlanı gör",

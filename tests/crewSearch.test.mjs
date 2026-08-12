@@ -15,6 +15,7 @@ test("round-trips every public crew search criterion through the URL contract", 
     availability: "Available",
     contract: "Permanent",
     nationality: "Turkish",
+    maritalStatus: "Married",
     skill: "Silver service",
     characteristic: "Team player",
     preference: "Motor yacht",
@@ -32,14 +33,17 @@ test("round-trips every public crew search criterion through the URL contract", 
   const filters = parseCrewSearchFilters(source);
   assert.equal(filters.query, "Chief Stewardess");
   assert.equal(filters.minimumExperience, 3);
-  assert.equal(filters.hasReferences, true);
+  assert.equal(filters.hasReferences, false);
   const normalizedSource = new URLSearchParams(source);
   normalizedSource.set("q", "Chief Stewardess");
+  normalizedSource.delete("references");
+  normalizedSource.delete("documents");
   assert.equal(
     crewSearchParams(filters).toString(),
     normalizedSource.toString(),
   );
-  assert.equal(crewSearchFilterCount(filters), 18);
+  assert.equal(filters.maritalStatus, "Married");
+  assert.equal(crewSearchFilterCount(filters), 17);
 });
 
 test("bounds malformed minimum experience and month values without widening a request", () => {
@@ -54,6 +58,27 @@ test("bounds malformed minimum experience and month values without widening a re
   assert.equal(filters.minimumExperience, 8);
   assert.equal(filters.memberSince, "");
   assert.equal(filters.premiumOnly, false);
+});
+
+test("accepts only the supported marital status filters", () => {
+  assert.equal(
+    parseCrewSearchFilters(
+      new URLSearchParams({ maritalStatus: "Single" }),
+    ).maritalStatus,
+    "Single",
+  );
+  assert.equal(
+    parseCrewSearchFilters(
+      new URLSearchParams({ maritalStatus: "Separated" }),
+    ).maritalStatus,
+    "",
+  );
+  assert.equal(
+    parseCrewSearchFilters(
+      new URLSearchParams({ maritalStatus: "single" }),
+    ).maritalStatus,
+    "",
+  );
 });
 
 test("merges exact yacht-work days without overstating short or overlapping roles", () => {

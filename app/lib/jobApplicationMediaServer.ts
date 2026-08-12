@@ -11,6 +11,7 @@ export type EmployerApplicationMediaKind =
 type MediaUrlInput = {
   jobPostId: string;
   applicationId: string;
+  memberId: string;
   kind: EmployerApplicationMediaKind;
   slot?: number;
   revision: string;
@@ -25,13 +26,14 @@ type MediaCapabilityInput = MediaUrlInput & {
 export type VerifiedEmployerApplicationMediaCapability = {
   jobPostId: string;
   applicationId: string;
+  memberId: string;
   kind: EmployerApplicationMediaKind;
   slot: number | null;
   expiresAt: number;
   revision: string;
 };
 
-const mediaCapabilityVersion = "2";
+const mediaCapabilityVersion = "3";
 const mediaCapabilityLifetimeSeconds = 900;
 const maximumAcceptedLifetimeSeconds = 1_200;
 const minimumSigningSecretLength = 32;
@@ -50,6 +52,7 @@ export function buildEmployerApplicationMediaUrl(input: MediaUrlInput) {
     signingSecret,
     normalized.jobPostId,
     normalized.applicationId,
+    normalized.memberId,
     normalized.kind,
     normalized.slot,
     normalized.revision,
@@ -61,6 +64,7 @@ export function buildEmployerApplicationMediaUrl(input: MediaUrlInput) {
     expires: String(expiresAt),
     token,
     revision: normalized.revision,
+    member: normalized.memberId,
   });
   if (normalized.slot !== null) search.set("slot", String(normalized.slot));
 
@@ -97,6 +101,7 @@ export function verifyEmployerApplicationMediaCapability(
     signingSecret,
     normalized.jobPostId,
     normalized.applicationId,
+    normalized.memberId,
     normalized.kind,
     normalized.slot,
     normalized.revision,
@@ -152,9 +157,11 @@ export function selectEmployerApplicationGallerySources(
 function normalizeMediaIdentity(input: MediaUrlInput) {
   const jobPostId = input.jobPostId.trim().toLowerCase();
   const applicationId = input.applicationId.trim().toLowerCase();
+  const memberId = input.memberId.trim().toLowerCase();
   if (
     !uuidPattern.test(jobPostId) ||
     !uuidPattern.test(applicationId) ||
+    !uuidPattern.test(memberId) ||
     !employerApplicationMediaKinds.includes(input.kind) ||
     !tokenPattern.test(input.revision)
   ) {
@@ -166,6 +173,7 @@ function normalizeMediaIdentity(input: MediaUrlInput) {
     return {
       jobPostId,
       applicationId,
+      memberId,
       kind: input.kind,
       slot: null,
       revision: input.revision,
@@ -184,6 +192,7 @@ function normalizeMediaIdentity(input: MediaUrlInput) {
   return {
     jobPostId,
     applicationId,
+    memberId,
     kind: input.kind,
     slot: input.slot,
     revision: input.revision,
@@ -194,6 +203,7 @@ function signMediaCapability(
   secret: string,
   jobPostId: string,
   applicationId: string,
+  memberId: string,
   kind: EmployerApplicationMediaKind,
   slot: number | null,
   revision: string,
@@ -204,6 +214,7 @@ function signMediaCapability(
     mediaCapabilityVersion,
     jobPostId,
     applicationId,
+    memberId,
     kind,
     slot === null ? "-" : String(slot),
     revision,

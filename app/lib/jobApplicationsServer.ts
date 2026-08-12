@@ -23,9 +23,11 @@ import {
   safeCandidateMeasurement,
 } from "./crewCandidateDataServer";
 import {
+  isJobApplicationMode,
   isJobApplicationStatus,
   type EmployerJobApplication,
   type EmployerJobApplicationDetails,
+  type EmployerJobApplicationMember,
   type JobApplicationJobSummary,
   type OwnJobApplication,
 } from "./jobApplications";
@@ -53,13 +55,11 @@ import { readLimitedJsonObjectDetailed } from "./requestBodyServer";
 export const maximumApplicationRequestBytes = 8_192;
 export const maximumCoverNoteLength = 2_000;
 export const ownJobApplicationSelect =
-  "id,job_post_id,status,cover_note,submitted_at,status_changed_at,withdrawn_at,updated_at,version";
-
-export type ApplicationCandidatePreview = EmployerJobApplication["candidate"];
-
-type CandidatePreviewResult =
-  | { ok: true; previews: Map<string, ApplicationCandidatePreview> }
-  | { ok: false; error: string };
+  "id,job_post_id,application_mode,status,cover_note,submitted_at,status_changed_at,withdrawn_at,updated_at,version";
+export const jobApplicationTeamMemberSelect =
+  "id,application_id,job_post_id,member_user_id,crew_profile_id,member_role,member_name_snapshot,member_position_snapshot,member_public_crew_id_snapshot,is_primary,created_at";
+const jobApplicationTeamMemberSnapshotSelect =
+  "id,application_id,job_post_id,candidate_snapshot,media_snapshot,captured_at,expires_at,purged_at";
 
 type CandidateDetailsResult =
   | { ok: true; details: EmployerJobApplicationDetails }
@@ -92,7 +92,11 @@ export async function readApplicationBody(
 }
 
 export function coverNoteFromBody(value: Record<string, unknown>) {
-  if (Object.keys(value).some((key) => key !== "coverNote")) {
+  if (
+    Object.keys(value).some(
+      (key) => key !== "coverNote" && key !== "applyAsTeam",
+    )
+  ) {
     return { ok: false as const, error: "The request contains unsupported fields." };
   }
   if (value.coverNote !== undefined && typeof value.coverNote !== "string") {
@@ -103,7 +107,17 @@ export function coverNoteFromBody(value: Record<string, unknown>) {
   if (coverNote.length > maximumCoverNoteLength) {
     return { ok: false as const, error: "The application note is too long." };
   }
-  return { ok: true as const, coverNote };
+  if (
+    value.applyAsTeam !== undefined &&
+    typeof value.applyAsTeam !== "boolean"
+  ) {
+    return { ok: false as const, error: "The application type is invalid." };
+  }
+  return {
+    ok: true as const,
+    coverNote,
+    applyAsTeam: value.applyAsTeam === true,
+  };
 }
 
 export async function accountRole(
@@ -211,94 +225,93 @@ export async function listAuthorizedJobApplications(
   };
 }
 
-export async function loadApplicationCandidatePreviews(
+type ApplicationTeamMemberRow = {
+  id: string;
+  applicationId: string;
+  jobPostId: string;
+  memberUserId: string;
+  crewProfileId: string;
+  memberRole: "crew" | "captain";
+  memberName: string;
+  memberPosition: string;
+  publicCrewId: string;
+  isPrimary: boolean;
+};
+
+type ApplicationTeamMemberSnapshot = {
+  memberId: string;
+  applicationId: string;
+  jobPostId: string;
+  snapshot?: ApplicationSnapshotRow;
+};
+
+type CandidateMembersResult =
+  | { ok: true; members: Map<string, EmployerJobApplicationMember[]> }
+  | { ok: false; error: string };
+
+export async function loadApplicationTeamMembers(
   serviceClient: SupabaseClient,
   rows: unknown[],
-): Promise<CandidatePreviewResult> {
-  const targets: Array<{
-    applicationId: string;
-    jobPostId: string;
-    applicantUserId: string;
-    crewProfileId: string;
-  }> = [];
-
-  for (const value of rows) {
-    if (!isRecord(value)) {
-      return { ok: false, error: "Candidate profiles could not be loaded." };
-    }
-    const applicationId = cleanText(value.id);
-    const jobPostId = cleanText(value.job_post_id);
-    const applicantUserId = cleanText(value.applicant_user_id);
-    const crewProfileId = cleanText(value.crew_profile_id);
-    if (
-      !isUuid(applicationId) ||
-      !isUuid(jobPostId) ||
-      !isUuid(applicantUserId)
-    ) {
-      return { ok: false, error: "Candidate profiles could not be loaded." };
-    }
-    targets.push({ applicationId, jobPostId, applicantUserId, crewProfileId });
-  }
-
-  const previews = new Map<string, ApplicationCandidatePreview>();
-  const snapshots = await loadAvailableApplicationSnapshots(
-    serviceClient,
-    targets.map((target) => target.applicationId),
-  );
-  if (!snapshots.ok) {
+): Promise<CandidateMembersResult> {
+  const targets = applicationTargets(rows);
+  if (!targets) {
     return { ok: false, error: "Candidate profiles could not be loaded." };
   }
 
-  for (const target of targets) {
-    const snapshot = snapshots.rows.get(target.applicationId);
-    if (!snapshot || !isUuid(target.crewProfileId)) continue;
-
-    const candidate = recordValue(snapshot.candidate_snapshot);
-    const media = recordValue(snapshot.media_snapshot);
-    const profile = recordValue(candidate.profile);
-    const experiences = recordArray(candidate.experiences) as CompletionExperience[];
-    const discoveryNotes = cleanText(profile.notes);
-    const discovery = parseCrewDiscoverySettings(discoveryNotes);
-    const completionPercent = calculateCrewProfileCompletion({
-      profile,
-      experiences,
-    });
-    const avatarSource = safeOwnedPublicMediaUrl(media.avatar_source, [
-      target.crewProfileId,
-      target.applicantUserId,
-    ]);
-    const capturedAt = databaseTimestamp(snapshot.captured_at);
-    const avatarRevision = employerApplicationMediaRevision(
-      capturedAt,
-      avatarSource,
-    );
-
-    previews.set(target.applicationId, {
-      displayName: "",
-      initials: "",
-      profilePhotoUrl:
-        avatarSource && avatarRevision
-          ? buildEmployerApplicationMediaUrl({
-              jobPostId: target.jobPostId,
-              applicationId: target.applicationId,
-              kind: "avatar",
-              revision: avatarRevision,
-            })
-          : "",
-      currentPosition:
-        publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
-        publicStructuredProfileField(profile.current_position, 120),
-      nationality: publicStructuredProfileField(profile.nationality, 80),
-      availabilityStatus: discoveryNotes.startsWith(crewDiscoveryNotesPrefix)
-        ? discovery.availabilityStatus
-        : "",
-      experienceYears: crewExperienceYears(experiences),
-      cvCompletionPercent: completionPercent,
-      premiumProfile: isPremiumCrewProfile(completionPercent),
-    });
+  const [memberRows, primarySnapshots] = await Promise.all([
+    loadApplicationTeamMemberRows(serviceClient, targets),
+    loadAvailableApplicationSnapshots(serviceClient, Array.from(targets.keys())),
+  ]);
+  if (!memberRows.ok || !primarySnapshots.ok) {
+    return { ok: false, error: "Candidate profiles could not be loaded." };
   }
 
-  return { ok: true, previews };
+  const primaryMembers = new Map<string, ApplicationTeamMemberRow>();
+  const missingPrimarySnapshots: ApplicationTeamMemberRow[] = [];
+  for (const [applicationId, target] of targets) {
+    const applicationMembers = memberRows.rows.get(applicationId) || [];
+    if (!validApplicationMemberSet(target, applicationMembers)) {
+      return { ok: false, error: "Candidate profiles could not be loaded." };
+    }
+
+    const primary = applicationMembers.find((member) => member.isPrimary);
+    if (!primary) {
+      return { ok: false, error: "Candidate profiles could not be loaded." };
+    }
+    primaryMembers.set(applicationId, primary);
+    if (!primarySnapshots.rows.has(applicationId)) {
+      missingPrimarySnapshots.push(primary);
+    }
+  }
+
+  const childPrimarySnapshots = await loadApplicationTeamMemberSnapshots(
+    serviceClient,
+    missingPrimarySnapshots,
+  );
+  if (!childPrimarySnapshots.ok) {
+    return { ok: false, error: "Candidate profiles could not be loaded." };
+  }
+
+  const members = new Map<string, EmployerJobApplicationMember[]>();
+  for (const [applicationId] of targets) {
+    const applicationMembers = memberRows.rows.get(applicationId) || [];
+    const primary = primaryMembers.get(applicationId);
+
+    members.set(
+      applicationId,
+      applicationMembers.map((member) =>
+        employerMemberFromSnapshot(
+          member,
+          member.id === primary?.id
+            ? primarySnapshots.rows.get(applicationId) ||
+                childPrimarySnapshots.rows.get(member.id)
+            : undefined,
+        ),
+      ),
+    );
+  }
+
+  return { ok: true, members };
 }
 
 export function applicationApplicantUserId(value: unknown) {
@@ -307,63 +320,64 @@ export function applicationApplicantUserId(value: unknown) {
   return isUuid(applicantUserId) ? applicantUserId : "";
 }
 
-export function applicationCandidatePreviewKey(value: unknown) {
-  if (!isRecord(value)) return "";
-  const applicationId = cleanText(value.id);
-  return isUuid(applicationId) ? applicationId : "";
-}
-
 export async function loadApplicationCandidateDetails(
   serviceClient: SupabaseClient,
   applicationRow: unknown,
+  requestedMemberId = "",
 ): Promise<CandidateDetailsResult> {
-  if (!isRecord(applicationRow)) {
+  const targets = applicationTargets([applicationRow]);
+  if (!targets || targets.size !== 1) {
+    return { ok: false, error: "Candidate profile could not be loaded." };
+  }
+  const [applicationId, target] = Array.from(targets.entries())[0];
+  const memberRows = await loadApplicationTeamMemberRows(serviceClient, targets);
+  if (!memberRows.ok) {
     return { ok: false, error: "Candidate profile could not be loaded." };
   }
 
-  const applicationId = cleanText(applicationRow.id);
-  const jobPostId = cleanText(applicationRow.job_post_id);
-  const applicantUserId = applicationApplicantUserId(applicationRow);
-  const crewProfileId = cleanText(applicationRow.crew_profile_id);
-  const snapshotName =
-    publicStructuredProfileField(applicationRow.applicant_name_snapshot, 120) ||
-    "BlueDeck candidate";
-  const snapshotPosition = publicStructuredProfileField(
-    applicationRow.applicant_position_snapshot,
-    120,
-  );
-
-  if (!isUuid(applicationId) || !isUuid(jobPostId) || !applicantUserId) {
+  const applicationMembers = memberRows.rows.get(applicationId) || [];
+  if (!validApplicationMemberSet(target, applicationMembers)) {
+    return { ok: false, error: "Candidate profile could not be loaded." };
+  }
+  const member = requestedMemberId
+    ? applicationMembers.find((candidate) => candidate.id === requestedMemberId)
+    : applicationMembers.find((candidate) => candidate.isPrimary);
+  if (!member || member.jobPostId !== target.jobPostId) {
     return { ok: false, error: "Candidate profile could not be loaded." };
   }
 
-  if (!isUuid(crewProfileId)) {
-    return {
-      ok: true,
-      details: emptyCandidateDetails(
-        applicationId,
-        snapshotName,
-        snapshotPosition,
-      ),
-    };
+  let snapshot: ApplicationSnapshotRow | undefined;
+  if (member.isPrimary) {
+    const primarySnapshots = await loadAvailableApplicationSnapshots(
+      serviceClient,
+      [applicationId],
+    );
+    if (!primarySnapshots.ok) {
+      return { ok: false, error: "Candidate profile could not be loaded." };
+    }
+    snapshot = primarySnapshots.rows.get(applicationId);
   }
 
-  const snapshots = await loadAvailableApplicationSnapshots(
-    serviceClient,
-    [applicationId],
-  );
-  if (!snapshots.ok) {
-    return { ok: false, error: "Candidate profile could not be loaded." };
+  if (!snapshot) {
+    const memberSnapshots = await loadApplicationTeamMemberSnapshots(
+      serviceClient,
+      [member],
+    );
+    if (!memberSnapshots.ok) {
+      return { ok: false, error: "Candidate profile could not be loaded." };
+    }
+    snapshot = memberSnapshots.rows.get(member.id);
   }
 
-  const snapshot = snapshots.rows.get(applicationId);
   if (!snapshot) {
     return {
       ok: true,
       details: emptyCandidateDetails(
         applicationId,
-        snapshotName,
-        snapshotPosition,
+        member.id,
+        member.isPrimary,
+        member.memberName,
+        member.memberPosition,
       ),
     };
   }
@@ -373,41 +387,40 @@ export async function loadApplicationCandidateDetails(
   const profile = recordValue(candidate.profile);
   const experiences = recordArray(candidate.experiences) as CompletionExperience[];
   const discovery = parseCrewDiscoverySettings(cleanText(profile.notes));
-  const completionPercent = calculateCrewProfileCompletion({
-    profile,
-    experiences,
-  });
+  const completionPercent = calculateCrewProfileCompletion({ profile, experiences });
   const currentPosition =
     publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
     publicStructuredProfileField(profile.current_position, 120) ||
-    snapshotPosition;
+    member.memberPosition;
   const capturedAt = databaseTimestamp(snapshot.captured_at);
-  const avatarSource = safeOwnedPublicMediaUrl(media.avatar_source, [
-    crewProfileId,
-    applicantUserId,
-  ]);
-  const avatarRevision = employerApplicationMediaRevision(
-    capturedAt,
-    avatarSource,
-  );
-  const gallerySources = selectEmployerApplicationGallerySources(
-    recordArray(media.gallery),
-    applicationId,
-    [crewProfileId, applicantUserId],
-  );
+  const mediaOwnerIds = applicationMemberMediaOwnerIds(member);
+  const avatarSource = mediaOwnerIds.length
+    ? safeOwnedPublicMediaUrl(media.avatar_source, mediaOwnerIds)
+    : "";
+  const avatarRevision = employerApplicationMediaRevision(capturedAt, avatarSource);
+  const gallerySources = mediaOwnerIds.length
+    ? selectEmployerApplicationGallerySources(
+        recordArray(media.gallery),
+        member.id,
+        mediaOwnerIds,
+      )
+    : [];
 
   return {
     ok: true,
     details: {
       applicationId,
+      memberId: member.id,
+      isPrimaryMember: member.isPrimary,
       candidate: {
-        displayName: maskedPersonName(snapshotName),
-        initials: personInitials(snapshotName),
+        displayName: maskedPersonName(member.memberName),
+        initials: personInitials(member.memberName),
         profilePhotoUrl:
           avatarSource && avatarRevision
             ? buildEmployerApplicationMediaUrl({
-                jobPostId,
+                jobPostId: member.jobPostId,
                 applicationId,
+                memberId: member.id,
                 kind: "avatar",
                 revision: avatarRevision,
               })
@@ -416,16 +429,14 @@ export async function loadApplicationCandidateDetails(
         nationality: publicStructuredProfileField(profile.nationality, 80),
         location: publicStructuredProfileField(profile.location, 120),
         gender: publicStructuredProfileField(profile.gender, 60),
+        maritalStatus: publicStructuredProfileField(profile.marital_status, 16),
         heightCm: safeCandidateMeasurement(profile.height_cm, 80, 260),
         weightKg: safeCandidateMeasurement(profile.weight_kg, 20, 400),
         smoker: publicStructuredProfileField(profile.smoker, 60),
-        visibleTattoos: publicStructuredProfileField(
-          profile.visible_tattoos,
-          120,
-        ),
+        visibleTattoos: publicStructuredProfileField(profile.visible_tattoos, 120),
         professionalSummary: redactCandidateProfileText(
           profile.bio,
-          snapshotName,
+          member.memberName,
           2_000,
         ),
         skills: publicStructuredStringArray(profile.personal_skills, 30, 120),
@@ -453,14 +464,12 @@ export async function loadApplicationCandidateDetails(
         languages: publicCandidateLanguageEntries(profile.languages),
         galleryPhotos: gallerySources
           .map((source, slot) => {
-            const revision = employerApplicationMediaRevision(
-              capturedAt,
-              source,
-            );
+            const revision = employerApplicationMediaRevision(capturedAt, source);
             return revision
               ? buildEmployerApplicationMediaUrl({
-                  jobPostId,
+                  jobPostId: member.jobPostId,
                   applicationId,
+                  memberId: member.id,
                   kind: "gallery",
                   slot,
                   revision,
@@ -488,6 +497,325 @@ export async function loadApplicationCandidateDetails(
         cvCompletionPercent: completionPercent,
         premiumProfile: isPremiumCrewProfile(completionPercent),
       },
+    },
+  };
+}
+
+function applicationTargets(rows: unknown[]) {
+  const targets = new Map<
+    string,
+    {
+      jobPostId: string;
+      applicantUserId: string;
+      applicationMode: "individual" | "team_couple";
+    }
+  >();
+
+  for (const value of rows) {
+    if (!isRecord(value)) return null;
+    const applicationId = cleanText(value.id).toLowerCase();
+    const jobPostId = cleanText(value.job_post_id).toLowerCase();
+    const applicantUserId = cleanText(value.applicant_user_id).toLowerCase();
+    if (
+      !isUuid(applicationId) ||
+      !isUuid(jobPostId) ||
+      !isUuid(applicantUserId) ||
+      !isJobApplicationMode(value.application_mode) ||
+      targets.has(applicationId)
+    ) {
+      return null;
+    }
+    targets.set(applicationId, {
+      jobPostId,
+      applicantUserId,
+      applicationMode: value.application_mode,
+    });
+  }
+
+  return targets;
+}
+
+function validApplicationMemberSet(
+  target: {
+    applicantUserId: string;
+    applicationMode: "individual" | "team_couple";
+  },
+  members: ApplicationTeamMemberRow[],
+) {
+  const primaryMembers = members.filter((member) => member.isPrimary);
+  const validModeCount =
+    target.applicationMode === "individual"
+      ? members.length === 1
+      : members.length >= 2 && members.length <= 8;
+  return (
+    primaryMembers.length === 1 &&
+    primaryMembers[0].memberUserId === target.applicantUserId &&
+    validModeCount
+  );
+}
+
+async function loadApplicationTeamMemberRows(
+  serviceClient: SupabaseClient,
+  targets: Map<
+    string,
+    {
+      jobPostId: string;
+      applicantUserId: string;
+      applicationMode: "individual" | "team_couple";
+    }
+  >,
+): Promise<
+  | { ok: true; rows: Map<string, ApplicationTeamMemberRow[]> }
+  | { ok: false }
+> {
+  const applicationIds = Array.from(targets.keys());
+  const rows = new Map<string, ApplicationTeamMemberRow[]>();
+  const seenMemberIds = new Set<string>();
+  for (const applicationId of applicationIds) rows.set(applicationId, []);
+
+  for (let index = 0; index < applicationIds.length; index += 50) {
+    const batch = applicationIds.slice(index, index + 50);
+    const { data, error } = await serviceClient
+      .from("job_application_team_members")
+      .select(jobApplicationTeamMemberSelect)
+      .in("application_id", batch)
+      .order("is_primary", { ascending: false })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (error) {
+      logJobApplicationError("application_team_members_load_failed", error, {
+        applicationCount: batch.length,
+      });
+      return { ok: false };
+    }
+
+    for (const value of data || []) {
+      const member = applicationTeamMemberFromRow(value);
+      const target = member ? targets.get(member.applicationId) : undefined;
+      if (
+        !member ||
+        !target ||
+        member.jobPostId !== target.jobPostId ||
+        seenMemberIds.has(member.id)
+      ) {
+        logJobApplicationError("invalid_application_team_member_record", undefined, {
+          applicationId: member?.applicationId || "unknown",
+        });
+        return { ok: false };
+      }
+      seenMemberIds.add(member.id);
+      rows.get(member.applicationId)?.push(member);
+    }
+  }
+
+  return { ok: true, rows };
+}
+
+function applicationTeamMemberFromRow(
+  value: unknown,
+): ApplicationTeamMemberRow | null {
+  if (!isRecord(value)) return null;
+  const id = cleanText(value.id).toLowerCase();
+  const applicationId = cleanText(value.application_id).toLowerCase();
+  const jobPostId = cleanText(value.job_post_id).toLowerCase();
+  const memberUserId = cleanText(value.member_user_id).toLowerCase();
+  const crewProfileId = cleanText(value.crew_profile_id).toLowerCase();
+  const memberRole = cleanText(value.member_role).toLowerCase();
+  const memberName =
+    publicStructuredProfileField(value.member_name_snapshot, 120) ||
+    "BlueDeck candidate";
+  const memberPosition = publicStructuredProfileField(
+    value.member_position_snapshot,
+    120,
+  );
+  const publicCrewId = publicStructuredProfileField(
+    value.member_public_crew_id_snapshot,
+    64,
+  );
+
+  if (
+    !isUuid(id) ||
+    !isUuid(applicationId) ||
+    !isUuid(jobPostId) ||
+    !isUuid(memberUserId) ||
+    (crewProfileId && !isUuid(crewProfileId)) ||
+    (memberRole !== "crew" && memberRole !== "captain") ||
+    typeof value.is_primary !== "boolean"
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    applicationId,
+    jobPostId,
+    memberUserId,
+    crewProfileId,
+    memberRole,
+    memberName,
+    memberPosition,
+    publicCrewId,
+    isPrimary: value.is_primary,
+  };
+}
+
+function applicationMemberMediaOwnerIds(member: ApplicationTeamMemberRow) {
+  return isUuid(member.memberUserId) && isUuid(member.crewProfileId)
+    ? [member.crewProfileId, member.memberUserId]
+    : [];
+}
+
+async function loadApplicationTeamMemberSnapshots(
+  serviceClient: SupabaseClient,
+  members: ApplicationTeamMemberRow[],
+): Promise<
+  | { ok: true; rows: Map<string, ApplicationSnapshotRow> }
+  | { ok: false }
+> {
+  const expectedMembers = new Map(
+    members.map((member) => [member.id, member] as const),
+  );
+  const memberIds = Array.from(expectedMembers.keys());
+  const rows = new Map<string, ApplicationSnapshotRow>();
+
+  for (let index = 0; index < memberIds.length; index += 50) {
+    const batch = memberIds.slice(index, index + 50);
+    const { data, error } = await serviceClient
+      .from("job_application_team_members")
+      .select(jobApplicationTeamMemberSnapshotSelect)
+      .in("id", batch);
+
+    if (error) {
+      logJobApplicationError("application_team_member_snapshots_load_failed", error, {
+        memberCount: batch.length,
+      });
+      return { ok: false };
+    }
+
+    const seen = new Set<string>();
+    for (const value of data || []) {
+      const parsed = applicationTeamMemberSnapshotFromRow(value);
+      const expected = parsed ? expectedMembers.get(parsed.memberId) : undefined;
+      if (
+        !parsed ||
+        !expected ||
+        parsed.applicationId !== expected.applicationId ||
+        parsed.jobPostId !== expected.jobPostId ||
+        seen.has(parsed.memberId)
+      ) {
+        logJobApplicationError(
+          "invalid_application_team_member_snapshot_record",
+          undefined,
+          { memberId: parsed?.memberId || "unknown" },
+        );
+        return { ok: false };
+      }
+      seen.add(parsed.memberId);
+      if (parsed.snapshot) rows.set(parsed.memberId, parsed.snapshot);
+    }
+
+    if (seen.size !== batch.length) {
+      logJobApplicationError("application_team_member_snapshot_missing", undefined, {
+        memberCount: batch.length,
+      });
+      return { ok: false };
+    }
+  }
+
+  return { ok: true, rows };
+}
+
+function applicationTeamMemberSnapshotFromRow(
+  value: unknown,
+): ApplicationTeamMemberSnapshot | null {
+  if (!isRecord(value)) return null;
+  const memberId = cleanText(value.id).toLowerCase();
+  const applicationId = cleanText(value.application_id).toLowerCase();
+  const jobPostId = cleanText(value.job_post_id).toLowerCase();
+  const capturedAt = databaseTimestamp(value.captured_at);
+  const expiresAt = databaseTimestamp(value.expires_at);
+  const purgedAt = optionalDatabaseTimestamp(value.purged_at);
+  if (
+    !isUuid(memberId) ||
+    !isUuid(applicationId) ||
+    !isUuid(jobPostId) ||
+    !isRecord(value.candidate_snapshot) ||
+    !isRecord(value.media_snapshot) ||
+    !capturedAt ||
+    !expiresAt ||
+    purgedAt === undefined
+  ) {
+    return null;
+  }
+
+  return {
+    memberId,
+    applicationId,
+    jobPostId,
+    snapshot:
+      purgedAt === null && Date.parse(expiresAt) > Date.now()
+        ? {
+            application_id: applicationId,
+            candidate_snapshot: value.candidate_snapshot,
+            media_snapshot: value.media_snapshot,
+            captured_at: capturedAt,
+            expires_at: expiresAt,
+            purged_at: null,
+          }
+        : undefined,
+  };
+}
+
+function employerMemberFromSnapshot(
+  member: ApplicationTeamMemberRow,
+  snapshot?: ApplicationSnapshotRow,
+): EmployerJobApplicationMember {
+  const candidate = recordValue(snapshot?.candidate_snapshot);
+  const media = recordValue(snapshot?.media_snapshot);
+  const profile = recordValue(candidate.profile);
+  const experiences = recordArray(candidate.experiences) as CompletionExperience[];
+  const discoveryNotes = cleanText(profile.notes);
+  const discovery = parseCrewDiscoverySettings(discoveryNotes);
+  const completionPercent = calculateCrewProfileCompletion({ profile, experiences });
+  const mediaOwnerIds = applicationMemberMediaOwnerIds(member);
+  const avatarSource =
+    snapshot && mediaOwnerIds.length
+      ? safeOwnedPublicMediaUrl(media.avatar_source, mediaOwnerIds)
+      : "";
+  const avatarRevision = employerApplicationMediaRevision(
+    snapshot?.captured_at || "",
+    avatarSource,
+  );
+
+  return {
+    id: member.id,
+    applicantRole: member.memberRole,
+    isPrimary: member.isPrimary,
+    candidate: {
+      displayName: maskedPersonName(member.memberName),
+      initials: personInitials(member.memberName),
+      profilePhotoUrl:
+        avatarSource && avatarRevision
+          ? buildEmployerApplicationMediaUrl({
+              jobPostId: member.jobPostId,
+              applicationId: member.applicationId,
+              memberId: member.id,
+              kind: "avatar",
+              revision: avatarRevision,
+            })
+          : "",
+      currentPosition:
+        publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
+        publicStructuredProfileField(profile.current_position, 120) ||
+        member.memberPosition,
+      nationality: publicStructuredProfileField(profile.nationality, 80),
+      availabilityStatus: discoveryNotes.startsWith(crewDiscoveryNotesPrefix)
+        ? discovery.availabilityStatus
+        : "",
+      experienceYears: crewExperienceYears(experiences),
+      cvCompletionPercent: completionPercent,
+      premiumProfile: isPremiumCrewProfile(completionPercent),
     },
   };
 }
@@ -575,6 +903,7 @@ export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | nu
 
   const id = cleanText(value.id);
   const jobPostId = cleanText(value.job_post_id);
+  const applicationMode = value.application_mode;
   const status = value.status;
   const submittedAt = databaseTimestamp(value.submitted_at);
   const updatedAt = databaseTimestamp(value.updated_at);
@@ -584,6 +913,7 @@ export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | nu
   if (
     !isUuid(id) ||
     !isUuid(jobPostId) ||
+    !isJobApplicationMode(applicationMode) ||
     !isJobApplicationStatus(status) ||
     !submittedAt ||
     !updatedAt ||
@@ -598,6 +928,7 @@ export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | nu
   return {
     id,
     jobPostId,
+    applicationMode,
     status,
     coverNote: cleanText(value.cover_note).slice(0, maximumCoverNoteLength),
     submittedAt,
@@ -609,7 +940,7 @@ export function ownJobApplicationFromRow(value: unknown): OwnJobApplication | nu
 
 export function employerJobApplicationFromRow(
   value: unknown,
-  preview?: ApplicationCandidatePreview,
+  members: EmployerJobApplicationMember[],
 ): EmployerJobApplication | null {
   const application = ownJobApplicationFromRow(value);
   if (!application || !isRecord(value)) return null;
@@ -623,30 +954,25 @@ export function employerJobApplicationFromRow(
     return null;
   }
 
-  const fullName =
-    publicStructuredProfileField(value.applicant_name_snapshot, 120) ||
-    "BlueDeck candidate";
-  const currentPosition = publicStructuredProfileField(
-    value.applicant_position_snapshot,
-    120,
-  );
+  const primary = members.find((member) => member.isPrimary);
+  if (
+    !primary ||
+    members.filter((member) => member.isPrimary).length !== 1 ||
+    primary.applicantRole !== applicantRole ||
+    (application.applicationMode === "individual" && members.length !== 1) ||
+    (application.applicationMode === "team_couple" &&
+      (members.length < 2 || members.length > 8))
+  ) {
+    return null;
+  }
 
   return {
     ...application,
     coverNote: "",
     applicantRole,
     privateNoteAvailable: Boolean(application.coverNote),
-    candidate: {
-      displayName: maskedPersonName(fullName),
-      initials: personInitials(fullName),
-      profilePhotoUrl: preview?.profilePhotoUrl || "",
-      currentPosition: preview?.currentPosition || currentPosition,
-      nationality: preview?.nationality || "",
-      availabilityStatus: preview?.availabilityStatus || "",
-      experienceYears: preview?.experienceYears || 0,
-      cvCompletionPercent: preview?.cvCompletionPercent || 0,
-      premiumProfile: preview?.premiumProfile || false,
-    },
+    candidate: primary.candidate,
+    members,
   };
 }
 
@@ -727,11 +1053,15 @@ export function logJobApplicationError(
 
 function emptyCandidateDetails(
   applicationId: string,
+  memberId: string,
+  isPrimaryMember: boolean,
   fullName: string,
   currentPosition: string,
 ): EmployerJobApplicationDetails {
   return {
     applicationId,
+    memberId,
+    isPrimaryMember,
     candidate: {
       displayName: maskedPersonName(fullName),
       initials: personInitials(fullName),
@@ -740,6 +1070,7 @@ function emptyCandidateDetails(
       nationality: "",
       location: "",
       gender: "",
+      maritalStatus: "",
       heightCm: null,
       weightKg: null,
       smoker: "",

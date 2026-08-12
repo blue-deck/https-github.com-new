@@ -21,16 +21,39 @@ export const jobApplicationJobAvailabilities = [
   "unavailable",
 ] as const;
 
+export const jobApplicationModes = ["individual", "team_couple"] as const;
+
 export type JobApplicationStatus =
   (typeof jobApplicationStatuses)[number];
 export type EmployerJobApplicationStatus =
   (typeof employerJobApplicationStatuses)[number];
 export type JobApplicationJobAvailability =
   (typeof jobApplicationJobAvailabilities)[number];
+export type JobApplicationMode = (typeof jobApplicationModes)[number];
+
+export type EmployerJobApplicationCandidate = {
+  displayName: string;
+  initials: string;
+  profilePhotoUrl: string;
+  currentPosition: string;
+  nationality: string;
+  availabilityStatus: string;
+  experienceYears: number;
+  cvCompletionPercent: number;
+  premiumProfile: boolean;
+};
+
+export type EmployerJobApplicationMember = {
+  id: string;
+  applicantRole: "crew" | "captain";
+  isPrimary: boolean;
+  candidate: EmployerJobApplicationCandidate;
+};
 
 export type OwnJobApplication = {
   id: string;
   jobPostId: string;
+  applicationMode: JobApplicationMode;
   status: JobApplicationStatus;
   coverNote: string;
   submittedAt: string;
@@ -42,21 +65,14 @@ export type OwnJobApplication = {
 export type EmployerJobApplication = OwnJobApplication & {
   applicantRole: "crew" | "captain";
   privateNoteAvailable: boolean;
-  candidate: {
-    displayName: string;
-    initials: string;
-    profilePhotoUrl: string;
-    currentPosition: string;
-    nationality: string;
-    availabilityStatus: string;
-    experienceYears: number;
-    cvCompletionPercent: number;
-    premiumProfile: boolean;
-  };
+  candidate: EmployerJobApplicationCandidate;
+  members: EmployerJobApplicationMember[];
 };
 
 export type EmployerJobApplicationDetails = {
   applicationId: string;
+  memberId: string;
+  isPrimaryMember: boolean;
   candidate: {
     displayName: string;
     initials: string;
@@ -65,6 +81,7 @@ export type EmployerJobApplicationDetails = {
     nationality: string;
     location: string;
     gender: string;
+    maritalStatus: string;
     heightCm: number | null;
     weightKg: number | null;
     smoker: string;
@@ -121,6 +138,10 @@ export function isJobApplicationJobAvailability(
   return jobApplicationJobAvailabilities.includes(
     value as JobApplicationJobAvailability,
   );
+}
+
+export function isJobApplicationMode(value: unknown): value is JobApplicationMode {
+  return jobApplicationModes.includes(value as JobApplicationMode);
 }
 
 export function canWithdrawJobApplication(status: JobApplicationStatus) {

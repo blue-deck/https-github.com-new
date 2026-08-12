@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CrewCandidateEmployerProfileOverview,
   CrewCandidatePassportCard,
   CrewCandidateProfileBody,
   CrewCandidateProfileIdentity,
@@ -26,6 +27,7 @@ import {
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
   employerJobApplicationStatuses,
+  isJobApplicationMode,
   isJobApplicationJobAvailability,
   isJobApplicationStatus,
   type EmployerJobApplication,
@@ -51,6 +53,7 @@ type WorkspaceResponse = {
   applications?: unknown[];
   application?: unknown;
   details?: unknown;
+  refreshRequired?: boolean;
 };
 
 type Filter = "all" | JobApplicationStatus;
@@ -77,7 +80,9 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
   const [profileError, setProfileError] = useState("");
   const [profileDetails, setProfileDetails] =
     useState<EmployerJobApplicationDetails | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
   const profileRequestRef = useRef<AbortController | null>(null);
+  const initialLoadCompleteRef = useRef(false);
 
   const selected = useMemo(
     () => applications.find((application) => application.id === selectedId) || null,
@@ -102,8 +107,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     let active = true;
 
     async function loadApplications() {
-      setLoading(true);
-      setError("");
+      const isInitialLoad = !initialLoadCompleteRef.current;
+      if (isInitialLoad) {
+        setLoading(true);
+        setError("");
+      }
 
       const {
         data: { session },
@@ -160,6 +168,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         }
 
         if (!active) return;
+        initialLoadCompleteRef.current = true;
         setJob(parsedJob);
         setApplications(parsedApplications);
         setTotalApplications(payload.total);
@@ -172,9 +181,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
         );
       } catch (loadError) {
         if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : c.loadError);
+        if (isInitialLoad) {
+          setError(loadError instanceof Error ? loadError.message : c.loadError);
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active && isInitialLoad) setLoading(false);
       }
     }
 
@@ -183,6 +194,23 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       active = false;
     };
   }, [c.loadError, jobId, reloadVersion]);
+
+  useEffect(() => {
+    function refreshVisibleWorkspace() {
+      if (document.visibilityState === "visible") {
+        setReloadVersion((current) => current + 1);
+      }
+    }
+
+    const interval = window.setInterval(refreshVisibleWorkspace, 15_000);
+    window.addEventListener("focus", refreshVisibleWorkspace);
+    document.addEventListener("visibilitychange", refreshVisibleWorkspace);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshVisibleWorkspace);
+      document.removeEventListener("visibilitychange", refreshVisibleWorkspace);
+    };
+  }, [jobId]);
 
   async function loadMoreApplications() {
     if (loadingMore || !hasMore || !nextCursor) return;
@@ -277,7 +305,22 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     [],
   );
 
-  async function openProfile(application: EmployerJobApplication) {
+  useEffect(() => {
+    if (!profileOpen || selected) return;
+    profileRequestRef.current?.abort();
+    profileRequestRef.current = null;
+    setProfileOpen(false);
+    setProfileLoading(false);
+    setProfileError("");
+    setProfileDetails(null);
+    setSelectedMemberId("");
+  }, [profileOpen, selected]);
+
+  async function openProfile(
+    application: EmployerJobApplication,
+    memberId = application.members.find((member) => member.isPrimary)?.id || "",
+  ) {
+    if (!memberId) return;
     profileRequestRef.current?.abort();
     const controller = new AbortController();
     profileRequestRef.current = controller;
@@ -288,6 +331,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     setProfileLoading(true);
     setProfileError("");
     setProfileDetails(null);
+    setSelectedMemberId(memberId);
 
     const {
       data: { session },
@@ -301,7 +345,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
 
     try {
       const response = await fetch(
-        `/api/employer/job-posts/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(application.id)}`,
+        `/api/employer/job-posts/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(application.id)}?member=${encodeURIComponent(memberId)}`,
         {
           headers: {
             Accept: "application/json",
@@ -319,7 +363,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       }
 
       const parsedDetails = parseCandidateDetails(payload.details);
-      if (!parsedDetails || parsedDetails.applicationId !== application.id) {
+      if (
+        !parsedDetails ||
+        parsedDetails.applicationId !== application.id ||
+        parsedDetails.memberId !== memberId
+      ) {
         throw new Error(c.profileLoadError);
       }
       if (!controller.signal.aborted) setProfileDetails(parsedDetails);
@@ -339,6 +387,7 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
     setProfileOpen(false);
     setProfileLoading(false);
     setProfileError("");
+    setSelectedMemberId("");
   }
 
   async function updateStatus(status: EmployerJobApplicationStatus) {
@@ -372,6 +421,11 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
       const payload = (await response
         .json()
         .catch(() => null)) as WorkspaceResponse | null;
+      if (response.ok && payload?.ok && payload.refreshRequired === true) {
+        setNotice({ tone: "success", message: c.updated });
+        setReloadVersion((current) => current + 1);
+        return;
+      }
       const updated = parseEmployerApplication(payload?.application);
       if (!response.ok || !payload?.ok || !updated) {
         throw new Error(payload?.error || c.updateError);
@@ -566,8 +620,10 @@ export function JobApplicationsManager({ jobId }: { jobId: string }) {
           error={profileError}
           updating={updating}
           notice={notice}
+          selectedMemberId={selectedMemberId}
           onClose={closeProfile}
-          onRetry={() => void openProfile(selected)}
+          onRetry={() => void openProfile(selected, selectedMemberId)}
+          onSelectMember={(memberId) => void openProfile(selected, memberId)}
           onUpdate={updateStatus}
         />
       ) : null}
@@ -595,7 +651,27 @@ function CrewPassportCard({
       candidate={candidate}
       availabilityValue={startValue}
       primaryBadge={
-        <StatusBadge status={application.status} language={language} />
+        <>
+          <StatusBadge status={application.status} language={language} />
+          {application.applicationMode === "team_couple" ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-cyan-900">
+              <UsersRound className="h-3.5 w-3.5" aria-hidden />
+              {c.teamCouple} · {application.members.length}
+            </span>
+          ) : null}
+          {application.applicationMode === "team_couple"
+            ? application.members.map((member) => (
+                <span
+                  key={member.id}
+                  data-i18n-ignore
+                  className="max-w-full truncate rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-600"
+                  title={`${member.candidate.displayName} · ${member.candidate.currentPosition || c.crewMember}`}
+                >
+                  {member.candidate.displayName} · {member.candidate.currentPosition || c.crewMember}
+                </span>
+              ))
+            : null}
+        </>
       }
       fourthFact={{
         icon: <Clock3 />,
@@ -616,8 +692,10 @@ function CandidateProfileModal({
   error,
   updating,
   notice,
+  selectedMemberId,
   onClose,
   onRetry,
+  onSelectMember,
   onUpdate,
 }: {
   application: EmployerJobApplication;
@@ -627,15 +705,21 @@ function CandidateProfileModal({
   error: string;
   updating: boolean;
   notice: Notice | null;
+  selectedMemberId: string;
   onClose: () => void;
   onRetry: () => void;
+  onSelectMember: (memberId: string) => void;
   onUpdate: (status: EmployerJobApplicationStatus) => void;
 }) {
   const c = copy[language];
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const candidate = details?.candidate;
-  const cardCandidate = application.candidate;
+  const selectedMember =
+    application.members.find((member) => member.id === selectedMemberId) ||
+    application.members.find((member) => member.isPrimary) ||
+    application.members[0];
+  const cardCandidate = selectedMember?.candidate || application.candidate;
   const isRejected = application.status === "rejected";
   const isFinal = ["withdrawn", "hired"].includes(application.status);
 
@@ -692,32 +776,29 @@ function CandidateProfileModal({
       }}
     >
       <article className="relative max-h-[96dvh] w-full max-w-[1180px] overflow-x-hidden overflow-y-auto rounded-[26px] border border-white/15 bg-[#f6f9fd] shadow-2xl shadow-black/40 sm:rounded-[34px]">
-        <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
-          <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={onClose}
-            className="bd-focus absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center rounded-full border border-white/20 bg-white/10 text-white transition hover:bg-white/20"
-            aria-label={c.close}
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
+        <button
+          ref={closeButtonRef}
+          type="button"
+          onClick={onClose}
+          className="bd-focus absolute right-3 top-3 z-30 grid h-11 w-11 place-items-center rounded-full border border-white/25 bg-[#071631]/65 text-white shadow-lg shadow-black/15 backdrop-blur-md transition hover:bg-[#071631]/85 sm:right-4 sm:top-4 lg:border-slate-200 lg:bg-white/95 lg:text-[#071631] lg:hover:bg-white"
+          aria-label={c.close}
+        >
+          <X className="h-5 w-5" aria-hidden />
+        </button>
 
+        {loading || error || !candidate ? (
+          <header className="relative overflow-hidden bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.20),transparent_32%),linear-gradient(125deg,#031126,#071631_58%,#0d254f)] px-5 py-6 text-white sm:px-8 sm:py-8">
+            <div className="pointer-events-none absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(165,243,252,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(165,243,252,0.10)_1px,transparent_1px)] [background-size:36px_36px]" />
           <div className="pr-12">
             <CrewCandidateProfileIdentity
               candidate={{
-                displayName:
-                  candidate?.displayName || cardCandidate.displayName,
-                initials: candidate?.initials || cardCandidate.initials,
-                profilePhotoUrl:
-                  candidate?.profilePhotoUrl || cardCandidate.profilePhotoUrl,
+                displayName: cardCandidate.displayName,
+                initials: cardCandidate.initials,
+                profilePhotoUrl: cardCandidate.profilePhotoUrl,
                 currentPosition:
-                  candidate?.currentPosition ||
                   cardCandidate.currentPosition ||
                   c.crewMember,
-                premiumProfile:
-                  candidate?.premiumProfile || cardCandidate.premiumProfile,
+                premiumProfile: cardCandidate.premiumProfile,
               }}
               kicker={c.candidateProfile}
               titleId="candidate-profile-title"
@@ -725,7 +806,56 @@ function CandidateProfileModal({
               headingLevel="h2"
             />
           </div>
-        </header>
+          </header>
+        ) : (
+          <CrewCandidateEmployerProfileOverview
+            candidate={candidate}
+            copy={c}
+            kicker={c.candidateProfile}
+            titleId="candidate-profile-title"
+            premiumLabel={c.premiumProfile}
+            roleFallback={c.crewMember}
+          />
+        )}
+
+        {application.members.length > 1 ? (
+          <section className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-800">
+              {c.teamMembers}
+            </p>
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1" role="tablist">
+              {application.members.map((member) => {
+                const active = member.id === selectedMemberId;
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => onSelectMember(member.id)}
+                    disabled={loading && active}
+                    className={`bd-focus min-w-44 shrink-0 rounded-xl border px-3.5 py-3 text-left transition disabled:cursor-wait ${
+                      active
+                        ? "border-[#071631] bg-[#071631] text-white"
+                        : "border-slate-200 bg-slate-50 text-[#071631] hover:border-cyan-300 hover:bg-cyan-50"
+                    }`}
+                  >
+                    <span data-i18n-ignore className="block truncate text-xs font-black">
+                      {member.candidate.displayName}
+                      {member.isPrimary ? ` · ${c.primaryApplicant}` : ""}
+                    </span>
+                    <span
+                      data-i18n-ignore
+                      className={`mt-1 block truncate text-[11px] ${active ? "text-cyan-100" : "text-slate-500"}`}
+                    >
+                      {member.candidate.currentPosition || c.crewMember}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ) : null}
 
         {loading ? (
           <div className="flex min-h-[420px] flex-col items-center justify-center p-10 text-center">
@@ -749,7 +879,7 @@ function CandidateProfileModal({
             </button>
           </div>
         ) : (
-          <CrewCandidateProfileBody candidate={candidate} copy={c}>
+          <CrewCandidateProfileBody candidate={candidate} copy={c} variant="employer">
             <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="max-w-2xl">
@@ -1036,21 +1166,44 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
   if (!isRecord(value) || !isRecord(value.candidate)) return null;
   const status = value.status;
   const applicantRole = value.applicantRole;
-  const candidate = value.candidate;
+  const applicationMode = value.applicationMode;
+  const candidate = parseEmployerCandidate(value.candidate);
+  const members = Array.isArray(value.members)
+    ? value.members.map((member) => {
+        if (!isRecord(member) || !isRecord(member.candidate)) return null;
+        const memberCandidate = parseEmployerCandidate(member.candidate);
+        if (
+          typeof member.id !== "string" ||
+          (member.applicantRole !== "crew" && member.applicantRole !== "captain") ||
+          typeof member.isPrimary !== "boolean" ||
+          !memberCandidate
+        ) {
+          return null;
+        }
+        return {
+          id: member.id,
+          applicantRole: member.applicantRole as "crew" | "captain",
+          isPrimary: member.isPrimary,
+          candidate: memberCandidate,
+        };
+      })
+    : [];
   if (
+    !candidate ||
     typeof value.id !== "string" ||
     typeof value.jobPostId !== "string" ||
+    !isJobApplicationMode(applicationMode) ||
     !isJobApplicationStatus(status) ||
     (applicantRole !== "crew" && applicantRole !== "captain") ||
     typeof value.submittedAt !== "string" ||
     typeof value.updatedAt !== "string" ||
     typeof value.version !== "number" ||
     typeof value.privateNoteAvailable !== "boolean" ||
-    typeof candidate.displayName !== "string" ||
-    typeof candidate.initials !== "string" ||
-    typeof candidate.experienceYears !== "number" ||
-    typeof candidate.cvCompletionPercent !== "number" ||
-    typeof candidate.premiumProfile !== "boolean"
+    members.some((member) => member === null) ||
+    members.filter((member) => member?.isPrimary).length !== 1 ||
+    (applicationMode === "individual" && members.length !== 1) ||
+    (applicationMode === "team_couple" &&
+      (members.length < 2 || members.length > 8))
   ) {
     return null;
   }
@@ -1058,6 +1211,7 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
   return {
     id: value.id,
     jobPostId: value.jobPostId,
+    applicationMode,
     status,
     coverNote: typeof value.coverNote === "string" ? value.coverNote : "",
     submittedAt: value.submittedAt,
@@ -1066,23 +1220,38 @@ function parseEmployerApplication(value: unknown): EmployerJobApplication | null
     version: value.version,
     applicantRole,
     privateNoteAvailable: value.privateNoteAvailable,
-    candidate: {
-      displayName: candidate.displayName,
-      initials: candidate.initials,
-      profilePhotoUrl: stringValue(candidate.profilePhotoUrl),
-      currentPosition: stringValue(candidate.currentPosition),
-      nationality: stringValue(candidate.nationality),
-      availabilityStatus: stringValue(candidate.availabilityStatus),
-      experienceYears:
-        candidate.experienceYears > 0 && candidate.experienceYears < 1
-          ? 0.5
-          : Math.max(0, Math.floor(candidate.experienceYears)),
-      cvCompletionPercent: Math.max(
-        0,
-        Math.min(100, Math.round(candidate.cvCompletionPercent)),
-      ),
-      premiumProfile: candidate.premiumProfile,
-    },
+    candidate,
+    members: members.filter((member) => member !== null),
+  };
+}
+
+function parseEmployerCandidate(value: unknown) {
+  if (!isRecord(value)) return null;
+  if (
+    typeof value.displayName !== "string" ||
+    typeof value.initials !== "string" ||
+    typeof value.experienceYears !== "number" ||
+    typeof value.cvCompletionPercent !== "number" ||
+    typeof value.premiumProfile !== "boolean"
+  ) {
+    return null;
+  }
+  return {
+    displayName: value.displayName,
+    initials: value.initials,
+    profilePhotoUrl: stringValue(value.profilePhotoUrl),
+    currentPosition: stringValue(value.currentPosition),
+    nationality: stringValue(value.nationality),
+    availabilityStatus: stringValue(value.availabilityStatus),
+    experienceYears:
+      value.experienceYears > 0 && value.experienceYears < 1
+        ? 0.5
+        : Math.max(0, Math.floor(value.experienceYears)),
+    cvCompletionPercent: Math.max(
+      0,
+      Math.min(100, Math.round(value.cvCompletionPercent)),
+    ),
+    premiumProfile: value.premiumProfile,
   };
 }
 
@@ -1091,6 +1260,8 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
   const candidate = value.candidate;
   if (
     typeof value.applicationId !== "string" ||
+    typeof value.memberId !== "string" ||
+    typeof value.isPrimaryMember !== "boolean" ||
     typeof candidate.displayName !== "string" ||
     typeof candidate.initials !== "string" ||
     typeof candidate.premiumProfile !== "boolean" ||
@@ -1102,6 +1273,8 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
 
   return {
     applicationId: value.applicationId,
+    memberId: value.memberId,
+    isPrimaryMember: value.isPrimaryMember,
     candidate: {
       displayName: candidate.displayName,
       initials: candidate.initials,
@@ -1110,6 +1283,7 @@ function parseCandidateDetails(value: unknown): EmployerJobApplicationDetails | 
       nationality: stringValue(candidate.nationality),
       location: stringValue(candidate.location),
       gender: stringValue(candidate.gender),
+      maritalStatus: stringValue(candidate.maritalStatus),
       heightCm: nullableSafeNumber(candidate.heightCm),
       weightKg: nullableSafeNumber(candidate.weightKg),
       smoker: stringValue(candidate.smoker),
@@ -1265,20 +1439,24 @@ const copy = {
     premium: "Premium",
     nameLocked: "Candidate name protected",
     maskedIdentity: "Identity protected by BlueDeck",
+    teamCouple: "Team/Couple",
+    teamMembers: "Team/Couple members",
+    primaryApplicant: "Primary",
     viewProfile: "View profile",
-    candidateProfile: "Applicant profile",
+    candidateProfile: "Crew profile",
     close: "Close profile",
-    gallery: "My Blue gallery",
-    galleryHelp: "Four selected photos shared by the candidate in My Blue.",
+    gallery: "Blue Gallery",
+    galleryHelp: "Selected professional photos shared by the candidate.",
     galleryPhoto: "gallery photo",
     openGalleryPhoto: "Open gallery photo",
     closeGalleryPhoto: "Close photo preview",
     noGalleryPhotos: "The candidate has not shared gallery photos yet.",
     references: "References",
     documents: "Documents",
-    experiences: "Experiences",
+    experiences: "Experience",
     personalDetails: "Personal details",
     gender: "Gender",
+    maritalStatus: "Marital status",
     height: "Height",
     weight: "Weight",
     smoker: "Smoker",
@@ -1287,7 +1465,7 @@ const copy = {
     professionalSummary: "Professional summary",
     noProfessionalSummary: "No professional summary has been added yet.",
     skillsCharacteristics: "Skills & characteristics",
-    skillsHelp: "All structured career preferences shared in My Profile.",
+    skillsHelp: "Skills, strengths and career preferences shared by the candidate.",
     skills: "Skills",
     characteristics: "Characteristics",
     seekingPositions: "Seeking positions",
@@ -1350,11 +1528,14 @@ const copy = {
     premium: "Premium",
     nameLocked: "Aday adı korumalı",
     maskedIdentity: "Kimlik BlueDeck tarafından korunuyor",
+    teamCouple: "Team/Couple",
+    teamMembers: "Team/Couple üyeleri",
+    primaryApplicant: "Başvuran",
     viewProfile: "Profili görüntüle",
-    candidateProfile: "Başvuran profili",
+    candidateProfile: "Crew profili",
     close: "Profili kapat",
-    gallery: "My Blue galerisi",
-    galleryHelp: "Adayın My Blue bölümünde paylaştığı dört seçilmiş fotoğraf.",
+    gallery: "Blue Gallery",
+    galleryHelp: "Adayın paylaştığı seçilmiş profesyonel fotoğraflar.",
     galleryPhoto: "galeri fotoğrafı",
     openGalleryPhoto: "Galeri fotoğrafını aç",
     closeGalleryPhoto: "Fotoğraf önizlemesini kapat",
@@ -1364,6 +1545,7 @@ const copy = {
     experiences: "Deneyim",
     personalDetails: "Kişisel bilgiler",
     gender: "Cinsiyet",
+    maritalStatus: "Medeni durum",
     height: "Boy",
     weight: "Kilo",
     smoker: "Sigara kullanımı",
@@ -1372,7 +1554,7 @@ const copy = {
     professionalSummary: "Profesyonel özet",
     noProfessionalSummary: "Henüz profesyonel özet eklenmemiş.",
     skillsCharacteristics: "Beceriler ve özellikler",
-    skillsHelp: "My Profile içinde paylaşılan tüm yapılandırılmış kariyer tercihleri.",
+    skillsHelp: "Adayın paylaştığı beceriler, güçlü yönler ve kariyer tercihleri.",
     skills: "Beceriler",
     characteristics: "Kişisel özellikler",
     seekingPositions: "Aranan pozisyonlar",

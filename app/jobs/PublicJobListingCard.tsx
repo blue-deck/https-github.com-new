@@ -13,10 +13,11 @@ import {
   UserRoundPlus,
 } from "lucide-react";
 import {
-  formatJobCandidateType,
   formatJobEmploymentType,
+  formatJobTeamCoupleAnswer,
   formatJobYachtLength,
   formatJobYachtType,
+  isJobTeamCouple,
 } from "../lib/jobPosts";
 import {
   formatJobDate,
@@ -55,14 +56,6 @@ export function PublicJobListingCard({
       className="group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] motion-reduce:transform-none lg:grid-cols-[minmax(13rem,0.9fr)_minmax(24rem,1.75fr)_minmax(16.5rem,0.85fr)]"
     >
       <div className="flex min-w-0 flex-col justify-center px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 lg:px-7 lg:py-7 xl:px-8">
-        {job.candidateType !== "individual" ? (
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <StatusPill>
-              {formatJobCandidateType(job.candidateType, language)}
-            </StatusPill>
-          </div>
-        ) : null}
-
         <h3
           id={titleId}
           data-i18n-ignore
@@ -92,6 +85,14 @@ export function PublicJobListingCard({
             {c.posted}: {formatJobDate(job.publishedAt, language)}
           </span>
         </p>
+        {isJobTeamCouple(job.candidateType) ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusPill>
+              {c.teamCouple}:{" "}
+              {formatJobTeamCoupleAnswer(job.candidateType, language)}
+            </StatusPill>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid min-w-0 gap-x-8 gap-y-3 border-t border-slate-200 px-5 py-6 sm:grid-cols-2 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10">
@@ -208,6 +209,7 @@ function StatusPill({ children }: { children: React.ReactNode }) {
 
 const cardCopy = {
   en: {
+    teamCouple: "Team/Couple",
     start: "Start",
     posted: "Posted",
     notSpecified: "Not specified",
@@ -215,6 +217,7 @@ const cardCopy = {
     viewRole: "View role details",
   },
   tr: {
+    teamCouple: "Team/Couple",
     start: "Başlangıç",
     posted: "Yayınlandı",
     notSpecified: "Belirtilmedi",

@@ -24,9 +24,7 @@ export const publicJobSearchSorts = [
   "yacht_length_asc",
 ] as const;
 
-export const publicJobPostedWithinOptions = [7, 14, 30] as const;
 export const defaultPublicJobSearchLimit = 20;
-export const maximumPublicJobSearchLimit = 50;
 export const maximumPublicJobSearchCursorLength = 2_048;
 
 export type PublicJobSearchSort = (typeof publicJobSearchSorts)[number];
@@ -62,8 +60,6 @@ export type PublicJobSearchFilters = {
   yachtFlagCountryCodes: string[];
   yachtLengthMinMetres: number | null;
   yachtLengthMaxMetres: number | null;
-  yachtBuildYearMin: number | null;
-  yachtBuildYearMax: number | null;
   crewMemberCountMin: number | null;
   crewMemberCountMax: number | null;
   minimumYachtExperiences: JobMinimumYachtExperience[];
@@ -74,9 +70,6 @@ export type PublicJobSearchFilters = {
   requiredVisas: JobVisa[];
   smokerPolicies: JobSmokerPolicy[];
   visibleTattooPolicies: JobVisibleTattooPolicy[];
-  startDateFrom: string;
-  startDateTo: string;
-  postedWithinDays: number | null;
   salaryCurrency: JobSalaryCurrency | null;
   salaryPeriod: JobSalaryPeriod | null;
   salaryMin: number | null;
@@ -118,8 +111,6 @@ const queryKeys = new Set([
   "yachtFlag",
   "lengthMin",
   "lengthMax",
-  "buildYearMin",
-  "buildYearMax",
   "crewMin",
   "crewMax",
   "minimumExperience",
@@ -130,15 +121,11 @@ const queryKeys = new Set([
   "visa",
   "smoker",
   "tattoo",
-  "startFrom",
-  "startTo",
-  "postedWithin",
   "salaryCurrency",
   "salaryPeriod",
   "salaryMin",
   "salaryMax",
   "sort",
-  "limit",
   "cursor",
 ]);
 
@@ -165,19 +152,13 @@ const scalarKeys = [
   "yachtBrand",
   "lengthMin",
   "lengthMax",
-  "buildYearMin",
-  "buildYearMax",
   "crewMin",
   "crewMax",
-  "startFrom",
-  "startTo",
-  "postedWithin",
   "salaryCurrency",
   "salaryPeriod",
   "salaryMin",
   "salaryMax",
   "sort",
-  "limit",
   "cursor",
 ] as const;
 
@@ -198,8 +179,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     yachtFlagCountryCodes: [],
     yachtLengthMinMetres: null,
     yachtLengthMaxMetres: null,
-    yachtBuildYearMin: null,
-    yachtBuildYearMax: null,
     crewMemberCountMin: null,
     crewMemberCountMax: null,
     minimumYachtExperiences: [],
@@ -210,9 +189,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     requiredVisas: [],
     smokerPolicies: [],
     visibleTattooPolicies: [],
-    startDateFrom: "",
-    startDateTo: "",
-    postedWithinDays: null,
     salaryCurrency: null,
     salaryPeriod: null,
     salaryMin: null,
@@ -348,16 +324,6 @@ export function parsePublicJobSearchParams(
     0.01,
     999,
   );
-  const yachtBuildYearMin = integerFilter(
-    searchParams.get("buildYearMin"),
-    1800,
-    2100,
-  );
-  const yachtBuildYearMax = integerFilter(
-    searchParams.get("buildYearMax"),
-    1800,
-    2100,
-  );
   const crewMemberCountMin = integerFilter(
     searchParams.get("crewMin"),
     1,
@@ -382,8 +348,6 @@ export function parsePublicJobSearchParams(
   const numericFilters = [
     yachtLengthMinMetres,
     yachtLengthMaxMetres,
-    yachtBuildYearMin,
-    yachtBuildYearMax,
     crewMemberCountMin,
     crewMemberCountMax,
     salaryMin,
@@ -391,27 +355,6 @@ export function parsePublicJobSearchParams(
   ];
   if (numericFilters.some((result) => !result.ok)) {
     return { ok: false, error: "One or more numeric filters are invalid." };
-  }
-
-  const startDateFrom = dateFilter(searchParams.get("startFrom"));
-  const startDateTo = dateFilter(searchParams.get("startTo"));
-  if (startDateFrom === null || startDateTo === null) {
-    return { ok: false, error: "One or more date filters are invalid." };
-  }
-
-  const postedWithin = integerFilter(
-    searchParams.get("postedWithin"),
-    1,
-    30,
-  );
-  if (
-    !postedWithin.ok ||
-    (postedWithin.value !== null &&
-      !publicJobPostedWithinOptions.includes(
-        postedWithin.value as (typeof publicJobPostedWithinOptions)[number],
-      ))
-  ) {
-    return { ok: false, error: "Select a valid publication window." };
   }
 
   const salaryCurrency = optionalEnum(
@@ -432,15 +375,6 @@ export function parsePublicJobSearchParams(
     sort === undefined
   ) {
     return { ok: false, error: "One or more selection filters are invalid." };
-  }
-
-  const limit = integerFilter(
-    searchParams.get("limit"),
-    1,
-    maximumPublicJobSearchLimit,
-  );
-  if (!limit.ok) {
-    return { ok: false, error: "Select a valid job page size." };
   }
 
   const cursorValue = searchParams.get("cursor");
@@ -464,8 +398,6 @@ export function parsePublicJobSearchParams(
     yachtFlagCountryCodes: successfulList(yachtFlagCountryCodes),
     yachtLengthMinMetres: numericValue(yachtLengthMinMetres),
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
-    yachtBuildYearMin: numericValue(yachtBuildYearMin),
-    yachtBuildYearMax: numericValue(yachtBuildYearMax),
     crewMemberCountMin: numericValue(crewMemberCountMin),
     crewMemberCountMax: numericValue(crewMemberCountMax),
     minimumYachtExperiences: successfulList(minimumYachtExperiences),
@@ -476,25 +408,18 @@ export function parsePublicJobSearchParams(
     requiredVisas: successfulList(requiredVisas),
     smokerPolicies: successfulList(smokerPolicies),
     visibleTattooPolicies: successfulList(visibleTattooPolicies),
-    startDateFrom,
-    startDateTo,
-    postedWithinDays: postedWithin.value,
     salaryCurrency,
     salaryPeriod,
     salaryMin: numericValue(salaryMin),
     salaryMax: numericValue(salaryMax),
     sort: sort || "newest",
-    limit: limit.value || defaultPublicJobSearchLimit,
+    limit: defaultPublicJobSearchLimit,
   };
 
   if (
     reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
-    reversed(filters.yachtBuildYearMin, filters.yachtBuildYearMax) ||
     reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
-    reversed(filters.salaryMin, filters.salaryMax) ||
-    (filters.startDateFrom &&
-      filters.startDateTo &&
-      filters.startDateFrom > filters.startDateTo)
+    reversed(filters.salaryMin, filters.salaryMax)
   ) {
     return { ok: false, error: "A minimum filter cannot exceed its maximum." };
   }
@@ -532,8 +457,6 @@ export function publicJobSearchParams(
   setList(params, "yachtFlag", filters.yachtFlagCountryCodes);
   setNumber(params, "lengthMin", filters.yachtLengthMinMetres);
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
-  setNumber(params, "buildYearMin", filters.yachtBuildYearMin);
-  setNumber(params, "buildYearMax", filters.yachtBuildYearMax);
   setNumber(params, "crewMin", filters.crewMemberCountMin);
   setNumber(params, "crewMax", filters.crewMemberCountMax);
   setList(params, "minimumExperience", filters.minimumYachtExperiences);
@@ -544,17 +467,11 @@ export function publicJobSearchParams(
   setList(params, "visa", filters.requiredVisas);
   setList(params, "smoker", filters.smokerPolicies);
   setList(params, "tattoo", filters.visibleTattooPolicies);
-  setText(params, "startFrom", filters.startDateFrom);
-  setText(params, "startTo", filters.startDateTo);
-  setNumber(params, "postedWithin", filters.postedWithinDays);
   setText(params, "salaryCurrency", filters.salaryCurrency || "");
   setText(params, "salaryPeriod", filters.salaryPeriod || "");
   setNumber(params, "salaryMin", filters.salaryMin);
   setNumber(params, "salaryMax", filters.salaryMax);
   if (filters.sort !== "newest") params.set("sort", filters.sort);
-  if (filters.limit !== defaultPublicJobSearchLimit) {
-    params.set("limit", String(filters.limit));
-  }
   if (cursor) params.set("cursor", cursor);
   return params;
 }
@@ -591,7 +508,6 @@ export function hasPublicJobSearchFilters(filters: PublicJobSearchFilters) {
 export function matchesPublicJobSearch(
   job: PublicJobPost,
   filters: PublicJobSearchFilters,
-  snapshotAt: string,
 ) {
   if (
     filters.query &&
@@ -637,11 +553,6 @@ export function matchesPublicJobSearch(
   }
   if (
     !numberInRange(
-      job.yachtBuildYear,
-      filters.yachtBuildYearMin,
-      filters.yachtBuildYearMax,
-    ) ||
-    !numberInRange(
       job.crewMemberCount,
       filters.crewMemberCountMin,
       filters.crewMemberCountMax,
@@ -667,29 +578,6 @@ export function matchesPublicJobSearch(
   ) {
     return false;
   }
-  if (
-    (filters.startDateFrom &&
-      (!job.startDate || job.startDate < filters.startDateFrom)) ||
-    (filters.startDateTo &&
-      (!job.startDate || job.startDate > filters.startDateTo))
-  ) {
-    return false;
-  }
-
-  if (filters.postedWithinDays !== null) {
-    const snapshot = Date.parse(snapshotAt);
-    const publishedAt = Date.parse(job.publishedAt);
-    const earliest = snapshot - filters.postedWithinDays * 86_400_000;
-    if (
-      !Number.isFinite(snapshot) ||
-      !Number.isFinite(publishedAt) ||
-      publishedAt < earliest ||
-      publishedAt > snapshot
-    ) {
-      return false;
-    }
-  }
-
   const salaryFilterSelected =
     filters.salaryCurrency !== null ||
     filters.salaryPeriod !== null ||
@@ -1142,15 +1030,6 @@ function integerFilter(value: string | null, minimum: number, maximum: number) {
   return Number.isSafeInteger(number) && number >= minimum && number <= maximum
     ? { ok: true as const, value: number }
     : { ok: false as const };
-}
-
-function dateFilter(value: string | null) {
-  if (value === null || value === "") return "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
-    ? value
-    : null;
 }
 
 function reversed(minimum: number | null, maximum: number | null) {

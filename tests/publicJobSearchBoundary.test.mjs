@@ -39,6 +39,55 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
   assert.match(client, /isValidNextCursor\(payload\.nextCursor, payload\.hasMore\)/);
 });
 
+test("multi-select filters are exclusive and dismiss on outside click or Escape", async () => {
+  const client = await source("app/jobs/JobsClient.tsx");
+
+  assert.match(client, /name="job-multi-select"/);
+  assert.match(client, /data-job-multi-select="true"/);
+  assert.match(client, /onToggle=\{\(event\) => \{/);
+  assert.match(client, /closeOpenJobMultiSelects\(event\.currentTarget\)/);
+  assert.match(client, /document\.addEventListener\("pointerdown"/);
+  assert.match(client, /event\.target\.closest\(jobMultiSelectSelector\)/);
+  assert.match(client, /document\.addEventListener\("keydown"/);
+  assert.match(client, /event\.key !== "Escape"/);
+  assert.match(client, /querySelector<HTMLElement>\("summary"\)\?\.focus\(\)/);
+  assert.match(client, /document\.removeEventListener\("pointerdown"/);
+  assert.match(client, /document\.removeEventListener\("keydown"/);
+});
+
+test("Team/Couple is a binary job filter and listing fact", async () => {
+  const [client, card, detail] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/jobs/PublicJobListingCard.tsx"),
+    source("app/jobs/[id]/JobDetailClient.tsx"),
+  ]);
+
+  assert.match(client, /label=\{c\.teamCouple\}/);
+  assert.match(client, /placeholder=\{c\.anyTeamCouple\}/);
+  assert.match(client, /if \(value === "yes"\) return \["team", "couple"\]/);
+  assert.match(client, /if \(value === "no"\) return \["individual"\]/);
+  assert.match(
+    client,
+    /add\("team-couple", `\$\{c\.teamCouple\}: \$\{c\[teamCouple\]\}`/,
+  );
+  assert.doesNotMatch(client, /label=\{c\.candidateType\}/);
+  assert.match(
+    card,
+    /formatJobTeamCoupleAnswer\(job\.candidateType, language\)/,
+  );
+  assert.match(card, /isJobTeamCouple\(job\.candidateType\) \? \(/);
+  assert.match(
+    card,
+    /\{c\.posted\}: \{formatJobDate\(job\.publishedAt, language\)\}[\s\S]*?isJobTeamCouple\(job\.candidateType\)/,
+  );
+  assert.match(detail, /label: c\.teamCouple/);
+  assert.match(
+    detail,
+    /formatJobTeamCoupleAnswer\(job\.candidateType, language\)/,
+  );
+  assert.doesNotMatch(detail, /individualCandidate/);
+});
+
 test("server scan uses a keyset, current activity, batched authority, and result-state binding", async () => {
   const server = await source("app/lib/publicJobSearchServer.ts");
 

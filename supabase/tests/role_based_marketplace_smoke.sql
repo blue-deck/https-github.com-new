@@ -33,6 +33,7 @@ declare
   application_a public.job_applications%rowtype;
   application_b public.job_applications%rowtype;
   captain_application public.job_applications%rowtype;
+  withdrawn_application_id uuid;
   stored_job public.job_posts%rowtype;
   event_count integer;
   result_count integer;
@@ -742,7 +743,7 @@ begin
       repeat('x', 2001)
     );
   exception
-    when check_violation then
+    when check_violation or invalid_parameter_value then
       long_note_rejected := true;
   end;
   if not long_note_rejected then
@@ -833,6 +834,31 @@ begin
   then
     raise exception 'Applicant withdrawal lifecycle failed.';
   end if;
+  withdrawn_application_id := application_a.id;
+
+  if (
+    public.bluedeck_job_applications_page(
+      owner_a,
+      job_a,
+      null,
+      null,
+      50
+    ) ->> 'total'
+  )::integer <> 1
+    or exists (
+      select 1
+      from public.bluedeck_list_job_applications(owner_a, job_a)
+      where id = withdrawn_application_id
+    )
+    or not exists (
+      select 1
+      from public.bluedeck_list_job_applications(crew_a, job_a)
+      where id = withdrawn_application_id
+        and status = 'withdrawn'
+    )
+  then
+    raise exception 'A withdrawn application remained visible to its employer.';
+  end if;
 
   begin
     perform public.bluedeck_update_job_application_status(
@@ -852,9 +878,39 @@ begin
   select count(*)
   into event_count
   from public.job_application_events as event
-  where event.application_id = application_a.id;
+  where event.application_id = withdrawn_application_id;
   if event_count <> 4 then
     raise exception 'Expected four append-only application lifecycle events.';
+  end if;
+
+  select * into application_a
+  from public.bluedeck_submit_job_application(
+    job_a,
+    crew_a,
+    'This is a fresh application after withdrawal.'
+  );
+
+  if application_a.id = withdrawn_application_id
+    or application_a.status <> 'submitted'
+    or application_a.version <> 1
+    or application_a.withdrawn_at is not null
+    or application_a.cover_note <> 'This is a fresh application after withdrawal.'
+    or (
+      public.bluedeck_job_applications_page(
+        owner_a,
+        job_a,
+        null,
+        null,
+        50
+      ) ->> 'total'
+    )::integer <> 2
+    or (
+      select application_count
+      from public.bluedeck_job_application_counts(owner_a)
+      where job_post_id = job_a
+    ) <> 2
+  then
+    raise exception 'A withdrawn applicant did not receive a fresh application cycle.';
   end if;
 
   select *
