@@ -46,13 +46,7 @@ test("personal crew selects show Any without changing their field labels", async
     "utf8",
   );
 
-  for (const field of [
-    "availability",
-    "maritalStatus",
-    "gender",
-    "smoker",
-    "visibleTattoos",
-  ]) {
+  for (const field of ["maritalStatus", "gender", "smoker", "visibleTattoos"]) {
     assert.match(
       client,
       new RegExp(`label=\\{c\\.${field}\\}\\s+emptyOptionLabel=\\{c\\.any\\}`),
@@ -61,6 +55,22 @@ test("personal crew selects show Any without changing their field labels", async
   assert.match(client, /any: "Any"/);
   assert.match(client, /any: "Herhangi"/);
   assert.match(client, /<option value="">\{emptyOptionLabel\}<\/option>/);
+});
+
+test("availability select uses its field label as the empty option", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    client,
+    /label=\{c\.availability\}\s+value=\{filters\.availability\}/,
+  );
+  assert.doesNotMatch(
+    client,
+    /label=\{c\.availability\}\s+emptyOptionLabel=\{c\.any\}/,
+  );
 });
 
 test("find crew reuses every My Profile availability option", async () => {

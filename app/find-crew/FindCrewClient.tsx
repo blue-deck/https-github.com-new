@@ -340,7 +340,6 @@ export function FindCrewClient({
               />
               <FilterSelect
                 label={c.availability}
-                emptyOptionLabel={c.any}
                 value={filters.availability}
                 onChange={(value) => setFilter("availability", value)}
                 options={crewAvailabilityStatuses}
