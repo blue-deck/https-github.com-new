@@ -19,6 +19,23 @@ test("find crew filter labels omit all and tüm prefixes", async () => {
   assert.doesNotMatch(client, /:\s*"Tüm [^"]+"/);
 });
 
+test("find crew uses concise English labels for core select filters", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(client, /availability: "Availability"/);
+  assert.match(client, /contract: "Employment type"/);
+  assert.match(client, /nationalityFilter: "Nationality"/);
+  assert.match(client, /maritalStatus: "Marital status"/);
+  assert.match(client, /skill: "Skills"/);
+  assert.doesNotMatch(
+    client,
+    /:\s*"Any (?:availability|contract|nationality|marital status|skill)"/,
+  );
+});
+
 test("round-trips every public crew search criterion through the URL contract", () => {
   const source = new URLSearchParams({
     q: "  Chief   Stewardess  ",
