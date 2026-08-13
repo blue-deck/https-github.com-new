@@ -917,7 +917,7 @@ const copy = {
     skill: "Skills",
     characteristic: "Professional trait",
     workPreference: "Work preference",
-    language: "Any language",
+    language: "Language",
     profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
