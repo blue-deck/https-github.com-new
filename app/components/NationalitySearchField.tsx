@@ -27,6 +27,7 @@ export function NationalitySearchField({
   label,
   value,
   onChange,
+  placeholder,
   className = "",
   labelClassName = defaultLabelClassName,
   controlClassName = defaultControlClassName,
@@ -34,6 +35,7 @@ export function NationalitySearchField({
   label: string;
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
   className?: string;
   labelClassName?: string;
   controlClassName?: string;
@@ -168,7 +170,7 @@ export function NationalitySearchField({
           autoComplete="off"
           spellCheck={false}
           value={open ? query : selectedName}
-          placeholder={c.placeholder}
+          placeholder={placeholder ?? c.placeholder}
           onFocus={(event) => {
             const input = event.currentTarget;
             if (!open) openPicker();

@@ -53,18 +53,53 @@ test("crew keyword search waits for its right-side search button", async () => {
 
   assert.match(
     client,
-    /const \[searchDraft, setSearchDraft\] = useState\(initialFilters\.query\)/,
+    /const \[draftFilters, setDraftFilters\] = useState\(\(\) =>\s*normalizeCrewSearchFilters\(initialFilters\)/,
   );
-  assert.match(client, /onChange=\{\(event\) => setSearchDraft\(event\.target\.value\)\}/);
-  assert.match(client, /function submitCrewKeywordSearch\(\) \{\s*setFilter\("query", searchDraft\);/);
+  assert.match(client, /value=\{draftFilters\.query\}/);
+  assert.match(client, /setDraftFilter\("query", event\.target\.value\)/);
+  assert.match(client, /function submitCrewKeywordSearch\(\) \{\s*setFilters\(\(current\) =>\s*normalizeCrewSearchFilters\(\{ \.\.\.current, query: draftFilters\.query \}\)/);
   assert.match(client, /onSubmit=\{\(event\) => \{\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
   assert.match(client, /if \(event\.key !== "Enter"\) return;\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
-  assert.match(client, /type="submit"\s+aria-label=\{c\.searchAction\}/);
+  assert.match(client, /type="submit"\s+aria-label=\{c\.keywordSearchAction\}/);
   assert.match(client, /absolute right-1 top-1\/2/);
-  assert.doesNotMatch(
-    client,
-    /onChange=\{\(event\) => setFilter\("query", event\.target\.value\)\}/,
+});
+
+test("primary and advanced crew filters apply only through the relocated Search button", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
   );
+
+  for (const field of [
+    "position",
+    "nationality",
+    "availability",
+    "location",
+    "maritalStatus",
+    "gender",
+    "smoker",
+    "visibleTattoos",
+    "minimumExperience",
+    "language",
+    "premiumOnly",
+    "hasPhoto",
+    "hasGallery",
+  ]) {
+    assert.match(client, new RegExp(`draftFilters\\.${field}`));
+  }
+  assert.match(
+    client,
+    /function submitAllCrewFilters\(\) \{\s*setFilters\(normalizeCrewSearchFilters\(draftFilters\)\);/,
+  );
+  assert.match(
+    client,
+    /!advancedOpen \? \(\s*<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
+  );
+  assert.match(
+    client,
+    /id="crew-advanced-filters"[\s\S]*?<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
+  );
+  assert.match(client, /placeholder=\{c\.nationalityFilter\}/);
 });
 
 test("personal crew selects show Any without changing their field labels", async () => {
@@ -92,7 +127,7 @@ test("availability select uses its field label as the empty option", async () =>
 
   assert.match(
     client,
-    /label=\{c\.availability\}\s+value=\{filters\.availability\}/,
+    /label=\{c\.availability\}\s+value=\{draftFilters\.availability\}/,
   );
   assert.doesNotMatch(
     client,
@@ -106,7 +141,7 @@ test("places nationality in primary filters and location in more filters", async
     "utf8",
   );
   const primaryStart = client.indexOf(
-    '<div className="mt-4 grid gap-3 md:grid-cols-2',
+    "className={`mt-4 grid gap-3 md:grid-cols-2",
   );
   const advancedStart = client.indexOf("{advancedOpen ?", primaryStart);
   const advancedEnd = client.indexOf(

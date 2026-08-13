@@ -64,7 +64,9 @@ export function FindCrewClient({
   const [filters, setFilters] = useState(() =>
     normalizeCrewSearchFilters(initialFilters),
   );
-  const [searchDraft, setSearchDraft] = useState(initialFilters.query);
+  const [draftFilters, setDraftFilters] = useState(() =>
+    normalizeCrewSearchFilters(initialFilters),
+  );
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     hasAdvancedCrewFilters(initialFilters),
   );
@@ -80,7 +82,7 @@ export function FindCrewClient({
   const filterFingerprint = crewSearchParams(filters).toString();
   const currentFilterFingerprint = useRef(filterFingerprint);
   const activeFilterCount = crewSearchFilterCount(filters);
-  const advancedFilterCount = countAdvancedCrewFilters(filters);
+  const advancedFilterCount = countAdvancedCrewFilters(draftFilters);
   const hasFilters = activeFilterCount > 0;
 
   useEffect(() => {
@@ -89,7 +91,7 @@ export function FindCrewClient({
         new URLSearchParams(window.location.search),
       );
       setFilters(restored);
-      setSearchDraft(restored.query);
+      setDraftFilters(restored);
       if (hasAdvancedCrewFilters(restored)) setAdvancedOpen(true);
     }
 
@@ -173,23 +175,29 @@ export function FindCrewClient({
     };
   }, [filterFingerprint, refreshVersion]);
 
-  function setFilter<Key extends keyof CrewSearchFilters>(
+  function setDraftFilter<Key extends keyof CrewSearchFilters>(
     key: Key,
     value: CrewSearchFilters[Key],
   ) {
-    setFilters((current) =>
+    setDraftFilters((current) =>
       normalizeCrewSearchFilters({ ...current, [key]: value }),
     );
   }
 
   function clearFilters() {
     setFilters(defaultCrewSearchFilters);
-    setSearchDraft("");
+    setDraftFilters(defaultCrewSearchFilters);
     setAdvancedOpen(false);
   }
 
   function submitCrewKeywordSearch() {
-    setFilter("query", searchDraft);
+    setFilters((current) =>
+      normalizeCrewSearchFilters({ ...current, query: draftFilters.query }),
+    );
+  }
+
+  function submitAllCrewFilters() {
+    setFilters(normalizeCrewSearchFilters(draftFilters));
   }
 
   async function loadMoreProfiles() {
@@ -317,7 +325,13 @@ export function FindCrewClient({
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.35fr_repeat(3,minmax(0,1fr))]">
+            <div
+              className={`mt-4 grid gap-3 md:grid-cols-2 ${
+                advancedOpen
+                  ? "xl:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,0.9fr))]"
+                  : "xl:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,0.9fr))_auto]"
+              }`}
+            >
               <form
                 className="block"
                 onSubmit={(event) => {
@@ -335,8 +349,10 @@ export function FindCrewClient({
                   <input
                     id="crew-keyword-search"
                     type="search"
-                    value={searchDraft}
-                    onChange={(event) => setSearchDraft(event.target.value)}
+                    value={draftFilters.query}
+                    onChange={(event) =>
+                      setDraftFilter("query", event.target.value)
+                    }
                     onKeyDown={(event) => {
                       if (event.key !== "Enter") return;
                       event.preventDefault();
@@ -348,8 +364,8 @@ export function FindCrewClient({
                   />
                   <button
                     type="submit"
-                    aria-label={c.searchAction}
-                    title={c.searchAction}
+                    aria-label={c.keywordSearchAction}
+                    title={c.keywordSearchAction}
                     className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
                   >
                     <Search className="h-5 w-5" aria-hidden />
@@ -358,23 +374,34 @@ export function FindCrewClient({
               </form>
               <FilterSelect
                 label={c.position}
-                value={filters.position}
-                onChange={(value) => setFilter("position", value)}
+                value={draftFilters.position}
+                onChange={(value) => setDraftFilter("position", value)}
                 options={facets.positions}
                 language={language}
               />
               <NationalitySearchField
                 label={c.nationalityFilter}
-                value={filters.nationality}
-                onChange={(value) => setFilter("nationality", value)}
+                value={draftFilters.nationality}
+                onChange={(value) => setDraftFilter("nationality", value)}
+                placeholder={c.nationalityFilter}
               />
               <FilterSelect
                 label={c.availability}
-                value={filters.availability}
-                onChange={(value) => setFilter("availability", value)}
+                value={draftFilters.availability}
+                onChange={(value) => setDraftFilter("availability", value)}
                 options={crewAvailabilityStatuses}
                 language={language}
               />
+              {!advancedOpen ? (
+                <CrewFilterSearchButton
+                  label={c.applyFilters}
+                  accessibleLabel={c.applyFiltersLabel}
+                  searchingLabel={c.searching}
+                  searching={searching}
+                  onClick={submitAllCrewFilters}
+                  className="self-end md:col-span-2 xl:col-span-1"
+                />
+              ) : null}
             </div>
 
             {advancedOpen ? (
@@ -385,53 +412,53 @@ export function FindCrewClient({
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <FilterSelect
                     label={c.location}
-                    value={filters.location}
-                    onChange={(value) => setFilter("location", value)}
+                    value={draftFilters.location}
+                    onChange={(value) => setDraftFilter("location", value)}
                     options={facets.locations}
                     language={language}
                   />
                   <FilterSelect
                     label={c.maritalStatus}
                     emptyOptionLabel={c.any}
-                    value={filters.maritalStatus}
-                    onChange={(value) => setFilter("maritalStatus", value)}
+                    value={draftFilters.maritalStatus}
+                    onChange={(value) => setDraftFilter("maritalStatus", value)}
                     options={crewMaritalStatuses}
                     language={language}
                   />
                   <FilterSelect
                     label={c.gender}
                     emptyOptionLabel={c.any}
-                    value={filters.gender}
-                    onChange={(value) => setFilter("gender", value)}
+                    value={draftFilters.gender}
+                    onChange={(value) => setDraftFilter("gender", value)}
                     options={crewGenderOptions}
                     language={language}
                   />
                   <FilterSelect
                     label={c.smoker}
                     emptyOptionLabel={c.any}
-                    value={filters.smoker}
-                    onChange={(value) => setFilter("smoker", value)}
+                    value={draftFilters.smoker}
+                    onChange={(value) => setDraftFilter("smoker", value)}
                     options={crewYesNoOptions}
                     language={language}
                   />
                   <FilterSelect
                     label={c.visibleTattoos}
                     emptyOptionLabel={c.any}
-                    value={filters.visibleTattoos}
-                    onChange={(value) => setFilter("visibleTattoos", value)}
+                    value={draftFilters.visibleTattoos}
+                    onChange={(value) => setDraftFilter("visibleTattoos", value)}
                     options={crewYesNoOptions}
                     language={language}
                   />
                   <YachtExperienceFilterSelect
                     label={c.minimumExperience}
-                    value={filters.minimumExperience}
-                    onChange={(value) => setFilter("minimumExperience", value)}
+                    value={draftFilters.minimumExperience}
+                    onChange={(value) => setDraftFilter("minimumExperience", value)}
                     language={language}
                   />
                   <FilterSelect
                     label={c.language}
-                    value={filters.language}
-                    onChange={(value) => setFilter("language", value)}
+                    value={draftFilters.language}
+                    onChange={(value) => setDraftFilter("language", value)}
                     options={facets.languages}
                     language={language}
                   />
@@ -444,18 +471,18 @@ export function FindCrewClient({
                   <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     <FilterToggle
                       label={c.premiumOnly}
-                      checked={filters.premiumOnly}
-                      onChange={(checked) => setFilter("premiumOnly", checked)}
+                      checked={draftFilters.premiumOnly}
+                      onChange={(checked) => setDraftFilter("premiumOnly", checked)}
                     />
                     <FilterToggle
                       label={c.hasPhoto}
-                      checked={filters.hasPhoto}
-                      onChange={(checked) => setFilter("hasPhoto", checked)}
+                      checked={draftFilters.hasPhoto}
+                      onChange={(checked) => setDraftFilter("hasPhoto", checked)}
                     />
                     <FilterToggle
                       label={c.hasGallery}
-                      checked={filters.hasGallery}
-                      onChange={(checked) => setFilter("hasGallery", checked)}
+                      checked={draftFilters.hasGallery}
+                      onChange={(checked) => setDraftFilter("hasGallery", checked)}
                     />
                   </div>
                 </fieldset>
@@ -466,6 +493,16 @@ export function FindCrewClient({
                   />
                   {c.fairHiringNote}
                 </p>
+                <div className="mt-5 flex justify-end border-t border-slate-200 pt-5">
+                  <CrewFilterSearchButton
+                    label={c.applyFilters}
+                    accessibleLabel={c.applyFiltersLabel}
+                    searchingLabel={c.searching}
+                    searching={searching}
+                    onClick={submitAllCrewFilters}
+                    className="w-full sm:w-auto sm:min-w-40"
+                  />
+                </div>
               </div>
             ) : null}
           </section>
@@ -612,6 +649,41 @@ export function FindCrewClient({
       </main>
 
       <PublicFooter />
+    </div>
+  );
+}
+
+function CrewFilterSearchButton({
+  label,
+  accessibleLabel,
+  searchingLabel,
+  searching,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  accessibleLabel: string;
+  searchingLabel: string;
+  searching: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        aria-label={searching ? searchingLabel : accessibleLabel}
+        onClick={onClick}
+        disabled={searching}
+        className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-6 text-sm font-black text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
+      >
+        {searching ? (
+          <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          <Search className="h-4 w-4" aria-hidden />
+        )}
+        {searching ? searchingLabel : label}
+      </button>
     </div>
   );
 }
@@ -877,11 +949,12 @@ const copy = {
     intro:
       "Search privacy-protected Crew and Captain profiles by professional experience, position, location, language, skills, work preferences and profile readiness.",
     filters: "Search and filters",
-    filterHint:
-      "Other filters update automatically. Use the search button after entering a keyword.",
+    filterHint: "Choose your criteria, then use Search to update the results.",
     advanced: "More filters",
     search: "Search crew",
-    searchAction: "Search",
+    keywordSearchAction: "Search keyword",
+    applyFilters: "Search",
+    applyFiltersLabel: "Search with selected filters",
     any: "Any",
     searchPlaceholder: "Position, skill, language or location",
     position: "Position",
@@ -938,10 +1011,12 @@ const copy = {
       "Gizliliği korunan Crew ve Captain profillerini mesleki deneyim, pozisyon, konum, dil, beceri, çalışma tercihi ve profil yeterliliğine göre arayın.",
     filters: "Arama ve filtreler",
     filterHint:
-      "Diğer filtreler otomatik güncellenir. Anahtar kelime yazdıktan sonra arama düğmesine basın.",
+      "Kriterlerinizi seçin, sonuçları güncellemek için Ara düğmesine basın.",
     advanced: "Daha fazla filtre",
     search: "Crew ara",
-    searchAction: "Ara",
+    keywordSearchAction: "Anahtar kelimeyi ara",
+    applyFilters: "Ara",
+    applyFiltersLabel: "Seçili filtrelerle ara",
     any: "Herhangi",
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyon",
