@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
+import { NationalitySearchField } from "../components/NationalitySearchField";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import { crewAvailabilityStatuses } from "../lib/crewDiscovery";
@@ -336,13 +337,10 @@ export function FindCrewClient({
                 options={facets.positions}
                 language={language}
               />
-              <FilterSelect
+              <NationalitySearchField
                 label={c.nationalityFilter}
                 value={filters.nationality}
                 onChange={(value) => setFilter("nationality", value)}
-                options={facets.nationalities}
-                language={language}
-                optionKind="nationality"
               />
               <FilterSelect
                 label={c.availability}
@@ -599,7 +597,6 @@ function FilterSelect({
   options,
   onChange,
   language,
-  optionKind = "default",
 }: {
   label: string;
   emptyOptionLabel?: string;
@@ -607,7 +604,6 @@ function FilterSelect({
   options: readonly string[];
   onChange: (value: string) => void;
   language: Language;
-  optionKind?: "default" | "nationality";
 }) {
   const visibleOptions =
     value && !options.includes(value) ? [value, ...options] : options;
@@ -624,7 +620,7 @@ function FilterSelect({
         <option value="">{emptyOptionLabel}</option>
         {visibleOptions.map((option) => (
           <option key={option} value={option}>
-            {formatFilterOption(option, language, optionKind)}
+            {formatFilterOption(option, language)}
           </option>
         ))}
       </select>
@@ -635,33 +631,8 @@ function FilterSelect({
 function formatFilterOption(
   option: string,
   language: Language,
-  kind: "default" | "nationality",
 ) {
   if (language === "en") return option;
-  if (kind === "nationality") {
-    return (
-      {
-        American: "Amerikalı",
-        Australian: "Avustralyalı",
-        British: "Britanyalı",
-        Canadian: "Kanadalı",
-        Croatian: "Hırvat",
-        Dutch: "Hollandalı",
-        Filipino: "Filipinli",
-        French: "Fransız",
-        German: "Alman",
-        Greek: "Yunan",
-        Italian: "İtalyan",
-        "New Zealander": "Yeni Zelandalı",
-        Polish: "Polonyalı",
-        Russian: "Rus",
-        "South African": "Güney Afrikalı",
-        Spanish: "İspanyol",
-        Turkish: "Türk",
-        Ukrainian: "Ukraynalı",
-      }[option] || translatePhrase(option, language)
-    );
-  }
   return translatePhrase(option, language);
 }
 

@@ -26,9 +26,10 @@ import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
 import { LocationSearchField } from "../components/LocationSearchField";
+import { NationalitySearchField } from "../components/NationalitySearchField";
 import { PhoneInput } from "../components/PhoneInput";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
-import { blueDeckCountries, nationalityOptions } from "../lib/countries";
+import { blueDeckCountries } from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import {
   crewAvailabilityStatuses,
@@ -67,7 +68,6 @@ import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 import { yachtPositionTitles } from "../lib/yachtOperations";
 import { downloadCvPages } from "../lib/cvPdfDownload";
 
-type CountryOption = (typeof blueDeckCountries)[number] | (typeof nationalityOptions)[number];
 type PhoneCountryOption = (typeof blueDeckCountries)[number];
 
 type CrewProfile = {
@@ -1367,7 +1367,13 @@ export default function ProfilePage() {
                     />
                   </div>
                   <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} profileField />
-                  <NationalitySelect value={profile.nationality || ""} onChange={(value) => setProfile({ ...profile, nationality: value })} />
+                  <NationalitySearchField
+                    label="Nationality"
+                    value={profile.nationality || ""}
+                    onChange={(value) => setProfile({ ...profile, nationality: value })}
+                    labelClassName={profileFieldLabelClassName}
+                    controlClassName={profileFieldControlClassName}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-5 md:grid-cols-6 [&>*]:min-w-0">
@@ -5214,151 +5220,6 @@ function DateField({ label, value, onChange, disabled = false, mobileFriendly = 
             ? "min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:opacity-40 sm:text-sm"
             : "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-500 disabled:opacity-40"}
       />
-    </div>
-  );
-}
-
-function NationalitySelect({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const selectedCountry = nationalityOptions.find((country) => country.nationality === value);
-
-  return (
-    <div className="block">
-      <p className={profileFieldLabelClassName}>Nationality</p>
-      <CountrySearch
-        selectedLabel={selectedCountry ? `${selectedCountry.flag} ${selectedCountry.country} / ${selectedCountry.nationality}` : "Select nationality"}
-        options={nationalityOptions}
-        onSelect={(country) => onChange(country.nationality)}
-        fullWidth
-      />
-    </div>
-  );
-}
-
-function CountrySearch({
-  selectedLabel,
-  options,
-  onSelect,
-  fullWidth = false,
-  phoneMode = false,
-}: {
-  selectedLabel: string;
-  options: CountryOption[];
-  onSelect: (country: CountryOption) => void;
-  fullWidth?: boolean;
-  phoneMode?: boolean;
-}) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [pickedLabel, setPickedLabel] = useState(selectedLabel);
-  const visibleLabel = pickedLabel || selectedLabel;
-  const preferredCountries = options.filter((country) => {
-    return country.code === "TR" || country.region === "Europe" || ["United States", "Russia", "United Arab Emirates", "Israel"].includes(country.country);
-  });
-  const source = query.trim() ? options : preferredCountries;
-  const filtered = source
-    .filter((country) => {
-      const search = `${country.country} ${country.nationality} ${"dial" in country ? country.dial : ""}`.toLowerCase();
-      return search.includes(query.toLowerCase());
-    })
-    .slice(0, query.trim() ? 80 : 60);
-  const buttonLabel = visibleLabel.replace(" / ", " · ");
-
-  useEffect(() => {
-    if (!open) setPickedLabel(selectedLabel);
-  }, [selectedLabel, open]);
-
-  useEffect(() => {
-    function closeOnOutsideClick(event: MouseEvent) {
-      if (!wrapperRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-        setQuery("");
-      }
-    }
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, []);
-
-  return (
-    <div
-      ref={wrapperRef}
-      className={`relative ${fullWidth ? "w-full" : phoneMode ? "w-[135px] shrink-0" : "w-[170px] shrink-0"}`}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-          setOpen(false);
-          setQuery("");
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key !== "Escape" || !open) return;
-        event.preventDefault();
-        setOpen(false);
-        setQuery("");
-        window.requestAnimationFrame(() => triggerRef.current?.focus());
-      }}
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        onClick={() => {
-          setOpen(!open);
-          setQuery("");
-        }}
-        className={fullWidth
-          ? `${profileFieldControlClassName} flex items-center justify-between gap-2 py-0 text-left hover:text-cyan-800`
-          : `flex min-h-11 w-full items-center justify-between gap-2 bg-white px-3 py-2.5 text-left text-base font-semibold text-slate-950 transition hover:text-cyan-800 sm:text-sm ${phoneMode ? "rounded-l-xl" : "rounded-xl border border-slate-200 shadow-sm"}`}
-      >
-        <span className="min-w-0 flex-1 truncate">{buttonLabel}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
-      </button>
-      {open && (
-        <div
-          role="dialog"
-          aria-label="Select country"
-          className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-40 w-full max-w-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
-        >
-          <input
-            autoFocus
-            aria-label="Search country"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search country..."
-            className="h-12 w-full border-b border-slate-200 px-4 py-0 text-base font-medium text-slate-950 outline-none sm:text-sm"
-          />
-          <div className="max-h-72 overflow-auto p-2">
-            {filtered.map((country) => (
-              <button
-                key={`${country.country}-${country.nationality}-${"dial" in country ? country.dial : ""}`}
-                type="button"
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  const nextLabel = `${country.flag} ${"dial" in country ? `${country.code} ${country.dial}` : `${country.country} · ${country.nationality}`}`;
-                  setPickedLabel(nextLabel);
-                  setOpen(false);
-                  setQuery("");
-                  onSelect(country);
-                  window.requestAnimationFrame(() => triggerRef.current?.focus());
-                }}
-                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 hover:bg-cyan-50"
-              >
-                <span className="min-w-0 flex-1 truncate">
-                  {country.flag} {country.country} · {country.nationality}
-                </span>
-                {"dial" in country && <span className="shrink-0 font-semibold text-cyan-700">{country.dial}</span>}
-              </button>
-            ))}
-            {!filtered.length ? (
-              <p role="status" className="px-3 py-5 text-center text-sm font-semibold text-slate-500">
-                No matching country found.
-              </p>
-            ) : null}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

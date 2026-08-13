@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crewAvailabilityStatuses } from "../../lib/crewDiscovery";
+import { nationalityFilterValues } from "../../lib/countries";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
 import { jobMinimumYachtExperiences } from "../../lib/jobPosts";
 import {
@@ -92,6 +93,10 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     !isAllowedCrewOption(
       searchParams.get("experienceMin"),
       jobMinimumYachtExperiences,
+    ) ||
+    !isAllowedCrewOption(
+      searchParams.get("nationality"),
+      nationalityFilterValues,
     ) ||
     !isAllowedCrewOption(searchParams.get("gender"), crewGenderOptions) ||
     !isAllowedCrewOption(searchParams.get("smoker"), crewYesNoOptions) ||

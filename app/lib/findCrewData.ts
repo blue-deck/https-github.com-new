@@ -41,6 +41,7 @@ import {
   type CrewSearchFacets,
   type CrewSearchFilters,
 } from "./crewSearch";
+import { nationalityValueMatchesCountry } from "./countries";
 import { canUseCrewWorkspace } from "./marketplaceCapabilities";
 import {
   getPublicCrewDiscoverySettings,
@@ -598,7 +599,10 @@ function crewSearchRecordMatches(
   }
   if (
     filters.nationality &&
-    !sameCrewValue(preview.nationality, filters.nationality)
+    !nationalityValueMatchesCountry(
+      preview.nationality,
+      filters.nationality,
+    )
   ) {
     return false;
   }

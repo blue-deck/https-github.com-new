@@ -101,6 +101,7 @@ test("places nationality in primary filters and location in more filters", async
   assert.ok(primaryStart >= 0 && advancedStart > primaryStart);
   assert.ok(advancedEnd > advancedStart);
   assert.match(primaryFilters, /label=\{c\.nationalityFilter\}/);
+  assert.match(primaryFilters, /<NationalitySearchField/);
   assert.doesNotMatch(primaryFilters, /label=\{c\.location\}/);
   assert.match(advancedSelects, /label=\{c\.location\}/);
   assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
@@ -132,6 +133,19 @@ test("find crew reuses every My Profile availability option", async () => {
   assert.match(
     route,
     /searchParams\.get\("availability"\),\s*crewAvailabilityStatuses/,
+  );
+});
+
+test("find crew validates nationality against the complete country dataset", async () => {
+  const route = await readFile(
+    new URL("../app/api/find-crew/route.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(route, /import \{ nationalityFilterValues \}/);
+  assert.match(
+    route,
+    /searchParams\.get\("nationality"\),\s*nationalityFilterValues/,
   );
 });
 
