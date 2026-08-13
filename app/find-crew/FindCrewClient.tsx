@@ -64,6 +64,7 @@ export function FindCrewClient({
   const [filters, setFilters] = useState(() =>
     normalizeCrewSearchFilters(initialFilters),
   );
+  const [searchDraft, setSearchDraft] = useState(initialFilters.query);
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     hasAdvancedCrewFilters(initialFilters),
   );
@@ -88,6 +89,7 @@ export function FindCrewClient({
         new URLSearchParams(window.location.search),
       );
       setFilters(restored);
+      setSearchDraft(restored.query);
       if (hasAdvancedCrewFilters(restored)) setAdvancedOpen(true);
     }
 
@@ -182,7 +184,12 @@ export function FindCrewClient({
 
   function clearFilters() {
     setFilters(defaultCrewSearchFilters);
+    setSearchDraft("");
     setAdvancedOpen(false);
+  }
+
+  function submitCrewKeywordSearch() {
+    setFilter("query", searchDraft);
   }
 
   async function loadMoreProfiles() {
@@ -311,25 +318,44 @@ export function FindCrewClient({
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.35fr_repeat(3,minmax(0,1fr))]">
-              <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+              <form
+                className="block"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  submitCrewKeywordSearch();
+                }}
+              >
+                <label
+                  htmlFor="crew-keyword-search"
+                  className="mb-1.5 block text-xs font-bold text-slate-600"
+                >
                   {c.search}
-                </span>
+                </label>
                 <span className="relative block">
-                  <Search
-                    className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-700"
-                    aria-hidden
-                  />
                   <input
+                    id="crew-keyword-search"
                     type="search"
-                    value={filters.query}
-                    onChange={(event) => setFilter("query", event.target.value)}
+                    value={searchDraft}
+                    onChange={(event) => setSearchDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      submitCrewKeywordSearch();
+                    }}
                     placeholder={c.searchPlaceholder}
                     maxLength={120}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
                   />
+                  <button
+                    type="submit"
+                    aria-label={c.searchAction}
+                    title={c.searchAction}
+                    className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
+                  >
+                    <Search className="h-5 w-5" aria-hidden />
+                  </button>
                 </span>
-              </label>
+              </form>
               <FilterSelect
                 label={c.position}
                 value={filters.position}
@@ -851,9 +877,11 @@ const copy = {
     intro:
       "Search privacy-protected Crew and Captain profiles by professional experience, position, location, language, skills, work preferences and profile readiness.",
     filters: "Search and filters",
-    filterHint: "Results update automatically as you refine the criteria.",
+    filterHint:
+      "Other filters update automatically. Use the search button after entering a keyword.",
     advanced: "More filters",
     search: "Search crew",
+    searchAction: "Search",
     any: "Any",
     searchPlaceholder: "Position, skill, language or location",
     position: "Position",
@@ -909,9 +937,11 @@ const copy = {
     intro:
       "Gizliliği korunan Crew ve Captain profillerini mesleki deneyim, pozisyon, konum, dil, beceri, çalışma tercihi ve profil yeterliliğine göre arayın.",
     filters: "Arama ve filtreler",
-    filterHint: "Kriterleri değiştirdikçe sonuçlar otomatik güncellenir.",
+    filterHint:
+      "Diğer filtreler otomatik güncellenir. Anahtar kelime yazdıktan sonra arama düğmesine basın.",
     advanced: "Daha fazla filtre",
     search: "Crew ara",
+    searchAction: "Ara",
     any: "Herhangi",
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyon",

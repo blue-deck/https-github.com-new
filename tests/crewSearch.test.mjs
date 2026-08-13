@@ -45,6 +45,28 @@ test("find crew uses concise English labels for core select filters", async () =
   );
 });
 
+test("crew keyword search waits for its right-side search button", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    client,
+    /const \[searchDraft, setSearchDraft\] = useState\(initialFilters\.query\)/,
+  );
+  assert.match(client, /onChange=\{\(event\) => setSearchDraft\(event\.target\.value\)\}/);
+  assert.match(client, /function submitCrewKeywordSearch\(\) \{\s*setFilter\("query", searchDraft\);/);
+  assert.match(client, /onSubmit=\{\(event\) => \{\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
+  assert.match(client, /if \(event\.key !== "Enter"\) return;\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
+  assert.match(client, /type="submit"\s+aria-label=\{c\.searchAction\}/);
+  assert.match(client, /absolute right-1 top-1\/2/);
+  assert.doesNotMatch(
+    client,
+    /onChange=\{\(event\) => setFilter\("query", event\.target\.value\)\}/,
+  );
+});
+
 test("personal crew selects show Any without changing their field labels", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
