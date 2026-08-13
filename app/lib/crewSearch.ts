@@ -9,9 +9,6 @@ export type CrewSearchFilters = {
   gender: string;
   smoker: string;
   visibleTattoos: string;
-  skill: string;
-  characteristic: string;
-  workPreference: string;
   language: string;
   minimumExperience: number | null;
   premiumOnly: boolean;
@@ -60,9 +57,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   gender: "",
   smoker: "",
   visibleTattoos: "",
-  skill: "",
-  characteristic: "",
-  workPreference: "",
   language: "",
   minimumExperience: null,
   premiumOnly: false,
@@ -81,9 +75,6 @@ export const crewSearchParamKeys = new Set([
   "gender",
   "smoker",
   "visibleTattoos",
-  "skill",
-  "characteristic",
-  "preference",
   "language",
   "experienceMin",
   "premium",
@@ -129,15 +120,6 @@ export function parseCrewSearchFilters(
       readSearchParam(source, "visibleTattoos"),
       crewYesNoOptions,
     ),
-    skill: limitedText(readSearchParam(source, "skill"), 120),
-    characteristic: limitedText(
-      readSearchParam(source, "characteristic"),
-      120,
-    ),
-    workPreference: limitedText(
-      readSearchParam(source, "preference"),
-      120,
-    ),
     language: limitedText(readSearchParam(source, "language"), 80),
     minimumExperience,
     premiumOnly: readSearchParam(source, "premium") === "1",
@@ -168,9 +150,6 @@ export function normalizeCrewSearchFilters(
       value.visibleTattoos,
       crewYesNoOptions,
     ),
-    skill: limitedText(value.skill, 120),
-    characteristic: limitedText(value.characteristic, 120),
-    workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
     minimumExperience,
     premiumOnly: value.premiumOnly === true,
@@ -192,9 +171,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "gender", normalized.gender);
   setText(params, "smoker", normalized.smoker);
   setText(params, "visibleTattoos", normalized.visibleTattoos);
-  setText(params, "skill", normalized.skill);
-  setText(params, "characteristic", normalized.characteristic);
-  setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
   setNumber(params, "experienceMin", normalized.minimumExperience);
   setBoolean(params, "premium", normalized.premiumOnly);

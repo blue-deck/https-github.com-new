@@ -625,21 +625,6 @@ function crewSearchRecordMatches(
   ) {
     return false;
   }
-  if (filters.skill && !hasExactCrewValue(preview.personalSkills, filters.skill)) {
-    return false;
-  }
-  if (
-    filters.characteristic &&
-    !hasExactCrewValue(record.characteristics, filters.characteristic)
-  ) {
-    return false;
-  }
-  if (
-    filters.workPreference &&
-    !hasExactCrewValue(record.workPreferences, filters.workPreference)
-  ) {
-    return false;
-  }
   if (
     filters.language &&
     !record.languages.some((item) => sameCrewValue(item.name, filters.language))

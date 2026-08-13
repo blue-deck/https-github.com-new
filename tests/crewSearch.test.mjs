@@ -29,9 +29,6 @@ test("find crew uses concise English labels for core select filters", async () =
   assert.match(client, /contract: "Employment type"/);
   assert.match(client, /nationalityFilter: "Nationality"/);
   assert.match(client, /maritalStatus: "Marital status"/);
-  assert.match(client, /skill: "Skills"/);
-  assert.match(client, /characteristic: "Professional trait"/);
-  assert.match(client, /workPreference: "Work preference"/);
   assert.match(client, /language: "Language"/);
   assert.doesNotMatch(
     client,
@@ -68,9 +65,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     gender: "Female",
     smoker: "No",
     visibleTattoos: "Yes",
-    skill: "Silver service",
-    characteristic: "Team player",
-    preference: "Motor yacht",
     language: "English",
     experienceMin: "3",
     premium: "1",
@@ -91,7 +85,33 @@ test("round-trips every public crew search criterion through the URL contract", 
   assert.equal(filters.gender, "Female");
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
-  assert.equal(crewSearchFilterCount(filters), 18);
+  assert.equal(crewSearchFilterCount(filters), 15);
+});
+
+test("removes skills, professional trait, and work preference filters", async () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({
+      skill: "Silver service",
+      characteristic: "Team player",
+      preference: "Motor yacht",
+    }),
+  );
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  for (const key of ["skill", "characteristic", "preference"]) {
+    assert.equal(crewSearchParamKeys.has(key), false);
+  }
+  for (const key of ["skill", "characteristic", "workPreference"]) {
+    assert.equal(Object.hasOwn(filters, key), false);
+  }
+  assert.equal(crewSearchParams(filters).toString(), "");
+  assert.doesNotMatch(
+    client,
+    /label=\{c\.(?:skill|characteristic|workPreference)\}/,
+  );
 });
 
 test("accepts only the personal filter options offered by My Profile", () => {

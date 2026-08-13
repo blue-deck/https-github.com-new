@@ -406,27 +406,6 @@ export function FindCrewClient({
                     language={language}
                   />
                   <FilterSelect
-                    label={c.skill}
-                    value={filters.skill}
-                    onChange={(value) => setFilter("skill", value)}
-                    options={facets.skills}
-                    language={language}
-                  />
-                  <FilterSelect
-                    label={c.characteristic}
-                    value={filters.characteristic}
-                    onChange={(value) => setFilter("characteristic", value)}
-                    options={facets.characteristics}
-                    language={language}
-                  />
-                  <FilterSelect
-                    label={c.workPreference}
-                    value={filters.workPreference}
-                    onChange={(value) => setFilter("workPreference", value)}
-                    options={facets.workPreferences}
-                    language={language}
-                  />
-                  <FilterSelect
                     label={c.language}
                     value={filters.language}
                     onChange={(value) => setFilter("language", value)}
@@ -764,9 +743,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     gender: filters.gender,
     smoker: filters.smoker,
     visibleTattoos: filters.visibleTattoos,
-    skill: filters.skill,
-    characteristic: filters.characteristic,
-    workPreference: filters.workPreference,
     language: filters.language,
     minimumExperience: filters.minimumExperience,
     premiumOnly: filters.premiumOnly,
@@ -921,9 +897,6 @@ const copy = {
     smoker: "Smoker",
     visibleTattoos: "Visible tattoos",
     minimumExperience: "Minimum experience",
-    skill: "Skills",
-    characteristic: "Professional trait",
-    workPreference: "Work preference",
     language: "Language",
     profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
@@ -983,9 +956,6 @@ const copy = {
     smoker: "Sigara kullanımı",
     visibleTattoos: "Görünür dövme",
     minimumExperience: "Minimum deneyim",
-    skill: "Beceriler",
-    characteristic: "Profesyonel özellikler",
-    workPreference: "Çalışma tercihleri",
     language: "Diller",
     profileQuality: "Profil yeterliliği",
     premiumOnly: "Premium profiller",
