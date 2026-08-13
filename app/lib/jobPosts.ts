@@ -487,9 +487,9 @@ const jobMinimumYachtExperienceLabels: Record<
   { en: string; tr: string }
 > = {
   "0_6_months": { en: "0–6 months", tr: "0–6 ay" },
-  "1_year": { en: "1 year", tr: "1 yıl" },
-  "2_years": { en: "2 years", tr: "2 yıl" },
-  "3_years": { en: "3 years", tr: "3 yıl" },
+  "1_year": { en: "1+ years", tr: "1+ yıl" },
+  "2_years": { en: "2+ years", tr: "2+ yıl" },
+  "3_years": { en: "3+ years", tr: "3+ yıl" },
   "1_3_years": { en: "1–3 years", tr: "1–3 yıl" },
   "3_5_years": { en: "3–5 years", tr: "3–5 yıl" },
   "5_plus_years": { en: "5+ years", tr: "5+ yıl" },

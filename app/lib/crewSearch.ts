@@ -5,9 +5,9 @@ const crewYachtExperienceBounds: Record<
   { minimum: number; maximum: number | null }
 > = {
   "0_6_months": { minimum: 0, maximum: 0.5 },
-  "1_year": { minimum: 1, maximum: 1.9 },
-  "2_years": { minimum: 2, maximum: 2.9 },
-  "3_years": { minimum: 3, maximum: 3.9 },
+  "1_year": { minimum: 1, maximum: null },
+  "2_years": { minimum: 2, maximum: null },
+  "3_years": { minimum: 3, maximum: null },
   "1_3_years": { minimum: 1, maximum: 3 },
   "3_5_years": { minimum: 3, maximum: 5 },
   "5_plus_years": { minimum: 5, maximum: null },

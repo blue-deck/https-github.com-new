@@ -337,9 +337,9 @@ test("find crew reuses every Create a job post yacht experience option", async (
     ),
     [
       "0–6 months",
-      "1 year",
-      "2 years",
-      "3 years",
+      "1+ years",
+      "2+ years",
+      "3+ years",
       "1–3 years",
       "3–5 years",
       "5+ years",
@@ -362,14 +362,18 @@ test("find crew reuses every Create a job post yacht experience option", async (
   );
 });
 
-test("matches crew yacht experience against exact, ranged, and plus options", () => {
+test("matches crew yacht experience against ranged and plus options", () => {
   assert.equal(crewExperienceMatchesYachtExperienceOption(0, "0_6_months"), true);
   assert.equal(crewExperienceMatchesYachtExperienceOption(0.5, "0_6_months"), true);
   assert.equal(crewExperienceMatchesYachtExperienceOption(0.6, "0_6_months"), false);
   assert.equal(crewExperienceMatchesYachtExperienceOption(1, "1_year"), true);
-  assert.equal(crewExperienceMatchesYachtExperienceOption(2.1, "1_year"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(20, "1_year"), true);
   assert.equal(crewExperienceMatchesYachtExperienceOption(2.5, "2_years"), true);
-  assert.equal(crewExperienceMatchesYachtExperienceOption(3.5, "3_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(1.9, "2_years"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(13.1, "2_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(3, "3_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(2.9, "3_years"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(13.1, "3_years"), true);
   assert.equal(crewExperienceMatchesYachtExperienceOption(2.9, "1_3_years"), true);
   assert.equal(crewExperienceMatchesYachtExperienceOption(3.1, "1_3_years"), false);
   assert.equal(crewExperienceMatchesYachtExperienceOption(4.7, "3_5_years"), true);
