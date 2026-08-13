@@ -128,12 +128,12 @@ begin
   from public.crew_profiles where id = hidden_preference_profile;
 
   if automatic_crew_id = hidden_preference_crew_id
-    or automatic_crew_id !~ '^BD-[A-F0-9]{32}$'
-    or hidden_preference_crew_id !~ '^BD-[A-F0-9]{32}$'
-    or position(upper(replace(automatic_user::text, '-', '')) in automatic_crew_id) > 0
-    or position(upper(replace(automatic_profile::text, '-', '')) in automatic_crew_id) > 0
-    or position(upper(replace(hidden_preference_user::text, '-', '')) in hidden_preference_crew_id) > 0
-    or position(upper(replace(hidden_preference_profile::text, '-', '')) in hidden_preference_crew_id) > 0
+    or automatic_crew_id !~ '^[A-F0-9]{8}$'
+    or hidden_preference_crew_id !~ '^[A-F0-9]{8}$'
+    or automatic_crew_id = upper(left(replace(automatic_user::text, '-', ''), 8))
+    or automatic_crew_id = upper(left(replace(automatic_profile::text, '-', ''), 8))
+    or hidden_preference_crew_id = upper(left(replace(hidden_preference_user::text, '-', ''), 8))
+    or hidden_preference_crew_id = upper(left(replace(hidden_preference_profile::text, '-', ''), 8))
   then
     raise exception 'Public Crew IDs are not opaque and collision-resistant.';
   end if;
