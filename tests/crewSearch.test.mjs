@@ -7,6 +7,7 @@ import {
   crewSearchParams,
   parseCrewSearchFilters,
 } from "../app/lib/crewSearch.ts";
+import { crewAvailabilityStatuses } from "../app/lib/crewDiscovery.ts";
 import { crewExperienceYearsFromDateRanges } from "../app/lib/crewExperience.ts";
 
 test("find crew filter labels omit all and tüm prefixes", async () => {
@@ -51,6 +52,33 @@ test("personal crew selects show Any without changing their field labels", async
   assert.match(client, /any: "Any"/);
   assert.match(client, /any: "Herhangi"/);
   assert.match(client, /<option value="">\{emptyOptionLabel\}<\/option>/);
+});
+
+test("find crew reuses every My Profile availability option", async () => {
+  const [client, route] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../app/api/find-crew/route.ts", import.meta.url),
+      "utf8",
+    ),
+  ]);
+
+  assert.deepEqual([...crewAvailabilityStatuses], [
+    "Available",
+    "In 1 week",
+    "In 1 month",
+    "Open to offers",
+    "Not available",
+  ]);
+  assert.match(client, /options=\{crewAvailabilityStatuses\}/);
+  assert.doesNotMatch(client, /options=\{facets\.availabilities\}/);
+  assert.match(
+    route,
+    /searchParams\.get\("availability"\),\s*crewAvailabilityStatuses/,
+  );
 });
 
 test("round-trips every public crew search criterion through the URL contract", () => {

@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
+import { crewAvailabilityStatuses } from "../lib/crewDiscovery";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 import {
   crewGenderOptions,
@@ -341,7 +342,7 @@ export function FindCrewClient({
                 label={c.availability}
                 value={filters.availability}
                 onChange={(value) => setFilter("availability", value)}
-                options={facets.availabilities}
+                options={crewAvailabilityStatuses}
                 language={language}
               />
               <FilterSelect

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { crewAvailabilityStatuses } from "../../lib/crewDiscovery";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
 import {
   crewGenderOptions,
@@ -92,6 +93,10 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     return false;
   }
   if (
+    !isAllowedCrewOption(
+      searchParams.get("availability"),
+      crewAvailabilityStatuses,
+    ) ||
     !isAllowedCrewOption(searchParams.get("gender"), crewGenderOptions) ||
     !isAllowedCrewOption(searchParams.get("smoker"), crewYesNoOptions) ||
     !isAllowedCrewOption(
