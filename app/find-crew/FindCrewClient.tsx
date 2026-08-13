@@ -440,13 +440,6 @@ export function FindCrewClient({
                     onChange={(value) => setDraftFilter("minimumExperience", value)}
                     language={language}
                   />
-                  <FilterSelect
-                    label={c.language}
-                    value={draftFilters.language}
-                    onChange={(value) => setDraftFilter("language", value)}
-                    options={facets.languages}
-                    language={language}
-                  />
                 </div>
 
                 <fieldset className="mt-5">
@@ -795,7 +788,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     gender: filters.gender,
     smoker: filters.smoker,
     visibleTattoos: filters.visibleTattoos,
-    language: filters.language,
     minimumExperience: filters.minimumExperience,
     premiumOnly: filters.premiumOnly,
     hasPhoto: filters.hasPhoto,
@@ -872,7 +864,6 @@ function isCrewSearchFacets(value: unknown): value is CrewSearchFacets {
     "skills",
     "characteristics",
     "workPreferences",
-    "languages",
   ].every(
     (key) =>
       Array.isArray(facets[key]) &&
@@ -947,7 +938,6 @@ const copy = {
     smoker: "Smoker",
     visibleTattoos: "Visible tattoos",
     minimumExperience: "Minimum experience",
-    language: "Language",
     profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
@@ -1005,7 +995,6 @@ const copy = {
     smoker: "Sigara kullanımı",
     visibleTattoos: "Görünür dövme",
     minimumExperience: "Minimum deneyim",
-    language: "Diller",
     profileQuality: "Profil yeterliliği",
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",

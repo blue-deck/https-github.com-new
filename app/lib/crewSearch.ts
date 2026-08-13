@@ -27,7 +27,6 @@ export type CrewSearchFilters = {
   gender: string;
   smoker: string;
   visibleTattoos: string;
-  language: string;
   minimumExperience: JobMinimumYachtExperience | null;
   premiumOnly: boolean;
   hasPhoto: boolean;
@@ -44,7 +43,6 @@ export type CrewSearchFacets = {
   skills: string[];
   characteristics: string[];
   workPreferences: string[];
-  languages: string[];
 };
 
 export const crewMaritalStatuses = ["Single", "Married"] as const;
@@ -61,7 +59,6 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
   skills: [],
   characteristics: [],
   workPreferences: [],
-  languages: [],
 };
 
 export const defaultCrewSearchFilters: CrewSearchFilters = {
@@ -74,7 +71,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   gender: "",
   smoker: "",
   visibleTattoos: "",
-  language: "",
   minimumExperience: null,
   premiumOnly: false,
   hasPhoto: false,
@@ -91,7 +87,6 @@ export const crewSearchParamKeys = new Set([
   "gender",
   "smoker",
   "visibleTattoos",
-  "language",
   "experienceMin",
   "premium",
   "photo",
@@ -133,7 +128,6 @@ export function parseCrewSearchFilters(
       readSearchParam(source, "visibleTattoos"),
       crewYesNoOptions,
     ),
-    language: limitedText(readSearchParam(source, "language"), 80),
     minimumExperience,
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
@@ -160,7 +154,6 @@ export function normalizeCrewSearchFilters(
       value.visibleTattoos,
       crewYesNoOptions,
     ),
-    language: limitedText(value.language, 80),
     minimumExperience,
     premiumOnly: value.premiumOnly === true,
     hasPhoto: value.hasPhoto === true,
@@ -180,7 +173,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "gender", normalized.gender);
   setText(params, "smoker", normalized.smoker);
   setText(params, "visibleTattoos", normalized.visibleTattoos);
-  setText(params, "language", normalized.language);
   setNullableText(params, "experienceMin", normalized.minimumExperience);
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);

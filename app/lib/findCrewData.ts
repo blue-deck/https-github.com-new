@@ -625,12 +625,6 @@ function crewSearchRecordMatches(
     return false;
   }
   if (
-    filters.language &&
-    !record.languages.some((item) => sameCrewValue(item.name, filters.language))
-  ) {
-    return false;
-  }
-  if (
     !crewExperienceMatchesYachtExperienceOption(
       preview.experienceYears,
       filters.minimumExperience,
@@ -703,9 +697,6 @@ function crewSearchFacets(records: CrewSearchRecord[]): CrewSearchFacets {
     ),
     workPreferences: sortedCrewFacet(
       records.flatMap((record) => record.workPreferences),
-    ),
-    languages: sortedCrewFacet(
-      records.flatMap((record) => record.languages.map((item) => item.name)),
     ),
   };
 }

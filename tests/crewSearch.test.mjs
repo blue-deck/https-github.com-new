@@ -62,7 +62,6 @@ test("find crew uses concise English labels for core select filters", async () =
   assert.match(client, /availability: "Availability"/);
   assert.match(client, /nationalityFilter: "Nationality"/);
   assert.match(client, /maritalStatus: "Marital status"/);
-  assert.match(client, /language: "Language"/);
   assert.doesNotMatch(client, /position: "Positions"/);
   assert.doesNotMatch(client, /location: "Locations"/);
   assert.doesNotMatch(
@@ -106,7 +105,6 @@ test("primary and advanced crew filters apply only through the relocated Search 
     "smoker",
     "visibleTattoos",
     "minimumExperience",
-    "language",
     "premiumOnly",
     "hasPhoto",
     "hasGallery",
@@ -243,7 +241,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     gender: "Female",
     smoker: "No",
     visibleTattoos: "Yes",
-    language: "English",
     experienceMin: "3_5_years",
     premium: "1",
     photo: "1",
@@ -263,7 +260,29 @@ test("round-trips every public crew search criterion through the URL contract", 
   assert.equal(filters.gender, "Female");
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
-  assert.equal(crewSearchFilterCount(filters), 14);
+  assert.equal(crewSearchFilterCount(filters), 13);
+});
+
+test("removes language from the crew filter contract", async () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({ language: "English" }),
+  );
+  const [client, dataSource] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/lib/findCrewData.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.equal(crewSearchParamKeys.has("language"), false);
+  assert.equal(Object.hasOwn(filters, "language"), false);
+  assert.equal(crewSearchParams(filters).toString(), "");
+  assert.doesNotMatch(client, /label=\{c\.language\}/);
+  assert.doesNotMatch(client, /draftFilters\.language/);
+  assert.doesNotMatch(client, /"languages",/);
+  assert.doesNotMatch(dataSource, /filters\.language/);
+  assert.doesNotMatch(dataSource, /languages: sortedCrewFacet/);
 });
 
 test("removes employment type from the crew filter contract", async () => {
