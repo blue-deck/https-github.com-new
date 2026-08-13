@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
   crewSearchFilterCount,
@@ -7,6 +8,16 @@ import {
   parseCrewSearchFilters,
 } from "../app/lib/crewSearch.ts";
 import { crewExperienceYearsFromDateRanges } from "../app/lib/crewExperience.ts";
+
+test("find crew filter labels omit all and tüm prefixes", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.doesNotMatch(client, /:\s*"All [^"]+"/);
+  assert.doesNotMatch(client, /:\s*"Tüm [^"]+"/);
+});
 
 test("round-trips every public crew search criterion through the URL contract", () => {
   const source = new URLSearchParams({
