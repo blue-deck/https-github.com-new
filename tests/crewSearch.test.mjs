@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   crewSearchFilterCount,
+  crewSearchParamKeys,
   crewSearchParams,
   parseCrewSearchFilters,
 } from "../app/lib/crewSearch.ts";
@@ -26,24 +27,31 @@ test("round-trips every public crew search criterion through the URL contract", 
     premium: "1",
     photo: "1",
     gallery: "1",
-    references: "1",
-    documents: "1",
   });
 
   const filters = parseCrewSearchFilters(source);
   assert.equal(filters.query, "Chief Stewardess");
   assert.equal(filters.minimumExperience, 3);
-  assert.equal(filters.hasReferences, false);
   const normalizedSource = new URLSearchParams(source);
   normalizedSource.set("q", "Chief Stewardess");
-  normalizedSource.delete("references");
-  normalizedSource.delete("documents");
   assert.equal(
     crewSearchParams(filters).toString(),
     normalizedSource.toString(),
   );
   assert.equal(filters.maritalStatus, "Married");
   assert.equal(crewSearchFilterCount(filters), 17);
+});
+
+test("removes public references and documents from the crew filter contract", () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({ references: "1", documents: "1" }),
+  );
+
+  assert.equal(crewSearchParamKeys.has("references"), false);
+  assert.equal(crewSearchParamKeys.has("documents"), false);
+  assert.equal(Object.hasOwn(filters, "hasReferences"), false);
+  assert.equal(Object.hasOwn(filters, "hasDocuments"), false);
+  assert.equal(crewSearchParams(filters).toString(), "");
 });
 
 test("bounds malformed minimum experience and month values without widening a request", () => {

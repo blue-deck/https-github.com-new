@@ -650,8 +650,6 @@ function crewSearchRecordMatches(
   if (filters.premiumOnly && !preview.premiumProfile) return false;
   if (filters.hasPhoto && !preview.profilePhotoUrl) return false;
   if (filters.hasGallery && record.galleryCount === 0) return false;
-  if (filters.hasReferences && record.referenceCount === 0) return false;
-  if (filters.hasDocuments && record.documentCount === 0) return false;
   return true;
 }
 

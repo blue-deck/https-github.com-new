@@ -16,8 +16,6 @@ export type CrewSearchFilters = {
   premiumOnly: boolean;
   hasPhoto: boolean;
   hasGallery: boolean;
-  hasReferences: boolean;
-  hasDocuments: boolean;
 };
 
 export type CrewSearchFacets = {
@@ -68,8 +66,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   premiumOnly: false,
   hasPhoto: false,
   hasGallery: false,
-  hasReferences: false,
-  hasDocuments: false,
 };
 
 export const crewSearchParamKeys = new Set([
@@ -90,8 +86,6 @@ export const crewSearchParamKeys = new Set([
   "premium",
   "photo",
   "gallery",
-  "references",
-  "documents",
   "cursor",
 ]);
 
@@ -136,8 +130,6 @@ export function parseCrewSearchFilters(
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
     hasGallery: readSearchParam(source, "gallery") === "1",
-    hasReferences: false,
-    hasDocuments: false,
   });
 }
 
@@ -167,8 +159,6 @@ export function normalizeCrewSearchFilters(
     premiumOnly: value.premiumOnly === true,
     hasPhoto: value.hasPhoto === true,
     hasGallery: value.hasGallery === true,
-    hasReferences: value.hasReferences === true,
-    hasDocuments: value.hasDocuments === true,
   };
 }
 
