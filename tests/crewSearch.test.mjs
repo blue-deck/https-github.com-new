@@ -26,10 +26,14 @@ test("find crew uses concise English labels for core select filters", async () =
     "utf8",
   );
 
+  assert.match(client, /position: "Position"/);
+  assert.match(client, /location: "Location"/);
   assert.match(client, /availability: "Availability"/);
   assert.match(client, /nationalityFilter: "Nationality"/);
   assert.match(client, /maritalStatus: "Marital status"/);
   assert.match(client, /language: "Language"/);
+  assert.doesNotMatch(client, /position: "Positions"/);
+  assert.doesNotMatch(client, /location: "Locations"/);
   assert.doesNotMatch(
     client,
     /:\s*"Any (?:availability|contract|nationality|marital status|skill|professional trait|work preference|language)"/,
