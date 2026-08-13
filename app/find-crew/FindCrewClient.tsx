@@ -406,14 +406,6 @@ export function FindCrewClient({
                     options={facets.languages}
                     language={language}
                   />
-                  <FilterSelect
-                    label={c.languageLevel}
-                    value={filters.languageLevel}
-                    onChange={(value) => setFilter("languageLevel", value)}
-                    options={facets.languageLevels}
-                    language={language}
-                    optionKind="languageLevel"
-                  />
                   <label className="block">
                     <span className="mb-1.5 block text-xs font-bold text-slate-600">
                       {c.memberSinceFilter}
@@ -621,7 +613,7 @@ function FilterSelect({
   options: readonly string[];
   onChange: (value: string) => void;
   language: Language;
-  optionKind?: "default" | "nationality" | "languageLevel";
+  optionKind?: "default" | "nationality";
 }) {
   const visibleOptions =
     value && !options.includes(value) ? [value, ...options] : options;
@@ -649,20 +641,9 @@ function FilterSelect({
 function formatFilterOption(
   option: string,
   language: Language,
-  kind: "default" | "nationality" | "languageLevel",
+  kind: "default" | "nationality",
 ) {
   if (language === "en") return option;
-  if (kind === "languageLevel") {
-    return (
-      {
-        Basic: "Temel",
-        Intermediate: "Orta",
-        Advanced: "İleri",
-        Fluent: "Akıcı",
-        Native: "Ana dil",
-      }[option] || translatePhrase(option, language)
-    );
-  }
   if (kind === "nationality") {
     return (
       {
@@ -768,7 +749,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     characteristic: filters.characteristic,
     workPreference: filters.workPreference,
     language: filters.language,
-    languageLevel: filters.languageLevel,
     minimumExperience: filters.minimumExperience,
     memberSince: filters.memberSince,
     premiumOnly: filters.premiumOnly,
@@ -847,7 +827,6 @@ function isCrewSearchFacets(value: unknown): value is CrewSearchFacets {
     "characteristics",
     "workPreferences",
     "languages",
-    "languageLevels",
   ].every(
     (key) =>
       Array.isArray(facets[key]) &&
@@ -924,7 +903,6 @@ const copy = {
     characteristic: "Any professional trait",
     workPreference: "Any work preference",
     language: "Any language",
-    languageLevel: "Minimum language level",
     memberSinceFilter: "Joined on or after",
     profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
@@ -984,7 +962,6 @@ const copy = {
     characteristic: "Tüm profesyonel özellikler",
     workPreference: "Tüm çalışma tercihleri",
     language: "Tüm diller",
-    languageLevel: "Minimum dil seviyesi",
     memberSinceFilter: "Bu tarihten sonra üye",
     profileQuality: "Profil yeterliliği",
     premiumOnly: "Premium profiller",

@@ -10,7 +10,6 @@ export type CrewSearchFilters = {
   characteristic: string;
   workPreference: string;
   language: string;
-  languageLevel: string;
   minimumExperience: number | null;
   memberSince: string;
   premiumOnly: boolean;
@@ -29,7 +28,6 @@ export type CrewSearchFacets = {
   characteristics: string[];
   workPreferences: string[];
   languages: string[];
-  languageLevels: string[];
 };
 
 export const crewMaritalStatuses = ["Single", "Married"] as const;
@@ -45,7 +43,6 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
   characteristics: [],
   workPreferences: [],
   languages: [],
-  languageLevels: [],
 };
 
 export const defaultCrewSearchFilters: CrewSearchFilters = {
@@ -60,7 +57,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   characteristic: "",
   workPreference: "",
   language: "",
-  languageLevel: "",
   minimumExperience: null,
   memberSince: "",
   premiumOnly: false,
@@ -80,7 +76,6 @@ export const crewSearchParamKeys = new Set([
   "characteristic",
   "preference",
   "language",
-  "level",
   "experienceMin",
   "memberSince",
   "premium",
@@ -124,7 +119,6 @@ export function parseCrewSearchFilters(
       120,
     ),
     language: limitedText(readSearchParam(source, "language"), 80),
-    languageLevel: limitedText(readSearchParam(source, "level"), 80),
     minimumExperience,
     memberSince: validMonth(readSearchParam(source, "memberSince")),
     premiumOnly: readSearchParam(source, "premium") === "1",
@@ -153,7 +147,6 @@ export function normalizeCrewSearchFilters(
     characteristic: limitedText(value.characteristic, 120),
     workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
-    languageLevel: limitedText(value.languageLevel, 80),
     minimumExperience,
     memberSince: validMonth(value.memberSince),
     premiumOnly: value.premiumOnly === true,
@@ -176,7 +169,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "characteristic", normalized.characteristic);
   setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
-  setText(params, "level", normalized.languageLevel);
   setNumber(params, "experienceMin", normalized.minimumExperience);
   setText(params, "memberSince", normalized.memberSince);
   setBoolean(params, "premium", normalized.premiumOnly);

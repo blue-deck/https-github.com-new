@@ -21,7 +21,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     characteristic: "Team player",
     preference: "Motor yacht",
     language: "English",
-    level: "Advanced",
     experienceMin: "3",
     memberSince: "2024-05",
     premium: "1",
@@ -39,7 +38,17 @@ test("round-trips every public crew search criterion through the URL contract", 
     normalizedSource.toString(),
   );
   assert.equal(filters.maritalStatus, "Married");
-  assert.equal(crewSearchFilterCount(filters), 17);
+  assert.equal(crewSearchFilterCount(filters), 16);
+});
+
+test("removes minimum language level from the crew filter contract", () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({ level: "Advanced" }),
+  );
+
+  assert.equal(crewSearchParamKeys.has("level"), false);
+  assert.equal(Object.hasOwn(filters, "languageLevel"), false);
+  assert.equal(crewSearchParams(filters).toString(), "");
 });
 
 test("removes public references and documents from the crew filter contract", () => {
