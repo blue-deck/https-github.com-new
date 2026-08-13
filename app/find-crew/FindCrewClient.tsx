@@ -17,9 +17,11 @@ import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 import {
+  crewGenderOptions,
   crewMaritalStatuses,
   crewSearchFilterCount,
   crewSearchParams,
+  crewYesNoOptions,
   defaultCrewSearchFilters,
   normalizeCrewSearchFilters,
   parseCrewSearchFilters,
@@ -370,6 +372,27 @@ export function FindCrewClient({
                     value={filters.maritalStatus}
                     onChange={(value) => setFilter("maritalStatus", value)}
                     options={crewMaritalStatuses}
+                    language={language}
+                  />
+                  <FilterSelect
+                    label={c.gender}
+                    value={filters.gender}
+                    onChange={(value) => setFilter("gender", value)}
+                    options={crewGenderOptions}
+                    language={language}
+                  />
+                  <FilterSelect
+                    label={c.smoker}
+                    value={filters.smoker}
+                    onChange={(value) => setFilter("smoker", value)}
+                    options={crewYesNoOptions}
+                    language={language}
+                  />
+                  <FilterSelect
+                    label={c.visibleTattoos}
+                    value={filters.visibleTattoos}
+                    onChange={(value) => setFilter("visibleTattoos", value)}
+                    options={crewYesNoOptions}
                     language={language}
                   />
                   <NumberFilterSelect
@@ -732,6 +755,9 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     ...defaultCrewSearchFilters,
     nationality: filters.nationality,
     maritalStatus: filters.maritalStatus,
+    gender: filters.gender,
+    smoker: filters.smoker,
+    visibleTattoos: filters.visibleTattoos,
     skill: filters.skill,
     characteristic: filters.characteristic,
     workPreference: filters.workPreference,
@@ -884,6 +910,9 @@ const copy = {
     contract: "Any contract",
     nationalityFilter: "Any nationality",
     maritalStatus: "Any marital status",
+    gender: "Gender",
+    smoker: "Smoker",
+    visibleTattoos: "Visible tattoos",
     minimumExperience: "Minimum experience",
     skill: "Any skill",
     characteristic: "Any professional trait",
@@ -942,6 +971,9 @@ const copy = {
     contract: "Çalışma türleri",
     nationalityFilter: "Uyruklar",
     maritalStatus: "Medeni durumlar",
+    gender: "Cinsiyet",
+    smoker: "Sigara kullanımı",
+    visibleTattoos: "Görünür dövme",
     minimumExperience: "Minimum deneyim",
     skill: "Beceriler",
     characteristic: "Profesyonel özellikler",

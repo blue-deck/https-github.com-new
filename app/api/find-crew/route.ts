@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
 import {
+  crewGenderOptions,
   crewSearchParamKeys,
+  crewYesNoOptions,
   parseCrewSearchFilters,
 } from "../../lib/crewSearch";
 import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
@@ -89,11 +91,28 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
   ) {
     return false;
   }
+  if (
+    !isAllowedCrewOption(searchParams.get("gender"), crewGenderOptions) ||
+    !isAllowedCrewOption(searchParams.get("smoker"), crewYesNoOptions) ||
+    !isAllowedCrewOption(
+      searchParams.get("visibleTattoos"),
+      crewYesNoOptions,
+    )
+  ) {
+    return false;
+  }
   const cursor = searchParams.get("cursor");
   return cursor === null ||
     /^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/.test(
       cursor,
     );
+}
+
+function isAllowedCrewOption(
+  value: string | null,
+  options: readonly string[],
+) {
+  return value === null || options.includes(value);
 }
 
 function directoryResponse(

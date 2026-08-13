@@ -49,6 +49,10 @@ import {
   signCrewPortfolioReference,
 } from "../lib/crewPortfolioStorage";
 import { saveCrewProfileByUserId } from "../lib/crewProfiles";
+import {
+  crewGenderOptions,
+  crewYesNoOptions,
+} from "../lib/crewSearch";
 import { absoluteSiteUrl } from "../lib/site";
 import {
   createSafeStoragePath,
@@ -1368,7 +1372,7 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-5 md:grid-cols-6 [&>*]:min-w-0">
                   <div className="col-span-2 md:col-span-1">
-                    <SelectField label="Gender" value={profile.gender || ""} options={["Female", "Male"]} onChange={(value) => setProfile({ ...profile, gender: value })} />
+                    <SelectField label="Gender" value={profile.gender || ""} options={crewGenderOptions} onChange={(value) => setProfile({ ...profile, gender: value })} />
                   </div>
                   <SelectField label="Marital status" value={profile.marital_status || ""} options={["Single", "Married"]} onChange={(value) => setProfile({ ...profile, marital_status: value })} />
                   <Field
@@ -1391,8 +1395,8 @@ export default function ProfilePage() {
                     onChange={(value) => setProfile({ ...profile, weight_kg: Number(value) || undefined })}
                     profileField
                   />
-                  <SelectField label="Smoker" value={profile.smoker || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, smoker: value })} />
-                  <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={["No", "Yes"]} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
+                  <SelectField label="Smoker" value={profile.smoker || ""} options={crewYesNoOptions} onChange={(value) => setProfile({ ...profile, smoker: value })} />
+                  <SelectField label="Visible tattoos" value={profile.visible_tattoos || ""} options={crewYesNoOptions} onChange={(value) => setProfile({ ...profile, visible_tattoos: value })} />
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 border-t border-slate-200 pt-5 md:grid-cols-2">
@@ -5376,7 +5380,7 @@ function LocationSelect({ value, onChange }: { value: string; onChange: (value: 
   );
 }
 
-function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+function SelectField({ label, value, options, onChange }: { label: string; value: string; options: readonly string[]; onChange: (value: string) => void }) {
   return (
     <div className="block">
       <p className={profileFieldLabelClassName}>{label}</p>

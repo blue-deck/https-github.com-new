@@ -28,6 +28,9 @@ test("round-trips every public crew search criterion through the URL contract", 
     contract: "Permanent",
     nationality: "Turkish",
     maritalStatus: "Married",
+    gender: "Female",
+    smoker: "No",
+    visibleTattoos: "Yes",
     skill: "Silver service",
     characteristic: "Team player",
     preference: "Motor yacht",
@@ -48,7 +51,52 @@ test("round-trips every public crew search criterion through the URL contract", 
     normalizedSource.toString(),
   );
   assert.equal(filters.maritalStatus, "Married");
-  assert.equal(crewSearchFilterCount(filters), 15);
+  assert.equal(filters.gender, "Female");
+  assert.equal(filters.smoker, "No");
+  assert.equal(filters.visibleTattoos, "Yes");
+  assert.equal(crewSearchFilterCount(filters), 18);
+});
+
+test("accepts only the personal filter options offered by My Profile", () => {
+  const accepted = parseCrewSearchFilters(
+    new URLSearchParams({
+      gender: "Male",
+      smoker: "Yes",
+      visibleTattoos: "No",
+    }),
+  );
+  assert.equal(accepted.gender, "Male");
+  assert.equal(accepted.smoker, "Yes");
+  assert.equal(accepted.visibleTattoos, "No");
+
+  const rejected = parseCrewSearchFilters(
+    new URLSearchParams({
+      gender: "male",
+      smoker: "Sometimes",
+      visibleTattoos: "Prefer not to say",
+    }),
+  );
+  assert.equal(rejected.gender, "");
+  assert.equal(rejected.smoker, "");
+  assert.equal(rejected.visibleTattoos, "");
+});
+
+test("keeps personal filters server-side while matching crew records", async () => {
+  const dataSource = await readFile(
+    new URL("../app/lib/findCrewData.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(dataSource, /sameCrewValue\(record\.gender, filters\.gender\)/);
+  assert.match(dataSource, /sameCrewValue\(record\.smoker, filters\.smoker\)/);
+  assert.match(
+    dataSource,
+    /sameCrewValue\(record\.visibleTattoos, filters\.visibleTattoos\)/,
+  );
+  assert.doesNotMatch(
+    dataSource.match(/export type DiscoverableCrewPreview = \{[\s\S]*?\n\};/)?.[0] || "",
+    /\b(?:gender|smoker|visibleTattoos):/,
+  );
 });
 
 test("removes joined date from the crew filter contract", () => {

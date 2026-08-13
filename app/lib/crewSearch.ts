@@ -6,6 +6,9 @@ export type CrewSearchFilters = {
   employmentType: string;
   nationality: string;
   maritalStatus: string;
+  gender: string;
+  smoker: string;
+  visibleTattoos: string;
   skill: string;
   characteristic: string;
   workPreference: string;
@@ -30,6 +33,8 @@ export type CrewSearchFacets = {
 };
 
 export const crewMaritalStatuses = ["Single", "Married"] as const;
+export const crewGenderOptions = ["Female", "Male"] as const;
+export const crewYesNoOptions = ["No", "Yes"] as const;
 
 export const emptyCrewSearchFacets: CrewSearchFacets = {
   positions: [],
@@ -52,6 +57,9 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   employmentType: "",
   nationality: "",
   maritalStatus: "",
+  gender: "",
+  smoker: "",
+  visibleTattoos: "",
   skill: "",
   characteristic: "",
   workPreference: "",
@@ -70,6 +78,9 @@ export const crewSearchParamKeys = new Set([
   "contract",
   "nationality",
   "maritalStatus",
+  "gender",
+  "smoker",
+  "visibleTattoos",
   "skill",
   "characteristic",
   "preference",
@@ -106,6 +117,18 @@ export function parseCrewSearchFilters(
     maritalStatus: normalizedMaritalStatus(
       readSearchParam(source, "maritalStatus"),
     ),
+    gender: normalizedCrewProfileOption(
+      readSearchParam(source, "gender"),
+      crewGenderOptions,
+    ),
+    smoker: normalizedCrewProfileOption(
+      readSearchParam(source, "smoker"),
+      crewYesNoOptions,
+    ),
+    visibleTattoos: normalizedCrewProfileOption(
+      readSearchParam(source, "visibleTattoos"),
+      crewYesNoOptions,
+    ),
     skill: limitedText(readSearchParam(source, "skill"), 120),
     characteristic: limitedText(
       readSearchParam(source, "characteristic"),
@@ -139,6 +162,12 @@ export function normalizeCrewSearchFilters(
     employmentType: limitedText(value.employmentType, 120),
     nationality: limitedText(value.nationality, 80),
     maritalStatus: normalizedMaritalStatus(value.maritalStatus),
+    gender: normalizedCrewProfileOption(value.gender, crewGenderOptions),
+    smoker: normalizedCrewProfileOption(value.smoker, crewYesNoOptions),
+    visibleTattoos: normalizedCrewProfileOption(
+      value.visibleTattoos,
+      crewYesNoOptions,
+    ),
     skill: limitedText(value.skill, 120),
     characteristic: limitedText(value.characteristic, 120),
     workPreference: limitedText(value.workPreference, 120),
@@ -160,6 +189,9 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "contract", normalized.employmentType);
   setText(params, "nationality", normalized.nationality);
   setText(params, "maritalStatus", normalized.maritalStatus);
+  setText(params, "gender", normalized.gender);
+  setText(params, "smoker", normalized.smoker);
+  setText(params, "visibleTattoos", normalized.visibleTattoos);
   setText(params, "skill", normalized.skill);
   setText(params, "characteristic", normalized.characteristic);
   setText(params, "preference", normalized.workPreference);
@@ -199,6 +231,14 @@ function normalizedMaritalStatus(value: unknown) {
   )
     ? normalized
     : "";
+}
+
+function normalizedCrewProfileOption(
+  value: unknown,
+  options: readonly string[],
+) {
+  const normalized = limitedText(value, 60);
+  return options.includes(normalized) ? normalized : "";
 }
 
 function boundedNumber(value: string, minimum: number, maximum: number) {

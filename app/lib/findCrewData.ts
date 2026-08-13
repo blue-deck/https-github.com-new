@@ -120,6 +120,9 @@ type CrewSearchRecord = {
   workPreferences: string[];
   languages: Array<{ name: string; level: string }>;
   maritalStatus: string;
+  gender: string;
+  smoker: string;
+  visibleTattoos: string;
   referenceCount: number;
   documentCount: number;
   galleryCount: number;
@@ -492,6 +495,13 @@ function toCrewSearchRecord(
     profileIdentity,
     16,
   );
+  const gender = identitySafeProfileField(row.gender, profileIdentity, 60);
+  const smoker = identitySafeProfileField(row.smoker, profileIdentity, 60);
+  const visibleTattoos = identitySafeProfileField(
+    row.visible_tattoos,
+    profileIdentity,
+    120,
+  );
   const characteristics = identitySafeStringArray(
     row.personal_characteristics,
     profileIdentity,
@@ -544,6 +554,9 @@ function toCrewSearchRecord(
     workPreferences,
     languages,
     maritalStatus,
+    gender,
+    smoker,
+    visibleTattoos,
     referenceCount,
     documentCount,
     galleryCount,
@@ -597,6 +610,18 @@ function crewSearchRecordMatches(
   if (
     filters.maritalStatus &&
     !sameCrewValue(record.maritalStatus, filters.maritalStatus)
+  ) {
+    return false;
+  }
+  if (filters.gender && !sameCrewValue(record.gender, filters.gender)) {
+    return false;
+  }
+  if (filters.smoker && !sameCrewValue(record.smoker, filters.smoker)) {
+    return false;
+  }
+  if (
+    filters.visibleTattoos &&
+    !sameCrewValue(record.visibleTattoos, filters.visibleTattoos)
   ) {
     return false;
   }
