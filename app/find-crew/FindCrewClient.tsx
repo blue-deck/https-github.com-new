@@ -18,6 +18,11 @@ import { useLanguage } from "../components/LanguageProvider";
 import { crewAvailabilityStatuses } from "../lib/crewDiscovery";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 import {
+  formatJobMinimumYachtExperience,
+  jobMinimumYachtExperiences,
+  type JobMinimumYachtExperience,
+} from "../lib/jobPosts";
+import {
   crewGenderOptions,
   crewMaritalStatuses,
   crewSearchFilterCount,
@@ -393,7 +398,7 @@ export function FindCrewClient({
                     options={crewYesNoOptions}
                     language={language}
                   />
-                  <NumberFilterSelect
+                  <YachtExperienceFilterSelect
                     label={c.minimumExperience}
                     value={filters.minimumExperience}
                     onChange={(value) => setFilter("minimumExperience", value)}
@@ -660,20 +665,17 @@ function formatFilterOption(
   return translatePhrase(option, language);
 }
 
-const experienceOptions = [0, 1, 2, 3, 5, 10, 15, 20, 30, 40, 50, 60];
-
-function NumberFilterSelect({
+function YachtExperienceFilterSelect({
   label,
   value,
   onChange,
   language,
 }: {
   label: string;
-  value: number | null;
-  onChange: (value: number | null) => void;
+  value: JobMinimumYachtExperience | null;
+  onChange: (value: JobMinimumYachtExperience | null) => void;
   language: Language;
 }) {
-  const years = language === "tr" ? "yıl" : "years";
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-bold text-slate-600">
@@ -682,14 +684,16 @@ function NumberFilterSelect({
       <select
         value={value === null ? "" : String(value)}
         onChange={(event) =>
-          onChange(event.target.value ? Number(event.target.value) : null)
+          onChange(
+            (event.target.value as JobMinimumYachtExperience) || null,
+          )
         }
         className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
       >
         <option value="">{label}</option>
-        {experienceOptions.map((option) => (
+        {jobMinimumYachtExperiences.map((option) => (
           <option key={option} value={option}>
-            {option} {years}
+            {formatJobMinimumYachtExperience(option, language)}
           </option>
         ))}
       </select>

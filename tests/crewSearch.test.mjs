@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  crewExperienceMatchesYachtExperienceOption,
   crewSearchFilterCount,
   crewSearchParamKeys,
   crewSearchParams,
@@ -9,6 +10,10 @@ import {
 } from "../app/lib/crewSearch.ts";
 import { crewAvailabilityStatuses } from "../app/lib/crewDiscovery.ts";
 import { crewExperienceYearsFromDateRanges } from "../app/lib/crewExperience.ts";
+import {
+  formatJobMinimumYachtExperience,
+  jobMinimumYachtExperiences,
+} from "../app/lib/jobPosts.ts";
 
 test("find crew filter labels omit all and tüm prefixes", async () => {
   const client = await readFile(
@@ -142,7 +147,7 @@ test("round-trips every public crew search criterion through the URL contract", 
     smoker: "No",
     visibleTattoos: "Yes",
     language: "English",
-    experienceMin: "3",
+    experienceMin: "3_5_years",
     premium: "1",
     photo: "1",
     gallery: "1",
@@ -150,7 +155,7 @@ test("round-trips every public crew search criterion through the URL contract", 
 
   const filters = parseCrewSearchFilters(source);
   assert.equal(filters.query, "Chief Stewardess");
-  assert.equal(filters.minimumExperience, 3);
+  assert.equal(filters.minimumExperience, "3_5_years");
   const normalizedSource = new URLSearchParams(source);
   normalizedSource.set("q", "Chief Stewardess");
   assert.equal(
@@ -280,7 +285,7 @@ test("removes public references and documents from the crew filter contract", ()
   assert.equal(crewSearchParams(filters).toString(), "");
 });
 
-test("bounds malformed minimum experience without widening a request", () => {
+test("rejects unsupported minimum yacht experience options", () => {
   const filters = parseCrewSearchFilters(
     new URLSearchParams({
       experienceMin: "8",
@@ -288,8 +293,94 @@ test("bounds malformed minimum experience without widening a request", () => {
     }),
   );
 
-  assert.equal(filters.minimumExperience, 8);
+  assert.equal(filters.minimumExperience, null);
   assert.equal(filters.premiumOnly, false);
+  assert.equal(crewSearchParams(filters).toString(), "");
+});
+
+test("find crew reuses every Create a job post yacht experience option", async () => {
+  const [client, manager, route, dataSource] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../app/hiring/jobs/JobPostsManager.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../app/api/find-crew/route.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL("../app/lib/findCrewData.ts", import.meta.url),
+      "utf8",
+    ),
+  ]);
+
+  assert.deepEqual([...jobMinimumYachtExperiences], [
+    "0_6_months",
+    "1_year",
+    "2_years",
+    "3_years",
+    "1_3_years",
+    "3_5_years",
+    "5_plus_years",
+    "5_10_years",
+    "10_plus_years",
+    "15_plus_years",
+    "20_plus_years",
+  ]);
+  assert.deepEqual(
+    jobMinimumYachtExperiences.map((option) =>
+      formatJobMinimumYachtExperience(option, "en"),
+    ),
+    [
+      "0–6 months",
+      "1 year",
+      "2 years",
+      "3 years",
+      "1–3 years",
+      "3–5 years",
+      "5+ years",
+      "5–10 years",
+      "10+ years",
+      "15+ years",
+      "20+ years",
+    ],
+  );
+  assert.match(client, /jobMinimumYachtExperiences\.map/);
+  assert.match(client, /formatJobMinimumYachtExperience\(option, language\)/);
+  assert.match(manager, /jobMinimumYachtExperiences\.map/);
+  assert.match(
+    route,
+    /searchParams\.get\("experienceMin"\),\s*jobMinimumYachtExperiences/,
+  );
+  assert.match(
+    dataSource,
+    /crewExperienceMatchesYachtExperienceOption\(\s*preview\.experienceYears,\s*filters\.minimumExperience/,
+  );
+});
+
+test("matches crew yacht experience against exact, ranged, and plus options", () => {
+  assert.equal(crewExperienceMatchesYachtExperienceOption(0, "0_6_months"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(0.5, "0_6_months"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(0.6, "0_6_months"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(1, "1_year"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(2.1, "1_year"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(2.5, "2_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(3.5, "3_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(2.9, "1_3_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(3.1, "1_3_years"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(4.7, "3_5_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(5.1, "3_5_years"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(12, "5_plus_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(8, "5_10_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(11, "5_10_years"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(10, "10_plus_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(14.9, "15_plus_years"), false);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(20, "20_plus_years"), true);
+  assert.equal(crewExperienceMatchesYachtExperienceOption(3, null), true);
 });
 
 test("accepts only the supported marital status filters", () => {

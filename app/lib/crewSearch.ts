@@ -1,3 +1,22 @@
+import type { JobMinimumYachtExperience } from "./jobPosts";
+
+const crewYachtExperienceBounds: Record<
+  JobMinimumYachtExperience,
+  { minimum: number; maximum: number | null }
+> = {
+  "0_6_months": { minimum: 0, maximum: 0.5 },
+  "1_year": { minimum: 1, maximum: 1.9 },
+  "2_years": { minimum: 2, maximum: 2.9 },
+  "3_years": { minimum: 3, maximum: 3.9 },
+  "1_3_years": { minimum: 1, maximum: 3 },
+  "3_5_years": { minimum: 3, maximum: 5 },
+  "5_plus_years": { minimum: 5, maximum: null },
+  "5_10_years": { minimum: 5, maximum: 10 },
+  "10_plus_years": { minimum: 10, maximum: null },
+  "15_plus_years": { minimum: 15, maximum: null },
+  "20_plus_years": { minimum: 20, maximum: null },
+};
+
 export type CrewSearchFilters = {
   query: string;
   position: string;
@@ -9,7 +28,7 @@ export type CrewSearchFilters = {
   smoker: string;
   visibleTattoos: string;
   language: string;
-  minimumExperience: number | null;
+  minimumExperience: JobMinimumYachtExperience | null;
   premiumOnly: boolean;
   hasPhoto: boolean;
   hasGallery: boolean;
@@ -87,10 +106,8 @@ type SearchParamSource =
 export function parseCrewSearchFilters(
   source: SearchParamSource,
 ): CrewSearchFilters {
-  const minimumExperience = boundedNumber(
+  const minimumExperience = normalizedMinimumYachtExperience(
     readSearchParam(source, "experienceMin"),
-    0,
-    60,
   );
   return normalizeCrewSearchFilters({
     query: limitedText(readSearchParam(source, "q"), 120),
@@ -127,10 +144,8 @@ export function parseCrewSearchFilters(
 export function normalizeCrewSearchFilters(
   value: Partial<CrewSearchFilters>,
 ): CrewSearchFilters {
-  const minimumExperience = boundedNumberValue(
+  const minimumExperience = normalizedMinimumYachtExperience(
     value.minimumExperience,
-    0,
-    60,
   );
   return {
     query: limitedText(value.query, 120),
@@ -166,7 +181,7 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "smoker", normalized.smoker);
   setText(params, "visibleTattoos", normalized.visibleTattoos);
   setText(params, "language", normalized.language);
-  setNumber(params, "experienceMin", normalized.minimumExperience);
+  setNullableText(params, "experienceMin", normalized.minimumExperience);
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);
   setBoolean(params, "gallery", normalized.hasGallery);
@@ -211,34 +226,39 @@ function normalizedCrewProfileOption(
   return options.includes(normalized) ? normalized : "";
 }
 
-function boundedNumber(value: string, minimum: number, maximum: number) {
-  if (!value || !/^\d+(?:\.\d)?$/.test(value)) return null;
-  return boundedNumberValue(Number(value), minimum, maximum);
+function normalizedMinimumYachtExperience(
+  value: unknown,
+): JobMinimumYachtExperience | null {
+  return typeof value === "string" &&
+    Object.hasOwn(crewYachtExperienceBounds, value)
+    ? (value as JobMinimumYachtExperience)
+    : null;
 }
 
-function boundedNumberValue(
-  value: unknown,
-  minimum: number,
-  maximum: number,
+export function crewExperienceMatchesYachtExperienceOption(
+  experienceYears: number,
+  option: JobMinimumYachtExperience | null,
 ) {
-  return typeof value === "number" &&
-    Number.isFinite(value) &&
-    value >= minimum &&
-    value <= maximum
-    ? Math.round(value * 10) / 10
-    : null;
+  if (option === null) return true;
+  if (!Number.isFinite(experienceYears) || experienceYears < 0) return false;
+
+  const { minimum, maximum } = crewYachtExperienceBounds[option];
+  return (
+    experienceYears >= minimum &&
+    (maximum === null || experienceYears <= maximum)
+  );
 }
 
 function setText(params: URLSearchParams, key: string, value: string) {
   if (value) params.set(key, value);
 }
 
-function setNumber(
+function setNullableText(
   params: URLSearchParams,
   key: string,
-  value: number | null,
+  value: string | null,
 ) {
-  if (value !== null) params.set(key, String(value));
+  if (value !== null) params.set(key, value);
 }
 
 function setBoolean(params: URLSearchParams, key: string, value: boolean) {

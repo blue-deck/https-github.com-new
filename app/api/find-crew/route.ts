@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crewAvailabilityStatuses } from "../../lib/crewDiscovery";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
+import { jobMinimumYachtExperiences } from "../../lib/jobPosts";
 import {
   crewGenderOptions,
   crewSearchParamKeys,
@@ -71,15 +72,6 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     return false;
   }
 
-  for (const key of ["experienceMin"]) {
-    const value = searchParams.get(key);
-    if (
-      value !== null &&
-      (!/^\d+(?:\.\d)?$/.test(value) || Number(value) > 60)
-    ) {
-      return false;
-    }
-  }
   for (const key of ["premium", "photo", "gallery"]) {
     const value = searchParams.get(key);
     if (value !== null && value !== "1") return false;
@@ -96,6 +88,10 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     !isAllowedCrewOption(
       searchParams.get("availability"),
       crewAvailabilityStatuses,
+    ) ||
+    !isAllowedCrewOption(
+      searchParams.get("experienceMin"),
+      jobMinimumYachtExperiences,
     ) ||
     !isAllowedCrewOption(searchParams.get("gender"), crewGenderOptions) ||
     !isAllowedCrewOption(searchParams.get("smoker"), crewYesNoOptions) ||

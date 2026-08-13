@@ -34,6 +34,7 @@ import {
   type CrewDiscoverySettings,
 } from "./crewDiscovery";
 import {
+  crewExperienceMatchesYachtExperienceOption,
   crewSearchFingerprintInput,
   defaultCrewSearchFilters,
   normalizeCrewSearchFilters,
@@ -626,8 +627,10 @@ function crewSearchRecordMatches(
     return false;
   }
   if (
-    filters.minimumExperience !== null &&
-    preview.experienceYears < filters.minimumExperience
+    !crewExperienceMatchesYachtExperienceOption(
+      preview.experienceYears,
+      filters.minimumExperience,
+    )
   ) {
     return false;
   }
