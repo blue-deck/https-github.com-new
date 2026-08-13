@@ -73,6 +73,36 @@ test("availability select uses its field label as the empty option", async () =>
   );
 });
 
+test("places nationality in primary filters and location in more filters", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+  const primaryStart = client.indexOf(
+    '<div className="mt-4 grid gap-3 md:grid-cols-2',
+  );
+  const advancedStart = client.indexOf("{advancedOpen ?", primaryStart);
+  const advancedEnd = client.indexOf(
+    '<fieldset className="mt-5">',
+    advancedStart,
+  );
+  const primaryFilters = client.slice(primaryStart, advancedStart);
+  const advancedSelects = client.slice(advancedStart, advancedEnd);
+  const advancedCounter = client.slice(
+    client.indexOf("function countAdvancedCrewFilters"),
+    client.indexOf("function candidateAvailabilityLabel"),
+  );
+
+  assert.ok(primaryStart >= 0 && advancedStart > primaryStart);
+  assert.ok(advancedEnd > advancedStart);
+  assert.match(primaryFilters, /label=\{c\.nationalityFilter\}/);
+  assert.doesNotMatch(primaryFilters, /label=\{c\.location\}/);
+  assert.match(advancedSelects, /label=\{c\.location\}/);
+  assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
+  assert.match(advancedCounter, /location: filters\.location/);
+  assert.doesNotMatch(advancedCounter, /nationality: filters\.nationality/);
+});
+
 test("find crew reuses every My Profile availability option", async () => {
   const [client, route] = await Promise.all([
     readFile(

@@ -332,11 +332,12 @@ export function FindCrewClient({
                 language={language}
               />
               <FilterSelect
-                label={c.location}
-                value={filters.location}
-                onChange={(value) => setFilter("location", value)}
-                options={facets.locations}
+                label={c.nationalityFilter}
+                value={filters.nationality}
+                onChange={(value) => setFilter("nationality", value)}
+                options={facets.nationalities}
                 language={language}
+                optionKind="nationality"
               />
               <FilterSelect
                 label={c.availability}
@@ -354,12 +355,11 @@ export function FindCrewClient({
               >
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <FilterSelect
-                    label={c.nationalityFilter}
-                    value={filters.nationality}
-                    onChange={(value) => setFilter("nationality", value)}
-                    options={facets.nationalities}
+                    label={c.location}
+                    value={filters.location}
+                    onChange={(value) => setFilter("location", value)}
+                    options={facets.locations}
                     language={language}
-                    optionKind="nationality"
                   />
                   <FilterSelect
                     label={c.maritalStatus}
@@ -732,7 +732,7 @@ function hasAdvancedCrewFilters(filters: CrewSearchFilters) {
 function countAdvancedCrewFilters(filters: CrewSearchFilters) {
   const advanced: CrewSearchFilters = {
     ...defaultCrewSearchFilters,
-    nationality: filters.nationality,
+    location: filters.location,
     maritalStatus: filters.maritalStatus,
     gender: filters.gender,
     smoker: filters.smoker,
