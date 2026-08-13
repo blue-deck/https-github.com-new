@@ -929,7 +929,7 @@ const copy = {
     profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
-    hasGallery: "Portfolio gallery",
+    hasGallery: "Blue gallery",
     fairHiringNote:
       "Use all personal filters responsibly and only where relevant and lawful.",
     results: "Matching crew",
@@ -989,7 +989,7 @@ const copy = {
     profileQuality: "Profil yeterliliği",
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",
-    hasGallery: "Portfolyo galerisi",
+    hasGallery: "Blue gallery",
     fairHiringNote:
       "Kişisel filtreleri yalnızca ilgili ve hukuka uygun olduğunda sorumlu biçimde kullanın.",
     results: "Eşleşen crew",
