@@ -39,6 +39,23 @@ test("find crew uses concise English labels for core select filters", async () =
   );
 });
 
+test("personal crew selects show Any without changing their field labels", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  for (const field of ["maritalStatus", "gender", "smoker", "visibleTattoos"]) {
+    assert.match(
+      client,
+      new RegExp(`label=\\{c\\.${field}\\}\\s+emptyOptionLabel=\\{c\\.any\\}`),
+    );
+  }
+  assert.match(client, /any: "Any"/);
+  assert.match(client, /any: "Herhangi"/);
+  assert.match(client, /<option value="">\{emptyOptionLabel\}<\/option>/);
+});
+
 test("round-trips every public crew search criterion through the URL contract", () => {
   const source = new URLSearchParams({
     q: "  Chief   Stewardess  ",

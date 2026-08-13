@@ -369,6 +369,7 @@ export function FindCrewClient({
                   />
                   <FilterSelect
                     label={c.maritalStatus}
+                    emptyOptionLabel={c.any}
                     value={filters.maritalStatus}
                     onChange={(value) => setFilter("maritalStatus", value)}
                     options={crewMaritalStatuses}
@@ -376,6 +377,7 @@ export function FindCrewClient({
                   />
                   <FilterSelect
                     label={c.gender}
+                    emptyOptionLabel={c.any}
                     value={filters.gender}
                     onChange={(value) => setFilter("gender", value)}
                     options={crewGenderOptions}
@@ -383,6 +385,7 @@ export function FindCrewClient({
                   />
                   <FilterSelect
                     label={c.smoker}
+                    emptyOptionLabel={c.any}
                     value={filters.smoker}
                     onChange={(value) => setFilter("smoker", value)}
                     options={crewYesNoOptions}
@@ -390,6 +393,7 @@ export function FindCrewClient({
                   />
                   <FilterSelect
                     label={c.visibleTattoos}
+                    emptyOptionLabel={c.any}
                     value={filters.visibleTattoos}
                     onChange={(value) => setFilter("visibleTattoos", value)}
                     options={crewYesNoOptions}
@@ -612,6 +616,7 @@ export function FindCrewClient({
 
 function FilterSelect({
   label,
+  emptyOptionLabel = label,
   value,
   options,
   onChange,
@@ -619,6 +624,7 @@ function FilterSelect({
   optionKind = "default",
 }: {
   label: string;
+  emptyOptionLabel?: string;
   value: string;
   options: readonly string[];
   onChange: (value: string) => void;
@@ -637,7 +643,7 @@ function FilterSelect({
         onChange={(event) => onChange(event.target.value)}
         className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
       >
-        <option value="">{label}</option>
+        <option value="">{emptyOptionLabel}</option>
         {visibleOptions.map((option) => (
           <option key={option} value={option}>
             {formatFilterOption(option, language, optionKind)}
@@ -903,6 +909,7 @@ const copy = {
     filterHint: "Results update automatically as you refine the criteria.",
     advanced: "More filters",
     search: "Search crew",
+    any: "Any",
     searchPlaceholder: "Position, skill, language or location",
     position: "Positions",
     location: "Locations",
@@ -964,6 +971,7 @@ const copy = {
     filterHint: "Kriterleri değiştirdikçe sonuçlar otomatik güncellenir.",
     advanced: "Daha fazla filtre",
     search: "Crew ara",
+    any: "Herhangi",
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyonlar",
     location: "Konumlar",
