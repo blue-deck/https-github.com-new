@@ -14,6 +14,7 @@ import {
   formatJobMinimumYachtExperience,
   jobMinimumYachtExperiences,
 } from "../app/lib/jobPosts.ts";
+import { capitalizeInitialInput } from "../app/lib/inputText.ts";
 
 test("find crew opens directly with the compact filter workspace", async () => {
   const [client, loading] = await Promise.all([
@@ -81,7 +82,10 @@ test("crew keyword search waits for its right-side search button", async () => {
     /const \[draftFilters, setDraftFilters\] = useState\(\(\) =>\s*normalizeCrewSearchFilters\(initialFilters\)/,
   );
   assert.match(client, /value=\{draftFilters\.query\}/);
-  assert.match(client, /setDraftFilter\("query", event\.target\.value\)/);
+  assert.match(
+    client,
+    /setDraftFilter\(\s*"query",\s*capitalizeInitialInput\(event\.target\.value, language\)/,
+  );
   assert.match(client, /function submitCrewKeywordSearch\(\) \{\s*setFilters\(\(current\) =>\s*normalizeCrewSearchFilters\(\{ \.\.\.current, query: draftFilters\.query \}\)/);
   assert.match(client, /onSubmit=\{\(event\) => \{\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
   assert.match(client, /if \(event\.key !== "Enter"\) return;\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
@@ -117,13 +121,53 @@ test("primary and advanced crew filters apply only through the relocated Search 
   );
   assert.match(
     client,
-    /!advancedOpen \? \(\s*<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
+    /!advancedOpen \? \(\s*<div[\s\S]*?<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
   );
   assert.match(
     client,
     /id="crew-advanced-filters"[\s\S]*?<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
   );
   assert.match(client, /placeholder=\{c\.nationalityFilter\}/);
+});
+
+test("clear filters stays beside both Search actions without a filter-count badge", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.doesNotMatch(client, /advancedFilterCount/);
+  assert.doesNotMatch(client, /\{advancedFilterCount\}/);
+  assert.match(
+    client,
+    /!advancedOpen \? \([\s\S]*?<CrewFilterClearAction[\s\S]*?<CrewFilterSearchButton/,
+  );
+  assert.match(
+    client,
+    /id="crew-advanced-filters"[\s\S]*?<CrewFilterClearAction[\s\S]*?<CrewFilterSearchButton/,
+  );
+  assert.match(
+    client,
+    /function CrewFilterClearAction[\s\S]*?text-slate-500 underline[\s\S]*?\{label\}/,
+  );
+  assert.match(client, /setFilterResetVersion\(\(version\) => version \+ 1\)/);
+});
+
+test("crew text inputs capitalize their first typed letter for the site language", async () => {
+  const nationalityField = await readFile(
+    new URL("../app/components/NationalitySearchField.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(capitalizeInitialInput("captain", "en"), "Captain");
+  assert.equal(capitalizeInitialInput("  stewardess", "en"), "  Stewardess");
+  assert.equal(capitalizeInitialInput("istanbul", "tr"), "İstanbul");
+  assert.equal(capitalizeInitialInput("2nd engineer", "en"), "2nd engineer");
+  assert.match(
+    nationalityField,
+    /setQuery\(capitalizeInitialInput\(event\.target\.value, language\)\)/,
+  );
+  assert.match(nationalityField, /autoCapitalize="sentences"/);
 });
 
 test("personal crew selects show Any without changing their field labels", async () => {

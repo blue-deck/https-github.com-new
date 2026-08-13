@@ -17,6 +17,7 @@ import {
   searchNationalityOptions,
   type BlueDeckNationalityOption,
 } from "../lib/countries";
+import { capitalizeInitialInput } from "../lib/inputText";
 import { useLanguage } from "./LanguageProvider";
 
 const defaultLabelClassName =
@@ -173,6 +174,7 @@ export function NationalitySearchField({
           }
           aria-describedby={statusId}
           autoComplete="off"
+          autoCapitalize="sentences"
           spellCheck={false}
           value={open ? query : selectedName}
           placeholder={placeholder ?? c.placeholder}
@@ -183,7 +185,7 @@ export function NationalitySearchField({
           }}
           onChange={(event) => {
             setOpen(true);
-            setQuery(event.target.value);
+            setQuery(capitalizeInitialInput(event.target.value, language));
             setActiveIndex(0);
           }}
           onKeyDown={handleKeyDown}

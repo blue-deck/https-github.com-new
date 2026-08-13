@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   UserRound,
-  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
@@ -23,6 +22,7 @@ import {
   jobMinimumYachtExperiences,
   type JobMinimumYachtExperience,
 } from "../lib/jobPosts";
+import { capitalizeInitialInput } from "../lib/inputText";
 import {
   crewGenderOptions,
   crewMaritalStatuses,
@@ -70,6 +70,7 @@ export function FindCrewClient({
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     hasAdvancedCrewFilters(initialFilters),
   );
+  const [filterResetVersion, setFilterResetVersion] = useState(0);
   const [searching, setSearching] = useState(false);
   const [searchFailed, setSearchFailed] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -82,7 +83,6 @@ export function FindCrewClient({
   const filterFingerprint = crewSearchParams(filters).toString();
   const currentFilterFingerprint = useRef(filterFingerprint);
   const activeFilterCount = crewSearchFilterCount(filters);
-  const advancedFilterCount = countAdvancedCrewFilters(draftFilters);
   const hasFilters = activeFilterCount > 0;
 
   useEffect(() => {
@@ -188,6 +188,7 @@ export function FindCrewClient({
     setFilters(defaultCrewSearchFilters);
     setDraftFilters(defaultCrewSearchFilters);
     setAdvancedOpen(false);
+    setFilterResetVersion((version) => version + 1);
   }
 
   function submitCrewKeywordSearch() {
@@ -295,14 +296,6 @@ export function FindCrewClient({
                 className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
               >
                 {c.advanced}
-                {advancedFilterCount > 0 ? (
-                  <span
-                    data-i18n-ignore
-                    className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan-700 px-1.5 text-xs text-white"
-                  >
-                    {advancedFilterCount}
-                  </span>
-                ) : null}
                 <ChevronDown
                   className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
                   aria-hidden
@@ -336,7 +329,10 @@ export function FindCrewClient({
                     type="search"
                     value={draftFilters.query}
                     onChange={(event) =>
-                      setDraftFilter("query", event.target.value)
+                      setDraftFilter(
+                        "query",
+                        capitalizeInitialInput(event.target.value, language),
+                      )
                     }
                     onKeyDown={(event) => {
                       if (event.key !== "Enter") return;
@@ -345,6 +341,7 @@ export function FindCrewClient({
                     }}
                     placeholder={c.searchPlaceholder}
                     maxLength={120}
+                    autoCapitalize="sentences"
                     className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
                   />
                   <button
@@ -365,6 +362,7 @@ export function FindCrewClient({
                 language={language}
               />
               <NationalitySearchField
+                key={`crew-nationality-${filterResetVersion}`}
                 label={c.nationalityFilter}
                 value={draftFilters.nationality}
                 onChange={(value) => setDraftFilter("nationality", value)}
@@ -378,14 +376,20 @@ export function FindCrewClient({
                 language={language}
               />
               {!advancedOpen ? (
-                <CrewFilterSearchButton
-                  label={c.applyFilters}
-                  accessibleLabel={c.applyFiltersLabel}
-                  searchingLabel={c.searching}
-                  searching={searching}
-                  onClick={submitAllCrewFilters}
-                  className="self-end md:col-span-2 xl:col-span-1"
-                />
+                <div className="flex items-center justify-end gap-3 self-end md:col-span-2 xl:col-span-1">
+                  <CrewFilterClearAction
+                    label={c.clear}
+                    onClick={clearFilters}
+                  />
+                  <CrewFilterSearchButton
+                    label={c.applyFilters}
+                    accessibleLabel={c.applyFiltersLabel}
+                    searchingLabel={c.searching}
+                    searching={searching}
+                    onClick={submitAllCrewFilters}
+                    className="min-w-32 flex-1 md:flex-none"
+                  />
+                </div>
               ) : null}
             </div>
 
@@ -471,7 +475,11 @@ export function FindCrewClient({
                   />
                   {c.fairHiringNote}
                 </p>
-                <div className="mt-5 flex justify-end border-t border-slate-200 pt-5">
+                <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
+                  <CrewFilterClearAction
+                    label={c.clear}
+                    onClick={clearFilters}
+                  />
                   <CrewFilterSearchButton
                     label={c.applyFilters}
                     accessibleLabel={c.applyFiltersLabel}
@@ -505,17 +513,6 @@ export function FindCrewClient({
                 ) : null}
               </h2>
             </div>
-            {hasFilters ? (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
-              >
-                <X className="h-4 w-4" aria-hidden />
-                {c.clear}
-                <span data-i18n-ignore>({activeFilterCount})</span>
-              </button>
-            ) : null}
           </div>
 
           {searchFailed ? (
@@ -582,13 +579,11 @@ export function FindCrewClient({
                 {hasFilters ? c.noMatchesText : c.emptyText}
               </p>
               {hasFilters ? (
-                <button
-                  type="button"
+                <CrewFilterClearAction
+                  label={c.clear}
                   onClick={clearFilters}
-                  className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
-                >
-                  {c.clear}
-                </button>
+                  className="mt-4"
+                />
               ) : (
                 <Link
                   href="/login?mode=signup&role=crew"
@@ -663,6 +658,26 @@ function CrewFilterSearchButton({
         {searching ? searchingLabel : label}
       </button>
     </div>
+  );
+}
+
+function CrewFilterClearAction({
+  label,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`bd-focus inline-flex min-h-11 items-center justify-center px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900 ${className}`.trim()}
+    >
+      {label}
+    </button>
   );
 }
 
