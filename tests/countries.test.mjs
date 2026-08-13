@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  canonicalNationalityValue,
   countryNameForLanguage,
   countryOptionFromNationalityValue,
   nationalityOptions,
@@ -71,6 +72,13 @@ test("country values are unique for new profiles and recognize legacy demonyms",
   assert.equal(nationalityValueMatchesCountry("German", "Germany"), true);
   assert.equal(nationalityValueMatchesCountry("Germany", "Germany"), true);
   assert.equal(nationalityValueMatchesCountry("German", "France"), false);
+
+  const turkey = countryOptionFromNationalityValue("Turkish");
+  assert.equal(turkey?.code, "TR");
+  assert.equal(turkey && nationalityStorageValue(turkey), "Turkey");
+  assert.equal(canonicalNationalityValue("Turkish"), "Turkey");
+  assert.equal(canonicalNationalityValue(" turkish "), "Turkey");
+  assert.equal(nationalityValueMatchesCountry("Turkish", "Turkey"), true);
 });
 
 test("My Profile and Find Crew use the shared nationality search field", async () => {
@@ -84,6 +92,11 @@ test("My Profile and Find Crew use the shared nationality search field", async (
 
   assert.match(profilePage, /<NationalitySearchField/);
   assert.match(findCrewClient, /<NationalitySearchField/);
+  assert.match(profilePage, /nationality: canonicalNationalityValue\(profile\.nationality\)/);
+  assert.match(
+    findCrewClient,
+    /<NationalitySearchField[\s\S]*?value=\{draftFilters\.nationality\}/,
+  );
   assert.doesNotMatch(profilePage, /function NationalitySelect/);
   assert.doesNotMatch(findCrewClient, /optionKind="nationality"/);
 });

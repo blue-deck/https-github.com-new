@@ -10,6 +10,7 @@ import {
   type KeyboardEvent,
 } from "react";
 import {
+  canonicalNationalityValue,
   countryNameForLanguage,
   countryOptionFromNationalityValue,
   nationalityStorageValue,
@@ -96,6 +97,10 @@ export function NationalitySearchField({
   }
 
   function openPicker(showAllCountries = false) {
+    const canonicalValue = canonicalNationalityValue(value);
+    if (selectedCountry && canonicalValue !== value) {
+      onChange(canonicalValue);
+    }
     const nextQuery = showAllCountries ? "" : selectedName;
     setOpen(true);
     setQuery(nextQuery);

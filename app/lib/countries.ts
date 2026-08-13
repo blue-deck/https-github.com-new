@@ -113,6 +113,13 @@ export function nationalityStorageValue(country: BlueDeckNationalityOption) {
   return country.countryEn;
 }
 
+export function canonicalNationalityValue(value: unknown) {
+  if (typeof value !== "string") return "";
+  const trimmedValue = value.trim();
+  const country = countryOptionFromNationalityValue(trimmedValue);
+  return country ? nationalityStorageValue(country) : trimmedValue;
+}
+
 export function nationalityValueMatchesCountry(
   nationalityValue: string,
   countryValue: string,

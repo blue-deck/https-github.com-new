@@ -29,7 +29,10 @@ import { LocationSearchField } from "../components/LocationSearchField";
 import { NationalitySearchField } from "../components/NationalitySearchField";
 import { PhoneInput } from "../components/PhoneInput";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
-import { blueDeckCountries } from "../lib/countries";
+import {
+  blueDeckCountries,
+  canonicalNationalityValue,
+} from "../lib/countries";
 import { saveBaseProfileById } from "../lib/baseProfiles";
 import {
   crewAvailabilityStatuses,
@@ -2476,7 +2479,7 @@ function profileSaveState(profile: CrewProfile) {
     phone: cleanSaveText(profile.phone),
     gender: cleanSaveText(profile.gender),
     marital_status: cleanSaveText(profile.marital_status),
-    nationality: cleanSaveText(profile.nationality),
+    nationality: canonicalNationalityValue(profile.nationality),
     current_position: currentPosition,
     location: cleanSaveText(profile.location),
     bio: cleanLimitedText(profile.bio, professionalSummaryMaxLength),
