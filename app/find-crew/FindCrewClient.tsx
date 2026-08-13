@@ -406,19 +406,6 @@ export function FindCrewClient({
                     options={facets.languages}
                     language={language}
                   />
-                  <label className="block">
-                    <span className="mb-1.5 block text-xs font-bold text-slate-600">
-                      {c.memberSinceFilter}
-                    </span>
-                    <input
-                      type="month"
-                      value={filters.memberSince}
-                      onChange={(event) =>
-                        setFilter("memberSince", event.target.value)
-                      }
-                      className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-                    />
-                  </label>
                 </div>
 
                 <fieldset className="mt-5">
@@ -750,7 +737,6 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     workPreference: filters.workPreference,
     language: filters.language,
     minimumExperience: filters.minimumExperience,
-    memberSince: filters.memberSince,
     premiumOnly: filters.premiumOnly,
     hasPhoto: filters.hasPhoto,
     hasGallery: filters.hasGallery,
@@ -903,7 +889,6 @@ const copy = {
     characteristic: "Any professional trait",
     workPreference: "Any work preference",
     language: "Any language",
-    memberSinceFilter: "Joined on or after",
     profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
@@ -962,7 +947,6 @@ const copy = {
     characteristic: "Tüm profesyonel özellikler",
     workPreference: "Tüm çalışma tercihleri",
     language: "Tüm diller",
-    memberSinceFilter: "Bu tarihten sonra üye",
     profileQuality: "Profil yeterliliği",
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",

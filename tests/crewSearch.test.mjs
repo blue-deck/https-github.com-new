@@ -22,7 +22,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     preference: "Motor yacht",
     language: "English",
     experienceMin: "3",
-    memberSince: "2024-05",
     premium: "1",
     photo: "1",
     gallery: "1",
@@ -38,7 +37,17 @@ test("round-trips every public crew search criterion through the URL contract", 
     normalizedSource.toString(),
   );
   assert.equal(filters.maritalStatus, "Married");
-  assert.equal(crewSearchFilterCount(filters), 16);
+  assert.equal(crewSearchFilterCount(filters), 15);
+});
+
+test("removes joined date from the crew filter contract", () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({ memberSince: "2024-05" }),
+  );
+
+  assert.equal(crewSearchParamKeys.has("memberSince"), false);
+  assert.equal(Object.hasOwn(filters, "memberSince"), false);
+  assert.equal(crewSearchParams(filters).toString(), "");
 });
 
 test("removes minimum language level from the crew filter contract", () => {
@@ -63,17 +72,15 @@ test("removes public references and documents from the crew filter contract", ()
   assert.equal(crewSearchParams(filters).toString(), "");
 });
 
-test("bounds malformed minimum experience and month values without widening a request", () => {
+test("bounds malformed minimum experience without widening a request", () => {
   const filters = parseCrewSearchFilters(
     new URLSearchParams({
       experienceMin: "8",
-      memberSince: "2024-19",
       premium: "true",
     }),
   );
 
   assert.equal(filters.minimumExperience, 8);
-  assert.equal(filters.memberSince, "");
   assert.equal(filters.premiumOnly, false);
 });
 

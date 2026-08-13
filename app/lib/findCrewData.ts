@@ -627,12 +627,6 @@ function crewSearchRecordMatches(
   ) {
     return false;
   }
-  if (
-    filters.memberSince &&
-    preview.memberSince.slice(0, 7) < filters.memberSince
-  ) {
-    return false;
-  }
   if (filters.premiumOnly && !preview.premiumProfile) return false;
   if (filters.hasPhoto && !preview.profilePhotoUrl) return false;
   if (filters.hasGallery && record.galleryCount === 0) return false;

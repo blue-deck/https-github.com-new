@@ -11,7 +11,6 @@ export type CrewSearchFilters = {
   workPreference: string;
   language: string;
   minimumExperience: number | null;
-  memberSince: string;
   premiumOnly: boolean;
   hasPhoto: boolean;
   hasGallery: boolean;
@@ -58,7 +57,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   workPreference: "",
   language: "",
   minimumExperience: null,
-  memberSince: "",
   premiumOnly: false,
   hasPhoto: false,
   hasGallery: false,
@@ -77,7 +75,6 @@ export const crewSearchParamKeys = new Set([
   "preference",
   "language",
   "experienceMin",
-  "memberSince",
   "premium",
   "photo",
   "gallery",
@@ -120,7 +117,6 @@ export function parseCrewSearchFilters(
     ),
     language: limitedText(readSearchParam(source, "language"), 80),
     minimumExperience,
-    memberSince: validMonth(readSearchParam(source, "memberSince")),
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
     hasGallery: readSearchParam(source, "gallery") === "1",
@@ -148,7 +144,6 @@ export function normalizeCrewSearchFilters(
     workPreference: limitedText(value.workPreference, 120),
     language: limitedText(value.language, 80),
     minimumExperience,
-    memberSince: validMonth(value.memberSince),
     premiumOnly: value.premiumOnly === true,
     hasPhoto: value.hasPhoto === true,
     hasGallery: value.hasGallery === true,
@@ -170,7 +165,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "preference", normalized.workPreference);
   setText(params, "language", normalized.language);
   setNumber(params, "experienceMin", normalized.minimumExperience);
-  setText(params, "memberSince", normalized.memberSince);
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);
   setBoolean(params, "gallery", normalized.hasGallery);
@@ -223,12 +217,6 @@ function boundedNumberValue(
     value <= maximum
     ? Math.round(value * 10) / 10
     : null;
-}
-
-function validMonth(value: unknown) {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}$/.test(value)) return "";
-  const month = Number(value.slice(5));
-  return month >= 1 && month <= 12 ? value : "";
 }
 
 function setText(params: URLSearchParams, key: string, value: string) {
