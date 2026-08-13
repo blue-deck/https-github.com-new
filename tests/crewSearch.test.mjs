@@ -27,7 +27,6 @@ test("find crew uses concise English labels for core select filters", async () =
   );
 
   assert.match(client, /availability: "Availability"/);
-  assert.match(client, /contract: "Employment type"/);
   assert.match(client, /nationalityFilter: "Nationality"/);
   assert.match(client, /maritalStatus: "Marital status"/);
   assert.match(client, /language: "Language"/);
@@ -87,7 +86,6 @@ test("round-trips every public crew search criterion through the URL contract", 
     position: "Chief Stewardess",
     location: "Athens",
     availability: "Available",
-    contract: "Permanent",
     nationality: "Turkish",
     maritalStatus: "Married",
     gender: "Female",
@@ -113,7 +111,23 @@ test("round-trips every public crew search criterion through the URL contract", 
   assert.equal(filters.gender, "Female");
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
-  assert.equal(crewSearchFilterCount(filters), 15);
+  assert.equal(crewSearchFilterCount(filters), 14);
+});
+
+test("removes employment type from the crew filter contract", async () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({ contract: "Permanent" }),
+  );
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.equal(crewSearchParamKeys.has("contract"), false);
+  assert.equal(Object.hasOwn(filters, "employmentType"), false);
+  assert.equal(crewSearchParams(filters).toString(), "");
+  assert.doesNotMatch(client, /label=\{c\.contract\}/);
+  assert.doesNotMatch(client, /filters\.employmentType/);
 });
 
 test("removes skills, professional trait, and work preference filters", async () => {

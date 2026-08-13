@@ -304,7 +304,7 @@ export function FindCrewClient({
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.35fr_repeat(4,minmax(0,1fr))]">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.35fr_repeat(3,minmax(0,1fr))]">
               <label className="block">
                 <span className="mb-1.5 block text-xs font-bold text-slate-600">
                   {c.search}
@@ -343,13 +343,6 @@ export function FindCrewClient({
                 value={filters.availability}
                 onChange={(value) => setFilter("availability", value)}
                 options={crewAvailabilityStatuses}
-                language={language}
-              />
-              <FilterSelect
-                label={c.contract}
-                value={filters.employmentType}
-                onChange={(value) => setFilter("employmentType", value)}
-                options={facets.employmentTypes}
                 language={language}
               />
             </div>
@@ -891,7 +884,6 @@ const copy = {
     position: "Positions",
     location: "Locations",
     availability: "Availability",
-    contract: "Employment type",
     nationalityFilter: "Nationality",
     maritalStatus: "Marital status",
     gender: "Gender",
@@ -950,7 +942,6 @@ const copy = {
     position: "Pozisyonlar",
     location: "Konumlar",
     availability: "Müsaitlik durumları",
-    contract: "Çalışma türleri",
     nationalityFilter: "Uyruklar",
     maritalStatus: "Medeni durumlar",
     gender: "Cinsiyet",

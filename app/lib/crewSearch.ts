@@ -3,7 +3,6 @@ export type CrewSearchFilters = {
   position: string;
   location: string;
   availability: string;
-  employmentType: string;
   nationality: string;
   maritalStatus: string;
   gender: string;
@@ -51,7 +50,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   position: "",
   location: "",
   availability: "",
-  employmentType: "",
   nationality: "",
   maritalStatus: "",
   gender: "",
@@ -69,7 +67,6 @@ export const crewSearchParamKeys = new Set([
   "position",
   "location",
   "availability",
-  "contract",
   "nationality",
   "maritalStatus",
   "gender",
@@ -103,7 +100,6 @@ export function parseCrewSearchFilters(
       readSearchParam(source, "availability"),
       120,
     ),
-    employmentType: limitedText(readSearchParam(source, "contract"), 120),
     nationality: limitedText(readSearchParam(source, "nationality"), 80),
     maritalStatus: normalizedMaritalStatus(
       readSearchParam(source, "maritalStatus"),
@@ -141,7 +137,6 @@ export function normalizeCrewSearchFilters(
     position: limitedText(value.position, 120),
     location: limitedText(value.location, 120),
     availability: limitedText(value.availability, 120),
-    employmentType: limitedText(value.employmentType, 120),
     nationality: limitedText(value.nationality, 80),
     maritalStatus: normalizedMaritalStatus(value.maritalStatus),
     gender: normalizedCrewProfileOption(value.gender, crewGenderOptions),
@@ -165,7 +160,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "position", normalized.position);
   setText(params, "location", normalized.location);
   setText(params, "availability", normalized.availability);
-  setText(params, "contract", normalized.employmentType);
   setText(params, "nationality", normalized.nationality);
   setText(params, "maritalStatus", normalized.maritalStatus);
   setText(params, "gender", normalized.gender);

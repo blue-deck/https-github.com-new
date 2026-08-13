@@ -596,12 +596,6 @@ function crewSearchRecordMatches(
     return false;
   }
   if (
-    filters.employmentType &&
-    !hasExactCrewValue(preview.employmentTypes, filters.employmentType)
-  ) {
-    return false;
-  }
-  if (
     filters.nationality &&
     !sameCrewValue(preview.nationality, filters.nationality)
   ) {
