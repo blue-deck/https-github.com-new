@@ -15,6 +15,32 @@ import {
   jobMinimumYachtExperiences,
 } from "../app/lib/jobPosts.ts";
 
+test("find crew opens directly with the compact filter workspace", async () => {
+  const [client, loading] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/find-crew/loading.tsx", import.meta.url), "utf8"),
+  ]);
+
+  for (const source of [client, loading]) {
+    assert.doesNotMatch(source, /Find the right yacht crew with precision\./);
+    assert.doesNotMatch(source, /Finding the right crew\./);
+  }
+  assert.doesNotMatch(
+    client,
+    /Search privacy-protected Crew and Captain profiles/,
+  );
+  assert.doesNotMatch(client, /c\.(?:eyebrow|title|intro)/);
+  assert.match(client, /<h1\s+id="crew-filter-heading"/);
+  assert.match(
+    client,
+    /max-w-7xl px-5 pb-12 pt-7[\s\S]*?<section[\s\S]*?aria-labelledby="crew-filter-heading"/,
+  );
+  assert.match(loading, /<h1 id="crew-filter-heading" className="sr-only">/);
+});
+
 test("find crew filter labels omit all and tüm prefixes", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),

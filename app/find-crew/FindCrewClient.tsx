@@ -265,41 +265,26 @@ export function FindCrewClient({
       <PublicHeader />
 
       <main id="main-content">
-        <section className="border-b border-slate-200 bg-white">
-          <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-              <ShieldCheck className="h-4 w-4" aria-hidden />
-              {c.eyebrow}
-            </p>
-            <h1 className="bd-serif mt-4 max-w-4xl text-4xl leading-[1.02] text-[#071f3c] sm:text-5xl lg:text-6xl">
-              {c.title}
-            </h1>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-[#526b83]">
-              {c.intro}
-            </p>
-          </div>
-        </section>
-
         <section
           aria-labelledby="crew-results-heading"
-          className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 lg:px-10 lg:py-12"
+          className="mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
         >
           <section
             aria-labelledby="crew-filter-heading"
-            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_14px_45px_rgba(15,45,72,0.05)] sm:p-5"
+            className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] sm:p-6"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2
+                <h1
                   id="crew-filter-heading"
-                  className="flex items-center gap-2 text-sm font-black text-[#071f3c]"
+                  className="flex items-center gap-2 text-base font-black text-[#071f3c]"
                 >
                   <SlidersHorizontal
                     className="h-5 w-5 text-cyan-700"
                     aria-hidden
                   />
                   {c.filters}
-                </h2>
+                </h1>
                 <p className="mt-1 text-sm text-slate-500">{c.filterHint}</p>
               </div>
               <button
@@ -944,10 +929,6 @@ function isDiscoverableCrewPreview(
 
 const copy = {
   en: {
-    eyebrow: "Public crew directory",
-    title: "Find the right yacht crew with precision.",
-    intro:
-      "Search privacy-protected Crew and Captain profiles by professional experience, position, location, language, skills, work preferences and profile readiness.",
     filters: "Search and filters",
     filterHint: "Choose your criteria, then use Search to update the results.",
     advanced: "More filters",
@@ -1005,10 +986,6 @@ const copy = {
     retry: "Retry search",
   },
   tr: {
-    eyebrow: "Herkese açık crew rehberi",
-    title: "Doğru yat mürettebatını hassasiyetle bulun.",
-    intro:
-      "Gizliliği korunan Crew ve Captain profillerini mesleki deneyim, pozisyon, konum, dil, beceri, çalışma tercihi ve profil yeterliliğine göre arayın.",
     filters: "Arama ve filtreler",
     filterHint:
       "Kriterlerinizi seçin, sonuçları güncellemek için Ara düğmesine basın.",
