@@ -42,7 +42,13 @@ test("personal crew selects show Any without changing their field labels", async
     "utf8",
   );
 
-  for (const field of ["maritalStatus", "gender", "smoker", "visibleTattoos"]) {
+  for (const field of [
+    "availability",
+    "maritalStatus",
+    "gender",
+    "smoker",
+    "visibleTattoos",
+  ]) {
     assert.match(
       client,
       new RegExp(`label=\\{c\\.${field}\\}\\s+emptyOptionLabel=\\{c\\.any\\}`),
