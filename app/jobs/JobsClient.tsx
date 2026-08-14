@@ -148,6 +148,8 @@ export function JobsClient({
     () => buildActiveFilterChips(filters, language, c),
     [c, filters, language],
   );
+  const activeFilterCount = activeFilters.length;
+  const advancedFilterCount = countAdvancedPublicJobFilters(filters);
   const hasFilters = hasPublicJobSearchFilters(filters);
 
   const optionSets = useMemo(
@@ -298,7 +300,7 @@ export function JobsClient({
           setRefreshing(false);
         }
       }
-    }, 300);
+    }, 280);
 
     return () => {
       window.clearTimeout(timer);
@@ -453,9 +455,12 @@ export function JobsClient({
               >
                 <Filter className="h-4 w-4" aria-hidden />
                 {c.advanced}
-                {activeFilters.length > 0 ? (
-                  <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] text-cyan-900">
-                    {activeFilters.length}
+                {advancedFilterCount > 0 ? (
+                  <span
+                    data-i18n-ignore
+                    className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan-700 px-1.5 text-xs text-white"
+                  >
+                    {advancedFilterCount}
                   </span>
                 ) : null}
                 <ChevronDown
@@ -466,17 +471,30 @@ export function JobsClient({
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.45fr_repeat(3,minmax(0,1fr))]">
-              <TextField
-                label={c.search}
-                type="search"
-                value={filters.query}
-                maxLength={120}
-                placeholder={c.searchPlaceholder}
-                icon="search"
-                onChange={(value) =>
-                  updateFilters((current) => ({ ...current, query: value }))
-                }
-              />
+              <label className="block min-w-0">
+                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+                  {c.search}
+                </span>
+                <span className="relative block">
+                  <Search
+                    className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-700"
+                    aria-hidden
+                  />
+                  <input
+                    type="search"
+                    value={filters.query}
+                    onChange={(event) =>
+                      updateFilters((current) => ({
+                        ...current,
+                        query: event.target.value,
+                      }))
+                    }
+                    placeholder={c.searchPlaceholder}
+                    maxLength={120}
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                  />
+                </span>
+              </label>
               <MultiSelectField
                 label={c.position}
                 placeholder={c.allPositions}
@@ -680,21 +698,6 @@ export function JobsClient({
                         }
                       />
                       <MultiSelectField
-                        label={c.skills}
-                        placeholder={c.anySkill}
-                        searchPlaceholder={c.searchSkills}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.skills}
-                        values={filters.requiredSkills}
-                        onChange={(requiredSkills) =>
-                          updateFilters((current) => ({
-                            ...current,
-                            requiredSkills: requiredSkills as PublicJobSearchFilters["requiredSkills"],
-                          }))
-                        }
-                      />
-                      <MultiSelectField
                         label={c.characteristics}
                         placeholder={c.anyCharacteristic}
                         searchPlaceholder={c.searchCharacteristics}
@@ -871,59 +874,64 @@ export function JobsClient({
                     <X className="h-3.5 w-3.5" aria-hidden />
                   </button>
                 ))}
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="bd-focus min-h-8 px-2 text-xs font-black text-slate-600 underline decoration-slate-300 underline-offset-4 hover:text-cyan-900"
-                >
-                  {c.clear}
-                </button>
               </div>
             ) : null}
           </section>
 
-          <div className="mt-7 flex flex-wrap items-end justify-between gap-4">
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
             <div aria-live="polite" aria-atomic="true">
               <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
                 {c.results}
               </p>
               <h2
                 id="jobs-results-heading"
-                className="mt-1 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
+                className="mt-1 flex items-center gap-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
               >
+                <span>
+                  <span data-i18n-ignore>{total}</span> {c.roles}
+                </span>
                 {refreshing && !validationError ? (
-                  <span className="inline-flex items-center gap-2 text-xl text-slate-600">
-                    <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
-                    {c.updating}
-                  </span>
-                ) : (
-                  <>
-                    <span data-i18n-ignore>{total}</span> {c.roles}
-                  </>
-                )}
+                  <LoaderCircle
+                    className="h-5 w-5 animate-spin text-cyan-700"
+                    aria-label={c.searching}
+                  />
+                ) : null}
               </h2>
             </div>
-            <FilterSelect
-              compact
-              label={c.sortBy}
-              placeholder={c.sortBy}
-              value={filters.sort}
-              options={optionSets.sorts}
-              onChange={(value) =>
-                updateFilters((current) => ({
-                  ...current,
-                  sort: value as PublicJobSearchSort,
-                  salaryCurrency:
-                    value.startsWith("salary_") && !current.salaryCurrency
-                      ? "EUR"
-                      : current.salaryCurrency,
-                  salaryPeriod:
-                    value.startsWith("salary_") && !current.salaryPeriod
-                      ? "month"
-                      : current.salaryPeriod,
-                }))
-              }
-            />
+            <div className="flex flex-wrap items-end gap-3">
+              {hasFilters ? (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
+                >
+                  <X className="h-4 w-4" aria-hidden />
+                  {c.clear}
+                  <span data-i18n-ignore>({activeFilterCount})</span>
+                </button>
+              ) : null}
+              <FilterSelect
+                compact
+                label={c.sortBy}
+                placeholder={c.sortBy}
+                value={filters.sort}
+                options={optionSets.sorts}
+                onChange={(value) =>
+                  updateFilters((current) => ({
+                    ...current,
+                    sort: value as PublicJobSearchSort,
+                    salaryCurrency:
+                      value.startsWith("salary_") && !current.salaryCurrency
+                        ? "EUR"
+                        : current.salaryCurrency,
+                    salaryPeriod:
+                      value.startsWith("salary_") && !current.salaryPeriod
+                        ? "month"
+                        : current.salaryPeriod,
+                  }))
+                }
+              />
+            </div>
           </div>
 
           {validationError ? (
@@ -957,7 +965,7 @@ export function JobsClient({
             <div aria-busy={refreshing}>
               <div
                 className={`mt-5 grid gap-5 transition-opacity ${
-                  refreshing ? "pointer-events-none opacity-45" : ""
+                  refreshing ? "opacity-55" : "opacity-100"
                 }`}
               >
                 {jobs.map((job) => (
@@ -1031,7 +1039,6 @@ function TextField({
   type = "text",
   placeholder,
   maxLength,
-  icon,
   onChange,
 }: {
   label: string;
@@ -1039,7 +1046,6 @@ function TextField({
   type?: "text" | "search" | "date";
   placeholder?: string;
   maxLength?: number;
-  icon?: "search";
   onChange: (value: string) => void;
 }) {
   return (
@@ -1048,19 +1054,13 @@ function TextField({
         {label}
       </span>
       <span className="relative block">
-        {icon === "search" ? (
-          <Search
-            className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-700"
-            aria-hidden
-          />
-        ) : null}
         <input
           type={type}
           value={value}
           maxLength={maxLength}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={`min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 ${icon ? "pl-11" : ""}`}
+          className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
         />
       </span>
     </label>
@@ -1504,7 +1504,6 @@ function buildOptionSets(language: Language, c: SearchCopy) {
     languages: publicJobSearchTaxonomy.requiredLanguages.map((value) =>
       option(value, formatJobRequiredLanguage(value, language)),
     ),
-    skills: publicJobSearchTaxonomy.skills.map((value) => option(value)),
     characteristics: publicJobSearchTaxonomy.characteristics.map((value) =>
       option(value),
     ),
@@ -1665,10 +1664,6 @@ function buildActiveFilterChips(
       }),
     ),
   );
-  addStringListChips(chips, filters.requiredSkills, "skill", (current, value) => ({
-    ...current,
-    requiredSkills: current.requiredSkills.filter((item) => item !== value),
-  }));
   addStringListChips(
     chips,
     filters.requiredCharacteristics,
@@ -1846,28 +1841,31 @@ function validateFilterRanges(
 }
 
 function hasAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
-  return Boolean(
-    filters.departments.length ||
-      filters.candidateTypes.length ||
-      filters.yachtTypes.length ||
-      filters.yachtBrand ||
-      filters.yachtFlagCountryCodes.length ||
-      filters.yachtLengthMinMetres !== null ||
-      filters.yachtLengthMaxMetres !== null ||
-      filters.crewMemberCountMin !== null ||
-      filters.crewMemberCountMax !== null ||
-      filters.minimumYachtExperiences.length ||
-      filters.requiredLanguages.length ||
-      filters.requiredSkills.length ||
-      filters.requiredCharacteristics.length ||
-      filters.requiredCertificates.length ||
-      filters.requiredVisas.length ||
-      filters.smokerPolicies.length ||
-      filters.visibleTattooPolicies.length ||
-      filters.salaryCurrency ||
-      filters.salaryPeriod ||
-      filters.salaryMin !== null ||
-      filters.salaryMax !== null
+  return countAdvancedPublicJobFilters(filters) > 0;
+}
+
+function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
+  return (
+    filters.departments.length +
+    (filters.candidateTypes.length > 0 ? 1 : 0) +
+    filters.yachtTypes.length +
+    (filters.yachtBrand ? 1 : 0) +
+    filters.yachtFlagCountryCodes.length +
+    (filters.yachtLengthMinMetres !== null ? 1 : 0) +
+    (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
+    (filters.crewMemberCountMin !== null ? 1 : 0) +
+    (filters.crewMemberCountMax !== null ? 1 : 0) +
+    filters.minimumYachtExperiences.length +
+    filters.requiredLanguages.length +
+    filters.requiredCharacteristics.length +
+    filters.requiredCertificates.length +
+    filters.requiredVisas.length +
+    filters.smokerPolicies.length +
+    filters.visibleTattooPolicies.length +
+    (filters.salaryCurrency ? 1 : 0) +
+    (filters.salaryPeriod ? 1 : 0) +
+    (filters.salaryMin !== null ? 1 : 0) +
+    (filters.salaryMax !== null ? 1 : 0)
   );
 }
 
@@ -1997,9 +1995,9 @@ const copy = {
     intro:
       "Search every detail employers publish, from vessel specifications and start dates to certificates, visas and working preferences.",
     filters: "Search and filters",
-    filterHint: "Choose multiple options to broaden a category; categories work together.",
-    search: "Keyword",
-    searchPlaceholder: "Role, requirement, yacht or listing number",
+    filterHint: "Results update automatically as you refine the criteria.",
+    search: "Search jobs",
+    searchPlaceholder: "Position, skill, language or location",
     position: "Position",
     allPositions: "All positions",
     searchPositions: "Search positions",
@@ -2037,9 +2035,6 @@ const copy = {
     requirements: "Published requirements",
     languages: "Languages",
     anyLanguage: "Any language",
-    skills: "Skills",
-    anySkill: "Any skill",
-    searchSkills: "Search skills",
     characteristics: "Characteristics",
     anyCharacteristic: "Any characteristic",
     searchCharacteristics: "Search characteristics",
@@ -2060,7 +2055,7 @@ const copy = {
     maximumSalary: "Maximum salary",
     results: "Current opportunities",
     roles: "open roles",
-    updating: "Updating results…",
+    searching: "Searching jobs",
     sortBy: "Sort by",
     sorts: {
       newest: "Newest first",
@@ -2105,9 +2100,9 @@ const copy = {
     intro:
       "İşverenlerin yayınladığı yat özelliklerinden başlangıç tarihlerine, sertifikalardan vize ve çalışma tercihlerine kadar her ayrıntıda arayın.",
     filters: "Arama ve filtreler",
-    filterHint: "Bir kategoride birden fazla seçenek seçilebilir; kategoriler birlikte çalışır.",
-    search: "Anahtar kelime",
-    searchPlaceholder: "Pozisyon, gereklilik, yat veya ilan numarası",
+    filterHint: "Kriterleri değiştirdikçe sonuçlar otomatik güncellenir.",
+    search: "İş ara",
+    searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyon",
     allPositions: "Tüm pozisyonlar",
     searchPositions: "Pozisyon ara",
@@ -2145,9 +2140,6 @@ const copy = {
     requirements: "Yayınlanan gereklilikler",
     languages: "Diller",
     anyLanguage: "Tüm diller",
-    skills: "Beceriler",
-    anySkill: "Tüm beceriler",
-    searchSkills: "Beceri ara",
     characteristics: "Kişisel özellikler",
     anyCharacteristic: "Tüm özellikler",
     searchCharacteristics: "Özellik ara",
@@ -2168,7 +2160,7 @@ const copy = {
     maximumSalary: "Maksimum ücret",
     results: "Güncel fırsatlar",
     roles: "açık pozisyon",
-    updating: "Sonuçlar güncelleniyor…",
+    searching: "İş ilanları aranıyor",
     sortBy: "Sırala",
     sorts: {
       newest: "En yeni önce",

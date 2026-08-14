@@ -7,7 +7,6 @@ import type {
   JobRequiredLanguage,
   JobSalaryCurrency,
   JobSalaryPeriod,
-  JobSkill,
   JobSmokerPolicy,
   JobVisa,
   JobVisibleTattooPolicy,
@@ -37,7 +36,6 @@ export type PublicJobSearchTaxonomy = {
   yachtTypes: readonly JobYachtType[];
   minimumYachtExperiences: readonly JobMinimumYachtExperience[];
   requiredLanguages: readonly JobRequiredLanguage[];
-  skills: readonly JobSkill[];
   characteristics: readonly JobCharacteristic[];
   certificates: readonly JobCertificate[];
   visas: readonly JobVisa[];
@@ -64,7 +62,6 @@ export type PublicJobSearchFilters = {
   crewMemberCountMax: number | null;
   minimumYachtExperiences: JobMinimumYachtExperience[];
   requiredLanguages: JobRequiredLanguage[];
-  requiredSkills: JobSkill[];
   requiredCharacteristics: JobCharacteristic[];
   requiredCertificates: JobCertificate[];
   requiredVisas: JobVisa[];
@@ -115,7 +112,6 @@ const queryKeys = new Set([
   "crewMax",
   "minimumExperience",
   "language",
-  "skill",
   "trait",
   "certificate",
   "visa",
@@ -138,7 +134,6 @@ const multiValueLimits: Record<string, number> = {
   yachtFlag: 12,
   minimumExperience: 11,
   language: 11,
-  skill: 20,
   trait: 15,
   certificate: 17,
   visa: 5,
@@ -183,7 +178,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     crewMemberCountMax: null,
     minimumYachtExperiences: [],
     requiredLanguages: [],
-    requiredSkills: [],
     requiredCharacteristics: [],
     requiredCertificates: [],
     requiredVisas: [],
@@ -262,11 +256,6 @@ export function parsePublicJobSearchParams(
     "language",
     taxonomy.requiredLanguages,
   );
-  const requiredSkills = enumList(
-    searchParams,
-    "skill",
-    taxonomy.skills,
-  );
   const requiredCharacteristics = enumList(
     searchParams,
     "trait",
@@ -302,7 +291,6 @@ export function parsePublicJobSearchParams(
     yachtFlagCountryCodes,
     minimumYachtExperiences,
     requiredLanguages,
-    requiredSkills,
     requiredCharacteristics,
     requiredCertificates,
     requiredVisas,
@@ -402,7 +390,6 @@ export function parsePublicJobSearchParams(
     crewMemberCountMax: numericValue(crewMemberCountMax),
     minimumYachtExperiences: successfulList(minimumYachtExperiences),
     requiredLanguages: successfulList(requiredLanguages),
-    requiredSkills: successfulList(requiredSkills),
     requiredCharacteristics: successfulList(requiredCharacteristics),
     requiredCertificates: successfulList(requiredCertificates),
     requiredVisas: successfulList(requiredVisas),
@@ -461,7 +448,6 @@ export function publicJobSearchParams(
   setNumber(params, "crewMax", filters.crewMemberCountMax);
   setList(params, "minimumExperience", filters.minimumYachtExperiences);
   setList(params, "language", filters.requiredLanguages);
-  setList(params, "skill", filters.requiredSkills);
   setList(params, "trait", filters.requiredCharacteristics);
   setList(params, "certificate", filters.requiredCertificates);
   setList(params, "visa", filters.requiredVisas);
@@ -489,7 +475,6 @@ export function canonicalPublicJobSearchFilters(
     yachtFlagCountryCodes: canonicalList(filters.yachtFlagCountryCodes),
     minimumYachtExperiences: canonicalList(filters.minimumYachtExperiences),
     requiredLanguages: canonicalList(filters.requiredLanguages),
-    requiredSkills: canonicalList(filters.requiredSkills),
     requiredCharacteristics: canonicalList(filters.requiredCharacteristics),
     requiredCertificates: canonicalList(filters.requiredCertificates),
     requiredVisas: canonicalList(filters.requiredVisas),
@@ -566,7 +551,6 @@ export function matchesPublicJobSearch(
       job.minimumYachtExperience,
     ) ||
     !arraysIntersect(filters.requiredLanguages, job.requiredLanguages) ||
-    !arraysIntersect(filters.requiredSkills, job.requiredSkills) ||
     !arraysIntersect(
       filters.requiredCharacteristics,
       job.requiredCharacteristics,
@@ -962,8 +946,8 @@ function foldText(value: string) {
   return value
     .normalize("NFKD")
     .replace(/\p{M}/gu, "")
-    .replace(/[_/]+/g, " ")
     .toLocaleLowerCase("en-US")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

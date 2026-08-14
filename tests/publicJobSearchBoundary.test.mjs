@@ -39,6 +39,27 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
   assert.match(client, /isValidNextCursor\(payload\.nextCursor, payload\.hasMore\)/);
 });
 
+test("job filters mirror crew auto-search and clear-all feedback", async () => {
+  const [jobsClient, crewClient] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/find-crew/FindCrewClient.tsx"),
+  ]);
+
+  assert.match(crewClient, /}, 280\);/);
+  assert.match(jobsClient, /}, 280\);/);
+  assert.match(jobsClient, /aria-label=\{c\.searching\}/);
+  assert.match(
+    jobsClient,
+    /\{c\.clear\}[\s\S]*?<span data-i18n-ignore>\(\{activeFilterCount\}\)<\/span>/,
+  );
+  assert.match(
+    jobsClient,
+    /function clearFilters\(\) \{[\s\S]*?setAdvancedOpen\(false\);[\s\S]*?createDefaultPublicJobSearchFilters\(\)/,
+  );
+  assert.match(jobsClient, /refreshing \? "opacity-55" : "opacity-100"/);
+  assert.doesNotMatch(jobsClient, /pointer-events-none opacity-45/);
+});
+
 test("multi-select filters are exclusive and dismiss on outside click or Escape", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
 

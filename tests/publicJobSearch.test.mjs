@@ -26,7 +26,6 @@ const taxonomy = {
   yachtTypes: ["motor_yacht", "sailing_yacht"],
   minimumYachtExperiences: ["3_5_years", "5_plus_years"],
   requiredLanguages: ["English", "Turkish"],
-  skills: ["Crew management", "Guest service"],
   characteristics: ["Leadership", "Team player"],
   certificates: ["Valid Passport", "STCW Basic Safety Training"],
   visas: ["Schengen Visa", "US B1/B2 Visa"],
@@ -55,7 +54,6 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["crewMax", "20"],
     ["minimumExperience", "3_5_years"],
     ["language", "English"],
-    ["skill", "Crew management"],
     ["trait", "Leadership"],
     ["certificate", "STCW Basic Safety Training"],
     ["visa", "Schengen Visa"],
@@ -133,8 +131,9 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
   }
 });
 
-test("rejects removed build-year, date-recency, and page-size filters", () => {
+test("rejects removed skills, build-year, date-recency, and page-size filters", () => {
   for (const query of [
+    "skill=Crew%20management",
     "buildYearMin=2018",
     "buildYearMax=2026",
     "startFrom=2026-09-01",
@@ -153,7 +152,7 @@ test("rejects removed build-year, date-recency, and page-size filters", () => {
 test("matches every structured public-detail category with normalized yacht units", () => {
   const filters = createDefaultPublicJobSearchFilters();
   Object.assign(filters, {
-    query: "görünür refit captain",
+    query: "GÖRÜNÜR, refit-captain crew-management",
     positions: ["Captain"],
     departments: ["Command"],
     location: "ath",
@@ -168,7 +167,6 @@ test("matches every structured public-detail category with normalized yacht unit
     crewMemberCountMax: 15,
     minimumYachtExperiences: ["3_5_years"],
     requiredLanguages: ["English"],
-    requiredSkills: ["Crew management"],
     requiredCharacteristics: ["Leadership"],
     requiredCertificates: ["STCW Basic Safety Training"],
     requiredVisas: ["Schengen Visa"],
@@ -237,8 +235,8 @@ test("Team/Couple uses one binary meaning for current and legacy candidate value
 test("uses OR within a category, AND between categories, inclusive ranges, and fails null fields closed", () => {
   const filters = createDefaultPublicJobSearchFilters();
   Object.assign(filters, {
+    positions: ["Chief Stewardess", "Captain"],
     departments: ["Command"],
-    requiredSkills: ["Guest service", "Crew management"],
     requiredLanguages: ["Turkish"],
     yachtLengthMinMetres: 49.9994,
     yachtLengthMaxMetres: 49.9994,
