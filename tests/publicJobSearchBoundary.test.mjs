@@ -74,6 +74,24 @@ test("job filters use explicit keyword and form searches with accessible clear a
   assert.doesNotMatch(jobsClient, /pointer-events-none opacity-45/);
 });
 
+test("published requirements expose only supported Any-based policy filters", async () => {
+  const [client, search, config] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/lib/publicJobSearch.ts"),
+    source("app/lib/publicJobSearchConfig.ts"),
+  ]);
+
+  assert.doesNotMatch(client, /label=\{c\.(characteristics|certificates)\}/);
+  assert.doesNotMatch(search, /requiredCharacteristics: JobCharacteristic\[\]/);
+  assert.doesNotMatch(search, /requiredCertificates: JobCertificate\[\]/);
+  assert.doesNotMatch(search, /setList\(params, "(trait|certificate)"/);
+  assert.match(client, /smoking: "Smoking"/);
+  assert.match(client, /visibleTattoos: "Visible tattoos"/);
+  assert.match(client, /placeholder=\{c\.any\}/);
+  assert.match(client, /value === "accepted" \? c\.yes : c\.no/);
+  assert.match(config, /value !== "no_preference"/);
+});
+
 test("multi-select filters are exclusive and dismiss on outside click or Escape", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
 

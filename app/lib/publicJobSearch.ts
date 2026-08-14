@@ -1,7 +1,5 @@
 import type {
   JobCandidateType,
-  JobCertificate,
-  JobCharacteristic,
   JobEmploymentType,
   JobMinimumYachtExperience,
   JobRequiredLanguage,
@@ -36,8 +34,6 @@ export type PublicJobSearchTaxonomy = {
   yachtTypes: readonly JobYachtType[];
   minimumYachtExperiences: readonly JobMinimumYachtExperience[];
   requiredLanguages: readonly JobRequiredLanguage[];
-  characteristics: readonly JobCharacteristic[];
-  certificates: readonly JobCertificate[];
   visas: readonly JobVisa[];
   smokerPolicies: readonly JobSmokerPolicy[];
   visibleTattooPolicies: readonly JobVisibleTattooPolicy[];
@@ -62,8 +58,6 @@ export type PublicJobSearchFilters = {
   crewMemberCountMax: number | null;
   minimumYachtExperiences: JobMinimumYachtExperience[];
   requiredLanguages: JobRequiredLanguage[];
-  requiredCharacteristics: JobCharacteristic[];
-  requiredCertificates: JobCertificate[];
   requiredVisas: JobVisa[];
   smokerPolicies: JobSmokerPolicy[];
   visibleTattooPolicies: JobVisibleTattooPolicy[];
@@ -112,8 +106,6 @@ const queryKeys = new Set([
   "crewMax",
   "minimumExperience",
   "language",
-  "trait",
-  "certificate",
   "visa",
   "smoker",
   "tattoo",
@@ -134,11 +126,9 @@ const multiValueLimits: Record<string, number> = {
   yachtFlag: 12,
   minimumExperience: 11,
   language: 11,
-  trait: 15,
-  certificate: 17,
   visa: 5,
-  smoker: 3,
-  tattoo: 3,
+  smoker: 1,
+  tattoo: 1,
 };
 
 const scalarKeys = [
@@ -178,8 +168,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     crewMemberCountMax: null,
     minimumYachtExperiences: [],
     requiredLanguages: [],
-    requiredCharacteristics: [],
-    requiredCertificates: [],
     requiredVisas: [],
     smokerPolicies: [],
     visibleTattooPolicies: [],
@@ -256,16 +244,6 @@ export function parsePublicJobSearchParams(
     "language",
     taxonomy.requiredLanguages,
   );
-  const requiredCharacteristics = enumList(
-    searchParams,
-    "trait",
-    taxonomy.characteristics,
-  );
-  const requiredCertificates = enumList(
-    searchParams,
-    "certificate",
-    taxonomy.certificates,
-  );
   const requiredVisas = enumList(
     searchParams,
     "visa",
@@ -291,8 +269,6 @@ export function parsePublicJobSearchParams(
     yachtFlagCountryCodes,
     minimumYachtExperiences,
     requiredLanguages,
-    requiredCharacteristics,
-    requiredCertificates,
     requiredVisas,
     smokerPolicies,
     visibleTattooPolicies,
@@ -390,8 +366,6 @@ export function parsePublicJobSearchParams(
     crewMemberCountMax: numericValue(crewMemberCountMax),
     minimumYachtExperiences: successfulList(minimumYachtExperiences),
     requiredLanguages: successfulList(requiredLanguages),
-    requiredCharacteristics: successfulList(requiredCharacteristics),
-    requiredCertificates: successfulList(requiredCertificates),
     requiredVisas: successfulList(requiredVisas),
     smokerPolicies: successfulList(smokerPolicies),
     visibleTattooPolicies: successfulList(visibleTattooPolicies),
@@ -448,8 +422,6 @@ export function publicJobSearchParams(
   setNumber(params, "crewMax", filters.crewMemberCountMax);
   setList(params, "minimumExperience", filters.minimumYachtExperiences);
   setList(params, "language", filters.requiredLanguages);
-  setList(params, "trait", filters.requiredCharacteristics);
-  setList(params, "certificate", filters.requiredCertificates);
   setList(params, "visa", filters.requiredVisas);
   setList(params, "smoker", filters.smokerPolicies);
   setList(params, "tattoo", filters.visibleTattooPolicies);
@@ -475,8 +447,6 @@ export function canonicalPublicJobSearchFilters(
     yachtFlagCountryCodes: canonicalList(filters.yachtFlagCountryCodes),
     minimumYachtExperiences: canonicalList(filters.minimumYachtExperiences),
     requiredLanguages: canonicalList(filters.requiredLanguages),
-    requiredCharacteristics: canonicalList(filters.requiredCharacteristics),
-    requiredCertificates: canonicalList(filters.requiredCertificates),
     requiredVisas: canonicalList(filters.requiredVisas),
     smokerPolicies: canonicalList(filters.smokerPolicies),
     visibleTattooPolicies: canonicalList(filters.visibleTattooPolicies),
@@ -551,11 +521,6 @@ export function matchesPublicJobSearch(
       job.minimumYachtExperience,
     ) ||
     !arraysIntersect(filters.requiredLanguages, job.requiredLanguages) ||
-    !arraysIntersect(
-      filters.requiredCharacteristics,
-      job.requiredCharacteristics,
-    ) ||
-    !arraysIntersect(filters.requiredCertificates, job.requiredCertificates) ||
     !arraysIntersect(filters.requiredVisas, job.requiredVisas) ||
     !includesSelected(filters.smokerPolicies, job.smokerPolicy) ||
     !includesSelected(filters.visibleTattooPolicies, job.visibleTattooPolicy)

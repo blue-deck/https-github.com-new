@@ -1,8 +1,6 @@
 import { nationalityOptions } from "./countries";
 import {
   jobCandidateTypes,
-  jobCertificateOptions,
-  jobCharacteristicOptions,
   jobEmploymentTypes,
   jobMinimumYachtExperiences,
   jobRequiredLanguages,
@@ -10,7 +8,6 @@ import {
   jobSalaryPeriods,
   jobSmokerPolicies,
   jobVisaOptions,
-  jobVisibleTattooPolicies,
   jobYachtTypes,
 } from "./jobPosts";
 import type { PublicJobSearchTaxonomy } from "./publicJobSearch";
@@ -24,11 +21,9 @@ export const publicJobSearchTaxonomy = {
   yachtTypes: jobYachtTypes,
   minimumYachtExperiences: jobMinimumYachtExperiences,
   requiredLanguages: jobRequiredLanguages,
-  characteristics: jobCharacteristicOptions,
-  certificates: jobCertificateOptions,
   visas: jobVisaOptions,
-  smokerPolicies: jobSmokerPolicies,
-  visibleTattooPolicies: jobVisibleTattooPolicies,
+  smokerPolicies: jobSmokerPolicies.filter((value) => value !== "no_preference"),
+  visibleTattooPolicies: ["accepted", "not_accepted"],
   salaryCurrencies: jobSalaryCurrencies,
   salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: nationalityOptions.map((country) => country.code),

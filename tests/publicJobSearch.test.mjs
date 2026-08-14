@@ -26,11 +26,9 @@ const taxonomy = {
   yachtTypes: ["motor_yacht", "sailing_yacht"],
   minimumYachtExperiences: ["3_5_years", "5_plus_years"],
   requiredLanguages: ["English", "Turkish"],
-  characteristics: ["Leadership", "Team player"],
-  certificates: ["Valid Passport", "STCW Basic Safety Training"],
   visas: ["Schengen Visa", "US B1/B2 Visa"],
-  smokerPolicies: ["no_preference", "non_smoker"],
-  visibleTattooPolicies: ["no_preference", "not_accepted"],
+  smokerPolicies: ["non_smoker", "smoker_accepted"],
+  visibleTattooPolicies: ["not_accepted", "accepted"],
   salaryCurrencies: ["EUR", "USD"],
   salaryPeriods: ["month", "year"],
   yachtFlagCountryCodes: ["TR", "GB"],
@@ -54,8 +52,6 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["crewMax", "20"],
     ["minimumExperience", "3_5_years"],
     ["language", "English"],
-    ["trait", "Leadership"],
-    ["certificate", "STCW Basic Safety Training"],
     ["visa", "Schengen Visa"],
     ["smoker", "non_smoker"],
     ["tattoo", "not_accepted"],
@@ -113,6 +109,30 @@ test("rejects unknown, duplicated, invalid, and logically unsafe filters", () =>
     ).ok,
     false,
   );
+  assert.equal(
+    parsePublicJobSearchParams(
+      new URLSearchParams("smoker=non_smoker&smoker=smoker_accepted"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+  assert.equal(
+    parsePublicJobSearchParams(
+      new URLSearchParams("tattoo=accepted&tattoo=not_accepted"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+});
+
+test("smoking and visible tattoo filters represent Any with no URL value", () => {
+  const parsed = parsePublicJobSearchParams(new URLSearchParams(), taxonomy);
+  assert.equal(parsed.ok, true);
+  assert.deepEqual(parsed.filters.smokerPolicies, []);
+  assert.deepEqual(parsed.filters.visibleTattooPolicies, []);
+  const params = publicJobSearchParams(parsed.filters);
+  assert.equal(params.has("smoker"), false);
+  assert.equal(params.has("tattoo"), false);
 });
 
 test("rejects malformed decimals, negative values, and non-finite tokens", () => {
@@ -131,9 +151,13 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
   }
 });
 
-test("rejects removed skills, build-year, date-recency, and page-size filters", () => {
+test("rejects removed requirement, build-year, date-recency, and page-size filters", () => {
   for (const query of [
     "skill=Crew%20management",
+    "trait=Leadership",
+    "certificate=STCW%20Basic%20Safety%20Training",
+    "smoker=no_preference",
+    "tattoo=no_preference",
     "buildYearMin=2018",
     "buildYearMax=2026",
     "startFrom=2026-09-01",
@@ -167,8 +191,6 @@ test("matches every structured public-detail category with normalized yacht unit
     crewMemberCountMax: 15,
     minimumYachtExperiences: ["3_5_years"],
     requiredLanguages: ["English"],
-    requiredCharacteristics: ["Leadership"],
-    requiredCertificates: ["STCW Basic Safety Training"],
     requiredVisas: ["Schengen Visa"],
     smokerPolicies: ["non_smoker"],
     visibleTattooPolicies: ["not_accepted"],
@@ -183,6 +205,17 @@ test("matches every structured public-detail category with normalized yacht unit
     true,
   );
   assert.equal(publicJobYachtLengthMetres(164.04, "ft"), 49.9994);
+  assert.equal(
+    matchesPublicJobSearch(
+      {
+        ...sampleJob(),
+        requiredCharacteristics: [],
+        requiredCertificates: [],
+      },
+      filters,
+    ),
+    true,
+  );
   assert.equal(
     matchesPublicJobSearch(
       { ...sampleJob(), requiredVisas: ["US B1/B2 Visa"] },

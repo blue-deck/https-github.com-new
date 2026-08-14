@@ -22,7 +22,6 @@ import {
   formatJobRequiredLanguage,
   formatJobSmokerPolicy,
   formatJobVisa,
-  formatJobVisibleTattooPolicy,
   formatJobYachtType,
   isJobTeamCouple,
   type PublicJobCard as ServerPublicJobCard,
@@ -768,38 +767,6 @@ export function JobsClient({
                         }
                       />
                       <MultiSelectField
-                        label={c.characteristics}
-                        placeholder={c.anyCharacteristic}
-                        searchPlaceholder={c.searchCharacteristics}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.characteristics}
-                        values={draftFilters.requiredCharacteristics}
-                        onChange={(requiredCharacteristics) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            requiredCharacteristics:
-                              requiredCharacteristics as PublicJobSearchFilters["requiredCharacteristics"],
-                          }))
-                        }
-                      />
-                      <MultiSelectField
-                        label={c.certificates}
-                        placeholder={c.anyCertificate}
-                        searchPlaceholder={c.searchCertificates}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.certificates}
-                        values={draftFilters.requiredCertificates}
-                        onChange={(requiredCertificates) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            requiredCertificates:
-                              requiredCertificates as PublicJobSearchFilters["requiredCertificates"],
-                          }))
-                        }
-                      />
-                      <MultiSelectField
                         label={c.visas}
                         placeholder={c.anyVisa}
                         selectedLabel={c.selected}
@@ -814,33 +781,33 @@ export function JobsClient({
                           }))
                         }
                       />
-                      <MultiSelectField
+                      <FilterSelect
+                        allowEmpty
                         label={c.smoking}
-                        placeholder={c.anyPolicy}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
+                        placeholder={c.any}
                         options={optionSets.smokerPolicies}
-                        values={draftFilters.smokerPolicies}
-                        onChange={(smokerPolicies) =>
+                        value={draftFilters.smokerPolicies[0] || ""}
+                        onChange={(smokerPolicy) =>
                           updateDraftFilters((current) => ({
                             ...current,
-                            smokerPolicies:
-                              smokerPolicies as PublicJobSearchFilters["smokerPolicies"],
+                            smokerPolicies: (smokerPolicy
+                              ? [smokerPolicy]
+                              : []) as PublicJobSearchFilters["smokerPolicies"],
                           }))
                         }
                       />
-                      <MultiSelectField
+                      <FilterSelect
+                        allowEmpty
                         label={c.visibleTattoos}
-                        placeholder={c.anyPolicy}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
+                        placeholder={c.any}
                         options={optionSets.tattooPolicies}
-                        values={draftFilters.visibleTattooPolicies}
-                        onChange={(visibleTattooPolicies) =>
+                        value={draftFilters.visibleTattooPolicies[0] || ""}
+                        onChange={(visibleTattooPolicy) =>
                           updateDraftFilters((current) => ({
                             ...current,
-                            visibleTattooPolicies:
-                              visibleTattooPolicies as PublicJobSearchFilters["visibleTattooPolicies"],
+                            visibleTattooPolicies: (visibleTattooPolicy
+                              ? [visibleTattooPolicy]
+                              : []) as PublicJobSearchFilters["visibleTattooPolicies"],
                           }))
                         }
                       />
@@ -1624,12 +1591,6 @@ function buildOptionSets(language: Language, c: SearchCopy) {
     languages: publicJobSearchTaxonomy.requiredLanguages.map((value) =>
       option(value, formatJobRequiredLanguage(value, language)),
     ),
-    characteristics: publicJobSearchTaxonomy.characteristics.map((value) =>
-      option(value),
-    ),
-    certificates: publicJobSearchTaxonomy.certificates.map((value) =>
-      option(value),
-    ),
     visas: publicJobSearchTaxonomy.visas.map((value) =>
       option(value, formatJobVisa(value)),
     ),
@@ -1637,7 +1598,7 @@ function buildOptionSets(language: Language, c: SearchCopy) {
       option(value, formatJobSmokerPolicy(value, language)),
     ),
     tattooPolicies: publicJobSearchTaxonomy.visibleTattooPolicies.map((value) =>
-      option(value, formatJobVisibleTattooPolicy(value, language)),
+      option(value, value === "accepted" ? c.yes : c.no),
     ),
     salaryCurrencies: publicJobSearchTaxonomy.salaryCurrencies.map((value) =>
       option(value),
@@ -1789,28 +1750,6 @@ function buildActiveFilterChips(
       }),
     ),
   );
-  addStringListChips(
-    chips,
-    filters.requiredCharacteristics,
-    "trait",
-    (current, value) => ({
-      ...current,
-      requiredCharacteristics: current.requiredCharacteristics.filter(
-        (item) => item !== value,
-      ),
-    }),
-  );
-  addStringListChips(
-    chips,
-    filters.requiredCertificates,
-    "certificate",
-    (current, value) => ({
-      ...current,
-      requiredCertificates: current.requiredCertificates.filter(
-        (item) => item !== value,
-      ),
-    }),
-  );
   filters.requiredVisas.forEach((value) =>
     add(`visa-${value}`, formatJobVisa(value), (current) => ({
       ...current,
@@ -1830,7 +1769,7 @@ function buildActiveFilterChips(
   filters.visibleTattooPolicies.forEach((value) =>
     add(
       `tattoo-${value}`,
-      formatJobVisibleTattooPolicy(value, language),
+      `${c.visibleTattoos}: ${value === "accepted" ? c.yes : c.no}`,
       (current) => ({
         ...current,
         visibleTattooPolicies: current.visibleTattooPolicies.filter(
@@ -1886,24 +1825,6 @@ function addNumberChip(
     label: `${prefix} ${value}${suffix ? ` ${suffix}` : ""}`,
     clear,
   });
-}
-
-function addStringListChips(
-  chips: ActiveFilterChip[],
-  values: readonly string[],
-  prefix: string,
-  clear: (
-    filters: PublicJobSearchFilters,
-    value: string,
-  ) => PublicJobSearchFilters,
-) {
-  values.forEach((value) =>
-    chips.push({
-      id: `${prefix}-${value}`,
-      label: value,
-      clear: (filters) => clear(filters, value),
-    }),
-  );
 }
 
 function clearSalaryDependency(
@@ -1986,8 +1907,6 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.crewMemberCountMax !== null ? 1 : 0) +
     filters.minimumYachtExperiences.length +
     filters.requiredLanguages.length +
-    filters.requiredCharacteristics.length +
-    filters.requiredCertificates.length +
     filters.requiredVisas.length +
     filters.smokerPolicies.length +
     filters.visibleTattooPolicies.length +
@@ -2176,17 +2095,11 @@ const copy = {
     requirements: "Published requirements",
     languages: "Languages",
     anyLanguage: "Any language",
-    characteristics: "Characteristics",
-    anyCharacteristic: "Any characteristic",
-    searchCharacteristics: "Search characteristics",
-    certificates: "Certificates",
-    anyCertificate: "Any certificate",
-    searchCertificates: "Search certificates",
     visas: "Visas",
     anyVisa: "Any visa",
-    smoking: "Smoking policy",
-    visibleTattoos: "Visible tattoo policy",
-    anyPolicy: "Any policy",
+    smoking: "Smoking",
+    visibleTattoos: "Visible tattoos",
+    any: "Any",
     salaryAndDisplay: "Salary and display",
     currency: "Salary currency",
     anyCurrency: "Any currency",
@@ -2285,17 +2198,11 @@ const copy = {
     requirements: "Yayınlanan gereklilikler",
     languages: "Diller",
     anyLanguage: "Tüm diller",
-    characteristics: "Kişisel özellikler",
-    anyCharacteristic: "Tüm özellikler",
-    searchCharacteristics: "Özellik ara",
-    certificates: "Sertifikalar",
-    anyCertificate: "Tüm sertifikalar",
-    searchCertificates: "Sertifika ara",
     visas: "Vizeler",
     anyVisa: "Tüm vizeler",
-    smoking: "Sigara politikası",
-    visibleTattoos: "Görünür dövme politikası",
-    anyPolicy: "Tüm politikalar",
+    smoking: "Sigara",
+    visibleTattoos: "Görünür dövmeler",
+    any: "Tümü",
     salaryAndDisplay: "Ücret ve görünüm",
     currency: "Ücret para birimi",
     anyCurrency: "Tüm para birimleri",
