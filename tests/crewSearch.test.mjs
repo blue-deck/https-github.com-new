@@ -128,10 +128,14 @@ test("primary and advanced crew filters apply only through the relocated Search 
   assert.match(client, /placeholder=\{c\.nationalityFilter\}/);
 });
 
-test("clear filters stays beside both Search actions without a filter-count badge", async () => {
+test("clear filters stays beside both Search actions without closing More filters", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
+  );
+  const clearFilters = client.slice(
+    client.indexOf("function clearFilters()"),
+    client.indexOf("function submitCrewKeywordSearch()"),
   );
 
   assert.doesNotMatch(client, /advancedFilterCount/);
@@ -148,6 +152,9 @@ test("clear filters stays beside both Search actions without a filter-count badg
     client,
     /function CrewFilterClearAction[\s\S]*?text-slate-500 underline[\s\S]*?\{label\}/,
   );
+  assert.doesNotMatch(clearFilters, /setAdvancedOpen/);
+  assert.match(clearFilters, /setFilters\(defaultCrewSearchFilters\)/);
+  assert.match(clearFilters, /setDraftFilters\(defaultCrewSearchFilters\)/);
   assert.match(client, /setFilterResetVersion\(\(version\) => version \+ 1\)/);
 });
 

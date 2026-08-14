@@ -187,7 +187,6 @@ export function FindCrewClient({
   function clearFilters() {
     setFilters(defaultCrewSearchFilters);
     setDraftFilters(defaultCrewSearchFilters);
-    setAdvancedOpen(false);
     setFilterResetVersion((version) => version + 1);
   }
 
