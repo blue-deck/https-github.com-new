@@ -36,26 +36,40 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
   assert.match(client, /tooManyDecimals/);
   assert.match(client, /parsedJobs\.length !== payload\.jobs\.length/);
   assert.match(client, /payload\.limit !== filters\.limit/);
-  assert.match(client, /isValidNextCursor\(payload\.nextCursor, payload\.hasMore\)/);
+  assert.match(
+    client,
+    /isValidNextCursor\(payload\.nextCursor, payload\.hasMore\)/,
+  );
 });
 
-test("job filters mirror crew auto-search and clear-all feedback", async () => {
-  const [jobsClient, crewClient] = await Promise.all([
-    source("app/jobs/JobsClient.tsx"),
-    source("app/find-crew/FindCrewClient.tsx"),
-  ]);
+test("job filters use explicit keyword and form searches with accessible clear actions", async () => {
+  const jobsClient = await source("app/jobs/JobsClient.tsx");
 
-  assert.match(crewClient, /}, 280\);/);
-  assert.match(jobsClient, /}, 280\);/);
+  assert.match(
+    jobsClient,
+    /const \[draftFilters, setDraftFilters\] = useState/,
+  );
+  assert.match(
+    jobsClient,
+    /function applyKeywordSearch\(\) \{[\s\S]*?applyFilterUpdate\(\(current\) => \(\{ \.\.\.current, query \}\)\)/,
+  );
+  assert.match(
+    jobsClient,
+    /function applyAllFilters\(\) \{[\s\S]*?applyFilterUpdate\(\(\) => draftFilters\)/,
+  );
+  assert.match(jobsClient, /aria-label=\{c\.searchKeyword\}/);
+  assert.match(jobsClient, /absolute bottom-1\.5 right-1\.5 top-1\.5/);
+  assert.match(jobsClient, /!advancedOpen \? \([\s\S]*?<FilterFormActions/);
+  assert.match(
+    jobsClient,
+    /id="advanced-job-filters"[\s\S]*?<FilterFormActions[\s\S]*?className="mt-5 justify-end border-t/,
+  );
+  assert.match(jobsClient, /disabled=\{!canClear\}/);
+  assert.match(jobsClient, /setDraftFilters\(emptyFilters\)/);
+  assert.match(jobsClient, /employmentType: "Employment type"/);
+  assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
+  assert.doesNotMatch(jobsClient, /\{advancedFilterCount\}/);
   assert.match(jobsClient, /aria-label=\{c\.searching\}/);
-  assert.match(
-    jobsClient,
-    /\{c\.clear\}[\s\S]*?<span data-i18n-ignore>\(\{activeFilterCount\}\)<\/span>/,
-  );
-  assert.match(
-    jobsClient,
-    /function clearFilters\(\) \{[\s\S]*?setAdvancedOpen\(false\);[\s\S]*?createDefaultPublicJobSearchFilters\(\)/,
-  );
   assert.match(jobsClient, /refreshing \? "opacity-55" : "opacity-100"/);
   assert.doesNotMatch(jobsClient, /pointer-events-none opacity-45/);
 });

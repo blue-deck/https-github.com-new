@@ -36,10 +36,7 @@ import {
   type PublicJobSearchSort,
 } from "../lib/publicJobSearch";
 import { publicJobSearchTaxonomy } from "../lib/publicJobSearchConfig";
-import {
-  parsePublicJobCards,
-  type PublicJobCard,
-} from "./job-data";
+import { parsePublicJobCards, type PublicJobCard } from "./job-data";
 import { useJobListingViewer } from "./JobListingAction";
 import {
   PublicJobListingCard,
@@ -114,6 +111,9 @@ export function JobsClient({
   const [filters, setFilters] = useState(
     initialFilters || createDefaultPublicJobSearchFilters,
   );
+  const [draftFilters, setDraftFilters] = useState(
+    initialFilters || createDefaultPublicJobSearchFilters,
+  );
   const [initialized, setInitialized] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(
     Boolean(initialFilters && hasAdvancedPublicJobFilters(initialFilters)),
@@ -133,13 +133,12 @@ export function JobsClient({
   const [nextCursor, setNextCursor] = useState<string | null>(
     suppliedInitialPage?.nextCursor || null,
   );
-  const [hasMore, setHasMore] = useState(
-    suppliedInitialPage?.hasMore || false,
-  );
+  const [hasMore, setHasMore] = useState(suppliedInitialPage?.hasMore || false);
   const [requestVersion, setRequestVersion] = useState(0);
   const loadMoreController = useRef<AbortController | null>(null);
 
   const validationError = validateFilterRanges(filters, c);
+  const draftValidationError = validateFilterRanges(draftFilters, c);
   const serializedFilters = useMemo(
     () => publicJobSearchParams(filters).toString(),
     [filters],
@@ -148,14 +147,10 @@ export function JobsClient({
     () => buildActiveFilterChips(filters, language, c),
     [c, filters, language],
   );
-  const activeFilterCount = activeFilters.length;
-  const advancedFilterCount = countAdvancedPublicJobFilters(filters);
   const hasFilters = hasPublicJobSearchFilters(filters);
+  const canClearFilters = hasFilters || hasPublicJobSearchFilters(draftFilters);
 
-  const optionSets = useMemo(
-    () => buildOptionSets(language, c),
-    [c, language],
-  );
+  const optionSets = useMemo(() => buildOptionSets(language, c), [c, language]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -195,7 +190,10 @@ export function JobsClient({
       }
       params.delete("query");
 
-      const parsed = parsePublicJobSearchParams(params, publicJobSearchTaxonomy);
+      const parsed = parsePublicJobSearchParams(
+        params,
+        publicJobSearchTaxonomy,
+      );
       const nextFilters = normalizeTeamCoupleFilters(
         parsed.ok ? parsed.filters : createDefaultPublicJobSearchFilters(),
       );
@@ -204,27 +202,26 @@ export function JobsClient({
       const serverPage = initialPageRef.current;
       const initialMatchesUrl = Boolean(
         parsed.ok &&
-          serverFilters &&
-          publicJobSearchParams(serverFilters).toString() ===
-            publicJobSearchParams(nextFilters).toString(),
+        serverFilters &&
+        publicJobSearchParams(serverFilters).toString() ===
+          publicJobSearchParams(nextFilters).toString(),
       );
       const useInitialPage = Boolean(
         allowInitialPage &&
-          initialMatchesUrl &&
-          serverPage &&
-          serverFilters &&
-          isValidInitialPage(serverPage, serverFilters.limit) &&
-          !initialLoadErrorRef.current,
+        initialMatchesUrl &&
+        serverPage &&
+        serverFilters &&
+        isValidInitialPage(serverPage, serverFilters.limit) &&
+        !initialLoadErrorRef.current,
       );
       const useInitialError = Boolean(
-        allowInitialPage &&
-          initialMatchesUrl &&
-          initialLoadErrorRef.current,
+        allowInitialPage && initialMatchesUrl && initialLoadErrorRef.current,
       );
 
       requestSequence.current += 1;
       loadMoreController.current?.abort();
       setFilters(nextFilters);
+      setDraftFilters(nextFilters);
       setAdvancedOpen(hasAdvancedPublicJobFilters(nextFilters));
       if (useInitialError) {
         setJobs([]);
@@ -286,7 +283,8 @@ export function JobsClient({
         setLoadMoreFailed(false);
         setLoadState("ready");
       } catch (error) {
-        if (isAbortError(error) || requestId !== requestSequence.current) return;
+        if (isAbortError(error) || requestId !== requestSequence.current)
+          return;
         setJobs([]);
         setTotal(0);
         setNextCursor(null);
@@ -325,7 +323,13 @@ export function JobsClient({
               label: c.createProfile,
             };
 
-  function updateFilters(
+  function updateDraftFilters(
+    update: (current: PublicJobSearchFilters) => PublicJobSearchFilters,
+  ) {
+    setDraftFilters(update);
+  }
+
+  function applyFilterUpdate(
     update: (current: PublicJobSearchFilters) => PublicJobSearchFilters,
   ) {
     requestSequence.current += 1;
@@ -335,9 +339,45 @@ export function JobsClient({
     setFilters(update);
   }
 
+  function applyKeywordSearch() {
+    const query = capitalizeFirstLetter(draftFilters.query, language);
+    setDraftFilters((current) => ({ ...current, query }));
+    applyFilterUpdate((current) => ({ ...current, query }));
+  }
+
+  function applyAllFilters() {
+    if (draftValidationError) return;
+    closeOpenJobMultiSelects();
+    applyFilterUpdate(() => draftFilters);
+  }
+
   function clearFilters() {
+    const emptyFilters = createDefaultPublicJobSearchFilters();
     setAdvancedOpen(false);
-    updateFilters(() => createDefaultPublicJobSearchFilters());
+    setDraftFilters(emptyFilters);
+    applyFilterUpdate(() => emptyFilters);
+  }
+
+  function removeAppliedFilter(chip: ActiveFilterChip) {
+    setDraftFilters((current) => chip.clear(current));
+    applyFilterUpdate((current) => chip.clear(current));
+  }
+
+  function updateSort(sort: PublicJobSearchSort) {
+    const withSort = (current: PublicJobSearchFilters) => ({
+      ...current,
+      sort,
+      salaryCurrency:
+        sort.startsWith("salary_") && !current.salaryCurrency
+          ? ("EUR" as const)
+          : current.salaryCurrency,
+      salaryPeriod:
+        sort.startsWith("salary_") && !current.salaryPeriod
+          ? ("month" as const)
+          : current.salaryPeriod,
+    });
+    setDraftFilters(withSort);
+    applyFilterUpdate(withSort);
   }
 
   function retry() {
@@ -455,14 +495,6 @@ export function JobsClient({
               >
                 <Filter className="h-4 w-4" aria-hidden />
                 {c.advanced}
-                {advancedFilterCount > 0 ? (
-                  <span
-                    data-i18n-ignore
-                    className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-cyan-700 px-1.5 text-xs text-white"
-                  >
-                    {advancedFilterCount}
-                  </span>
-                ) : null}
                 <ChevronDown
                   className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
                   aria-hidden
@@ -470,31 +502,48 @@ export function JobsClient({
               </button>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[1.45fr_repeat(3,minmax(0,1fr))]">
-              <label className="block min-w-0">
-                <span className="mb-1.5 block text-xs font-bold text-slate-600">
+            <div className="mt-4 grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))_auto]">
+              <div className="block min-w-0">
+                <label
+                  htmlFor="jobs-keyword-search"
+                  className="mb-1.5 block text-xs font-bold text-slate-600"
+                >
                   {c.search}
-                </span>
+                </label>
                 <span className="relative block">
-                  <Search
-                    className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-700"
-                    aria-hidden
-                  />
                   <input
+                    id="jobs-keyword-search"
                     type="search"
-                    value={filters.query}
+                    value={draftFilters.query}
                     onChange={(event) =>
-                      updateFilters((current) => ({
+                      updateDraftFilters((current) => ({
                         ...current,
-                        query: event.target.value,
+                        query: capitalizeFirstLetter(
+                          event.target.value,
+                          language,
+                        ),
                       }))
                     }
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      applyKeywordSearch();
+                    }}
                     placeholder={c.searchPlaceholder}
                     maxLength={120}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    className="min-h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
                   />
+                  <button
+                    type="button"
+                    onClick={applyKeywordSearch}
+                    aria-label={c.searchKeyword}
+                    title={c.searchKeyword}
+                    className="bd-focus absolute bottom-1.5 right-1.5 top-1.5 inline-flex w-9 items-center justify-center rounded-lg bg-[#071f3c] text-white transition hover:bg-cyan-800"
+                  >
+                    <Search className="h-4 w-4" aria-hidden />
+                  </button>
                 </span>
-              </label>
+              </div>
               <MultiSelectField
                 label={c.position}
                 placeholder={c.allPositions}
@@ -502,19 +551,24 @@ export function JobsClient({
                 selectedLabel={c.selected}
                 emptyLabel={c.noOptions}
                 options={optionSets.positions}
-                values={filters.positions}
+                values={draftFilters.positions}
                 maxSelections={12}
+                capitalizeSearch
+                searchLocale={language}
                 onChange={(positions) =>
-                  updateFilters((current) => ({ ...current, positions }))
+                  updateDraftFilters((current) => ({ ...current, positions }))
                 }
               />
               <TextField
                 label={c.location}
-                value={filters.location}
+                value={draftFilters.location}
                 maxLength={120}
                 placeholder={c.locationPlaceholder}
                 onChange={(value) =>
-                  updateFilters((current) => ({ ...current, location: value }))
+                  updateDraftFilters((current) => ({
+                    ...current,
+                    location: value,
+                  }))
                 }
               />
               <MultiSelectField
@@ -523,14 +577,25 @@ export function JobsClient({
                 selectedLabel={c.selected}
                 emptyLabel={c.noOptions}
                 options={optionSets.employmentTypes}
-                values={filters.employmentTypes}
+                values={draftFilters.employmentTypes}
                 onChange={(employmentTypes) =>
-                  updateFilters((current) => ({
+                  updateDraftFilters((current) => ({
                     ...current,
-                    employmentTypes: employmentTypes as PublicJobSearchFilters["employmentTypes"],
+                    employmentTypes:
+                      employmentTypes as PublicJobSearchFilters["employmentTypes"],
                   }))
                 }
               />
+              {!advancedOpen ? (
+                <FilterFormActions
+                  copy={c}
+                  canClear={canClearFilters}
+                  searchDisabled={Boolean(draftValidationError)}
+                  onSearch={applyAllFilters}
+                  onClear={clearFilters}
+                  className="md:col-span-2 xl:col-span-1 xl:justify-end"
+                />
+              ) : null}
             </div>
 
             {advancedOpen ? (
@@ -547,9 +612,9 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.departments}
-                        values={filters.departments}
+                        values={draftFilters.departments}
                         onChange={(departments) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             departments,
                           }))
@@ -560,9 +625,11 @@ export function JobsClient({
                         label={c.teamCouple}
                         placeholder={c.anyTeamCouple}
                         options={optionSets.teamCouple}
-                        value={teamCoupleFilterValue(filters.candidateTypes)}
+                        value={teamCoupleFilterValue(
+                          draftFilters.candidateTypes,
+                        )}
                         onChange={(value) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             candidateTypes: candidateTypesForTeamCouple(
                               value as TeamCoupleFilterValue,
@@ -581,21 +648,22 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.yachtTypes}
-                        values={filters.yachtTypes}
+                        values={draftFilters.yachtTypes}
                         onChange={(yachtTypes) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            yachtTypes: yachtTypes as PublicJobSearchFilters["yachtTypes"],
+                            yachtTypes:
+                              yachtTypes as PublicJobSearchFilters["yachtTypes"],
                           }))
                         }
                       />
                       <TextField
                         label={c.yachtBrand}
-                        value={filters.yachtBrand}
+                        value={draftFilters.yachtBrand}
                         maxLength={80}
                         placeholder={c.anyBrand}
                         onChange={(yachtBrand) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             yachtBrand,
                           }))
@@ -608,10 +676,10 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.flags}
-                        values={filters.yachtFlagCountryCodes}
+                        values={draftFilters.yachtFlagCountryCodes}
                         maxSelections={12}
                         onChange={(yachtFlagCountryCodes) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             yachtFlagCountryCodes,
                           }))
@@ -623,11 +691,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.minimumExperiences}
-                        values={filters.minimumYachtExperiences}
+                        values={draftFilters.minimumYachtExperiences}
                         onChange={(minimumYachtExperiences) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            minimumYachtExperiences: minimumYachtExperiences as PublicJobSearchFilters["minimumYachtExperiences"],
+                            minimumYachtExperiences:
+                              minimumYachtExperiences as PublicJobSearchFilters["minimumYachtExperiences"],
                           }))
                         }
                       />
@@ -636,21 +705,21 @@ export function JobsClient({
                       <RangeField
                         label={c.yachtLength}
                         unit={c.metres}
-                        minimum={filters.yachtLengthMinMetres}
-                        maximum={filters.yachtLengthMaxMetres}
+                        minimum={draftFilters.yachtLengthMinMetres}
+                        maximum={draftFilters.yachtLengthMaxMetres}
                         minValue={0.01}
                         maxValue={999}
                         step={0.01}
                         minLabel={c.minimum}
                         maxLabel={c.maximum}
                         onMinimumChange={(yachtLengthMinMetres) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             yachtLengthMinMetres,
                           }))
                         }
                         onMaximumChange={(yachtLengthMaxMetres) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             yachtLengthMaxMetres,
                           }))
@@ -658,21 +727,21 @@ export function JobsClient({
                       />
                       <RangeField
                         label={c.crewCount}
-                        minimum={filters.crewMemberCountMin}
-                        maximum={filters.crewMemberCountMax}
+                        minimum={draftFilters.crewMemberCountMin}
+                        maximum={draftFilters.crewMemberCountMax}
                         minValue={1}
                         maxValue={200}
                         step={1}
                         minLabel={c.minimum}
                         maxLabel={c.maximum}
                         onMinimumChange={(crewMemberCountMin) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             crewMemberCountMin,
                           }))
                         }
                         onMaximumChange={(crewMemberCountMax) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             crewMemberCountMax,
                           }))
@@ -689,11 +758,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.languages}
-                        values={filters.requiredLanguages}
+                        values={draftFilters.requiredLanguages}
                         onChange={(requiredLanguages) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            requiredLanguages: requiredLanguages as PublicJobSearchFilters["requiredLanguages"],
+                            requiredLanguages:
+                              requiredLanguages as PublicJobSearchFilters["requiredLanguages"],
                           }))
                         }
                       />
@@ -704,11 +774,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.characteristics}
-                        values={filters.requiredCharacteristics}
+                        values={draftFilters.requiredCharacteristics}
                         onChange={(requiredCharacteristics) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            requiredCharacteristics: requiredCharacteristics as PublicJobSearchFilters["requiredCharacteristics"],
+                            requiredCharacteristics:
+                              requiredCharacteristics as PublicJobSearchFilters["requiredCharacteristics"],
                           }))
                         }
                       />
@@ -719,11 +790,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.certificates}
-                        values={filters.requiredCertificates}
+                        values={draftFilters.requiredCertificates}
                         onChange={(requiredCertificates) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            requiredCertificates: requiredCertificates as PublicJobSearchFilters["requiredCertificates"],
+                            requiredCertificates:
+                              requiredCertificates as PublicJobSearchFilters["requiredCertificates"],
                           }))
                         }
                       />
@@ -733,11 +805,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.visas}
-                        values={filters.requiredVisas}
+                        values={draftFilters.requiredVisas}
                         onChange={(requiredVisas) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            requiredVisas: requiredVisas as PublicJobSearchFilters["requiredVisas"],
+                            requiredVisas:
+                              requiredVisas as PublicJobSearchFilters["requiredVisas"],
                           }))
                         }
                       />
@@ -747,11 +820,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.smokerPolicies}
-                        values={filters.smokerPolicies}
+                        values={draftFilters.smokerPolicies}
                         onChange={(smokerPolicies) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            smokerPolicies: smokerPolicies as PublicJobSearchFilters["smokerPolicies"],
+                            smokerPolicies:
+                              smokerPolicies as PublicJobSearchFilters["smokerPolicies"],
                           }))
                         }
                       />
@@ -761,11 +835,12 @@ export function JobsClient({
                         selectedLabel={c.selected}
                         emptyLabel={c.noOptions}
                         options={optionSets.tattooPolicies}
-                        values={filters.visibleTattooPolicies}
+                        values={draftFilters.visibleTattooPolicies}
                         onChange={(visibleTattooPolicies) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
-                            visibleTattooPolicies: visibleTattooPolicies as PublicJobSearchFilters["visibleTattooPolicies"],
+                            visibleTattooPolicies:
+                              visibleTattooPolicies as PublicJobSearchFilters["visibleTattooPolicies"],
                           }))
                         }
                       />
@@ -777,12 +852,13 @@ export function JobsClient({
                       <FilterSelect
                         label={c.currency}
                         placeholder={c.anyCurrency}
-                        value={filters.salaryCurrency || ""}
+                        value={draftFilters.salaryCurrency || ""}
                         options={optionSets.salaryCurrencies}
                         onChange={(value) =>
-                          updateFilters((current) =>
+                          updateDraftFilters((current) =>
                             clearSalaryDependency(current, {
-                              salaryCurrency: (value || null) as PublicJobSearchFilters["salaryCurrency"],
+                              salaryCurrency: (value ||
+                                null) as PublicJobSearchFilters["salaryCurrency"],
                             }),
                           )
                         }
@@ -790,24 +866,25 @@ export function JobsClient({
                       <FilterSelect
                         label={c.payPeriod}
                         placeholder={c.anyPeriod}
-                        value={filters.salaryPeriod || ""}
+                        value={draftFilters.salaryPeriod || ""}
                         options={optionSets.salaryPeriods}
                         onChange={(value) =>
-                          updateFilters((current) =>
+                          updateDraftFilters((current) =>
                             clearSalaryDependency(current, {
-                              salaryPeriod: (value || null) as PublicJobSearchFilters["salaryPeriod"],
+                              salaryPeriod: (value ||
+                                null) as PublicJobSearchFilters["salaryPeriod"],
                             }),
                           )
                         }
                       />
                       <NumberField
                         label={c.minimumSalary}
-                        value={filters.salaryMin}
+                        value={draftFilters.salaryMin}
                         min={0}
                         max={99_999_999.99}
                         step={0.01}
                         onChange={(salaryMin) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             salaryMin,
                             salaryCurrency:
@@ -823,12 +900,12 @@ export function JobsClient({
                       />
                       <NumberField
                         label={c.maximumSalary}
-                        value={filters.salaryMax}
+                        value={draftFilters.salaryMax}
                         min={0}
                         max={99_999_999.99}
                         step={0.01}
                         onChange={(salaryMax) =>
-                          updateFilters((current) => ({
+                          updateDraftFilters((current) => ({
                             ...current,
                             salaryMax,
                             salaryCurrency:
@@ -845,15 +922,23 @@ export function JobsClient({
                     </div>
                   </FilterGroup>
                 </div>
+                <FilterFormActions
+                  copy={c}
+                  canClear={canClearFilters}
+                  searchDisabled={Boolean(draftValidationError)}
+                  onSearch={applyAllFilters}
+                  onClear={clearFilters}
+                  className="mt-5 justify-end border-t border-slate-200 pt-5"
+                />
               </div>
             ) : null}
 
-            {validationError ? (
+            {draftValidationError ? (
               <p
                 role="alert"
                 className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
               >
-                {validationError}
+                {draftValidationError}
               </p>
             ) : null}
 
@@ -866,7 +951,7 @@ export function JobsClient({
                   <button
                     key={chip.id}
                     type="button"
-                    onClick={() => updateFilters((current) => chip.clear(current))}
+                    onClick={() => removeAppliedFilter(chip)}
                     aria-label={`${c.removeFilter}: ${chip.label}`}
                     className="bd-focus inline-flex min-h-8 items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 text-xs font-bold text-cyan-950 transition hover:border-cyan-400 hover:bg-cyan-100"
                   >
@@ -899,37 +984,13 @@ export function JobsClient({
               </h2>
             </div>
             <div className="flex flex-wrap items-end gap-3">
-              {hasFilters ? (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                  {c.clear}
-                  <span data-i18n-ignore>({activeFilterCount})</span>
-                </button>
-              ) : null}
               <FilterSelect
                 compact
                 label={c.sortBy}
                 placeholder={c.sortBy}
                 value={filters.sort}
                 options={optionSets.sorts}
-                onChange={(value) =>
-                  updateFilters((current) => ({
-                    ...current,
-                    sort: value as PublicJobSearchSort,
-                    salaryCurrency:
-                      value.startsWith("salary_") && !current.salaryCurrency
-                        ? "EUR"
-                        : current.salaryCurrency,
-                    salaryPeriod:
-                      value.startsWith("salary_") && !current.salaryPeriod
-                        ? "month"
-                        : current.salaryPeriod,
-                  }))
-                }
+                onChange={(value) => updateSort(value as PublicJobSearchSort)}
               />
             </div>
           </div>
@@ -981,7 +1042,10 @@ export function JobsClient({
               {hasMore || loadMoreFailed ? (
                 <div className="mt-7 text-center">
                   {loadMoreFailed ? (
-                    <p role="alert" className="mb-3 text-sm font-semibold text-rose-700">
+                    <p
+                      role="alert"
+                      className="mb-3 text-sm font-semibold text-rose-700"
+                    >
                       {c.loadMoreError}
                     </p>
                   ) : null}
@@ -992,7 +1056,10 @@ export function JobsClient({
                     className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-sm font-black text-slate-800 transition hover:border-cyan-500 hover:text-cyan-900 disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     {loadingMore ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
+                      <LoaderCircle
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden
+                      />
                     ) : null}
                     {loadingMore ? c.loadingMore : c.loadMore}
                   </button>
@@ -1008,6 +1075,46 @@ export function JobsClient({
       </main>
 
       <PublicFooter />
+    </div>
+  );
+}
+
+function FilterFormActions({
+  copy,
+  canClear,
+  searchDisabled,
+  onSearch,
+  onClear,
+  className = "",
+}: {
+  copy: SearchCopy;
+  canClear: boolean;
+  searchDisabled: boolean;
+  onSearch: () => void;
+  onClear: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`flex min-h-12 flex-wrap items-center gap-x-4 gap-y-2 ${className}`}
+    >
+      <button
+        type="button"
+        onClick={onSearch}
+        disabled={searchDisabled}
+        className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        <Search className="h-4 w-4" aria-hidden />
+        {copy.applyFilters}
+      </button>
+      <button
+        type="button"
+        onClick={onClear}
+        disabled={!canClear}
+        className="bd-focus min-h-10 border-0 bg-transparent px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900 hover:decoration-cyan-600 disabled:cursor-default disabled:text-slate-300 disabled:no-underline"
+      >
+        {copy.clear}
+      </button>
     </div>
   );
 }
@@ -1129,7 +1236,8 @@ function RangeField({
   return (
     <fieldset className="min-w-0">
       <legend className="mb-1.5 text-xs font-bold text-slate-600">
-        {label}{unit ? ` (${unit})` : ""}
+        {label}
+        {unit ? ` (${unit})` : ""}
       </legend>
       <div className="grid grid-cols-2 gap-2">
         <label>
@@ -1218,6 +1326,8 @@ function MultiSelectField({
   options,
   values,
   maxSelections,
+  capitalizeSearch = false,
+  searchLocale = "en",
   onChange,
 }: {
   label: string;
@@ -1228,6 +1338,8 @@ function MultiSelectField({
   options: readonly SelectOption[];
   values: readonly string[];
   maxSelections?: number;
+  capitalizeSearch?: boolean;
+  searchLocale?: Language;
   onChange: (values: string[]) => void;
 }) {
   const [search, setSearch] = useState("");
@@ -1261,9 +1373,7 @@ function MultiSelectField({
           aria-label={`${label}: ${selectionSummary}`}
           className="bd-focus flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden"
         >
-          <span className="min-w-0 truncate">
-            {selectionSummary}
-          </span>
+          <span className="min-w-0 truncate">{selectionSummary}</span>
           <ChevronDown
             className="h-4 w-4 shrink-0 transition group-open:rotate-180"
             aria-hidden
@@ -1277,7 +1387,13 @@ function MultiSelectField({
                 type="search"
                 value={search}
                 placeholder={searchPlaceholder}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) =>
+                  setSearch(
+                    capitalizeSearch
+                      ? capitalizeFirstLetter(event.target.value, searchLocale)
+                      : event.target.value,
+                  )
+                }
                 className="min-h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
               />
             </label>
@@ -1388,7 +1504,10 @@ function EmptyState({
 }) {
   return (
     <div className="mt-5 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-12 text-center">
-      <BriefcaseBusiness className="mx-auto h-10 w-10 text-cyan-700" aria-hidden />
+      <BriefcaseBusiness
+        className="mx-auto h-10 w-10 text-cyan-700"
+        aria-hidden
+      />
       <h2 className="mt-5 text-2xl font-semibold text-[#071f3c]">{title}</h2>
       <p className="mx-auto mt-3 max-w-xl leading-7 text-slate-600">{text}</p>
       {action ? (
@@ -1463,7 +1582,7 @@ async function fetchJobsPage(
     !isValidNextCursor(payload.nextCursor, payload.hasMore) ||
     (payload.hasMore && parsedJobs.length === 0) ||
     (cursor === null &&
-      payload.hasMore !== (parsedJobs.length < payload.total)) ||
+      payload.hasMore !== parsedJobs.length < payload.total) ||
     new Set(parsedJobs.map((job) => job.id)).size !== parsedJobs.length
   ) {
     throw new Error("jobs_response_invalid");
@@ -1499,7 +1618,8 @@ function buildOptionSets(language: Language, c: SearchCopy) {
       option(code, formatCountryWithFlag(code) || code),
     ),
     minimumExperiences: publicJobSearchTaxonomy.minimumYachtExperiences.map(
-      (value) => option(value, formatJobMinimumYachtExperience(value, language)),
+      (value) =>
+        option(value, formatJobMinimumYachtExperience(value, language)),
     ),
     languages: publicJobSearchTaxonomy.requiredLanguages.map((value) =>
       option(value, formatJobRequiredLanguage(value, language)),
@@ -1537,11 +1657,8 @@ function buildActiveFilterChips(
   c: SearchCopy,
 ) {
   const chips: ActiveFilterChip[] = [];
-  const add = (
-    id: string,
-    label: string,
-    clear: ActiveFilterChip["clear"],
-  ) => chips.push({ id, label, clear });
+  const add = (id: string, label: string, clear: ActiveFilterChip["clear"]) =>
+    chips.push({ id, label, clear });
 
   if (filters.query) {
     add("q", `${c.keywordChip}: ${filters.query}`, (current) => ({
@@ -1556,10 +1673,14 @@ function buildActiveFilterChips(
     })),
   );
   filters.departments.forEach((value) =>
-    add(`department-${value}`, formatDepartment(value, language), (current) => ({
-      ...current,
-      departments: current.departments.filter((item) => item !== value),
-    })),
+    add(
+      `department-${value}`,
+      formatDepartment(value, language),
+      (current) => ({
+        ...current,
+        departments: current.departments.filter((item) => item !== value),
+      }),
+    ),
   );
   if (filters.location) {
     add("location", `${c.locationChip}: ${filters.location}`, (current) => ({
@@ -1587,10 +1708,14 @@ function buildActiveFilterChips(
     }));
   }
   filters.yachtTypes.forEach((value) =>
-    add(`yacht-type-${value}`, formatJobYachtType(value, language), (current) => ({
-      ...current,
-      yachtTypes: current.yachtTypes.filter((item) => item !== value),
-    })),
+    add(
+      `yacht-type-${value}`,
+      formatJobYachtType(value, language),
+      (current) => ({
+        ...current,
+        yachtTypes: current.yachtTypes.filter((item) => item !== value),
+      }),
+    ),
   );
   if (filters.yachtBrand) {
     add("yacht-brand", `${c.brandChip}: ${filters.yachtBrand}`, (current) => ({
@@ -1693,10 +1818,14 @@ function buildActiveFilterChips(
     })),
   );
   filters.smokerPolicies.forEach((value) =>
-    add(`smoker-${value}`, formatJobSmokerPolicy(value, language), (current) => ({
-      ...current,
-      smokerPolicies: current.smokerPolicies.filter((item) => item !== value),
-    })),
+    add(
+      `smoker-${value}`,
+      formatJobSmokerPolicy(value, language),
+      (current) => ({
+        ...current,
+        smokerPolicies: current.smokerPolicies.filter((item) => item !== value),
+      }),
+    ),
   );
   filters.visibleTattooPolicies.forEach((value) =>
     add(
@@ -1763,7 +1892,10 @@ function addStringListChips(
   chips: ActiveFilterChip[],
   values: readonly string[],
   prefix: string,
-  clear: (filters: PublicJobSearchFilters, value: string) => PublicJobSearchFilters,
+  clear: (
+    filters: PublicJobSearchFilters,
+    value: string,
+  ) => PublicJobSearchFilters,
 ) {
   values.forEach((value) =>
     chips.push({
@@ -1789,10 +1921,7 @@ function clearSalaryDependency(
   return next;
 }
 
-function validateFilterRanges(
-  filters: PublicJobSearchFilters,
-  c: SearchCopy,
-) {
+function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   const reversed = (minimum: number | null, maximum: number | null) =>
     minimum !== null && maximum !== null && minimum > maximum;
   const outside = (
@@ -1932,6 +2061,15 @@ function readNullableNumber(value: string) {
   return Number.isFinite(number) ? number : null;
 }
 
+function capitalizeFirstLetter(value: string, language: Language) {
+  const firstLetter = value.match(/\p{L}/u);
+  if (!firstLetter || firstLetter.index === undefined) return value;
+  const index = firstLetter.index;
+  const letter = firstLetter[0];
+  const locale = language === "tr" ? "tr-TR" : "en-US";
+  return `${value.slice(0, index)}${letter.toLocaleUpperCase(locale)}${value.slice(index + letter.length)}`;
+}
+
 function isValidNextCursor(
   value: unknown,
   hasMore: boolean,
@@ -1957,7 +2095,7 @@ function isValidInitialPage(
     page.jobs.length <= page.total &&
     typeof page.hasMore === "boolean" &&
     isValidNextCursor(page.nextCursor, page.hasMore) &&
-    page.hasMore === (page.jobs.length < page.total) &&
+    page.hasMore === page.jobs.length < page.total &&
     new Set(page.jobs.map((job) => job.id)).size === page.jobs.length
   );
 }
@@ -1995,15 +2133,18 @@ const copy = {
     intro:
       "Search every detail employers publish, from vessel specifications and start dates to certificates, visas and working preferences.",
     filters: "Search and filters",
-    filterHint: "Results update automatically as you refine the criteria.",
+    filterHint:
+      "Choose your filters, then select Search to update the results.",
     search: "Search jobs",
     searchPlaceholder: "Position, skill, language or location",
+    searchKeyword: "Search this keyword",
+    applyFilters: "Search",
     position: "Position",
     allPositions: "All positions",
     searchPositions: "Search positions",
     location: "Location",
     locationPlaceholder: "City, marina or cruising area",
-    employmentType: "Employment",
+    employmentType: "Employment type",
     allEmploymentTypes: "All employment types",
     advanced: "Advanced filters",
     activeFilters: "Active",
@@ -2088,7 +2229,8 @@ const copy = {
     openHiring: "My Job Postings & Hiring",
     openDashboard: "Open dashboard",
     noMatchesTitle: "No roles match these filters",
-    noMatchesText: "Remove one or more filters to explore the other open roles.",
+    noMatchesText:
+      "Remove one or more filters to explore the other open roles.",
     loadMore: "Load more roles",
     loadingMore: "Loading more…",
     loadMoreError: "More roles could not be loaded. Please try again.",
@@ -2100,15 +2242,18 @@ const copy = {
     intro:
       "İşverenlerin yayınladığı yat özelliklerinden başlangıç tarihlerine, sertifikalardan vize ve çalışma tercihlerine kadar her ayrıntıda arayın.",
     filters: "Arama ve filtreler",
-    filterHint: "Kriterleri değiştirdikçe sonuçlar otomatik güncellenir.",
+    filterHint:
+      "Filtrelerinizi seçin, ardından sonuçları güncellemek için Ara'ya basın.",
     search: "İş ara",
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
+    searchKeyword: "Bu anahtar kelimeyi ara",
+    applyFilters: "Ara",
     position: "Pozisyon",
     allPositions: "Tüm pozisyonlar",
     searchPositions: "Pozisyon ara",
     location: "Konum",
     locationPlaceholder: "Şehir, marina veya seyir bölgesi",
-    employmentType: "Çalışma biçimi",
+    employmentType: "Çalışma türü",
     allEmploymentTypes: "Tüm çalışma biçimleri",
     advanced: "Gelişmiş filtreler",
     activeFilters: "Etkin",
@@ -2193,7 +2338,8 @@ const copy = {
     openHiring: "İş İlanlarım ve İşe Alım",
     openDashboard: "Dashboard’u aç",
     noMatchesTitle: "Bu filtrelere uygun ilan yok",
-    noMatchesText: "Diğer açık pozisyonları görmek için bir veya daha fazla filtreyi kaldırın.",
+    noMatchesText:
+      "Diğer açık pozisyonları görmek için bir veya daha fazla filtreyi kaldırın.",
     loadMore: "Daha fazla ilan yükle",
     loadingMore: "Daha fazlası yükleniyor…",
     loadMoreError: "Diğer ilanlar yüklenemedi. Lütfen tekrar deneyin.",
