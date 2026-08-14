@@ -109,6 +109,7 @@ test("primary and advanced crew filters apply only through the relocated Search 
     "premiumOnly",
     "hasPhoto",
     "hasGallery",
+    "hasTeamCouple",
   ]) {
     assert.match(client, new RegExp(`draftFilters\\.${field}`));
   }
@@ -278,6 +279,7 @@ test("round-trips every public crew search criterion through the URL contract", 
     premium: "1",
     photo: "1",
     gallery: "1",
+    teamCouple: "1",
   });
 
   const filters = parseCrewSearchFilters(source);
@@ -293,7 +295,47 @@ test("round-trips every public crew search criterion through the URL contract", 
   assert.equal(filters.gender, "Female");
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
-  assert.equal(crewSearchFilterCount(filters), 12);
+  assert.equal(filters.hasTeamCouple, true);
+  assert.equal(crewSearchFilterCount(filters), 13);
+});
+
+test("filters Team/Couple crew as separate profiles from accepted connections", async () => {
+  const [client, route, dataSource] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/api/find-crew/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/findCrewData.ts", import.meta.url), "utf8"),
+  ]);
+
+  const accepted = parseCrewSearchFilters(
+    new URLSearchParams({ teamCouple: "1" }),
+  );
+  const rejected = parseCrewSearchFilters(
+    new URLSearchParams({ teamCouple: "true" }),
+  );
+
+  assert.equal(crewSearchParamKeys.has("teamCouple"), true);
+  assert.equal(accepted.hasTeamCouple, true);
+  assert.equal(crewSearchParams(accepted).toString(), "teamCouple=1");
+  assert.equal(rejected.hasTeamCouple, false);
+  assert.match(
+    client,
+    /label=\{c\.hasTeamCouple\}[\s\S]*?checked=\{draftFilters\.hasTeamCouple\}/,
+  );
+  assert.match(client, /hasTeamCouple: "Team\/Couple"/);
+  assert.match(route, /"premium", "photo", "gallery", "teamCouple"/);
+  assert.match(dataSource, /\.from\("crew_team_relationships"\)/);
+  assert.match(dataSource, /\.eq\("status", "accepted"\)/);
+  assert.match(
+    dataSource,
+    /if \(filters\.hasTeamCouple && !record\.hasTeamCouple\) return false;/,
+  );
+  assert.match(
+    dataSource,
+    /profiles: selected\.map\(\(record\) => record\.preview\)/,
+  );
 });
 
 test("removes location from the crew filter contract", async () => {

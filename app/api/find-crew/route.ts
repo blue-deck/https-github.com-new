@@ -73,7 +73,7 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     return false;
   }
 
-  for (const key of ["premium", "photo", "gallery"]) {
+  for (const key of ["premium", "photo", "gallery", "teamCouple"]) {
     const value = searchParams.get(key);
     if (value !== null && value !== "1") return false;
   }

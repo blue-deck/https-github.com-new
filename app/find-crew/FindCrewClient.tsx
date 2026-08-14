@@ -443,7 +443,7 @@ export function FindCrewClient({
                   <legend className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
                     {c.profileQuality}
                   </legend>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     <FilterToggle
                       label={c.premiumOnly}
                       checked={draftFilters.premiumOnly}
@@ -458,6 +458,13 @@ export function FindCrewClient({
                       label={c.hasGallery}
                       checked={draftFilters.hasGallery}
                       onChange={(checked) => setDraftFilter("hasGallery", checked)}
+                    />
+                    <FilterToggle
+                      label={c.hasTeamCouple}
+                      checked={draftFilters.hasTeamCouple}
+                      onChange={(checked) =>
+                        setDraftFilter("hasTeamCouple", checked)
+                      }
                     />
                   </div>
                 </fieldset>
@@ -799,6 +806,7 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     premiumOnly: filters.premiumOnly,
     hasPhoto: filters.hasPhoto,
     hasGallery: filters.hasGallery,
+    hasTeamCouple: filters.hasTeamCouple,
   };
   return crewSearchFilterCount(advanced);
 }
@@ -947,6 +955,7 @@ const copy = {
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
     hasGallery: "Blue gallery",
+    hasTeamCouple: "Team/Couple",
     fairHiringNote:
       "Use all personal filters responsibly and only where relevant and lawful.",
     results: "Matching crew",
@@ -1003,6 +1012,7 @@ const copy = {
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",
     hasGallery: "Blue gallery",
+    hasTeamCouple: "Team/Couple",
     fairHiringNote:
       "Kişisel filtreleri yalnızca ilgili ve hukuka uygun olduğunda sorumlu biçimde kullanın.",
     results: "Eşleşen crew",

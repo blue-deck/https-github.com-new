@@ -39,3 +39,25 @@ test("shared overview preserves public heading semantics and compact section ord
     /if \(compactVariant\)[\s\S]*?\{gallerySection\}[\s\S]*?\{personalDetailsSection\}[\s\S]*?\{languagesSection\}[\s\S]*?\{skillsSection\}/,
   );
 });
+
+test("public personal details identify Team/Couple status without exposing peers", async () => {
+  const [profile, presentation, dataSource] = await Promise.all([
+    source("app/find-crew/[crewId]/InviteCrewPanel.tsx"),
+    source("app/components/CrewCandidatePresentation.tsx"),
+    source("app/lib/findCrewData.ts"),
+  ]);
+
+  assert.match(dataSource, /hasTeamCouple: boolean;/);
+  assert.match(
+    dataSource,
+    /hasTeamCouple: teamCoupleUserIds\.has\(userId\)/,
+  );
+  assert.match(presentation, /candidate\.hasTeamCouple/);
+  assert.match(presentation, /<UsersRound className="h-5 w-5"/);
+  assert.match(profile, /teamCoupleConnected: "Confirmed Team\/Couple connection"/);
+  assert.match(
+    profile,
+    /Each crew member remains a separate profile in search results\./,
+  );
+  assert.doesNotMatch(presentation, /teamCoupleMembers|relationshipId|publicCrewId/);
+});

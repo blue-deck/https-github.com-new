@@ -940,6 +940,10 @@ const publicProfileCopy = {
     preferredLocations: "Preferred hiring regions",
     languages: "Languages",
     noLanguages: "No language information has been added yet.",
+    teamCouple: "Team/Couple",
+    teamCoupleConnected: "Confirmed Team/Couple connection",
+    teamCoupleHelp:
+      "This crew member has at least one accepted Team/Couple connection. Each crew member remains a separate profile in search results.",
     crewPortal: "Crew Portal / CV",
     crewPortalTitle: "Open this crew member’s public BlueDeck profile",
     crewPortalHelp:
@@ -990,6 +994,10 @@ const publicProfileCopy = {
     preferredLocations: "Tercih edilen çalışma bölgeleri",
     languages: "Diller",
     noLanguages: "Henüz dil bilgisi eklenmemiş.",
+    teamCouple: "Team/Couple",
+    teamCoupleConnected: "Onaylı Team/Couple bağlantısı",
+    teamCoupleHelp:
+      "Bu crew üyesinin kabul edilmiş en az bir Team/Couple bağlantısı var. Arama sonuçlarında her crew üyesi ayrı profil olarak gösterilir.",
     crewPortal: "Crew Portal / CV",
     crewPortalTitle: "Bu crew üyesinin herkese açık BlueDeck profilini aç",
     crewPortalHelp:

@@ -78,6 +78,9 @@ export type CrewCandidateProfileCopy = {
   preferredLocations: string;
   languages: string;
   noLanguages: string;
+  teamCouple?: string;
+  teamCoupleConnected?: string;
+  teamCoupleHelp?: string;
 };
 
 type CrewCandidateProfileDetails = Pick<
@@ -103,7 +106,9 @@ type CrewCandidateProfileDetails = Pick<
   | "employmentTypes"
   | "preferredLocations"
   | "languages"
->;
+> & {
+  hasTeamCouple?: boolean;
+};
 
 type CrewCandidateProfileOverviewDetails = Pick<
   EmployerJobApplicationDetails["candidate"],
@@ -567,6 +572,29 @@ export function CrewCandidateProfileBody({
           compact={compactVariant}
         />
       </dl>
+      {candidate.hasTeamCouple &&
+      copy.teamCouple &&
+      copy.teamCoupleConnected &&
+      copy.teamCoupleHelp ? (
+        <div
+          className={`${compactVariant ? "mt-4" : "mt-5"} flex items-start gap-3 rounded-2xl border border-cyan-200 bg-[linear-gradient(135deg,#ecfeff,#f8fafc)] p-4 shadow-[0_14px_34px_-30px_rgba(8,145,178,0.75)]`}
+        >
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-800 text-white shadow-sm">
+            <UsersRound className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-800">
+              {copy.teamCouple}
+            </p>
+            <p className="mt-1 text-sm font-black text-[#071631]">
+              {copy.teamCoupleConnected}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">
+              {copy.teamCoupleHelp}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 

@@ -73,6 +73,7 @@ export type DiscoverableCrewPreview = {
 };
 
 export type DiscoverableCrewProfile = DiscoverableCrewPreview & {
+  hasTeamCouple: boolean;
   fullName: string;
   bio: string;
   gender: string;
@@ -128,6 +129,7 @@ type CrewSearchRecord = {
   referenceCount: number;
   documentCount: number;
   galleryCount: number;
+  hasTeamCouple: boolean;
   searchText: string;
 };
 
@@ -146,6 +148,9 @@ const publicCrewScanPageSize = 48;
 const maximumPublicCrewScanRows = 2_400;
 const relatedProfileBatchSize = 100;
 const relatedPageSize = 500;
+const teamCoupleUserBatchSize = 50;
+const maximumTeamCoupleRelationshipsPerBatch = 1_000;
+const teamCoupleQueryConcurrency = 4;
 const crewSearchCacheLifetimeMs = 15_000;
 let crewSearchRecordsCache: {
   expiresAt: number;
@@ -246,6 +251,7 @@ type CrewSearchRelatedData = {
   documentCounts: Map<string, number>;
   photosByProfile: Map<string, Record<string, unknown>[]>;
   maritalStatuses: Map<string, string>;
+  teamCoupleUserIds: Set<string>;
 };
 
 async function loadAllDiscoverableCrewRows(serviceClient: SupabaseClient) {
@@ -317,7 +323,8 @@ async function loadCrewSearchRelatedData(
   rows: CrewProfileRow[],
 ): Promise<CrewSearchRelatedData> {
   const profileIds = rows.map((row) => text(row.id)).filter(isUuid);
-  if (profileIds.length !== rows.length) {
+  const userIds = rows.map((row) => text(row.user_id)).filter(isUuid);
+  if (profileIds.length !== rows.length || userIds.length !== rows.length) {
     throw new Error("find_crew_profiles_invalid");
   }
 
@@ -327,6 +334,7 @@ async function loadCrewSearchRelatedData(
     referenceRows,
     photoRows,
     maritalStatuses,
+    teamCoupleUserIds,
   ] =
     await Promise.all([
       loadCandidateExperienceRows(serviceClient, profileIds),
@@ -352,6 +360,7 @@ async function loadCrewSearchRelatedData(
         false,
       ),
       loadCrewMaritalStatuses(serviceClient, profileIds),
+      loadAcceptedTeamCoupleUserIds(serviceClient, userIds),
     ]);
   if (experienceResult.error) {
     console.error(
@@ -384,7 +393,80 @@ async function loadCrewSearchRelatedData(
     documentCounts,
     photosByProfile,
     maritalStatuses,
+    teamCoupleUserIds,
   };
+}
+
+async function loadAcceptedTeamCoupleUserIds(
+  serviceClient: SupabaseClient,
+  userIds: string[],
+) {
+  const uniqueUserIds = Array.from(new Set(userIds));
+  if (uniqueUserIds.some((userId) => !isUuid(userId))) {
+    throw new Error("find_crew_profiles_invalid");
+  }
+
+  const batches: string[][] = [];
+  for (
+    let userIndex = 0;
+    userIndex < uniqueUserIds.length;
+    userIndex += teamCoupleUserBatchSize
+  ) {
+    batches.push(
+      uniqueUserIds.slice(userIndex, userIndex + teamCoupleUserBatchSize),
+    );
+  }
+
+  const acceptedUserIds = new Set<string>();
+  for (
+    let batchIndex = 0;
+    batchIndex < batches.length;
+    batchIndex += teamCoupleQueryConcurrency
+  ) {
+    const results = await Promise.all(
+      batches
+        .slice(batchIndex, batchIndex + teamCoupleQueryConcurrency)
+        .map((batch) => {
+          const userList = batch.join(",");
+          return serviceClient
+            .from("crew_team_relationships")
+            .select("requester_user_id,recipient_user_id", { count: "exact" })
+            .eq("status", "accepted")
+            .or(
+              `requester_user_id.in.(${userList}),recipient_user_id.in.(${userList})`,
+            )
+            .limit(maximumTeamCoupleRelationshipsPerBatch);
+        }),
+    );
+
+    for (const result of results) {
+      if (
+        result.error ||
+        typeof result.count !== "number" ||
+        result.count > maximumTeamCoupleRelationshipsPerBatch
+      ) {
+        console.error(
+          "Find Crew Team/Couple relationships could not be loaded",
+          result.error
+            ? safeErrorMessage(result.error)
+            : "team_couple_relationship_capacity_exceeded",
+        );
+        throw new Error("find_crew_profiles_unavailable");
+      }
+
+      for (const row of result.data || []) {
+        const requesterUserId = text(row.requester_user_id);
+        const recipientUserId = text(row.recipient_user_id);
+        if (!isUuid(requesterUserId) || !isUuid(recipientUserId)) {
+          throw new Error("find_crew_profiles_invalid");
+        }
+        acceptedUserIds.add(requesterUserId);
+        acceptedUserIds.add(recipientUserId);
+      }
+    }
+  }
+
+  return acceptedUserIds;
 }
 
 async function loadCrewMaritalStatuses(
@@ -562,6 +644,7 @@ function toCrewSearchRecord(
     referenceCount,
     documentCount,
     galleryCount,
+    hasTeamCouple: related.teamCoupleUserIds.has(userId),
     searchText,
   };
 }
@@ -626,6 +709,7 @@ function crewSearchRecordMatches(
   if (filters.premiumOnly && !preview.premiumProfile) return false;
   if (filters.hasPhoto && !preview.profilePhotoUrl) return false;
   if (filters.hasGallery && record.galleryCount === 0) return false;
+  if (filters.hasTeamCouple && !record.hasTeamCouple) return false;
   return true;
 }
 
@@ -731,10 +815,16 @@ async function loadDiscoverableCrewProfile(
   } = context;
 
   const profileId = text(row.id);
-  if (!isUuid(profileId)) return null;
+  const userId = text(row.user_id);
+  if (!isUuid(profileId) || !isUuid(userId)) return null;
 
-  const [photoResult, documentResult, referenceResult, experienceResult] =
-    await Promise.all([
+  const [
+    photoResult,
+    documentResult,
+    referenceResult,
+    experienceResult,
+    teamCoupleUserIds,
+  ] = await Promise.all([
       serviceClient
         .from("crew_portfolio_photos")
         .select("id,image_url,created_at")
@@ -753,6 +843,7 @@ async function loadDiscoverableCrewProfile(
         .eq("crew_profile_id", profileId)
         .eq("show_on_cv", true),
       loadCandidateExperienceRows(serviceClient, [profileId]),
+      loadAcceptedTeamCoupleUserIds(serviceClient, [userId]),
     ]);
 
   const relatedError =
@@ -815,6 +906,7 @@ async function loadDiscoverableCrewProfile(
 
   return {
     ...preview,
+    hasTeamCouple: teamCoupleUserIds.has(userId),
     fullName: preview.displayName,
     bio: professionalSummary,
     gender: rawGender,

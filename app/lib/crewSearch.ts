@@ -30,6 +30,7 @@ export type CrewSearchFilters = {
   premiumOnly: boolean;
   hasPhoto: boolean;
   hasGallery: boolean;
+  hasTeamCouple: boolean;
 };
 
 export type CrewSearchFacets = {
@@ -71,6 +72,7 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   premiumOnly: false,
   hasPhoto: false,
   hasGallery: false,
+  hasTeamCouple: false,
 };
 
 export const crewSearchParamKeys = new Set([
@@ -86,6 +88,7 @@ export const crewSearchParamKeys = new Set([
   "premium",
   "photo",
   "gallery",
+  "teamCouple",
   "cursor",
 ]);
 
@@ -126,6 +129,7 @@ export function parseCrewSearchFilters(
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
     hasGallery: readSearchParam(source, "gallery") === "1",
+    hasTeamCouple: readSearchParam(source, "teamCouple") === "1",
   });
 }
 
@@ -151,6 +155,7 @@ export function normalizeCrewSearchFilters(
     premiumOnly: value.premiumOnly === true,
     hasPhoto: value.hasPhoto === true,
     hasGallery: value.hasGallery === true,
+    hasTeamCouple: value.hasTeamCouple === true,
   };
 }
 
@@ -169,6 +174,7 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);
   setBoolean(params, "gallery", normalized.hasGallery);
+  setBoolean(params, "teamCouple", normalized.hasTeamCouple);
   return params;
 }
 
