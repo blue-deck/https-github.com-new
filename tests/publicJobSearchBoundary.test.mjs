@@ -42,8 +42,11 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
   );
 });
 
-test("job filters use explicit keyword and form searches with accessible clear actions", async () => {
-  const jobsClient = await source("app/jobs/JobsClient.tsx");
+test("job filters use explicit keyword and form searches with contextual clear actions", async () => {
+  const [jobsClient, crewClient] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/find-crew/FindCrewClient.tsx"),
+  ]);
 
   assert.match(
     jobsClient,
@@ -59,13 +62,37 @@ test("job filters use explicit keyword and form searches with accessible clear a
   );
   assert.match(jobsClient, /aria-label=\{c\.searchKeyword\}/);
   assert.match(jobsClient, /absolute bottom-1\.5 right-1\.5 top-1\.5/);
-  assert.match(jobsClient, /!advancedOpen \? \([\s\S]*?<FilterFormActions/);
   assert.match(
     jobsClient,
-    /id="advanced-job-filters"[\s\S]*?<FilterFormActions[\s\S]*?className="mt-5 justify-end border-t/,
+    /const hasPrimaryDraftFilters =[\s\S]*?draftFilters\.positions\.length > 0 \|\|[\s\S]*?draftFilters\.location\.trim\(\)\.length > 0 \|\|[\s\S]*?draftFilters\.employmentTypes\.length > 0/,
   );
-  assert.match(jobsClient, /disabled=\{!canClear\}/);
+  const primaryVisibility = jobsClient.slice(
+    jobsClient.indexOf("const hasPrimaryDraftFilters"),
+    jobsClient.indexOf("const optionSets"),
+  );
+  assert.doesNotMatch(primaryVisibility, /draftFilters\.query/);
+  assert.match(
+    jobsClient,
+    /!advancedOpen && hasPrimaryDraftFilters \? "pb-11" : ""/,
+  );
+  assert.match(
+    jobsClient,
+    /!advancedOpen \? \([\s\S]*?<JobFilterSearchButton[\s\S]*?\{hasPrimaryDraftFilters \? \([\s\S]*?<JobFilterClearAction[\s\S]*?className="absolute right-0 top-full mt-1 whitespace-nowrap"/,
+  );
+  assert.match(
+    jobsClient,
+    /id="advanced-job-filters"[\s\S]*?className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
+  );
+  const clearFilters = jobsClient.slice(
+    jobsClient.indexOf("function clearFilters()"),
+    jobsClient.indexOf("function removeAppliedFilter"),
+  );
+  assert.doesNotMatch(clearFilters, /setAdvancedOpen/);
   assert.match(jobsClient, /setDraftFilters\(emptyFilters\)/);
+  const sharedClearStyle =
+    "inline-flex min-h-11 items-center justify-center px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900";
+  assert.ok(jobsClient.includes(sharedClearStyle));
+  assert.ok(crewClient.includes(sharedClearStyle));
   assert.match(jobsClient, /employmentType: "Employment type"/);
   assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
   assert.doesNotMatch(jobsClient, /\{advancedFilterCount\}/);

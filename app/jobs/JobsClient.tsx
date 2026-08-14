@@ -147,7 +147,10 @@ export function JobsClient({
     [c, filters, language],
   );
   const hasFilters = hasPublicJobSearchFilters(filters);
-  const canClearFilters = hasFilters || hasPublicJobSearchFilters(draftFilters);
+  const hasPrimaryDraftFilters =
+    draftFilters.positions.length > 0 ||
+    draftFilters.location.trim().length > 0 ||
+    draftFilters.employmentTypes.length > 0;
 
   const optionSets = useMemo(() => buildOptionSets(language, c), [c, language]);
 
@@ -352,7 +355,6 @@ export function JobsClient({
 
   function clearFilters() {
     const emptyFilters = createDefaultPublicJobSearchFilters();
-    setAdvancedOpen(false);
     setDraftFilters(emptyFilters);
     applyFilterUpdate(() => emptyFilters);
   }
@@ -501,7 +503,11 @@ export function JobsClient({
               </button>
             </div>
 
-            <div className="mt-4 grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))_auto]">
+            <div
+              className={`mt-4 grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))_auto] ${
+                !advancedOpen && hasPrimaryDraftFilters ? "pb-11" : ""
+              }`}
+            >
               <div className="block min-w-0">
                 <label
                   htmlFor="jobs-keyword-search"
@@ -586,14 +592,20 @@ export function JobsClient({
                 }
               />
               {!advancedOpen ? (
-                <FilterFormActions
-                  copy={c}
-                  canClear={canClearFilters}
-                  searchDisabled={Boolean(draftValidationError)}
-                  onSearch={applyAllFilters}
-                  onClear={clearFilters}
-                  className="md:col-span-2 xl:col-span-1 xl:justify-end"
-                />
+                <div className="relative flex min-h-12 items-end justify-end self-end md:col-span-2 xl:col-span-1">
+                  <JobFilterSearchButton
+                    label={c.applyFilters}
+                    searchDisabled={Boolean(draftValidationError)}
+                    onSearch={applyAllFilters}
+                  />
+                  {hasPrimaryDraftFilters ? (
+                    <JobFilterClearAction
+                      label={c.clear}
+                      onClick={clearFilters}
+                      className="absolute right-0 top-full mt-1 whitespace-nowrap"
+                    />
+                  ) : null}
+                </div>
               ) : null}
             </div>
 
@@ -889,14 +901,18 @@ export function JobsClient({
                     </div>
                   </FilterGroup>
                 </div>
-                <FilterFormActions
-                  copy={c}
-                  canClear={canClearFilters}
-                  searchDisabled={Boolean(draftValidationError)}
-                  onSearch={applyAllFilters}
-                  onClear={clearFilters}
-                  className="mt-5 justify-end border-t border-slate-200 pt-5"
-                />
+                <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
+                  <JobFilterClearAction
+                    label={c.clear}
+                    onClick={clearFilters}
+                  />
+                  <JobFilterSearchButton
+                    label={c.applyFilters}
+                    searchDisabled={Boolean(draftValidationError)}
+                    onSearch={applyAllFilters}
+                    className="w-full sm:w-auto sm:min-w-40"
+                  />
+                </div>
               </div>
             ) : null}
 
@@ -1046,43 +1062,49 @@ export function JobsClient({
   );
 }
 
-function FilterFormActions({
-  copy,
-  canClear,
+function JobFilterSearchButton({
+  label,
   searchDisabled,
   onSearch,
-  onClear,
   className = "",
 }: {
-  copy: SearchCopy;
-  canClear: boolean;
+  label: string;
   searchDisabled: boolean;
   onSearch: () => void;
-  onClear: () => void;
   className?: string;
 }) {
   return (
-    <div
-      className={`flex min-h-12 flex-wrap items-center gap-x-4 gap-y-2 ${className}`}
-    >
+    <div className={className}>
       <button
         type="button"
         onClick={onSearch}
         disabled={searchDisabled}
-        className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45"
+        className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45"
       >
         <Search className="h-4 w-4" aria-hidden />
-        {copy.applyFilters}
-      </button>
-      <button
-        type="button"
-        onClick={onClear}
-        disabled={!canClear}
-        className="bd-focus min-h-10 border-0 bg-transparent px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900 hover:decoration-cyan-600 disabled:cursor-default disabled:text-slate-300 disabled:no-underline"
-      >
-        {copy.clear}
+        {label}
       </button>
     </div>
+  );
+}
+
+function JobFilterClearAction({
+  label,
+  onClick,
+  className = "",
+}: {
+  label: string;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`bd-focus inline-flex min-h-11 items-center justify-center px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900 ${className}`.trim()}
+    >
+      {label}
+    </button>
   );
 }
 
