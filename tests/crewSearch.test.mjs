@@ -59,12 +59,10 @@ test("find crew uses concise English labels for core select filters", async () =
   );
 
   assert.match(client, /position: "Position"/);
-  assert.match(client, /location: "Location"/);
   assert.match(client, /availability: "Availability"/);
   assert.match(client, /nationalityFilter: "Nationality"/);
   assert.match(client, /maritalStatus: "Marital status"/);
   assert.doesNotMatch(client, /position: "Positions"/);
-  assert.doesNotMatch(client, /location: "Locations"/);
   assert.doesNotMatch(
     client,
     /:\s*"Any (?:availability|contract|nationality|marital status|skill|professional trait|work preference|language)"/,
@@ -103,7 +101,6 @@ test("primary and advanced crew filters apply only through the relocated Search 
     "position",
     "nationality",
     "availability",
-    "location",
     "maritalStatus",
     "gender",
     "smoker",
@@ -203,7 +200,7 @@ test("availability select uses its field label as the empty option", async () =>
   );
 });
 
-test("places nationality in primary filters and location in more filters", async () => {
+test("keeps nationality in primary filters and removes the location filter", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
@@ -218,20 +215,13 @@ test("places nationality in primary filters and location in more filters", async
   );
   const primaryFilters = client.slice(primaryStart, advancedStart);
   const advancedSelects = client.slice(advancedStart, advancedEnd);
-  const advancedCounter = client.slice(
-    client.indexOf("function countAdvancedCrewFilters"),
-    client.indexOf("function candidateAvailabilityLabel"),
-  );
-
   assert.ok(primaryStart >= 0 && advancedStart > primaryStart);
   assert.ok(advancedEnd > advancedStart);
   assert.match(primaryFilters, /label=\{c\.nationalityFilter\}/);
   assert.match(primaryFilters, /<NationalitySearchField/);
   assert.doesNotMatch(primaryFilters, /label=\{c\.location\}/);
-  assert.match(advancedSelects, /label=\{c\.location\}/);
+  assert.doesNotMatch(advancedSelects, /label=\{c\.location\}/);
   assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
-  assert.match(advancedCounter, /location: filters\.location/);
-  assert.doesNotMatch(advancedCounter, /nationality: filters\.nationality/);
 });
 
 test("find crew reuses every My Profile availability option", async () => {
@@ -278,7 +268,6 @@ test("round-trips every public crew search criterion through the URL contract", 
   const source = new URLSearchParams({
     q: "  Chief   Stewardess  ",
     position: "Chief Stewardess",
-    location: "Athens",
     availability: "Available",
     nationality: "Turkish",
     maritalStatus: "Married",
@@ -304,7 +293,29 @@ test("round-trips every public crew search criterion through the URL contract", 
   assert.equal(filters.gender, "Female");
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
-  assert.equal(crewSearchFilterCount(filters), 13);
+  assert.equal(crewSearchFilterCount(filters), 12);
+});
+
+test("removes location from the crew filter contract", async () => {
+  const filters = parseCrewSearchFilters(
+    new URLSearchParams({ location: "Athens" }),
+  );
+  const [client, dataSource] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/lib/findCrewData.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.equal(crewSearchParamKeys.has("location"), false);
+  assert.equal(Object.hasOwn(filters, "location"), false);
+  assert.equal(crewSearchParams(filters).toString(), "");
+  assert.doesNotMatch(client, /label=\{c\.location\}/);
+  assert.doesNotMatch(client, /draftFilters\.location/);
+  assert.doesNotMatch(client, /"locations",/);
+  assert.doesNotMatch(dataSource, /filters\.location/);
+  assert.doesNotMatch(dataSource, /locations: sortedCrewFacet/);
 });
 
 test("removes language from the crew filter contract", async () => {

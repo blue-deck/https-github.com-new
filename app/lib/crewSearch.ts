@@ -20,7 +20,6 @@ const crewYachtExperienceBounds: Record<
 export type CrewSearchFilters = {
   query: string;
   position: string;
-  location: string;
   availability: string;
   nationality: string;
   maritalStatus: string;
@@ -35,7 +34,6 @@ export type CrewSearchFilters = {
 
 export type CrewSearchFacets = {
   positions: string[];
-  locations: string[];
   availabilities: string[];
   employmentTypes: string[];
   nationalities: string[];
@@ -51,7 +49,6 @@ export const crewYesNoOptions = ["No", "Yes"] as const;
 
 export const emptyCrewSearchFacets: CrewSearchFacets = {
   positions: [],
-  locations: [],
   availabilities: [],
   employmentTypes: [],
   nationalities: [],
@@ -64,7 +61,6 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
 export const defaultCrewSearchFilters: CrewSearchFilters = {
   query: "",
   position: "",
-  location: "",
   availability: "",
   nationality: "",
   maritalStatus: "",
@@ -80,7 +76,6 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
 export const crewSearchParamKeys = new Set([
   "q",
   "position",
-  "location",
   "availability",
   "nationality",
   "maritalStatus",
@@ -107,7 +102,6 @@ export function parseCrewSearchFilters(
   return normalizeCrewSearchFilters({
     query: limitedText(readSearchParam(source, "q"), 120),
     position: limitedText(readSearchParam(source, "position"), 120),
-    location: limitedText(readSearchParam(source, "location"), 120),
     availability: limitedText(
       readSearchParam(source, "availability"),
       120,
@@ -144,7 +138,6 @@ export function normalizeCrewSearchFilters(
   return {
     query: limitedText(value.query, 120),
     position: limitedText(value.position, 120),
-    location: limitedText(value.location, 120),
     availability: limitedText(value.availability, 120),
     nationality: limitedText(value.nationality, 80),
     maritalStatus: normalizedMaritalStatus(value.maritalStatus),
@@ -166,7 +159,6 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   const params = new URLSearchParams();
   setText(params, "q", normalized.query);
   setText(params, "position", normalized.position);
-  setText(params, "location", normalized.location);
   setText(params, "availability", normalized.availability);
   setText(params, "nationality", normalized.nationality);
   setText(params, "maritalStatus", normalized.maritalStatus);

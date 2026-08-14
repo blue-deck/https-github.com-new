@@ -400,13 +400,6 @@ export function FindCrewClient({
               >
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <FilterSelect
-                    label={c.location}
-                    value={draftFilters.location}
-                    onChange={(value) => setDraftFilter("location", value)}
-                    options={facets.locations}
-                    language={language}
-                  />
-                  <FilterSelect
                     label={c.maritalStatus}
                     emptyOptionLabel={c.any}
                     value={draftFilters.maritalStatus}
@@ -798,7 +791,6 @@ function hasAdvancedCrewFilters(filters: CrewSearchFilters) {
 function countAdvancedCrewFilters(filters: CrewSearchFilters) {
   const advanced: CrewSearchFilters = {
     ...defaultCrewSearchFilters,
-    location: filters.location,
     maritalStatus: filters.maritalStatus,
     gender: filters.gender,
     smoker: filters.smoker,
@@ -871,7 +863,6 @@ function isCrewSearchFacets(value: unknown): value is CrewSearchFacets {
   const facets = value as Record<string, unknown>;
   return [
     "positions",
-    "locations",
     "availabilities",
     "employmentTypes",
     "nationalities",
@@ -945,7 +936,6 @@ const copy = {
     any: "Any",
     searchPlaceholder: "Position, skill, language or location",
     position: "Position",
-    location: "Location",
     availability: "Availability",
     nationalityFilter: "Nationality",
     maritalStatus: "Marital status",
@@ -1002,7 +992,6 @@ const copy = {
     any: "Herhangi",
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyon",
-    location: "Konum",
     availability: "Müsaitlik durumları",
     nationalityFilter: "Uyruklar",
     maritalStatus: "Medeni durumlar",

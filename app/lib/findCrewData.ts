@@ -583,15 +583,6 @@ function crewSearchRecordMatches(
     return false;
   }
   if (
-    filters.location &&
-    !hasPartialCrewValue(
-      [preview.location, ...preview.preferredLocations],
-      filters.location,
-    )
-  ) {
-    return false;
-  }
-  if (
     filters.availability &&
     !sameCrewValue(preview.availabilityStatus, filters.availability)
   ) {
@@ -642,13 +633,6 @@ function hasExactCrewValue(values: string[], expected: string) {
   return values.some((value) => sameCrewValue(value, expected));
 }
 
-function hasPartialCrewValue(values: string[], expected: string) {
-  const normalizedExpected = normalizeCrewSearchText(expected);
-  return values.some((value) =>
-    normalizeCrewSearchText(value).includes(normalizedExpected),
-  );
-}
-
 function sameCrewValue(left: string, right: string) {
   return normalizeCrewSearchText(left) === normalizeCrewSearchText(right);
 }
@@ -669,12 +653,6 @@ function crewSearchFacets(records: CrewSearchRecord[]): CrewSearchFacets {
       records.flatMap((record) => [
         record.preview.currentPosition,
         ...record.preview.seekingPositions,
-      ]),
-    ),
-    locations: sortedCrewFacet(
-      records.flatMap((record) => [
-        record.preview.location,
-        ...record.preview.preferredLocations,
       ]),
     ),
     availabilities: sortedCrewFacet(
