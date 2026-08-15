@@ -69,8 +69,8 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
   const publicCrewId = text(gallery.profile, "public_crew_id") || crewId;
 
   return (
-    <main className="min-h-screen bg-[#eef5f6] px-4 py-6 text-[#06111f] sm:px-6 lg:px-8">
-      <section className="mx-auto max-w-6xl overflow-hidden rounded-[32px] border border-[#c7d9df] bg-white shadow-2xl shadow-slate-950/10">
+    <main className="bd-page-gutter min-h-screen bg-[#eef5f6] px-4 py-6 text-[#06111f] sm:px-6 lg:px-8">
+      <section className="bd-page-frame mx-auto max-w-6xl overflow-hidden rounded-[32px] border border-[#c7d9df] bg-white shadow-2xl shadow-slate-950/10">
         <header className="relative overflow-hidden bg-[#06111f] px-6 py-7 text-white sm:px-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_20%,rgba(95,211,229,0.22),transparent_30%),linear-gradient(120deg,#06111f_0%,#0d2534_56%,#123748_100%)]" />
           <div className="relative flex flex-wrap items-center justify-between gap-6">

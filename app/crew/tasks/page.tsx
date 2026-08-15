@@ -656,7 +656,7 @@ export default function CrewTasksPage() {
 
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
-      <div className="bd-ocean-content bd-crew-task-content mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
+      <div className="bd-ocean-content bd-crew-task-content bd-page-frame bd-page-gutter mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
         <header className="mb-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <p className="bd-kicker">BlueDeck Crew Workspace</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl">

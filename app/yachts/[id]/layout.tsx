@@ -132,10 +132,10 @@ export default function YachtAppLayout({
   if (sessionStatus === "checking") {
     return (
       <main
-        className="bd-app-page min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12"
+        className="bd-app-page bd-page-gutter min-h-screen px-5 py-16 text-[#071f3c] sm:px-8 lg:px-12"
         aria-busy="true"
       >
-        <div className="mx-auto max-w-[1500px]">
+        <div className="bd-page-frame mx-auto max-w-[1500px]">
           <p className="bd-kicker">BlueDeck Secure Access</p>
           <h1 className="bd-serif mt-4 text-4xl sm:text-5xl" role="status">
             {language === "tr"
@@ -154,7 +154,7 @@ export default function YachtAppLayout({
           aria-label={language === "tr" ? "Yat çalışma alanı" : "Yacht workspace"}
           className="bd-yacht-section-nav sticky z-40 border-b border-[#071f3c]/10 bg-white shadow-sm"
         >
-          <div className="mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 sm:px-8 lg:px-12">
+          <div className="bd-page-frame bd-page-gutter mx-auto flex max-w-[1500px] items-center gap-4 px-4 py-4 sm:px-8 lg:px-12">
             <div className="flex min-w-0 flex-1 items-center gap-6 overflow-x-auto">
               {nav.map((item) => {
                 const Icon = item.icon;

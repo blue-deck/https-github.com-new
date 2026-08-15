@@ -7,7 +7,7 @@ export default function FindCrewLoading() {
 
       <main id="main-content" aria-busy="true">
         <section
-          className="mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
+          className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
         >
           <h1 id="crew-filter-heading" className="sr-only">
             Search and filters

@@ -448,7 +448,7 @@ export function JobsClient({
 
       <main id="main-content">
         <section className="border-b border-slate-200 bg-white">
-          <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
+          <div className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
             <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
               <Compass className="h-4 w-4" aria-hidden />
               {c.eyebrow}
@@ -465,7 +465,7 @@ export function JobsClient({
         <section
           id="jobs-board"
           aria-label={c.results}
-          className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
+          className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
         >
           <section
             aria-labelledby="jobs-filter-heading"

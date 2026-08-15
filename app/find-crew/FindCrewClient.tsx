@@ -267,7 +267,7 @@ export function FindCrewClient({
       <main id="main-content">
         <section
           aria-labelledby="crew-results-heading"
-          className="mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
+          className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
         >
           <section
             aria-labelledby="crew-filter-heading"

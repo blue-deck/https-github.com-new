@@ -135,9 +135,9 @@ export default function YachtsPage() {
 
   if (loading) {
     return (
-      <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+      <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
         <div
-          className="bd-ocean-content mx-auto max-w-7xl"
+          className="bd-ocean-content bd-page-frame mx-auto max-w-7xl"
           role="status"
           aria-live="polite"
         >
@@ -176,8 +176,8 @@ export default function YachtsPage() {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
-      <div className="bd-ocean-content mx-auto max-w-7xl">
+    <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
+      <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
         <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-8">

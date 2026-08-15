@@ -292,8 +292,8 @@ export default function DocumentsPage() {
   }, [yachtId]);
 
   return (
-    <main className="bd-app-page min-h-screen bg-[#f4f7fb] px-4 pb-20 pt-6 text-slate-900 sm:px-6 sm:pt-8 lg:px-10">
-      <div className="mx-auto max-w-7xl">
+    <main className="bd-app-page bd-page-gutter min-h-screen bg-[#f4f7fb] px-4 pb-20 pt-6 text-slate-900 sm:px-6 sm:pt-8 lg:px-10">
+      <div className="bd-page-frame mx-auto max-w-7xl">
         <Link
           href={`/yachts/${yachtId}`}
           className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-600 transition hover:text-slate-950"

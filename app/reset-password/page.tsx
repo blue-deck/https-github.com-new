@@ -177,7 +177,7 @@ export default function ResetPasswordPage() {
         tabIndex={-1}
         className="bd-app-page bd-site-shell min-h-screen overflow-hidden text-[#071f3c]"
       >
-        <section className="bd-ocean-content mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-[1280px] items-center gap-10 px-5 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-12">
+        <section className="bd-ocean-content bd-page-frame bd-page-gutter mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-[1280px] items-center gap-10 px-5 py-10 lg:grid-cols-[0.95fr_1.05fr] lg:px-12">
           <div className="hidden lg:block">
             <p className="bd-kicker">{t("reset.privateAccess")}</p>
             <h2 className="bd-serif mt-5 max-w-2xl text-6xl leading-[1.02] text-[#071f3c]">

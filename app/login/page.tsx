@@ -327,7 +327,7 @@ export default function LoginPage() {
         id="main-content"
         className="bd-site-shell min-h-screen overflow-x-clip text-slate-900"
       >
-      <div className="bd-ocean-content mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
+      <div className="bd-ocean-content bd-page-frame bd-page-gutter mx-auto grid min-h-[calc(100dvh-var(--public-header-height))] max-w-6xl items-center gap-8 px-5 py-8 lg:grid-cols-[1fr_460px] lg:px-8">
         <section className="hidden lg:block">
           <p className="bd-kicker">{t("login.heroEyebrow")}</p>
           <h2 className="bd-serif mt-5 max-w-3xl text-6xl font-normal leading-tight text-[#071f3c]">

@@ -140,8 +140,8 @@ export function MyJobApplicationsPortal() {
   }, [state]);
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 pb-20 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
-      <div className="bd-ocean-content mx-auto max-w-7xl">
+    <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 pb-20 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
+      <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
         <section className="relative overflow-hidden rounded-[30px] border border-white/80 bg-white/95 shadow-2xl shadow-slate-950/8 backdrop-blur">
           <div className="bd-brand-rule h-0.5" />
           <div className="grid gap-8 p-6 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-11">
