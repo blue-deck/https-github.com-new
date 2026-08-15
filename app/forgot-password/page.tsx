@@ -99,7 +99,7 @@ export default function ForgotPasswordPage() {
         className="bd-site-shell min-h-screen text-[#071f3c]"
       >
         <section className="border-b border-[#071f3c]/10 bg-white/64">
-          <div className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8 lg:px-12">
+          <div className="bd-page-frame bd-page-gutter mx-auto max-w-[1500px] px-5 py-14 sm:px-8 lg:px-12">
             <p className="bd-kicker">{t("forgot.eyebrow")}</p>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.02em] text-[#07182d] sm:text-5xl">
               {t("forgot.title")}
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1500px] px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
+        <section className="bd-page-frame bd-page-gutter mx-auto max-w-[1500px] px-5 py-14 sm:px-8 lg:px-12 lg:py-20">
           <form
             onSubmit={submitResetRequest}
             aria-busy={loading}

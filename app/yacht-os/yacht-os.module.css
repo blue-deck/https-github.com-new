@@ -2,7 +2,8 @@
 .capabilities,
 .journey,
 .trust {
-  width: min(100% - 2.5rem, 1280px);
+  width: calc(100% - var(--bd-page-gutter) - var(--bd-page-gutter));
+  max-width: none;
   margin-inline: auto;
 }
 
@@ -275,7 +276,7 @@
   .capabilities,
   .journey,
   .trust {
-    width: min(100% - 2rem, 1280px);
+    width: calc(100% - var(--bd-page-gutter) - var(--bd-page-gutter));
   }
 
   .overviewVisual {

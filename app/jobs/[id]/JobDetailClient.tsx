@@ -285,7 +285,7 @@ function JobDetail({
   return (
     <>
       <section className="border-b border-[#071f3c]/10 bg-white">
-        <div className="mx-auto max-w-[1180px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
+        <div className="bd-page-frame bd-page-gutter mx-auto max-w-[1180px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           {!embedded ? (
             <Link
               href="/jobs"
@@ -337,7 +337,7 @@ function JobDetail({
       </section>
 
       <section className="bg-[#f7f9fc]">
-        <div className="mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 lg:px-10 lg:py-12 xl:max-w-[1240px] xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="bd-page-frame bd-page-gutter mx-auto grid max-w-[1180px] gap-6 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-8 lg:px-10 lg:py-12 xl:max-w-[1240px] xl:grid-cols-[minmax(0,1fr)_360px]">
           <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-sm shadow-slate-950/5 sm:px-8 sm:py-8 lg:col-start-1 lg:row-start-1">
             {roleOverview ? (
               <DetailSection title={c.description} first>
@@ -554,7 +554,7 @@ function BulletList({ items }: { items: string[] }) {
 
 function DetailLoading({ label }: { label: string }) {
   return (
-    <section className="mx-auto max-w-[1180px] px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
+    <section className="bd-page-frame bd-page-gutter mx-auto max-w-[1180px] px-5 py-10 sm:px-8 lg:px-10 lg:py-12">
       <div
         role="status"
         className="flex items-center gap-3 text-sm font-bold text-cyan-800"

@@ -459,8 +459,8 @@ export default function MyBluePage() {
 
   if (loading) {
     return (
-      <main className="bd-app-page bd-ocean-shell min-h-screen px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
-        <div className="bd-ocean-content mx-auto max-w-[1320px]">
+      <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
+        <div className="bd-ocean-content bd-page-frame mx-auto max-w-[1320px]">
           <div className="bd-glass-card-strong rounded-[28px] p-6 text-sm font-semibold text-slate-600">
             Loading photo gallery...
           </div>
@@ -470,8 +470,8 @@ export default function MyBluePage() {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
-      <div className="bd-ocean-content mx-auto max-w-[1320px]">
+    <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen overflow-x-hidden px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
+      <div className="bd-ocean-content bd-page-frame mx-auto max-w-[1320px]">
         <Link
           href="/dashboard"
           className="bd-focus mb-3 inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-3 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm backdrop-blur transition hover:border-cyan-300 hover:text-cyan-800"

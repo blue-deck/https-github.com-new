@@ -277,7 +277,7 @@ export function BlueDeckTopBar() {
       >
         {language === "tr" ? "İçeriğe geç" : "Skip to content"}
       </a>
-      <div className="bd-app-topbar-inner mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
+      <div className="bd-app-topbar-inner bd-page-frame bd-page-gutter mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
         <div className="bd-topbar-logo-area flex min-w-0 items-center gap-4">
           <BlueDeckLogoLink
             href="/"

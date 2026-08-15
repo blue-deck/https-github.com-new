@@ -698,8 +698,8 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
   }
 
   return (
-    <main className="bd-app-page min-h-screen overflow-x-hidden bg-slate-50 px-4 pb-24 pt-6 text-slate-900 sm:px-7 sm:pt-8 lg:px-10">
-      <div className="mx-auto w-full max-w-[1180px]">
+    <main className="bd-app-page bd-page-gutter min-h-screen overflow-x-hidden bg-slate-50 px-4 pb-24 pt-6 text-slate-900 sm:px-7 sm:pt-8 lg:px-10">
+      <div className="bd-page-frame mx-auto w-full max-w-[1180px]">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#071f3c] sm:text-4xl">

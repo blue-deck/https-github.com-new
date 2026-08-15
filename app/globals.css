@@ -44,6 +44,7 @@
   --sidebar-width: 260px;
   --topbar-height: 88px;
   --topbar-height-mobile: 76px;
+  --bd-page-gutter: 1.25rem;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -313,10 +314,11 @@ textarea:-webkit-autofill:focus {
   grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
   gap: clamp(1rem, 1.5vw, 1.5rem);
-  width: min(100%, 1500px);
+  width: 100%;
+  max-width: none;
   min-height: var(--public-header-height);
   margin: 0 auto;
-  padding: 0 clamp(1rem, 2vw, 2rem);
+  padding: 0 var(--bd-page-gutter);
 }
 
 .bd-public-brand {
@@ -697,8 +699,9 @@ textarea:-webkit-autofill:focus {
   position: relative;
   grid-template-columns: max-content minmax(0, 1fr) max-content;
   gap: clamp(1rem, 2vw, 2rem);
-  width: min(100%, 1280px);
-  padding-inline: 1.25rem;
+  width: 100%;
+  max-width: none;
+  padding-inline: var(--bd-page-gutter);
 }
 
 .bd-public-brand-group {
@@ -872,7 +875,7 @@ textarea:-webkit-autofill:focus {
 
 .bd-public-container,
 .bd-section {
-  width: min(100% - 2.5rem, 1280px);
+  width: calc(100% - var(--bd-page-gutter) - var(--bd-page-gutter));
   max-width: none;
   margin-inline: auto;
 }
@@ -978,7 +981,8 @@ textarea:-webkit-autofill:focus {
   display: grid;
   grid-template-columns: minmax(260px, 1.4fr) repeat(3, minmax(150px, 0.7fr));
   gap: clamp(2rem, 5vw, 4rem);
-  width: min(100% - 2.5rem, 1280px);
+  width: calc(100% - var(--bd-page-gutter) - var(--bd-page-gutter));
+  max-width: none;
   margin-inline: auto;
   padding-block: 3.75rem;
 }
@@ -1045,7 +1049,8 @@ textarea:-webkit-autofill:focus {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  width: min(100% - 2.5rem, 1280px);
+  width: calc(100% - var(--bd-page-gutter) - var(--bd-page-gutter));
+  max-width: none;
   min-height: 4.25rem;
   margin-inline: auto;
   color: rgba(255, 255, 255, 0.48);
@@ -1093,6 +1098,27 @@ textarea:-webkit-autofill:focus {
   position: relative;
   z-index: 1;
   min-width: 0;
+}
+
+.bd-page-frame {
+  min-width: 0;
+  margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --bd-page-gutter: 1cm;
+  }
+
+  .bd-page-frame {
+    width: 100%;
+    max-width: none !important;
+  }
+
+  .bd-page-gutter {
+    padding-right: var(--bd-page-gutter) !important;
+    padding-left: var(--bd-page-gutter) !important;
+  }
 }
 
 .bd-ocean-shell,
@@ -1940,6 +1966,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 @media (max-width: 640px) {
   :root {
     --public-header-height: var(--public-header-height-mobile);
+    --bd-page-gutter: 1rem;
   }
 
   .bd-public-header-inner {
@@ -2011,7 +2038,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   .bd-section,
   .bd-public-footer-grid,
   .bd-public-footer-bottom > div {
-    width: min(100% - 2rem, 1280px);
+    width: calc(100% - var(--bd-page-gutter) - var(--bd-page-gutter));
   }
 
   .bd-public-page-intro-inner {

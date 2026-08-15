@@ -1139,8 +1139,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
-      <div className="bd-ocean-content mx-auto max-w-[1520px]">
+    <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
+      <div className="bd-ocean-content bd-page-frame mx-auto max-w-[1520px]">
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-5 sm:p-8">

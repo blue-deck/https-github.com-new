@@ -303,7 +303,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="bd-app-page relative min-h-screen overflow-hidden bg-[#edf3f4] px-4 py-7 text-[#102a3b] sm:px-6 sm:py-11">
+    <main className="bd-app-page bd-page-gutter relative min-h-screen overflow-hidden bg-[#edf3f4] px-4 py-7 text-[#102a3b] sm:px-6 sm:py-11">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-70"
@@ -314,7 +314,7 @@ export default function SettingsPage() {
         }}
       />
 
-      <div className="relative mx-auto max-w-[1080px]">
+      <div className="bd-page-frame relative mx-auto max-w-[1080px]">
         <header className="border-b-2 border-[#17394a] pb-7 sm:pb-8">
           <div className="grid gap-7 md:grid-cols-[minmax(0,1fr)_340px] md:items-end">
             <div>
@@ -848,8 +848,8 @@ function PasswordRequirements({
 
 function SettingsSkeleton() {
   return (
-    <main className="bd-app-page min-h-screen bg-[#edf3f4] px-4 py-7 text-[#102a3b] sm:px-6 sm:py-11">
-      <div className="mx-auto max-w-[1080px] animate-pulse" aria-busy="true" aria-label="Loading settings">
+    <main className="bd-app-page bd-page-gutter min-h-screen bg-[#edf3f4] px-4 py-7 text-[#102a3b] sm:px-6 sm:py-11">
+      <div className="bd-page-frame mx-auto max-w-[1080px] animate-pulse" aria-busy="true" aria-label="Loading settings">
         <div className="border-b-2 border-[#c1cfd3] pb-8">
           <div className="h-3 w-40 rounded-sm bg-[#c9d7da]" />
           <div className="mt-4 h-14 w-56 rounded-sm bg-[#b8c9cd]" />

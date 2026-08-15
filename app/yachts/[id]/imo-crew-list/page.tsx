@@ -67,8 +67,8 @@ export default function ImoCrewListPage() {
   }
 
   return (
-    <main className="bd-app-page min-h-screen bg-[#020817] px-5 py-8 text-white sm:px-8 lg:px-10">
-      <div className="mx-auto max-w-7xl">
+    <main className="bd-app-page bd-page-gutter min-h-screen bg-[#020817] px-5 py-8 text-white sm:px-8 lg:px-10">
+      <div className="bd-page-frame mx-auto max-w-7xl">
         <header className="bd-page-hero mb-8 flex flex-col justify-between gap-5 rounded-[32px] border border-cyan-500/20 bg-cyan-500/10 p-8 print:hidden md:flex-row md:items-end">
           <div>
             <p className="text-cyan-300">Captain Document</p>

@@ -547,8 +547,8 @@ export default function AdminEmployerAccessPage() {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen overflow-x-hidden px-5 pb-24 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
-      <div className="bd-ocean-content mx-auto w-full max-w-[1500px]">
+    <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen overflow-x-hidden px-5 pb-24 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
+      <div className="bd-ocean-content bd-page-frame mx-auto w-full max-w-[1500px]">
         <section className="bd-page-hero relative overflow-hidden rounded-[34px] border border-slate-200 bg-white p-6 sm:p-8 lg:p-10">
           <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />
           <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">

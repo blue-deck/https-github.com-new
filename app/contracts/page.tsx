@@ -144,8 +144,8 @@ export default function ContractsPage() {
   }
 
   return (
-    <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
-      <div className="bd-ocean-content mx-auto max-w-5xl">
+    <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
+      <div className="bd-ocean-content bd-page-frame mx-auto max-w-5xl">
         <header className="bd-glass-card-strong rounded-[34px] p-8">
           <p className="text-cyan-300">My Contracts</p>
           <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">Mobile Signature</h1>

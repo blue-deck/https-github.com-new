@@ -465,8 +465,8 @@ export default function YachtDashboard() {
   ];
 
   return (
-    <main className="bd-app-page min-h-screen min-w-0 overflow-x-hidden px-5 pb-32 pt-8 text-slate-950 sm:px-8 lg:px-10">
-      <div className="mx-auto w-full min-w-0 max-w-7xl">
+    <main className="bd-app-page bd-page-gutter min-h-screen min-w-0 overflow-x-hidden px-5 pb-32 pt-8 text-slate-950 sm:px-8 lg:px-10">
+      <div className="bd-page-frame mx-auto w-full min-w-0 max-w-7xl">
         <section className="min-w-0">
           <div className="bd-page-hero relative overflow-hidden rounded-[36px] border border-slate-200 bg-white p-6 shadow-2xl shadow-cyan-950/10 sm:p-8 lg:p-10">
             <div className="bd-brand-rule absolute inset-x-0 top-0 h-1.5" />

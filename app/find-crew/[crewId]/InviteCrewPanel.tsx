@@ -78,7 +78,7 @@ export function CrewProfileContent({
       aria-labelledby="crew-profile-heading"
       className="border-b border-slate-200 bg-slate-50/70"
     >
-      <div className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+      <div className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
         <nav aria-label={c.profileNavigation}>
           <Link
             href="/find-crew"
@@ -269,7 +269,7 @@ export function PublicCrewProfileContent({
       aria-labelledby="crew-profile-heading"
       className="border-b border-slate-200 bg-slate-50/70"
     >
-      <div className="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
+      <div className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
         <nav aria-label={c.profileNavigation}>
           <Link
             href="/find-crew"
