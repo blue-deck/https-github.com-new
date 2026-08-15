@@ -44,7 +44,6 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["employmentType", "rotation"],
     ["candidateType", "couple"],
     ["yachtType", "motor_yacht"],
-    ["yachtBrand", "Feadship"],
     ["yachtFlag", "tr"],
     ["lengthMin", "40"],
     ["lengthMax", "70.5"],
@@ -151,8 +150,9 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
   }
 });
 
-test("rejects removed requirement, build-year, date-recency, and page-size filters", () => {
+test("rejects removed brand, requirement, build-year, date-recency, and page-size filters", () => {
   for (const query of [
+    "yachtBrand=Feadship",
     "skill=Crew%20management",
     "trait=Leadership",
     "certificate=STCW%20Basic%20Safety%20Training",
@@ -183,7 +183,6 @@ test("matches every structured public-detail category with normalized yacht unit
     employmentTypes: ["rotation"],
     candidateTypes: ["couple"],
     yachtTypes: ["motor_yacht"],
-    yachtBrand: "fead",
     yachtFlagCountryCodes: ["TR"],
     yachtLengthMinMetres: 49.9,
     yachtLengthMaxMetres: 50.1,

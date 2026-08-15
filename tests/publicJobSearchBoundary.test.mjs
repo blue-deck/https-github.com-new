@@ -152,6 +152,18 @@ test("published requirements expose only supported Any-based policy filters", as
   assert.match(config, /value !== "no_preference"/);
 });
 
+test("yacht brand remains job data but is not exposed as a public job filter", async () => {
+  const [client, search] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/lib/publicJobSearch.ts"),
+  ]);
+
+  assert.doesNotMatch(client, /label=\{c\.yachtBrand\}/);
+  assert.doesNotMatch(client, /draftFilters\.yachtBrand/);
+  assert.doesNotMatch(search, /yachtBrand: string;/);
+  assert.doesNotMatch(search, /setText\(params, "yachtBrand"/);
+});
+
 test("multi-select filters are exclusive and dismiss on outside click or Escape", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
 

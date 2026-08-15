@@ -668,18 +668,6 @@ export function JobsClient({
                           }))
                         }
                       />
-                      <TextField
-                        label={c.yachtBrand}
-                        value={draftFilters.yachtBrand}
-                        maxLength={80}
-                        placeholder={c.anyBrand}
-                        onChange={(yachtBrand) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            yachtBrand,
-                          }))
-                        }
-                      />
                       <MultiSelectField
                         label={c.yachtFlag}
                         placeholder={c.anyFlag}
@@ -1700,12 +1688,6 @@ function buildActiveFilterChips(
       }),
     ),
   );
-  if (filters.yachtBrand) {
-    add("yacht-brand", `${c.brandChip}: ${filters.yachtBrand}`, (current) => ({
-      ...current,
-      yachtBrand: "",
-    }));
-  }
   filters.yachtFlagCountryCodes.forEach((value) =>
     add(`flag-${value}`, formatCountryWithFlag(value) || value, (current) => ({
       ...current,
@@ -1921,7 +1903,6 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     filters.departments.length +
     (filters.candidateTypes.length > 0 ? 1 : 0) +
     filters.yachtTypes.length +
-    (filters.yachtBrand ? 1 : 0) +
     filters.yachtFlagCountryCodes.length +
     (filters.yachtLengthMinMetres !== null ? 1 : 0) +
     (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
@@ -2102,8 +2083,6 @@ const copy = {
     yachtDetails: "Yacht and experience",
     yachtType: "Yacht type",
     allYachtTypes: "All yacht types",
-    yachtBrand: "Yacht brand",
-    anyBrand: "Any brand",
     yachtFlag: "Yacht flag",
     anyFlag: "Any flag",
     searchFlags: "Search flags",
@@ -2143,7 +2122,6 @@ const copy = {
     },
     keywordChip: "Keyword",
     locationChip: "Location",
-    brandChip: "Brand",
     clear: "Clear filters",
     fixFiltersTitle: "Check the selected range",
     rangeError: "A minimum value or date cannot be later than its maximum.",
@@ -2205,8 +2183,6 @@ const copy = {
     yachtDetails: "Yat ve deneyim",
     yachtType: "Yat türü",
     allYachtTypes: "Tüm yat türleri",
-    yachtBrand: "Yat markası",
-    anyBrand: "Tüm markalar",
     yachtFlag: "Yat bayrağı",
     anyFlag: "Tüm bayraklar",
     searchFlags: "Bayrak ara",
@@ -2246,7 +2222,6 @@ const copy = {
     },
     keywordChip: "Anahtar kelime",
     locationChip: "Konum",
-    brandChip: "Marka",
     clear: "Filtreleri temizle",
     fixFiltersTitle: "Seçilen aralığı kontrol edin",
     rangeError: "Minimum değer veya tarih maksimumdan büyük olamaz.",

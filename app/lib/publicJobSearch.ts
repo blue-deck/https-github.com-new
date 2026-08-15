@@ -50,7 +50,6 @@ export type PublicJobSearchFilters = {
   employmentTypes: JobEmploymentType[];
   candidateTypes: JobCandidateType[];
   yachtTypes: JobYachtType[];
-  yachtBrand: string;
   yachtFlagCountryCodes: string[];
   yachtLengthMinMetres: number | null;
   yachtLengthMaxMetres: number | null;
@@ -98,7 +97,6 @@ const queryKeys = new Set([
   "employmentType",
   "candidateType",
   "yachtType",
-  "yachtBrand",
   "yachtFlag",
   "lengthMin",
   "lengthMax",
@@ -134,7 +132,6 @@ const multiValueLimits: Record<string, number> = {
 const scalarKeys = [
   "q",
   "location",
-  "yachtBrand",
   "lengthMin",
   "lengthMax",
   "crewMin",
@@ -160,7 +157,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     employmentTypes: [],
     candidateTypes: [],
     yachtTypes: [],
-    yachtBrand: "",
     yachtFlagCountryCodes: [],
     yachtLengthMinMetres: null,
     yachtLengthMaxMetres: null,
@@ -198,8 +194,7 @@ export function parsePublicJobSearchParams(
 
   const query = boundedText(searchParams.get("q"), 120);
   const location = boundedText(searchParams.get("location"), 120);
-  const yachtBrand = boundedText(searchParams.get("yachtBrand"), 80);
-  if (query === null || location === null || yachtBrand === null) {
+  if (query === null || location === null) {
     return { ok: false, error: "One or more text filters are invalid." };
   }
 
@@ -358,7 +353,6 @@ export function parsePublicJobSearchParams(
     employmentTypes: successfulList(employmentTypes),
     candidateTypes: successfulList(candidateTypes),
     yachtTypes: successfulList(yachtTypes),
-    yachtBrand,
     yachtFlagCountryCodes: successfulList(yachtFlagCountryCodes),
     yachtLengthMinMetres: numericValue(yachtLengthMinMetres),
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
@@ -414,7 +408,6 @@ export function publicJobSearchParams(
   setList(params, "employmentType", filters.employmentTypes);
   setList(params, "candidateType", filters.candidateTypes);
   setList(params, "yachtType", filters.yachtTypes);
-  setText(params, "yachtBrand", filters.yachtBrand);
   setList(params, "yachtFlag", filters.yachtFlagCountryCodes);
   setNumber(params, "lengthMin", filters.yachtLengthMinMetres);
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
@@ -481,12 +474,6 @@ export function matchesPublicJobSearch(
   if (!includesSelected(filters.employmentTypes, job.employmentType)) return false;
   if (!includesSelected(filters.candidateTypes, job.candidateType)) return false;
   if (!includesSelected(filters.yachtTypes, job.yachtType)) return false;
-  if (
-    filters.yachtBrand &&
-    !foldText(job.yachtBrand || "").includes(foldText(filters.yachtBrand))
-  ) {
-    return false;
-  }
   if (
     !includesSelected(filters.yachtFlagCountryCodes, job.yachtFlagCountryCode)
   ) {
