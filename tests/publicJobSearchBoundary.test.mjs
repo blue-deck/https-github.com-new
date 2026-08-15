@@ -108,6 +108,26 @@ test("job filters use explicit keyword and form searches with contextual clear a
     salaryNumberField,
     /\[&::-webkit-outer-spin-button\]:appearance-none/,
   );
+  const rangeNumberField = jobsClient.slice(
+    jobsClient.indexOf("function RangeField"),
+    jobsClient.indexOf("function FilterSelect"),
+  );
+  assert.equal(
+    rangeNumberField.match(/\[appearance:textfield\]/g)?.length,
+    2,
+  );
+  assert.equal(
+    rangeNumberField.match(
+      /\[&::-webkit-inner-spin-button\]:appearance-none/g,
+    )?.length,
+    2,
+  );
+  assert.equal(
+    rangeNumberField.match(
+      /\[&::-webkit-outer-spin-button\]:appearance-none/g,
+    )?.length,
+    2,
+  );
   assert.doesNotMatch(jobsClient, /\{advancedFilterCount\}/);
   assert.match(jobsClient, /aria-label=\{c\.searching\}/);
   assert.match(jobsClient, /refreshing \? "opacity-55" : "opacity-100"/);
