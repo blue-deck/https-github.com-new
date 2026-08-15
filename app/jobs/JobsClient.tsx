@@ -1191,7 +1191,7 @@ function NumberField({
         max={max}
         step={step}
         onChange={(event) => onChange(readNullableNumber(event.target.value))}
-        className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+        className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
       />
     </label>
   );

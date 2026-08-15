@@ -95,6 +95,19 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.ok(crewClient.includes(sharedClearStyle));
   assert.match(jobsClient, /employmentType: "Employment type"/);
   assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
+  const salaryNumberField = jobsClient.slice(
+    jobsClient.indexOf("function NumberField"),
+    jobsClient.indexOf("function RangeField"),
+  );
+  assert.match(salaryNumberField, /\[appearance:textfield\]/);
+  assert.match(
+    salaryNumberField,
+    /\[&::-webkit-inner-spin-button\]:appearance-none/,
+  );
+  assert.match(
+    salaryNumberField,
+    /\[&::-webkit-outer-spin-button\]:appearance-none/,
+  );
   assert.doesNotMatch(jobsClient, /\{advancedFilterCount\}/);
   assert.match(jobsClient, /aria-label=\{c\.searching\}/);
   assert.match(jobsClient, /refreshing \? "opacity-55" : "opacity-100"/);
