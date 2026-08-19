@@ -2772,7 +2772,7 @@ function SeazoneStyleCvPreview({
                 </div>
               </header>
 
-              <div className="bd-cv-main p-6 sm:p-8 print:p-7">
+              <div className="bd-cv-main p-8 print:p-7">
                 <SeazoneSection title="About Me" className="mt-0">
                   <p className="rounded-2xl border border-[#b8c9d0] bg-white p-4 text-[18px] font-semibold leading-7 text-[#17232c]">
                     {professionalSummary}
@@ -2980,8 +2980,8 @@ function PrintableCvPages({
     { kind: "first" as const, experiences: firstPageExperiences },
     ...remainingPages.map((items) => ({ kind: "continued" as const, experiences: items })),
   ];
-  if (pages.length === 1 && firstPageExperiences.length === 0) {
-    pages[0].experiences = [];
+  if (documents.length > 0 && pages.length === 1) {
+    pages.push({ kind: "continued", experiences: [] });
   }
 
   return (
@@ -3017,11 +3017,11 @@ function PrintableCvPages({
                   <PrintableExperienceList experiences={page.experiences} references={references} />
                 </PrintableSection>
               </>
-            ) : (
+            ) : page.experiences.length > 0 ? (
               <div className="bd-print-continuation-experiences">
                 <PrintableExperienceList experiences={page.experiences} references={references} />
               </div>
-            )}
+            ) : null}
             <PrintablePageFooter />
           </div>
         </section>

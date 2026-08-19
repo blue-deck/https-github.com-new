@@ -89,7 +89,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <CvScaleFrame responsiveOnMobile>
+      <CvScaleFrame>
       <section id="bluedeck-cv" className="bd-cv-root bd-cv-public-sheet mx-auto w-[980px] max-w-none overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
         <div className="bd-cv-public-toolbar flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
           <div className="flex items-center gap-3">
@@ -236,7 +236,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               </div>
             </header>
 
-            <div className="bd-cv-main p-6 sm:p-8 print:p-7">
+            <div className="bd-cv-main p-8 print:p-7">
               <CvSection title="About Me" className="mt-0">
                 <p className="rounded-2xl border border-[#d8e2e6] bg-[#f6f8f8] p-4 text-[14px] leading-7 text-[#3d454c]">
                   {professionalSummary}
@@ -256,7 +256,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
                   return (
                     <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className={`bd-cv-experience overflow-hidden rounded-2xl border border-[#cbd8dd] bg-white shadow-sm shadow-slate-950/5 ${shouldBreakBeforeExperience(index) ? "bd-cv-experience-break-before" : ""}`}>
-                      <div className="bd-cv-experience-grid grid items-stretch sm:grid-cols-[136px_1fr]">
+                      <div className="bd-cv-experience-grid grid grid-cols-[136px_1fr] items-stretch">
                         <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-white p-3">
                           {text(experience, "photo_url") ? (
                             <img
@@ -305,7 +305,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
             {standaloneReferences.length > 0 && (
               <CvSection title="References">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-2 gap-3">
                   {standaloneReferences.slice(0, 4).map((reference) => (
                     <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                       <p className="font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>

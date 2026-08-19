@@ -35,7 +35,7 @@ export function CvScaleFrame({
       const horizontalPadding = parseFloat(frameStyle.paddingLeft) + parseFloat(frameStyle.paddingRight);
       const verticalPadding = parseFloat(frameStyle.paddingTop) + parseFloat(frameStyle.paddingBottom);
       const availableWidth = Math.max(1, frame.clientWidth - horizontalPadding);
-      const nextScale = Math.min(1, Math.max(0.24, availableWidth / cvDesignWidth));
+      const nextScale = Math.min(1, availableWidth / cvDesignWidth);
       const contentHeight = content.scrollHeight || content.getBoundingClientRect().height || 1120;
 
       setScale(nextScale);
