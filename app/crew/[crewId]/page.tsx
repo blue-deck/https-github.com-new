@@ -14,6 +14,10 @@ import {
   safeOwnedPublicMediaUrl,
 } from "../../lib/publicCrewSafety";
 import { maskedPersonName } from "../../lib/crewCandidateDataServer";
+import {
+  referencesForExperience,
+  unlinkedExperienceReferences,
+} from "../../lib/crewExperienceReferences";
 import { loadEligiblePublicCrewContext } from "../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../lib/site";
 
@@ -82,7 +86,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
     ...stringArray(profile.personal_characteristics),
   ].slice(0, 18);
   const cleanReferences = publicReferenceEntries(references);
-  const standaloneReferences = publicUnmatchedExperienceReferences(experiences, cleanReferences);
+  const standaloneReferences = unlinkedExperienceReferences(experiences, cleanReferences);
   const professionalSummary =
     text(profile, "bio") ||
     `I am a ${position.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
@@ -251,7 +255,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                   </p>
                 )}
                 {experiences.map((experience, index) => {
-                  const experienceReferences = publicReferencesForExperience(experience, cleanReferences);
+                  const experienceReferences = referencesForExperience(experience, cleanReferences);
                   const yachtName = text(experience, "yacht_name") || "Yacht";
 
                   return (
@@ -356,7 +360,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       .limit(30),
     serviceClient
       .from("crew_references")
-      .select("id,role,vessel,company")
+      .select("id,role,vessel,company,crew_experience_id")
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false })
@@ -443,6 +447,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
     ),
     references: (referenceRes.data || []).map((reference) => ({
       id: text(reference as Row, "id"),
+      crew_experience_id: text(reference as Row, "crew_experience_id"),
       role: redactPublicContactDetails(reference.role, 120),
       vessel: redactPublicContactDetails(reference.vessel, 160),
       company: redactPublicContactDetails(reference.company, 160),
@@ -631,18 +636,6 @@ function formatDateRange(start?: string, end?: string) {
   return `${startText} - ${endText}`;
 }
 
-function normalizeVesselName(value?: string) {
-  return (value || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\b(m y|s y|my|sy|motor yacht|sailing yacht|yacht)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function publicReferenceEntries(references: Row[]) {
   return references.filter((reference) =>
     Boolean(
@@ -651,22 +644,6 @@ function publicReferenceEntries(references: Row[]) {
         text(reference, "company"),
     ),
   );
-}
-
-function publicReferenceMatchesExperience(reference: Row, experience: Row) {
-  const vessel = normalizeVesselName(text(reference, "vessel"));
-  const yacht = normalizeVesselName(text(experience, "yacht_name"));
-  if (!vessel || !yacht) return false;
-  if (vessel === yacht) return true;
-  return vessel.length >= 3 && yacht.length >= 3 && (vessel.includes(yacht) || yacht.includes(vessel));
-}
-
-function publicReferencesForExperience(experience: Row, references: Row[]) {
-  return references.filter((reference) => publicReferenceMatchesExperience(reference, experience));
-}
-
-function publicUnmatchedExperienceReferences(experiences: Row[], references: Row[]) {
-  return references.filter((reference) => !experiences.some((experience) => publicReferenceMatchesExperience(reference, experience)));
 }
 
 function publicReferenceDisplayName(reference: Row) {

@@ -49,6 +49,10 @@ import {
   isPremiumCrewProfile,
 } from "../lib/crewProfileCompletion";
 import {
+  referencesForExperience,
+  unlinkedExperienceReferences,
+} from "../lib/crewExperienceReferences";
+import {
   normalizeCrewPortfolioStoragePath,
   signCrewPortfolioReference,
 } from "../lib/crewPortfolioStorage";
@@ -146,6 +150,7 @@ type PortfolioPhoto = {
 
 type ReferenceEntry = {
   id?: string;
+  crew_experience_id?: string | null;
   name: string;
   role: string;
   vessel: string;
@@ -503,6 +508,7 @@ const emptyOtherWorkExperience: Experience = {
 };
 
 const emptyReference: ReferenceEntry = {
+  crew_experience_id: null,
   name: "",
   role: "",
   vessel: "",
@@ -563,6 +569,10 @@ export default function ProfilePage() {
         return secondCreatedAt - firstCreatedAt;
       }),
     [experiences],
+  );
+  const unlinkedReferences = useMemo(
+    () => unlinkedExperienceReferences(experiences, references),
+    [experiences, references],
   );
   const editableYachtExperiences = useMemo(
     () => sortedExperiences.filter((item) => !isOtherWorkExperience(item)),
@@ -1446,6 +1456,14 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
+                <UnlinkedReferencesPanel
+                  experiences={editableYachtExperiences}
+                  references={unlinkedReferences}
+                  targetKind="yacht"
+                  saving={referenceSaving}
+                  onSaveReference={saveReference}
+                  onDeleteReference={deleteReference}
+                />
                 <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
                   <button
                     type="button"
@@ -1535,6 +1553,14 @@ export default function ProfilePage() {
                     {referenceStatus.message}
                   </p>
                 )}
+                <UnlinkedReferencesPanel
+                  experiences={editableOtherWorkExperiences}
+                  references={unlinkedReferences}
+                  targetKind="workplace"
+                  saving={referenceSaving}
+                  onSaveReference={saveReference}
+                  onDeleteReference={deleteReference}
+                />
                 <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
                   <button
                     type="button"
@@ -1965,18 +1991,6 @@ function formatDateRange(start?: string, end?: string) {
   const endText = end ? formatCvDate(end) : "Present";
   if (startText === "-" && endText === "Present") return "Present";
   return `${startText} - ${endText}`;
-}
-
-function normalizeVesselName(value?: string) {
-  return (value || "")
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\b(m y|s y|my|sy|motor yacht|sailing yacht|yacht)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function cleanReferenceEntries(references: ReferenceEntry[]) {
@@ -2554,22 +2568,6 @@ function composeReferencePhone(country: PhoneCountryOption | null, localNumber: 
   const cleanLocal = localNumber.replace(/[^\d\s()-]/g, "").trim();
   if (!country) return cleanLocal;
   return cleanLocal ? `${country.dial} ${cleanLocal}` : country.dial;
-}
-
-function referenceMatchesExperience(reference: ReferenceEntry, experience: Experience) {
-  return referenceMatchesTargetName(reference, experience.yacht_name);
-}
-
-function referenceMatchesTargetName(reference: ReferenceEntry, targetName: string) {
-  const vessel = normalizeVesselName(reference.vessel);
-  const target = normalizeVesselName(targetName);
-  if (!vessel || !target) return false;
-  if (vessel === target) return true;
-  return vessel.length >= 3 && target.length >= 3 && (vessel.includes(target) || target.includes(vessel));
-}
-
-function referencesForExperience(experience: Experience, references: ReferenceEntry[]) {
-  return references.filter((reference) => referenceMatchesExperience(reference, experience));
 }
 
 function cvReferencesForExperience(experience: Experience, references: ReferenceEntry[]) {
@@ -4137,9 +4135,7 @@ function ExperienceEditor({
   ].filter(Boolean).join(" – ");
   const summaryOngoing = Boolean(draft.start_date && !draft.end_date);
   const hasSummaryMeta = Boolean(draft.position || summaryDate);
-  const linkedReferenceCount = draft.yacht_name.trim()
-    ? references.filter((reference) => referenceMatchesTargetName(reference, draft.yacht_name.trim())).length
-    : 0;
+  const linkedReferenceCount = referencesForExperience(draft, references).length;
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -4354,6 +4350,7 @@ function ExperienceEditor({
           </button>
           <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
             <LinkedReferencePanel
+              targetExperienceId={draft.id}
               targetName={draft.yacht_name}
               targetKind="yacht"
               references={references}
@@ -4408,9 +4405,7 @@ function OtherWorkExperienceEditor({
   ].filter(Boolean).join(" – ");
   const summaryOngoing = Boolean(draft.start_date && !draft.end_date);
   const hasSummaryMeta = Boolean(draft.position || summaryDate);
-  const linkedReferenceCount = draft.yacht_name.trim()
-    ? references.filter((reference) => referenceMatchesTargetName(reference, draft.yacht_name.trim())).length
-    : 0;
+  const linkedReferenceCount = referencesForExperience(draft, references).length;
 
   useEffect(() => {
     setDraft(normalizeOtherWorkExperience(item));
@@ -4548,6 +4543,7 @@ function OtherWorkExperienceEditor({
           </button>
           <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
             <LinkedReferencePanel
+              targetExperienceId={draft.id}
               targetName={draft.yacht_name}
               targetKind="workplace"
               references={references}
@@ -4572,7 +4568,102 @@ function OtherWorkExperienceEditor({
   );
 }
 
+function UnlinkedReferencesPanel({
+  experiences,
+  references,
+  targetKind,
+  saving,
+  onSaveReference,
+  onDeleteReference,
+}: {
+  experiences: Experience[];
+  references: ReferenceEntry[];
+  targetKind: "yacht" | "workplace";
+  saving: boolean;
+  onSaveReference: (item: ReferenceEntry) => Promise<boolean>;
+  onDeleteReference: (id?: string) => void;
+}) {
+  const [targets, setTargets] = useState<Record<string, string>>({});
+
+  if (references.length === 0) return null;
+
+  const targetLabel = targetKind === "yacht" ? "yacht experience" : "other work experience";
+
+  return (
+    <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 sm:p-5">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-800">Needs attention</p>
+        <h3 className="mt-1 text-sm font-semibold text-slate-950">Link older references to a {targetLabel}</h3>
+        <p className="mt-1 text-xs leading-5 text-slate-600">
+          These references predate experience-level linking. Choose the exact experience once; future edits and deletion will stay isolated to it.
+        </p>
+      </div>
+
+      <div className="mt-4 divide-y divide-amber-200/80 rounded-xl border border-amber-200 bg-white">
+        {references.map((reference, index) => {
+          const referenceKey = reference.id || `${reference.name}-${reference.vessel}-${index}`;
+          const selectedTarget = targets[referenceKey] || "";
+
+          return (
+            <div key={referenceKey} className="p-3 sm:p-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-950">{referenceDisplayName(reference)}</p>
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
+                    Previously labelled: <span data-i18n-ignore>{reference.vessel || "Not specified"}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => onDeleteReference(reference.id)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-lg border border-rose-100 bg-white px-2.5 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label={`Delete unlinked reference ${referenceDisplayName(reference)}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                <select
+                  aria-label={`Choose ${targetLabel} for ${referenceDisplayName(reference)}`}
+                  value={selectedTarget}
+                  disabled={saving || experiences.length === 0}
+                  onChange={(event) => setTargets((current) => ({ ...current, [referenceKey]: event.target.value }))}
+                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 disabled:bg-slate-100 disabled:text-slate-500"
+                >
+                  <option value="">Choose {targetLabel}</option>
+                  {experiences.map((experience) => (
+                    <option key={experience.id} value={experience.id}>
+                      {[displayExperienceTitle(experience), experience.position, formatDateRange(experience.start_date, experience.end_date)]
+                        .filter(Boolean)
+                        .join(" — ")}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={saving || !selectedTarget}
+                  onClick={() => onSaveReference({ ...reference, crew_experience_id: selectedTarget })}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  Link reference
+                </button>
+              </div>
+              {experiences.length === 0 && (
+                <p className="mt-2 text-xs font-semibold text-amber-800">Save a {targetLabel} before linking this reference.</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function LinkedReferencePanel({
+  targetExperienceId,
   targetName,
   targetKind,
   references,
@@ -4581,6 +4672,7 @@ function LinkedReferencePanel({
   onDeleteReference,
   embedded = false,
 }: {
+  targetExperienceId?: string;
   targetName: string;
   targetKind: "yacht" | "workplace";
   references: ReferenceEntry[];
@@ -4589,25 +4681,35 @@ function LinkedReferencePanel({
   onDeleteReference: (id?: string) => void;
   embedded?: boolean;
 }) {
+  const cleanTargetExperienceId = targetExperienceId?.trim() || "";
   const cleanTargetName = targetName.trim();
-  const linkedReferences = cleanTargetName ? references.filter((reference) => referenceMatchesTargetName(reference, cleanTargetName)) : [];
+  const linkedReferences = referencesForExperience({ id: cleanTargetExperienceId }, references);
   const requestReference = linkedReferences.find(isReferenceUponRequest);
   const regularReferences = linkedReferences.filter((reference) => !isReferenceUponRequest(reference));
   const targetLabel = targetKind === "yacht" ? "yacht name" : "workplace / company";
   const linkedText = targetKind === "yacht" ? "Linked to this yacht" : "Linked to this work";
 
   async function saveLinkedReference(reference: ReferenceEntry) {
+    if (!cleanTargetExperienceId) {
+      alert("Save this experience before adding a reference.");
+      return false;
+    }
+
     if (!cleanTargetName) {
       alert(`Add the ${targetLabel} before saving a reference.`);
       return false;
     }
 
     if (isReferenceUponRequest(reference)) {
-      return onSaveReference(referenceUponRequestEntry(cleanTargetName, reference));
+      return onSaveReference({
+        ...referenceUponRequestEntry(cleanTargetName, reference),
+        crew_experience_id: cleanTargetExperienceId,
+      });
     }
 
     return onSaveReference({
       ...reference,
+      crew_experience_id: cleanTargetExperienceId,
       name: (reference.name || reference.company).trim(),
       vessel: cleanTargetName,
       company: "",
@@ -4623,60 +4725,70 @@ function LinkedReferencePanel({
         <p className="text-[10px] font-semibold text-[#6b7b84]">{linkedText}</p>
       </div>
 
-      <div className="mb-2 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={referenceSaving || Boolean(requestReference)}
-          onClick={() => saveLinkedReference(referenceUponRequestEntry(targetName))}
-          className={`inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-black uppercase tracking-[0.06em] transition disabled:cursor-default ${
-            requestReference
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-[#b9dce3] bg-white text-[#173f4a] hover:border-[#2d7482] hover:bg-[#eef7f8] disabled:opacity-60"
-          }`}
-        >
-          {requestReference ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-          {referenceUponRequestText}
-        </button>
-        {requestReference && (
+      {!cleanTargetExperienceId && (
+        <p className="rounded-xl border border-cyan-100 bg-cyan-50 px-3 py-2.5 text-sm font-semibold text-cyan-900">
+          Save this experience first, then add its references here.
+        </p>
+      )}
+
+      {cleanTargetExperienceId ? (
+        <div className="mb-2 flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={referenceSaving}
-            onClick={() => onDeleteReference(requestReference.id)}
-            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-rose-100 bg-white px-2.5 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
-            aria-label="Remove references available upon request"
+            disabled={referenceSaving || Boolean(requestReference)}
+            onClick={() => saveLinkedReference(referenceUponRequestEntry(targetName))}
+            className={`inline-flex h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 text-[11px] font-black uppercase tracking-[0.06em] transition disabled:cursor-default ${
+              requestReference
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-[#b9dce3] bg-white text-[#173f4a] hover:border-[#2d7482] hover:bg-[#eef7f8] disabled:opacity-60"
+            }`}
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            {requestReference ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+            {referenceUponRequestText}
           </button>
-        )}
-      </div>
+          {requestReference ? (
+            <button
+              type="button"
+              disabled={referenceSaving}
+              onClick={() => onDeleteReference(requestReference.id)}
+              className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-rose-100 bg-white px-2.5 text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label="Remove references available upon request"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
-      <div
-        className={`divide-y divide-slate-200 transition ${
-          requestReference ? "opacity-55 grayscale-[0.35]" : ""
-        }`}
-        aria-disabled={Boolean(requestReference)}
-      >
-        {regularReferences.map((reference) => (
+      {cleanTargetExperienceId ? (
+        <div
+          className={`divide-y divide-slate-200 transition ${
+            requestReference ? "opacity-55 grayscale-[0.35]" : ""
+          }`}
+          aria-disabled={Boolean(requestReference)}
+        >
+          {regularReferences.map((reference) => (
+            <ExperienceReferenceEditor
+              key={reference.id || `${reference.name}-${reference.email}`}
+              item={reference}
+              isNew={false}
+              saving={referenceSaving}
+              disabled={Boolean(requestReference)}
+              onSave={saveLinkedReference}
+              onDelete={onDeleteReference}
+            />
+          ))}
           <ExperienceReferenceEditor
-            key={reference.id || `${reference.name}-${reference.email}`}
-            item={reference}
-            isNew={false}
+            key={`new-reference-${targetKind}`}
+            item={emptyReference}
+            isNew
             saving={referenceSaving}
             disabled={Boolean(requestReference)}
             onSave={saveLinkedReference}
             onDelete={onDeleteReference}
           />
-        ))}
-        <ExperienceReferenceEditor
-          key={`new-reference-${targetKind}`}
-          item={emptyReference}
-          isNew
-          saving={referenceSaving}
-          disabled={Boolean(requestReference)}
-          onSave={saveLinkedReference}
-          onDelete={onDeleteReference}
-        />
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

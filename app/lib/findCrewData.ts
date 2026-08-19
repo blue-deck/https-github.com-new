@@ -247,7 +247,7 @@ async function loadCrewSearchRecords() {
 
 type CrewSearchRelatedData = {
   experiencesByProfile: Map<string, CandidateExperienceRow[]>;
-  referencesByProfile: Map<string, Array<{ vessel?: unknown }>>;
+  referencesByProfile: Map<string, Array<{ crew_experience_id?: unknown }>>;
   documentCounts: Map<string, number>;
   photosByProfile: Map<string, Record<string, unknown>[]>;
   maritalStatuses: Map<string, string>;
@@ -348,7 +348,7 @@ async function loadCrewSearchRelatedData(
       loadCrewRelatedRows(
         serviceClient,
         "crew_references",
-        "id,crew_profile_id,vessel,created_at",
+        "id,crew_profile_id,crew_experience_id,created_at",
         profileIds,
         true,
       ),
@@ -839,7 +839,7 @@ async function loadDiscoverableCrewProfile(
         .eq("show_on_cv", true),
       serviceClient
         .from("crew_references")
-        .select("id,vessel")
+        .select("id,crew_experience_id")
         .eq("crew_profile_id", profileId)
         .eq("show_on_cv", true),
       loadCandidateExperienceRows(serviceClient, [profileId]),
