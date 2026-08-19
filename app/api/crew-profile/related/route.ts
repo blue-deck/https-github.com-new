@@ -59,7 +59,7 @@ const relatedTables: Record<RelatedKind, { table: string; columns: string[] }> =
   },
   reference: {
     table: "crew_references",
-    columns: ["name", "role", "vessel", "company", "phone", "email", "notes", "show_on_cv"],
+    columns: ["name", "role", "vessel", "company", "phone", "email", "notes", "show_on_cv", "crew_experience_id"],
   },
   portfolio: {
     table: "crew_portfolio_photos",
@@ -359,6 +359,37 @@ export async function POST(request: NextRequest) {
   );
   if (!payload) {
     return jsonError("Invalid crew profile record.", 400);
+  }
+
+  if (kind === "reference") {
+    const crewExperienceId =
+      typeof payload.crew_experience_id === "string"
+        ? payload.crew_experience_id.trim()
+        : "";
+    if (!isUuid(crewExperienceId)) {
+      return jsonError("A valid crew experience id is required.", 400);
+    }
+
+    const { data: crewExperience, error: crewExperienceError } =
+      await serviceClient
+        .from("crew_experiences")
+        .select("id,yacht_name")
+        .eq("id", crewExperienceId)
+        .eq("crew_profile_id", profileId)
+        .maybeSingle();
+
+    if (crewExperienceError) {
+      return jsonError("Crew experience access could not be verified.", 500);
+    }
+    if (!crewExperience) {
+      return jsonError("Crew experience access denied.", 403);
+    }
+
+    payload.crew_experience_id = crewExperienceId;
+    payload.vessel =
+      typeof crewExperience.yacht_name === "string"
+        ? crewExperience.yacht_name
+        : "";
   }
 
   if (kind === "document" && Object.hasOwn(payload, "file_url")) {

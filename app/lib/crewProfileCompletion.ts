@@ -1,4 +1,5 @@
 import { parseCrewDiscoverySettings } from "./crewDiscovery";
+import { countExperienceReferences as countLinkedExperienceReferences } from "./crewExperienceReferences";
 import { crewExperienceYearsFromDateRanges } from "./crewExperience";
 
 export const premiumProfileCompletionThreshold = 85;
@@ -27,6 +28,7 @@ export type CompletionProfile = {
 };
 
 export type CompletionExperience = {
+  id?: unknown;
   yacht_name?: unknown;
   yacht_type?: unknown;
   yacht_program?: unknown;
@@ -39,7 +41,7 @@ export type CompletionExperience = {
 };
 
 export type CompletionReference = {
-  vessel?: unknown;
+  crew_experience_id?: unknown;
 };
 
 const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
@@ -131,22 +133,7 @@ export function countExperienceReferences(
   experiences: CompletionExperience[],
   references: CompletionReference[],
 ) {
-  const experienceTargets = experiences
-    .map(normalizeCompletionExperience)
-    .map((experience) => normalizeReferenceTarget(experience.yacht_name))
-    .filter(Boolean);
-
-  if (experienceTargets.length === 0) return 0;
-
-  return references.filter((reference) => {
-    const referenceTarget = normalizeReferenceTarget(reference.vessel);
-    return (
-      referenceTarget.length > 0 &&
-      experienceTargets.some((experienceTarget) =>
-        referenceTargetMatches(referenceTarget, experienceTarget),
-      )
-    );
-  }).length;
+  return countLinkedExperienceReferences(experiences, references);
 }
 
 export function isPremiumCrewProfile(completionPercent: number) {
@@ -218,28 +205,6 @@ function filledRatio(values: unknown[]) {
 
 function textCompletionRatio(value: unknown, fullLength: number) {
   return Math.min(text(value).length / fullLength, 1);
-}
-
-function normalizeReferenceTarget(value: unknown) {
-  return text(value)
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
-    .replace(/\b(m y|s y|my|sy|motor yacht|sailing yacht|yacht)\b/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function referenceTargetMatches(referenceTarget: string, experienceTarget: string) {
-  if (referenceTarget === experienceTarget) return true;
-  return (
-    referenceTarget.length >= 3 &&
-    experienceTarget.length >= 3 &&
-    (referenceTarget.includes(experienceTarget) ||
-      experienceTarget.includes(referenceTarget))
-  );
 }
 
 function languageEntries(value: unknown) {
