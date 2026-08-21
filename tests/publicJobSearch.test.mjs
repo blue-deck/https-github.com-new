@@ -15,10 +15,12 @@ import {
 } from "../app/lib/publicJobSearch.ts";
 import {
   formatJobSalaryCurrencyOption,
+  formatJobSalaryPeriod,
   formatJobTeamCoupleAnswer,
   isJobSalaryCurrency,
   isJobTeamCouple,
   jobSalaryCurrencyOptions,
+  jobSalaryPeriods,
 } from "../app/lib/jobPosts.ts";
 
 const taxonomy = {
@@ -31,7 +33,7 @@ const taxonomy = {
   requiredLanguages: ["English", "Turkish"],
   visas: ["Schengen Visa", "US B1/B2 Visa"],
   salaryCurrencies: jobSalaryCurrencyOptions,
-  salaryPeriods: ["month", "year"],
+  salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: ["TR", "GB"],
 };
 
@@ -139,6 +141,75 @@ test("salary currency filters mirror the create-job picker and match every suppo
       ),
       false,
       `${currency} must not match ${otherCurrency}`,
+    );
+  });
+});
+
+test("salary period filters mirror the create-job picker and match every supported period", () => {
+  assert.deepEqual(
+    jobSalaryPeriods.map((period) => formatJobSalaryPeriod(period, "en")),
+    ["Day", "Week", "Month", "Year"],
+  );
+  assert.deepEqual(
+    jobSalaryPeriods.map((period) => formatJobSalaryPeriod(period, "tr")),
+    ["Gün", "Hafta", "Ay", "Yıl"],
+  );
+  assert.equal(
+    parsePublicJobSearchParams(
+      new URLSearchParams("salaryPeriod=fortnight"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+
+  jobSalaryPeriods.forEach((period, index) => {
+    const params = new URLSearchParams({
+      salaryCurrency: "EUR",
+      salaryPeriod: period,
+      salaryMin: "8000",
+      salaryMax: "9000",
+    });
+    const parsed = parsePublicJobSearchParams(params, taxonomy);
+    assert.equal(parsed.ok, true, period);
+    if (!parsed.ok) return;
+
+    assert.equal(parsed.filters.salaryPeriod, period);
+    assert.equal(
+      publicJobSearchParams(parsed.filters).get("salaryPeriod"),
+      period,
+    );
+    assert.equal(
+      matchesPublicJobSearch(
+        sampleJob({
+          salary: {
+            min: 7_000,
+            max: 8_000,
+            currency: "EUR",
+            period,
+          },
+        }),
+        parsed.filters,
+      ),
+      true,
+      period,
+    );
+
+    const otherPeriod =
+      jobSalaryPeriods[(index + 1) % jobSalaryPeriods.length];
+    assert.equal(
+      matchesPublicJobSearch(
+        sampleJob({
+          salary: {
+            min: 7_000,
+            max: 8_000,
+            currency: "EUR",
+            period: otherPeriod,
+          },
+        }),
+        parsed.filters,
+      ),
+      false,
+      `${period} must not match ${otherPeriod}`,
     );
   });
 });

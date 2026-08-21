@@ -252,6 +252,24 @@ test("Find Jobs and Create Job Post share salary currency options and labels", a
   assert.match(client, /formatJobSalaryCurrencyOption\(value\)/);
 });
 
+test("Find Jobs and Create Job Post share salary period options and labels", async () => {
+  const [jobPosts, manager, config, client] = await Promise.all([
+    source("app/lib/jobPosts.ts"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/lib/publicJobSearchConfig.ts"),
+    source("app/jobs/JobsClient.tsx"),
+  ]);
+
+  assert.match(jobPosts, /export const jobSalaryPeriods =/);
+  assert.match(jobPosts, /export function formatJobSalaryPeriod/);
+  assert.match(manager, /jobSalaryPeriods\.map\(\(period\) =>/);
+  assert.match(manager, /formatJobSalaryPeriod\(period, language\)/);
+  assert.match(config, /salaryPeriods: jobSalaryPeriods/);
+  assert.match(client, /formatJobSalaryPeriod\(value, language\)/);
+  assert.doesNotMatch(client, /function formatSalaryPeriod/);
+  assert.doesNotMatch(client, /Per (?:day|week|month|year)/);
+});
+
 test("yacht brand remains job data but is not exposed as a public job filter", async () => {
   const [client, search] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),

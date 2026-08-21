@@ -21,6 +21,7 @@ import {
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
   formatJobSalaryCurrencyOption,
+  formatJobSalaryPeriod,
   formatJobVisa,
   formatJobYachtType,
   isJobTeamCouple,
@@ -1538,7 +1539,7 @@ function buildOptionSets(language: Language, c: SearchCopy) {
       option(value, formatJobSalaryCurrencyOption(value)),
     ),
     salaryPeriods: publicJobSearchTaxonomy.salaryPeriods.map((value) =>
-      option(value, formatSalaryPeriod(value, language)),
+      option(value, formatJobSalaryPeriod(value, language)),
     ),
     sorts: (Object.keys(c.sorts) as PublicJobSearchSort[]).map((value) =>
       option(value, c.sorts[value]),
@@ -1693,7 +1694,7 @@ function buildActiveFilterChips(
   if (filters.salaryPeriod) {
     add(
       "salary-period",
-      formatSalaryPeriod(filters.salaryPeriod, language),
+      formatJobSalaryPeriod(filters.salaryPeriod, language),
       (current) => clearSalaryDependency(current, { salaryPeriod: null }),
     );
   }
@@ -1865,16 +1866,6 @@ function formatDepartment(value: string, language: Language) {
       Medical: "Sağlık",
     }[value] || value
   );
-}
-
-function formatSalaryPeriod(value: string, language: Language) {
-  const labels: Record<string, { en: string; tr: string }> = {
-    day: { en: "Per day", tr: "Günlük" },
-    week: { en: "Per week", tr: "Haftalık" },
-    month: { en: "Per month", tr: "Aylık" },
-    year: { en: "Per year", tr: "Yıllık" },
-  };
-  return labels[value]?.[language] || value;
 }
 
 function readNullableNumber(value: string) {

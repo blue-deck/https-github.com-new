@@ -170,6 +170,16 @@ const jobSalaryCurrencyOptionLabels: Record<JobSalaryCurrencyOption, string> = {
   TRY: "TL (TRY)",
 };
 
+const jobSalaryPeriodLabels: Record<
+  JobSalaryPeriod,
+  { en: string; tr: string }
+> = {
+  day: { en: "Day", tr: "Gün" },
+  week: { en: "Week", tr: "Hafta" },
+  month: { en: "Month", tr: "Ay" },
+  year: { en: "Year", tr: "Yıl" },
+};
+
 export type JobSalary = {
   min: number | null;
   max: number | null;
@@ -364,6 +374,13 @@ export function isJobSalaryCurrencyOption(
   value: unknown,
 ): value is JobSalaryCurrencyOption {
   return jobSalaryCurrencyOptions.includes(value as JobSalaryCurrencyOption);
+}
+
+export function formatJobSalaryPeriod(
+  value: JobSalaryPeriod,
+  language: "en" | "tr",
+) {
+  return jobSalaryPeriodLabels[value][language];
 }
 
 export function formatJobSalaryCurrencyOption(

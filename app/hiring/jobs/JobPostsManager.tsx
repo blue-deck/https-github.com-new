@@ -34,6 +34,7 @@ import {
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
   formatJobSalaryCurrencyOption,
+  formatJobSalaryPeriod,
   formatJobSmokerPolicy,
   formatJobVisa,
   formatJobVisibleTattooPolicy,
@@ -224,10 +225,6 @@ const copy = {
     salaryAmount: "Salary",
     currency: "Currency",
     period: "Period",
-    day: "Day",
-    week: "Week",
-    month: "Month",
-    year: "Year",
     saveDraft: "Save draft",
     publish: "Publish role",
     saveLive: "Save live changes",
@@ -349,10 +346,6 @@ const copy = {
     salaryAmount: "Maaş",
     currency: "Para birimi",
     period: "Dönem",
-    day: "Gün",
-    week: "Hafta",
-    month: "Ay",
-    year: "Yıl",
     saveDraft: "Taslak kaydet",
     publish: "İlanı yayınla",
     saveLive: "Yayındaki değişiklikleri kaydet",
@@ -1248,7 +1241,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                           >
                             {jobSalaryPeriods.map((period) => (
                               <option key={period} value={period}>
-                                {c[period]}
+                                {formatJobSalaryPeriod(period, language)}
                               </option>
                             ))}
                           </select>
