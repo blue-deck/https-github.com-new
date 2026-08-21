@@ -1213,7 +1213,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                             }
                             disabled={saving}
                             required
-                            className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+                            className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none [appearance:textfield] placeholder:text-slate-400 disabled:cursor-not-allowed [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                           />
                           <select
                             aria-label={c.currency}

@@ -51,3 +51,21 @@ test("Any is a persisted candidate type and the database default", async () => {
     /alter column candidate_type set default 'any'/,
   );
 });
+
+test("salary input hides native number spinner controls", async () => {
+  const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
+  const salaryInput = manager.slice(
+    manager.indexOf('aria-label={c.salaryAmount}') - 300,
+    manager.indexOf('aria-label={c.currency}'),
+  );
+
+  assert.match(salaryInput, /\[appearance:textfield\]/);
+  assert.match(
+    salaryInput,
+    /\[&::-webkit-inner-spin-button\]:appearance-none/,
+  );
+  assert.match(
+    salaryInput,
+    /\[&::-webkit-outer-spin-button\]:appearance-none/,
+  );
+});
