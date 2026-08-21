@@ -43,6 +43,8 @@ export type LocationSearchFieldProps = {
   className?: string;
   labelClassName?: string;
   inputClassName?: string;
+  popupClassName?: string;
+  popupListClassName?: string;
 };
 
 const defaultLabelClassName =
@@ -65,6 +67,8 @@ export function LocationSearchField({
   className = "",
   labelClassName = defaultLabelClassName,
   inputClassName = defaultInputClassName,
+  popupClassName = "",
+  popupListClassName = "",
 }: LocationSearchFieldProps) {
   const generatedId = useId();
   const inputId = `${generatedId}-location`;
@@ -294,7 +298,7 @@ export function LocationSearchField({
 
       {popupVisible ? (
         <div
-          className="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
+          className={`mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10 ${popupClassName}`.trim()}
         >
           {searching ? (
             <p className="px-3 py-2 text-sm text-slate-500">
@@ -310,6 +314,7 @@ export function LocationSearchField({
             <div
               id={listboxId}
               role="listbox"
+              className={popupListClassName}
               aria-label={
                 ariaLabel || (typeof label === "string" ? label : placeholder)
               }

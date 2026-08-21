@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
+import { LocationSearchField } from "../components/LocationSearchField";
 import { useLanguage } from "../components/LanguageProvider";
 import { formatCountryWithFlag, nationalityOptions } from "../lib/countries";
 import {
@@ -565,15 +566,23 @@ export function JobsClient({
                   updateDraftFilters((current) => ({ ...current, positions }))
                 }
               />
-              <TextField
+              <LocationSearchField
                 label={c.location}
+                ariaLabel={c.location}
                 value={draftFilters.location}
-                maxLength={120}
                 placeholder={c.locationPlaceholder}
-                onChange={(value) =>
+                searchingText={c.locationSearching}
+                noResultsText={c.locationNoResults}
+                resultsText={c.locationResults}
+                maxLength={120}
+                className="relative min-w-0"
+                labelClassName="mb-1.5 block text-xs font-bold text-slate-600"
+                popupClassName="absolute left-0 top-full z-50 w-full min-w-64"
+                popupListClassName="max-h-72 overflow-y-auto overscroll-contain"
+                onChange={(location) =>
                   updateDraftFilters((current) => ({
                     ...current,
-                    location: value,
+                    location,
                   }))
                 }
               />
@@ -1045,40 +1054,6 @@ function JobFilterClearAction({
     >
       {label}
     </button>
-  );
-}
-
-function TextField({
-  label,
-  value,
-  type = "text",
-  placeholder,
-  maxLength,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  type?: "text" | "search" | "date";
-  placeholder?: string;
-  maxLength?: number;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 block text-xs font-bold text-slate-600">
-        {label}
-      </span>
-      <span className="relative block">
-        <input
-          type={type}
-          value={value}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          onChange={(event) => onChange(event.target.value)}
-          className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-        />
-      </span>
-    </label>
   );
 }
 
@@ -1956,7 +1931,10 @@ const copy = {
     allPositions: "All positions",
     searchPositions: "Search positions",
     location: "Location",
-    locationPlaceholder: "City, marina or cruising area",
+    locationPlaceholder: "Search location",
+    locationSearching: "Searching locations…",
+    locationNoResults: "No matching location found. You can keep your own text.",
+    locationResults: "location options available.",
     employmentType: "Employment type",
     allEmploymentTypes: "All employment types",
     advanced: "Advanced filters",
@@ -2049,7 +2027,11 @@ const copy = {
     allPositions: "Tüm pozisyonlar",
     searchPositions: "Pozisyon ara",
     location: "Konum",
-    locationPlaceholder: "Şehir, marina veya seyir bölgesi",
+    locationPlaceholder: "Konum ara",
+    locationSearching: "Konumlar aranıyor…",
+    locationNoResults:
+      "Eşleşen konum bulunamadı. Yazdığınız konumu kullanabilirsiniz.",
+    locationResults: "konum seçeneği bulundu.",
     employmentType: "Çalışma türü",
     allEmploymentTypes: "Tüm çalışma biçimleri",
     advanced: "Gelişmiş filtreler",

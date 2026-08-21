@@ -146,6 +146,54 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.doesNotMatch(jobsClient, /pointer-events-none opacity-45/);
 });
 
+test("Find Jobs reuses the Create Job Post location search without auto-applying it", async () => {
+  const [jobsClient, manager, locationSearch] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/components/LocationSearchField.tsx"),
+  ]);
+
+  assert.match(
+    jobsClient,
+    /import \{ LocationSearchField \} from "\.\.\/components\/LocationSearchField"/,
+  );
+  assert.match(manager, /<LocationSearchField/);
+  assert.match(
+    jobsClient,
+    /<LocationSearchField[\s\S]*?value=\{draftFilters\.location\}[\s\S]*?searchingText=\{c\.locationSearching\}[\s\S]*?noResultsText=\{c\.locationNoResults\}[\s\S]*?resultsText=\{c\.locationResults\}[\s\S]*?maxLength=\{120\}/,
+  );
+  const locationField = jobsClient.slice(
+    jobsClient.indexOf("<LocationSearchField"),
+    jobsClient.indexOf(
+      "<MultiSelectField",
+      jobsClient.indexOf("<LocationSearchField"),
+    ),
+  );
+  assert.match(locationField, /updateDraftFilters/);
+  assert.doesNotMatch(locationField, /applyFilterUpdate|applyAllFilters/);
+  assert.match(locationField, /popupClassName="absolute left-0 top-full z-50/);
+  assert.match(
+    locationField,
+    /popupListClassName="max-h-72 overflow-y-auto overscroll-contain"/,
+  );
+  assert.doesNotMatch(jobsClient, /function TextField\(/);
+
+  assert.match(
+    locationSearch,
+    /https:\/\/geocoding-api\.open-meteo\.com\/v1\/search/,
+  );
+  assert.match(locationSearch, /}, 450\)/);
+  assert.match(locationSearch, /event\.key === "ArrowDown"/);
+  assert.match(locationSearch, /event\.key === "Enter"/);
+  assert.match(locationSearch, /role="combobox"/);
+  assert.match(locationSearch, /role="listbox"/);
+
+  assert.match(jobsClient, /locationPlaceholder: "Search location"/);
+  assert.match(jobsClient, /locationSearching: "Searching locations…"/);
+  assert.match(jobsClient, /locationPlaceholder: "Konum ara"/);
+  assert.match(jobsClient, /locationSearching: "Konumlar aranıyor…"/);
+});
+
 test("published requirements expose only language and visa filters", async () => {
   const [client, search, config] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
