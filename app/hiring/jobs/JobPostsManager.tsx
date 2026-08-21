@@ -1196,7 +1196,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                         </p>
                       </div>
                     </div>
-                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                    <div className="mt-5">
                       <fieldset>
                         <legend className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
                           <RequiredFieldLabel label={c.salaryAmount} />
@@ -1214,7 +1214,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                             }
                             disabled={saving}
                             required
-                            className="min-w-0 flex-1 bg-transparent px-4 text-sm font-semibold text-slate-950 outline-none [appearance:textfield] placeholder:text-slate-400 disabled:cursor-not-allowed [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold text-slate-950 outline-none [appearance:textfield] placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-4 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                           />
                           <select
                             aria-label={c.currency}
@@ -1226,7 +1226,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                               )
                             }
                             disabled={saving}
-                            className="bd-focus min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800 disabled:cursor-not-allowed"
+                            className="min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-1.5 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-3 sm:text-sm"
                           >
                             {jobSalaryCurrencyOptions.map((currency) => (
                               <option key={currency} value={currency}>
@@ -1234,27 +1234,26 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                               </option>
                             ))}
                           </select>
+                          <select
+                            aria-label={c.period}
+                            value={form.salaryPeriod}
+                            onChange={(event) =>
+                              updateForm(
+                                "salaryPeriod",
+                                event.target.value as FormState["salaryPeriod"],
+                              )
+                            }
+                            disabled={saving}
+                            className="min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-1.5 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-3 sm:text-sm"
+                          >
+                            {jobSalaryPeriods.map((period) => (
+                              <option key={period} value={period}>
+                                {c[period]}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </fieldset>
-                      <Field label={c.period}>
-                        <select
-                          value={form.salaryPeriod}
-                          onChange={(event) =>
-                            updateForm(
-                              "salaryPeriod",
-                              event.target.value as FormState["salaryPeriod"],
-                            )
-                          }
-                          disabled={saving}
-                          className={inputClass}
-                        >
-                          {jobSalaryPeriods.map((period) => (
-                            <option key={period} value={period}>
-                              {c[period]}
-                            </option>
-                          ))}
-                        </select>
-                      </Field>
                     </div>
                   </div>
                 </div>

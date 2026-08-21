@@ -69,3 +69,37 @@ test("salary input hides native number spinner controls", async () => {
     /\[&::-webkit-outer-spin-button\]:appearance-none/,
   );
 });
+
+test("salary amount, currency, and period share one control", async () => {
+  const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
+  const salarySectionStart = manager.indexOf("{c.salary}");
+  const salaryFieldsetStart = manager.indexOf("<fieldset>", salarySectionStart);
+  const salaryFieldsetEnd = manager.indexOf(
+    "</fieldset>",
+    salaryFieldsetStart,
+  );
+  const salaryControl = manager.slice(
+    salaryFieldsetStart,
+    salaryFieldsetEnd,
+  );
+
+  const amountIndex = salaryControl.indexOf("aria-label={c.salaryAmount}");
+  const currencyIndex = salaryControl.indexOf("aria-label={c.currency}");
+  const periodIndex = salaryControl.indexOf("aria-label={c.period}");
+
+  assert.ok(amountIndex >= 0);
+  assert.ok(currencyIndex > amountIndex);
+  assert.ok(periodIndex > currencyIndex);
+  assert.match(salaryControl, /updateForm\(\s*"salaryCurrency"/);
+  assert.match(salaryControl, /updateForm\(\s*"salaryPeriod"/);
+  assert.equal(salaryControl.match(/px-1\.5 text-xs/g)?.length, 2);
+  assert.equal(salaryControl.match(/sm:px-3 sm:text-sm/g)?.length, 2);
+  assert.equal(
+    salaryControl.match(/focus-visible:shadow-\[inset_0_0_0_2px_#06b6d4\]/g)
+      ?.length,
+    3,
+  );
+  assert.doesNotMatch(manager, /<Field label=\{c\.period\}>/);
+  assert.match(manager, /salaryCurrency: form\.salaryCurrency/);
+  assert.match(manager, /salaryPeriod: form\.salaryPeriod/);
+});
