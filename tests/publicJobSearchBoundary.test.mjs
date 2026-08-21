@@ -81,7 +81,7 @@ test("job filters use explicit keyword and form searches with contextual clear a
   );
   assert.match(
     jobsClient,
-    /id="advanced-job-filters"[\s\S]*?className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
+    /id="advanced-job-filters"[\s\S]*?className="mt-4 flex items-center justify-end gap-4"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
   );
   const clearFilters = jobsClient.slice(
     jobsClient.indexOf("function clearFilters()"),
@@ -149,6 +149,77 @@ test("published requirements expose only language and visa filters", async () =>
   assert.doesNotMatch(search, /(smokerPolicies|visibleTattooPolicies):/);
   assert.doesNotMatch(search, /setList\(params, "(smoker|tattoo)"/);
   assert.doesNotMatch(config, /(smokerPolicies|visibleTattooPolicies):/);
+});
+
+test("advanced job filters use one flat responsive grid without dropping controls", async () => {
+  const client = await source("app/jobs/JobsClient.tsx");
+  const start = client.indexOf("{advancedOpen ? (");
+  const end = client.indexOf("{draftValidationError ? (", start);
+
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+
+  const advanced = client.slice(start, end);
+  assert.doesNotMatch(advanced, /<FilterGroup\b/);
+  assert.doesNotMatch(
+    advanced,
+    /c\.(roleAndContract|yachtDetails|requirements|salaryAndDisplay)\b/,
+  );
+  assert.doesNotMatch(client, /function FilterGroup\(/);
+  assert.doesNotMatch(
+    client,
+    /\b(roleAndContract|yachtDetails|requirements|salaryAndDisplay):/,
+  );
+  assert.match(
+    advanced,
+    /grid-cols-1[^"\n]*sm:grid-cols-2[^"\n]*lg:grid-cols-3/,
+  );
+
+  const labels = [
+    ...advanced.matchAll(
+      /<(?:MultiSelectField|FilterSelect|RangeField|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
+    ),
+  ]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(
+    labels,
+    [
+      "department",
+      "teamCouple",
+      "minimumExperience",
+      "yachtType",
+      "yachtFlag",
+      "yachtLength",
+      "crewCount",
+      "languages",
+      "visas",
+      "currency",
+      "payPeriod",
+      "minimumSalary",
+      "maximumSalary",
+    ].sort(),
+  );
+
+  const optionSets = [
+    ...advanced.matchAll(/\boptions=\{optionSets\.([A-Za-z]+)\}/g),
+  ]
+    .map((match) => match[1])
+    .sort();
+  assert.deepEqual(
+    optionSets,
+    [
+      "departments",
+      "teamCouple",
+      "minimumExperiences",
+      "yachtTypes",
+      "flags",
+      "languages",
+      "visas",
+      "salaryCurrencies",
+      "salaryPeriods",
+    ].sort(),
+  );
 });
 
 test("yacht brand remains job data but is not exposed as a public job filter", async () => {

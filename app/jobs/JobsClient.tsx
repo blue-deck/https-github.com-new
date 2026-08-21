@@ -611,254 +611,235 @@ export function JobsClient({
             {advancedOpen ? (
               <div
                 id="advanced-job-filters"
+                role="region"
+                aria-label={c.advanced}
                 className="mt-5 border-t border-slate-200 pt-5"
               >
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <FilterGroup title={c.roleAndContract}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <MultiSelectField
-                        label={c.department}
-                        placeholder={c.allDepartments}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.departments}
-                        values={draftFilters.departments}
-                        onChange={(departments) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            departments,
-                          }))
-                        }
-                      />
-                      <FilterSelect
-                        allowEmpty
-                        label={c.teamCouple}
-                        placeholder={c.anyTeamCouple}
-                        options={optionSets.teamCouple}
-                        value={teamCoupleFilterValue(
-                          draftFilters.candidateTypes,
-                        )}
-                        onChange={(value) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            candidateTypes: candidateTypesForTeamCouple(
-                              value as TeamCoupleFilterValue,
-                            ),
-                          }))
-                        }
-                      />
-                    </div>
-                  </FilterGroup>
-
-                  <FilterGroup title={c.yachtDetails}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <MultiSelectField
-                        label={c.yachtType}
-                        placeholder={c.allYachtTypes}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.yachtTypes}
-                        values={draftFilters.yachtTypes}
-                        onChange={(yachtTypes) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            yachtTypes:
-                              yachtTypes as PublicJobSearchFilters["yachtTypes"],
-                          }))
-                        }
-                      />
-                      <MultiSelectField
-                        label={c.yachtFlag}
-                        placeholder={c.anyFlag}
-                        searchPlaceholder={c.searchFlags}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.flags}
-                        values={draftFilters.yachtFlagCountryCodes}
-                        maxSelections={12}
-                        onChange={(yachtFlagCountryCodes) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            yachtFlagCountryCodes,
-                          }))
-                        }
-                      />
-                      <MultiSelectField
-                        label={c.minimumExperience}
-                        placeholder={c.anyExperience}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.minimumExperiences}
-                        values={draftFilters.minimumYachtExperiences}
-                        onChange={(minimumYachtExperiences) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            minimumYachtExperiences:
-                              minimumYachtExperiences as PublicJobSearchFilters["minimumYachtExperiences"],
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                      <RangeField
-                        label={c.yachtLength}
-                        unit={c.metres}
-                        minimum={draftFilters.yachtLengthMinMetres}
-                        maximum={draftFilters.yachtLengthMaxMetres}
-                        minValue={0.01}
-                        maxValue={999}
-                        step={0.01}
-                        minLabel={c.minimum}
-                        maxLabel={c.maximum}
-                        onMinimumChange={(yachtLengthMinMetres) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            yachtLengthMinMetres,
-                          }))
-                        }
-                        onMaximumChange={(yachtLengthMaxMetres) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            yachtLengthMaxMetres,
-                          }))
-                        }
-                      />
-                      <RangeField
-                        label={c.crewCount}
-                        minimum={draftFilters.crewMemberCountMin}
-                        maximum={draftFilters.crewMemberCountMax}
-                        minValue={1}
-                        maxValue={200}
-                        step={1}
-                        minLabel={c.minimum}
-                        maxLabel={c.maximum}
-                        onMinimumChange={(crewMemberCountMin) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            crewMemberCountMin,
-                          }))
-                        }
-                        onMaximumChange={(crewMemberCountMax) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            crewMemberCountMax,
-                          }))
-                        }
-                      />
-                    </div>
-                  </FilterGroup>
-
-                  <FilterGroup className="lg:col-span-2" title={c.requirements}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <MultiSelectField
-                        label={c.languages}
-                        placeholder={c.anyLanguage}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.languages}
-                        values={draftFilters.requiredLanguages}
-                        onChange={(requiredLanguages) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            requiredLanguages:
-                              requiredLanguages as PublicJobSearchFilters["requiredLanguages"],
-                          }))
-                        }
-                      />
-                      <MultiSelectField
-                        label={c.visas}
-                        placeholder={c.anyVisa}
-                        selectedLabel={c.selected}
-                        emptyLabel={c.noOptions}
-                        options={optionSets.visas}
-                        values={draftFilters.requiredVisas}
-                        onChange={(requiredVisas) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            requiredVisas:
-                              requiredVisas as PublicJobSearchFilters["requiredVisas"],
-                          }))
-                        }
-                      />
-                    </div>
-                  </FilterGroup>
-
-                  <FilterGroup title={c.salaryAndDisplay}>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <FilterSelect
-                        label={c.currency}
-                        placeholder={c.anyCurrency}
-                        value={draftFilters.salaryCurrency || ""}
-                        options={optionSets.salaryCurrencies}
-                        onChange={(value) =>
-                          updateDraftFilters((current) =>
-                            clearSalaryDependency(current, {
-                              salaryCurrency: (value ||
-                                null) as PublicJobSearchFilters["salaryCurrency"],
-                            }),
-                          )
-                        }
-                      />
-                      <FilterSelect
-                        label={c.payPeriod}
-                        placeholder={c.anyPeriod}
-                        value={draftFilters.salaryPeriod || ""}
-                        options={optionSets.salaryPeriods}
-                        onChange={(value) =>
-                          updateDraftFilters((current) =>
-                            clearSalaryDependency(current, {
-                              salaryPeriod: (value ||
-                                null) as PublicJobSearchFilters["salaryPeriod"],
-                            }),
-                          )
-                        }
-                      />
-                      <NumberField
-                        label={c.minimumSalary}
-                        value={draftFilters.salaryMin}
-                        min={0}
-                        max={99_999_999.99}
-                        step={0.01}
-                        onChange={(salaryMin) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            salaryMin,
-                            salaryCurrency:
-                              salaryMin !== null && !current.salaryCurrency
-                                ? "EUR"
-                                : current.salaryCurrency,
-                            salaryPeriod:
-                              salaryMin !== null && !current.salaryPeriod
-                                ? "month"
-                                : current.salaryPeriod,
-                          }))
-                        }
-                      />
-                      <NumberField
-                        label={c.maximumSalary}
-                        value={draftFilters.salaryMax}
-                        min={0}
-                        max={99_999_999.99}
-                        step={0.01}
-                        onChange={(salaryMax) =>
-                          updateDraftFilters((current) => ({
-                            ...current,
-                            salaryMax,
-                            salaryCurrency:
-                              salaryMax !== null && !current.salaryCurrency
-                                ? "EUR"
-                                : current.salaryCurrency,
-                            salaryPeriod:
-                              salaryMax !== null && !current.salaryPeriod
-                                ? "month"
-                                : current.salaryPeriod,
-                          }))
-                        }
-                      />
-                    </div>
-                  </FilterGroup>
+                <div className="grid grid-cols-1 gap-x-3 gap-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
+                  <MultiSelectField
+                    label={c.department}
+                    placeholder={c.allDepartments}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.departments}
+                    values={draftFilters.departments}
+                    onChange={(departments) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        departments,
+                      }))
+                    }
+                  />
+                  <FilterSelect
+                    allowEmpty
+                    label={c.teamCouple}
+                    placeholder={c.anyTeamCouple}
+                    options={optionSets.teamCouple}
+                    value={teamCoupleFilterValue(draftFilters.candidateTypes)}
+                    onChange={(value) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        candidateTypes: candidateTypesForTeamCouple(
+                          value as TeamCoupleFilterValue,
+                        ),
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.minimumExperience}
+                    placeholder={c.anyExperience}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.minimumExperiences}
+                    values={draftFilters.minimumYachtExperiences}
+                    onChange={(minimumYachtExperiences) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        minimumYachtExperiences:
+                          minimumYachtExperiences as PublicJobSearchFilters["minimumYachtExperiences"],
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.yachtType}
+                    placeholder={c.allYachtTypes}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.yachtTypes}
+                    values={draftFilters.yachtTypes}
+                    onChange={(yachtTypes) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtTypes:
+                          yachtTypes as PublicJobSearchFilters["yachtTypes"],
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.yachtFlag}
+                    placeholder={c.anyFlag}
+                    searchPlaceholder={c.searchFlags}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.flags}
+                    values={draftFilters.yachtFlagCountryCodes}
+                    maxSelections={12}
+                    onChange={(yachtFlagCountryCodes) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtFlagCountryCodes,
+                      }))
+                    }
+                  />
+                  <RangeField
+                    label={c.yachtLength}
+                    unit={c.metres}
+                    minimum={draftFilters.yachtLengthMinMetres}
+                    maximum={draftFilters.yachtLengthMaxMetres}
+                    minValue={0.01}
+                    maxValue={999}
+                    step={0.01}
+                    minLabel={c.minimum}
+                    maxLabel={c.maximum}
+                    onMinimumChange={(yachtLengthMinMetres) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtLengthMinMetres,
+                      }))
+                    }
+                    onMaximumChange={(yachtLengthMaxMetres) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtLengthMaxMetres,
+                      }))
+                    }
+                  />
+                  <RangeField
+                    label={c.crewCount}
+                    minimum={draftFilters.crewMemberCountMin}
+                    maximum={draftFilters.crewMemberCountMax}
+                    minValue={1}
+                    maxValue={200}
+                    step={1}
+                    minLabel={c.minimum}
+                    maxLabel={c.maximum}
+                    onMinimumChange={(crewMemberCountMin) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        crewMemberCountMin,
+                      }))
+                    }
+                    onMaximumChange={(crewMemberCountMax) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        crewMemberCountMax,
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.languages}
+                    placeholder={c.anyLanguage}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.languages}
+                    values={draftFilters.requiredLanguages}
+                    onChange={(requiredLanguages) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        requiredLanguages:
+                          requiredLanguages as PublicJobSearchFilters["requiredLanguages"],
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.visas}
+                    placeholder={c.anyVisa}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.visas}
+                    values={draftFilters.requiredVisas}
+                    onChange={(requiredVisas) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        requiredVisas:
+                          requiredVisas as PublicJobSearchFilters["requiredVisas"],
+                      }))
+                    }
+                  />
+                  <FilterSelect
+                    label={c.currency}
+                    placeholder={c.anyCurrency}
+                    value={draftFilters.salaryCurrency || ""}
+                    options={optionSets.salaryCurrencies}
+                    onChange={(value) =>
+                      updateDraftFilters((current) =>
+                        clearSalaryDependency(current, {
+                          salaryCurrency: (value ||
+                            null) as PublicJobSearchFilters["salaryCurrency"],
+                        }),
+                      )
+                    }
+                  />
+                  <FilterSelect
+                    label={c.payPeriod}
+                    placeholder={c.anyPeriod}
+                    value={draftFilters.salaryPeriod || ""}
+                    options={optionSets.salaryPeriods}
+                    onChange={(value) =>
+                      updateDraftFilters((current) =>
+                        clearSalaryDependency(current, {
+                          salaryPeriod: (value ||
+                            null) as PublicJobSearchFilters["salaryPeriod"],
+                        }),
+                      )
+                    }
+                  />
+                  <div className="grid min-w-0 grid-cols-2 gap-2">
+                    <NumberField
+                      label={c.minimumSalary}
+                      value={draftFilters.salaryMin}
+                      min={0}
+                      max={99_999_999.99}
+                      step={0.01}
+                      onChange={(salaryMin) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          salaryMin,
+                          salaryCurrency:
+                            salaryMin !== null && !current.salaryCurrency
+                              ? "EUR"
+                              : current.salaryCurrency,
+                          salaryPeriod:
+                            salaryMin !== null && !current.salaryPeriod
+                              ? "month"
+                              : current.salaryPeriod,
+                        }))
+                      }
+                    />
+                    <NumberField
+                      label={c.maximumSalary}
+                      value={draftFilters.salaryMax}
+                      min={0}
+                      max={99_999_999.99}
+                      step={0.01}
+                      onChange={(salaryMax) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          salaryMax,
+                          salaryCurrency:
+                            salaryMax !== null && !current.salaryCurrency
+                              ? "EUR"
+                              : current.salaryCurrency,
+                          salaryPeriod:
+                            salaryMax !== null && !current.salaryPeriod
+                              ? "month"
+                              : current.salaryPeriod,
+                        }))
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
+                <div className="mt-4 flex items-center justify-end gap-4">
                   <JobFilterClearAction
                     label={c.clear}
                     onClick={clearFilters}
@@ -1062,27 +1043,6 @@ function JobFilterClearAction({
     >
       {label}
     </button>
-  );
-}
-
-function FilterGroup({
-  title,
-  className = "",
-  children,
-}: {
-  title: string;
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <fieldset
-      className={`min-w-0 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 ${className}`}
-    >
-      <legend className="px-1 text-xs font-black uppercase tracking-[0.1em] text-cyan-900">
-        {title}
-      </legend>
-      {children}
-    </fieldset>
   );
 }
 
@@ -2012,14 +1972,12 @@ const copy = {
     removeFilter: "Remove filter",
     selected: "selected",
     noOptions: "No options found",
-    roleAndContract: "Role and contract",
     department: "Department",
     allDepartments: "All departments",
     teamCouple: "Team/Couple",
     anyTeamCouple: "Any",
     yes: "Yes",
     no: "No",
-    yachtDetails: "Yacht and experience",
     yachtType: "Yacht type",
     allYachtTypes: "All yacht types",
     yachtFlag: "Yacht flag",
@@ -2032,12 +1990,10 @@ const copy = {
     anyExperience: "Any experience",
     minimum: "Min",
     maximum: "Max",
-    requirements: "Published requirements",
     languages: "Languages",
     anyLanguage: "Any language",
     visas: "Visas",
     anyVisa: "Any visa",
-    salaryAndDisplay: "Salary and display",
     currency: "Salary currency",
     anyCurrency: "Any currency",
     payPeriod: "Salary period",
@@ -2109,14 +2065,12 @@ const copy = {
     removeFilter: "Filtreyi kaldır",
     selected: "seçili",
     noOptions: "Seçenek bulunamadı",
-    roleAndContract: "Pozisyon ve sözleşme",
     department: "Departman",
     allDepartments: "Tüm departmanlar",
     teamCouple: "Team/Couple",
     anyTeamCouple: "Tümü",
     yes: "Evet",
     no: "Hayır",
-    yachtDetails: "Yat ve deneyim",
     yachtType: "Yat türü",
     allYachtTypes: "Tüm yat türleri",
     yachtFlag: "Yat bayrağı",
@@ -2129,12 +2083,10 @@ const copy = {
     anyExperience: "Tüm deneyim düzeyleri",
     minimum: "Min",
     maximum: "Maks",
-    requirements: "Yayınlanan gereklilikler",
     languages: "Diller",
     anyLanguage: "Tüm diller",
     visas: "Vizeler",
     anyVisa: "Tüm vizeler",
-    salaryAndDisplay: "Ücret ve görünüm",
     currency: "Ücret para birimi",
     anyCurrency: "Tüm para birimleri",
     payPeriod: "Ücret dönemi",
