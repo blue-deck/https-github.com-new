@@ -6,7 +6,6 @@ import {
   jobRequiredLanguages,
   jobSalaryCurrencies,
   jobSalaryPeriods,
-  jobSmokerPolicies,
   jobVisaOptions,
   jobYachtTypes,
 } from "./jobPosts";
@@ -22,8 +21,6 @@ export const publicJobSearchTaxonomy = {
   minimumYachtExperiences: jobMinimumYachtExperiences,
   requiredLanguages: jobRequiredLanguages,
   visas: jobVisaOptions,
-  smokerPolicies: jobSmokerPolicies.filter((value) => value !== "no_preference"),
-  visibleTattooPolicies: ["accepted", "not_accepted"],
   salaryCurrencies: jobSalaryCurrencies,
   salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: nationalityOptions.map((country) => country.code),

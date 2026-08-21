@@ -5,9 +5,7 @@ import type {
   JobRequiredLanguage,
   JobSalaryCurrency,
   JobSalaryPeriod,
-  JobSmokerPolicy,
   JobVisa,
-  JobVisibleTattooPolicy,
   JobYachtType,
   PublicJobPost,
 } from "./jobPosts";
@@ -35,8 +33,6 @@ export type PublicJobSearchTaxonomy = {
   minimumYachtExperiences: readonly JobMinimumYachtExperience[];
   requiredLanguages: readonly JobRequiredLanguage[];
   visas: readonly JobVisa[];
-  smokerPolicies: readonly JobSmokerPolicy[];
-  visibleTattooPolicies: readonly JobVisibleTattooPolicy[];
   salaryCurrencies: readonly JobSalaryCurrency[];
   salaryPeriods: readonly JobSalaryPeriod[];
   yachtFlagCountryCodes: readonly string[];
@@ -58,8 +54,6 @@ export type PublicJobSearchFilters = {
   minimumYachtExperiences: JobMinimumYachtExperience[];
   requiredLanguages: JobRequiredLanguage[];
   requiredVisas: JobVisa[];
-  smokerPolicies: JobSmokerPolicy[];
-  visibleTattooPolicies: JobVisibleTattooPolicy[];
   salaryCurrency: JobSalaryCurrency | null;
   salaryPeriod: JobSalaryPeriod | null;
   salaryMin: number | null;
@@ -105,8 +99,6 @@ const queryKeys = new Set([
   "minimumExperience",
   "language",
   "visa",
-  "smoker",
-  "tattoo",
   "salaryCurrency",
   "salaryPeriod",
   "salaryMin",
@@ -125,8 +117,6 @@ const multiValueLimits: Record<string, number> = {
   minimumExperience: 11,
   language: 11,
   visa: 5,
-  smoker: 1,
-  tattoo: 1,
 };
 
 const scalarKeys = [
@@ -165,8 +155,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     minimumYachtExperiences: [],
     requiredLanguages: [],
     requiredVisas: [],
-    smokerPolicies: [],
-    visibleTattooPolicies: [],
     salaryCurrency: null,
     salaryPeriod: null,
     salaryMin: null,
@@ -244,16 +232,6 @@ export function parsePublicJobSearchParams(
     "visa",
     taxonomy.visas,
   );
-  const smokerPolicies = enumList(
-    searchParams,
-    "smoker",
-    taxonomy.smokerPolicies,
-  );
-  const visibleTattooPolicies = enumList(
-    searchParams,
-    "tattoo",
-    taxonomy.visibleTattooPolicies,
-  );
 
   const enumLists = [
     positions,
@@ -265,8 +243,6 @@ export function parsePublicJobSearchParams(
     minimumYachtExperiences,
     requiredLanguages,
     requiredVisas,
-    smokerPolicies,
-    visibleTattooPolicies,
   ];
   const invalidEnumList = enumLists.find((result) => !result.ok);
   if (invalidEnumList && !invalidEnumList.ok) {
@@ -361,8 +337,6 @@ export function parsePublicJobSearchParams(
     minimumYachtExperiences: successfulList(minimumYachtExperiences),
     requiredLanguages: successfulList(requiredLanguages),
     requiredVisas: successfulList(requiredVisas),
-    smokerPolicies: successfulList(smokerPolicies),
-    visibleTattooPolicies: successfulList(visibleTattooPolicies),
     salaryCurrency,
     salaryPeriod,
     salaryMin: numericValue(salaryMin),
@@ -416,8 +390,6 @@ export function publicJobSearchParams(
   setList(params, "minimumExperience", filters.minimumYachtExperiences);
   setList(params, "language", filters.requiredLanguages);
   setList(params, "visa", filters.requiredVisas);
-  setList(params, "smoker", filters.smokerPolicies);
-  setList(params, "tattoo", filters.visibleTattooPolicies);
   setText(params, "salaryCurrency", filters.salaryCurrency || "");
   setText(params, "salaryPeriod", filters.salaryPeriod || "");
   setNumber(params, "salaryMin", filters.salaryMin);
@@ -441,8 +413,6 @@ export function canonicalPublicJobSearchFilters(
     minimumYachtExperiences: canonicalList(filters.minimumYachtExperiences),
     requiredLanguages: canonicalList(filters.requiredLanguages),
     requiredVisas: canonicalList(filters.requiredVisas),
-    smokerPolicies: canonicalList(filters.smokerPolicies),
-    visibleTattooPolicies: canonicalList(filters.visibleTattooPolicies),
     limit: defaultPublicJobSearchLimit,
   }).toString();
 }
@@ -508,9 +478,7 @@ export function matchesPublicJobSearch(
       job.minimumYachtExperience,
     ) ||
     !arraysIntersect(filters.requiredLanguages, job.requiredLanguages) ||
-    !arraysIntersect(filters.requiredVisas, job.requiredVisas) ||
-    !includesSelected(filters.smokerPolicies, job.smokerPolicy) ||
-    !includesSelected(filters.visibleTattooPolicies, job.visibleTattooPolicy)
+    !arraysIntersect(filters.requiredVisas, job.requiredVisas)
   ) {
     return false;
   }

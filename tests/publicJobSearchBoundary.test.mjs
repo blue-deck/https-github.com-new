@@ -134,7 +134,7 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.doesNotMatch(jobsClient, /pointer-events-none opacity-45/);
 });
 
-test("published requirements expose only supported Any-based policy filters", async () => {
+test("published requirements expose only language and visa filters", async () => {
   const [client, search, config] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/lib/publicJobSearch.ts"),
@@ -145,11 +145,10 @@ test("published requirements expose only supported Any-based policy filters", as
   assert.doesNotMatch(search, /requiredCharacteristics: JobCharacteristic\[\]/);
   assert.doesNotMatch(search, /requiredCertificates: JobCertificate\[\]/);
   assert.doesNotMatch(search, /setList\(params, "(trait|certificate)"/);
-  assert.match(client, /smoking: "Smoking"/);
-  assert.match(client, /visibleTattoos: "Visible tattoos"/);
-  assert.match(client, /placeholder=\{c\.any\}/);
-  assert.match(client, /value === "accepted" \? c\.yes : c\.no/);
-  assert.match(config, /value !== "no_preference"/);
+  assert.doesNotMatch(client, /label=\{c\.(smoking|visibleTattoos)\}/);
+  assert.doesNotMatch(search, /(smokerPolicies|visibleTattooPolicies):/);
+  assert.doesNotMatch(search, /setList\(params, "(smoker|tattoo)"/);
+  assert.doesNotMatch(config, /(smokerPolicies|visibleTattooPolicies):/);
 });
 
 test("yacht brand remains job data but is not exposed as a public job filter", async () => {
