@@ -199,7 +199,7 @@ const copy = {
     startDate: "Job start date",
     datePlaceholder: "DD/MM/YYYY",
     invalidDate: "Enter a valid date in DD/MM/YYYY format.",
-    narrative: "Description & salary",
+    narrative: "Description",
     description: "Full description",
     descriptionPlaceholder:
       "Describe the yacht environment, role, schedule and what success looks like.",
@@ -320,7 +320,7 @@ const copy = {
     startDate: "İşe başlama tarihi",
     datePlaceholder: "GG/AA/YYYY",
     invalidDate: "GG/AA/YYYY biçiminde geçerli bir tarih girin.",
-    narrative: "Açıklama ve maaş",
+    narrative: "Açıklama",
     description: "Ayrıntılı açıklama",
     descriptionPlaceholder:
       "Yat ortamını, görevi, çalışma düzenini ve beklentileri açıkla.",
@@ -893,6 +893,78 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     required
                     labelClassName={fieldLabelClass}
                   />
+
+                  <div className="border-t border-slate-200 pt-5 lg:col-span-2">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-950">
+                          {c.salary}
+                        </h4>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {c.salaryHelp}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-5">
+                      <fieldset>
+                        <legend className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
+                          <RequiredFieldLabel label={c.salaryAmount} />
+                        </legend>
+                        <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            min="0.01"
+                            step="0.01"
+                            aria-label={c.salaryAmount}
+                            value={form.salaryAmount}
+                            onChange={(event) =>
+                              updateForm("salaryAmount", event.target.value)
+                            }
+                            disabled={saving}
+                            required
+                            className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold text-slate-950 outline-none [appearance:textfield] placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-4 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <select
+                            aria-label={c.currency}
+                            value={form.salaryCurrency}
+                            onChange={(event) =>
+                              updateForm(
+                                "salaryCurrency",
+                                event.target.value as JobSalaryCurrencyOption,
+                              )
+                            }
+                            disabled={saving}
+                            className="min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-1.5 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-3 sm:text-sm"
+                          >
+                            {jobSalaryCurrencyOptions.map((currency) => (
+                              <option key={currency} value={currency}>
+                                {formatJobSalaryCurrencyOption(currency)}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            aria-label={c.period}
+                            value={form.salaryPeriod}
+                            onChange={(event) =>
+                              updateForm(
+                                "salaryPeriod",
+                                event.target.value as FormState["salaryPeriod"],
+                              )
+                            }
+                            disabled={saving}
+                            className="min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-1.5 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-3 sm:text-sm"
+                          >
+                            {jobSalaryPeriods.map((period) => (
+                              <option key={period} value={period}>
+                                {formatJobSalaryPeriod(period, language)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </fieldset>
+                    </div>
+                  </div>
                 </div>
               </FormSection>
 
@@ -1178,77 +1250,6 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     onChange={(value) => updateForm("benefits", value)}
                   />
 
-                  <div className="border-t border-slate-200 pt-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <h4 className="text-sm font-black text-slate-950">
-                          {c.salary}
-                        </h4>
-                        <p className="mt-1 text-xs leading-5 text-slate-500">
-                          {c.salaryHelp}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-5">
-                      <fieldset>
-                        <legend className="text-[11px] font-black uppercase tracking-[0.1em] text-slate-500">
-                          <RequiredFieldLabel label={c.salaryAmount} />
-                        </legend>
-                        <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
-                          <input
-                            type="number"
-                            inputMode="decimal"
-                            min="0.01"
-                            step="0.01"
-                            aria-label={c.salaryAmount}
-                            value={form.salaryAmount}
-                            onChange={(event) =>
-                              updateForm("salaryAmount", event.target.value)
-                            }
-                            disabled={saving}
-                            required
-                            className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold text-slate-950 outline-none [appearance:textfield] placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-4 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                          />
-                          <select
-                            aria-label={c.currency}
-                            value={form.salaryCurrency}
-                            onChange={(event) =>
-                              updateForm(
-                                "salaryCurrency",
-                                event.target.value as JobSalaryCurrencyOption,
-                              )
-                            }
-                            disabled={saving}
-                            className="min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-1.5 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-3 sm:text-sm"
-                          >
-                            {jobSalaryCurrencyOptions.map((currency) => (
-                              <option key={currency} value={currency}>
-                                {formatJobSalaryCurrencyOption(currency)}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            aria-label={c.period}
-                            value={form.salaryPeriod}
-                            onChange={(event) =>
-                              updateForm(
-                                "salaryPeriod",
-                                event.target.value as FormState["salaryPeriod"],
-                              )
-                            }
-                            disabled={saving}
-                            className="min-h-12 shrink-0 border-l border-slate-200 bg-slate-50 px-1.5 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-3 sm:text-sm"
-                          >
-                            {jobSalaryPeriods.map((period) => (
-                              <option key={period} value={period}>
-                                {formatJobSalaryPeriod(period, language)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </fieldset>
-                    </div>
-                  </div>
                 </div>
               </FormSection>
 

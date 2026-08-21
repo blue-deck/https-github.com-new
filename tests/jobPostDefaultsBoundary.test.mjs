@@ -103,3 +103,23 @@ test("salary amount, currency, and period share one control", async () => {
   assert.match(manager, /salaryCurrency: form\.salaryCurrency/);
   assert.match(manager, /salaryPeriod: form\.salaryPeriod/);
 });
+
+test("salary control is rendered inside Job basics", async () => {
+  const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
+  const basicsStart = manager.indexOf("title={c.identity}");
+  const candidatePreferencesStart = manager.indexOf(
+    "title={c.candidatePreferences}",
+    basicsStart,
+  );
+  const salaryStart = manager.indexOf("{c.salary}", basicsStart);
+  const narrativeStart = manager.indexOf("title={c.narrative}");
+
+  assert.ok(basicsStart >= 0);
+  assert.ok(salaryStart > basicsStart);
+  assert.ok(salaryStart < candidatePreferencesStart);
+  assert.ok(narrativeStart > candidatePreferencesStart);
+  assert.equal(manager.match(/aria-label=\{c\.salaryAmount\}/g)?.length, 1);
+  assert.equal(manager.indexOf("{c.salary}", narrativeStart), -1);
+  assert.match(manager, /narrative: "Description"/);
+  assert.match(manager, /narrative: "Açıklama"/);
+});
