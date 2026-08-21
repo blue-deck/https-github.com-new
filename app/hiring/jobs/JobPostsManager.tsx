@@ -968,6 +968,118 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                 </div>
               </FormSection>
 
+              <FormSection icon={<Ship />} title={c.yachtDetails}>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <Field label={<RequiredFieldLabel label={c.yachtType} />}>
+                    <select
+                      value={form.yachtType}
+                      onChange={(event) =>
+                        updateForm(
+                          "yachtType",
+                          event.target.value as FormState["yachtType"],
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                      required
+                    >
+                      <option value="">{c.yachtTypePlaceholder}</option>
+                      {jobYachtTypes.map((type) => (
+                        <option key={type} value={type}>
+                          {formatJobYachtType(type, language)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field label={c.yachtBrand}>
+                    <input
+                      type="text"
+                      value={form.yachtBrand}
+                      onChange={(event) =>
+                        updateForm("yachtBrand", event.target.value.slice(0, 80))
+                      }
+                      maxLength={80}
+                      disabled={saving}
+                      className={inputClass}
+                      placeholder={c.yachtBrandPlaceholder}
+                    />
+                  </Field>
+
+                  <CountryFlagField
+                    label={c.yachtFlag}
+                    value={form.yachtFlagCountryCode}
+                    placeholder={c.yachtFlagPlaceholder}
+                    clearLabel={c.yachtFlagClear}
+                    noResults={c.yachtFlagNoResults}
+                    disabled={saving}
+                    onChange={(value) =>
+                      updateForm("yachtFlagCountryCode", value)
+                    }
+                  />
+
+                  <Field label={c.yachtBuildYear}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]{4}"
+                      value={form.yachtBuildYear}
+                      onChange={(event) =>
+                        updateForm(
+                          "yachtBuildYear",
+                          event.target.value.replace(/\D/g, "").slice(0, 4),
+                        )
+                      }
+                      maxLength={4}
+                      disabled={saving}
+                      className={inputClass}
+                      placeholder={c.yachtBuildYearPlaceholder}
+                    />
+                  </Field>
+
+                  <YachtSizeField
+                    label={<RequiredFieldLabel label={c.yachtLength} />}
+                    value={form.yachtLength}
+                    unit={form.yachtLengthUnit}
+                    onChange={(value, unit) =>
+                      setForm((current) => ({
+                        ...current,
+                        yachtLength: value,
+                        yachtLengthUnit: unit,
+                      }))
+                    }
+                    amountLabel={c.yachtLengthAmount}
+                    unitLabel={c.yachtLengthUnit}
+                    placeholder={c.yachtLengthPlaceholder}
+                    feetOptionLabel="ft"
+                    metresOptionLabel="m"
+                    disabled={saving}
+                    required
+                    maxLength={6}
+                    maxIntegerDigits={3}
+                    labelClassName={fieldLabelClass}
+                  />
+
+                  <Field label={c.crewMemberCount}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={form.crewMemberCount}
+                      onChange={(event) =>
+                        updateForm(
+                          "crewMemberCount",
+                          event.target.value.replace(/\D/g, "").slice(0, 3),
+                        )
+                      }
+                      disabled={saving}
+                      className={inputClass}
+                      placeholder={c.crewMemberCountPlaceholder}
+                    />
+                  </Field>
+                </div>
+              </FormSection>
+
               <FormSection
                 icon={<UsersRound />}
                 title={c.candidatePreferences}
@@ -1105,118 +1217,6 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     formatOption={formatJobVisa}
                     onChange={(value) => updateForm("requiredVisas", value)}
                   />
-                </div>
-              </FormSection>
-
-              <FormSection icon={<Ship />} title={c.yachtDetails}>
-                <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={<RequiredFieldLabel label={c.yachtType} />}>
-                    <select
-                      value={form.yachtType}
-                      onChange={(event) =>
-                        updateForm(
-                          "yachtType",
-                          event.target.value as FormState["yachtType"],
-                        )
-                      }
-                      disabled={saving}
-                      className={inputClass}
-                      required
-                    >
-                      <option value="">{c.yachtTypePlaceholder}</option>
-                      {jobYachtTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {formatJobYachtType(type, language)}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label={c.yachtBrand}>
-                    <input
-                      type="text"
-                      value={form.yachtBrand}
-                      onChange={(event) =>
-                        updateForm("yachtBrand", event.target.value.slice(0, 80))
-                      }
-                      maxLength={80}
-                      disabled={saving}
-                      className={inputClass}
-                      placeholder={c.yachtBrandPlaceholder}
-                    />
-                  </Field>
-
-                  <CountryFlagField
-                    label={c.yachtFlag}
-                    value={form.yachtFlagCountryCode}
-                    placeholder={c.yachtFlagPlaceholder}
-                    clearLabel={c.yachtFlagClear}
-                    noResults={c.yachtFlagNoResults}
-                    disabled={saving}
-                    onChange={(value) =>
-                      updateForm("yachtFlagCountryCode", value)
-                    }
-                  />
-
-                  <Field label={c.yachtBuildYear}>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]{4}"
-                      value={form.yachtBuildYear}
-                      onChange={(event) =>
-                        updateForm(
-                          "yachtBuildYear",
-                          event.target.value.replace(/\D/g, "").slice(0, 4),
-                        )
-                      }
-                      maxLength={4}
-                      disabled={saving}
-                      className={inputClass}
-                      placeholder={c.yachtBuildYearPlaceholder}
-                    />
-                  </Field>
-
-                  <YachtSizeField
-                    label={<RequiredFieldLabel label={c.yachtLength} />}
-                    value={form.yachtLength}
-                    unit={form.yachtLengthUnit}
-                    onChange={(value, unit) =>
-                      setForm((current) => ({
-                        ...current,
-                        yachtLength: value,
-                        yachtLengthUnit: unit,
-                      }))
-                    }
-                    amountLabel={c.yachtLengthAmount}
-                    unitLabel={c.yachtLengthUnit}
-                    placeholder={c.yachtLengthPlaceholder}
-                    feetOptionLabel="ft"
-                    metresOptionLabel="m"
-                    disabled={saving}
-                    required
-                    maxLength={6}
-                    maxIntegerDigits={3}
-                    labelClassName={fieldLabelClass}
-                  />
-
-                  <Field label={c.crewMemberCount}>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={form.crewMemberCount}
-                      onChange={(event) =>
-                        updateForm(
-                          "crewMemberCount",
-                          event.target.value.replace(/\D/g, "").slice(0, 3),
-                        )
-                      }
-                      disabled={saving}
-                      className={inputClass}
-                      placeholder={c.crewMemberCountPlaceholder}
-                    />
-                  </Field>
                 </div>
               </FormSection>
 

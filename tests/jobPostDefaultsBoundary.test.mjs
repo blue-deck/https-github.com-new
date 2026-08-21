@@ -123,3 +123,20 @@ test("salary control is rendered inside Job basics", async () => {
   assert.match(manager, /narrative: "Description"/);
   assert.match(manager, /narrative: "Açıklama"/);
 });
+
+test("create job post sections follow the intended workflow order", async () => {
+  const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
+  const sectionTitles = [
+    "title={c.identity}",
+    "title={c.yachtDetails}",
+    "title={c.candidatePreferences}",
+    "title={c.narrative}",
+  ];
+  const sectionIndexes = sectionTitles.map((title) => manager.indexOf(title));
+
+  assert.ok(sectionIndexes.every((index) => index >= 0));
+  assert.deepEqual(sectionIndexes, [...sectionIndexes].sort((a, b) => a - b));
+  for (const title of sectionTitles) {
+    assert.equal(manager.split(title).length - 1, 1);
+  }
+});
