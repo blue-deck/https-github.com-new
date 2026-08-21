@@ -1956,8 +1956,8 @@ const copy = {
     filters: "Search and filters",
     filterHint:
       "Choose your filters, then select Search to update the results.",
-    search: "Search jobs",
-    searchPlaceholder: "Position, skill, language or location",
+    search: "Keyword",
+    searchPlaceholder: "Position, skill, language or any",
     searchKeyword: "Search this keyword",
     applyFilters: "Search",
     position: "Position",
@@ -2049,8 +2049,8 @@ const copy = {
     filters: "Arama ve filtreler",
     filterHint:
       "Filtrelerinizi seçin, ardından sonuçları güncellemek için Ara'ya basın.",
-    search: "İş ara",
-    searchPlaceholder: "Pozisyon, beceri, dil veya konum",
+    search: "Anahtar kelime",
+    searchPlaceholder: "Pozisyon, beceri, dil veya herhangi bir anahtar kelime",
     searchKeyword: "Bu anahtar kelimeyi ara",
     applyFilters: "Ara",
     position: "Pozisyon",

@@ -93,6 +93,18 @@ test("job filters use explicit keyword and form searches with contextual clear a
     "inline-flex min-h-11 items-center justify-center px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900";
   assert.ok(jobsClient.includes(sharedClearStyle));
   assert.ok(crewClient.includes(sharedClearStyle));
+  assert.match(jobsClient, /search: "Keyword"/);
+  assert.match(
+    jobsClient,
+    /searchPlaceholder: "Position, skill, language or any"/,
+  );
+  assert.match(jobsClient, /search: "Anahtar kelime"/);
+  assert.match(
+    jobsClient,
+    /searchPlaceholder: "Pozisyon, beceri, dil veya herhangi bir anahtar kelime"/,
+  );
+  assert.doesNotMatch(jobsClient, /Position, skill, language or location/);
+  assert.doesNotMatch(jobsClient, /Pozisyon, beceri, dil veya konum/);
   assert.match(jobsClient, /employmentType: "Employment type"/);
   assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
   const salaryNumberField = jobsClient.slice(
