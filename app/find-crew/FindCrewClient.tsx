@@ -936,7 +936,7 @@ const copy = {
     filters: "Search and filters",
     filterHint: "Choose your criteria, then use Search to update the results.",
     advanced: "More filters",
-    search: "Search crew",
+    search: "Keyword",
     keywordSearchAction: "Search keyword",
     applyFilters: "Search",
     applyFiltersLabel: "Search with selected filters",
@@ -993,7 +993,7 @@ const copy = {
     filterHint:
       "Kriterlerinizi seçin, sonuçları güncellemek için Ara düğmesine basın.",
     advanced: "Daha fazla filtre",
-    search: "Crew ara",
+    search: "Anahtar kelime",
     keywordSearchAction: "Anahtar kelimeyi ara",
     applyFilters: "Ara",
     applyFiltersLabel: "Seçili filtrelerle ara",

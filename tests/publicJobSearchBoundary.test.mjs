@@ -61,7 +61,10 @@ test("job filters use explicit keyword and form searches with contextual clear a
     /function applyAllFilters\(\) \{[\s\S]*?applyFilterUpdate\(\(\) => draftFilters\)/,
   );
   assert.match(jobsClient, /aria-label=\{c\.searchKeyword\}/);
-  assert.match(jobsClient, /absolute bottom-1\.5 right-1\.5 top-1\.5/);
+  const sharedKeywordButtonStyle =
+    "bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950";
+  assert.ok(jobsClient.includes(sharedKeywordButtonStyle));
+  assert.ok(crewClient.includes(sharedKeywordButtonStyle));
   assert.match(
     jobsClient,
     /const hasPrimaryDraftFilters =[\s\S]*?draftFilters\.positions\.length > 0 \|\|[\s\S]*?draftFilters\.location\.trim\(\)\.length > 0 \|\|[\s\S]*?draftFilters\.employmentTypes\.length > 0/,
@@ -94,11 +97,13 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.ok(jobsClient.includes(sharedClearStyle));
   assert.ok(crewClient.includes(sharedClearStyle));
   assert.match(jobsClient, /search: "Keyword"/);
+  assert.match(crewClient, /search: "Keyword"/);
   assert.match(
     jobsClient,
     /searchPlaceholder: "Position, skill, language or any"/,
   );
   assert.match(jobsClient, /search: "Anahtar kelime"/);
+  assert.match(crewClient, /search: "Anahtar kelime"/);
   assert.match(
     jobsClient,
     /searchPlaceholder: "Pozisyon, beceri, dil veya herhangi bir anahtar kelime"/,

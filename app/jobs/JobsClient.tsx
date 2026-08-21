@@ -545,9 +545,9 @@ export function JobsClient({
                     onClick={applyKeywordSearch}
                     aria-label={c.searchKeyword}
                     title={c.searchKeyword}
-                    className="bd-focus absolute bottom-1.5 right-1.5 top-1.5 inline-flex w-9 items-center justify-center rounded-lg bg-[#071f3c] text-white transition hover:bg-cyan-800"
+                    className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
                   >
-                    <Search className="h-4 w-4" aria-hidden />
+                    <Search className="h-5 w-5" aria-hidden />
                   </button>
                 </span>
               </div>
