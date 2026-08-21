@@ -16,7 +16,7 @@ export const publicJobSearchTaxonomy = {
   positions: Array.from(new Set(yachtPositionTitles)),
   departments: yachtDepartments,
   employmentTypes: jobEmploymentTypes,
-  candidateTypes: jobCandidateTypes,
+  candidateTypes: jobCandidateTypes.filter((value) => value !== "any"),
   yachtTypes: jobYachtTypes,
   minimumYachtExperiences: jobMinimumYachtExperiences,
   requiredLanguages: jobRequiredLanguages,

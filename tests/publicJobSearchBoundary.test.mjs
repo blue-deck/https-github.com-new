@@ -262,17 +262,24 @@ test("multi-select filters are exclusive and dismiss on outside click or Escape"
   assert.match(client, /document\.removeEventListener\("keydown"/);
 });
 
-test("Team/Couple is a binary job filter and listing fact", async () => {
-  const [client, card, detail] = await Promise.all([
+test("Team/Couple stays a binary filter while Any listings match either choice", async () => {
+  const [client, card, detail, search, config] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/jobs/PublicJobListingCard.tsx"),
     source("app/jobs/[id]/JobDetailClient.tsx"),
+    source("app/lib/publicJobSearch.ts"),
+    source("app/lib/publicJobSearchConfig.ts"),
   ]);
 
   assert.match(client, /label=\{c\.teamCouple\}/);
   assert.match(client, /placeholder=\{c\.anyTeamCouple\}/);
   assert.match(client, /if \(value === "yes"\) return \["team", "couple"\]/);
   assert.match(client, /if \(value === "no"\) return \["individual"\]/);
+  assert.match(search, /return value === "any" \|\| includesSelected\(selected, value\)/);
+  assert.match(
+    config,
+    /candidateTypes: jobCandidateTypes\.filter\(\(value\) => value !== "any"\)/,
+  );
   assert.match(
     client,
     /add\("team-couple", `\$\{c\.teamCouple\}: \$\{c\[teamCouple\]\}`/,

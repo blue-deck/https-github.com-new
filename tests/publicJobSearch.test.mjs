@@ -199,7 +199,7 @@ test("matches every structured public-detail category with normalized yacht unit
   );
 });
 
-test("Team/Couple uses one binary meaning for current and legacy candidate values", () => {
+test("Team/Couple filters treat an Any listing as a wildcard", () => {
   const yesFilters = createDefaultPublicJobSearchFilters();
   yesFilters.candidateTypes = ["team", "couple"];
   const noFilters = createDefaultPublicJobSearchFilters();
@@ -231,9 +231,20 @@ test("Team/Couple uses one binary meaning for current and legacy candidate value
     matchesPublicJobSearch(sampleJob({ candidateType: "team" }), noFilters),
     false,
   );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ candidateType: "any" }), yesFilters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ candidateType: "any" }), noFilters),
+    true,
+  );
+  assert.equal(isJobTeamCouple("any"), false);
   assert.equal(isJobTeamCouple("individual"), false);
   assert.equal(isJobTeamCouple("team"), true);
   assert.equal(isJobTeamCouple("couple"), true);
+  assert.equal(formatJobTeamCoupleAnswer("any", "en"), "Any");
+  assert.equal(formatJobTeamCoupleAnswer("any", "tr"), "Tümü");
   assert.equal(formatJobTeamCoupleAnswer("team", "en"), "Yes");
   assert.equal(formatJobTeamCoupleAnswer("individual", "tr"), "Hayır");
 });

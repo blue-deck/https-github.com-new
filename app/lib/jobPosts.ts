@@ -6,7 +6,7 @@ export const jobEmploymentTypes = [
   "rotation",
   "daywork",
 ] as const;
-export const jobCandidateTypes = ["individual", "team", "couple"] as const;
+export const jobCandidateTypes = ["any", "individual", "team", "couple"] as const;
 export const jobSmokerPolicies = [
   "no_preference",
   "non_smoker",
@@ -278,6 +278,7 @@ export function formatJobCandidateType(
   language: "en" | "tr",
 ) {
   const labels = {
+    any: { en: "Any", tr: "Tümü" },
     team: { en: "Team / Couple", tr: "Ekip / Çift" },
     couple: { en: "Couple", tr: "Çift" },
   } as const;
@@ -285,13 +286,16 @@ export function formatJobCandidateType(
 }
 
 export function isJobTeamCouple(value: JobCandidateType) {
-  return value !== "individual";
+  return value === "team" || value === "couple";
 }
 
 export function formatJobTeamCoupleAnswer(
   value: JobCandidateType,
   language: "en" | "tr",
 ) {
+  if (value === "any") {
+    return language === "tr" ? "Tümü" : "Any";
+  }
   if (isJobTeamCouple(value)) {
     return language === "tr" ? "Evet" : "Yes";
   }

@@ -120,9 +120,18 @@ test("database application ceilings return a general rate-limit response", async
   );
 });
 
-test("team application options expose only currently available relationships", async () => {
-  const route = await source("app/api/jobs/[id]/application/route.ts");
+test("team application options allow Any jobs and expose only available relationships", async () => {
+  const [route, migration] = await Promise.all([
+    source("app/api/jobs/[id]/application/route.ts"),
+    source(
+      "supabase/migrations/20260821105637_allow_any_job_candidate_type.sql",
+    ),
+  ]);
 
+  assert.match(
+    route,
+    /\["any", "team", "couple"\]\.includes\(/,
+  );
   assert.match(
     route,
     /teamDashboard\?\.members\.filter\(\(member\) => member\.isAvailable\)/,
@@ -130,6 +139,14 @@ test("team application options expose only currently available relationships", a
   assert.match(
     route,
     /teamMembers: teamApplicationAllowed \? availableTeamMembers : \[\]/,
+  );
+  assert.match(
+    migration,
+    /candidate_type in \('any', 'individual', 'team', 'couple'\)/,
+  );
+  assert.match(
+    migration,
+    /current_job\.candidate_type not in \(''any'', ''team'', ''couple''\)/,
   );
 });
 

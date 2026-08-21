@@ -442,7 +442,9 @@ export function matchesPublicJobSearch(
     return false;
   }
   if (!includesSelected(filters.employmentTypes, job.employmentType)) return false;
-  if (!includesSelected(filters.candidateTypes, job.candidateType)) return false;
+  if (!matchesCandidateType(filters.candidateTypes, job.candidateType)) {
+    return false;
+  }
   if (!includesSelected(filters.yachtTypes, job.yachtType)) return false;
   if (
     !includesSelected(filters.yachtFlagCountryCodes, job.yachtFlagCountryCode)
@@ -813,6 +815,7 @@ const employmentAliases: Record<string, string> = {
   daywork: "daywork günlük gunluk",
 };
 const candidateAliases: Record<string, string> = {
+  any: "any either fark etmez tümü tumu",
   individual: "individual bireysel",
   team: "team ekip couple çift cift",
   couple: "couple çift cift",
@@ -979,6 +982,13 @@ function includesSelected<Option extends string>(
   value: Option | null,
 ) {
   return selected.length === 0 || (value !== null && selected.includes(value));
+}
+
+function matchesCandidateType(
+  selected: readonly JobCandidateType[],
+  value: JobCandidateType,
+) {
+  return value === "any" || includesSelected(selected, value);
 }
 
 function arraysIntersect<Option extends string>(

@@ -140,7 +140,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       jobPostId,
     });
   }
-  const teamApplicationAllowed = ["team", "couple"].includes(
+  const teamApplicationAllowed = ["any", "team", "couple"].includes(
     cleanText(jobResult.data?.candidate_type).toLowerCase(),
   );
   const availableTeamMembers =

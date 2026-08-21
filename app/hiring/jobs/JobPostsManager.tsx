@@ -96,7 +96,7 @@ type Notice = {
 
 type FormState = {
   position: string;
-  employmentType: (typeof jobEmploymentTypes)[number];
+  employmentType: (typeof jobEmploymentTypes)[number] | "";
   candidateType: JobCandidateType;
   smokerPolicy: JobSmokerPolicy;
   visibleTattooPolicy: JobVisibleTattooPolicy;
@@ -148,7 +148,9 @@ const copy = {
     position: "Position",
     positionPlaceholder: "Select a position",
     employmentType: "Employment type",
+    employmentTypePlaceholder: "Select employment type",
     teamCouple: "Team / Couple",
+    any: "Any",
     yes: "Yes",
     no: "No",
     candidatePreferences: "Candidate requirements",
@@ -188,7 +190,7 @@ const copy = {
       "Complete every field marked with * before publishing.",
     logistics: "Timing and location",
     location: "Location",
-    locationPlaceholder: "Search city or port",
+    locationPlaceholder: "Search location",
     locationSearching: "Searching locations…",
     locationNoResults: "No matching location found. You can keep your own text.",
     locationResults: "location options available.",
@@ -270,7 +272,9 @@ const copy = {
     position: "Pozisyon",
     positionPlaceholder: "Pozisyon seç",
     employmentType: "Çalışma biçimi",
+    employmentTypePlaceholder: "Çalışma biçimi seç",
     teamCouple: "Team / Couple",
+    any: "Tümü",
     yes: "Evet",
     no: "Hayır",
     candidatePreferences: "Aday gereksinimleri",
@@ -310,7 +314,7 @@ const copy = {
       "Yayınlamadan önce * ile işaretlenen tüm alanları doldurun.",
     logistics: "Tarih ve konum",
     location: "Konum",
-    locationPlaceholder: "Şehir veya liman ara",
+    locationPlaceholder: "Konum ara",
     locationSearching: "Konumlar aranıyor…",
     locationNoResults:
       "Eşleşen konum bulunamadı. Yazdığınız konumu kullanabilirsiniz.",
@@ -819,6 +823,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                       className={inputClass}
                       required
                     >
+                      <option value="">{c.employmentTypePlaceholder}</option>
                       {jobEmploymentTypes.map((type) => (
                         <option key={type} value={type}>
                           {c[type]}
@@ -829,18 +834,19 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
                   <Field label={c.teamCouple}>
                     <select
-                      value={
-                        form.candidateType === "individual" ? "no" : "yes"
-                      }
+                      value={teamCoupleSelection(form.candidateType)}
                       onChange={(event) =>
                         updateForm(
                           "candidateType",
-                          event.target.value === "yes" ? "team" : "individual",
+                          candidateTypeFromTeamCoupleSelection(
+                            event.target.value,
+                          ),
                         )
                       }
                       disabled={saving}
                       className={inputClass}
                     >
+                      <option value="any">{c.any}</option>
                       <option value="no">{c.no}</option>
                       <option value="yes">{c.yes}</option>
                     </select>
@@ -915,7 +921,9 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     >
                       {jobSmokerPolicies.map((policy) => (
                         <option key={policy} value={policy}>
-                          {formatJobSmokerPolicy(policy, language)}
+                          {policy === "no_preference"
+                            ? c.any
+                            : formatJobSmokerPolicy(policy, language)}
                         </option>
                       ))}
                     </select>
@@ -935,7 +943,9 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                     >
                       {jobVisibleTattooPolicies.map((policy) => (
                         <option key={policy} value={policy}>
-                          {formatJobVisibleTattooPolicy(policy, language)}
+                          {policy === "no_preference"
+                            ? c.any
+                            : formatJobVisibleTattooPolicy(policy, language)}
                         </option>
                       ))}
                     </select>
@@ -1337,8 +1347,8 @@ const fieldLabelClass =
 function emptyForm(): FormState {
   return {
     position: "",
-    employmentType: "permanent",
-    candidateType: "individual",
+    employmentType: "",
+    candidateType: "any",
     smokerPolicy: "no_preference",
     visibleTattooPolicy: "no_preference",
     requiredLanguages: [],
@@ -1362,6 +1372,19 @@ function emptyForm(): FormState {
     salaryCurrency: "EUR",
     salaryPeriod: "month",
   };
+}
+
+function teamCoupleSelection(value: JobCandidateType) {
+  if (value === "any") return "any";
+  return value === "individual" ? "no" : "yes";
+}
+
+function candidateTypeFromTeamCoupleSelection(
+  value: string,
+): JobCandidateType {
+  if (value === "yes") return "team";
+  if (value === "no") return "individual";
+  return "any";
 }
 
 function formFromJob(job: EmployerJobPost): FormState {
