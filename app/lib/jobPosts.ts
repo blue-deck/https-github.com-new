@@ -162,6 +162,14 @@ export type JobYachtLengthUnit = (typeof jobYachtLengthUnits)[number];
 export type JobMinimumYachtExperience =
   (typeof jobMinimumYachtExperiences)[number];
 
+const jobSalaryCurrencyOptionLabels: Record<JobSalaryCurrencyOption, string> = {
+  EUR: "EUR (€)",
+  USD: "USD ($)",
+  GBP: "GBP (£)",
+  AUD: "AUD (A$)",
+  TRY: "TL (TRY)",
+};
+
 export type JobSalary = {
   min: number | null;
   max: number | null;
@@ -356,6 +364,12 @@ export function isJobSalaryCurrencyOption(
   value: unknown,
 ): value is JobSalaryCurrencyOption {
   return jobSalaryCurrencyOptions.includes(value as JobSalaryCurrencyOption);
+}
+
+export function formatJobSalaryCurrencyOption(
+  value: JobSalaryCurrencyOption,
+) {
+  return jobSalaryCurrencyOptionLabels[value];
 }
 
 export function isJobClosureReason(

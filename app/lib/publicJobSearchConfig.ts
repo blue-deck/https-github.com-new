@@ -4,7 +4,7 @@ import {
   jobEmploymentTypes,
   jobMinimumYachtExperiences,
   jobRequiredLanguages,
-  jobSalaryCurrencies,
+  jobSalaryCurrencyOptions,
   jobSalaryPeriods,
   jobVisaOptions,
   jobYachtTypes,
@@ -21,7 +21,7 @@ export const publicJobSearchTaxonomy = {
   minimumYachtExperiences: jobMinimumYachtExperiences,
   requiredLanguages: jobRequiredLanguages,
   visas: jobVisaOptions,
-  salaryCurrencies: jobSalaryCurrencies,
+  salaryCurrencies: jobSalaryCurrencyOptions,
   salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: nationalityOptions.map((country) => country.code),
 } satisfies PublicJobSearchTaxonomy;

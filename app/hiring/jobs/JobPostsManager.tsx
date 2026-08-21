@@ -33,6 +33,7 @@ import { YachtSizeField } from "../../components/YachtSizeField";
 import {
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
+  formatJobSalaryCurrencyOption,
   formatJobSmokerPolicy,
   formatJobVisa,
   formatJobVisibleTattooPolicy,
@@ -1229,7 +1230,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                           >
                             {jobSalaryCurrencyOptions.map((currency) => (
                               <option key={currency} value={currency}>
-                                {formatSalaryCurrencyOption(currency)}
+                                {formatJobSalaryCurrencyOption(currency)}
                               </option>
                             ))}
                           </select>
@@ -1423,17 +1424,6 @@ function formFromJob(job: EmployerJobPost): FormState {
       : "EUR",
     salaryPeriod: job.salary?.period || "month",
   };
-}
-
-function formatSalaryCurrencyOption(currency: JobSalaryCurrencyOption) {
-  const labels: Record<JobSalaryCurrencyOption, string> = {
-    EUR: "EUR (€)",
-    USD: "USD ($)",
-    GBP: "GBP (£)",
-    AUD: "AUD (A$)",
-    TRY: "TL (TRY)",
-  };
-  return labels[currency];
 }
 
 function RequiredFieldLabel({ label }: { label: string }) {

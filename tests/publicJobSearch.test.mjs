@@ -14,8 +14,11 @@ import {
   publicJobYachtLengthMetres,
 } from "../app/lib/publicJobSearch.ts";
 import {
+  formatJobSalaryCurrencyOption,
   formatJobTeamCoupleAnswer,
+  isJobSalaryCurrency,
   isJobTeamCouple,
+  jobSalaryCurrencyOptions,
 } from "../app/lib/jobPosts.ts";
 
 const taxonomy = {
@@ -27,7 +30,7 @@ const taxonomy = {
   minimumYachtExperiences: ["3_5_years", "5_plus_years"],
   requiredLanguages: ["English", "Turkish"],
   visas: ["Schengen Visa", "US B1/B2 Visa"],
-  salaryCurrencies: ["EUR", "USD"],
+  salaryCurrencies: jobSalaryCurrencyOptions,
   salaryPeriods: ["month", "year"],
   yachtFlagCountryCodes: ["TR", "GB"],
 };
@@ -72,6 +75,72 @@ test("strictly parses and round-trips the complete public job filter contract", 
   );
   assert.equal(reparsed.ok, true);
   assert.deepEqual(reparsed.filters, parsed.filters);
+});
+
+test("salary currency filters mirror the create-job picker and match every supported currency", () => {
+  assert.deepEqual(
+    jobSalaryCurrencyOptions.map(formatJobSalaryCurrencyOption),
+    ["EUR (€)", "USD ($)", "GBP (£)", "AUD (A$)", "TL (TRY)"],
+  );
+  assert.equal(isJobSalaryCurrency("NZD"), true);
+  assert.equal(
+    parsePublicJobSearchParams(
+      new URLSearchParams("salaryCurrency=NZD"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+
+  jobSalaryCurrencyOptions.forEach((currency, index) => {
+    const params = new URLSearchParams({
+      salaryCurrency: currency,
+      salaryPeriod: "month",
+      salaryMin: "8000",
+      salaryMax: "9000",
+    });
+    const parsed = parsePublicJobSearchParams(params, taxonomy);
+    assert.equal(parsed.ok, true, currency);
+    if (!parsed.ok) return;
+
+    assert.equal(parsed.filters.salaryCurrency, currency);
+    assert.equal(
+      publicJobSearchParams(parsed.filters).get("salaryCurrency"),
+      currency,
+    );
+    assert.equal(
+      matchesPublicJobSearch(
+        sampleJob({
+          salary: {
+            min: 7_000,
+            max: 8_000,
+            currency,
+            period: "month",
+          },
+        }),
+        parsed.filters,
+      ),
+      true,
+      currency,
+    );
+
+    const otherCurrency =
+      jobSalaryCurrencyOptions[(index + 1) % jobSalaryCurrencyOptions.length];
+    assert.equal(
+      matchesPublicJobSearch(
+        sampleJob({
+          salary: {
+            min: 7_000,
+            max: 8_000,
+            currency: otherCurrency,
+            period: "month",
+          },
+        }),
+        parsed.filters,
+      ),
+      false,
+      `${currency} must not match ${otherCurrency}`,
+    );
+  });
 });
 
 test("rejects unknown, duplicated, invalid, and logically unsafe filters", () => {

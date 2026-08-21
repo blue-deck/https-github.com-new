@@ -234,6 +234,24 @@ test("advanced job filters use one flat responsive grid without dropping control
   );
 });
 
+test("Find Jobs and Create Job Post share salary currency options and labels", async () => {
+  const [jobPosts, manager, config, client] = await Promise.all([
+    source("app/lib/jobPosts.ts"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/lib/publicJobSearchConfig.ts"),
+    source("app/jobs/JobsClient.tsx"),
+  ]);
+
+  assert.match(jobPosts, /export const jobSalaryCurrencyOptions =/);
+  assert.match(jobPosts, /export function formatJobSalaryCurrencyOption/);
+  assert.match(manager, /jobSalaryCurrencyOptions\.map\(\(currency\) =>/);
+  assert.match(manager, /formatJobSalaryCurrencyOption\(currency\)/);
+  assert.doesNotMatch(manager, /function formatSalaryCurrencyOption/);
+  assert.match(config, /salaryCurrencies: jobSalaryCurrencyOptions/);
+  assert.doesNotMatch(config, /\bjobSalaryCurrencies\b/);
+  assert.match(client, /formatJobSalaryCurrencyOption\(value\)/);
+});
+
 test("yacht brand remains job data but is not exposed as a public job filter", async () => {
   const [client, search] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),

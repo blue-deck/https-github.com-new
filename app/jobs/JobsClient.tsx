@@ -20,6 +20,7 @@ import {
   formatJobEmploymentType,
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
+  formatJobSalaryCurrencyOption,
   formatJobVisa,
   formatJobYachtType,
   isJobTeamCouple,
@@ -1534,7 +1535,7 @@ function buildOptionSets(language: Language, c: SearchCopy) {
       option(value, formatJobVisa(value)),
     ),
     salaryCurrencies: publicJobSearchTaxonomy.salaryCurrencies.map((value) =>
-      option(value),
+      option(value, formatJobSalaryCurrencyOption(value)),
     ),
     salaryPeriods: publicJobSearchTaxonomy.salaryPeriods.map((value) =>
       option(value, formatSalaryPeriod(value, language)),
