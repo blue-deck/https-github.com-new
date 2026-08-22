@@ -26,7 +26,7 @@ export default function FindCrewLoading() {
               </div>
               <div className="h-11 w-32 rounded-xl border border-slate-200 bg-slate-50" />
             </div>
-            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,0.9fr))_auto]">
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
               {[0, 1, 2, 3].map((item) => (
                 <div key={item}>
                   <div className="mb-1.5 h-3 w-20 rounded bg-slate-100" />

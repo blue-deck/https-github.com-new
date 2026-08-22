@@ -305,8 +305,8 @@ export function FindCrewClient({
             <div
               className={`mt-4 grid gap-3 md:grid-cols-2 ${
                 advancedOpen
-                  ? "xl:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,0.9fr))]"
-                  : "xl:grid-cols-[minmax(0,1.35fr)_repeat(3,minmax(0,0.9fr))_auto]"
+                  ? "xl:grid-cols-4"
+                  : "xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
               }`}
             >
               <form

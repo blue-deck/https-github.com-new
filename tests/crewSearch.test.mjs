@@ -232,6 +232,28 @@ test("keeps nationality in primary filters and removes the location filter", asy
   assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
 });
 
+test("primary crew filter controls use equal desktop columns", async () => {
+  const [client, loading] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/find-crew/loading.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(client, /\? "xl:grid-cols-4"/);
+  assert.match(
+    client,
+    /: "xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\]"/,
+  );
+  assert.match(
+    loading,
+    /xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\]/,
+  );
+  assert.doesNotMatch(client, /1\.35fr|0\.9fr/);
+  assert.doesNotMatch(loading, /1\.35fr|0\.9fr/);
+});
+
 test("find crew reuses every My Profile availability option", async () => {
   const [client, route] = await Promise.all([
     readFile(
