@@ -397,7 +397,32 @@ export function FindCrewClient({
                 id="crew-advanced-filters"
                 className="mt-5 border-t border-slate-200 pt-5"
               >
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <FilterToggle
+                    label={c.premiumOnly}
+                    checked={draftFilters.premiumOnly}
+                    onChange={(checked) => setDraftFilter("premiumOnly", checked)}
+                  />
+                  <FilterToggle
+                    label={c.hasPhoto}
+                    checked={draftFilters.hasPhoto}
+                    onChange={(checked) => setDraftFilter("hasPhoto", checked)}
+                  />
+                  <FilterToggle
+                    label={c.hasGallery}
+                    checked={draftFilters.hasGallery}
+                    onChange={(checked) => setDraftFilter("hasGallery", checked)}
+                  />
+                  <FilterToggle
+                    label={c.hasTeamCouple}
+                    checked={draftFilters.hasTeamCouple}
+                    onChange={(checked) =>
+                      setDraftFilter("hasTeamCouple", checked)
+                    }
+                  />
+                </div>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <FilterSelect
                     label={c.maritalStatus}
                     emptyOptionLabel={c.any}
@@ -437,36 +462,6 @@ export function FindCrewClient({
                     language={language}
                   />
                 </div>
-
-                <fieldset className="mt-5">
-                  <legend className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">
-                    {c.profileQuality}
-                  </legend>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    <FilterToggle
-                      label={c.premiumOnly}
-                      checked={draftFilters.premiumOnly}
-                      onChange={(checked) => setDraftFilter("premiumOnly", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasPhoto}
-                      checked={draftFilters.hasPhoto}
-                      onChange={(checked) => setDraftFilter("hasPhoto", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasGallery}
-                      checked={draftFilters.hasGallery}
-                      onChange={(checked) => setDraftFilter("hasGallery", checked)}
-                    />
-                    <FilterToggle
-                      label={c.hasTeamCouple}
-                      checked={draftFilters.hasTeamCouple}
-                      onChange={(checked) =>
-                        setDraftFilter("hasTeamCouple", checked)
-                      }
-                    />
-                  </div>
-                </fieldset>
                 <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
                   <ShieldCheck
                     className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700"
@@ -950,7 +945,6 @@ const copy = {
     smoker: "Smoker",
     visibleTattoos: "Visible tattoos",
     minimumExperience: "Minimum experience",
-    profileQuality: "Profile readiness",
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
     hasGallery: "Blue gallery",
@@ -1007,7 +1001,6 @@ const copy = {
     smoker: "Sigara kullanımı",
     visibleTattoos: "Görünür dövme",
     minimumExperience: "Minimum deneyim",
-    profileQuality: "Profil yeterliliği",
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",
     hasGallery: "Blue gallery",

@@ -218,7 +218,7 @@ test("keeps nationality in primary filters and removes the location filter", asy
   );
   const advancedStart = client.indexOf("{advancedOpen ?", primaryStart);
   const advancedEnd = client.indexOf(
-    '<fieldset className="mt-5">',
+    "{c.fairHiringNote}",
     advancedStart,
   );
   const primaryFilters = client.slice(primaryStart, advancedStart);
@@ -230,6 +230,37 @@ test("keeps nationality in primary filters and removes the location filter", asy
   assert.doesNotMatch(primaryFilters, /label=\{c\.location\}/);
   assert.doesNotMatch(advancedSelects, /label=\{c\.location\}/);
   assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
+});
+
+test("advanced crew filters show readiness toggles first without a heading", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+  const advancedStart = client.indexOf('id="crew-advanced-filters"');
+  const advancedEnd = client.indexOf("{c.fairHiringNote}", advancedStart);
+  const advancedFilters = client.slice(advancedStart, advancedEnd);
+  const orderedFields = [
+    "premiumOnly",
+    "hasPhoto",
+    "hasGallery",
+    "hasTeamCouple",
+    "maritalStatus",
+    "gender",
+    "smoker",
+    "visibleTattoos",
+    "minimumExperience",
+  ];
+  const fieldPositions = orderedFields.map((field) =>
+    advancedFilters.indexOf(`draftFilters.${field}`),
+  );
+
+  assert.ok(advancedStart >= 0 && advancedEnd > advancedStart);
+  assert.ok(fieldPositions.every((position) => position >= 0));
+  assert.deepEqual(fieldPositions, [...fieldPositions].sort((a, b) => a - b));
+  assert.doesNotMatch(advancedFilters, /profileQuality|Profile readiness/);
+  assert.doesNotMatch(advancedFilters, /<legend\b/);
+  assert.doesNotMatch(client, /profileQuality:/);
 });
 
 test("primary crew filter controls use equal desktop columns", async () => {
