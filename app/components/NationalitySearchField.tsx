@@ -22,8 +22,10 @@ import { useLanguage } from "./LanguageProvider";
 
 const defaultLabelClassName =
   "mb-1.5 block text-xs font-bold text-slate-600";
+export const NATIONALITY_CONTROL_SIZE_CLASS_NAME =
+  "h-12 min-h-12 w-full min-w-0";
 const defaultControlClassName =
-  "min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100";
+  `${NATIONALITY_CONTROL_SIZE_CLASS_NAME} rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`;
 
 export function NationalitySearchField({
   label,
@@ -154,11 +156,14 @@ export function NationalitySearchField({
   }
 
   return (
-    <div ref={wrapperRef} className={`relative block ${className}`.trim()}>
+    <div
+      ref={wrapperRef}
+      className={`relative block min-w-0 ${className}`.trim()}
+    >
       <label htmlFor={inputId} className={labelClassName}>
         {label}
       </label>
-      <div className="relative">
+      <div className="relative min-w-0">
         <input
           ref={inputRef}
           id={inputId}

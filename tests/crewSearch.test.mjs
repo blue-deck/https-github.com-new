@@ -264,12 +264,16 @@ test("advanced crew filters show readiness toggles first without a heading", asy
 });
 
 test("primary crew filter controls use equal desktop columns", async () => {
-  const [client, loading] = await Promise.all([
+  const [client, loading, nationalityField] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
     ),
     readFile(new URL("../app/find-crew/loading.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/components/NationalitySearchField.tsx", import.meta.url),
+      "utf8",
+    ),
   ]);
 
   assert.match(client, /\? "xl:grid-cols-4"/);
@@ -283,6 +287,21 @@ test("primary crew filter controls use equal desktop columns", async () => {
   );
   assert.doesNotMatch(client, /1\.35fr|0\.9fr/);
   assert.doesNotMatch(loading, /1\.35fr|0\.9fr/);
+  assert.match(
+    nationalityField,
+    /NATIONALITY_CONTROL_SIZE_CLASS_NAME =\s*\n\s*"h-12 min-h-12 w-full min-w-0"/,
+  );
+  assert.match(
+    client,
+    /id="crew-keyword-search"[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
+  );
+  assert.match(
+    client,
+    /function FilterSelect[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
+  );
+  assert.match(client, /<form\s+className="block min-w-0"/);
+  assert.match(client, /<label className="block min-w-0">/);
+  assert.match(nationalityField, /relative block min-w-0/);
 });
 
 test("find crew reuses every My Profile availability option", async () => {

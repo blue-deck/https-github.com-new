@@ -12,7 +12,10 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
-import { NationalitySearchField } from "../components/NationalitySearchField";
+import {
+  NATIONALITY_CONTROL_SIZE_CLASS_NAME,
+  NationalitySearchField,
+} from "../components/NationalitySearchField";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import { crewAvailabilityStatuses } from "../lib/crewDiscovery";
@@ -310,7 +313,7 @@ export function FindCrewClient({
               }`}
             >
               <form
-                className="block"
+                className="block min-w-0"
                 onSubmit={(event) => {
                   event.preventDefault();
                   submitCrewKeywordSearch();
@@ -322,7 +325,7 @@ export function FindCrewClient({
                 >
                   {c.search}
                 </label>
-                <span className="relative block">
+                <span className="relative block min-w-0">
                   <input
                     id="crew-keyword-search"
                     type="search"
@@ -341,7 +344,7 @@ export function FindCrewClient({
                     placeholder={c.searchPlaceholder}
                     maxLength={120}
                     autoCapitalize="sentences"
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
                   />
                   <button
                     type="submit"
@@ -693,14 +696,14 @@ function FilterSelect({
   const visibleOptions =
     value && !options.includes(value) ? [value, ...options] : options;
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-1.5 block text-xs font-bold text-slate-600">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+        className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
       >
         <option value="">{emptyOptionLabel}</option>
         {visibleOptions.map((option) => (
