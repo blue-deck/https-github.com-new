@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BriefcaseBusiness,
   ChevronDown,
-  Compass,
   Filter,
   LoaderCircle,
   RefreshCw,
@@ -447,20 +446,7 @@ export function JobsClient({
       <PublicHeader />
 
       <main id="main-content">
-        <section className="border-b border-slate-200 bg-white">
-          <div className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 lg:px-10 lg:py-16">
-            <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-cyan-800">
-              <Compass className="h-4 w-4" aria-hidden />
-              {c.eyebrow}
-            </p>
-            <h1 className="bd-serif mt-4 max-w-4xl text-4xl leading-[1.02] text-[#071f3c] sm:text-5xl lg:text-6xl">
-              {c.title}
-            </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-[#526b83]">
-              {c.intro}
-            </p>
-          </div>
-        </section>
+        <h1 className="sr-only">{c.pageTitle}</h1>
 
         <section
           id="jobs-board"
@@ -1851,10 +1837,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 const copy = {
   en: {
-    eyebrow: "Open yacht roles",
-    title: "Your next role may already be on deck.",
-    intro:
-      "Search every detail employers publish, from vessel specifications and start dates to certificates, visas and working preferences.",
+    pageTitle: "Open yacht roles",
     filters: "Search and filters",
     filterHint:
       "Choose your filters, then select Search to update the results.",
@@ -1943,10 +1926,7 @@ const copy = {
     shown: "shown",
   },
   tr: {
-    eyebrow: "Açık yat pozisyonları",
-    title: "Sıradaki göreviniz güvertede sizi bekliyor olabilir.",
-    intro:
-      "İşverenlerin yayınladığı yat özelliklerinden başlangıç tarihlerine, sertifikalardan vize ve çalışma tercihlerine kadar her ayrıntıda arayın.",
+    pageTitle: "Açık yat pozisyonları",
     filters: "Arama ve filtreler",
     filterHint:
       "Filtrelerinizi seçin, ardından sonuçları güncellemek için Ara'ya basın.",

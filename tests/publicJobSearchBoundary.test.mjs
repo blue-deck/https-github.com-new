@@ -23,6 +23,20 @@ test("public job search is SSR hydrated and does not issue a duplicate first fet
   assert.match(client, /if \(skipInitialFetch\.current\)/);
 });
 
+test("Find Jobs opens directly on filters without the promotional hero", async () => {
+  const client = await source("app/jobs/JobsClient.tsx");
+
+  assert.match(
+    client,
+    /<main id="main-content">\s*<h1 className="sr-only">\{c\.pageTitle\}<\/h1>\s*<section\s+id="jobs-board"/,
+  );
+  assert.doesNotMatch(client, /c\.(eyebrow|title|intro)/);
+  assert.doesNotMatch(client, /Your next role may already be on deck/);
+  assert.doesNotMatch(client, /Search every detail employers publish/);
+  assert.doesNotMatch(client, /Sıradaki göreviniz güvertede sizi bekliyor olabilir/);
+  assert.doesNotMatch(client, /İşverenlerin yayınladığı yat özelliklerinden/);
+});
+
 test("client restores URL filters, advances a filter-bound cursor, and exposes both error states", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
 
