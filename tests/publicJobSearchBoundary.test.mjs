@@ -252,7 +252,6 @@ test("advanced job filters use one flat responsive grid without dropping control
     [
       "department",
       "teamCouple",
-      "minimumExperience",
       "yachtType",
       "yachtFlag",
       "yachtLength",
@@ -276,7 +275,6 @@ test("advanced job filters use one flat responsive grid without dropping control
     [
       "departments",
       "teamCouple",
-      "minimumExperiences",
       "yachtTypes",
       "flags",
       "languages",
@@ -285,6 +283,33 @@ test("advanced job filters use one flat responsive grid without dropping control
       "salaryPeriods",
     ].sort(),
   );
+});
+
+test("minimum yacht experience remains job data but is not a public job filter", async () => {
+  const [client, search, config, manager, parser, detail] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/lib/publicJobSearch.ts"),
+    source("app/lib/publicJobSearchConfig.ts"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/jobs/job-data.ts"),
+    source("app/jobs/[id]/JobDetailClient.tsx"),
+  ]);
+
+  assert.doesNotMatch(
+    client,
+    /c\.(minimumExperience|anyExperience)|minimumYachtExperiences|minimumExperiences/,
+  );
+  assert.doesNotMatch(search, /minimumYachtExperiences/);
+  assert.doesNotMatch(search, /"minimumExperience"/);
+  assert.doesNotMatch(
+    config,
+    /jobMinimumYachtExperiences|minimumYachtExperiences/,
+  );
+  assert.match(search, /job\.minimumYachtExperience/);
+  assert.match(manager, /<Field label=\{c\.minimumYachtExperience\}>/);
+  assert.match(manager, /jobMinimumYachtExperiences\.map/);
+  assert.match(parser, /minimumYachtExperience/);
+  assert.match(detail, /label: c\.minimumYachtExperience/);
 });
 
 test("Find Jobs and Create Job Post share salary currency options and labels", async () => {

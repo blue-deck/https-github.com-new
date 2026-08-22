@@ -19,7 +19,6 @@ import { useLanguage } from "../components/LanguageProvider";
 import { formatCountryWithFlag, nationalityOptions } from "../lib/countries";
 import {
   formatJobEmploymentType,
-  formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
   formatJobSalaryCurrencyOption,
   formatJobSalaryPeriod,
@@ -653,21 +652,6 @@ export function JobsClient({
                         candidateTypes: candidateTypesForTeamCouple(
                           value as TeamCoupleFilterValue,
                         ),
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.minimumExperience}
-                    placeholder={c.anyExperience}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.minimumExperiences}
-                    values={draftFilters.minimumYachtExperiences}
-                    onChange={(minimumYachtExperiences) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        minimumYachtExperiences:
-                          minimumYachtExperiences as PublicJobSearchFilters["minimumYachtExperiences"],
                       }))
                     }
                   />
@@ -1500,10 +1484,6 @@ function buildOptionSets(language: Language, c: SearchCopy) {
     flags: nationalityOptions.map(({ code }) =>
       option(code, formatCountryWithFlag(code) || code),
     ),
-    minimumExperiences: publicJobSearchTaxonomy.minimumYachtExperiences.map(
-      (value) =>
-        option(value, formatJobMinimumYachtExperience(value, language)),
-    ),
     languages: publicJobSearchTaxonomy.requiredLanguages.map((value) =>
       option(value, formatJobRequiredLanguage(value, language)),
     ),
@@ -1630,18 +1610,6 @@ function buildActiveFilterChips(
     (current) => ({ ...current, crewMemberCountMax: null }),
   );
 
-  filters.minimumYachtExperiences.forEach((value) =>
-    add(
-      `experience-${value}`,
-      `${c.minimumExperience}: ${formatJobMinimumYachtExperience(value, language)}`,
-      (current) => ({
-        ...current,
-        minimumYachtExperiences: current.minimumYachtExperiences.filter(
-          (item) => item !== value,
-        ),
-      }),
-    ),
-  );
   filters.requiredLanguages.forEach((value) =>
     add(
       `language-${value}`,
@@ -1786,7 +1754,6 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
     (filters.crewMemberCountMax !== null ? 1 : 0) +
-    filters.minimumYachtExperiences.length +
     filters.requiredLanguages.length +
     filters.requiredVisas.length +
     (filters.salaryCurrency ? 1 : 0) +
@@ -1956,8 +1923,6 @@ const copy = {
     yachtLength: "Yacht length",
     metres: "m",
     crewCount: "Crew size",
-    minimumExperience: "Minimum yacht experience",
-    anyExperience: "Any experience",
     minimum: "Min",
     maximum: "Max",
     languages: "Languages",
@@ -2053,8 +2018,6 @@ const copy = {
     yachtLength: "Yat uzunluğu",
     metres: "m",
     crewCount: "Mürettebat sayısı",
-    minimumExperience: "Minimum yat deneyimi",
-    anyExperience: "Tüm deneyim düzeyleri",
     minimum: "Min",
     maximum: "Maks",
     languages: "Diller",

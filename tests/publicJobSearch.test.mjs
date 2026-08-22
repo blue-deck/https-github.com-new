@@ -29,7 +29,6 @@ const taxonomy = {
   employmentTypes: ["permanent", "rotation"],
   candidateTypes: ["individual", "team", "couple"],
   yachtTypes: ["motor_yacht", "sailing_yacht"],
-  minimumYachtExperiences: ["3_5_years", "5_plus_years"],
   requiredLanguages: ["English", "Turkish"],
   visas: ["Schengen Visa", "US B1/B2 Visa"],
   salaryCurrencies: jobSalaryCurrencyOptions,
@@ -52,7 +51,6 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["lengthMax", "70.5"],
     ["crewMin", "8"],
     ["crewMax", "20"],
-    ["minimumExperience", "3_5_years"],
     ["language", "English"],
     ["visa", "Schengen Visa"],
     ["salaryCurrency", "EUR"],
@@ -262,8 +260,9 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
   }
 });
 
-test("rejects removed brand, requirement, policy, build-year, date-recency, and page-size filters", () => {
+test("rejects removed experience, brand, requirement, policy, build-year, date-recency, and page-size filters", () => {
   for (const query of [
+    "minimumExperience=3_5_years",
     "yachtBrand=Feadship",
     "skill=Crew%20management",
     "trait=Leadership",
@@ -304,7 +303,6 @@ test("matches every structured public-detail category with normalized yacht unit
     yachtLengthMaxMetres: 50.1,
     crewMemberCountMin: 10,
     crewMemberCountMax: 15,
-    minimumYachtExperiences: ["3_5_years"],
     requiredLanguages: ["English"],
     requiredVisas: ["Schengen Visa"],
     salaryCurrency: "EUR",
@@ -336,6 +334,20 @@ test("matches every structured public-detail category with normalized yacht unit
       "2026-08-08T12:00:00.000Z",
     ),
     false,
+  );
+});
+
+test("minimum yacht experience remains searchable job content without a structured filter", () => {
+  const filters = createDefaultPublicJobSearchFilters();
+  filters.query = "plus";
+
+  assert.equal(matchesPublicJobSearch(sampleJob(), filters), false);
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ minimumYachtExperience: "5_plus_years" }),
+      filters,
+    ),
+    true,
   );
 });
 
@@ -628,6 +640,13 @@ test("result fingerprint changes with membership, order, or mutable public state
     await publicJobSearchResultFingerprint([
       first,
       { ...second, startDate: "2026-10-01" },
+    ]),
+    baseline,
+  );
+  assert.notEqual(
+    await publicJobSearchResultFingerprint([
+      first,
+      { ...second, minimumYachtExperience: "5_plus_years" },
     ]),
     baseline,
   );
