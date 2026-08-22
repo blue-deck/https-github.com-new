@@ -19,7 +19,6 @@ import { useLanguage } from "../components/LanguageProvider";
 import { formatCountryWithFlag, nationalityOptions } from "../lib/countries";
 import {
   formatJobEmploymentType,
-  formatJobRequiredLanguage,
   formatJobSalaryCurrencyOption,
   formatJobSalaryPeriod,
   formatJobVisa,
@@ -728,21 +727,6 @@ export function JobsClient({
                       updateDraftFilters((current) => ({
                         ...current,
                         crewMemberCountMax,
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.languages}
-                    placeholder={c.anyLanguage}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.languages}
-                    values={draftFilters.requiredLanguages}
-                    onChange={(requiredLanguages) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        requiredLanguages:
-                          requiredLanguages as PublicJobSearchFilters["requiredLanguages"],
                       }))
                     }
                   />
@@ -1484,9 +1468,6 @@ function buildOptionSets(language: Language, c: SearchCopy) {
     flags: nationalityOptions.map(({ code }) =>
       option(code, formatCountryWithFlag(code) || code),
     ),
-    languages: publicJobSearchTaxonomy.requiredLanguages.map((value) =>
-      option(value, formatJobRequiredLanguage(value, language)),
-    ),
     visas: publicJobSearchTaxonomy.visas.map((value) =>
       option(value, formatJobVisa(value)),
     ),
@@ -1610,18 +1591,6 @@ function buildActiveFilterChips(
     (current) => ({ ...current, crewMemberCountMax: null }),
   );
 
-  filters.requiredLanguages.forEach((value) =>
-    add(
-      `language-${value}`,
-      formatJobRequiredLanguage(value, language),
-      (current) => ({
-        ...current,
-        requiredLanguages: current.requiredLanguages.filter(
-          (item) => item !== value,
-        ),
-      }),
-    ),
-  );
   filters.requiredVisas.forEach((value) =>
     add(`visa-${value}`, formatJobVisa(value), (current) => ({
       ...current,
@@ -1754,7 +1723,6 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
     (filters.crewMemberCountMax !== null ? 1 : 0) +
-    filters.requiredLanguages.length +
     filters.requiredVisas.length +
     (filters.salaryCurrency ? 1 : 0) +
     (filters.salaryPeriod ? 1 : 0) +
@@ -1925,8 +1893,6 @@ const copy = {
     crewCount: "Crew size",
     minimum: "Min",
     maximum: "Max",
-    languages: "Languages",
-    anyLanguage: "Any language",
     visas: "Visas",
     anyVisa: "Any visa",
     currency: "Salary currency",
@@ -2020,8 +1986,6 @@ const copy = {
     crewCount: "Mürettebat sayısı",
     minimum: "Min",
     maximum: "Maks",
-    languages: "Diller",
-    anyLanguage: "Tüm diller",
     visas: "Vizeler",
     anyVisa: "Tüm vizeler",
     currency: "Ücret para birimi",

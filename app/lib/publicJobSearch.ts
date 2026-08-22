@@ -1,7 +1,6 @@
 import type {
   JobCandidateType,
   JobEmploymentType,
-  JobRequiredLanguage,
   JobSalaryCurrency,
   JobSalaryPeriod,
   JobVisa,
@@ -29,7 +28,6 @@ export type PublicJobSearchTaxonomy = {
   employmentTypes: readonly JobEmploymentType[];
   candidateTypes: readonly JobCandidateType[];
   yachtTypes: readonly JobYachtType[];
-  requiredLanguages: readonly JobRequiredLanguage[];
   visas: readonly JobVisa[];
   salaryCurrencies: readonly JobSalaryCurrency[];
   salaryPeriods: readonly JobSalaryPeriod[];
@@ -49,7 +47,6 @@ export type PublicJobSearchFilters = {
   yachtLengthMaxMetres: number | null;
   crewMemberCountMin: number | null;
   crewMemberCountMax: number | null;
-  requiredLanguages: JobRequiredLanguage[];
   requiredVisas: JobVisa[];
   salaryCurrency: JobSalaryCurrency | null;
   salaryPeriod: JobSalaryPeriod | null;
@@ -93,7 +90,6 @@ const queryKeys = new Set([
   "lengthMax",
   "crewMin",
   "crewMax",
-  "language",
   "visa",
   "salaryCurrency",
   "salaryPeriod",
@@ -110,7 +106,6 @@ const multiValueLimits: Record<string, number> = {
   candidateType: 3,
   yachtType: 11,
   yachtFlag: 12,
-  language: 11,
   visa: 5,
 };
 
@@ -147,7 +142,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     yachtLengthMaxMetres: null,
     crewMemberCountMin: null,
     crewMemberCountMax: null,
-    requiredLanguages: [],
     requiredVisas: [],
     salaryCurrency: null,
     salaryPeriod: null,
@@ -211,11 +205,6 @@ export function parsePublicJobSearchParams(
     taxonomy.yachtFlagCountryCodes,
     (value) => value.toUpperCase(),
   );
-  const requiredLanguages = enumList(
-    searchParams,
-    "language",
-    taxonomy.requiredLanguages,
-  );
   const requiredVisas = enumList(
     searchParams,
     "visa",
@@ -229,7 +218,6 @@ export function parsePublicJobSearchParams(
     candidateTypes,
     yachtTypes,
     yachtFlagCountryCodes,
-    requiredLanguages,
     requiredVisas,
   ];
   const invalidEnumList = enumLists.find((result) => !result.ok);
@@ -322,7 +310,6 @@ export function parsePublicJobSearchParams(
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
     crewMemberCountMin: numericValue(crewMemberCountMin),
     crewMemberCountMax: numericValue(crewMemberCountMax),
-    requiredLanguages: successfulList(requiredLanguages),
     requiredVisas: successfulList(requiredVisas),
     salaryCurrency,
     salaryPeriod,
@@ -374,7 +361,6 @@ export function publicJobSearchParams(
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
   setNumber(params, "crewMin", filters.crewMemberCountMin);
   setNumber(params, "crewMax", filters.crewMemberCountMax);
-  setList(params, "language", filters.requiredLanguages);
   setList(params, "visa", filters.requiredVisas);
   setText(params, "salaryCurrency", filters.salaryCurrency || "");
   setText(params, "salaryPeriod", filters.salaryPeriod || "");
@@ -396,7 +382,6 @@ export function canonicalPublicJobSearchFilters(
     candidateTypes: canonicalList(filters.candidateTypes),
     yachtTypes: canonicalList(filters.yachtTypes),
     yachtFlagCountryCodes: canonicalList(filters.yachtFlagCountryCodes),
-    requiredLanguages: canonicalList(filters.requiredLanguages),
     requiredVisas: canonicalList(filters.requiredVisas),
     limit: defaultPublicJobSearchLimit,
   }).toString();
@@ -459,10 +444,7 @@ export function matchesPublicJobSearch(
   ) {
     return false;
   }
-  if (
-    !arraysIntersect(filters.requiredLanguages, job.requiredLanguages) ||
-    !arraysIntersect(filters.requiredVisas, job.requiredVisas)
-  ) {
+  if (!arraysIntersect(filters.requiredVisas, job.requiredVisas)) {
     return false;
   }
   const salaryFilterSelected =

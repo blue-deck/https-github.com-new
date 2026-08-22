@@ -199,7 +199,7 @@ test("Find Jobs reuses the Create Job Post location search without auto-applying
   assert.match(jobsClient, /locationSearching: "Konumlar aranıyor…"/);
 });
 
-test("published requirements expose only language and visa filters", async () => {
+test("published requirements expose only the visa filter", async () => {
   const [client, search, config] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/lib/publicJobSearch.ts"),
@@ -214,6 +214,8 @@ test("published requirements expose only language and visa filters", async () =>
   assert.doesNotMatch(search, /(smokerPolicies|visibleTattooPolicies):/);
   assert.doesNotMatch(search, /setList\(params, "(smoker|tattoo)"/);
   assert.doesNotMatch(config, /(smokerPolicies|visibleTattooPolicies):/);
+  assert.match(client, /label=\{c\.visas\}/);
+  assert.doesNotMatch(client, /label=\{c\.languages\}/);
 });
 
 test("advanced job filters use one flat responsive grid without dropping controls", async () => {
@@ -256,7 +258,6 @@ test("advanced job filters use one flat responsive grid without dropping control
       "yachtFlag",
       "yachtLength",
       "crewCount",
-      "languages",
       "visas",
       "currency",
       "payPeriod",
@@ -277,12 +278,47 @@ test("advanced job filters use one flat responsive grid without dropping control
       "teamCouple",
       "yachtTypes",
       "flags",
-      "languages",
       "visas",
       "salaryCurrencies",
       "salaryPeriods",
     ].sort(),
   );
+});
+
+test("required languages remain job data but are not a public job filter", async () => {
+  const [client, search, config, manager, parser, detail] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/lib/publicJobSearch.ts"),
+    source("app/lib/publicJobSearchConfig.ts"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/jobs/job-data.ts"),
+    source("app/jobs/[id]/JobDetailClient.tsx"),
+  ]);
+
+  assert.doesNotMatch(
+    client,
+    /c\.(languages|anyLanguage)|draftFilters\.requiredLanguages|optionSets\.languages|formatJobRequiredLanguage/,
+  );
+  assert.doesNotMatch(search, /requiredLanguages: JobRequiredLanguage\[\]/);
+  assert.doesNotMatch(search, /filters\.requiredLanguages/);
+  assert.doesNotMatch(search, /taxonomy\.requiredLanguages/);
+  assert.doesNotMatch(search, /"language"/);
+  assert.doesNotMatch(config, /jobRequiredLanguages|requiredLanguages/);
+
+  const fingerprint = search.slice(
+    search.indexOf("export async function publicJobSearchResultFingerprint"),
+    search.indexOf("function publicJobSearchDocument"),
+  );
+  const keywordDocument = search.slice(
+    search.indexOf("function publicJobSearchDocument"),
+    search.indexOf("function keywordMatches"),
+  );
+  assert.match(fingerprint, /job\.requiredLanguages/);
+  assert.match(keywordDocument, /\.\.\.job\.requiredLanguages/);
+  assert.match(manager, /title=\{c\.requiredLanguages\}/);
+  assert.match(manager, /jobRequiredLanguages/);
+  assert.match(parser, /requiredLanguages/);
+  assert.match(detail, /label: c\.languages/);
 });
 
 test("minimum yacht experience remains job data but is not a public job filter", async () => {
