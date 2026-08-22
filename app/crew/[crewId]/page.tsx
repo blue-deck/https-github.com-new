@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cache, type ReactNode } from "react";
 import { notFound } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   BriefcaseBusiness,
   MapPin,
@@ -14,6 +15,10 @@ import {
   safeOwnedPublicMediaUrl,
 } from "../../lib/publicCrewSafety";
 import { maskedPersonName } from "../../lib/crewCandidateDataServer";
+import {
+  crewExperienceBreakdownFromDateRanges,
+  formatCrewExperienceDuration,
+} from "../../lib/crewExperience";
 import {
   referencesForExperience,
   unlinkedExperienceReferences,
@@ -87,6 +92,13 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
   ].slice(0, 18);
   const cleanReferences = publicReferenceEntries(references);
   const standaloneReferences = unlinkedExperienceReferences(experiences, cleanReferences);
+  const yachtExperiences = experiences.filter(
+    (experience) => publicExperienceKind(experience) === "yacht",
+  );
+  const otherExperiences = experiences.filter(
+    (experience) => publicExperienceKind(experience) === "other",
+  );
+  const experienceBreakdown = publicExperienceBreakdown(experiences);
   const professionalSummary =
     text(profile, "bio") ||
     `I am a ${position.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
@@ -247,65 +259,37 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                 </p>
               </CvSection>
 
-              <CvSection title="Yacht Experience" badge={`${totalExperienceYears(experiences)} years`} icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />}>
-              <div className="bd-cv-experience-list space-y-4">
-                {experiences.length === 0 && (
+              {yachtExperiences.length > 0 && (
+                <PublicExperienceSection
+                  title="Yacht Experience"
+                  duration={formatCrewExperienceDuration(experienceBreakdown.yachtYears, "en")}
+                  experiences={yachtExperiences}
+                  references={cleanReferences}
+                  kind="yacht"
+                />
+              )}
+
+              {otherExperiences.length > 0 && (
+                <PublicExperienceSection
+                  title="Other Experience"
+                  duration={formatCrewExperienceDuration(experienceBreakdown.otherYears, "en")}
+                  experiences={otherExperiences}
+                  references={cleanReferences}
+                  kind="other"
+                  indexOffset={Math.min(
+                    yachtExperiences.length,
+                    maximumRenderedPublicExperiencesPerType,
+                  )}
+                />
+              )}
+
+              {experiences.length === 0 && (
+                <CvSection title="Experience" icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />}>
                   <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
-                    No yacht experience added yet.
+                    No experience added yet.
                   </p>
-                )}
-                {experiences.map((experience, index) => {
-                  const experienceReferences = referencesForExperience(experience, cleanReferences);
-                  const yachtName = text(experience, "yacht_name") || "Yacht";
-
-                  return (
-                    <article key={text(experience, "id") || `${text(experience, "yacht_name")}-${text(experience, "start_date")}`} className={`bd-cv-experience overflow-hidden rounded-2xl border border-[#cbd8dd] bg-white shadow-sm shadow-slate-950/5 ${shouldBreakBeforeExperience(index) ? "bd-cv-experience-break-before" : ""}`}>
-                      <div className="bd-cv-experience-grid grid grid-cols-[136px_1fr] items-stretch">
-                        <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-white p-3">
-                          {text(experience, "photo_url") ? (
-                            <img
-                              src={text(experience, "photo_url")}
-                              alt={`${yachtName} yacht work experience`}
-                              className="h-24 w-full rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="h-24 rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)]" />
-                          )}
-                          <div className="mt-3">
-                            {[experienceText(experience, "yacht_type"), experienceText(experience, "yacht_program"), experienceText(experience, "yacht_size")].filter(Boolean).length > 0 && (
-                              <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
-                                {[experienceText(experience, "yacht_type"), experienceText(experience, "yacht_program"), experienceText(experience, "yacht_size")].filter(Boolean).join(" / ")}
-                              </p>
-                            )}
-                            <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">{formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}</p>
-                            {experienceText(experience, "location") && (
-                              <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
-                                <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-                                <span>{experienceText(experience, "location")}</span>
-                              </p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="bd-cv-experience-body h-full bg-white p-4">
-                          <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#d8e2e6] pb-3">
-                            <h2 className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]" style={{ fontSize: yachtNameFontSize(yachtName) }}>{yachtName}</h2>
-                            <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
-                              {text(experience, "position") || "Position"}
-                            </span>
-                          </div>
-                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
-                          <p className="mt-2 text-[13px] leading-5 text-[#364650]">
-                            {experienceText(experience, "description") || "Responsibilities and onboard duties will appear here."}
-                          </p>
-                          <PublicExperienceReferences references={experienceReferences} />
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </CvSection>
+                </CvSection>
+              )}
 
             {standaloneReferences.length > 0 && (
               <CvSection title="References">
@@ -342,7 +326,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   const profile = context.profile as Row;
 
   const profileId = String(profile.id);
-  const [documentRes, initialExperienceRes, referenceRes] = await Promise.all([
+  const [documentRes, experienceResult, referenceRes] = await Promise.all([
     serviceClient
       .from("crew_documents")
       .select("id,document_type,category,issuer,expiry_date,no_expiry")
@@ -350,14 +334,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false })
       .limit(10),
-    serviceClient
-      .from("crew_experiences")
-      .select(
-        "id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,photo_url",
-      )
-      .eq("crew_profile_id", profileId)
-      .order("start_date", { ascending: false })
-      .limit(30),
+    loadPublicCvExperienceRows(serviceClient, profileId),
     serviceClient
       .from("crew_references")
       .select("id,role,vessel,company,crew_experience_id")
@@ -367,28 +344,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       .limit(20),
   ]);
 
-  let experienceRows = initialExperienceRes.data as Row[] | null;
-  let experienceError = initialExperienceRes.error;
-
-  if (
-    experienceError &&
-    /yacht_type|yacht_program|yacht_size|location|schema cache|column/i.test(
-      experienceError.message,
-    )
-  ) {
-    const fallbackExperienceRes = await serviceClient
-      .from("crew_experiences")
-      .select(
-        "id,yacht_name,position,start_date,end_date,description,photo_url",
-      )
-      .eq("crew_profile_id", profileId)
-      .order("start_date", { ascending: false })
-      .limit(30);
-    experienceRows = fallbackExperienceRes.data as Row[] | null;
-    experienceError = fallbackExperienceRes.error;
-  }
-
-  if (documentRes.error || experienceError || referenceRes.error) {
+  if (documentRes.error || experienceResult.error || referenceRes.error) {
     return null;
   }
 
@@ -438,7 +394,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       expiry_date: text(document as Row, "expiry_date"),
       no_expiry: document.no_expiry === true,
     })),
-    experiences: (experienceRows || []).map((experience) =>
+    experiences: experienceResult.rows.map((experience) =>
       publicExperienceRow(
         experience as Row,
         cleanCrewId,
@@ -455,6 +411,67 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   };
 });
 
+const publicCvExperiencePageSize = 100;
+const maximumPublicCvExperienceRows = 500;
+const maximumRenderedPublicExperiencesPerType = 30;
+const richPublicExperienceSelect =
+  "id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,photo_url";
+const fallbackPublicExperienceSelect =
+  "id,yacht_name,position,start_date,end_date,description,photo_url";
+
+async function loadPublicCvExperienceRows(
+  serviceClient: SupabaseClient,
+  profileId: string,
+): Promise<{ rows: Row[]; error: { message?: string } | null }> {
+  const rows: Row[] = [];
+  let offset = 0;
+  let useFallbackSelect = false;
+
+  while (rows.length < maximumPublicCvExperienceRows) {
+    const requestedPageSize = Math.min(
+      publicCvExperiencePageSize,
+      maximumPublicCvExperienceRows - rows.length,
+    );
+    const selectedColumns: string = useFallbackSelect
+      ? fallbackPublicExperienceSelect
+      : richPublicExperienceSelect;
+    const response = await serviceClient
+      .from("crew_experiences")
+      .select(selectedColumns)
+      .eq("crew_profile_id", profileId)
+      .order("start_date", { ascending: false })
+      .order("id", { ascending: true })
+      .range(offset, offset + requestedPageSize - 1);
+
+    if (
+      response.error &&
+      !useFallbackSelect &&
+      isLegacyPublicExperienceSchemaError(response.error)
+    ) {
+      useFallbackSelect = true;
+      rows.length = 0;
+      offset = 0;
+      continue;
+    }
+    if (response.error) return { rows: [], error: response.error };
+
+    const page = (response.data || []) as unknown as Row[];
+    rows.push(...page);
+    if (page.length < requestedPageSize) {
+      return { rows, error: null };
+    }
+    offset += requestedPageSize;
+  }
+
+  return { rows, error: null };
+}
+
+function isLegacyPublicExperienceSchemaError(error: { message?: string }) {
+  return /yacht_type|yacht_program|yacht_size|location|schema cache|column/i.test(
+    error.message || "",
+  );
+}
+
 function primaryPosition(profile: Row) {
   return stringArray(profile.current_positions)[0] || text(profile, "current_position") || "Yacht Crew";
 }
@@ -465,6 +482,9 @@ function text(row: Row, key: string) {
 }
 
 const experienceMetadataPrefix = "__BLUDECK_EXPERIENCE_META__";
+const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
+
+type PublicExperienceKind = "yacht" | "other";
 
 function experienceText(row: Row, key: string) {
   if (key === "description") return splitExperienceDescription(text(row, "description")).description.trim();
@@ -473,6 +493,31 @@ function experienceText(row: Row, key: string) {
   }
 
   return text(row, key);
+}
+
+function publicExperienceKind(row: Row): PublicExperienceKind {
+  const explicitKind = text(row, "experience_kind");
+  if (explicitKind === "other") return "other";
+  if (explicitKind === "yacht") return "yacht";
+
+  const yachtType = experienceText(row, "yacht_type");
+  const yachtProgram = experienceText(row, "yacht_program");
+  return yachtType === otherWorkExperienceMarker || yachtProgram.toLowerCase() === "other work"
+    ? "other"
+    : "yacht";
+}
+
+function publicExperienceBreakdown(experiences: Row[]) {
+  return crewExperienceBreakdownFromDateRanges(
+    experiences.map((experience) => ({
+      yacht_type:
+        publicExperienceKind(experience) === "other"
+          ? otherWorkExperienceMarker
+          : "",
+      start_date: text(experience, "start_date"),
+      end_date: text(experience, "end_date"),
+    })),
+  );
 }
 
 function splitExperienceDescription(value: string): { description: string; meta: Record<string, string> } {
@@ -542,25 +587,31 @@ function publicExperienceRow(
 ): Row {
   const parsedDescription = splitExperienceDescription(text(row, "description"));
   const experienceId = text(row, "id");
+  const rawYachtType = text(row, "yacht_type") || parsedDescription.meta.yacht_type;
+  const rawYachtProgram = text(row, "yacht_program") || parsedDescription.meta.yacht_program;
+  const isOtherWork =
+    rawYachtType === otherWorkExperienceMarker ||
+    rawYachtProgram.toLowerCase() === "other work";
   const hasPhoto = Boolean(
     safeOwnedPublicMediaUrl(text(row, "photo_url"), ownerIds),
   );
 
   return {
     id: experienceId,
+    experience_kind: isOtherWork ? "other" : "yacht",
     yacht_name: redactPublicContactDetails(text(row, "yacht_name"), 160),
-    yacht_type: redactPublicContactDetails(
-      text(row, "yacht_type") || parsedDescription.meta.yacht_type,
-      120,
-    ),
-    yacht_program: redactPublicContactDetails(
-      text(row, "yacht_program") || parsedDescription.meta.yacht_program,
-      120,
-    ),
-    yacht_size: redactPublicContactDetails(
-      text(row, "yacht_size") || parsedDescription.meta.yacht_size,
-      80,
-    ),
+    yacht_type: isOtherWork
+      ? ""
+      : redactPublicContactDetails(rawYachtType, 120),
+    yacht_program: isOtherWork
+      ? ""
+      : redactPublicContactDetails(rawYachtProgram, 120),
+    yacht_size: isOtherWork
+      ? ""
+      : redactPublicContactDetails(
+          text(row, "yacht_size") || parsedDescription.meta.yacht_size,
+          80,
+        ),
     location: redactPublicContactDetails(
       text(row, "location") || parsedDescription.meta.location,
       160,
@@ -593,14 +644,6 @@ function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
-}
-
-function totalExperienceYears(experiences: Row[]) {
-  const firstYear = experiences
-    .map((item) => Number(text(item, "start_date").slice(0, 4)))
-    .filter(Boolean)
-    .sort((a, b) => a - b)[0];
-  return firstYear ? `${Math.max(new Date().getFullYear() - firstYear, 1)}+` : "0";
 }
 
 function formatCvDate(value?: string) {
@@ -664,6 +707,113 @@ function languageLevelWidth(level: string) {
   return "50%";
 }
 
+function PublicExperienceSection({
+  title,
+  duration,
+  experiences,
+  references,
+  kind,
+  indexOffset = 0,
+}: {
+  title: string;
+  duration: string;
+  experiences: Row[];
+  references: Row[];
+  kind: PublicExperienceKind;
+  indexOffset?: number;
+}) {
+  const renderedExperiences = experiences.slice(
+    0,
+    maximumRenderedPublicExperiencesPerType,
+  );
+
+  return (
+    <CvSection
+      title={title}
+      badge={duration}
+      icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />}
+    >
+      <div className="bd-cv-experience-list space-y-4">
+        {renderedExperiences.map((experience, index) => {
+          const experienceReferences = referencesForExperience(experience, references);
+          const organizationName =
+            text(experience, "yacht_name") || (kind === "yacht" ? "Yacht" : "Company");
+          const metadata = kind === "yacht"
+            ? [
+                experienceText(experience, "yacht_type"),
+                experienceText(experience, "yacht_program"),
+                experienceText(experience, "yacht_size"),
+              ].filter(Boolean)
+            : [];
+
+          return (
+            <article
+              key={text(experience, "id") || `${organizationName}-${text(experience, "start_date")}`}
+              className={`bd-cv-experience overflow-hidden rounded-2xl border border-[#cbd8dd] bg-white shadow-sm shadow-slate-950/5 ${shouldBreakBeforeExperience(index + indexOffset) ? "bd-cv-experience-break-before" : ""}`}
+            >
+              <div className="bd-cv-experience-grid grid grid-cols-[136px_1fr] items-stretch">
+                <div className="bd-cv-experience-meta h-full border-r border-[#d8e2e6] bg-white p-3">
+                  {text(experience, "photo_url") ? (
+                    <img
+                      src={text(experience, "photo_url")}
+                      alt={`${organizationName} ${kind === "yacht" ? "yacht" : "professional"} work experience`}
+                      className="h-24 w-full rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-24 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#f5f8f9,#e8f0f2)] text-[#78909a]">
+                      <BriefcaseBusiness className="h-7 w-7" aria-hidden="true" />
+                    </div>
+                  )}
+                  <div className="mt-3">
+                    {metadata.length > 0 && (
+                      <p className="mt-1 text-[10px] font-black uppercase leading-4 tracking-[0.08em] text-[#6b747a]">
+                        {metadata.join(" / ")}
+                      </p>
+                    )}
+                    <p className="mt-1 text-[12px] font-semibold leading-5 text-[#2d7482]">
+                      {formatDateRange(text(experience, "start_date"), text(experience, "end_date"))}
+                    </p>
+                    {experienceText(experience, "location") && (
+                      <p className="mt-1 flex items-start gap-1.5 text-[10px] font-black uppercase leading-4 tracking-[0.06em] text-[#2d7482]">
+                        <MapPin className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+                        <span>{experienceText(experience, "location")}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bd-cv-experience-body h-full bg-white p-4">
+                  <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#d8e2e6] pb-3">
+                    <h2
+                      className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]"
+                      style={{ fontSize: yachtNameFontSize(organizationName) }}
+                    >
+                      {organizationName}
+                    </h2>
+                    <span className="inline-flex shrink-0 rounded-md bg-[#173f4a] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white">
+                      {text(experience, "position") || "Position"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#6b7b84]">Duties</p>
+                  <p className="mt-2 text-[13px] leading-5 text-[#364650]">
+                    {experienceText(experience, "description") || "Responsibilities and duties will appear here."}
+                  </p>
+                  <PublicExperienceReferences references={experienceReferences} kind={kind} />
+                </div>
+              </div>
+            </article>
+          );
+        })}
+        {experiences.length > renderedExperiences.length && (
+          <p className="rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] px-4 py-3 text-xs font-semibold text-[#5a6870]">
+            Showing the latest {renderedExperiences.length} of {experiences.length} {kind === "yacht" ? "yacht" : "other"} experience entries.
+          </p>
+        )}
+      </div>
+    </CvSection>
+  );
+}
+
 function CvSection({
   title,
   badge,
@@ -724,7 +874,13 @@ function SidebarLine({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PublicExperienceReferences({ references }: { references: Row[] }) {
+function PublicExperienceReferences({
+  references,
+  kind,
+}: {
+  references: Row[];
+  kind: PublicExperienceKind;
+}) {
   if (references.length === 0) return null;
 
   return (
@@ -735,7 +891,7 @@ function PublicExperienceReferences({ references }: { references: Row[] }) {
           <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="bd-cv-reference-card border-t border-[#e2e8eb] py-2 first:border-t-0 first:pt-0 last:pb-0">
             <p className="text-[13px] font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
-              {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
+              {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || (kind === "yacht" ? "Yacht reference" : "Professional reference")}
             </p>
             <p className="mt-1 text-xs text-[#5a6870]">Contact details are protected by request.</p>
           </div>

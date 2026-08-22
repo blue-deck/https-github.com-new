@@ -25,6 +25,7 @@ import {
 import {
   calculateCrewProfileCompletion,
   countExperienceReferences,
+  crewExperienceBreakdown,
   crewExperienceYears,
   isPremiumCrewProfile,
 } from "./crewProfileCompletion";
@@ -34,7 +35,7 @@ import {
   type CrewDiscoverySettings,
 } from "./crewDiscovery";
 import {
-  crewExperienceMatchesYachtExperienceOption,
+  crewExperienceMatchesFilters,
   crewSearchFingerprintInput,
   defaultCrewSearchFilters,
   normalizeCrewSearchFilters,
@@ -68,6 +69,8 @@ export type DiscoverableCrewPreview = {
   employmentTypes: string[];
   personalSkills: string[];
   experienceYears: number;
+  yachtExperienceYears: number;
+  otherExperienceYears: number;
   premiumProfile: boolean;
   memberSince: string;
 };
@@ -698,12 +701,7 @@ function crewSearchRecordMatches(
   ) {
     return false;
   }
-  if (
-    !crewExperienceMatchesYachtExperienceOption(
-      preview.experienceYears,
-      filters.minimumExperience,
-    )
-  ) {
+  if (!crewExperienceMatchesFilters(preview, filters)) {
     return false;
   }
   if (filters.premiumOnly && !preview.premiumProfile) return false;
@@ -1219,6 +1217,7 @@ function toDiscoverableCrewPreview(
     profile: row,
     experiences,
   });
+  const experienceBreakdown = crewExperienceBreakdown(experiences);
 
   return {
     crewId,
@@ -1269,6 +1268,8 @@ function toDiscoverableCrewPreview(
       120,
     ),
     experienceYears: crewExperienceYears(experiences),
+    yachtExperienceYears: experienceBreakdown.yachtYears,
+    otherExperienceYears: experienceBreakdown.otherYears,
     premiumProfile: isPremiumCrewProfile(completionPercent),
     memberSince: databaseTimestamp(row.created_at),
   };

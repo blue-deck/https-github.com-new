@@ -22,11 +22,11 @@ import { crewAvailabilityStatuses } from "../lib/crewDiscovery";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 import {
   formatJobMinimumYachtExperience,
-  jobMinimumYachtExperiences,
   type JobMinimumYachtExperience,
 } from "../lib/jobPosts";
 import { capitalizeInitialInput } from "../lib/inputText";
 import {
+  crewExperienceTypes,
   crewGenderOptions,
   crewMaritalStatuses,
   crewSearchFilterCount,
@@ -35,10 +35,27 @@ import {
   defaultCrewSearchFilters,
   normalizeCrewSearchFilters,
   parseCrewSearchFilters,
+  type CrewExperienceType,
   type CrewSearchFacets,
   type CrewSearchFilters,
 } from "../lib/crewSearch";
 import { translatePhrase, type Language } from "../lib/i18n";
+
+const experienceTypeLabels = {
+  en: { any: "Any", yacht: "Yacht", other: "Other" },
+  tr: { any: "Tümü", yacht: "Yat", other: "Diğer" },
+} as const;
+
+const findCrewMinimumExperienceThresholds = [
+  "0_6_months",
+  "1_year",
+  "2_years",
+  "3_years",
+  "5_plus_years",
+  "10_plus_years",
+  "15_plus_years",
+  "20_plus_years",
+] as const satisfies readonly JobMinimumYachtExperience[];
 
 type FindCrewClientProps = {
   profiles: DiscoverableCrewPreview[];
@@ -458,7 +475,15 @@ export function FindCrewClient({
                     options={crewYesNoOptions}
                     language={language}
                   />
-                  <YachtExperienceFilterSelect
+                  <ExperienceTypeFilterSelect
+                    label={c.experienceType}
+                    value={draftFilters.experienceType}
+                    onChange={(value) =>
+                      setDraftFilter("experienceType", value)
+                    }
+                    language={language}
+                  />
+                  <MinimumExperienceFilterSelect
                     label={c.minimumExperience}
                     value={draftFilters.minimumExperience}
                     onChange={(value) => setDraftFilter("minimumExperience", value)}
@@ -560,6 +585,7 @@ export function FindCrewClient({
                   }}
                   copy={c}
                   profileHref={`/find-crew/${encodeURIComponent(profile.crewId)}`}
+                  experienceLanguage={language}
                 />
               ))}
             </div>
@@ -724,7 +750,7 @@ function formatFilterOption(
   return translatePhrase(option, language);
 }
 
-function YachtExperienceFilterSelect({
+function MinimumExperienceFilterSelect({
   label,
   value,
   onChange,
@@ -750,14 +776,67 @@ function YachtExperienceFilterSelect({
         className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
       >
         <option value="">{label}</option>
-        {jobMinimumYachtExperiences.map((option) => (
+        {findCrewMinimumExperienceThresholds.map((option) => (
           <option key={option} value={option}>
-            {formatJobMinimumYachtExperience(option, language)}
+            {formatFindCrewMinimumExperience(option, language)}
           </option>
         ))}
       </select>
     </label>
   );
+}
+
+function formatFindCrewMinimumExperience(
+  value: JobMinimumYachtExperience,
+  language: Language,
+) {
+  if (value === "0_6_months") {
+    return language === "tr" ? "6+ ay" : "6+ months";
+  }
+  return formatJobMinimumYachtExperience(value, language);
+}
+
+function ExperienceTypeFilterSelect({
+  label,
+  value,
+  onChange,
+  language,
+}: {
+  label: string;
+  value: CrewExperienceType;
+  onChange: (value: CrewExperienceType) => void;
+  language: Language;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-bold text-slate-600">
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => {
+          const nextValue = event.target.value as CrewExperienceType;
+          onChange(
+            crewExperienceTypes.includes(nextValue) ? nextValue : "any",
+          );
+        }}
+        className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+      >
+        {crewExperienceTypes.map((option) => (
+          <option key={option} value={option}>
+            {experienceTypeLabel(option, language)}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function experienceTypeLabel(
+  value: CrewExperienceType,
+  language: Language,
+) {
+  return experienceTypeLabels[language][value];
 }
 
 function FilterToggle({
@@ -800,6 +879,7 @@ function countAdvancedCrewFilters(filters: CrewSearchFilters) {
     smoker: filters.smoker,
     visibleTattoos: filters.visibleTattoos,
     minimumExperience: filters.minimumExperience,
+    experienceType: filters.experienceType,
     premiumOnly: filters.premiumOnly,
     hasPhoto: filters.hasPhoto,
     hasGallery: filters.hasGallery,
@@ -925,6 +1005,14 @@ function isDiscoverableCrewPreview(
     Number.isFinite(profile.experienceYears) &&
     profile.experienceYears >= 0 &&
     profile.experienceYears <= 100 &&
+    typeof profile.yachtExperienceYears === "number" &&
+    Number.isFinite(profile.yachtExperienceYears) &&
+    profile.yachtExperienceYears >= 0 &&
+    profile.yachtExperienceYears <= 100 &&
+    typeof profile.otherExperienceYears === "number" &&
+    Number.isFinite(profile.otherExperienceYears) &&
+    profile.otherExperienceYears >= 0 &&
+    profile.otherExperienceYears <= 100 &&
     typeof profile.premiumProfile === "boolean"
   );
 }
@@ -947,6 +1035,7 @@ const copy = {
     gender: "Gender",
     smoker: "Smoker",
     visibleTattoos: "Visible tattoos",
+    experienceType: "Experience type",
     minimumExperience: "Minimum experience",
     premiumOnly: "Premium profiles",
     hasPhoto: "Profile photo",
@@ -1003,6 +1092,7 @@ const copy = {
     gender: "Cinsiyet",
     smoker: "Sigara kullanımı",
     visibleTattoos: "Görünür dövme",
+    experienceType: "Deneyim türü",
     minimumExperience: "Minimum deneyim",
     premiumOnly: "Premium profiller",
     hasPhoto: "Profil fotoğrafı",

@@ -7,6 +7,7 @@ import {
   crewGenderOptions,
   crewSearchParamKeys,
   crewYesNoOptions,
+  isCrewExperienceType,
   parseCrewSearchFilters,
 } from "../../lib/crewSearch";
 import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
@@ -83,6 +84,10 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
     maritalStatus !== "Single" &&
     maritalStatus !== "Married"
   ) {
+    return false;
+  }
+  const experienceType = searchParams.get("experienceType");
+  if (experienceType !== null && !isCrewExperienceType(experienceType)) {
     return false;
   }
   if (

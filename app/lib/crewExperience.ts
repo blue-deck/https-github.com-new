@@ -4,22 +4,65 @@ export type CrewExperienceDateRange = {
   end_date?: unknown;
 };
 
-const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
+export type CrewExperienceBreakdown = {
+  yachtYears: number;
+  otherYears: number;
+};
+
+export const otherWorkExperienceMarker = "__BLUDECK_OTHER_WORK__";
 const millisecondsPerDay = 86_400_000;
-const averageDaysPerYear = 365.2425;
+const daysPerExperienceYear = 365;
 const maximumCredibleExperienceYears = 80;
+const exactExperiencePrecision = 10_000;
 
 export function crewExperienceYearsFromDateRanges(
   experiences: CrewExperienceDateRange[],
   currentDate = new Date(),
 ) {
+  return roundedExperienceYears(
+    crewExperienceBreakdownFromDateRanges(experiences, currentDate).yachtYears,
+  );
+}
+
+export function crewExperienceBreakdownFromDateRanges(
+  experiences: CrewExperienceDateRange[],
+  currentDate = new Date(),
+): CrewExperienceBreakdown {
   const currentDay = utcDay(currentDate);
-  if (currentDay === null) return 0;
+  if (currentDay === null) return { yachtYears: 0, otherYears: 0 };
+
+  return {
+    yachtYears: experienceYearsForType(experiences, currentDay, "yacht"),
+    otherYears: experienceYearsForType(experiences, currentDay, "other"),
+  };
+}
+
+export function formatCrewExperienceDuration(
+  years: number,
+  language: "en" | "tr",
+) {
+  if (!Number.isFinite(years) || years <= 0) return "0";
+  if (years <= 0.5) return language === "tr" ? "0–6 ay" : "0–6 months";
+  if (years < 1) return language === "tr" ? "6–12 ay" : "6–12 months";
+
+  const completedYears = Math.floor(years);
+  return language === "tr"
+    ? `${completedYears}+ yıl`
+    : `${completedYears}+ years`;
+}
+
+function experienceYearsForType(
+  experiences: CrewExperienceDateRange[],
+  currentDay: number,
+  type: "yacht" | "other",
+) {
+  const expectsOtherWork = type === "other";
 
   const ranges = experiences
     .filter(
       (experience) =>
-        cleanText(experience.yacht_type) !== otherWorkExperienceMarker,
+        (cleanText(experience.yacht_type) === otherWorkExperienceMarker) ===
+        expectsOtherWork,
     )
     .map((experience) => {
       const start = utcDay(experience.start_date);
@@ -61,9 +104,19 @@ export function crewExperienceYearsFromDateRanges(
   if (activeStart !== null) totalDays += activeEnd - activeStart;
 
   if (totalDays <= 0) return 0;
+  const exactYears = Math.min(
+    maximumCredibleExperienceYears,
+    totalDays / daysPerExperienceYear,
+  );
+  return Math.floor(exactYears * exactExperiencePrecision) /
+    exactExperiencePrecision;
+}
+
+function roundedExperienceYears(years: number) {
+  if (!Number.isFinite(years) || years <= 0) return 0;
   return Math.min(
     maximumCredibleExperienceYears,
-    Math.max(0.1, Math.round((totalDays / averageDaysPerYear) * 10) / 10),
+    Math.max(0.1, Math.round(years * 10) / 10),
   );
 }
 

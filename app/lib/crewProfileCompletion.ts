@@ -1,6 +1,9 @@
 import { parseCrewDiscoverySettings } from "./crewDiscovery";
 import { countExperienceReferences as countLinkedExperienceReferences } from "./crewExperienceReferences";
-import { crewExperienceYearsFromDateRanges } from "./crewExperience";
+import {
+  crewExperienceBreakdownFromDateRanges,
+  crewExperienceYearsFromDateRanges,
+} from "./crewExperience";
 
 export const premiumProfileCompletionThreshold = 85;
 
@@ -124,6 +127,16 @@ export function crewExperienceYears(
   currentDate = new Date(),
 ) {
   return crewExperienceYearsFromDateRanges(
+    experiences.map(normalizeCompletionExperience),
+    currentDate,
+  );
+}
+
+export function crewExperienceBreakdown(
+  experiences: CompletionExperience[],
+  currentDate = new Date(),
+) {
+  return crewExperienceBreakdownFromDateRanges(
     experiences.map(normalizeCompletionExperience),
     currentDate,
   );

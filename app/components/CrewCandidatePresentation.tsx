@@ -16,8 +16,14 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useEffect, useId, useState, type ReactNode } from "react";
+import { formatCrewExperienceDuration } from "../lib/crewExperience";
 import type { EmployerJobApplicationDetails } from "../lib/jobApplications";
 import { AccessibleImageLightbox } from "./AccessibleImageLightbox";
+
+const crewExperienceLabels = {
+  en: { yacht: "Yacht", other: "Other" },
+  tr: { yacht: "Yat", other: "Diğer" },
+} as const;
 
 export type CrewCandidateCardProfile = {
   displayName: string;
@@ -26,6 +32,8 @@ export type CrewCandidateCardProfile = {
   currentPosition: string;
   nationality: string;
   experienceYears: number;
+  yachtExperienceYears?: number;
+  otherExperienceYears?: number;
   premiumProfile: boolean;
 };
 
@@ -108,6 +116,8 @@ type CrewCandidateProfileDetails = Pick<
   | "languages"
 > & {
   hasTeamCouple?: boolean;
+  yachtExperienceYears?: number;
+  otherExperienceYears?: number;
 };
 
 type CrewCandidateProfileOverviewDetails = Pick<
@@ -120,7 +130,10 @@ type CrewCandidateProfileOverviewDetails = Pick<
   | "experienceYears"
   | "referenceCount"
   | "professionalSummary"
->;
+> & {
+  yachtExperienceYears?: number;
+  otherExperienceYears?: number;
+};
 
 export function CrewCandidatePassportCard({
   candidate,
@@ -130,6 +143,7 @@ export function CrewCandidatePassportCard({
   copy,
   profileHref,
   onView,
+  experienceLanguage = "en",
 }: {
   candidate: CrewCandidateCardProfile;
   availabilityValue: string;
@@ -142,6 +156,7 @@ export function CrewCandidatePassportCard({
   copy: CrewCandidateCardCopy;
   profileHref?: string;
   onView?: () => void;
+  experienceLanguage?: "en" | "tr";
 }) {
   const titleId = useId();
   const actionLabel = `${copy.viewProfile}: ${candidate.displayName}`;
@@ -224,13 +239,16 @@ export function CrewCandidatePassportCard({
         <PassportFact
           icon={<BriefcaseBusiness />}
           label={copy.experience}
-          value={
-            candidate.experienceYears > 0
-              ? candidate.experienceYears < 1
-                ? copy.lessThanOneYear
-                : `${candidate.experienceYears}+ ${copy.years}`
-              : copy.noExperience
-          }
+          value={candidateExperienceValue(
+            candidate,
+            experienceLanguage,
+            profileExperienceLabel(
+              candidate.experienceYears,
+              copy.years,
+              copy.lessThanOneYear,
+              copy.noExperience,
+            ),
+          )}
         />
         <PassportFact
           icon={fourthFact.icon}
@@ -331,6 +349,7 @@ export function CrewCandidateEmployerProfileOverview({
   roleFallback,
   headingLevel = "h2",
   reserveTrailingActionSpace = true,
+  experienceLanguage = "en",
 }: {
   candidate: CrewCandidateProfileOverviewDetails;
   copy: CrewCandidateProfileCopy;
@@ -340,14 +359,20 @@ export function CrewCandidateEmployerProfileOverview({
   roleFallback: string;
   headingLevel?: "h1" | "h2";
   reserveTrailingActionSpace?: boolean;
+  experienceLanguage?: "en" | "tr";
 }) {
   const Heading = headingLevel;
   const summaryHeadingLevel = headingLevel === "h1" ? "h2" : "h3";
-  const experienceValue = profileExperienceLabel(
-    candidate.experienceYears,
-    copy.years,
-    copy.lessThanOneYear,
-    copy.noExperience,
+  const experienceValue = candidateExperienceValue(
+    candidate,
+    experienceLanguage,
+    profileExperienceLabel(
+      candidate.experienceYears,
+      copy.years,
+      copy.lessThanOneYear,
+      copy.noExperience,
+    ),
+    true,
   );
 
   return (
@@ -444,12 +469,14 @@ export function CrewCandidateProfileBody({
   children,
   variant = "default",
   sectionHeadingLevel = "h3",
+  experienceLanguage = "en",
 }: {
   candidate: CrewCandidateProfileDetails;
   copy: CrewCandidateProfileCopy;
   children?: ReactNode;
   variant?: "default" | "employer" | "public";
   sectionHeadingLevel?: "h2" | "h3";
+  experienceLanguage?: "en" | "tr";
 }) {
   const [activeGalleryPhoto, setActiveGalleryPhoto] = useState<{
     source: string;
@@ -732,11 +759,16 @@ export function CrewCandidateProfileBody({
       <section className="grid gap-3 sm:grid-cols-3">
         <ProfileMetric
           icon={<BriefcaseBusiness />}
-          value={profileExperienceLabel(
-            candidate.experienceYears,
-            copy.years,
-            copy.lessThanOneYear,
-            copy.noExperience,
+          value={candidateExperienceValue(
+            candidate,
+            experienceLanguage,
+            profileExperienceLabel(
+              candidate.experienceYears,
+              copy.years,
+              copy.lessThanOneYear,
+              copy.noExperience,
+            ),
+            true,
           )}
           label={copy.experiences}
         />
@@ -773,7 +805,61 @@ function profileExperienceLabel(
 ) {
   if (experienceYears <= 0) return noExperienceLabel;
   if (experienceYears < 1) return lessThanOneYearLabel;
-  return `${experienceYears}+ ${yearsLabel}`;
+  return `${Math.floor(experienceYears)}+ ${yearsLabel}`;
+}
+
+function candidateExperienceValue(
+  candidate: {
+    yachtExperienceYears?: number;
+    otherExperienceYears?: number;
+  },
+  language: "en" | "tr",
+  fallback: string,
+  prominent = false,
+) {
+  const yachtExperienceYears = isCrewExperienceYears(
+    candidate.yachtExperienceYears,
+  )
+    ? candidate.yachtExperienceYears
+    : null;
+  const otherExperienceYears = isCrewExperienceYears(
+    candidate.otherExperienceYears,
+  )
+    ? candidate.otherExperienceYears
+    : null;
+  if (yachtExperienceYears === null && otherExperienceYears === null) {
+    return fallback;
+  }
+
+  const labels = crewExperienceLabels[language];
+  const lines = [
+    yachtExperienceYears !== null && yachtExperienceYears > 0
+      ? `${labels.yacht} — ${formatCrewExperienceDuration(yachtExperienceYears, language)}`
+      : "",
+    otherExperienceYears !== null && otherExperienceYears > 0
+      ? `${labels.other} — ${formatCrewExperienceDuration(otherExperienceYears, language)}`
+      : "",
+  ].filter(Boolean);
+
+  if (lines.length === 0) {
+    return formatCrewExperienceDuration(0, language);
+  }
+
+  return (
+    <span
+      className={`block space-y-0.5 normal-case tracking-normal ${prominent ? "text-sm font-black leading-5 sm:text-base" : "text-sm font-semibold leading-5"}`}
+    >
+      {lines.map((line) => (
+        <span key={line} className="block">
+          {line}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function isCrewExperienceYears(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
 export function CandidateAvatar({
@@ -838,7 +924,7 @@ export function PassportFact({
 }: {
   icon: ReactNode;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="min-w-0">
@@ -993,7 +1079,7 @@ function ProfileMetric({
   label,
 }: {
   icon: ReactNode;
-  value: number | string;
+  value: ReactNode;
   label: string;
 }) {
   return (
@@ -1002,9 +1088,9 @@ function ProfileMetric({
         {icon}
       </span>
       <div>
-        <p className="text-2xl font-black tabular-nums text-[#071631]">
+        <div className="text-2xl font-black tabular-nums text-[#071631]">
           {value}
-        </p>
+        </div>
         <p className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">
           {label}
         </p>
@@ -1086,7 +1172,7 @@ function EmployerHeroMetric({
   divided = false,
 }: {
   label: string;
-  value: number | string;
+  value: ReactNode;
   divided?: boolean;
 }) {
   return (

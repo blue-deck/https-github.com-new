@@ -290,6 +290,7 @@ export function PublicCrewProfileContent({
             roleFallback={p.roleFallback}
             headingLevel="h1"
             reserveTrailingActionSpace={false}
+            experienceLanguage={language}
           />
 
           <CrewCandidateProfileBody
@@ -297,6 +298,7 @@ export function PublicCrewProfileContent({
             copy={p}
             variant="public"
             sectionHeadingLevel="h2"
+            experienceLanguage={language}
           >
             <section className="rounded-[26px] border border-cyan-100 bg-[linear-gradient(135deg,#ffffff,#edf9fc)] p-5 shadow-sm sm:p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">

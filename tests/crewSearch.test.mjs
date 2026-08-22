@@ -2,14 +2,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
+  crewExperienceMatchesFilters,
   crewExperienceMatchesYachtExperienceOption,
   crewSearchFilterCount,
   crewSearchParamKeys,
   crewSearchParams,
+  defaultCrewSearchFilters,
+  isCrewExperienceType,
   parseCrewSearchFilters,
 } from "../app/lib/crewSearch.ts";
 import { crewAvailabilityStatuses } from "../app/lib/crewDiscovery.ts";
-import { crewExperienceYearsFromDateRanges } from "../app/lib/crewExperience.ts";
+import {
+  crewExperienceBreakdownFromDateRanges,
+  crewExperienceYearsFromDateRanges,
+  formatCrewExperienceDuration,
+} from "../app/lib/crewExperience.ts";
 import {
   formatJobMinimumYachtExperience,
   jobMinimumYachtExperiences,
@@ -354,6 +361,7 @@ test("round-trips every public crew search criterion through the URL contract", 
     gender: "Female",
     smoker: "No",
     visibleTattoos: "Yes",
+    experienceType: "other",
     experienceMin: "3_5_years",
     premium: "1",
     photo: "1",
@@ -363,6 +371,7 @@ test("round-trips every public crew search criterion through the URL contract", 
 
   const filters = parseCrewSearchFilters(source);
   assert.equal(filters.query, "Chief Stewardess");
+  assert.equal(filters.experienceType, "other");
   assert.equal(filters.minimumExperience, "3_5_years");
   const normalizedSource = new URLSearchParams(source);
   normalizedSource.set("q", "Chief Stewardess");
@@ -375,7 +384,44 @@ test("round-trips every public crew search criterion through the URL contract", 
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
   assert.equal(filters.hasTeamCouple, true);
-  assert.equal(crewSearchFilterCount(filters), 13);
+  assert.equal(crewSearchFilterCount(filters), 14);
+});
+
+test("accepts only supported experience types and omits Any from canonical URLs", () => {
+  assert.equal(crewSearchParamKeys.has("experienceType"), true);
+  assert.equal(isCrewExperienceType("any"), true);
+  assert.equal(isCrewExperienceType("yacht"), true);
+  assert.equal(isCrewExperienceType("other"), true);
+  assert.equal(isCrewExperienceType("combined"), false);
+
+  const anyFilters = parseCrewSearchFilters(
+    new URLSearchParams({ experienceType: "any" }),
+  );
+  const yachtFilters = parseCrewSearchFilters(
+    new URLSearchParams({ experienceType: "yacht" }),
+  );
+  const invalidFilters = parseCrewSearchFilters(
+    new URLSearchParams({ experienceType: "combined" }),
+  );
+
+  assert.equal(anyFilters.experienceType, "any");
+  assert.equal(crewSearchParams(anyFilters).toString(), "");
+  assert.equal(yachtFilters.experienceType, "yacht");
+  assert.equal(crewSearchParams(yachtFilters).toString(), "experienceType=yacht");
+  assert.equal(invalidFilters.experienceType, "any");
+  assert.equal(crewSearchParams(invalidFilters).toString(), "");
+});
+
+test("find crew API rejects unsupported experience type values", async () => {
+  const route = await readFile(
+    new URL("../app/api/find-crew/route.ts", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    route,
+    /experienceType = searchParams\.get\("experienceType"\)[\s\S]*?!isCrewExperienceType\(experienceType\)/,
+  );
 });
 
 test("filters Team/Couple crew as separate profiles from accepted connections", async () => {
@@ -590,7 +636,7 @@ test("rejects unsupported minimum yacht experience options", () => {
   assert.equal(crewSearchParams(filters).toString(), "");
 });
 
-test("find crew reuses every Create a job post yacht experience option", async () => {
+test("find crew uses minimum thresholds while Create a job retains every option", async () => {
   const [client, manager, route, dataSource] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
@@ -641,8 +687,15 @@ test("find crew reuses every Create a job post yacht experience option", async (
       "20+ years",
     ],
   );
-  assert.match(client, /jobMinimumYachtExperiences\.map/);
-  assert.match(client, /formatJobMinimumYachtExperience\(option, language\)/);
+  assert.match(
+    client,
+    /const findCrewMinimumExperienceThresholds = \[\s*"0_6_months",\s*"1_year",\s*"2_years",\s*"3_years",\s*"5_plus_years",\s*"10_plus_years",\s*"15_plus_years",\s*"20_plus_years",/,
+  );
+  assert.match(client, /findCrewMinimumExperienceThresholds\.map/);
+  assert.match(
+    client,
+    /value === "0_6_months"[\s\S]*?"6\+ months"/,
+  );
   assert.match(manager, /jobMinimumYachtExperiences\.map/);
   assert.match(
     route,
@@ -650,7 +703,7 @@ test("find crew reuses every Create a job post yacht experience option", async (
   );
   assert.match(
     dataSource,
-    /crewExperienceMatchesYachtExperienceOption\(\s*preview\.experienceYears,\s*filters\.minimumExperience/,
+    /crewExperienceMatchesFilters\(preview, filters\)/,
   );
 });
 
@@ -677,6 +730,127 @@ test("matches crew yacht experience against ranged and plus options", () => {
   assert.equal(crewExperienceMatchesYachtExperienceOption(14.9, "15_plus_years"), false);
   assert.equal(crewExperienceMatchesYachtExperienceOption(20, "20_plus_years"), true);
   assert.equal(crewExperienceMatchesYachtExperienceOption(3, null), true);
+});
+
+test("matches minimum experience against the selected type without summing categories", () => {
+  const mixedExperience = {
+    yachtExperienceYears: 1,
+    otherExperienceYears: 5,
+  };
+
+  assert.equal(
+    crewExperienceMatchesFilters(mixedExperience, {
+      ...defaultCrewSearchFilters,
+      experienceType: "any",
+      minimumExperience: "5_plus_years",
+    }),
+    true,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(mixedExperience, {
+      ...defaultCrewSearchFilters,
+      experienceType: "yacht",
+      minimumExperience: "5_plus_years",
+    }),
+    false,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(mixedExperience, {
+      ...defaultCrewSearchFilters,
+      experienceType: "other",
+      minimumExperience: "5_plus_years",
+    }),
+    true,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(
+      { yachtExperienceYears: 1.5, otherExperienceYears: 1.5 },
+      {
+        ...defaultCrewSearchFilters,
+        experienceType: "any",
+        minimumExperience: "3_years",
+      },
+    ),
+    false,
+  );
+});
+
+test("typed and minimum experience filters require a valid dated experience", () => {
+  const emptyExperience = {
+    yachtExperienceYears: 0,
+    otherExperienceYears: 0,
+  };
+
+  assert.equal(
+    crewExperienceMatchesFilters(emptyExperience, defaultCrewSearchFilters),
+    true,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(emptyExperience, {
+      ...defaultCrewSearchFilters,
+      experienceType: "yacht",
+    }),
+    false,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(emptyExperience, {
+      ...defaultCrewSearchFilters,
+      experienceType: "other",
+    }),
+    false,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(emptyExperience, {
+      ...defaultCrewSearchFilters,
+      minimumExperience: "0_6_months",
+    }),
+    false,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(emptyExperience, {
+      ...defaultCrewSearchFilters,
+      minimumExperience: 0,
+    }),
+    true,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(emptyExperience, {
+      ...defaultCrewSearchFilters,
+      experienceType: "yacht",
+      minimumExperience: 0,
+    }),
+    false,
+  );
+});
+
+test("treats the Find Crew six-month option as a true 0.5-year minimum", () => {
+  const filters = {
+    ...defaultCrewSearchFilters,
+    experienceType: "yacht",
+    minimumExperience: "0_6_months",
+  };
+
+  assert.equal(
+    crewExperienceMatchesFilters(
+      { yachtExperienceYears: 0.4999, otherExperienceYears: 0 },
+      filters,
+    ),
+    false,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(
+      { yachtExperienceYears: 0.5, otherExperienceYears: 0 },
+      filters,
+    ),
+    true,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(
+      { yachtExperienceYears: 0.75, otherExperienceYears: 0 },
+      filters,
+    ),
+    true,
+  );
 });
 
 test("accepts only the supported marital status filters", () => {
@@ -738,6 +912,117 @@ test("merges exact yacht-work days without overstating short or overlapping role
     ),
     0.1,
   );
+});
+
+test("calculates overlap-safe yacht and other work durations independently", () => {
+  const breakdown = crewExperienceBreakdownFromDateRanges(
+    [
+      {
+        yacht_type: "Motor Yacht",
+        start_date: "2024-01-01",
+        end_date: "2024-06-30",
+      },
+      {
+        yacht_type: "Sailing Yacht",
+        start_date: "2024-04-01",
+        end_date: "2024-12-31",
+      },
+      {
+        yacht_type: "__BLUDECK_OTHER_WORK__",
+        start_date: "2024-01-01",
+        end_date: "2024-03-31",
+      },
+      {
+        yacht_type: "__BLUDECK_OTHER_WORK__",
+        start_date: "2024-03-01",
+        end_date: "2024-06-30",
+      },
+    ],
+    new Date("2025-01-15T12:00:00.000Z"),
+  );
+
+  assert.equal(Math.round(breakdown.yachtYears * 10) / 10, 1);
+  assert.equal(Math.round(breakdown.otherYears * 10) / 10, 0.5);
+});
+
+test("uses exact duration at minimum-experience boundaries", () => {
+  const justUnderOneYear = [
+    {
+      yacht_type: "Motor Yacht",
+      start_date: "2024-01-01",
+      end_date: "2024-12-29",
+    },
+  ];
+  const exactlyOneYear = [
+    {
+      yacht_type: "Motor Yacht",
+      start_date: "2023-01-01",
+      end_date: "2023-12-31",
+    },
+  ];
+  const underOneYearBreakdown = crewExperienceBreakdownFromDateRanges(
+    justUnderOneYear,
+    new Date("2025-01-15T12:00:00.000Z"),
+  );
+  const oneYearBreakdown = crewExperienceBreakdownFromDateRanges(
+    exactlyOneYear,
+    new Date("2025-01-15T12:00:00.000Z"),
+  );
+
+  assert.equal(underOneYearBreakdown.yachtYears, 0.9972);
+  assert.equal(oneYearBreakdown.yachtYears, 1);
+  assert.equal(
+    crewExperienceYearsFromDateRanges(
+      justUnderOneYear,
+      new Date("2025-01-15T12:00:00.000Z"),
+    ),
+    1,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(
+      {
+        yachtExperienceYears: underOneYearBreakdown.yachtYears,
+        otherExperienceYears: underOneYearBreakdown.otherYears,
+      },
+      {
+        ...defaultCrewSearchFilters,
+        experienceType: "yacht",
+        minimumExperience: "1_year",
+      },
+    ),
+    false,
+  );
+  assert.equal(
+    crewExperienceMatchesFilters(
+      {
+        yachtExperienceYears: oneYearBreakdown.yachtYears,
+        otherExperienceYears: oneYearBreakdown.otherYears,
+      },
+      {
+        ...defaultCrewSearchFilters,
+        experienceType: "yacht",
+        minimumExperience: "1_year",
+      },
+    ),
+    true,
+  );
+  assert.equal(
+    formatCrewExperienceDuration(oneYearBreakdown.yachtYears, "en"),
+    "1+ years",
+  );
+});
+
+test("formats experience without decimal-year labels", () => {
+  assert.equal(formatCrewExperienceDuration(0, "en"), "0");
+  assert.equal(formatCrewExperienceDuration(0.499, "en"), "0–6 months");
+  assert.equal(formatCrewExperienceDuration(0.5, "en"), "0–6 months");
+  assert.equal(formatCrewExperienceDuration(0.501, "en"), "6–12 months");
+  assert.equal(formatCrewExperienceDuration(0.999, "en"), "6–12 months");
+  assert.equal(formatCrewExperienceDuration(1, "en"), "1+ years");
+  assert.equal(formatCrewExperienceDuration(1.2, "en"), "1+ years");
+  assert.equal(formatCrewExperienceDuration(13.1, "en"), "13+ years");
+  assert.equal(formatCrewExperienceDuration(0.4, "tr"), "0–6 ay");
+  assert.equal(formatCrewExperienceDuration(13.1, "tr"), "13+ yıl");
 });
 
 test("ignores future, reversed, and malformed yacht experience dates", () => {

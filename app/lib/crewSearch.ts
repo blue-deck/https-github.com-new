@@ -26,12 +26,16 @@ export type CrewSearchFilters = {
   gender: string;
   smoker: string;
   visibleTattoos: string;
+  experienceType: CrewExperienceType;
   minimumExperience: JobMinimumYachtExperience | null;
   premiumOnly: boolean;
   hasPhoto: boolean;
   hasGallery: boolean;
   hasTeamCouple: boolean;
 };
+
+export const crewExperienceTypes = ["any", "yacht", "other"] as const;
+export type CrewExperienceType = (typeof crewExperienceTypes)[number];
 
 export type CrewSearchFacets = {
   positions: string[];
@@ -68,6 +72,7 @@ export const defaultCrewSearchFilters: CrewSearchFilters = {
   gender: "",
   smoker: "",
   visibleTattoos: "",
+  experienceType: "any",
   minimumExperience: null,
   premiumOnly: false,
   hasPhoto: false,
@@ -84,6 +89,7 @@ export const crewSearchParamKeys = new Set([
   "gender",
   "smoker",
   "visibleTattoos",
+  "experienceType",
   "experienceMin",
   "premium",
   "photo",
@@ -125,6 +131,9 @@ export function parseCrewSearchFilters(
       readSearchParam(source, "visibleTattoos"),
       crewYesNoOptions,
     ),
+    experienceType: normalizeCrewExperienceType(
+      readSearchParam(source, "experienceType"),
+    ),
     minimumExperience,
     premiumOnly: readSearchParam(source, "premium") === "1",
     hasPhoto: readSearchParam(source, "photo") === "1",
@@ -151,6 +160,7 @@ export function normalizeCrewSearchFilters(
       value.visibleTattoos,
       crewYesNoOptions,
     ),
+    experienceType: normalizeCrewExperienceType(value.experienceType),
     minimumExperience,
     premiumOnly: value.premiumOnly === true,
     hasPhoto: value.hasPhoto === true,
@@ -170,6 +180,9 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   setText(params, "gender", normalized.gender);
   setText(params, "smoker", normalized.smoker);
   setText(params, "visibleTattoos", normalized.visibleTattoos);
+  if (normalized.experienceType !== "any") {
+    params.set("experienceType", normalized.experienceType);
+  }
   setNullableText(params, "experienceMin", normalized.minimumExperience);
   setBoolean(params, "premium", normalized.premiumOnly);
   setBoolean(params, "photo", normalized.hasPhoto);
@@ -185,6 +198,34 @@ export function crewSearchFilterCount(filters: CrewSearchFilters) {
 
 export function crewSearchFingerprintInput(filters: CrewSearchFilters) {
   return crewSearchParams(filters).toString();
+}
+
+export function isCrewExperienceType(
+  value: unknown,
+): value is CrewExperienceType {
+  return crewExperienceTypes.includes(value as CrewExperienceType);
+}
+
+export function crewExperienceMatchesFilters(
+  experience: { yachtExperienceYears: number; otherExperienceYears: number },
+  filters: Pick<CrewSearchFilters, "experienceType" | "minimumExperience">,
+) {
+  const experienceType = normalizeCrewExperienceType(filters.experienceType);
+  const minimumExperience = normalizedMinimumYachtExperience(
+    filters.minimumExperience,
+  );
+  const yachtMatches = experienceMeetsMinimum(
+    experience.yachtExperienceYears,
+    minimumExperience,
+  );
+  const otherMatches = experienceMeetsMinimum(
+    experience.otherExperienceYears,
+    minimumExperience,
+  );
+
+  if (experienceType === "yacht") return yachtMatches;
+  if (experienceType === "other") return otherMatches;
+  return minimumExperience === null || yachtMatches || otherMatches;
 }
 
 function readSearchParam(source: SearchParamSource, key: string) {
@@ -216,6 +257,10 @@ function normalizedCrewProfileOption(
   return options.includes(normalized) ? normalized : "";
 }
 
+function normalizeCrewExperienceType(value: unknown): CrewExperienceType {
+  return isCrewExperienceType(value) ? value : "any";
+}
+
 function normalizedMinimumYachtExperience(
   value: unknown,
 ): JobMinimumYachtExperience | null {
@@ -237,6 +282,19 @@ export function crewExperienceMatchesYachtExperienceOption(
     experienceYears >= minimum &&
     (maximum === null || experienceYears <= maximum)
   );
+}
+
+function experienceMeetsMinimum(
+  years: number,
+  option: JobMinimumYachtExperience | null,
+) {
+  if (!Number.isFinite(years) || years <= 0) return false;
+  if (option === null) return true;
+
+  const minimum = option === "0_6_months"
+    ? 0.5
+    : crewYachtExperienceBounds[option].minimum;
+  return years >= minimum;
 }
 
 function setText(params: URLSearchParams, key: string, value: string) {

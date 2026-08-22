@@ -45,9 +45,10 @@ import {
 } from "../lib/crewDiscovery";
 import {
   calculateCrewProfileCompletion,
-  crewExperienceYears,
+  crewExperienceBreakdown,
   isPremiumCrewProfile,
 } from "../lib/crewProfileCompletion";
+import { formatCrewExperienceDuration } from "../lib/crewExperience";
 import {
   referencesForExperience,
   unlinkedExperienceReferences,
@@ -586,10 +587,18 @@ export default function ProfilePage() {
   const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen;
   const showNewDocumentForm = newDocumentOpen;
   const newDocumentDirty = !saveStateEquals(documentSaveState(documentDraft), documentSaveState(newDocumentDraft()));
-  const totalExperienceYears = useMemo(() => {
-    const years = crewExperienceYears(editableYachtExperiences);
-    return years > 0 ? `${years}+` : "0";
-  }, [editableYachtExperiences]);
+  const experienceBreakdown = useMemo(
+    () => crewExperienceBreakdown(sortedExperiences),
+    [sortedExperiences],
+  );
+  const yachtExperienceDuration = formatCrewExperienceDuration(
+    experienceBreakdown.yachtYears,
+    "en",
+  );
+  const otherExperienceDuration = formatCrewExperienceDuration(
+    experienceBreakdown.otherYears,
+    "en",
+  );
   const cvCompletionPercent = useMemo(
     () =>
       calculateCvCompletion({
@@ -1230,8 +1239,8 @@ export default function ProfilePage() {
             </div>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Snapshot label="Crew ID" value={profile.public_crew_id || "-"} tone="navy" />
-              <Snapshot label="Experience" value={`${totalExperienceYears} yrs`} tone="cyan" />
-              <Snapshot label="Documents" value={String(documents.length)} tone="gold" />
+              <Snapshot label="Yacht Experience" value={yachtExperienceDuration} tone="cyan" />
+              <Snapshot label="Other Experience" value={otherExperienceDuration} tone="gold" />
               <Snapshot label="Alerts" value={String(expiryAlerts.length)} tone="rose" />
             </div>
           </div>
@@ -1810,7 +1819,8 @@ export default function ProfilePage() {
                   documents={cvDocuments}
                   experiences={experiences}
                   references={cvReferences}
-                  totalExperienceYears={totalExperienceYears}
+                  yachtExperienceDuration={yachtExperienceDuration}
+                  otherExperienceDuration={otherExperienceDuration}
                   downloading={pdfDownloading}
                   onDownload={async (payload) => {
                     setPdfDownloading(true);
@@ -2122,7 +2132,8 @@ type CvPdfPayload = {
   experiences: Experience[];
   references: ReferenceEntry[];
   professionalSummary: string;
-  totalExperienceYears: string;
+  yachtExperienceDuration: string;
+  otherExperienceDuration: string;
   crewName: string;
   primaryPosition: string;
   visibleSkills: string[];
@@ -2607,7 +2618,8 @@ function SeazoneStyleCvPreview({
   documents,
   experiences,
   references,
-  totalExperienceYears,
+  yachtExperienceDuration,
+  otherExperienceDuration,
   downloading,
   onDownload,
 }: {
@@ -2615,7 +2627,8 @@ function SeazoneStyleCvPreview({
   documents: CrewDocument[];
   experiences: Experience[];
   references: ReferenceEntry[];
-  totalExperienceYears: string;
+  yachtExperienceDuration: string;
+  otherExperienceDuration: string;
   downloading: boolean;
   onDownload: (payload: CvPdfPayload) => void | Promise<void>;
 }) {
@@ -2649,7 +2662,8 @@ function SeazoneStyleCvPreview({
               experiences: cleanExperiences,
               references: cleanReferences,
               professionalSummary,
-              totalExperienceYears,
+              yachtExperienceDuration,
+              otherExperienceDuration,
               crewName,
               primaryPosition,
               visibleSkills,
@@ -2777,7 +2791,7 @@ function SeazoneStyleCvPreview({
                   </p>
                 </SeazoneSection>
 
-                <SeazoneSection title="Yacht Experience" badge={`${totalExperienceYears} years`}>
+                <SeazoneSection title="Yacht Experience" badge={yachtExperienceDuration}>
                 <div className="bd-cv-experience-list space-y-4">
                   {cleanYachtExperiences.length === 0 && (
                     <p className="rounded-xl border border-dashed border-[#c7d2d6] bg-[#f6f8f8] p-5 text-sm text-[#5a6870]">
@@ -2796,7 +2810,7 @@ function SeazoneStyleCvPreview({
               </SeazoneSection>
 
               {cleanOtherWorkExperiences.length > 0 && (
-                <SeazoneSection title="Other Work Experience">
+                <SeazoneSection title="Other Work Experience" badge={otherExperienceDuration}>
                   <div className="bd-cv-experience-list space-y-4">
                     {cleanOtherWorkExperiences.map((item, index) => (
                       <SeazoneExperienceCard
@@ -2824,7 +2838,8 @@ function SeazoneStyleCvPreview({
         experiences={cleanExperiences}
         references={cleanReferences}
         professionalSummary={professionalSummary}
-        totalExperienceYears={totalExperienceYears}
+        yachtExperienceDuration={yachtExperienceDuration}
+        otherExperienceDuration={otherExperienceDuration}
         crewName={crewName}
         primaryPosition={primaryPosition}
         visibleSkills={visibleSkills}
@@ -2955,7 +2970,8 @@ function PrintableCvPages({
   experiences,
   references,
   professionalSummary,
-  totalExperienceYears,
+  yachtExperienceDuration,
+  otherExperienceDuration,
   crewName,
   primaryPosition,
   visibleSkills,
@@ -2966,7 +2982,8 @@ function PrintableCvPages({
   experiences: Experience[];
   references: ReferenceEntry[];
   professionalSummary: string;
-  totalExperienceYears: string;
+  yachtExperienceDuration: string;
+  otherExperienceDuration: string;
   crewName: string;
   primaryPosition: string;
   visibleSkills: string[];
@@ -3010,7 +3027,9 @@ function PrintableCvPages({
                 </PrintableSection>
                 <PrintableSection
                   title={page.experiences.some((experience) => !isOtherWorkExperience(experience)) ? "Yacht Experience" : "Other Work Experience"}
-                  badge={page.experiences.some((experience) => !isOtherWorkExperience(experience)) ? `${totalExperienceYears} years` : undefined}
+                  badge={page.experiences.some((experience) => !isOtherWorkExperience(experience))
+                    ? yachtExperienceDuration
+                    : otherExperienceDuration}
                 >
                   <PrintableExperienceList experiences={page.experiences} references={references} />
                 </PrintableSection>
