@@ -32,7 +32,7 @@ const sections = [
   {
     title: "Public crew directory",
     paragraphs: [
-      "Active, email-confirmed accounts registered as Crew or Captain are automatically included in the public Find Crew directory while they remain eligible. Find Crew can be viewed without creating or signing in to a BlueDeck account.",
+      "Active, email-confirmed accounts registered as Crew or Captain are automatically included in the public Find Crew directory unless Availability is set to Not available. Find Crew can be viewed without creating or signing in to a BlueDeck account.",
       "Public results use a masked display name and may show selected professional and physical profile details, availability, work preferences, profile and gallery images, and counts of completed profile records. A linked Crew ID CV or gallery may also show CV-selected certificate metadata, work-experience details and reference role, vessel or company information.",
       "Full legal names, email addresses, phone numbers, reference contact details, private document files, storage paths and yacht workspaces are not included in the public directory.",
     ],
@@ -77,7 +77,7 @@ const sections = [
   {
     title: "Your choices and rights",
     paragraphs: [
-      "You can update most profile information in BlueDeck. Public directory inclusion follows the active Crew or Captain role associated with your account. Depending on applicable law, you may request access, correction, deletion, restriction, objection or a portable copy of your personal information, and may complain to the relevant data-protection authority.",
+      "You can update most profile information in BlueDeck. Active Crew and Captain profiles default to Available; selecting Not available hides the profile from Find Crew without preventing job applications. Depending on applicable law, you may request access, correction, deletion, restriction, objection or a portable copy of your personal information, and may complain to the relevant data-protection authority.",
       "We may need to verify your identity and authority over a yacht or account before acting on a request. Send requests to info@bluedeck.app.",
     ],
   },

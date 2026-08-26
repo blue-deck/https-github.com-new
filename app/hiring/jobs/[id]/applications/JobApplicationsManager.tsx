@@ -26,6 +26,7 @@ import {
 } from "../../../../components/CrewCandidatePresentation";
 import { useLanguage } from "../../../../components/LanguageProvider";
 import {
+  applicationCandidateAvailabilityStatus,
   employerJobApplicationStatuses,
   isJobApplicationMode,
   isJobApplicationJobAvailability,
@@ -1230,6 +1231,7 @@ function parseEmployerCandidate(value: unknown) {
   if (
     typeof value.displayName !== "string" ||
     typeof value.initials !== "string" ||
+    value.availabilityStatus !== applicationCandidateAvailabilityStatus ||
     typeof value.experienceYears !== "number" ||
     typeof value.cvCompletionPercent !== "number" ||
     typeof value.premiumProfile !== "boolean"
@@ -1242,7 +1244,7 @@ function parseEmployerCandidate(value: unknown) {
     profilePhotoUrl: stringValue(value.profilePhotoUrl),
     currentPosition: stringValue(value.currentPosition),
     nationality: stringValue(value.nationality),
-    availabilityStatus: stringValue(value.availabilityStatus),
+    availabilityStatus: applicationCandidateAvailabilityStatus,
     experienceYears:
       value.experienceYears > 0 && value.experienceYears < 1
         ? 0.5

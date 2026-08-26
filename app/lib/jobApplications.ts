@@ -22,6 +22,7 @@ export const jobApplicationJobAvailabilities = [
 ] as const;
 
 export const jobApplicationModes = ["individual", "team_couple"] as const;
+export const applicationCandidateAvailabilityStatus = "Open to offers" as const;
 
 export type JobApplicationStatus =
   (typeof jobApplicationStatuses)[number];
@@ -37,7 +38,7 @@ export type EmployerJobApplicationCandidate = {
   profilePhotoUrl: string;
   currentPosition: string;
   nationality: string;
-  availabilityStatus: string;
+  availabilityStatus: typeof applicationCandidateAvailabilityStatus;
   experienceYears: number;
   cvCompletionPercent: number;
   premiumProfile: boolean;

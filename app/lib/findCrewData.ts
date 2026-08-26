@@ -30,7 +30,7 @@ import {
   isPremiumCrewProfile,
 } from "./crewProfileCompletion";
 import {
-  crewDiscoveryNotesPrefix,
+  isCrewVisibleInDirectory,
   parseCrewDiscoverySettings,
   type CrewDiscoverySettings,
 } from "./crewDiscovery";
@@ -260,6 +260,7 @@ type CrewSearchRelatedData = {
 async function loadAllDiscoverableCrewRows(serviceClient: SupabaseClient) {
   const rows: CrewProfileRow[] = [];
   const seenCursors = new Set<string>();
+  let scannedRowCount = 0;
   let beforeUpdatedAt: string | null = null;
   let beforeId: string | null = null;
 
@@ -291,15 +292,20 @@ async function loadAllDiscoverableCrewRows(serviceClient: SupabaseClient) {
     if (
       pageRows.length > publicCrewScanPageSize ||
       (data.has_more && pageRows.length !== publicCrewScanPageSize) ||
-      rows.length + pageRows.length > maximumPublicCrewScanRows
+      scannedRowCount + pageRows.length > maximumPublicCrewScanRows
     ) {
       throw new Error(
-        rows.length + pageRows.length > maximumPublicCrewScanRows
+        scannedRowCount + pageRows.length > maximumPublicCrewScanRows
           ? "find_crew_directory_capacity_exceeded"
           : "find_crew_profiles_invalid",
       );
     }
-    rows.push(...pageRows);
+    scannedRowCount += pageRows.length;
+    rows.push(
+      ...pageRows.filter((row) =>
+        isCrewVisibleInDirectory(parseCrewDiscoverySettings(text(row.notes))),
+      ),
+    );
     if (!data.has_more) return rows;
 
     const last = pageRows.at(-1);
@@ -980,8 +986,8 @@ export async function isActiveDirectoryCrew(crewId: string) {
  * Single public-crew privacy boundary used by the directory, CV, gallery,
  * metadata and media routes. Every call verifies the current profile state,
  * workspace entitlement and live Auth account. Crew and Captain directory
- * eligibility is automatic; discovery settings only provide optional public
- * availability and work-preference values.
+ * eligibility is automatic unless the member explicitly selects Not available;
+ * other discovery settings provide optional public work-preference values.
  */
 export async function loadEligiblePublicCrewContext(
   crewId: string,
@@ -998,6 +1004,7 @@ export async function loadEligiblePublicCrewContext(
   if (!profile) return null;
 
   const discovery = getPublicCrewDiscoverySettings(profile.notes);
+  if (!isCrewVisibleInDirectory(discovery)) return null;
 
   const account = await loadEligibleCrewAccount(serviceClient, profile);
   if (!account) return null;
@@ -1209,9 +1216,6 @@ function toDiscoverableCrewPreview(
     ) ||
     "Yacht crew";
   const notes = text(row.notes);
-  const hasSavedDiscoverySettings = notes.startsWith(
-    crewDiscoveryNotesPrefix,
-  );
   const discovery = parseCrewDiscoverySettings(notes);
   const completionPercent = calculateCrewProfileCompletion({
     profile: row,
@@ -1242,13 +1246,11 @@ function toDiscoverableCrewPreview(
       profileIdentity,
       80,
     ),
-    availabilityStatus: hasSavedDiscoverySettings
-      ? identitySafeProfileField(
-          discovery.availabilityStatus,
-          profileIdentity,
-          120,
-        )
-      : "",
+    availabilityStatus: identitySafeProfileField(
+      discovery.availabilityStatus,
+      profileIdentity,
+      120,
+    ),
     preferredLocations: identitySafeStringArray(
       discovery.preferredLocations,
       profileIdentity,

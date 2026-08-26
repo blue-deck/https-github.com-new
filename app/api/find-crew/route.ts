@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crewAvailabilityStatuses } from "../../lib/crewDiscovery";
+import { crewDirectoryAvailabilityStatuses } from "../../lib/crewDiscovery";
 import { nationalityFilterValues } from "../../lib/countries";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
 import { jobMinimumYachtExperiences } from "../../lib/jobPosts";
@@ -93,7 +93,7 @@ function isValidCrewSearchRequest(searchParams: URLSearchParams) {
   if (
     !isAllowedCrewOption(
       searchParams.get("availability"),
-      crewAvailabilityStatuses,
+      crewDirectoryAvailabilityStatuses,
     ) ||
     !isAllowedCrewOption(
       searchParams.get("experienceMin"),

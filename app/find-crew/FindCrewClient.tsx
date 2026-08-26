@@ -18,7 +18,7 @@ import {
 } from "../components/NationalitySearchField";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
-import { crewAvailabilityStatuses } from "../lib/crewDiscovery";
+import { crewDirectoryAvailabilityStatuses } from "../lib/crewDiscovery";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
 import {
   formatJobMinimumYachtExperience,
@@ -391,9 +391,10 @@ export function FindCrewClient({
               />
               <FilterSelect
                 label={c.availability}
+                emptyOptionLabel={c.selectAvailability}
                 value={draftFilters.availability}
                 onChange={(value) => setDraftFilter("availability", value)}
-                options={crewAvailabilityStatuses}
+                options={crewDirectoryAvailabilityStatuses}
                 language={language}
               />
               {!advancedOpen ? (
@@ -1046,6 +1047,7 @@ const copy = {
     searchPlaceholder: "Position, skill, language or location",
     position: "Position",
     availability: "Availability",
+    selectAvailability: "Select availability",
     nationalityFilter: "Nationality",
     maritalStatus: "Marital status",
     gender: "Gender",
@@ -1103,6 +1105,7 @@ const copy = {
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyon",
     availability: "Müsaitlik durumları",
+    selectAvailability: "Müsaitlik durumu seçin",
     nationalityFilter: "Uyruklar",
     maritalStatus: "Medeni durumlar",
     gender: "Cinsiyet",

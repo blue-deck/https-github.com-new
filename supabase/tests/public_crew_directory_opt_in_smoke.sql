@@ -1,5 +1,5 @@
--- Automatic public discovery is evaluated from current account state. It must
--- not depend on mutating profile preferences or on synchronization triggers.
+-- Automatic public discovery is evaluated from current account state and the
+-- explicit Not available choice. It must not rely on synchronization triggers.
 
 begin;
 
@@ -90,6 +90,33 @@ begin
     or page::text like '%PRIVATE AUTOMATIC DIRECTORY NOTES%'
   then
     raise exception 'A newly confirmed Captain was not discovered automatically and privately.';
+  end if;
+
+  update public.crew_profiles
+  set notes =
+    '__BLUDECK_FIND_CREW__{"discoverable":true,"availabilityStatus":"Not available","preferredLocations":[],"employmentTypes":[],"contactVisibility":"request_only"}' ||
+    E'\nPRIVATE AUTOMATIC DIRECTORY NOTES'
+  where id = profile_id;
+
+  select public.bluedeck_public_crew_page(null, null, 48) into page;
+  if exists (
+    select 1
+    from jsonb_array_elements(page -> 'rows') as row_data
+    where row_data ->> 'id' = profile_id::text
+  ) or (select notes from public.crew_profiles where id = profile_id)
+    not like '%PRIVATE AUTOMATIC DIRECTORY NOTES'
+  then
+    raise exception 'An explicitly unavailable Captain remained discoverable or lost private notes.';
+  end if;
+
+  update public.crew_profiles set notes = original_notes where id = profile_id;
+  select public.bluedeck_public_crew_page(null, null, 48) into page;
+  if not exists (
+    select 1
+    from jsonb_array_elements(page -> 'rows') as row_data
+    where row_data ->> 'id' = profile_id::text
+  ) then
+    raise exception 'An Available Captain did not return to the directory.';
   end if;
 
   update auth.users

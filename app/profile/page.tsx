@@ -1213,7 +1213,6 @@ export default function ProfilePage() {
                       }
                       className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white px-3 pr-10 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15 sm:text-sm"
                     >
-                      <option value="">Select availability</option>
                       {crewAvailabilityStatuses.map((option) => (
                         <option key={option} value={option}>{option}</option>
                       ))}
@@ -1221,7 +1220,7 @@ export default function ProfilePage() {
                     <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden />
                   </span>
                   <span className="mt-2 block text-xs leading-5 text-slate-500">
-                    Shown to employers on your job applications.
+                    Select Not available to hide this profile from Find Crew. You can still apply to jobs.
                   </span>
                 </label>
               </div>
@@ -1840,7 +1839,7 @@ export default function ProfilePage() {
             <span className="font-black uppercase tracking-[0.12em] text-[#071f3c]">
               Find Crew directory
             </span>{" "}
-            Active, email-confirmed Crew and Captain accounts are listed automatically with a masked name, selected professional profile fields and approved photos. Email, phone, private files and reference contact details stay hidden.{" "}
+            Active, email-confirmed Crew and Captain accounts are listed automatically unless Availability is set to Not available. Public cards use a masked name and approved profile details; email, phone, private files and reference contact details stay hidden.{" "}
             <Link
               href="/privacy"
               className="bd-focus font-bold text-cyan-800 underline decoration-cyan-300 underline-offset-2"
@@ -3643,7 +3642,7 @@ function ProfilePhoto({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-950">Profile photo</p>
-        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "For active Crew and Captain accounts, this appears automatically in the public Find Crew profile and Crew ID CV portal."}</p>
+        <p className="mt-0.5 text-xs leading-5 text-slate-500">{uploading ? "Uploading photo..." : "For active Crew and Captain accounts, this appears in Find Crew and the Crew ID CV portal unless Availability is set to Not available."}</p>
       </div>
     </div>
   );

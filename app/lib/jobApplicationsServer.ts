@@ -23,6 +23,7 @@ import {
   safeCandidateMeasurement,
 } from "./crewCandidateDataServer";
 import {
+  applicationCandidateAvailabilityStatus,
   isJobApplicationMode,
   isJobApplicationStatus,
   type EmployerJobApplication,
@@ -37,7 +38,7 @@ import {
   selectEmployerApplicationGallerySources,
 } from "./jobApplicationMediaServer";
 import {
-  crewDiscoveryNotesPrefix,
+  isCrewVisibleInDirectory,
   parseCrewDiscoverySettings,
 } from "./crewDiscovery";
 import {
@@ -398,7 +399,7 @@ export async function loadApplicationCandidateDetails(
   }
 
   const snapshot = snapshotResult.snapshot;
-  const publicOverlay = publicMedia.ok
+  const candidatePublicOverlay = publicMedia.ok
     ? publicMediaOverlayForMember(publicMedia.overlays, member)
     : undefined;
   const candidate = recordValue(snapshot?.candidate_snapshot);
@@ -406,6 +407,9 @@ export async function loadApplicationCandidateDetails(
   const profile = recordValue(candidate.profile);
   const experiences = recordArray(candidate.experiences) as CompletionExperience[];
   const discovery = parseCrewDiscoverySettings(cleanText(profile.notes));
+  const publicOverlay = isCrewVisibleInDirectory(discovery)
+    ? candidatePublicOverlay
+    : undefined;
   const completionPercent = calculateCrewProfileCompletion({ profile, experiences });
   const currentPosition =
     publicStructuredStringArray(profile.current_positions, 1, 120)[0] ||
@@ -831,8 +835,10 @@ function employerMemberFromSnapshot(
   const media = recordValue(snapshot?.media_snapshot);
   const profile = recordValue(candidate.profile);
   const experiences = recordArray(candidate.experiences) as CompletionExperience[];
-  const discoveryNotes = cleanText(profile.notes);
-  const discovery = parseCrewDiscoverySettings(discoveryNotes);
+  const discovery = parseCrewDiscoverySettings(cleanText(profile.notes));
+  const visiblePublicOverlay = isCrewVisibleInDirectory(discovery)
+    ? publicOverlay
+    : undefined;
   const completionPercent = calculateCrewProfileCompletion({ profile, experiences });
   const mediaOwnerIds = applicationMemberMediaOwnerIds(member);
   const avatarSource =
@@ -851,8 +857,8 @@ function employerMemberFromSnapshot(
     candidate: {
       displayName: maskedPersonName(member.memberName),
       initials: personInitials(member.memberName),
-      profilePhotoUrl: publicOverlay
-        ? publicOverlay.profilePhotoUrl
+      profilePhotoUrl: visiblePublicOverlay
+        ? visiblePublicOverlay.profilePhotoUrl
         : avatarSource && avatarRevision
           ? buildEmployerApplicationMediaUrl({
               jobPostId: member.jobPostId,
@@ -867,9 +873,7 @@ function employerMemberFromSnapshot(
         publicStructuredProfileField(profile.current_position, 120) ||
         member.memberPosition,
       nationality: publicStructuredProfileField(profile.nationality, 80),
-      availabilityStatus: discoveryNotes.startsWith(crewDiscoveryNotesPrefix)
-        ? discovery.availabilityStatus
-        : "",
+      availabilityStatus: applicationCandidateAvailabilityStatus,
       experienceYears: crewExperienceYears(experiences),
       cvCompletionPercent: completionPercent,
       premiumProfile: isPremiumCrewProfile(completionPercent),

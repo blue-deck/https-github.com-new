@@ -1,10 +1,14 @@
 export const crewDiscoveryNotesPrefix = "__BLUDECK_FIND_CREW__";
 
-export const crewAvailabilityStatuses = [
+export const crewDirectoryAvailabilityStatuses = [
   "Available",
   "In 1 week",
   "In 1 month",
   "Open to offers",
+] as const;
+
+export const crewAvailabilityStatuses = [
+  ...crewDirectoryAvailabilityStatuses,
   "Not available",
 ] as const;
 
@@ -35,11 +39,20 @@ export type CrewDiscoverySettings = {
 
 export const defaultCrewDiscoverySettings: CrewDiscoverySettings = {
   discoverable: true,
-  availabilityStatus: "",
+  availabilityStatus: "Available",
   preferredLocations: [],
   employmentTypes: [],
   contactVisibility: "request_only",
 };
+
+export function isCrewVisibleInDirectory(
+  value: Pick<CrewDiscoverySettings, "availabilityStatus"> | string,
+) {
+  const availabilityStatus = normalizeAvailabilityStatus(
+    typeof value === "string" ? value : value.availabilityStatus,
+  );
+  return availabilityStatus !== "Not available";
+}
 
 export function parseCrewDiscoverySettings(notes?: string | null): CrewDiscoverySettings {
   const { settings } = splitCrewDiscoveryNotes(notes);

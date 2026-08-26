@@ -1,5 +1,12 @@
 import type { JobMinimumYachtExperience } from "./jobPosts";
 
+const crewSearchAvailabilityStatuses = [
+  "Available",
+  "In 1 week",
+  "In 1 month",
+  "Open to offers",
+] as const;
+
 const crewYachtExperienceBounds: Record<
   JobMinimumYachtExperience,
   { minimum: number; maximum: number | null }
@@ -111,9 +118,8 @@ export function parseCrewSearchFilters(
   return normalizeCrewSearchFilters({
     query: limitedText(readSearchParam(source, "q"), 120),
     position: limitedText(readSearchParam(source, "position"), 120),
-    availability: limitedText(
+    availability: normalizedDirectoryAvailability(
       readSearchParam(source, "availability"),
-      120,
     ),
     nationality: limitedText(readSearchParam(source, "nationality"), 80),
     maritalStatus: normalizedMaritalStatus(
@@ -151,7 +157,7 @@ export function normalizeCrewSearchFilters(
   return {
     query: limitedText(value.query, 120),
     position: limitedText(value.position, 120),
-    availability: limitedText(value.availability, 120),
+    availability: normalizedDirectoryAvailability(value.availability),
     nationality: limitedText(value.nationality, 80),
     maritalStatus: normalizedMaritalStatus(value.maritalStatus),
     gender: normalizedCrewProfileOption(value.gender, crewGenderOptions),
@@ -237,6 +243,15 @@ function readSearchParam(source: SearchParamSource, key: string) {
 function limitedText(value: unknown, maximumLength: number) {
   return typeof value === "string"
     ? value.trim().replace(/\s+/g, " ").slice(0, maximumLength)
+    : "";
+}
+
+function normalizedDirectoryAvailability(value: unknown) {
+  const normalized = limitedText(value, 120);
+  return crewSearchAvailabilityStatuses.includes(
+    normalized as (typeof crewSearchAvailabilityStatuses)[number],
+  )
+    ? normalized
     : "";
 }
 

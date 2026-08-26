@@ -23,7 +23,7 @@ const sections = [
   {
     title: "Profiles and public visibility",
     paragraphs: [
-      "By creating or using an active Crew or Captain account, you authorize BlueDeck to list its masked, privacy-protected professional profile automatically in the public Find Crew directory after email confirmation. The public profile may include selected professional and physical fields, availability and approved images, and may link to a Crew ID CV or gallery containing CV-selected materials. Full legal names, direct contact details, private files and reference contact details remain protected as described in the Privacy Policy. You remain responsible for having the right to upload and publish every image and statement you submit.",
+      "By creating or using an active Crew or Captain account, you authorize BlueDeck to list its masked, privacy-protected professional profile automatically in the public Find Crew directory after email confirmation unless Availability is set to Not available. This visibility choice does not prevent job applications. The public profile may include selected professional and physical fields, availability and approved images, and may link to a Crew ID CV or gallery containing CV-selected materials. Full legal names, direct contact details, private files and reference contact details remain protected as described in the Privacy Policy. You remain responsible for having the right to upload and publish every image and statement you submit.",
     ],
   },
   {

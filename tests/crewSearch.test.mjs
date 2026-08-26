@@ -11,7 +11,14 @@ import {
   isCrewExperienceType,
   parseCrewSearchFilters,
 } from "../app/lib/crewSearch.ts";
-import { crewAvailabilityStatuses } from "../app/lib/crewDiscovery.ts";
+import {
+  crewAvailabilityStatuses,
+  crewDirectoryAvailabilityStatuses,
+  crewDiscoveryNotesPrefix,
+  defaultCrewDiscoverySettings,
+  isCrewVisibleInDirectory,
+  parseCrewDiscoverySettings,
+} from "../app/lib/crewDiscovery.ts";
 import {
   crewExperienceBreakdownFromDateRanges,
   crewExperienceYearsFromDateRanges,
@@ -199,7 +206,7 @@ test("personal crew selects show Any without changing their field labels", async
   assert.match(client, /<option value="">\{emptyOptionLabel\}<\/option>/);
 });
 
-test("availability select uses its field label as the empty option", async () => {
+test("availability select uses an explicit selection prompt", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
@@ -207,12 +214,10 @@ test("availability select uses its field label as the empty option", async () =>
 
   assert.match(
     client,
-    /label=\{c\.availability\}\s+value=\{draftFilters\.availability\}/,
+    /label=\{c\.availability\}\s+emptyOptionLabel=\{c\.selectAvailability\}\s+value=\{draftFilters\.availability\}/,
   );
-  assert.doesNotMatch(
-    client,
-    /label=\{c\.availability\}\s+emptyOptionLabel=\{c\.any\}/,
-  );
+  assert.match(client, /selectAvailability: "Select availability"/);
+  assert.match(client, /selectAvailability: "Müsaitlik durumu seçin"/);
 });
 
 test("keeps nationality in primary filters and removes the location filter", async () => {
@@ -364,8 +369,8 @@ test("crew filter controls share equal columns and one select surface", async ()
   assert.match(nationalityField, /relative block min-w-0/);
 });
 
-test("find crew reuses every My Profile availability option", async () => {
-  const [client, route] = await Promise.all([
+test("find crew excludes Not available from filters while My Profile keeps it", async () => {
+  const [client, route, profile] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
@@ -374,6 +379,7 @@ test("find crew reuses every My Profile availability option", async () => {
       new URL("../app/api/find-crew/route.ts", import.meta.url),
       "utf8",
     ),
+    readFile(new URL("../app/profile/page.tsx", import.meta.url), "utf8"),
   ]);
 
   assert.deepEqual([...crewAvailabilityStatuses], [
@@ -383,11 +389,55 @@ test("find crew reuses every My Profile availability option", async () => {
     "Open to offers",
     "Not available",
   ]);
-  assert.match(client, /options=\{crewAvailabilityStatuses\}/);
+  assert.deepEqual([...crewDirectoryAvailabilityStatuses], [
+    "Available",
+    "In 1 week",
+    "In 1 month",
+    "Open to offers",
+  ]);
+  assert.match(client, /options=\{crewDirectoryAvailabilityStatuses\}/);
+  assert.doesNotMatch(client, /options=\{crewAvailabilityStatuses\}/);
   assert.doesNotMatch(client, /options=\{facets\.availabilities\}/);
   assert.match(
     route,
-    /searchParams\.get\("availability"\),\s*crewAvailabilityStatuses/,
+    /searchParams\.get\("availability"\),\s*crewDirectoryAvailabilityStatuses/,
+  );
+  assert.match(profile, /crewAvailabilityStatuses\.map/);
+  assert.doesNotMatch(profile, /<option value="">Select availability<\/option>/);
+});
+
+test("missing availability defaults to Available and explicit unavailability stays hidden", () => {
+  assert.equal(defaultCrewDiscoverySettings.availabilityStatus, "Available");
+  assert.equal(parseCrewDiscoverySettings(null).availabilityStatus, "Available");
+  assert.equal(parseCrewDiscoverySettings("private notes").availabilityStatus, "Available");
+  assert.equal(
+    parseCrewDiscoverySettings(`${crewDiscoveryNotesPrefix}{malformed`).availabilityStatus,
+    "Available",
+  );
+
+  const unavailable = parseCrewDiscoverySettings(
+    `${crewDiscoveryNotesPrefix}${JSON.stringify({ availabilityStatus: "Not available" })}`,
+  );
+  const legacyUnavailable = parseCrewDiscoverySettings(
+    `${crewDiscoveryNotesPrefix}${JSON.stringify({ availabilityStatus: "Currently employed" })}`,
+  );
+  assert.equal(unavailable.availabilityStatus, "Not available");
+  assert.equal(legacyUnavailable.availabilityStatus, "Not available");
+  assert.equal(isCrewVisibleInDirectory(unavailable), false);
+  assert.equal(isCrewVisibleInDirectory(legacyUnavailable), false);
+  assert.equal(isCrewVisibleInDirectory(parseCrewDiscoverySettings(null)), true);
+
+  assert.equal(
+    parseCrewSearchFilters(
+      new URLSearchParams({ availability: "Not available" }),
+    ).availability,
+    "",
+  );
+  assert.equal(
+    parseCrewSearchFilters(
+      new URLSearchParams({ availability: "Available" }),
+    ).availability,
+    "Available",
   );
 });
 

@@ -1,8 +1,8 @@
 import type { Language } from "./i18n";
 
 export const generatedPhraseTranslations: Record<string, Partial<Record<Language, string>>> = {
-  "Active, email-confirmed Crew and Captain accounts are listed automatically with a masked name, selected professional profile fields and approved photos. Email, phone, private files and reference contact details stay hidden.": {
-    "tr": "Aktif ve e-posta adresi onaylanmış Crew ve Captain hesapları; maskelenmiş ad, seçili profesyonel profil alanları ve onaylanmış fotoğraflarla otomatik olarak listelenir. E-posta, telefon, özel dosyalar ve referans iletişim bilgileri gizli kalır.",
+  "Active, email-confirmed Crew and Captain accounts are listed automatically unless Availability is set to Not available. Public cards use a masked name and approved profile details; email, phone, private files and reference contact details stay hidden.": {
+    "tr": "Aktif ve e-posta adresi onaylanmış Crew ve Captain hesapları, Müsaitlik durumu Müsait değil olarak ayarlanmadıkça otomatik olarak listelenir. Herkese açık kartlarda maskelenmiş ad ve onaylanmış profil bilgileri kullanılır; e-posta, telefon, özel dosyalar ve referans iletişim bilgileri gizli kalır.",
   },
   "Automatic": {
     "tr": "Otomatik",
@@ -13,8 +13,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Find Crew directory": {
     "tr": "Find Crew rehberi",
   },
-  "For active Crew and Captain accounts, this appears automatically in the public Find Crew profile and Crew ID CV portal.": {
-    "tr": "Aktif Crew ve Captain hesaplarında bu fotoğraf, herkese açık Find Crew profilinde ve Crew ID CV portalında otomatik olarak görünür.",
+  "For active Crew and Captain accounts, this appears in Find Crew and the Crew ID CV portal unless Availability is set to Not available.": {
+    "tr": "Aktif Crew ve Captain hesaplarında bu fotoğraf, Müsaitlik durumu Müsait değil olarak ayarlanmadıkça Find Crew ve Crew ID CV portalında görünür.",
   },
   "Public": {
     "tr": "Herkese açık",
@@ -28,8 +28,8 @@ export const generatedPhraseTranslations: Record<string, Partial<Record<Language
   "Select availability": {
     "tr": "Müsaitlik durumu seçin",
   },
-  "Shown to employers on your job applications.": {
-    "tr": "İş başvurularınızda işverenlere gösterilir.",
+  "Select Not available to hide this profile from Find Crew. You can still apply to jobs.": {
+    "tr": "Bu profili Find Crew'dan gizlemek için Müsait değil seçeneğini seçin. İşlere başvurmaya devam edebilirsiniz.",
   },
   "· Crew ID": {
     "tr": "· Mürettebat kimliği",
