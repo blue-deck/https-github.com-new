@@ -8,7 +8,7 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("Captain Workspace and My Applications expose the shared dashboard return control", async () => {
+test("Captain Workspace, My Applications, and Contracts expose the shared dashboard return control", async () => {
   const pages = [
     {
       path: "app/yachts/page.tsx",
@@ -17,6 +17,10 @@ test("Captain Workspace and My Applications expose the shared dashboard return c
     {
       path: "app/portal/applications/MyJobApplicationsPortal.tsx",
       contentMarker: '<section className="relative overflow-hidden rounded-[30px]',
+    },
+    {
+      path: "app/contracts/page.tsx",
+      contentMarker: '<header className="bd-glass-card-strong rounded-[34px] p-8">',
     },
   ];
 

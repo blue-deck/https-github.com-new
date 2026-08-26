@@ -1,10 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, FileSignature, PenLine } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, ChevronLeft, FileSignature, PenLine } from "lucide-react";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { supabase } from "../lib/supabase";
 import { parseAssignedContractPayload } from "../lib/contractPayload";
+
+function DashboardReturnLink() {
+  return (
+    <Link
+      href="/dashboard"
+      className="bd-focus mb-3 inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-3 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm backdrop-blur transition hover:border-cyan-300 hover:text-cyan-800"
+      aria-label="Back to dashboard"
+      title="Back to dashboard"
+    >
+      <ChevronLeft className="h-4 w-4" aria-hidden />
+      Dashboard
+    </Link>
+  );
+}
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<any[]>([]);
@@ -115,8 +130,11 @@ export default function ContractsPage() {
   if (loading) {
     return (
       <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900" aria-busy="true">
-        <div className="bd-ocean-content" role="status" aria-live="polite">
-          <h1 className="text-3xl font-semibold text-[#071f3c]">Loading contracts...</h1>
+        <div className="bd-ocean-content">
+          <DashboardReturnLink />
+          <div role="status" aria-live="polite">
+            <h1 className="text-3xl font-semibold text-[#071f3c]">Loading contracts...</h1>
+          </div>
         </div>
       </main>
     );
@@ -125,20 +143,23 @@ export default function ContractsPage() {
   if (loadError) {
     return (
       <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
-        <section className="bd-ocean-content mx-auto max-w-3xl rounded-[28px] border border-rose-200 bg-white p-7 shadow-sm" role="alert">
-          <p className="bd-kicker">BlueDeck Contracts</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]">
-            Contracts could not be loaded
-          </h1>
-          <p className="mt-3 max-w-xl leading-7 text-slate-600">{loadError}</p>
-          <button
-            type="button"
-            onClick={() => void loadContracts()}
-            className="bd-focus mt-6 min-h-12 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
-          >
-            Try again
-          </button>
-        </section>
+        <div className="bd-ocean-content mx-auto max-w-3xl">
+          <DashboardReturnLink />
+          <section className="rounded-[28px] border border-rose-200 bg-white p-7 shadow-sm" role="alert">
+            <p className="bd-kicker">BlueDeck Contracts</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]">
+              Contracts could not be loaded
+            </h1>
+            <p className="mt-3 max-w-xl leading-7 text-slate-600">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void loadContracts()}
+              className="bd-focus mt-6 min-h-12 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+            >
+              Try again
+            </button>
+          </section>
+        </div>
       </main>
     );
   }
@@ -146,6 +167,7 @@ export default function ContractsPage() {
   return (
     <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-5xl">
+        <DashboardReturnLink />
         <header className="bd-glass-card-strong rounded-[34px] p-8">
           <p className="text-cyan-300">My Contracts</p>
           <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">Mobile Signature</h1>
