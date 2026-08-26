@@ -30,7 +30,7 @@ import {
   formatJobSalaryAmountInput,
   formatJobSalaryCurrencyOption,
   formatJobSalaryPeriod,
-  formatJobVisa,
+  formatJobYachtProgram,
   formatJobYachtType,
   isJobTeamCouple,
   maximumJobSalaryAmount,
@@ -761,6 +761,20 @@ export function JobsClient({
                       }))
                     }
                   />
+                  <FilterSelect
+                    allowEmpty
+                    label={c.yachtProgram}
+                    placeholder={c.allYachtPrograms}
+                    options={optionSets.yachtPrograms}
+                    value={draftFilters.yachtProgram || ""}
+                    onChange={(value) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtProgram: (value ||
+                          null) as PublicJobSearchFilters["yachtProgram"],
+                      }))
+                    }
+                  />
                   <MultiSelectField
                     label={c.yachtFlag}
                     placeholder={c.anyFlag}
@@ -789,21 +803,6 @@ export function JobsClient({
                         candidateTypes: candidateTypesForTeamCouple(
                           value as TeamCoupleFilterValue,
                         ),
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.visas}
-                    placeholder={c.anyVisa}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.visas}
-                    values={draftFilters.requiredVisas}
-                    onChange={(requiredVisas) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        requiredVisas:
-                          requiredVisas as PublicJobSearchFilters["requiredVisas"],
                       }))
                     }
                   />
@@ -1913,11 +1912,11 @@ function buildOptionSets(language: Language, c: SearchCopy) {
     yachtTypes: publicJobSearchTaxonomy.yachtTypes.map((value) =>
       option(value, formatJobYachtType(value, language)),
     ),
+    yachtPrograms: publicJobSearchTaxonomy.yachtPrograms.map((value) =>
+      option(value, formatJobYachtProgram(value, language)),
+    ),
     flags: nationalityOptions.map(({ code }) =>
       option(code, formatCountryWithFlag(code) || code),
-    ),
-    visas: publicJobSearchTaxonomy.visas.map((value) =>
-      option(value, formatJobVisa(value)),
     ),
     salaryCurrencies: publicJobSearchTaxonomy.salaryCurrencies.map((value) =>
       option(value, formatJobSalaryCurrencyOption(value)),
@@ -1997,6 +1996,13 @@ function buildActiveFilterChips(
       }),
     ),
   );
+  if (filters.yachtProgram) {
+    add(
+      "yacht-program",
+      `${c.yachtProgram}: ${formatJobYachtProgram(filters.yachtProgram, language)}`,
+      (current) => ({ ...current, yachtProgram: null }),
+    );
+  }
   filters.yachtFlagCountryCodes.forEach((value) =>
     add(`flag-${value}`, formatCountryWithFlag(value) || value, (current) => ({
       ...current,
@@ -2030,13 +2036,6 @@ function buildActiveFilterChips(
       (current) => ({ ...current, crewMemberCountMin: null }),
     );
   }
-
-  filters.requiredVisas.forEach((value) =>
-    add(`visa-${value}`, formatJobVisa(value), (current) => ({
-      ...current,
-      requiredVisas: current.requiredVisas.filter((item) => item !== value),
-    })),
-  );
 
   if (
     filters.salaryCurrency ||
@@ -2157,13 +2156,13 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     filters.departments.length +
     (filters.candidateTypes.length > 0 ? 1 : 0) +
     filters.yachtTypes.length +
+    (filters.yachtProgram ? 1 : 0) +
     filters.yachtFlagCountryCodes.length +
     (filters.yachtLengthMinMetres !== null ||
       filters.yachtLengthMaxMetres !== null
       ? 1
       : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
-    filters.requiredVisas.length +
     (filters.salaryCurrency ||
     filters.salaryPeriod ||
     filters.salaryMin !== null ||
@@ -2326,6 +2325,8 @@ const copy = {
     no: "No",
     yachtType: "Yacht type",
     allYachtTypes: "All yacht types",
+    yachtProgram: "Yacht program",
+    allYachtPrograms: "All yacht programs",
     yachtFlag: "Yacht flag",
     anyFlag: "Any flag",
     searchFlags: "Search flags",
@@ -2339,8 +2340,6 @@ const copy = {
     metres: "m",
     crewSize: "Crew size",
     anyCrewSize: "Any",
-    visas: "Visas",
-    anyVisa: "Any visa",
     salary: "Salary",
     from: "From",
     currency: "Salary currency",
@@ -2421,6 +2420,8 @@ const copy = {
     no: "Hayır",
     yachtType: "Yat türü",
     allYachtTypes: "Tüm yat türleri",
+    yachtProgram: "Yat programı",
+    allYachtPrograms: "Tüm yat programları",
     yachtFlag: "Yat bayrağı",
     anyFlag: "Tüm bayraklar",
     searchFlags: "Bayrak ara",
@@ -2434,8 +2435,6 @@ const copy = {
     metres: "m",
     crewSize: "Mürettebat sayısı",
     anyCrewSize: "Tümü",
-    visas: "Vizeler",
-    anyVisa: "Tüm vizeler",
     salary: "Maaş",
     from: "Başlangıç",
     currency: "Ücret para birimi",

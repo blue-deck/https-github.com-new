@@ -15,6 +15,7 @@ import {
   publicJobYachtLengthMetres,
 } from "../app/lib/publicJobSearch.ts";
 import {
+  formatJobYachtProgram,
   formatJobSalaryCurrencyOption,
   formatJobSalaryPeriod,
   formatJobTeamCoupleAnswer,
@@ -22,6 +23,7 @@ import {
   isJobTeamCouple,
   jobSalaryCurrencyOptions,
   jobSalaryPeriods,
+  jobYachtPrograms,
 } from "../app/lib/jobPosts.ts";
 
 const taxonomy = {
@@ -30,7 +32,7 @@ const taxonomy = {
   employmentTypes: ["permanent", "rotation"],
   candidateTypes: ["individual", "team", "couple"],
   yachtTypes: ["motor_yacht", "sailing_yacht"],
-  visas: ["Schengen Visa", "US B1/B2 Visa"],
+  yachtPrograms: jobYachtPrograms,
   salaryCurrencies: jobSalaryCurrencyOptions,
   salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: ["TR", "GB"],
@@ -42,8 +44,10 @@ test("default salary units stay inactive until the salary filter is used", () =>
 
   assert.equal(defaults.salaryCurrency, null);
   assert.equal(defaults.salaryPeriod, null);
+  assert.equal(defaults.yachtProgram, null);
   assert.equal(params.has("salaryCurrency"), false);
   assert.equal(params.has("salaryPeriod"), false);
+  assert.equal(params.has("yachtProgram"), false);
   assert.equal(hasPublicJobSearchFilters(defaults), false);
   assert.equal(
     matchesPublicJobSearch(
@@ -75,11 +79,11 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["employmentType", "rotation"],
     ["candidateType", "couple"],
     ["yachtType", "motor_yacht"],
+    ["yachtProgram", "private_charter"],
     ["yachtFlag", "tr"],
     ["lengthMin", "20"],
     ["lengthMax", "70"],
     ["crewMin", "8"],
-    ["visa", "Schengen Visa"],
     ["salaryCurrency", "EUR"],
     ["salaryPeriod", "month"],
     ["salaryMin", "1000"],
@@ -96,7 +100,12 @@ test("strictly parses and round-trips the complete public job filter contract", 
   assert.equal(parsed.filters.yachtLengthMinMetres, 20);
   assert.equal(parsed.filters.yachtLengthMaxMetres, 70);
   assert.equal(parsed.filters.crewMemberCountMin, 8);
+  assert.equal(parsed.filters.yachtProgram, "private_charter");
   assert.equal(parsed.filters.salaryCurrency, "EUR");
+  assert.equal(
+    publicJobSearchParams(parsed.filters).get("yachtProgram"),
+    "private_charter",
+  );
   assert.equal(publicJobSearchParams(parsed.filters).get("salaryMin"), "1000");
   assert.equal(publicJobSearchParams(parsed.filters).get("salaryMax"), "10000");
 
@@ -106,6 +115,33 @@ test("strictly parses and round-trips the complete public job filter contract", 
   );
   assert.equal(reparsed.ok, true);
   assert.deepEqual(reparsed.filters, parsed.filters);
+});
+
+test("yacht program is a scalar filter with shared values and labels", () => {
+  assert.deepEqual(jobYachtPrograms, [
+    "private",
+    "charter",
+    "private_charter",
+  ]);
+  assert.deepEqual(
+    jobYachtPrograms.map((program) => formatJobYachtProgram(program, "en")),
+    ["Private", "Charter", "Private & Charter"],
+  );
+
+  for (const yachtProgram of jobYachtPrograms) {
+    const parsed = parsePublicJobSearchParams(
+      new URLSearchParams({ yachtProgram }),
+      taxonomy,
+    );
+    assert.equal(parsed.ok, true, yachtProgram);
+    if (!parsed.ok) continue;
+    assert.equal(parsed.filters.yachtProgram, yachtProgram);
+    assert.equal(
+      publicJobSearchParams(parsed.filters).toString(),
+      `yachtProgram=${yachtProgram}`,
+    );
+    assert.equal(hasPublicJobSearchFilters(parsed.filters), true);
+  }
 });
 
 test("salary currency filters mirror the create-job picker and match every supported currency", () => {
@@ -254,6 +290,27 @@ test("rejects unknown, duplicated, invalid, and logically unsafe filters", () =>
   );
   assert.equal(
     parsePublicJobSearchParams(
+      new URLSearchParams("yachtProgram=private&yachtProgram=charter"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+  assert.equal(
+    parsePublicJobSearchParams(
+      new URLSearchParams("yachtProgram=private-charter"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+  assert.equal(
+    parsePublicJobSearchParams(
+      new URLSearchParams("visa=Schengen%20Visa"),
+      taxonomy,
+    ).ok,
+    false,
+  );
+  assert.equal(
+    parsePublicJobSearchParams(
       new URLSearchParams("employmentType=freelance"),
       taxonomy,
     ).ok,
@@ -375,10 +432,10 @@ test("matches every structured public-detail category with normalized yacht unit
     employmentTypes: ["rotation"],
     candidateTypes: ["couple"],
     yachtTypes: ["motor_yacht"],
+    yachtProgram: "private",
     yachtFlagCountryCodes: ["TR"],
     yachtLengthMaxMetres: 50,
     crewMemberCountMin: 10,
-    requiredVisas: ["Schengen Visa"],
     salaryCurrency: "EUR",
     salaryPeriod: "month",
     salaryMin: 6_000,
@@ -403,11 +460,49 @@ test("matches every structured public-detail category with normalized yacht unit
   );
   assert.equal(
     matchesPublicJobSearch(
-      { ...sampleJob(), requiredVisas: ["US B1/B2 Visa"] },
+      { ...sampleJob(), yachtProgram: "charter" },
       filters,
       "2026-08-08T12:00:00.000Z",
     ),
     false,
+  );
+});
+
+test("yacht program matching is exact while All includes combined and legacy listings", () => {
+  const privateFilters = createDefaultPublicJobSearchFilters();
+  privateFilters.yachtProgram = "private";
+
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ yachtProgram: "private" }), privateFilters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ yachtProgram: "charter" }), privateFilters),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtProgram: "private_charter" }),
+      privateFilters,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ yachtProgram: null }), privateFilters),
+    false,
+  );
+
+  const allPrograms = createDefaultPublicJobSearchFilters();
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtProgram: "private_charter" }),
+      allPrograms,
+    ),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ yachtProgram: null }), allPrograms),
+    true,
   );
 });
 
@@ -433,6 +528,20 @@ test("required languages remain searchable job content without a structured filt
   assert.equal(
     matchesPublicJobSearch(
       sampleJob({ requiredLanguages: ["English"] }),
+      filters,
+    ),
+    false,
+  );
+});
+
+test("required visas remain searchable job content without a structured filter", () => {
+  const filters = createDefaultPublicJobSearchFilters();
+  filters.query = "Schengen";
+
+  assert.equal(matchesPublicJobSearch(sampleJob(), filters), true);
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ requiredVisas: ["US B1/B2 Visa"] }),
       filters,
     ),
     false,
@@ -840,6 +949,15 @@ test("cursor is opaque, filter-bound, authenticated, and round-trips", async () 
     }),
     null,
   );
+  const changedYachtProgram = { ...filters, yachtProgram: "charter" };
+  assert.equal(
+    await decodePublicJobSearchCursor({
+      filters: changedYachtProgram,
+      token,
+      key,
+    }),
+    null,
+  );
   const parts = token.split(".");
   parts[2] = `${parts[2][0] === "A" ? "B" : "A"}${parts[2].slice(1)}`;
   assert.equal(
@@ -952,6 +1070,13 @@ test("result fingerprint changes with membership, order, or mutable public state
     ]),
     baseline,
   );
+  assert.notEqual(
+    await publicJobSearchResultFingerprint([
+      first,
+      { ...second, yachtProgram: "charter" },
+    ]),
+    baseline,
+  );
   assert.notEqual(await publicJobSearchResultFingerprint([first]), baseline);
 });
 
@@ -975,6 +1100,7 @@ function sampleJob(overrides = {}) {
     yachtFlagCountryCode: "TR",
     yachtBuildYear: 2022,
     yachtType: "motor_yacht",
+    yachtProgram: "private",
     yachtLength: 164.04,
     yachtLengthUnit: "ft",
     crewMemberCount: 12,

@@ -39,6 +39,7 @@ import {
   formatJobSmokerPolicy,
   formatJobVisa,
   formatJobVisibleTattooPolicy,
+  formatJobYachtProgram,
   formatJobYachtType,
   formatJobListingNumber,
   isEmployerJobPostExpired,
@@ -54,6 +55,7 @@ import {
   jobSmokerPolicies,
   jobVisibleTattooPolicies,
   jobVisaOptions,
+  jobYachtPrograms,
   jobYachtTypes,
   maximumJobCertificateSelections,
   maximumJobCharacteristicSelections,
@@ -74,6 +76,7 @@ import {
   type JobVisa,
   type JobPostStatus,
   type JobYachtLengthUnit,
+  type JobYachtProgram,
   type JobYachtType,
 } from "../../lib/jobPosts";
 import { positionSelectGroups } from "../../lib/yachtOperations";
@@ -110,6 +113,7 @@ type FormState = {
   yachtFlagCountryCode: string;
   yachtBuildYear: string;
   yachtType: JobYachtType | "";
+  yachtProgram: JobYachtProgram | "";
   yachtLength: string;
   yachtLengthUnit: JobYachtLengthUnit;
   crewMemberCount: string;
@@ -183,6 +187,8 @@ const copy = {
       "Yacht build year must be a four-digit year between 1800 and 2100.",
     yachtType: "Yacht type",
     yachtTypePlaceholder: "Select yacht type",
+    yachtProgram: "Yacht program",
+    yachtProgramPlaceholder: "Select yacht program",
     yachtLength: "Yacht length",
     yachtLengthAmount: "Yacht length value",
     yachtLengthUnit: "Yacht length unit",
@@ -303,6 +309,8 @@ const copy = {
       "Yat yapım yılı 1800 ile 2100 arasında dört haneli bir yıl olmalıdır.",
     yachtType: "Yat türü",
     yachtTypePlaceholder: "Yat türünü seç",
+    yachtProgram: "Yat programı",
+    yachtProgramPlaceholder: "Yat programını seç",
     yachtLength: "Yat uzunluğu",
     yachtLengthAmount: "Yat uzunluğu değeri",
     yachtLengthUnit: "Yat uzunluğu birimi",
@@ -558,6 +566,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
       yachtFlagCountryCode: form.yachtFlagCountryCode || null,
       yachtBuildYear: yachtBuildYear.value,
       yachtType: form.yachtType || null,
+      yachtProgram: form.yachtProgram || null,
       yachtLength: yachtLength.value,
       yachtLengthUnit:
         yachtLength.value === null ? null : form.yachtLengthUnit,
@@ -979,53 +988,81 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
 
               <FormSection icon={<Ship />} title={c.yachtDetails}>
                 <div className="grid gap-5 lg:grid-cols-2">
-                  <Field label={<RequiredFieldLabel label={c.yachtType} />}>
-                    <select
-                      value={form.yachtType}
-                      onChange={(event) =>
-                        updateForm(
-                          "yachtType",
-                          event.target.value as FormState["yachtType"],
-                        )
-                      }
-                      disabled={saving}
-                      className={inputClass}
-                      required
-                    >
-                      <option value="">{c.yachtTypePlaceholder}</option>
-                      {jobYachtTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {formatJobYachtType(type, language)}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
+                  <div className="grid content-start gap-5">
+                    <Field label={<RequiredFieldLabel label={c.yachtType} />}>
+                      <select
+                        value={form.yachtType}
+                        onChange={(event) =>
+                          updateForm(
+                            "yachtType",
+                            event.target.value as FormState["yachtType"],
+                          )
+                        }
+                        disabled={saving}
+                        className={inputClass}
+                        required
+                      >
+                        <option value="">{c.yachtTypePlaceholder}</option>
+                        {jobYachtTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {formatJobYachtType(type, language)}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
 
-                  <Field label={c.yachtBrand}>
-                    <input
-                      type="text"
-                      value={form.yachtBrand}
-                      onChange={(event) =>
-                        updateForm("yachtBrand", event.target.value.slice(0, 80))
-                      }
-                      maxLength={80}
+                    <Field label={c.yachtProgram}>
+                      <select
+                        value={form.yachtProgram}
+                        onChange={(event) =>
+                          updateForm(
+                            "yachtProgram",
+                            event.target.value as FormState["yachtProgram"],
+                          )
+                        }
+                        disabled={saving}
+                        className={inputClass}
+                      >
+                        <option value="">{c.yachtProgramPlaceholder}</option>
+                        {jobYachtPrograms.map((program) => (
+                          <option key={program} value={program}>
+                            {formatJobYachtProgram(program, language)}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
+                  </div>
+
+                  <div className="grid content-start gap-5">
+                    <Field label={c.yachtBrand}>
+                      <input
+                        type="text"
+                        value={form.yachtBrand}
+                        onChange={(event) =>
+                          updateForm(
+                            "yachtBrand",
+                            event.target.value.slice(0, 80),
+                          )
+                        }
+                        maxLength={80}
+                        disabled={saving}
+                        className={inputClass}
+                        placeholder={c.yachtBrandPlaceholder}
+                      />
+                    </Field>
+
+                    <CountryFlagField
+                      label={c.yachtFlag}
+                      value={form.yachtFlagCountryCode}
+                      placeholder={c.yachtFlagPlaceholder}
+                      clearLabel={c.yachtFlagClear}
+                      noResults={c.yachtFlagNoResults}
                       disabled={saving}
-                      className={inputClass}
-                      placeholder={c.yachtBrandPlaceholder}
+                      onChange={(value) =>
+                        updateForm("yachtFlagCountryCode", value)
+                      }
                     />
-                  </Field>
-
-                  <CountryFlagField
-                    label={c.yachtFlag}
-                    value={form.yachtFlagCountryCode}
-                    placeholder={c.yachtFlagPlaceholder}
-                    clearLabel={c.yachtFlagClear}
-                    noResults={c.yachtFlagNoResults}
-                    disabled={saving}
-                    onChange={(value) =>
-                      updateForm("yachtFlagCountryCode", value)
-                    }
-                  />
+                  </div>
 
                   <Field label={c.yachtBuildYear}>
                     <input
@@ -1359,6 +1396,7 @@ function emptyForm(): FormState {
     yachtFlagCountryCode: "",
     yachtBuildYear: "",
     yachtType: "",
+    yachtProgram: "",
     yachtLength: "",
     yachtLengthUnit: "m",
     crewMemberCount: "",
@@ -1403,6 +1441,7 @@ function formFromJob(job: EmployerJobPost): FormState {
     yachtBuildYear:
       job.yachtBuildYear === null ? "" : String(job.yachtBuildYear),
     yachtType: job.yachtType || "",
+    yachtProgram: job.yachtProgram || "",
     yachtLength:
       job.yachtLength === null ? "" : String(job.yachtLength),
     yachtLengthUnit: job.yachtLengthUnit || "m",

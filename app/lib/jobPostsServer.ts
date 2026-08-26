@@ -19,6 +19,7 @@ import {
   isJobSalaryPeriod,
   isJobMinimumYachtExperience,
   isJobYachtLengthUnit,
+  isJobYachtProgram,
   isJobYachtType,
   maximumJobCertificateSelections,
   maximumJobCharacteristicSelections,
@@ -40,6 +41,7 @@ import {
   type JobSalaryPeriod,
   type JobMinimumYachtExperience,
   type JobYachtLengthUnit,
+  type JobYachtProgram,
   type JobYachtType,
   type PublicJobCard,
   type PublicJobPost,
@@ -63,12 +65,12 @@ export const maximumJobPostRequestBytes = 32_768;
 export const maximumPublicJobResults = 100;
 
 export const publicJobPostSelect =
-  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,required_skills,required_characteristics,required_certificates,required_visas,yacht_brand,yacht_flag_country_code,yacht_build_year,yacht_type,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,published_at";
+  "id,listing_number,title,position,department,employment_type,candidate_type,smoker_policy,visible_tattoo_policy,required_languages,required_skills,required_characteristics,required_certificates,required_visas,yacht_brand,yacht_flag_country_code,yacht_build_year,yacht_type,yacht_program,yacht_length,yacht_length_unit,crew_member_count,minimum_yacht_experience,location,start_date,summary,description,responsibilities,requirements,benefits,salary_visible,salary_min,salary_max,salary_currency,salary_period,published_at";
 export const publicJobPostServiceSelect =
   `${publicJobPostSelect},created_by`;
 
 export const publicJobCardSelect =
-  "id,position,employment_type,candidate_type,yacht_type,yacht_length,yacht_length_unit,location,start_date,salary_visible,salary_min,salary_max,salary_currency,salary_period,published_at";
+  "id,position,employment_type,candidate_type,yacht_type,yacht_program,yacht_length,yacht_length_unit,location,start_date,salary_visible,salary_min,salary_max,salary_currency,salary_period,published_at";
 export const publicJobCardServiceSelect = `${publicJobCardSelect},created_by`;
 
 export const employerJobPostSelect =
@@ -81,6 +83,7 @@ const createPayloadKeys = new Set([
   "yachtFlagCountryCode",
   "yachtBuildYear",
   "yachtType",
+  "yachtProgram",
   "yachtLength",
   "yachtLengthUnit",
   "crewMemberCount",
@@ -131,6 +134,7 @@ export type JobPostMutation = {
   yachtFlagCountryCode: string | null;
   yachtBuildYear: number | null;
   yachtType: JobYachtType | null;
+  yachtProgram: JobYachtProgram | null | undefined;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
   crewMemberCount: number | null;
@@ -345,6 +349,12 @@ export function parseJobPostMutation(
   );
   const yachtBuildYear = optionalYachtBuildYear(value.yachtBuildYear);
   const yachtType = optionalJobYachtType(value.yachtType);
+  const yachtProgramProvided = Object.hasOwn(value, "yachtProgram");
+  const yachtProgram = yachtProgramProvided
+    ? optionalJobYachtProgram(value.yachtProgram)
+    : mode === "create"
+      ? null
+      : undefined;
   const yachtLength = optionalYachtLength(value.yachtLength);
   const yachtLengthUnit = optionalJobYachtLengthUnit(value.yachtLengthUnit);
   const crewMemberCount = optionalCrewMemberCount(value.crewMemberCount);
@@ -357,6 +367,7 @@ export function parseJobPostMutation(
     yachtFlagCountryCode === undefined ||
     !yachtBuildYear.ok ||
     yachtType === undefined ||
+    (yachtProgramProvided && yachtProgram === undefined) ||
     !yachtLength.ok ||
     yachtLengthUnit === undefined ||
     (yachtLength.value === null) !== (yachtLengthUnit === null) ||
@@ -521,6 +532,7 @@ export function parseJobPostMutation(
       yachtFlagCountryCode,
       yachtBuildYear: yachtBuildYear.value,
       yachtType,
+      yachtProgram,
       yachtLength: yachtLength.value,
       yachtLengthUnit,
       crewMemberCount: crewMemberCount.value,
@@ -744,6 +756,7 @@ export function publicJobPostFromRow(value: unknown): PublicJobPost | null {
     yachtFlagCountryCode: base.yachtFlagCountryCode,
     yachtBuildYear: base.yachtBuildYear,
     yachtType: base.yachtType,
+    yachtProgram: base.yachtProgram,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
     crewMemberCount: base.crewMemberCount,
@@ -765,6 +778,7 @@ export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
   const id = cleanText(value.id);
   const position = cleanText(value.position);
   const yachtType = databaseJobYachtType(value.yacht_type);
+  const yachtProgram = databaseJobYachtProgram(value.yacht_program);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
   const startDate = optionalDatabaseDate(value.start_date);
@@ -778,6 +792,7 @@ export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
     !isJobEmploymentType(value.employment_type) ||
     !isJobCandidateType(value.candidate_type) ||
     yachtType === undefined ||
+    yachtProgram === undefined ||
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
     (yachtLength === null) !== (yachtLengthUnit === null) ||
@@ -799,6 +814,7 @@ export function publicJobCardFromRow(value: unknown): PublicJobCard | null {
     employmentType: value.employment_type,
     candidateType: value.candidate_type,
     yachtType,
+    yachtProgram,
     yachtLength,
     yachtLengthUnit,
     location: cleanText(value.location),
@@ -880,6 +896,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
     yachtFlagCountryCode: base.yachtFlagCountryCode,
     yachtBuildYear: base.yachtBuildYear,
     yachtType: base.yachtType,
+    yachtProgram: base.yachtProgram,
     yachtLength: base.yachtLength,
     yachtLengthUnit: base.yachtLengthUnit,
     crewMemberCount: base.crewMemberCount,
@@ -906,7 +923,7 @@ export function employerJobPostFromRow(value: unknown): EmployerJobPost | null {
 export function jobPostMutationColumns(
   mutation: JobPostMutation,
 ): Record<string, unknown> {
-  return {
+  const columns: Record<string, unknown> = {
     title: mutation.title,
     position: mutation.position,
     department: mutation.department,
@@ -942,6 +959,10 @@ export function jobPostMutationColumns(
     salary_period: mutation.salaryPeriod,
     status: mutation.status,
   };
+  if (mutation.yachtProgram !== undefined) {
+    columns.yacht_program = mutation.yachtProgram;
+  }
+  return columns;
 }
 
 export function logJobPostError(
@@ -970,6 +991,7 @@ function jobPostBaseFromRow(value: unknown) {
   );
   const yachtBuildYear = databaseYachtBuildYear(value.yacht_build_year);
   const yachtType = databaseJobYachtType(value.yacht_type);
+  const yachtProgram = databaseJobYachtProgram(value.yacht_program);
   const yachtLength = databaseYachtLength(value.yacht_length);
   const yachtLengthUnit = databaseJobYachtLengthUnit(value.yacht_length_unit);
   const crewMemberCount = databaseCrewMemberCount(value.crew_member_count);
@@ -1019,6 +1041,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtFlagCountryCode === undefined ||
     yachtBuildYear === undefined ||
     yachtType === undefined ||
+    yachtProgram === undefined ||
     yachtLength === undefined ||
     yachtLengthUnit === undefined ||
     (yachtLength === null) !== (yachtLengthUnit === null) ||
@@ -1067,6 +1090,7 @@ function jobPostBaseFromRow(value: unknown) {
     yachtFlagCountryCode,
     yachtBuildYear,
     yachtType,
+    yachtProgram,
     yachtLength,
     yachtLengthUnit,
     crewMemberCount,
@@ -1228,6 +1252,13 @@ function optionalJobYachtType(value: unknown): JobYachtType | null | undefined {
   return isJobYachtType(value) ? value : undefined;
 }
 
+function optionalJobYachtProgram(
+  value: unknown,
+): JobYachtProgram | null | undefined {
+  if (value === null) return null;
+  return isJobYachtProgram(value) ? value : undefined;
+}
+
 function optionalJobYachtLengthUnit(
   value: unknown,
 ): JobYachtLengthUnit | null | undefined {
@@ -1349,6 +1380,13 @@ function databaseJobYachtType(
 ): JobYachtType | null | undefined {
   if (value === null) return null;
   return isJobYachtType(value) ? value : undefined;
+}
+
+function databaseJobYachtProgram(
+  value: unknown,
+): JobYachtProgram | null | undefined {
+  if (value === null) return null;
+  return isJobYachtProgram(value) ? value : undefined;
 }
 
 function databaseJobYachtLengthUnit(

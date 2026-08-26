@@ -133,6 +133,11 @@ export const jobYachtTypes = [
   "commercial_vessel",
   "new_build",
 ] as const;
+export const jobYachtPrograms = [
+  "private",
+  "charter",
+  "private_charter",
+] as const;
 export const jobYachtLengthUnits = ["m", "ft"] as const;
 export const jobMinimumYachtExperiences = [
   "0_6_months",
@@ -165,6 +170,7 @@ export type JobSalaryCurrencyOption =
 export type JobSalaryCurrency = (typeof jobSalaryCurrencies)[number];
 export type JobClosureReason = (typeof jobClosureReasons)[number];
 export type JobYachtType = (typeof jobYachtTypes)[number];
+export type JobYachtProgram = (typeof jobYachtPrograms)[number];
 export type JobYachtLengthUnit = (typeof jobYachtLengthUnits)[number];
 export type JobMinimumYachtExperience =
   (typeof jobMinimumYachtExperiences)[number];
@@ -213,6 +219,7 @@ export type PublicJobPost = {
   yachtFlagCountryCode: string | null;
   yachtBuildYear: number | null;
   yachtType: JobYachtType | null;
+  yachtProgram: JobYachtProgram | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
   crewMemberCount: number | null;
@@ -235,6 +242,7 @@ export type PublicJobCard = Pick<
   | "employmentType"
   | "candidateType"
   | "yachtType"
+  | "yachtProgram"
   | "yachtLength"
   | "yachtLengthUnit"
   | "location"
@@ -406,6 +414,12 @@ export function isJobYachtType(value: unknown): value is JobYachtType {
   return jobYachtTypes.includes(value as JobYachtType);
 }
 
+export function isJobYachtProgram(
+  value: unknown,
+): value is JobYachtProgram {
+  return jobYachtPrograms.includes(value as JobYachtProgram);
+}
+
 export function isJobYachtLengthUnit(
   value: unknown,
 ): value is JobYachtLengthUnit {
@@ -435,6 +449,15 @@ const jobYachtTypeLabels: Record<
   chase_boat: { en: "Chase boat", tr: "Takip botu" },
   commercial_vessel: { en: "Commercial vessel", tr: "Ticari tekne" },
   new_build: { en: "New build", tr: "Yeni inşa" },
+};
+
+const jobYachtProgramLabels: Record<
+  JobYachtProgram,
+  { en: string; tr: string }
+> = {
+  private: { en: "Private", tr: "Özel" },
+  charter: { en: "Charter", tr: "Charter" },
+  private_charter: { en: "Private & Charter", tr: "Özel & Charter" },
 };
 
 export function formatJobSmokerPolicy(
@@ -496,6 +519,13 @@ export function formatJobYachtType(
   language: "en" | "tr",
 ) {
   return jobYachtTypeLabels[value][language];
+}
+
+export function formatJobYachtProgram(
+  value: JobYachtProgram,
+  language: "en" | "tr",
+) {
+  return jobYachtProgramLabels[value][language];
 }
 
 export function formatJobYachtLength(

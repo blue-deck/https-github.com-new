@@ -4,7 +4,7 @@ import {
   jobEmploymentTypes,
   jobSalaryCurrencyOptions,
   jobSalaryPeriods,
-  jobVisaOptions,
+  jobYachtPrograms,
   jobYachtTypes,
 } from "./jobPosts";
 import type { PublicJobSearchTaxonomy } from "./publicJobSearch";
@@ -16,7 +16,7 @@ export const publicJobSearchTaxonomy = {
   employmentTypes: jobEmploymentTypes,
   candidateTypes: jobCandidateTypes.filter((value) => value !== "any"),
   yachtTypes: jobYachtTypes,
-  visas: jobVisaOptions,
+  yachtPrograms: jobYachtPrograms,
   salaryCurrencies: jobSalaryCurrencyOptions,
   salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: nationalityOptions.map((country) => country.code),

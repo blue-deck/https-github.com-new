@@ -184,23 +184,49 @@ test("Find Jobs reuses the Create Job Post location search without auto-applying
   assert.match(jobsClient, /locationSearching: "Konumlar aranıyor…"/);
 });
 
-test("published requirements expose only the visa filter", async () => {
-  const [client, search, config] = await Promise.all([
+test("published requirements remain searchable job data without structured filters", async () => {
+  const [client, search, config, manager, parser, detail] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/lib/publicJobSearch.ts"),
     source("app/lib/publicJobSearchConfig.ts"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/jobs/job-data.ts"),
+    source("app/jobs/[id]/JobDetailClient.tsx"),
   ]);
 
-  assert.doesNotMatch(client, /label=\{c\.(characteristics|certificates)\}/);
+  assert.doesNotMatch(
+    client,
+    /label=\{c\.(characteristics|certificates|smoking|visibleTattoos|visas|languages)\}/,
+  );
   assert.doesNotMatch(search, /requiredCharacteristics: JobCharacteristic\[\]/);
   assert.doesNotMatch(search, /requiredCertificates: JobCertificate\[\]/);
-  assert.doesNotMatch(search, /setList\(params, "(trait|certificate)"/);
-  assert.doesNotMatch(client, /label=\{c\.(smoking|visibleTattoos)\}/);
+  assert.doesNotMatch(search, /requiredVisas: JobVisa\[\]/);
+  assert.doesNotMatch(
+    search,
+    /setList\(params, "(trait|certificate|visa|language)"/,
+  );
   assert.doesNotMatch(search, /(smokerPolicies|visibleTattooPolicies):/);
   assert.doesNotMatch(search, /setList\(params, "(smoker|tattoo)"/);
+  assert.doesNotMatch(search, /filters\.requiredVisas|taxonomy\.visas/);
   assert.doesNotMatch(config, /(smokerPolicies|visibleTattooPolicies):/);
-  assert.match(client, /label=\{c\.visas\}/);
-  assert.doesNotMatch(client, /label=\{c\.languages\}/);
+  assert.doesNotMatch(config, /jobVisaOptions|\bvisas:/);
+
+  const fingerprint = search.slice(
+    search.indexOf("export async function publicJobSearchResultFingerprint"),
+    search.indexOf("function publicJobSearchDocument"),
+  );
+  const keywordDocument = search.slice(
+    search.indexOf("function publicJobSearchDocument"),
+    search.indexOf("function keywordMatches"),
+  );
+  assert.match(fingerprint, /job\.requiredVisas/);
+  assert.match(keywordDocument, /\.\.\.job\.requiredVisas/);
+  assert.match(manager, /title=\{c\.visas\}/);
+  assert.match(parser, /requiredVisas/);
+  assert.match(
+    detail,
+    /title=\{c\.visas\}[\s\S]*?job\.requiredVisas\.map\(formatJobVisa\)/,
+  );
 });
 
 test("advanced job filters keep a flat grid and group the salary controls", async () => {
@@ -235,9 +261,9 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
     advanced.indexOf("<YachtLengthRangeSlider"),
     advanced.indexOf("<CrewSizeSlider"),
     advanced.indexOf("label={c.yachtType}"),
+    advanced.indexOf("label={c.yachtProgram}"),
     advanced.indexOf("label={c.yachtFlag}"),
     advanced.indexOf("label={c.teamCouple}"),
-    advanced.indexOf("label={c.visas}"),
   ];
   assert.equal(requestedFilterOrder.every((index) => index >= 0), true);
   assert.deepEqual(
@@ -258,10 +284,10 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
       "department",
       "teamCouple",
       "yachtType",
+      "yachtProgram",
       "yachtFlag",
       "yachtLength",
       "crewSize",
-      "visas",
     ].sort(),
   );
 
@@ -276,10 +302,20 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
       "departments",
       "teamCouple",
       "yachtTypes",
+      "yachtPrograms",
       "flags",
-      "visas",
     ].sort(),
   );
+
+  assert.match(
+    advanced,
+    /<FilterSelect\s+allowEmpty\s+label=\{c\.yachtProgram\}\s+placeholder=\{c\.allYachtPrograms\}\s+options=\{optionSets\.yachtPrograms\}\s+value=\{draftFilters\.yachtProgram \|\| ""\}/,
+  );
+  assert.match(
+    advanced,
+    /yachtProgram: \(value \|\|\s+null\) as PublicJobSearchFilters\["yachtProgram"\]/,
+  );
+  assert.doesNotMatch(advanced, /c\.visas|optionSets\.visas|requiredVisas/);
 
   assert.match(
     advanced,
@@ -353,6 +389,77 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   );
   assert.match(amountField, /grid-cols-2/);
   assert.match(amountField, /min-\[390px\]:grid-cols-/);
+});
+
+test("Yacht program uses shared options in Create and Find Jobs", async () => {
+  const [jobPosts, manager, config, client] = await Promise.all([
+    source("app/lib/jobPosts.ts"),
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/lib/publicJobSearchConfig.ts"),
+    source("app/jobs/JobsClient.tsx"),
+  ]);
+
+  assert.match(
+    jobPosts,
+    /export const jobYachtPrograms = \[\s*"private",\s*"charter",\s*"private_charter",?\s*\] as const/,
+  );
+  assert.match(jobPosts, /private: \{ en: "Private", tr: "Özel" \}/);
+  assert.match(jobPosts, /charter: \{ en: "Charter", tr: "Charter" \}/);
+  assert.match(
+    jobPosts,
+    /private_charter: \{ en: "Private & Charter", tr: "Özel & Charter" \}/,
+  );
+  assert.match(jobPosts, /export function formatJobYachtProgram/);
+  assert.match(config, /yachtPrograms: jobYachtPrograms/);
+  assert.match(
+    client,
+    /yachtPrograms: publicJobSearchTaxonomy\.yachtPrograms\.map\(\(value\) =>[\s\S]*?formatJobYachtProgram\(value, language\)/,
+  );
+  assert.match(client, /allYachtPrograms: "All yacht programs"/);
+
+  const yachtDetailsStart = manager.indexOf(
+    '<FormSection icon={<Ship />} title={c.yachtDetails}>',
+  );
+  const yachtTypeStart = manager.indexOf(
+    "label={c.yachtType}",
+    yachtDetailsStart,
+  );
+  const yachtProgramStart = manager.indexOf(
+    "<Field label={c.yachtProgram}>",
+    yachtDetailsStart,
+  );
+  const yachtTypeEnd = manager.indexOf("</Field>", yachtTypeStart);
+  const yachtProgramEnd = manager.indexOf("</Field>", yachtProgramStart);
+  assert.notEqual(yachtDetailsStart, -1);
+  assert.notEqual(yachtTypeStart, -1);
+  assert.notEqual(yachtProgramStart, -1);
+  assert.notEqual(yachtTypeEnd, -1);
+  assert.notEqual(yachtProgramEnd, -1);
+  assert.ok(yachtTypeStart < yachtProgramStart);
+  const yachtTypeField = manager.slice(yachtTypeStart, yachtTypeEnd);
+  const yachtProgramField = manager.slice(yachtProgramStart, yachtProgramEnd);
+  assert.match(yachtTypeField, /className=\{inputClass\}/);
+  assert.match(yachtProgramField, /className=\{inputClass\}/);
+  assert.match(
+    yachtProgramField,
+    /<option value="">\{c\.yachtProgramPlaceholder\}<\/option>/,
+  );
+  assert.match(yachtProgramField, /jobYachtPrograms\.map\(\(program\) =>/);
+  assert.match(
+    yachtProgramField,
+    /formatJobYachtProgram\(program, language\)/,
+  );
+});
+
+test("Yacht program contributes one active chip and one advanced-filter count", async () => {
+  const client = await source("app/jobs/JobsClient.tsx");
+
+  assert.match(
+    client,
+    /if \(filters\.yachtProgram\) \{[\s\S]*?add\(\s*"yacht-program",[\s\S]*?formatJobYachtProgram\(filters\.yachtProgram, language\)[\s\S]*?yachtProgram: null/,
+  );
+  assert.match(client, /\(filters\.yachtProgram \? 1 : 0\)/);
+  assert.doesNotMatch(client, /filters\.requiredVisas|optionSets\.visas/);
 });
 
 test("yacht length is an accessible two-thumb 0–200 m range backed by exact unit conversion", async () => {
@@ -668,6 +775,59 @@ test("server scan uses a keyset, current activity, batched authority, and result
   assert.match(server, /status: 400/);
 });
 
+test("Yacht program is mapped through public cards and renders above Start", async () => {
+  const [jobPosts, jobPostsServer, search, searchServer, parser, card] =
+    await Promise.all([
+      source("app/lib/jobPosts.ts"),
+      source("app/lib/jobPostsServer.ts"),
+      source("app/lib/publicJobSearch.ts"),
+      source("app/lib/publicJobSearchServer.ts"),
+      source("app/jobs/job-data.ts"),
+      source("app/jobs/PublicJobListingCard.tsx"),
+    ]);
+
+  const publicCard = jobPosts.slice(
+    jobPosts.indexOf("export type PublicJobCard"),
+    jobPosts.indexOf("export type EmployerJobPost"),
+  );
+  assert.match(publicCard, /\| "yachtProgram"/);
+  assert.match(jobPostsServer, /publicJobCardSelect[\s\S]*?yacht_program/);
+
+  const cardMapping = searchServer.slice(
+    searchServer.indexOf("function publicJobCardFromPost"),
+    searchServer.indexOf("async function derivePublicJobCursorKey"),
+  );
+  assert.match(cardMapping, /yachtProgram: job\.yachtProgram/);
+
+  const cardParser = parser.slice(
+    parser.indexOf("export function parsePublicJobCard"),
+    parser.indexOf("function parseStrictCardSalary"),
+  );
+  assert.match(cardParser, /isJobYachtProgram\(yachtProgramValue\)/);
+  assert.match(cardParser, /yachtProgramValue === undefined/);
+  assert.match(cardParser, /yachtProgram === undefined/);
+  assert.match(cardParser, /yachtProgram,/);
+
+  const fingerprint = search.slice(
+    search.indexOf("export async function publicJobSearchResultFingerprint"),
+    search.indexOf("function publicJobSearchDocument"),
+  );
+  assert.match(fingerprint, /job\.yachtProgram/);
+
+  assert.match(
+    card,
+    /const yachtProgram = job\.yachtProgram[\s\S]*?formatJobYachtProgram\(job\.yachtProgram, language\)/,
+  );
+  assert.match(
+    card,
+    /\{yachtProgram \? \([\s\S]*?<InfoLine icon=\{<Anchor \/>\} value=\{yachtProgram\} \/>[\s\S]*?\) : null\}/,
+  );
+  assert.ok(
+    card.indexOf('value={yachtProgram}') <
+      card.indexOf('value={`${c.start}: ${'),
+  );
+});
+
 test("expensive job searches are IP limited and always return no-store responses", async () => {
   const route = await source("app/api/jobs/route.ts");
 
@@ -689,4 +849,6 @@ test("public card hydration rejects malformed identities, dates, and salary meta
   assert.match(parser, /validDate\(startDate\)/);
   assert.match(parser, /isJobSalaryCurrency\(value\.currency\)/);
   assert.match(parser, /isJobSalaryPeriod\(value\.period\)/);
+  assert.match(parser, /isJobYachtProgram\(yachtProgramValue\)/);
+  assert.match(parser, /yachtProgram === undefined/);
 });

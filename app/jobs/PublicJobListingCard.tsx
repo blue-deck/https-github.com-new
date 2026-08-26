@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Anchor,
   ArrowRight,
   BriefcaseBusiness,
   CalendarDays,
@@ -16,6 +17,7 @@ import {
   formatJobEmploymentType,
   formatJobTeamCoupleAnswer,
   formatJobYachtLength,
+  formatJobYachtProgram,
   formatJobYachtType,
   isJobTeamCouple,
 } from "../lib/jobPosts";
@@ -42,6 +44,9 @@ export function PublicJobListingCard({
   const salary = formatJobSalary(job.salary, language);
   const yachtType = job.yachtType
     ? formatJobYachtType(job.yachtType, language)
+    : "";
+  const yachtProgram = job.yachtProgram
+    ? formatJobYachtProgram(job.yachtProgram, language)
     : "";
   const yachtLength =
     job.yachtLength !== null && job.yachtLengthUnit
@@ -102,6 +107,9 @@ export function PublicJobListingCard({
           <InfoLine icon={<MapPin />} value={job.location} />
         </div>
         <div className="grid content-center gap-3">
+          {yachtProgram ? (
+            <InfoLine icon={<Anchor />} value={yachtProgram} />
+          ) : null}
           <InfoLine
             icon={<CalendarDays />}
             value={`${c.start}: ${
@@ -162,6 +170,7 @@ export function PublicJobListingSkeleton() {
         <div className="space-y-4">
           <div className="h-4 rounded bg-slate-100" />
           <div className="h-4 w-4/5 rounded bg-slate-100" />
+          <div className="h-4 w-2/3 rounded bg-slate-100" />
         </div>
       </div>
       <div className="border-t border-slate-100 px-7 py-7 lg:border-l lg:border-t-0">

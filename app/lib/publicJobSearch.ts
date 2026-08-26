@@ -3,7 +3,7 @@ import type {
   JobEmploymentType,
   JobSalaryCurrency,
   JobSalaryPeriod,
-  JobVisa,
+  JobYachtProgram,
   JobYachtType,
   PublicJobPost,
 } from "./jobPosts";
@@ -40,7 +40,7 @@ export type PublicJobSearchTaxonomy = {
   employmentTypes: readonly JobEmploymentType[];
   candidateTypes: readonly JobCandidateType[];
   yachtTypes: readonly JobYachtType[];
-  visas: readonly JobVisa[];
+  yachtPrograms: readonly JobYachtProgram[];
   salaryCurrencies: readonly JobSalaryCurrency[];
   salaryPeriods: readonly JobSalaryPeriod[];
   yachtFlagCountryCodes: readonly string[];
@@ -54,11 +54,11 @@ export type PublicJobSearchFilters = {
   employmentTypes: JobEmploymentType[];
   candidateTypes: JobCandidateType[];
   yachtTypes: JobYachtType[];
+  yachtProgram: JobYachtProgram | null;
   yachtFlagCountryCodes: string[];
   yachtLengthMinMetres: number | null;
   yachtLengthMaxMetres: number | null;
   crewMemberCountMin: number | null;
-  requiredVisas: JobVisa[];
   salaryCurrency: JobSalaryCurrency | null;
   salaryPeriod: JobSalaryPeriod | null;
   salaryMin: number | null;
@@ -96,11 +96,11 @@ const queryKeys = new Set([
   "employmentType",
   "candidateType",
   "yachtType",
+  "yachtProgram",
   "yachtFlag",
   "lengthMin",
   "lengthMax",
   "crewMin",
-  "visa",
   "salaryCurrency",
   "salaryPeriod",
   "salaryMin",
@@ -116,12 +116,12 @@ const multiValueLimits: Record<string, number> = {
   candidateType: 3,
   yachtType: 11,
   yachtFlag: 12,
-  visa: 5,
 };
 
 const scalarKeys = [
   "q",
   "location",
+  "yachtProgram",
   "lengthMin",
   "lengthMax",
   "crewMin",
@@ -146,11 +146,11 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     employmentTypes: [],
     candidateTypes: [],
     yachtTypes: [],
+    yachtProgram: null,
     yachtFlagCountryCodes: [],
     yachtLengthMinMetres: null,
     yachtLengthMaxMetres: null,
     crewMemberCountMin: null,
-    requiredVisas: [],
     salaryCurrency: null,
     salaryPeriod: null,
     salaryMin: null,
@@ -213,12 +213,6 @@ export function parsePublicJobSearchParams(
     taxonomy.yachtFlagCountryCodes,
     (value) => value.toUpperCase(),
   );
-  const requiredVisas = enumList(
-    searchParams,
-    "visa",
-    taxonomy.visas,
-  );
-
   const enumLists = [
     positions,
     departments,
@@ -226,7 +220,6 @@ export function parsePublicJobSearchParams(
     candidateTypes,
     yachtTypes,
     yachtFlagCountryCodes,
-    requiredVisas,
   ];
   const invalidEnumList = enumLists.find((result) => !result.ok);
   if (invalidEnumList && !invalidEnumList.ok) {
@@ -280,6 +273,10 @@ export function parsePublicJobSearchParams(
     searchParams.get("salaryPeriod"),
     taxonomy.salaryPeriods,
   );
+  const yachtProgram = optionalEnum(
+    searchParams.get("yachtProgram"),
+    taxonomy.yachtPrograms,
+  );
   const sort = optionalEnum(
     searchParams.get("sort"),
     publicJobSearchSorts,
@@ -287,6 +284,7 @@ export function parsePublicJobSearchParams(
   if (
     salaryCurrency === undefined ||
     salaryPeriod === undefined ||
+    yachtProgram === undefined ||
     sort === undefined
   ) {
     return { ok: false, error: "One or more selection filters are invalid." };
@@ -309,11 +307,11 @@ export function parsePublicJobSearchParams(
     employmentTypes: successfulList(employmentTypes),
     candidateTypes: successfulList(candidateTypes),
     yachtTypes: successfulList(yachtTypes),
+    yachtProgram,
     yachtFlagCountryCodes: successfulList(yachtFlagCountryCodes),
     yachtLengthMinMetres: numericValue(yachtLengthMinMetres),
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
     crewMemberCountMin: numericValue(crewMemberCountMin),
-    requiredVisas: successfulList(requiredVisas),
     salaryCurrency,
     salaryPeriod,
     salaryMin: numericValue(salaryMin),
@@ -358,11 +356,11 @@ export function publicJobSearchParams(
   setList(params, "employmentType", filters.employmentTypes);
   setList(params, "candidateType", filters.candidateTypes);
   setList(params, "yachtType", filters.yachtTypes);
+  setText(params, "yachtProgram", filters.yachtProgram || "");
   setList(params, "yachtFlag", filters.yachtFlagCountryCodes);
   setNumber(params, "lengthMin", filters.yachtLengthMinMetres);
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
   setNumber(params, "crewMin", filters.crewMemberCountMin);
-  setList(params, "visa", filters.requiredVisas);
   setText(params, "salaryCurrency", filters.salaryCurrency || "");
   setText(params, "salaryPeriod", filters.salaryPeriod || "");
   setNumber(params, "salaryMin", filters.salaryMin);
@@ -383,7 +381,6 @@ export function canonicalPublicJobSearchFilters(
     candidateTypes: canonicalList(filters.candidateTypes),
     yachtTypes: canonicalList(filters.yachtTypes),
     yachtFlagCountryCodes: canonicalList(filters.yachtFlagCountryCodes),
-    requiredVisas: canonicalList(filters.requiredVisas),
     limit: defaultPublicJobSearchLimit,
   }).toString();
 }
@@ -418,6 +415,12 @@ export function matchesPublicJobSearch(
   }
   if (!includesSelected(filters.yachtTypes, job.yachtType)) return false;
   if (
+    filters.yachtProgram !== null &&
+    job.yachtProgram !== filters.yachtProgram
+  ) {
+    return false;
+  }
+  if (
     !includesSelected(filters.yachtFlagCountryCodes, job.yachtFlagCountryCode)
   ) {
     return false;
@@ -443,9 +446,6 @@ export function matchesPublicJobSearch(
     (job.crewMemberCount === null ||
       job.crewMemberCount < filters.crewMemberCountMin)
   ) {
-    return false;
-  }
-  if (!arraysIntersect(filters.requiredVisas, job.requiredVisas)) {
     return false;
   }
   const salaryFilterSelected =
@@ -679,6 +679,7 @@ export async function publicJobSearchResultFingerprint(
     job.yachtFlagCountryCode,
     job.yachtBuildYear,
     job.yachtType,
+    job.yachtProgram,
     job.yachtLength,
     job.yachtLengthUnit,
     job.crewMemberCount,
@@ -724,6 +725,7 @@ function publicJobSearchDocument(job: PublicJobPost) {
     employmentAliases[job.employmentType],
     candidateAliases[job.candidateType],
     yachtAliases[job.yachtType || ""],
+    yachtProgramAliases[job.yachtProgram || ""],
     smokerAliases[job.smokerPolicy],
     tattooAliases[job.visibleTattooPolicy],
     experienceAliases[job.minimumYachtExperience || ""],
@@ -742,6 +744,7 @@ function publicJobSearchDocument(job: PublicJobPost) {
     job.yachtFlagCountryCode || "",
     job.yachtBuildYear === null ? "" : String(job.yachtBuildYear),
     job.yachtType || "",
+    job.yachtProgram || "",
     job.yachtLength === null ? "" : String(job.yachtLength),
     job.yachtLengthUnit || "",
     job.crewMemberCount === null ? "" : String(job.crewMemberCount),
@@ -796,6 +799,12 @@ const yachtAliases: Record<string, string> = {
   chase_boat: "chase boat takip botu",
   commercial_vessel: "commercial vessel ticari tekne",
   new_build: "new build yeni inşa insa",
+};
+
+const yachtProgramAliases: Record<string, string> = {
+  private: "private özel ozel",
+  charter: "charter kiralama",
+  private_charter: "private charter private & charter özel kiralama ozel",
 };
 const smokerAliases: Record<string, string> = {
   no_preference: "no preference tercih yok",
@@ -955,13 +964,6 @@ function matchesCandidateType(
   value: JobCandidateType,
 ) {
   return value === "any" || includesSelected(selected, value);
-}
-
-function arraysIntersect<Option extends string>(
-  selected: readonly Option[],
-  values: readonly Option[],
-) {
-  return selected.length === 0 || selected.some((item) => values.includes(item));
 }
 
 function compareNullablePrimary(

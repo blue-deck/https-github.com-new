@@ -2,9 +2,11 @@ import {
   formatJobMinimumYachtExperience,
   formatJobYachtLength,
   formatJobYachtBuildYear,
+  formatJobYachtProgram,
   formatJobYachtType,
   isJobEmploymentType,
   isJobYachtLengthUnit,
+  isJobYachtProgram,
   isJobYachtType,
   isJobCandidateType,
   isJobCertificate,
@@ -23,6 +25,7 @@ import {
   maximumJobSkillSelections,
   maximumJobVisaSelections,
   type JobYachtLengthUnit,
+  type JobYachtProgram,
   type JobYachtType,
   type JobEmploymentType,
   type JobCandidateType,
@@ -68,6 +71,7 @@ export type PublicJob = {
   yachtFlagCountryCode: string | null;
   yachtBuildYear: number | null;
   yachtType: JobYachtType | null;
+  yachtProgram: JobYachtProgram | null;
   yachtLength: number | null;
   yachtLengthUnit: JobYachtLengthUnit | null;
   crewMemberCount: number | null;
@@ -90,6 +94,7 @@ export type PublicJobCard = Pick<
   | "location"
   | "startDate"
   | "yachtType"
+  | "yachtProgram"
   | "yachtLength"
   | "yachtLengthUnit"
   | "salary"
@@ -110,6 +115,11 @@ export function parsePublicJob(value: unknown): PublicJob | null {
   if (!id || !isSupportedJobListingNumber(listingNumber) || !title) return null;
 
   const yachtTypeValue = readValue(value, "yachtType", "yacht_type");
+  const yachtProgramValue = readValue(
+    value,
+    "yachtProgram",
+    "yacht_program",
+  );
   const yachtLengthValue = readValue(value, "yachtLength", "yacht_length");
   const yachtLengthUnitValue = readValue(
     value,
@@ -216,6 +226,9 @@ export function parsePublicJob(value: unknown): PublicJob | null {
       readValue(value, "yachtBuildYear", "yacht_build_year"),
     ),
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
+    yachtProgram: isJobYachtProgram(yachtProgramValue)
+      ? yachtProgramValue
+      : null,
     yachtLength:
       yachtLength !== null && yachtLengthUnit !== null ? yachtLength : null,
     yachtLengthUnit: yachtLength !== null ? yachtLengthUnit : null,
@@ -253,6 +266,17 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
     "candidate_type",
   );
   const yachtTypeValue = readValue(value, "yachtType", "yacht_type");
+  const yachtProgramValue = readValue(
+    value,
+    "yachtProgram",
+    "yacht_program",
+  );
+  const yachtProgram =
+    yachtProgramValue === null || yachtProgramValue === undefined
+      ? null
+      : isJobYachtProgram(yachtProgramValue)
+        ? yachtProgramValue
+        : undefined;
   const yachtLengthRaw = readValue(value, "yachtLength", "yacht_length");
   const yachtLengthValue = readPositiveNullableNumber(
     yachtLengthRaw,
@@ -279,6 +303,7 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
     !isJobEmploymentType(employmentTypeValue) ||
     !isJobCandidateType(candidateTypeValue) ||
     (yachtTypeValue !== null && !isJobYachtType(yachtTypeValue)) ||
+    yachtProgram === undefined ||
     (yachtLengthRaw !== null && yachtLengthValue === null) ||
     (yachtLengthUnitValue !== null &&
       !isJobYachtLengthUnit(yachtLengthUnitValue)) ||
@@ -299,6 +324,7 @@ export function parsePublicJobCard(value: unknown): PublicJobCard | null {
     startDate,
     publishedAt,
     yachtType: isJobYachtType(yachtTypeValue) ? yachtTypeValue : null,
+    yachtProgram,
     yachtLength:
       yachtLengthValue !== null && yachtLengthUnit !== null
         ? yachtLengthValue
@@ -399,6 +425,9 @@ export function yachtSpecificationLabel(
           language,
         )
       : "";
+  const program = job.yachtProgram
+    ? formatJobYachtProgram(job.yachtProgram, language)
+    : "";
 
   const flag = job.yachtFlagCountryCode
     ? formatCountryWithFlag(job.yachtFlagCountryCode)
@@ -408,7 +437,7 @@ export function yachtSpecificationLabel(
       ? ""
       : formatJobYachtBuildYear(job.yachtBuildYear, language);
 
-  return [job.yachtBrand, flag, buildYear, type, length]
+  return [job.yachtBrand, flag, buildYear, type, program, length]
     .filter(Boolean)
     .join(" · ");
 }

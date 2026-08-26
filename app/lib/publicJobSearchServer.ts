@@ -260,6 +260,7 @@ function publicJobCardFromPost(job: PublicJobPost): PublicJobCard {
     employmentType: job.employmentType,
     candidateType: job.candidateType,
     yachtType: job.yachtType,
+    yachtProgram: job.yachtProgram,
     yachtLength: job.yachtLength,
     yachtLengthUnit: job.yachtLengthUnit,
     location: job.location,

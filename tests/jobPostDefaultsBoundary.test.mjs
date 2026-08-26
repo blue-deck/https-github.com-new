@@ -52,6 +52,110 @@ test("Any is a persisted candidate type and the database default", async () => {
   );
 });
 
+test("Create Job keeps Yacht program optional, shared, and directly below Yacht type", async () => {
+  const [manager, jobPosts] = await Promise.all([
+    source("app/hiring/jobs/JobPostsManager.tsx"),
+    source("app/lib/jobPosts.ts"),
+  ]);
+
+  assert.match(
+    jobPosts,
+    /export const jobYachtPrograms = \[\s*"private",\s*"charter",\s*"private_charter",?\s*\] as const/,
+  );
+  assert.match(
+    jobPosts,
+    /private: \{ en: "Private", tr: "Özel" \}/,
+  );
+  assert.match(
+    jobPosts,
+    /charter: \{ en: "Charter", tr: "Charter" \}/,
+  );
+  assert.match(
+    jobPosts,
+    /private_charter: \{ en: "Private & Charter", tr: "Özel & Charter" \}/,
+  );
+  assert.match(jobPosts, /export function formatJobYachtProgram\(/);
+
+  assert.match(manager, /yachtProgramPlaceholder: "Select yacht program"/);
+  assert.match(manager, /yachtProgramPlaceholder: "Yat programını seç"/);
+  assert.match(manager, /yachtProgram: JobYachtProgram \| ""/);
+  assert.match(
+    manager,
+    /<option value="">\{c\.yachtProgramPlaceholder\}<\/option>[\s\S]*?\{jobYachtPrograms\.map\(\(program\) => \([\s\S]*?formatJobYachtProgram\(program, language\)/,
+  );
+
+  const payload = manager.slice(
+    manager.indexOf("const payload ="),
+    manager.indexOf("try {", manager.indexOf("const payload =")),
+  );
+  const emptyForm = manager.slice(
+    manager.indexOf("function emptyForm()"),
+    manager.indexOf("function teamCoupleSelection"),
+  );
+  const editHydration = manager.slice(
+    manager.indexOf("function formFromJob("),
+    manager.indexOf("function RequiredFieldLabel"),
+  );
+  assert.match(payload, /yachtProgram: form\.yachtProgram \|\| null/);
+  assert.match(emptyForm, /yachtType: "",\s*yachtProgram: "",/);
+  assert.match(editHydration, /yachtProgram: job\.yachtProgram \|\| ""/);
+
+  const yachtSectionStart = manager.indexOf("title={c.yachtDetails}");
+  const yachtSectionEnd = manager.indexOf(
+    "title={c.candidatePreferences}",
+    yachtSectionStart,
+  );
+  const yachtSection = manager.slice(yachtSectionStart, yachtSectionEnd);
+  const leftColumnStart = yachtSection.indexOf(
+    '<div className="grid content-start gap-5">',
+  );
+  const leftColumnEnd = yachtSection.indexOf("</div>", leftColumnStart);
+  const leftColumn = yachtSection.slice(leftColumnStart, leftColumnEnd);
+  const yachtTypeStart = leftColumn.indexOf("label={c.yachtType}");
+  const yachtProgramStart = leftColumn.indexOf("label={c.yachtProgram}");
+  const yachtTypeField = leftColumn.slice(yachtTypeStart, yachtProgramStart);
+  const yachtProgramField = leftColumn.slice(yachtProgramStart);
+
+  assert.ok(yachtSectionStart >= 0);
+  assert.ok(yachtSectionEnd > yachtSectionStart);
+  assert.ok(leftColumnStart >= 0);
+  assert.ok(leftColumnEnd > leftColumnStart);
+  assert.ok(yachtTypeStart >= 0);
+  assert.ok(yachtProgramStart > yachtTypeStart);
+  assert.match(
+    leftColumn,
+    /<\/Field>\s*<Field label=\{c\.yachtProgram\}>/,
+  );
+  assert.doesNotMatch(leftColumn, /label=\{c\.yachtBrand\}/);
+  assert.ok(yachtSection.indexOf("label={c.yachtBrand}") > leftColumnEnd);
+  assert.equal(
+    yachtTypeField.match(/className=\{inputClass\}/g)?.length,
+    1,
+  );
+  assert.equal(
+    yachtProgramField.match(/className=\{inputClass\}/g)?.length,
+    1,
+  );
+  assert.doesNotMatch(yachtProgramField, /\brequired\b/);
+});
+
+test("stale Create Job clients preserve Yacht program on updates", async () => {
+  const server = await source("app/lib/jobPostsServer.ts");
+
+  assert.match(
+    server,
+    /const yachtProgramProvided = Object\.hasOwn\(value, "yachtProgram"\)/,
+  );
+  assert.match(
+    server,
+    /const yachtProgram = yachtProgramProvided[\s\S]*?: mode === "create"[\s\S]*?\? null[\s\S]*?: undefined/,
+  );
+  assert.match(
+    server,
+    /if \(mutation\.yachtProgram !== undefined\) \{\s*columns\.yacht_program = mutation\.yachtProgram/,
+  );
+});
+
 test("salary input uses the shared grouped whole-number behavior", async () => {
   const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
   const salaryInput = manager.slice(

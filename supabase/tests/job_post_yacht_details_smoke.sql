@@ -23,6 +23,7 @@ declare
   missing_insert_rejected boolean := false;
   missing_publish_rejected boolean := false;
   invalid_type_rejected boolean := false;
+  invalid_program_rejected boolean := false;
   invalid_unit_rejected boolean := false;
   missing_unit_rejected boolean := false;
   zero_length_rejected boolean := false;
@@ -115,6 +116,7 @@ begin
     employment_type,
     location,
     yacht_type,
+    yacht_program,
     minimum_yacht_experience_years,
     summary,
     description,
@@ -130,6 +132,7 @@ begin
     'seasonal',
     'Palma, Spain',
     '  CATAMARAN  ',
+    '  PRIVATE_CHARTER  ',
     0,
     'An intentionally incomplete private draft for yacht-detail validation.',
     'This private draft verifies that a publisher can save yacht type before entering the paired numeric length and display unit.',
@@ -139,6 +142,7 @@ begin
 
   partial_job_id := job_row.id;
   if job_row.yacht_type <> 'catamaran'
+    or job_row.yacht_program is distinct from 'private_charter'
     or job_row.yacht_length is not null
     or job_row.yacht_length_unit is not null
     or job_row.minimum_yacht_experience_years <> 0
@@ -200,6 +204,27 @@ begin
 
   if not invalid_type_rejected then
     raise exception 'An unsupported yacht-type slug was stored.';
+  end if;
+
+  begin
+    insert into public.job_posts (
+      yacht_id, created_by, updated_by, title, position, department,
+      employment_type, location, yacht_program, summary, description, status
+    )
+    values (
+      yacht_id, owner_id, owner_id, 'Invalid Yacht Program Draft',
+      'Deckhand', 'Deck', 'seasonal', 'Palma, Spain', 'brokerage',
+      'An invalid private draft used to verify the yacht-program domain.',
+      'This draft must fail the stable yacht-program slug constraint before it can be saved.',
+      'draft'
+    );
+  exception
+    when check_violation then
+      invalid_program_rejected := true;
+  end;
+
+  if not invalid_program_rejected then
+    raise exception 'An unsupported yacht-program slug was stored.';
   end if;
 
   begin
@@ -326,6 +351,7 @@ begin
     location,
     start_date,
     yacht_type,
+    yacht_program,
     yacht_length,
     yacht_length_unit,
     minimum_yacht_experience_years,
@@ -347,6 +373,7 @@ begin
     'Monaco',
     current_date + 30,
     '  MOTOR_YACHT  ',
+    ' Charter ',
     27.50,
     ' FT ',
     5,
@@ -361,6 +388,7 @@ begin
 
   valid_job_id := job_row.id;
   if job_row.yacht_type <> 'motor_yacht'
+    or job_row.yacht_program is distinct from 'charter'
     or job_row.yacht_length <> 27.50
     or job_row.yacht_length_unit <> 'ft'
     or job_row.minimum_yacht_experience_years <> 5
@@ -371,6 +399,7 @@ begin
   update public.job_posts
   set status = 'closed',
       yacht_type = 'commercial_vessel',
+      yacht_program = 'private',
       yacht_length = 999,
       yacht_length_unit = 'm',
       updated_by = owner_id
@@ -379,6 +408,7 @@ begin
 
   if job_row.status <> 'closed'
     or job_row.yacht_type <> 'motor_yacht'
+    or job_row.yacht_program is distinct from 'charter'
     or job_row.yacht_length <> 27.50
     or job_row.yacht_length_unit <> 'ft'
   then
@@ -541,6 +571,7 @@ begin
   if job_row.status <> 'closed'
     or job_row.closure_reason <> 'expired'
     or job_row.yacht_type is not null
+    or job_row.yacht_program is not null
     or job_row.yacht_length is not null
     or job_row.yacht_length_unit is not null
     or job_row.minimum_yacht_experience_years is not null
