@@ -25,6 +25,12 @@ export const publicJobYachtLengthSlider = {
   maximumMetres: 200,
   stepMetres: 5,
 } as const;
+export const publicJobCrewSizeSlider = {
+  minimumCrewMembers: 0,
+  minimumActiveCrewMembers: 1,
+  maximumCrewMembers: 50,
+  stepCrewMembers: 1,
+} as const;
 
 export type PublicJobSearchSort = (typeof publicJobSearchSorts)[number];
 
@@ -241,8 +247,8 @@ export function parsePublicJobSearchParams(
   );
   const crewMemberCountMin = integerFilter(
     searchParams.get("crewMin"),
-    1,
-    200,
+    publicJobCrewSizeSlider.minimumActiveCrewMembers,
+    publicJobCrewSizeSlider.maximumCrewMembers,
   );
   const salaryMin = integerFilter(
     searchParams.get("salaryMin"),

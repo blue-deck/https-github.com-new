@@ -127,20 +127,8 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.doesNotMatch(jobsClient, /Pozisyon, beceri, dil veya konum/);
   assert.match(jobsClient, /employmentType: "Employment type"/);
   assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
-  const numberField = jobsClient.slice(
-    jobsClient.indexOf("function NumberField"),
-    jobsClient.indexOf("function YachtLengthRangeSlider"),
-  );
-  assert.match(numberField, /inputMode=\{integer \? "numeric" : "decimal"\}/);
-  assert.match(numberField, /\[appearance:textfield\]/);
-  assert.match(
-    numberField,
-    /\[&::-webkit-inner-spin-button\]:appearance-none/,
-  );
-  assert.match(
-    numberField,
-    /\[&::-webkit-outer-spin-button\]:appearance-none/,
-  );
+  assert.doesNotMatch(jobsClient, /function NumberField\(/);
+  assert.doesNotMatch(jobsClient, /readNullableNumber/);
   assert.doesNotMatch(jobsClient, /function RangeField\(/);
   assert.doesNotMatch(jobsClient, /\{advancedFilterCount\}/);
   assert.match(jobsClient, /aria-label=\{c\.searching\}/);
@@ -243,7 +231,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
 
   const labels = [
     ...advanced.matchAll(
-      /<(?:MultiSelectField|FilterSelect|YachtLengthRangeSlider|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
+      /<(?:MultiSelectField|FilterSelect|YachtLengthRangeSlider|CrewSizeSlider)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
     ),
   ]
     .map((match) => match[1])
@@ -256,7 +244,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
       "yachtType",
       "yachtFlag",
       "yachtLength",
-      "minimumCrewSize",
+      "crewSize",
       "visas",
     ].sort(),
   );
@@ -364,7 +352,7 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
 
   assert.match(client, /<YachtLengthRangeSlider/);
   const rangeStart = client.indexOf("function YachtLengthRangeSlider(");
-  const rangeEnd = client.indexOf("function FilterSelect(", rangeStart);
+  const rangeEnd = client.indexOf("function CrewSizeSlider(", rangeStart);
   const range = client.slice(rangeStart, rangeEnd);
   assert.equal(range.match(/type="range"/g)?.length, 2);
   assert.match(range, /aria-label=\{minimumLabel\}/);
@@ -427,7 +415,7 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
   assert.match(yachtSizeField, /<option value="m">/);
 });
 
-test("crew size is a single integer minimum filter with an inclusive server contract", async () => {
+test("crew size is a single-thumb 0–50 minimum slider with an inclusive server contract", async () => {
   const [client, search, server, page, route] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/lib/publicJobSearch.ts"),
@@ -438,13 +426,30 @@ test("crew size is a single integer minimum filter with an inclusive server cont
 
   assert.match(
     client,
-    /<NumberField[\s\S]*?label=\{c\.minimumCrewSize\}[\s\S]*?value=\{draftFilters\.crewMemberCountMin\}[\s\S]*?min=\{1\}[\s\S]*?max=\{200\}[\s\S]*?step=\{1\}[\s\S]*?integer/,
+    /<CrewSizeSlider[\s\S]*?label=\{c\.crewSize\}[\s\S]*?anyLabel=\{c\.anyCrewSize\}[\s\S]*?value=\{draftFilters\.crewMemberCountMin\}[\s\S]*?minimum=\{publicJobCrewSizeSlider\.minimumCrewMembers\}[\s\S]*?maximum=\{publicJobCrewSizeSlider\.maximumCrewMembers\}[\s\S]*?step=\{publicJobCrewSizeSlider\.stepCrewMembers\}/,
   );
-  assert.match(client, /minimumCrewSize: "Minimum crew size"/);
-  assert.match(
-    client,
-    /minimumCrewSize: "Minimum mürettebat sayısı"/,
-  );
+  assert.match(client, /crewSize: "Crew size"/);
+  assert.match(client, /crewSize: "Mürettebat sayısı"/);
+  assert.doesNotMatch(client, /minimumCrewSize:/);
+  assert.doesNotMatch(client, /function NumberField\(/);
+  const sliderStart = client.indexOf("function CrewSizeSlider(");
+  const sliderEnd = client.indexOf("function FilterSelect(", sliderStart);
+  const slider = client.slice(sliderStart, sliderEnd);
+  assert.notEqual(sliderStart, -1);
+  assert.notEqual(sliderEnd, -1);
+  assert.equal(slider.match(/type="range"/g)?.length, 1);
+  assert.match(slider, /const sliderValue = value \?\? minimum/);
+  assert.match(slider, /clampedValue === minimum \? null : clampedValue/);
+  assert.match(slider, /aria-valuetext=\{accessibleValueText\}/);
+  assert.match(slider, /onPointerDown=\{handlePointerDown\}/);
+  assert.match(slider, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(slider, /onLostPointerCapture=\{handleLostPointerCapture\}/);
+  assert.match(slider, /"--bd-range-start": `\$\{start\}%`/);
+  assert.match(slider, /"--bd-range-end": "100%"/);
+  assert.match(search, /minimumCrewMembers: 0/);
+  assert.match(search, /minimumActiveCrewMembers: 1/);
+  assert.match(search, /maximumCrewMembers: 50/);
+  assert.match(search, /stepCrewMembers: 1/);
   assert.doesNotMatch(client, /crewMemberCountMax|"crew-max"|function RangeField\(/);
 
   assert.match(search, /setNumber\(params, "crewMin", filters\.crewMemberCountMin\)/);

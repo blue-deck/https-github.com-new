@@ -42,6 +42,7 @@ import {
   createDefaultPublicJobSearchFilters,
   hasPublicJobSearchFilters,
   parsePublicJobSearchParams,
+  publicJobCrewSizeSlider,
   publicJobSearchParams,
   publicJobYachtLengthSlider,
   type PublicJobSearchFilters,
@@ -715,13 +716,14 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <NumberField
-                    label={c.minimumCrewSize}
+                  <CrewSizeSlider
+                    label={c.crewSize}
+                    anyLabel={c.anyCrewSize}
+                    language={language}
                     value={draftFilters.crewMemberCountMin}
-                    min={1}
-                    max={200}
-                    step={1}
-                    integer
+                    minimum={publicJobCrewSizeSlider.minimumCrewMembers}
+                    maximum={publicJobCrewSizeSlider.maximumCrewMembers}
+                    step={publicJobCrewSizeSlider.stepCrewMembers}
                     onChange={(crewMemberCountMin) =>
                       updateDraftFilters((current) => ({
                         ...current,
@@ -1010,42 +1012,6 @@ function JobFilterClearAction({
     >
       {label}
     </button>
-  );
-}
-
-function NumberField({
-  label,
-  value,
-  min,
-  max,
-  step,
-  integer = false,
-  onChange,
-}: {
-  label: string;
-  value: number | null;
-  min: number;
-  max: number;
-  step: number;
-  integer?: boolean;
-  onChange: (value: number | null) => void;
-}) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 block text-xs font-bold text-slate-600">
-        {label}
-      </span>
-      <input
-        type="number"
-        inputMode={integer ? "numeric" : "decimal"}
-        value={value ?? ""}
-        min={min}
-        max={max}
-        step={step}
-        onChange={(event) => onChange(readNullableNumber(event.target.value))}
-        className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-      />
-    </label>
   );
 }
 
@@ -1459,6 +1425,150 @@ function YachtLengthRangeSlider({
         </span>
       </div>
     </fieldset>
+  );
+}
+
+function CrewSizeSlider({
+  label,
+  anyLabel,
+  language,
+  value,
+  minimum,
+  maximum,
+  step,
+  onChange,
+}: {
+  label: string;
+  anyLabel: string;
+  language: Language;
+  value: number | null;
+  minimum: number;
+  maximum: number;
+  step: number;
+  onChange: (value: number | null) => void;
+}) {
+  const inputId = useId();
+  const summaryId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const draggedPointerId = useRef<number | null>(null);
+  const sliderValue = value ?? minimum;
+  const span = maximum - minimum;
+  const start = ((sliderValue - minimum) / span) * 100;
+  const summaryText = value === null ? anyLabel : `${value}+`;
+  const accessibleValueText = formatCrewSizeSliderValue(value, language);
+
+  const valueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const thumbInset =
+      Number.parseFloat(
+        getComputedStyle(event.currentTarget).getPropertyValue(
+          "--bd-range-thumb-inset",
+        ),
+      ) || 12;
+    const usableWidth = Math.max(1, bounds.width - thumbInset * 2);
+    const ratio = Math.max(
+      0,
+      Math.min(
+        1,
+        (event.clientX - bounds.left - thumbInset) / usableWidth,
+      ),
+    );
+    return Math.min(
+      maximum,
+      minimum + Math.round((ratio * span) / step) * step,
+    );
+  };
+  const updateValue = (nextValue: number) => {
+    const clampedValue = Math.max(minimum, Math.min(maximum, nextValue));
+    onChange(clampedValue === minimum ? null : clampedValue);
+  };
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (
+      !event.isPrimary ||
+      (event.pointerType === "mouse" && event.button !== 0)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    draggedPointerId.current = event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    inputRef.current?.focus();
+    updateValue(valueFromPointer(event));
+  };
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (draggedPointerId.current !== event.pointerId) return;
+    updateValue(valueFromPointer(event));
+  };
+  const stopPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (draggedPointerId.current !== event.pointerId) return;
+    draggedPointerId.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+  const handleLostPointerCapture = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (draggedPointerId.current === event.pointerId) {
+      draggedPointerId.current = null;
+    }
+  };
+
+  return (
+    <div className="block min-w-0">
+      <div className="mb-1.5 flex min-h-5 items-center justify-between gap-3">
+        <label
+          htmlFor={inputId}
+          className="min-w-0 text-xs font-bold text-slate-600"
+        >
+          {label}
+        </label>
+        <span
+          id={summaryId}
+          className="shrink-0 rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-800"
+        >
+          {summaryText}
+        </span>
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+        <div
+          className="bd-job-length-range"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={stopPointerDrag}
+          onPointerCancel={stopPointerDrag}
+          onLostPointerCapture={handleLostPointerCapture}
+          style={
+            {
+              "--bd-range-start": `${start}%`,
+              "--bd-range-end": "100%",
+            } as CSSProperties
+          }
+        >
+          <span className="bd-job-length-range-track" aria-hidden />
+          <input
+            id={inputId}
+            ref={inputRef}
+            type="range"
+            value={sliderValue}
+            min={minimum}
+            max={maximum}
+            step={step}
+            aria-describedby={summaryId}
+            aria-valuetext={accessibleValueText}
+            onChange={(event) => updateValue(Number(event.target.value))}
+            className="bd-job-length-range-input"
+          />
+        </div>
+        <span
+          aria-hidden
+          className="mt-0.5 flex justify-between text-[11px] font-semibold text-slate-400"
+        >
+          <span>{minimum}</span>
+          <span>{maximum}</span>
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -1907,14 +2017,13 @@ function buildActiveFilterChips(
       yachtLengthMaxMetres: null,
     }));
   }
-  addNumberChip(
-    chips,
-    "crew-min",
-    filters.crewMemberCountMin,
-    `${c.minimumCrewSize}:`,
-    "",
-    (current) => ({ ...current, crewMemberCountMin: null }),
-  );
+  if (filters.crewMemberCountMin !== null) {
+    add(
+      "crew-min",
+      `${c.crewSize}: ${filters.crewMemberCountMin}+`,
+      (current) => ({ ...current, crewMemberCountMin: null }),
+    );
+  }
 
   filters.requiredVisas.forEach((value) =>
     add(`visa-${value}`, formatJobVisa(value), (current) => ({
@@ -1961,22 +2070,6 @@ function buildActiveFilterChips(
   return chips;
 }
 
-function addNumberChip(
-  chips: ActiveFilterChip[],
-  id: string,
-  value: number | null,
-  prefix: string,
-  suffix: string,
-  clear: ActiveFilterChip["clear"],
-) {
-  if (value === null) return;
-  chips.push({
-    id,
-    label: `${prefix} ${value}${suffix ? ` ${suffix}` : ""}`,
-    clear,
-  });
-}
-
 function clearSalaryFilters(filters: PublicJobSearchFilters) {
   return {
     ...filters,
@@ -2021,7 +2114,12 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
     (filters.yachtLengthMaxMetres !== null &&
       filters.yachtLengthMaxMetres % publicJobYachtLengthSlider.stepMetres !==
         0) ||
-    outside(filters.crewMemberCountMin, 1, 200, true) ||
+    outside(
+      filters.crewMemberCountMin,
+      publicJobCrewSizeSlider.minimumActiveCrewMembers,
+      publicJobCrewSizeSlider.maximumCrewMembers,
+      true,
+    ) ||
     outside(filters.salaryMin, 0, maximumJobSalaryAmount, true) ||
     outside(filters.salaryMax, 0, maximumJobSalaryAmount, true)
   ) {
@@ -2116,12 +2214,6 @@ function formatDepartment(value: string, language: Language) {
   );
 }
 
-function readNullableNumber(value: string) {
-  if (!value) return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
 function capitalizeFirstLetter(value: string, language: Language) {
   const firstLetter = value.match(/\p{L}/u);
   if (!firstLetter || firstLetter.index === undefined) return value;
@@ -2129,6 +2221,14 @@ function capitalizeFirstLetter(value: string, language: Language) {
   const letter = firstLetter[0];
   const locale = language === "tr" ? "tr-TR" : "en-US";
   return `${value.slice(0, index)}${letter.toLocaleUpperCase(locale)}${value.slice(index + letter.length)}`;
+}
+
+function formatCrewSizeSliderValue(value: number | null, language: Language) {
+  if (value === null) {
+    return language === "tr" ? "Tüm mürettebat sayıları" : "Any crew size";
+  }
+  if (language === "tr") return `En az ${value} mürettebat`;
+  return `At least ${value} crew member${value === 1 ? "" : "s"}`;
 }
 
 function isValidNextCursor(
@@ -2231,7 +2331,8 @@ const copy = {
     noMaximumYachtLength: "No maximum yacht length",
     upTo: "Up to",
     metres: "m",
-    minimumCrewSize: "Minimum crew size",
+    crewSize: "Crew size",
+    anyCrewSize: "Any",
     visas: "Visas",
     anyVisa: "Any visa",
     salary: "Salary",
@@ -2325,7 +2426,8 @@ const copy = {
     noMaximumYachtLength: "Maksimum yat uzunluğu sınırı yok",
     upTo: "En fazla",
     metres: "m",
-    minimumCrewSize: "Minimum mürettebat sayısı",
+    crewSize: "Mürettebat sayısı",
+    anyCrewSize: "Tümü",
     visas: "Vizeler",
     anyVisa: "Tüm vizeler",
     salary: "Maaş",

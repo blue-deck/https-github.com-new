@@ -302,6 +302,8 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
     "crewMin=-1",
     "crewMin=0",
     "crewMin=1.5",
+    "crewMin=51",
+    "crewMin=200",
     "crewMin=201",
     "crewMin=NaN",
     "crewMin=Infinity",
@@ -519,23 +521,27 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
   );
 });
 
-test("minimum crew size is inclusive, accepts larger crews, and fails missing values closed", () => {
+test("crew size minimum is inclusive through 50 and accepts larger published crews", () => {
   const filters = createDefaultPublicJobSearchFilters();
   assert.equal(filters.crewMemberCountMin, null);
   assert.equal(publicJobSearchParams(filters).has("crewMin"), false);
   assert.equal(publicJobSearchParams(filters).has("crewMax"), false);
-  filters.crewMemberCountMin = 12;
+  filters.crewMemberCountMin = 50;
 
   assert.equal(
-    matchesPublicJobSearch(sampleJob({ crewMemberCount: 12 }), filters),
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 50 }), filters),
     true,
   );
   assert.equal(
-    matchesPublicJobSearch(sampleJob({ crewMemberCount: 13 }), filters),
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 51 }), filters),
     true,
   );
   assert.equal(
-    matchesPublicJobSearch(sampleJob({ crewMemberCount: 11 }), filters),
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 200 }), filters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 49 }), filters),
     false,
   );
   assert.equal(
@@ -551,8 +557,8 @@ test("minimum crew size is inclusive, accepts larger crews, and fails missing va
   );
 });
 
-test("minimum crew size round-trips at its supported boundaries", () => {
-  for (const minimum of [1, 200]) {
+test("every selectable crew size minimum from 1 through 50 round-trips", () => {
+  for (const minimum of Array.from({ length: 50 }, (_, index) => index + 1)) {
     const parsed = parsePublicJobSearchParams(
       new URLSearchParams(`crewMin=${minimum}`),
       taxonomy,
