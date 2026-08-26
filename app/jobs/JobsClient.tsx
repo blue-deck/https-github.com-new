@@ -643,7 +643,6 @@ export function JobsClient({
                     }
                   />
                   <SalaryFilterGroup
-                    salaryLabel={c.salary}
                     minimumLabel={c.minimumSalary}
                     maximumLabel={c.maximumSalary}
                     currencyLabel={c.currency}
@@ -1027,7 +1026,6 @@ function JobFilterClearAction({
 }
 
 function SalaryFilterGroup({
-  salaryLabel,
   minimumLabel,
   maximumLabel,
   currencyLabel,
@@ -1043,7 +1041,6 @@ function SalaryFilterGroup({
   onCurrencyChange,
   onPeriodChange,
 }: {
-  salaryLabel: string;
   minimumLabel: string;
   maximumLabel: string;
   currencyLabel: string;
@@ -1060,37 +1057,34 @@ function SalaryFilterGroup({
   onPeriodChange: (value: string) => void;
 }) {
   return (
-    <fieldset className="min-w-0 rounded-2xl border border-cyan-100 bg-white/80 p-3 sm:col-span-2 sm:p-4 lg:col-span-2">
-      <legend className="sr-only">{salaryLabel}</legend>
-      <div className="grid min-w-0 gap-3 md:grid-cols-2">
-        <SalaryAmountField
-          label={minimumLabel}
-          currencyLabel={currencyLabel}
-          periodLabel={periodLabel}
-          value={minimum}
-          currency={currency}
-          period={period}
-          currencyOptions={currencyOptions}
-          periodOptions={periodOptions}
-          onAmountChange={onMinimumChange}
-          onCurrencyChange={onCurrencyChange}
-          onPeriodChange={onPeriodChange}
-        />
-        <SalaryAmountField
-          label={maximumLabel}
-          currencyLabel={currencyLabel}
-          periodLabel={periodLabel}
-          value={maximum}
-          currency={currency}
-          period={period}
-          currencyOptions={currencyOptions}
-          periodOptions={periodOptions}
-          onAmountChange={onMaximumChange}
-          onCurrencyChange={onCurrencyChange}
-          onPeriodChange={onPeriodChange}
-        />
-      </div>
-    </fieldset>
+    <>
+      <SalaryAmountField
+        label={minimumLabel}
+        currencyLabel={currencyLabel}
+        periodLabel={periodLabel}
+        value={minimum}
+        currency={currency}
+        period={period}
+        currencyOptions={currencyOptions}
+        periodOptions={periodOptions}
+        onAmountChange={onMinimumChange}
+        onCurrencyChange={onCurrencyChange}
+        onPeriodChange={onPeriodChange}
+      />
+      <SalaryAmountField
+        label={maximumLabel}
+        currencyLabel={currencyLabel}
+        periodLabel={periodLabel}
+        value={maximum}
+        currency={currency}
+        period={period}
+        currencyOptions={currencyOptions}
+        periodOptions={periodOptions}
+        onAmountChange={onMaximumChange}
+        onCurrencyChange={onCurrencyChange}
+        onPeriodChange={onPeriodChange}
+      />
+    </>
   );
 }
 
@@ -1120,6 +1114,11 @@ function SalaryAmountField({
   onPeriodChange: (value: string) => void;
 }) {
   const inputId = useId();
+  const selectedCurrencyLabel =
+    currencyOptions.find((option) => option.value === currency)?.label ??
+    currency;
+  const selectedPeriodLabel =
+    periodOptions.find((option) => option.value === period)?.label ?? period;
 
   return (
     <div className="min-w-0">
@@ -1129,7 +1128,7 @@ function SalaryAmountField({
       >
         {label}
       </label>
-      <div className="grid min-h-12 min-w-0 grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 min-[390px]:grid-cols-[minmax(0,1fr)_6.75rem_5.75rem] sm:grid-cols-[minmax(0,1fr)_7.25rem_6.75rem]">
+      <div className="grid h-12 min-w-0 grid-cols-[minmax(4.5rem,1fr)_4.875rem_3.875rem] overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 sm:grid-cols-[minmax(4.5rem,1fr)_5rem_4.5rem] lg:grid-cols-[minmax(4.5rem,1fr)_6.25rem_5.25rem]">
         <input
           id={inputId}
           type="text"
@@ -1145,15 +1144,15 @@ function SalaryAmountField({
               ),
             )
           }
-          className="col-span-2 min-h-12 min-w-0 bg-transparent px-3 text-sm font-semibold tabular-nums text-slate-950 outline-none placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] min-[390px]:col-span-1"
+          className="h-full min-h-0 min-w-0 bg-transparent px-1 text-[11px] font-semibold tracking-[-0.08em] tabular-nums text-slate-950 outline-none placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] min-[390px]:px-2 min-[390px]:text-xs min-[390px]:tracking-normal sm:px-3 lg:text-sm"
         />
-        <span className="relative flex min-h-12 min-w-0 border-t border-slate-200 bg-slate-50 min-[390px]:border-l min-[390px]:border-t-0">
+        <span className="relative flex h-full min-h-0 min-w-0 border-l border-slate-200 bg-slate-50">
           <select
             aria-label={`${label} ${currencyLabel}`}
             title={`${label} ${currencyLabel}`}
             value={currency}
             onChange={(event) => onCurrencyChange(event.target.value)}
-            className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-3 pr-7 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] sm:text-sm"
+            className="peer h-full min-h-0 w-full cursor-pointer appearance-none bg-transparent py-0 pl-2 pr-4 text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4]"
           >
             {currencyOptions.map((option) => (
               <option data-i18n-ignore key={option.value} value={option.value}>
@@ -1161,18 +1160,24 @@ function SalaryAmountField({
               </option>
             ))}
           </select>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs lg:pl-3 lg:pr-7 lg:text-sm"
+          >
+            {selectedCurrencyLabel}
+          </span>
           <ChevronDown
-            className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 text-slate-500 min-[390px]:h-3.5 min-[390px]:w-3.5 lg:right-2 lg:h-4 lg:w-4"
             aria-hidden
           />
         </span>
-        <span className="relative flex min-h-12 min-w-0 border-l border-t border-slate-200 bg-slate-50 min-[390px]:border-t-0">
+        <span className="relative flex h-full min-h-0 min-w-0 border-l border-slate-200 bg-slate-50">
           <select
             aria-label={`${label} ${periodLabel}`}
             title={`${label} ${periodLabel}`}
             value={period}
             onChange={(event) => onPeriodChange(event.target.value)}
-            className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-2.5 pr-7 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] sm:pl-3 sm:text-sm"
+            className="peer h-full min-h-0 w-full cursor-pointer appearance-none bg-transparent py-0 pl-2 pr-4 text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4]"
           >
             {periodOptions.map((option) => (
               <option data-i18n-ignore key={option.value} value={option.value}>
@@ -1180,8 +1185,14 @@ function SalaryAmountField({
               </option>
             ))}
           </select>
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs lg:pl-3 lg:pr-7 lg:text-sm"
+          >
+            {selectedPeriodLabel}
+          </span>
           <ChevronDown
-            className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            className="pointer-events-none absolute right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 text-slate-500 min-[390px]:h-3.5 min-[390px]:w-3.5 lg:right-2 lg:h-4 lg:w-4"
             aria-hidden
           />
         </span>
@@ -1355,20 +1366,23 @@ function DualRangeSlider({
   return (
     <fieldset className="block min-w-0">
       <legend className="sr-only">{label}</legend>
-      <div className="mb-1.5 flex min-h-5 items-center justify-between gap-3">
-        <span aria-hidden className="text-xs font-bold text-slate-600">
+      <div className="mb-1.5 flex h-4 items-center justify-between gap-3">
+        <span
+          aria-hidden
+          className="min-w-0 truncate text-xs font-bold text-slate-600"
+        >
           {label}
         </span>
         <span
           id={summaryId}
-          className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-800"
+          className="shrink-0 rounded-full bg-cyan-50 px-2 text-[11px] font-bold leading-4 text-cyan-800"
         >
           {valueText}
         </span>
       </div>
-      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+      <div className="relative h-12 rounded-xl border border-slate-200 bg-white px-3">
         <div
-          className="bd-job-length-range"
+          className="bd-job-length-range bd-job-length-range-compact"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={stopPointerDrag}
@@ -1433,7 +1447,7 @@ function DualRangeSlider({
         </div>
         <span
           aria-hidden
-          className="mt-0.5 flex justify-between text-[11px] font-semibold text-slate-400"
+          className="pointer-events-none absolute inset-x-3 bottom-1 flex justify-between text-[10px] font-semibold leading-3 text-slate-400"
         >
           <span>
             {minimum}

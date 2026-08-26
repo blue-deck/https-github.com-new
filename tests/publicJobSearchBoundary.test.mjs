@@ -229,7 +229,7 @@ test("published requirements remain searchable job data without structured filte
   );
 });
 
-test("advanced job filters keep a flat grid and group the salary controls", async () => {
+test("advanced job filters keep one symmetric grid for every control", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
   const start = client.indexOf("{advancedOpen ? (");
   const end = client.indexOf("{draftValidationError ? (", start);
@@ -358,11 +358,8 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
     2,
   );
   assert.doesNotMatch(salaryGroup, /<FilterSelect/);
-  assert.match(salaryGroup, /md:grid-cols-2/);
-  assert.match(
-    salaryGroup,
-    /rounded-2xl border border-cyan-100 bg-white\/80/,
-  );
+  assert.match(salaryGroup, /return \(\s*<>/);
+  assert.doesNotMatch(salaryGroup, /<fieldset|col-span|rounded-2xl|\bp-[34]\b/);
 
   const amountStart = client.indexOf("function SalaryAmountField(");
   const amountEnd = client.indexOf(
@@ -387,8 +384,15 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
     amountField.indexOf('aria-label={`${label} ${currencyLabel}`}') <
       amountField.indexOf('aria-label={`${label} ${periodLabel}`}'),
   );
-  assert.match(amountField, /grid-cols-2/);
-  assert.match(amountField, /min-\[390px\]:grid-cols-/);
+  assert.match(
+    amountField,
+    /grid h-12 min-w-0 grid-cols-\[minmax\(4\.5rem,1fr\)_4\.875rem_3\.875rem\]/,
+  );
+  assert.match(
+    amountField,
+    /sm:grid-cols-\[minmax\(4\.5rem,1fr\)_5rem_4\.5rem\]/,
+  );
+  assert.doesNotMatch(amountField, /min-\[390px\]:grid-cols-|col-span-2|border-t/);
 });
 
 test("Yacht program uses shared options in Create and Find Jobs", async () => {
@@ -512,6 +516,18 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
   assert.match(range, /event\.key === "ArrowLeft"/);
   assert.match(range, /event\.key === "Home"/);
   assert.match(range, /event\.key === "End"/);
+  assert.match(
+    range,
+    /className="relative h-12 rounded-xl border border-slate-200 bg-white px-3"/,
+  );
+  assert.match(
+    range,
+    /className="bd-job-length-range bd-job-length-range-compact"/,
+  );
+  assert.match(
+    range,
+    /className="pointer-events-none absolute inset-x-3 bottom-1 flex justify-between/,
+  );
 
   assert.match(search, /minimumMetres: 0/);
   assert.match(search, /maximumMetres: 200/);
@@ -534,6 +550,14 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
   assert.match(styles, /--bd-range-thumb-inset: 12px/);
   assert.match(styles, /height: 2\.75rem/);
   assert.match(styles, /touch-action: pan-y/);
+  assert.match(
+    styles,
+    /\.bd-job-length-range-compact \.bd-job-length-range-track \{\s*top: calc\(50% - 0\.375rem\)/,
+  );
+  assert.match(
+    styles,
+    /\.bd-job-length-range-compact \.bd-job-length-range-input \{\s*transform: translateY\(-0\.375rem\)/,
+  );
 
   assert.match(server, /matchesPublicJobSearch\(job, filters\)/);
   assert.match(manager, /<YachtSizeField/);

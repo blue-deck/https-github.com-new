@@ -204,6 +204,14 @@ textarea:-webkit-autofill:focus {
   touch-action: pan-y;
 }
 
+.bd-job-length-range-compact .bd-job-length-range-track {
+  top: calc(50% - 0.375rem);
+}
+
+.bd-job-length-range-compact .bd-job-length-range-input {
+  transform: translateY(-0.375rem);
+}
+
 .bd-job-length-range-input::-webkit-slider-runnable-track {
   height: 0.375rem;
   border-radius: 9999px;
