@@ -19,7 +19,6 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
-  X,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
 import { LocationSearchField } from "../components/LocationSearchField";
@@ -60,11 +59,6 @@ type LoadState = "loading" | "ready" | "error";
 type Language = "en" | "tr";
 type TeamCoupleFilterValue = "" | "yes" | "no";
 type SelectOption = { value: string; label: string };
-type ActiveFilterChip = {
-  id: string;
-  label: string;
-  clear: (filters: PublicJobSearchFilters) => PublicJobSearchFilters;
-};
 
 export type InitialPublicJobSearchPage = {
   jobs: PublicJobCard[];
@@ -157,10 +151,6 @@ export function JobsClient({
   const serializedFilters = useMemo(
     () => publicJobSearchParams(filters).toString(),
     [filters],
-  );
-  const activeFilters = useMemo(
-    () => buildActiveFilterChips(filters, language, c),
-    [c, filters, language],
   );
   const hasFilters = hasPublicJobSearchFilters(filters);
   const hasPrimaryDraftFilters =
@@ -373,11 +363,6 @@ export function JobsClient({
     const emptyFilters = createDefaultPublicJobSearchFilters();
     setDraftFilters(emptyFilters);
     applyFilterUpdate(() => emptyFilters);
-  }
-
-  function removeAppliedFilter(chip: ActiveFilterChip) {
-    setDraftFilters((current) => chip.clear(current));
-    applyFilterUpdate((current) => chip.clear(current));
   }
 
   function updateSort(sort: PublicJobSearchSort) {
@@ -842,25 +827,6 @@ export function JobsClient({
               </p>
             ) : null}
 
-            {activeFilters.length > 0 ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-                <span className="mr-1 text-xs font-black uppercase tracking-[0.1em] text-slate-500">
-                  {c.activeFilters}
-                </span>
-                {activeFilters.map((chip) => (
-                  <button
-                    key={chip.id}
-                    type="button"
-                    onClick={() => removeAppliedFilter(chip)}
-                    aria-label={`${c.removeFilter}: ${chip.label}`}
-                    className="bd-focus inline-flex min-h-8 items-center gap-1.5 rounded-full border border-cyan-200 bg-cyan-50 px-3 text-xs font-bold text-cyan-950 transition hover:border-cyan-400 hover:bg-cyan-100"
-                  >
-                    <span data-i18n-ignore>{chip.label}</span>
-                    <X className="h-3.5 w-3.5" aria-hidden />
-                  </button>
-                ))}
-              </div>
-            ) : null}
           </section>
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
@@ -1822,172 +1788,6 @@ function buildOptionSets(language: Language, c: SearchCopy) {
   };
 }
 
-function buildActiveFilterChips(
-  filters: PublicJobSearchFilters,
-  language: Language,
-  c: SearchCopy,
-) {
-  const chips: ActiveFilterChip[] = [];
-  const add = (id: string, label: string, clear: ActiveFilterChip["clear"]) =>
-    chips.push({ id, label, clear });
-
-  if (filters.query) {
-    add("q", `${c.keywordChip}: ${filters.query}`, (current) => ({
-      ...current,
-      query: "",
-    }));
-  }
-  filters.positions.forEach((value) =>
-    add(`position-${value}`, value, (current) => ({
-      ...current,
-      positions: current.positions.filter((item) => item !== value),
-    })),
-  );
-  filters.departments.forEach((value) =>
-    add(
-      `department-${value}`,
-      formatDepartment(value, language),
-      (current) => ({
-        ...current,
-        departments: current.departments.filter((item) => item !== value),
-      }),
-    ),
-  );
-  if (filters.location) {
-    add("location", `${c.locationChip}: ${filters.location}`, (current) => ({
-      ...current,
-      location: "",
-    }));
-  }
-  filters.employmentTypes.forEach((value) =>
-    add(
-      `employment-${value}`,
-      formatJobEmploymentType(value, language),
-      (current) => ({
-        ...current,
-        employmentTypes: current.employmentTypes.filter(
-          (item) => item !== value,
-        ),
-      }),
-    ),
-  );
-  const teamCouple = teamCoupleFilterValue(filters.candidateTypes);
-  if (teamCouple) {
-    add("team-couple", `${c.teamCouple}: ${c[teamCouple]}`, (current) => ({
-      ...current,
-      candidateTypes: [],
-    }));
-  }
-  filters.yachtTypes.forEach((value) =>
-    add(
-      `yacht-type-${value}`,
-      formatJobYachtType(value, language),
-      (current) => ({
-        ...current,
-        yachtTypes: current.yachtTypes.filter((item) => item !== value),
-      }),
-    ),
-  );
-  if (filters.yachtProgram) {
-    add(
-      "yacht-program",
-      `${c.yachtProgram}: ${formatJobYachtProgram(filters.yachtProgram, language)}`,
-      (current) => ({ ...current, yachtProgram: null }),
-    );
-  }
-  filters.yachtFlagCountryCodes.forEach((value) =>
-    add(`flag-${value}`, formatCountryWithFlag(value) || value, (current) => ({
-      ...current,
-      yachtFlagCountryCodes: current.yachtFlagCountryCodes.filter(
-        (item) => item !== value,
-      ),
-    })),
-  );
-
-  if (
-    filters.yachtLengthMinMetres !== null ||
-    filters.yachtLengthMaxMetres !== null
-  ) {
-    const range =
-      filters.yachtLengthMinMetres !== null &&
-      filters.yachtLengthMaxMetres !== null
-        ? `${filters.yachtLengthMinMetres}–${filters.yachtLengthMaxMetres} ${c.metres}`
-        : filters.yachtLengthMinMetres !== null
-          ? `${c.from} ${filters.yachtLengthMinMetres} ${c.metres}`
-          : `${c.upTo} ${filters.yachtLengthMaxMetres} ${c.metres}`;
-    add("yacht-length", `${c.yachtLength}: ${range}`, (current) => ({
-      ...current,
-      yachtLengthMinMetres: null,
-      yachtLengthMaxMetres: null,
-    }));
-  }
-  if (
-    filters.crewMemberCountMin !== null ||
-    filters.crewMemberCountMax !== null
-  ) {
-    const range =
-      filters.crewMemberCountMin !== null &&
-      filters.crewMemberCountMax !== null
-        ? `${filters.crewMemberCountMin}–${filters.crewMemberCountMax}`
-        : filters.crewMemberCountMin !== null
-          ? `${c.from} ${filters.crewMemberCountMin}`
-          : `${c.upTo} ${filters.crewMemberCountMax}`;
-    add("crew-size", `${c.crewSize}: ${range}`, (current) => ({
-      ...current,
-      crewMemberCountMin: null,
-      crewMemberCountMax: null,
-    }));
-  }
-
-  if (
-    filters.salaryCurrency ||
-    filters.salaryPeriod ||
-    filters.salaryMin !== null ||
-    filters.salaryMax !== null
-  ) {
-    let amount = "";
-    if (filters.salaryMin !== null && filters.salaryMax !== null) {
-      const minimum = formatJobSalaryAmountInput(filters.salaryMin);
-      const maximum = formatJobSalaryAmountInput(filters.salaryMax);
-      amount = minimum === maximum ? minimum : `${minimum}–${maximum}`;
-    } else if (filters.salaryMin !== null) {
-      amount = `${c.from} ${formatJobSalaryAmountInput(filters.salaryMin)}`;
-    } else if (filters.salaryMax !== null) {
-      amount = `${c.upTo} ${formatJobSalaryAmountInput(filters.salaryMax)}`;
-    }
-
-    const salaryAmount =
-      amount && filters.salaryCurrency
-        ? `${amount} ${filters.salaryCurrency}`
-        : amount;
-    const salaryDetails = [
-      salaryAmount,
-      !amount ? filters.salaryCurrency || "" : "",
-      filters.salaryPeriod
-        ? formatJobSalaryPeriod(filters.salaryPeriod, language)
-        : "",
-    ].filter(Boolean);
-    add(
-      "salary",
-      `${c.salary}: ${salaryDetails.join(" · ")}`,
-      clearSalaryFilters,
-    );
-  }
-
-  return chips;
-}
-
-function clearSalaryFilters(filters: PublicJobSearchFilters) {
-  return {
-    ...filters,
-    salaryCurrency: null,
-    salaryPeriod: null,
-    salaryMin: null,
-    salaryMax: null,
-    sort: filters.sort.startsWith("salary_") ? "newest" : filters.sort,
-  } as PublicJobSearchFilters;
-}
-
 function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   const reversed = (minimum: number | null, maximum: number | null) =>
     minimum !== null && maximum !== null && minimum > maximum;
@@ -2217,8 +2017,6 @@ const copy = {
     employmentType: "Employment type",
     allEmploymentTypes: "All employment types",
     advanced: "More filters",
-    activeFilters: "Active",
-    removeFilter: "Remove filter",
     selected: "selected",
     noOptions: "No options found",
     department: "Department",
@@ -2248,7 +2046,6 @@ const copy = {
     maximumCrewSize: "Maximum crew size",
     noMinimumCrewSize: "No minimum crew size",
     noMaximumCrewSize: "No maximum crew size",
-    salary: "Salary",
     from: "From",
     currency: "Salary currency",
     payPeriod: "Salary period",
@@ -2266,8 +2063,6 @@ const copy = {
       yacht_length_desc: "Yacht length: largest first",
       yacht_length_asc: "Yacht length: smallest first",
     },
-    keywordChip: "Keyword",
-    locationChip: "Location",
     clear: "Clear filters",
     fixFiltersTitle: "Check the selected range",
     rangeError: "A minimum value or date cannot be later than its maximum.",
@@ -2316,8 +2111,6 @@ const copy = {
     employmentType: "Çalışma türü",
     allEmploymentTypes: "Tüm çalışma biçimleri",
     advanced: "Daha fazla filtre",
-    activeFilters: "Etkin",
-    removeFilter: "Filtreyi kaldır",
     selected: "seçili",
     noOptions: "Seçenek bulunamadı",
     department: "Departman",
@@ -2347,7 +2140,6 @@ const copy = {
     maximumCrewSize: "Maksimum mürettebat sayısı",
     noMinimumCrewSize: "Minimum mürettebat sayısı sınırı yok",
     noMaximumCrewSize: "Maksimum mürettebat sayısı sınırı yok",
-    salary: "Maaş",
     from: "Başlangıç",
     currency: "Ücret para birimi",
     payPeriod: "Ücret dönemi",
@@ -2365,8 +2157,6 @@ const copy = {
       yacht_length_desc: "Yat uzunluğu: büyükten küçüğe",
       yacht_length_asc: "Yat uzunluğu: küçükten büyüğe",
     },
-    keywordChip: "Anahtar kelime",
-    locationChip: "Konum",
     clear: "Filtreleri temizle",
     fixFiltersTitle: "Seçilen aralığı kontrol edin",
     rangeError: "Minimum değer veya tarih maksimumdan büyük olamaz.",

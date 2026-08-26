@@ -57,7 +57,7 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
   );
 });
 
-test("job filters use explicit keyword and form searches with contextual clear actions", async () => {
+test("job filters use explicit searches and clear actions without selection summaries", async () => {
   const [jobsClient, crewClient] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/find-crew/FindCrewClient.tsx"),
@@ -103,10 +103,14 @@ test("job filters use explicit keyword and form searches with contextual clear a
   );
   const clearFilters = jobsClient.slice(
     jobsClient.indexOf("function clearFilters()"),
-    jobsClient.indexOf("function removeAppliedFilter"),
+    jobsClient.indexOf("function updateSort"),
   );
   assert.doesNotMatch(clearFilters, /setAdvancedOpen/);
   assert.match(jobsClient, /setDraftFilters\(emptyFilters\)/);
+  assert.doesNotMatch(
+    jobsClient,
+    /ActiveFilterChip|activeFilters|buildActiveFilterChips|removeAppliedFilter|keywordChip|locationChip/,
+  );
   const sharedClearStyle =
     "inline-flex min-h-11 items-center justify-center px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900";
   assert.ok(jobsClient.includes(sharedClearStyle));
@@ -461,14 +465,11 @@ test("Yacht program uses shared options in Create and Find Jobs", async () => {
   );
 });
 
-test("Yacht program contributes one active chip and one advanced-filter count", async () => {
+test("Yacht program contributes one advanced-filter count without a selection summary", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
 
-  assert.match(
-    client,
-    /if \(filters\.yachtProgram\) \{[\s\S]*?add\(\s*"yacht-program",[\s\S]*?formatJobYachtProgram\(filters\.yachtProgram, language\)[\s\S]*?yachtProgram: null/,
-  );
   assert.match(client, /\(filters\.yachtProgram \? 1 : 0\)/);
+  assert.doesNotMatch(client, /"yacht-program"|buildActiveFilterChips/);
   assert.doesNotMatch(client, /filters\.requiredVisas|optionSets\.visas/);
 });
 
@@ -789,10 +790,6 @@ test("Team/Couple stays a binary filter while Any listings match either choice",
   assert.match(
     config,
     /candidateTypes: jobCandidateTypes\.filter\(\(value\) => value !== "any"\)/,
-  );
-  assert.match(
-    client,
-    /add\("team-couple", `\$\{c\.teamCouple\}: \$\{c\[teamCouple\]\}`/,
   );
   assert.doesNotMatch(client, /label=\{c\.candidateType\}/);
   assert.match(
