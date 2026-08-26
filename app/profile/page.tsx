@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -7,6 +8,7 @@ import {
   Camera,
   Check,
   ChevronDown,
+  ChevronLeft,
   Download,
   ExternalLink,
   IdCard,
@@ -1160,6 +1162,16 @@ export default function ProfilePage() {
   return (
     <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-3 py-4 text-slate-900 sm:px-6 sm:py-6 lg:px-8">
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-[1520px]">
+        <Link
+          href="/dashboard"
+          className="bd-focus mb-3 inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-3 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm backdrop-blur transition hover:border-cyan-300 hover:text-cyan-800"
+          aria-label="Back to dashboard"
+          title="Back to dashboard"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          Dashboard
+        </Link>
+
         <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-5 sm:p-8">
@@ -1181,29 +1193,6 @@ export default function ProfilePage() {
               </div>
 
               <div className="grid gap-3">
-                <section className="rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
-                        Find Crew directory
-                      </p>
-                      <p className="mt-1.5 text-xs leading-5 text-slate-500">
-                        Active, email-confirmed Crew and Captain accounts are listed automatically with a masked name, selected professional profile fields and approved photos. Email, phone, private files and reference contact details stay hidden.
-                      </p>
-                      <a
-                        href="/privacy"
-                        className="bd-focus mt-2 inline-flex text-xs font-bold text-cyan-800 underline decoration-cyan-300 underline-offset-4"
-                      >
-                        Review public-profile privacy details
-                      </a>
-                    </div>
-                    <span className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-bold text-emerald-800">
-                      <Check className="h-4 w-4" aria-hidden />
-                      Automatic
-                    </span>
-                  </div>
-                </section>
-
                 <label className="block rounded-2xl border border-slate-200 bg-white/90 p-4 shadow-sm">
                   <span className="flex items-center justify-between gap-3">
                     <span className="text-xs font-black uppercase tracking-[0.15em] text-[#071f3c]">
@@ -1838,6 +1827,28 @@ export default function ProfilePage() {
           </div>
         </div>
         </section>
+
+        <footer
+          className="mt-4 border-t border-slate-200/80 px-1 py-3 text-[10px] leading-4 text-slate-500"
+          aria-label="Find Crew directory privacy notice"
+        >
+          <p>
+            <span className="mr-2 inline-flex items-center gap-1 font-black uppercase tracking-[0.12em] text-emerald-700">
+              <Check className="h-3 w-3" aria-hidden />
+              Automatic
+            </span>
+            <span className="font-black uppercase tracking-[0.12em] text-[#071f3c]">
+              Find Crew directory
+            </span>{" "}
+            Active, email-confirmed Crew and Captain accounts are listed automatically with a masked name, selected professional profile fields and approved photos. Email, phone, private files and reference contact details stay hidden.{" "}
+            <Link
+              href="/privacy"
+              className="bd-focus font-bold text-cyan-800 underline decoration-cyan-300 underline-offset-2"
+            >
+              Review public-profile privacy details
+            </Link>
+          </p>
+        </footer>
       </div>
     </main>
   );
