@@ -870,21 +870,6 @@ export default function DashboardPage() {
 
           {canApplyToJobs ? (
             <Link
-              href="/jobs"
-              className={dashboardCardClass}
-            >
-              <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("dashboard.findJob")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {t("dashboard.findJobText")}
-              </p>
-            </Link>
-          ) : null}
-
-          {canApplyToJobs ? (
-            <Link
               href="/portal/applications"
               className={dashboardCardClass}
             >
