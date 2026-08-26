@@ -660,35 +660,38 @@ export default function DashboardPage() {
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
         <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="bd-brand-rule h-0.5" />
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 p-5 sm:gap-8 sm:p-7">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">
-                {t("dashboard.myDashboard")}
-              </p>
-              <h1 className="mt-2 text-2xl font-semibold leading-tight tracking-[-0.025em] text-[#071f3c] sm:text-4xl">
-                <span className="font-medium text-slate-500">{t("dashboard.welcome")}, </span>
-                <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
-              </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <div className="inline-flex min-h-8 items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50/70 px-3 text-xs">
-                  <span className="font-semibold text-slate-500">{t("dashboard.role")}</span>
-                  <span data-i18n-ignore className="font-bold text-[#173f4a]">{roleLabel}</span>
+          <div className="p-5 sm:p-7">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">
+              {t("dashboard.myDashboard")}
+            </p>
+
+            <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 sm:items-center sm:gap-6">
+              <DashboardPhotoControl
+                url={profile?.dashboard_photo_url}
+                photoAlt={`${profile?.full_name || t("topbar.accountFallback")} — ${t("dashboard.profilePhoto")}`}
+                addLabel={`${t("topbar.addPhoto")} — ${t("dashboard.profilePhoto")}`}
+                changeLabel={`${t("topbar.changePhoto")} — ${t("dashboard.profilePhoto")}`}
+                removeLabel={`${t("topbar.removePhoto")} — ${t("dashboard.profilePhoto")}`}
+                uploading={photoUploading}
+                uploadingLabel={t("dashboard.updatingPhoto")}
+                onChoose={() => fileInputRef.current?.click()}
+                onRemove={() => void removeDashboardPhoto()}
+              />
+
+              <div className="min-w-0">
+                <h1 className="text-2xl font-semibold leading-tight tracking-[-0.025em] text-[#071f3c] sm:text-4xl">
+                  <span className="font-medium text-slate-500">{t("dashboard.welcome")}, </span>
+                  <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
+                </h1>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="inline-flex min-h-8 items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50/70 px-3 text-xs">
+                    <span className="font-semibold text-slate-500">{t("dashboard.role")}</span>
+                    <span data-i18n-ignore className="font-bold text-[#173f4a]">{roleLabel}</span>
+                  </div>
+                  {hasCrewWorkspace ? <TeamCouplePanel /> : null}
                 </div>
-                {hasCrewWorkspace ? <TeamCouplePanel /> : null}
               </div>
             </div>
-
-            <DashboardPhotoControl
-              url={profile?.dashboard_photo_url}
-              photoAlt={`${profile?.full_name || t("topbar.accountFallback")} — ${t("dashboard.profilePhoto")}`}
-              addLabel={`${t("topbar.addPhoto")} — ${t("dashboard.profilePhoto")}`}
-              changeLabel={`${t("topbar.changePhoto")} — ${t("dashboard.profilePhoto")}`}
-              removeLabel={`${t("topbar.removePhoto")} — ${t("dashboard.profilePhoto")}`}
-              uploading={photoUploading}
-              uploadingLabel={t("dashboard.updatingPhoto")}
-              onChoose={() => fileInputRef.current?.click()}
-              onRemove={() => void removeDashboardPhoto()}
-            />
             <input
               ref={fileInputRef}
               type="file"
