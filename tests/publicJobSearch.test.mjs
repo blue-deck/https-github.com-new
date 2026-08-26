@@ -46,8 +46,7 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["candidateType", "couple"],
     ["yachtType", "motor_yacht"],
     ["yachtFlag", "tr"],
-    ["lengthMin", "40"],
-    ["lengthMax", "70.5"],
+    ["lengthMax", "70"],
     ["crewMin", "8"],
     ["crewMax", "20"],
     ["visa", "Schengen Visa"],
@@ -64,7 +63,7 @@ test("strictly parses and round-trips the complete public job filter contract", 
   assert.equal(parsed.ok, true);
   assert.equal(parsed.filters.query, "refit Captain");
   assert.deepEqual(parsed.filters.yachtFlagCountryCodes, ["TR"]);
-  assert.equal(parsed.filters.yachtLengthMaxMetres, 70.5);
+  assert.equal(parsed.filters.yachtLengthMaxMetres, 70);
   assert.equal(parsed.filters.salaryCurrency, "EUR");
 
   const reparsed = parsePublicJobSearchParams(
@@ -228,7 +227,7 @@ test("rejects unknown, duplicated, invalid, and logically unsafe filters", () =>
   );
   assert.equal(
     parsePublicJobSearchParams(
-      new URLSearchParams("lengthMin=60&lengthMax=40"),
+      new URLSearchParams("crewMin=60&crewMax=40"),
       taxonomy,
     ).ok,
     false,
@@ -244,9 +243,11 @@ test("rejects unknown, duplicated, invalid, and logically unsafe filters", () =>
 
 test("rejects malformed decimals, negative values, and non-finite tokens", () => {
   for (const query of [
-    "lengthMin=-1",
-    "lengthMin=NaN",
-    "lengthMin=1.234",
+    "lengthMax=-5",
+    "lengthMax=NaN",
+    "lengthMax=2.5",
+    "lengthMax=7",
+    "lengthMax=205",
     "salaryMax=Infinity&salaryCurrency=EUR&salaryPeriod=month",
     "crewMin=1.5",
   ]) {
@@ -258,8 +259,9 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
   }
 });
 
-test("rejects removed experience, brand, language, requirement, policy, build-year, date-recency, and page-size filters", () => {
+test("rejects removed minimum-length, experience, brand, language, requirement, policy, build-year, date-recency, and page-size filters", () => {
   for (const query of [
+    "lengthMin=40",
     "minimumExperience=3_5_years",
     "yachtBrand=Feadship",
     "language=English",
@@ -298,8 +300,7 @@ test("matches every structured public-detail category with normalized yacht unit
     candidateTypes: ["couple"],
     yachtTypes: ["motor_yacht"],
     yachtFlagCountryCodes: ["TR"],
-    yachtLengthMinMetres: 49.9,
-    yachtLengthMaxMetres: 50.1,
+    yachtLengthMaxMetres: 50,
     crewMemberCountMin: 10,
     crewMemberCountMax: 15,
     requiredVisas: ["Schengen Visa"],
@@ -418,8 +419,7 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
   Object.assign(filters, {
     positions: ["Chief Stewardess", "Captain"],
     departments: ["Command"],
-    yachtLengthMinMetres: 49.9994,
-    yachtLengthMaxMetres: 49.9994,
+    yachtLengthMaxMetres: 50,
     salaryCurrency: "EUR",
     salaryPeriod: "month",
     salaryMin: 8_000,
@@ -480,10 +480,84 @@ test("salary filters require the published currency and period and use inclusive
 
 test("normalizes feet to metres at small and large boundaries", () => {
   assert.equal(publicJobYachtLengthMetres(1, "ft"), 0.3048);
+  assert.equal(publicJobYachtLengthMetres(88, "ft"), 26.8224);
   assert.equal(publicJobYachtLengthMetres(100, "ft"), 30.48);
   assert.equal(publicJobYachtLengthMetres(100, "m"), 100);
   assert.equal(publicJobYachtLengthMetres(0, "ft"), null);
   assert.equal(publicJobYachtLengthMetres(null, "m"), null);
+});
+
+test("maximum yacht length uses 5-metre slider steps and omits the zero Any sentinel", () => {
+  const defaults = createDefaultPublicJobSearchFilters();
+  assert.equal(defaults.yachtLengthMaxMetres, null);
+  assert.equal(publicJobSearchParams(defaults).has("lengthMax"), false);
+
+  for (const maximum of [5, 30, 200]) {
+    const parsed = parsePublicJobSearchParams(
+      new URLSearchParams(`lengthMax=${maximum}`),
+      taxonomy,
+    );
+    assert.equal(parsed.ok, true, String(maximum));
+    if (!parsed.ok) continue;
+    assert.equal(parsed.filters.yachtLengthMaxMetres, maximum);
+    assert.equal(
+      publicJobSearchParams(parsed.filters).get("lengthMax"),
+      String(maximum),
+    );
+  }
+
+  assert.equal(
+    parsePublicJobSearchParams(new URLSearchParams("lengthMax=0"), taxonomy).ok,
+    false,
+  );
+});
+
+test("maximum yacht length converts feet to metres and keeps the limit inclusive", () => {
+  const filters = createDefaultPublicJobSearchFilters();
+  filters.yachtLengthMaxMetres = 30;
+
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtLength: 88, yachtLengthUnit: "ft" }),
+      filters,
+    ),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtLength: 30, yachtLengthUnit: "m" }),
+      filters,
+    ),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtLength: 100, yachtLengthUnit: "ft" }),
+      filters,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtLength: 30.0001, yachtLengthUnit: "m" }),
+      filters,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtLength: null, yachtLengthUnit: null }),
+      filters,
+    ),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ yachtLength: null, yachtLengthUnit: null }),
+      createDefaultPublicJobSearchFilters(),
+    ),
+    true,
+  );
 });
 
 test("sort anchors provide stable load-more semantics", () => {

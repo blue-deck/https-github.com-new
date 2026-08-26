@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   BriefcaseBusiness,
   ChevronDown,
@@ -30,6 +36,7 @@ import {
   hasPublicJobSearchFilters,
   parsePublicJobSearchParams,
   publicJobSearchParams,
+  publicJobYachtLengthSlider,
   type PublicJobSearchFilters,
   type PublicJobSearchSort,
 } from "../lib/publicJobSearch";
@@ -671,23 +678,16 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <RangeField
-                    label={c.yachtLength}
+                  <MaximumLengthSlider
+                    label={c.maximumYachtLength}
+                    anyLabel={c.anyYachtLength}
+                    upToLabel={c.upTo}
                     unit={c.metres}
-                    minimum={draftFilters.yachtLengthMinMetres}
-                    maximum={draftFilters.yachtLengthMaxMetres}
-                    minValue={0.01}
-                    maxValue={999}
-                    step={0.01}
-                    minLabel={c.minimum}
-                    maxLabel={c.maximum}
-                    onMinimumChange={(yachtLengthMinMetres) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtLengthMinMetres,
-                      }))
-                    }
-                    onMaximumChange={(yachtLengthMaxMetres) =>
+                    value={draftFilters.yachtLengthMaxMetres}
+                    minimum={publicJobYachtLengthSlider.minimumMetres}
+                    maximum={publicJobYachtLengthSlider.maximumMetres}
+                    step={publicJobYachtLengthSlider.stepMetres}
+                    onChange={(yachtLengthMaxMetres) =>
                       updateDraftFilters((current) => ({
                         ...current,
                         yachtLengthMaxMetres,
@@ -1041,6 +1041,70 @@ function NumberField({
         onChange={(event) => onChange(readNullableNumber(event.target.value))}
         className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
       />
+    </label>
+  );
+}
+
+function MaximumLengthSlider({
+  label,
+  anyLabel,
+  upToLabel,
+  unit,
+  value,
+  minimum,
+  maximum,
+  step,
+  onChange,
+}: {
+  label: string;
+  anyLabel: string;
+  upToLabel: string;
+  unit: string;
+  value: number | null;
+  minimum: number;
+  maximum: number;
+  step: number;
+  onChange: (value: number | null) => void;
+}) {
+  const sliderValue = value ?? minimum;
+  const progress = ((sliderValue - minimum) / (maximum - minimum)) * 100;
+  const valueText =
+    value === null ? anyLabel : `${upToLabel} ${value} ${unit}`;
+
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1.5 flex min-h-5 items-center justify-between gap-3">
+        <span className="text-xs font-bold text-slate-600">{label}</span>
+        <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-800">
+          {valueText}
+        </span>
+      </span>
+      <span className="block rounded-xl border border-slate-200 bg-white px-3 py-2">
+        <input
+          type="range"
+          value={sliderValue}
+          min={minimum}
+          max={maximum}
+          step={step}
+          aria-label={label}
+          aria-valuetext={valueText}
+          onChange={(event) => {
+            const nextValue = Number(event.target.value);
+            onChange(nextValue === minimum ? null : nextValue);
+          }}
+          style={
+            { "--bd-range-progress": `${progress}%` } as CSSProperties
+          }
+          className="bd-job-length-slider"
+        />
+        <span
+          aria-hidden
+          className="mt-0.5 flex justify-between text-[11px] font-semibold text-slate-400"
+        >
+          <span>{minimum} {unit}</span>
+          <span>{maximum} {unit}</span>
+        </span>
+      </span>
     </label>
   );
 }
@@ -1546,17 +1610,9 @@ function buildActiveFilterChips(
 
   addNumberChip(
     chips,
-    "length-min",
-    filters.yachtLengthMinMetres,
-    `${c.yachtLength} ≥`,
-    c.metres,
-    (current) => ({ ...current, yachtLengthMinMetres: null }),
-  );
-  addNumberChip(
-    chips,
     "length-max",
     filters.yachtLengthMaxMetres,
-    `${c.yachtLength} ≤`,
+    `${c.maximumYachtLength}: ${c.upTo}`,
     c.metres,
     (current) => ({ ...current, yachtLengthMaxMetres: null }),
   );
@@ -1664,21 +1720,25 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   const tooManyDecimals = (value: number | null) =>
     value !== null && !/^\d+(?:\.\d{1,2})?$/.test(String(value));
   if (
-    outside(filters.yachtLengthMinMetres, 0.01, 999) ||
-    outside(filters.yachtLengthMaxMetres, 0.01, 999) ||
+    outside(
+      filters.yachtLengthMaxMetres,
+      publicJobYachtLengthSlider.stepMetres,
+      publicJobYachtLengthSlider.maximumMetres,
+      true,
+    ) ||
+    (filters.yachtLengthMaxMetres !== null &&
+      filters.yachtLengthMaxMetres % publicJobYachtLengthSlider.stepMetres !==
+        0) ||
     outside(filters.crewMemberCountMin, 1, 200, true) ||
     outside(filters.crewMemberCountMax, 1, 200, true) ||
     outside(filters.salaryMin, 0, 99_999_999.99) ||
     outside(filters.salaryMax, 0, 99_999_999.99) ||
-    tooManyDecimals(filters.yachtLengthMinMetres) ||
-    tooManyDecimals(filters.yachtLengthMaxMetres) ||
     tooManyDecimals(filters.salaryMin) ||
     tooManyDecimals(filters.salaryMax)
   ) {
     return c.valueError;
   }
   if (
-    reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
     reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
     reversed(filters.salaryMin, filters.salaryMax)
   ) {
@@ -1705,7 +1765,6 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.candidateTypes.length > 0 ? 1 : 0) +
     filters.yachtTypes.length +
     filters.yachtFlagCountryCodes.length +
-    (filters.yachtLengthMinMetres !== null ? 1 : 0) +
     (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
     (filters.crewMemberCountMax !== null ? 1 : 0) +
@@ -1872,6 +1931,9 @@ const copy = {
     anyFlag: "Any flag",
     searchFlags: "Search flags",
     yachtLength: "Yacht length",
+    maximumYachtLength: "Maximum yacht length",
+    anyYachtLength: "Any length",
+    upTo: "Up to",
     metres: "m",
     crewCount: "Crew size",
     minimum: "Min",
@@ -1962,6 +2024,9 @@ const copy = {
     anyFlag: "Tüm bayraklar",
     searchFlags: "Bayrak ara",
     yachtLength: "Yat uzunluğu",
+    maximumYachtLength: "Maksimum yat uzunluğu",
+    anyYachtLength: "Tüm uzunluklar",
+    upTo: "En fazla",
     metres: "m",
     crewCount: "Mürettebat sayısı",
     minimum: "Min",

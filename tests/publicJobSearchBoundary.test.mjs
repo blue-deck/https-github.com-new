@@ -258,7 +258,7 @@ test("advanced job filters use one flat responsive grid without dropping control
 
   const labels = [
     ...advanced.matchAll(
-      /<(?:MultiSelectField|FilterSelect|RangeField|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
+      /<(?:MultiSelectField|FilterSelect|MaximumLengthSlider|RangeField|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
     ),
   ]
     .map((match) => match[1])
@@ -270,7 +270,7 @@ test("advanced job filters use one flat responsive grid without dropping control
       "teamCouple",
       "yachtType",
       "yachtFlag",
-      "yachtLength",
+      "maximumYachtLength",
       "crewCount",
       "visas",
       "currency",
@@ -297,6 +297,55 @@ test("advanced job filters use one flat responsive grid without dropping control
       "salaryPeriods",
     ].sort(),
   );
+});
+
+test("yacht length is a single accessible 0–200 m maximum slider backed by exact unit conversion", async () => {
+  const [client, search, server, manager, yachtSizeField, styles] =
+    await Promise.all([
+      source("app/jobs/JobsClient.tsx"),
+      source("app/lib/publicJobSearch.ts"),
+      source("app/lib/publicJobSearchServer.ts"),
+      source("app/hiring/jobs/JobPostsManager.tsx"),
+      source("app/components/YachtSizeField.tsx"),
+      source("app/globals.css"),
+    ]);
+
+  assert.match(client, /<MaximumLengthSlider/);
+  assert.match(client, /type="range"/);
+  assert.match(client, /aria-valuetext=\{valueText\}/);
+  assert.match(client, /value=\{draftFilters\.yachtLengthMaxMetres\}/);
+  assert.match(
+    client,
+    /minimum=\{publicJobYachtLengthSlider\.minimumMetres\}/,
+  );
+  assert.match(
+    client,
+    /maximum=\{publicJobYachtLengthSlider\.maximumMetres\}/,
+  );
+  assert.match(client, /step=\{publicJobYachtLengthSlider\.stepMetres\}/);
+  assert.match(client, /nextValue === minimum \? null : nextValue/);
+  assert.doesNotMatch(client, /yachtLengthMinMetres/);
+
+  assert.match(search, /minimumMetres: 0/);
+  assert.match(search, /maximumMetres: 200/);
+  assert.match(search, /stepMetres: 5/);
+  assert.match(search, /const metres = unit === "ft" \? value \* 0\.3048 : value/);
+  assert.match(
+    search,
+    /yachtLengthMetres > filters\.yachtLengthMaxMetres/,
+  );
+  assert.doesNotMatch(search, /yachtLengthMinMetres/);
+  assert.doesNotMatch(search, /"lengthMin"/);
+
+  assert.match(styles, /\.bd-job-length-slider/);
+  assert.match(styles, /::-webkit-slider-thumb/);
+  assert.match(styles, /::-moz-range-thumb/);
+  assert.match(styles, /--bd-range-progress/);
+
+  assert.match(server, /matchesPublicJobSearch\(job, filters\)/);
+  assert.match(manager, /<YachtSizeField/);
+  assert.match(yachtSizeField, /<option value="ft">/);
+  assert.match(yachtSizeField, /<option value="m">/);
 });
 
 test("required languages remain job data but are not a public job filter", async () => {

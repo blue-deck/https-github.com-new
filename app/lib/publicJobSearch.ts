@@ -19,6 +19,11 @@ export const publicJobSearchSorts = [
 
 export const defaultPublicJobSearchLimit = 20;
 export const maximumPublicJobSearchCursorLength = 2_048;
+export const publicJobYachtLengthSlider = {
+  minimumMetres: 0,
+  maximumMetres: 200,
+  stepMetres: 5,
+} as const;
 
 export type PublicJobSearchSort = (typeof publicJobSearchSorts)[number];
 
@@ -43,7 +48,6 @@ export type PublicJobSearchFilters = {
   candidateTypes: JobCandidateType[];
   yachtTypes: JobYachtType[];
   yachtFlagCountryCodes: string[];
-  yachtLengthMinMetres: number | null;
   yachtLengthMaxMetres: number | null;
   crewMemberCountMin: number | null;
   crewMemberCountMax: number | null;
@@ -86,7 +90,6 @@ const queryKeys = new Set([
   "candidateType",
   "yachtType",
   "yachtFlag",
-  "lengthMin",
   "lengthMax",
   "crewMin",
   "crewMax",
@@ -112,7 +115,6 @@ const multiValueLimits: Record<string, number> = {
 const scalarKeys = [
   "q",
   "location",
-  "lengthMin",
   "lengthMax",
   "crewMin",
   "crewMax",
@@ -138,7 +140,6 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     candidateTypes: [],
     yachtTypes: [],
     yachtFlagCountryCodes: [],
-    yachtLengthMinMetres: null,
     yachtLengthMaxMetres: null,
     crewMemberCountMin: null,
     crewMemberCountMax: null,
@@ -225,15 +226,11 @@ export function parsePublicJobSearchParams(
     return { ok: false, error: invalidEnumList.error };
   }
 
-  const yachtLengthMinMetres = decimalFilter(
-    searchParams.get("lengthMin"),
-    0.01,
-    999,
-  );
-  const yachtLengthMaxMetres = decimalFilter(
+  const yachtLengthMaxMetres = steppedIntegerFilter(
     searchParams.get("lengthMax"),
-    0.01,
-    999,
+    publicJobYachtLengthSlider.stepMetres,
+    publicJobYachtLengthSlider.maximumMetres,
+    publicJobYachtLengthSlider.stepMetres,
   );
   const crewMemberCountMin = integerFilter(
     searchParams.get("crewMin"),
@@ -257,7 +254,6 @@ export function parsePublicJobSearchParams(
   );
 
   const numericFilters = [
-    yachtLengthMinMetres,
     yachtLengthMaxMetres,
     crewMemberCountMin,
     crewMemberCountMax,
@@ -306,7 +302,6 @@ export function parsePublicJobSearchParams(
     candidateTypes: successfulList(candidateTypes),
     yachtTypes: successfulList(yachtTypes),
     yachtFlagCountryCodes: successfulList(yachtFlagCountryCodes),
-    yachtLengthMinMetres: numericValue(yachtLengthMinMetres),
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
     crewMemberCountMin: numericValue(crewMemberCountMin),
     crewMemberCountMax: numericValue(crewMemberCountMax),
@@ -320,7 +315,6 @@ export function parsePublicJobSearchParams(
   };
 
   if (
-    reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
     reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
     reversed(filters.salaryMin, filters.salaryMax)
   ) {
@@ -357,7 +351,6 @@ export function publicJobSearchParams(
   setList(params, "candidateType", filters.candidateTypes);
   setList(params, "yachtType", filters.yachtTypes);
   setList(params, "yachtFlag", filters.yachtFlagCountryCodes);
-  setNumber(params, "lengthMin", filters.yachtLengthMinMetres);
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
   setNumber(params, "crewMin", filters.crewMemberCountMin);
   setNumber(params, "crewMax", filters.crewMemberCountMax);
@@ -427,11 +420,9 @@ export function matchesPublicJobSearch(
     job.yachtLengthUnit,
   );
   if (
-    !numberInRange(
-      yachtLengthMetres,
-      filters.yachtLengthMinMetres,
-      filters.yachtLengthMaxMetres,
-    )
+    filters.yachtLengthMaxMetres !== null &&
+    (yachtLengthMetres === null ||
+      yachtLengthMetres > filters.yachtLengthMaxMetres)
   ) {
     return false;
   }
@@ -899,6 +890,19 @@ function integerFilter(value: string | null, minimum: number, maximum: number) {
   const number = Number(value);
   return Number.isSafeInteger(number) && number >= minimum && number <= maximum
     ? { ok: true as const, value: number }
+    : { ok: false as const };
+}
+
+function steppedIntegerFilter(
+  value: string | null,
+  minimum: number,
+  maximum: number,
+  step: number,
+) {
+  const result = integerFilter(value, minimum, maximum);
+  if (!result.ok || result.value === null) return result;
+  return (result.value - minimum) % step === 0
+    ? result
     : { ok: false as const };
 }
 
