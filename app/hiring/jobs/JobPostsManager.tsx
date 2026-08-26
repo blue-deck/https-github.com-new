@@ -33,6 +33,7 @@ import { YachtSizeField } from "../../components/YachtSizeField";
 import {
   formatJobMinimumYachtExperience,
   formatJobRequiredLanguage,
+  formatJobSalaryAmountInput,
   formatJobSalaryCurrencyOption,
   formatJobSalaryPeriod,
   formatJobSmokerPolicy,
@@ -58,6 +59,8 @@ import {
   maximumJobCharacteristicSelections,
   maximumJobSkillSelections,
   maximumJobVisaSelections,
+  normalizeJobSalaryAmountInput,
+  parseJobSalaryAmountInput,
   type EmployerJobPost,
   type JobCandidateType,
   type JobCertificate,
@@ -221,7 +224,7 @@ const copy = {
     listHint: "One item per line",
     benefitsPlaceholder: "Rotation schedule\nTravel covered",
     salary: "Salary",
-    salaryHelp: "Salary is shown on the public job card.",
+    salaryHelp: "Shown on the public job card. Maximum 1.000.000.",
     salaryAmount: "Salary",
     currency: "Currency",
     period: "Period",
@@ -342,7 +345,7 @@ const copy = {
     listHint: "Her satıra bir madde",
     benefitsPlaceholder: "Rotasyon programı\nSeyahat masrafları",
     salary: "Maaş",
-    salaryHelp: "Maaş public ilan kartında gösterilir.",
+    salaryHelp: "Public ilan kartında gösterilir. Maksimum 1.000.000.",
     salaryAmount: "Maaş",
     currency: "Para birimi",
     period: "Dönem",
@@ -912,18 +915,24 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
                         </legend>
                         <div className="mt-2 flex min-h-12 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-2 focus-within:ring-cyan-100 has-[input:disabled]:cursor-not-allowed has-[input:disabled]:bg-slate-100 has-[input:disabled]:opacity-65">
                           <input
-                            type="number"
-                            inputMode="decimal"
-                            min="0.01"
-                            step="0.01"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9.]*"
+                            maxLength={9}
+                            autoComplete="off"
                             aria-label={c.salaryAmount}
                             value={form.salaryAmount}
                             onChange={(event) =>
-                              updateForm("salaryAmount", event.target.value)
+                              updateForm(
+                                "salaryAmount",
+                                normalizeJobSalaryAmountInput(
+                                  event.target.value,
+                                ),
+                              )
                             }
                             disabled={saving}
                             required
-                            className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold text-slate-950 outline-none [appearance:textfield] placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-4 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                            className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold tabular-nums text-slate-950 outline-none placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] disabled:cursor-not-allowed sm:px-4"
                           />
                           <select
                             aria-label={c.currency}
@@ -1411,7 +1420,9 @@ function formFromJob(job: EmployerJobPost): FormState {
     salaryAmount:
       job.salary?.min === null && job.salary?.max === null
         ? ""
-        : String(job.salary?.min ?? job.salary?.max ?? ""),
+        : formatJobSalaryAmountInput(
+            job.salary?.min ?? job.salary?.max ?? "",
+          ),
     salaryCurrency: isJobSalaryCurrencyOption(job.salary?.currency)
       ? job.salary.currency
       : "EUR",
@@ -1777,8 +1788,8 @@ function inputNumber(
   value: string,
 ): { ok: true; value: number | null } | { ok: false } {
   if (!value.trim()) return { ok: true, value: null };
-  const number = Number(value);
-  if (!Number.isFinite(number) || number < 0 || number > 99_999_999.99) {
+  const number = parseJobSalaryAmountInput(value);
+  if (number === null) {
     return { ok: false };
   }
   return { ok: true, value: number };

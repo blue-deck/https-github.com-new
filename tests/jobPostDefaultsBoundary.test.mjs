@@ -52,22 +52,21 @@ test("Any is a persisted candidate type and the database default", async () => {
   );
 });
 
-test("salary input hides native number spinner controls", async () => {
+test("salary input uses the shared grouped whole-number behavior", async () => {
   const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
   const salaryInput = manager.slice(
     manager.indexOf('aria-label={c.salaryAmount}') - 300,
     manager.indexOf('aria-label={c.currency}'),
   );
 
-  assert.match(salaryInput, /\[appearance:textfield\]/);
-  assert.match(
-    salaryInput,
-    /\[&::-webkit-inner-spin-button\]:appearance-none/,
-  );
-  assert.match(
-    salaryInput,
-    /\[&::-webkit-outer-spin-button\]:appearance-none/,
-  );
+  assert.match(salaryInput, /type="text"/);
+  assert.match(salaryInput, /inputMode="numeric"/);
+  assert.match(salaryInput, /pattern="\[0-9\.\]\*"/);
+  assert.match(salaryInput, /maxLength=\{9\}/);
+  assert.match(manager, /normalizeJobSalaryAmountInput\(/);
+  assert.match(manager, /parseJobSalaryAmountInput\(value\)/);
+  assert.match(manager, /formatJobSalaryAmountInput\(/);
+  assert.doesNotMatch(salaryInput, /type="number"/);
 });
 
 test("salary amount, currency, and period share one control", async () => {

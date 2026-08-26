@@ -7,6 +7,7 @@ import type {
   JobYachtType,
   PublicJobPost,
 } from "./jobPosts";
+import { maximumJobSalaryAmount } from "./jobSalaryAmount.js";
 
 export const publicJobSearchSorts = [
   "newest",
@@ -233,15 +234,15 @@ export function parsePublicJobSearchParams(
     1,
     200,
   );
-  const salaryMin = decimalFilter(
+  const salaryMin = integerFilter(
     searchParams.get("salaryMin"),
     0,
-    99_999_999.99,
+    maximumJobSalaryAmount,
   );
-  const salaryMax = decimalFilter(
+  const salaryMax = integerFilter(
     searchParams.get("salaryMax"),
     0,
-    99_999_999.99,
+    maximumJobSalaryAmount,
   );
 
   const numericFilters = [
@@ -852,17 +853,6 @@ function boundedText(value: string | null, maximumLength: number) {
     return null;
   }
   return text;
-}
-
-function decimalFilter(value: string | null, minimum: number, maximum: number) {
-  if (value === null || value === "") {
-    return { ok: true as const, value: null };
-  }
-  if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return { ok: false as const };
-  const number = Number(value);
-  return Number.isFinite(number) && number >= minimum && number <= maximum
-    ? { ok: true as const, value: number }
-    : { ok: false as const };
 }
 
 function integerFilter(value: string | null, minimum: number, maximum: number) {

@@ -22,6 +22,7 @@ import {
   isJobYachtType,
   maximumJobCertificateSelections,
   maximumJobCharacteristicSelections,
+  maximumJobSalaryAmount,
   maximumJobSkillSelections,
   maximumJobVisaSelections,
   type EmployerJobPost,
@@ -456,7 +457,7 @@ export function parseJobPostMutation(
   if (!salaryMin.ok || !salaryMax.ok) {
     return {
       ok: false,
-      error: "Salary values must be positive numbers below 100,000,000.",
+      error: "Salary values must be whole numbers between 0 and 1,000,000.",
     };
   }
   if (
@@ -1213,12 +1214,13 @@ function optionalMoney(
   if (
     typeof value !== "number" ||
     !Number.isFinite(value) ||
+    !Number.isSafeInteger(value) ||
     value < 0 ||
-    value > 99_999_999.99
+    value > maximumJobSalaryAmount
   ) {
     return { ok: false };
   }
-  return { ok: true, value: Math.round(value * 100) / 100 };
+  return { ok: true, value };
 }
 
 function optionalJobYachtType(value: unknown): JobYachtType | null | undefined {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -24,11 +25,15 @@ import { useLanguage } from "../components/LanguageProvider";
 import { formatCountryWithFlag, nationalityOptions } from "../lib/countries";
 import {
   formatJobEmploymentType,
+  formatJobSalaryAmountInput,
   formatJobSalaryCurrencyOption,
   formatJobSalaryPeriod,
   formatJobVisa,
   formatJobYachtType,
   isJobTeamCouple,
+  maximumJobSalaryAmount,
+  normalizeJobSalaryAmountInput,
+  parseJobSalaryAmountInput,
   type PublicJobCard as ServerPublicJobCard,
 } from "../lib/jobPosts";
 import {
@@ -723,12 +728,49 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <FilterSelect
-                    label={c.currency}
-                    placeholder={c.anyCurrency}
-                    value={draftFilters.salaryCurrency || ""}
-                    options={optionSets.salaryCurrencies}
-                    onChange={(value) =>
+                  <SalaryFilterGroup
+                    salaryLabel={c.salary}
+                    minimumLabel={c.minimumSalary}
+                    maximumLabel={c.maximumSalary}
+                    currencyLabel={c.currency}
+                    anyCurrencyLabel={c.anyCurrencyOption}
+                    periodLabel={c.payPeriod}
+                    anyPeriodLabel={c.anyPeriod}
+                    minimum={draftFilters.salaryMin}
+                    maximum={draftFilters.salaryMax}
+                    currency={draftFilters.salaryCurrency || ""}
+                    period={draftFilters.salaryPeriod || ""}
+                    currencyOptions={optionSets.salaryCurrencies}
+                    periodOptions={optionSets.salaryPeriods}
+                    onMinimumChange={(salaryMin) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        salaryMin,
+                        salaryCurrency:
+                          salaryMin !== null && !current.salaryCurrency
+                            ? "EUR"
+                            : current.salaryCurrency,
+                        salaryPeriod:
+                          salaryMin !== null && !current.salaryPeriod
+                            ? "month"
+                            : current.salaryPeriod,
+                      }))
+                    }
+                    onMaximumChange={(salaryMax) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        salaryMax,
+                        salaryCurrency:
+                          salaryMax !== null && !current.salaryCurrency
+                            ? "EUR"
+                            : current.salaryCurrency,
+                        salaryPeriod:
+                          salaryMax !== null && !current.salaryPeriod
+                            ? "month"
+                            : current.salaryPeriod,
+                      }))
+                    }
+                    onCurrencyChange={(value) =>
                       updateDraftFilters((current) =>
                         clearSalaryDependency(current, {
                           salaryCurrency: (value ||
@@ -736,13 +778,7 @@ export function JobsClient({
                         }),
                       )
                     }
-                  />
-                  <FilterSelect
-                    label={c.payPeriod}
-                    placeholder={c.anyPeriod}
-                    value={draftFilters.salaryPeriod || ""}
-                    options={optionSets.salaryPeriods}
-                    onChange={(value) =>
+                    onPeriodChange={(value) =>
                       updateDraftFilters((current) =>
                         clearSalaryDependency(current, {
                           salaryPeriod: (value ||
@@ -751,50 +787,6 @@ export function JobsClient({
                       )
                     }
                   />
-                  <div className="grid min-w-0 grid-cols-2 gap-2">
-                    <NumberField
-                      label={c.minimumSalary}
-                      value={draftFilters.salaryMin}
-                      min={0}
-                      max={99_999_999.99}
-                      step={0.01}
-                      onChange={(salaryMin) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          salaryMin,
-                          salaryCurrency:
-                            salaryMin !== null && !current.salaryCurrency
-                              ? "EUR"
-                              : current.salaryCurrency,
-                          salaryPeriod:
-                            salaryMin !== null && !current.salaryPeriod
-                              ? "month"
-                              : current.salaryPeriod,
-                        }))
-                      }
-                    />
-                    <NumberField
-                      label={c.maximumSalary}
-                      value={draftFilters.salaryMax}
-                      min={0}
-                      max={99_999_999.99}
-                      step={0.01}
-                      onChange={(salaryMax) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          salaryMax,
-                          salaryCurrency:
-                            salaryMax !== null && !current.salaryCurrency
-                              ? "EUR"
-                              : current.salaryCurrency,
-                          salaryPeriod:
-                            salaryMax !== null && !current.salaryPeriod
-                              ? "month"
-                              : current.salaryPeriod,
-                        }))
-                      }
-                    />
-                  </div>
                 </div>
                 <div className="mt-4 flex items-center justify-end gap-4">
                   <JobFilterClearAction
@@ -1036,6 +1028,154 @@ function NumberField({
         className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
       />
     </label>
+  );
+}
+
+function SalaryFilterGroup({
+  salaryLabel,
+  minimumLabel,
+  maximumLabel,
+  currencyLabel,
+  anyCurrencyLabel,
+  periodLabel,
+  anyPeriodLabel,
+  minimum,
+  maximum,
+  currency,
+  period,
+  currencyOptions,
+  periodOptions,
+  onMinimumChange,
+  onMaximumChange,
+  onCurrencyChange,
+  onPeriodChange,
+}: {
+  salaryLabel: string;
+  minimumLabel: string;
+  maximumLabel: string;
+  currencyLabel: string;
+  anyCurrencyLabel: string;
+  periodLabel: string;
+  anyPeriodLabel: string;
+  minimum: number | null;
+  maximum: number | null;
+  currency: string;
+  period: string;
+  currencyOptions: readonly SelectOption[];
+  periodOptions: readonly SelectOption[];
+  onMinimumChange: (value: number | null) => void;
+  onMaximumChange: (value: number | null) => void;
+  onCurrencyChange: (value: string) => void;
+  onPeriodChange: (value: string) => void;
+}) {
+  return (
+    <fieldset className="min-w-0 rounded-2xl border border-cyan-100 bg-white/80 p-3 sm:col-span-2 sm:p-4 lg:col-span-2">
+      <legend className="sr-only">{salaryLabel}</legend>
+      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+        <SalaryAmountField
+          label={minimumLabel}
+          currencyLabel={currencyLabel}
+          anyCurrencyLabel={anyCurrencyLabel}
+          value={minimum}
+          currency={currency}
+          currencyOptions={currencyOptions}
+          onAmountChange={onMinimumChange}
+          onCurrencyChange={onCurrencyChange}
+        />
+        <SalaryAmountField
+          label={maximumLabel}
+          currencyLabel={currencyLabel}
+          anyCurrencyLabel={anyCurrencyLabel}
+          value={maximum}
+          currency={currency}
+          currencyOptions={currencyOptions}
+          onAmountChange={onMaximumChange}
+          onCurrencyChange={onCurrencyChange}
+        />
+      </div>
+      <div className="mt-3 min-w-0 sm:w-[calc(50%-0.375rem)]">
+        <FilterSelect
+          allowEmpty
+          label={periodLabel}
+          placeholder={anyPeriodLabel}
+          value={period}
+          options={periodOptions}
+          onChange={onPeriodChange}
+        />
+      </div>
+    </fieldset>
+  );
+}
+
+function SalaryAmountField({
+  label,
+  currencyLabel,
+  anyCurrencyLabel,
+  value,
+  currency,
+  currencyOptions,
+  onAmountChange,
+  onCurrencyChange,
+}: {
+  label: string;
+  currencyLabel: string;
+  anyCurrencyLabel: string;
+  value: number | null;
+  currency: string;
+  currencyOptions: readonly SelectOption[];
+  onAmountChange: (value: number | null) => void;
+  onCurrencyChange: (value: string) => void;
+}) {
+  const inputId = useId();
+
+  return (
+    <div className="min-w-0">
+      <label
+        htmlFor={inputId}
+        className="mb-1.5 block text-xs font-bold text-slate-600"
+      >
+        {label}
+      </label>
+      <div className="flex min-h-12 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100">
+        <input
+          id={inputId}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9.]*"
+          maxLength={9}
+          autoComplete="off"
+          value={formatJobSalaryAmountInput(value)}
+          onChange={(event) =>
+            onAmountChange(
+              parseJobSalaryAmountInput(
+                normalizeJobSalaryAmountInput(event.target.value),
+              ),
+            )
+          }
+          className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold tabular-nums text-slate-950 outline-none placeholder:text-slate-400"
+        />
+        <span className="relative flex w-[7.75rem] shrink-0 border-l border-slate-200 bg-slate-50 sm:w-[8.25rem]">
+          <select
+            aria-label={`${label} ${currencyLabel}`}
+            title={`${label} ${currencyLabel}`}
+            value={currency}
+            onChange={(event) => onCurrencyChange(event.target.value)}
+            className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-3 pr-7 text-xs font-black text-slate-800 outline-none sm:text-sm"
+          >
+            <option value="">{anyCurrencyLabel}</option>
+            {currencyOptions.map((option) => (
+              <option data-i18n-ignore key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            aria-hidden
+          />
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -1555,34 +1695,40 @@ function buildActiveFilterChips(
     })),
   );
 
-  if (filters.salaryCurrency) {
-    add("salary-currency", filters.salaryCurrency, (current) =>
-      clearSalaryDependency(current, { salaryCurrency: null }),
-    );
-  }
-  if (filters.salaryPeriod) {
+  if (
+    filters.salaryCurrency ||
+    filters.salaryPeriod ||
+    filters.salaryMin !== null ||
+    filters.salaryMax !== null
+  ) {
+    let amount = "";
+    if (filters.salaryMin !== null && filters.salaryMax !== null) {
+      const minimum = formatJobSalaryAmountInput(filters.salaryMin);
+      const maximum = formatJobSalaryAmountInput(filters.salaryMax);
+      amount = minimum === maximum ? minimum : `${minimum}–${maximum}`;
+    } else if (filters.salaryMin !== null) {
+      amount = `${c.from} ${formatJobSalaryAmountInput(filters.salaryMin)}`;
+    } else if (filters.salaryMax !== null) {
+      amount = `${c.upTo} ${formatJobSalaryAmountInput(filters.salaryMax)}`;
+    }
+
+    const salaryAmount =
+      amount && filters.salaryCurrency
+        ? `${amount} ${filters.salaryCurrency}`
+        : amount;
+    const salaryDetails = [
+      salaryAmount,
+      !amount ? filters.salaryCurrency || "" : "",
+      filters.salaryPeriod
+        ? formatJobSalaryPeriod(filters.salaryPeriod, language)
+        : "",
+    ].filter(Boolean);
     add(
-      "salary-period",
-      formatJobSalaryPeriod(filters.salaryPeriod, language),
-      (current) => clearSalaryDependency(current, { salaryPeriod: null }),
+      "salary",
+      `${c.salary}: ${salaryDetails.join(" · ")}`,
+      clearSalaryFilters,
     );
   }
-  addNumberChip(
-    chips,
-    "salary-min",
-    filters.salaryMin,
-    `${c.minimumSalary}:`,
-    filters.salaryCurrency || "",
-    (current) => ({ ...current, salaryMin: null }),
-  );
-  addNumberChip(
-    chips,
-    "salary-max",
-    filters.salaryMax,
-    `${c.maximumSalary}:`,
-    filters.salaryCurrency || "",
-    (current) => ({ ...current, salaryMax: null }),
-  );
 
   return chips;
 }
@@ -1618,6 +1764,17 @@ function clearSalaryDependency(
   return next;
 }
 
+function clearSalaryFilters(filters: PublicJobSearchFilters) {
+  return {
+    ...filters,
+    salaryCurrency: null,
+    salaryPeriod: null,
+    salaryMin: null,
+    salaryMax: null,
+    sort: filters.sort.startsWith("salary_") ? "newest" : filters.sort,
+  } as PublicJobSearchFilters;
+}
+
 function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   const reversed = (minimum: number | null, maximum: number | null) =>
     minimum !== null && maximum !== null && minimum > maximum;
@@ -1632,8 +1789,6 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
       value < minimum ||
       value > maximum ||
       (integer && !Number.isSafeInteger(value)));
-  const tooManyDecimals = (value: number | null) =>
-    value !== null && !/^\d+(?:\.\d{1,2})?$/.test(String(value));
   if (
     outside(
       filters.yachtLengthMaxMetres,
@@ -1645,10 +1800,8 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
       filters.yachtLengthMaxMetres % publicJobYachtLengthSlider.stepMetres !==
         0) ||
     outside(filters.crewMemberCountMin, 1, 200, true) ||
-    outside(filters.salaryMin, 0, 99_999_999.99) ||
-    outside(filters.salaryMax, 0, 99_999_999.99) ||
-    tooManyDecimals(filters.salaryMin) ||
-    tooManyDecimals(filters.salaryMax)
+    outside(filters.salaryMin, 0, maximumJobSalaryAmount, true) ||
+    outside(filters.salaryMax, 0, maximumJobSalaryAmount, true)
   ) {
     return c.valueError;
   }
@@ -1679,10 +1832,12 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
     filters.requiredVisas.length +
-    (filters.salaryCurrency ? 1 : 0) +
-    (filters.salaryPeriod ? 1 : 0) +
-    (filters.salaryMin !== null ? 1 : 0) +
-    (filters.salaryMax !== null ? 1 : 0)
+    (filters.salaryCurrency ||
+    filters.salaryPeriod ||
+    filters.salaryMin !== null ||
+    filters.salaryMax !== null
+      ? 1
+      : 0)
   );
 }
 
@@ -1848,8 +2003,10 @@ const copy = {
     minimumCrewSize: "Minimum crew size",
     visas: "Visas",
     anyVisa: "Any visa",
+    salary: "Salary",
+    from: "From",
     currency: "Salary currency",
-    anyCurrency: "Any currency",
+    anyCurrencyOption: "Any",
     payPeriod: "Salary period",
     anyPeriod: "Any period",
     minimumSalary: "Minimum salary",
@@ -1939,8 +2096,10 @@ const copy = {
     minimumCrewSize: "Minimum mürettebat sayısı",
     visas: "Vizeler",
     anyVisa: "Tüm vizeler",
+    salary: "Maaş",
+    from: "Başlangıç",
     currency: "Ücret para birimi",
-    anyCurrency: "Tüm para birimleri",
+    anyCurrencyOption: "Tümü",
     payPeriod: "Ücret dönemi",
     anyPeriod: "Tüm dönemler",
     minimumSalary: "Minimum ücret",

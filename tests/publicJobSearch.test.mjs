@@ -51,8 +51,8 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["visa", "Schengen Visa"],
     ["salaryCurrency", "EUR"],
     ["salaryPeriod", "month"],
-    ["salaryMin", "6000"],
-    ["salaryMax", "9000"],
+    ["salaryMin", "1000"],
+    ["salaryMax", "10000"],
     ["sort", "salary_highest"],
   ]) {
     source.append(key, value);
@@ -65,6 +65,8 @@ test("strictly parses and round-trips the complete public job filter contract", 
   assert.equal(parsed.filters.yachtLengthMaxMetres, 70);
   assert.equal(parsed.filters.crewMemberCountMin, 8);
   assert.equal(parsed.filters.salaryCurrency, "EUR");
+  assert.equal(publicJobSearchParams(parsed.filters).get("salaryMin"), "1000");
+  assert.equal(publicJobSearchParams(parsed.filters).get("salaryMax"), "10000");
 
   const reparsed = parsePublicJobSearchParams(
     publicJobSearchParams(parsed.filters),
@@ -251,6 +253,12 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
     "lengthMax=7",
     "lengthMax=205",
     "salaryMax=Infinity&salaryCurrency=EUR&salaryPeriod=month",
+    "salaryMax=1000001&salaryCurrency=EUR&salaryPeriod=month",
+    "salaryMax=1000.5&salaryCurrency=EUR&salaryPeriod=month",
+    "salaryMax=1.000&salaryCurrency=EUR&salaryPeriod=month",
+    "salaryMax=1%2C000&salaryCurrency=EUR&salaryPeriod=month",
+    "salaryMax=1e3&salaryCurrency=EUR&salaryPeriod=month",
+    "salaryMax=1000&salaryMax=2000&salaryCurrency=EUR&salaryPeriod=month",
     "crewMin=-1",
     "crewMin=0",
     "crewMin=1.5",
@@ -265,6 +273,24 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
       query,
     );
   }
+});
+
+test("accepts the exact whole-number salary boundaries", () => {
+  const parsed = parsePublicJobSearchParams(
+    new URLSearchParams({
+      salaryCurrency: "EUR",
+      salaryPeriod: "month",
+      salaryMin: "0",
+      salaryMax: "1000000",
+    }),
+    taxonomy,
+  );
+
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  assert.equal(parsed.filters.salaryMin, 0);
+  assert.equal(parsed.filters.salaryMax, 1_000_000);
+  assert.equal(publicJobSearchParams(parsed.filters).get("salaryMax"), "1000000");
 });
 
 test("rejects removed maximum-crew, minimum-length, experience, brand, language, requirement, policy, build-year, date-recency, and page-size filters", () => {

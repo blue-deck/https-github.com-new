@@ -47,7 +47,8 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
   assert.match(client, /setLoadState\("error"\)/);
   assert.match(client, /setLoadMoreFailed\(true\)/);
   assert.match(client, /requestId !== requestSequence\.current/);
-  assert.match(client, /tooManyDecimals/);
+  assert.match(client, /maximumJobSalaryAmount/);
+  assert.match(client, /Number\.isSafeInteger\(value\)/);
   assert.match(client, /parsedJobs\.length !== payload\.jobs\.length/);
   assert.match(client, /payload\.limit !== filters\.limit/);
   assert.match(
@@ -214,7 +215,7 @@ test("published requirements expose only the visa filter", async () => {
   assert.doesNotMatch(client, /label=\{c\.languages\}/);
 });
 
-test("advanced job filters use one flat responsive grid without dropping controls", async () => {
+test("advanced job filters keep a flat grid and group the salary controls", async () => {
   const client = await source("app/jobs/JobsClient.tsx");
   const start = client.indexOf("{advancedOpen ? (");
   const end = client.indexOf("{draftValidationError ? (", start);
@@ -237,6 +238,8 @@ test("advanced job filters use one flat responsive grid without dropping control
     advanced,
     /grid-cols-1[^"\n]*sm:grid-cols-2[^"\n]*lg:grid-cols-3/,
   );
+  assert.match(advanced, /<SalaryFilterGroup/);
+  assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 
   const labels = [
     ...advanced.matchAll(
@@ -255,10 +258,6 @@ test("advanced job filters use one flat responsive grid without dropping control
       "maximumYachtLength",
       "minimumCrewSize",
       "visas",
-      "currency",
-      "payPeriod",
-      "minimumSalary",
-      "maximumSalary",
     ].sort(),
   );
 
@@ -275,9 +274,32 @@ test("advanced job filters use one flat responsive grid without dropping control
       "yachtTypes",
       "flags",
       "visas",
-      "salaryCurrencies",
-      "salaryPeriods",
     ].sort(),
+  );
+
+  assert.match(
+    advanced,
+    /currencyOptions=\{optionSets\.salaryCurrencies\}/,
+  );
+  assert.match(advanced, /periodOptions=\{optionSets\.salaryPeriods\}/);
+  assert.match(advanced, /minimum=\{draftFilters\.salaryMin\}/);
+  assert.match(advanced, /maximum=\{draftFilters\.salaryMax\}/);
+  assert.match(advanced, /currency=\{draftFilters\.salaryCurrency \|\| ""\}/);
+
+  const groupStart = client.indexOf("function SalaryFilterGroup(");
+  const groupEnd = client.indexOf("function SalaryAmountField(", groupStart);
+  const salaryGroup = client.slice(groupStart, groupEnd);
+  assert.notEqual(groupStart, -1);
+  assert.notEqual(groupEnd, -1);
+  assert.equal(salaryGroup.match(/<SalaryAmountField\b/g)?.length, 2);
+  assert.equal(salaryGroup.match(/currency=\{currency\}/g)?.length, 2);
+  assert.ok(
+    salaryGroup.indexOf("label={periodLabel}") >
+      salaryGroup.lastIndexOf("<SalaryAmountField"),
+  );
+  assert.match(
+    salaryGroup,
+    /rounded-2xl border border-cyan-100 bg-white\/80/,
   );
 });
 
