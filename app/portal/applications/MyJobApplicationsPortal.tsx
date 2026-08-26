@@ -7,6 +7,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
   Clock3,
   FileCheck2,
   LoaderCircle,
@@ -142,6 +143,16 @@ export function MyJobApplicationsPortal() {
   return (
     <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 pb-20 pt-8 text-slate-900 sm:px-8 sm:pt-10 lg:px-10">
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
+        <Link
+          href="/dashboard"
+          className="bd-focus mb-3 inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-3 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm backdrop-blur transition hover:border-cyan-300 hover:text-cyan-800"
+          aria-label="Back to dashboard"
+          title="Back to dashboard"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          Dashboard
+        </Link>
+
         <section className="relative overflow-hidden rounded-[30px] border border-white/80 bg-white/95 shadow-2xl shadow-slate-950/8 backdrop-blur">
           <div className="bd-brand-rule h-0.5" />
           <div className="grid gap-8 p-6 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-11">

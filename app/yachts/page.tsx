@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 
@@ -178,6 +179,16 @@ export default function YachtsPage() {
   return (
     <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
+        <Link
+          href="/dashboard"
+          className="bd-focus mb-3 inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white/90 px-3 text-xs font-black uppercase tracking-[0.08em] text-[#173f4a] shadow-sm backdrop-blur transition hover:border-cyan-300 hover:text-cyan-800"
+          aria-label="Back to dashboard"
+          title="Back to dashboard"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden />
+          Dashboard
+        </Link>
+
         <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-8">
