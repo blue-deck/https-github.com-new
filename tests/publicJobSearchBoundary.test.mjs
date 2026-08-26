@@ -118,6 +118,12 @@ test("job filters use explicit keyword and form searches with contextual clear a
     /searchPlaceholder: "Position, skill, language or any"/,
   );
   assert.match(jobsClient, /search: "Anahtar kelime"/);
+  assert.match(jobsClient, /advanced: "More filters"/);
+  assert.match(jobsClient, /advanced: "Daha fazla filtre"/);
+  assert.doesNotMatch(
+    jobsClient,
+    /advanced: "(?:Advanced filters|Gelişmiş filtreler)"/,
+  );
   assert.match(crewClient, /search: "Anahtar kelime"/);
   assert.match(
     jobsClient,
