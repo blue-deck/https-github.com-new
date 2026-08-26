@@ -126,39 +126,21 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.doesNotMatch(jobsClient, /Pozisyon, beceri, dil veya konum/);
   assert.match(jobsClient, /employmentType: "Employment type"/);
   assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
-  const salaryNumberField = jobsClient.slice(
+  const numberField = jobsClient.slice(
     jobsClient.indexOf("function NumberField"),
-    jobsClient.indexOf("function RangeField"),
+    jobsClient.indexOf("function MaximumLengthSlider"),
   );
-  assert.match(salaryNumberField, /\[appearance:textfield\]/);
+  assert.match(numberField, /inputMode=\{integer \? "numeric" : "decimal"\}/);
+  assert.match(numberField, /\[appearance:textfield\]/);
   assert.match(
-    salaryNumberField,
+    numberField,
     /\[&::-webkit-inner-spin-button\]:appearance-none/,
   );
   assert.match(
-    salaryNumberField,
+    numberField,
     /\[&::-webkit-outer-spin-button\]:appearance-none/,
   );
-  const rangeNumberField = jobsClient.slice(
-    jobsClient.indexOf("function RangeField"),
-    jobsClient.indexOf("function FilterSelect"),
-  );
-  assert.equal(
-    rangeNumberField.match(/\[appearance:textfield\]/g)?.length,
-    2,
-  );
-  assert.equal(
-    rangeNumberField.match(
-      /\[&::-webkit-inner-spin-button\]:appearance-none/g,
-    )?.length,
-    2,
-  );
-  assert.equal(
-    rangeNumberField.match(
-      /\[&::-webkit-outer-spin-button\]:appearance-none/g,
-    )?.length,
-    2,
-  );
+  assert.doesNotMatch(jobsClient, /function RangeField\(/);
   assert.doesNotMatch(jobsClient, /\{advancedFilterCount\}/);
   assert.match(jobsClient, /aria-label=\{c\.searching\}/);
   assert.match(jobsClient, /refreshing \? "opacity-55" : "opacity-100"/);
@@ -258,7 +240,7 @@ test("advanced job filters use one flat responsive grid without dropping control
 
   const labels = [
     ...advanced.matchAll(
-      /<(?:MultiSelectField|FilterSelect|MaximumLengthSlider|RangeField|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
+      /<(?:MultiSelectField|FilterSelect|MaximumLengthSlider|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
     ),
   ]
     .map((match) => match[1])
@@ -271,7 +253,7 @@ test("advanced job filters use one flat responsive grid without dropping control
       "yachtType",
       "yachtFlag",
       "maximumYachtLength",
-      "crewCount",
+      "minimumCrewSize",
       "visas",
       "currency",
       "payPeriod",
@@ -346,6 +328,41 @@ test("yacht length is a single accessible 0–200 m maximum slider backed by exa
   assert.match(manager, /<YachtSizeField/);
   assert.match(yachtSizeField, /<option value="ft">/);
   assert.match(yachtSizeField, /<option value="m">/);
+});
+
+test("crew size is a single integer minimum filter with an inclusive server contract", async () => {
+  const [client, search, server, page, route] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/lib/publicJobSearch.ts"),
+    source("app/lib/publicJobSearchServer.ts"),
+    source("app/jobs/page.tsx"),
+    source("app/api/jobs/route.ts"),
+  ]);
+
+  assert.match(
+    client,
+    /<NumberField[\s\S]*?label=\{c\.minimumCrewSize\}[\s\S]*?value=\{draftFilters\.crewMemberCountMin\}[\s\S]*?min=\{1\}[\s\S]*?max=\{200\}[\s\S]*?step=\{1\}[\s\S]*?integer/,
+  );
+  assert.match(client, /minimumCrewSize: "Minimum crew size"/);
+  assert.match(
+    client,
+    /minimumCrewSize: "Minimum mürettebat sayısı"/,
+  );
+  assert.doesNotMatch(client, /crewMemberCountMax|"crew-max"|function RangeField\(/);
+
+  assert.match(search, /setNumber\(params, "crewMin", filters\.crewMemberCountMin\)/);
+  assert.match(
+    search,
+    /job\.crewMemberCount < filters\.crewMemberCountMin/,
+  );
+  assert.doesNotMatch(search, /crewMemberCountMax|"crewMax"/);
+
+  assert.match(server, /matchesPublicJobSearch\(job, filters\)/);
+  assert.match(page, /if \(!parsed\.ok\) redirect\("\/jobs"\)/);
+  assert.match(
+    route,
+    /if \(!parsed\.ok\) \{[\s\S]*?publicResponse\(\{ ok: false, error: parsed\.error \}, 400\)/,
+  );
 });
 
 test("required languages remain job data but are not a public job filter", async () => {

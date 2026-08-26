@@ -694,25 +694,17 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <RangeField
-                    label={c.crewCount}
-                    minimum={draftFilters.crewMemberCountMin}
-                    maximum={draftFilters.crewMemberCountMax}
-                    minValue={1}
-                    maxValue={200}
+                  <NumberField
+                    label={c.minimumCrewSize}
+                    value={draftFilters.crewMemberCountMin}
+                    min={1}
+                    max={200}
                     step={1}
-                    minLabel={c.minimum}
-                    maxLabel={c.maximum}
-                    onMinimumChange={(crewMemberCountMin) =>
+                    integer
+                    onChange={(crewMemberCountMin) =>
                       updateDraftFilters((current) => ({
                         ...current,
                         crewMemberCountMin,
-                      }))
-                    }
-                    onMaximumChange={(crewMemberCountMax) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        crewMemberCountMax,
                       }))
                     }
                   />
@@ -1017,6 +1009,7 @@ function NumberField({
   min,
   max,
   step,
+  integer = false,
   onChange,
 }: {
   label: string;
@@ -1024,6 +1017,7 @@ function NumberField({
   min: number;
   max: number;
   step: number;
+  integer?: boolean;
   onChange: (value: number | null) => void;
 }) {
   return (
@@ -1033,7 +1027,7 @@ function NumberField({
       </span>
       <input
         type="number"
-        inputMode="decimal"
+        inputMode={integer ? "numeric" : "decimal"}
         value={value ?? ""}
         min={min}
         max={max}
@@ -1106,77 +1100,6 @@ function MaximumLengthSlider({
         </span>
       </span>
     </label>
-  );
-}
-
-function RangeField({
-  label,
-  unit,
-  minimum,
-  maximum,
-  minValue,
-  maxValue,
-  step,
-  minLabel,
-  maxLabel,
-  onMinimumChange,
-  onMaximumChange,
-}: {
-  label: string;
-  unit?: string;
-  minimum: number | null;
-  maximum: number | null;
-  minValue: number;
-  maxValue: number;
-  step: number;
-  minLabel: string;
-  maxLabel: string;
-  onMinimumChange: (value: number | null) => void;
-  onMaximumChange: (value: number | null) => void;
-}) {
-  return (
-    <fieldset className="min-w-0">
-      <legend className="mb-1.5 text-xs font-bold text-slate-600">
-        {label}
-        {unit ? ` (${unit})` : ""}
-      </legend>
-      <div className="grid grid-cols-2 gap-2">
-        <label>
-          <span className="sr-only">{`${label} ${minLabel}`}</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            aria-label={`${label} ${minLabel}`}
-            placeholder={minLabel}
-            value={minimum ?? ""}
-            min={minValue}
-            max={maxValue}
-            step={step}
-            onChange={(event) =>
-              onMinimumChange(readNullableNumber(event.target.value))
-            }
-            className="min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none placeholder:font-normal placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-          />
-        </label>
-        <label>
-          <span className="sr-only">{`${label} ${maxLabel}`}</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            aria-label={`${label} ${maxLabel}`}
-            placeholder={maxLabel}
-            value={maximum ?? ""}
-            min={minValue}
-            max={maxValue}
-            step={step}
-            onChange={(event) =>
-              onMaximumChange(readNullableNumber(event.target.value))
-            }
-            className="min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-900 outline-none transition [appearance:textfield] [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none placeholder:font-normal placeholder:text-slate-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
-          />
-        </label>
-      </div>
-    </fieldset>
   );
 }
 
@@ -1620,17 +1543,9 @@ function buildActiveFilterChips(
     chips,
     "crew-min",
     filters.crewMemberCountMin,
-    `${c.crewCount} ≥`,
+    `${c.minimumCrewSize}:`,
     "",
     (current) => ({ ...current, crewMemberCountMin: null }),
-  );
-  addNumberChip(
-    chips,
-    "crew-max",
-    filters.crewMemberCountMax,
-    `${c.crewCount} ≤`,
-    "",
-    (current) => ({ ...current, crewMemberCountMax: null }),
   );
 
   filters.requiredVisas.forEach((value) =>
@@ -1730,7 +1645,6 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
       filters.yachtLengthMaxMetres % publicJobYachtLengthSlider.stepMetres !==
         0) ||
     outside(filters.crewMemberCountMin, 1, 200, true) ||
-    outside(filters.crewMemberCountMax, 1, 200, true) ||
     outside(filters.salaryMin, 0, 99_999_999.99) ||
     outside(filters.salaryMax, 0, 99_999_999.99) ||
     tooManyDecimals(filters.salaryMin) ||
@@ -1738,10 +1652,7 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   ) {
     return c.valueError;
   }
-  if (
-    reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
-    reversed(filters.salaryMin, filters.salaryMax)
-  ) {
+  if (reversed(filters.salaryMin, filters.salaryMax)) {
     return c.rangeError;
   }
   if (
@@ -1767,7 +1678,6 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     filters.yachtFlagCountryCodes.length +
     (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
-    (filters.crewMemberCountMax !== null ? 1 : 0) +
     filters.requiredVisas.length +
     (filters.salaryCurrency ? 1 : 0) +
     (filters.salaryPeriod ? 1 : 0) +
@@ -1935,9 +1845,7 @@ const copy = {
     anyYachtLength: "Any length",
     upTo: "Up to",
     metres: "m",
-    crewCount: "Crew size",
-    minimum: "Min",
-    maximum: "Max",
+    minimumCrewSize: "Minimum crew size",
     visas: "Visas",
     anyVisa: "Any visa",
     currency: "Salary currency",
@@ -2028,9 +1936,7 @@ const copy = {
     anyYachtLength: "Tüm uzunluklar",
     upTo: "En fazla",
     metres: "m",
-    crewCount: "Mürettebat sayısı",
-    minimum: "Min",
-    maximum: "Maks",
+    minimumCrewSize: "Minimum mürettebat sayısı",
     visas: "Vizeler",
     anyVisa: "Tüm vizeler",
     currency: "Ücret para birimi",

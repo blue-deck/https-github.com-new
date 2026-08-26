@@ -48,7 +48,6 @@ test("strictly parses and round-trips the complete public job filter contract", 
     ["yachtFlag", "tr"],
     ["lengthMax", "70"],
     ["crewMin", "8"],
-    ["crewMax", "20"],
     ["visa", "Schengen Visa"],
     ["salaryCurrency", "EUR"],
     ["salaryPeriod", "month"],
@@ -64,6 +63,7 @@ test("strictly parses and round-trips the complete public job filter contract", 
   assert.equal(parsed.filters.query, "refit Captain");
   assert.deepEqual(parsed.filters.yachtFlagCountryCodes, ["TR"]);
   assert.equal(parsed.filters.yachtLengthMaxMetres, 70);
+  assert.equal(parsed.filters.crewMemberCountMin, 8);
   assert.equal(parsed.filters.salaryCurrency, "EUR");
 
   const reparsed = parsePublicJobSearchParams(
@@ -227,7 +227,9 @@ test("rejects unknown, duplicated, invalid, and logically unsafe filters", () =>
   );
   assert.equal(
     parsePublicJobSearchParams(
-      new URLSearchParams("crewMin=60&crewMax=40"),
+      new URLSearchParams(
+        "salaryCurrency=EUR&salaryPeriod=month&salaryMin=6000&salaryMax=5000",
+      ),
       taxonomy,
     ).ok,
     false,
@@ -249,7 +251,13 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
     "lengthMax=7",
     "lengthMax=205",
     "salaryMax=Infinity&salaryCurrency=EUR&salaryPeriod=month",
+    "crewMin=-1",
+    "crewMin=0",
     "crewMin=1.5",
+    "crewMin=201",
+    "crewMin=NaN",
+    "crewMin=Infinity",
+    "crewMin=1&crewMin=2",
   ]) {
     assert.equal(
       parsePublicJobSearchParams(new URLSearchParams(query), taxonomy).ok,
@@ -259,8 +267,9 @@ test("rejects malformed decimals, negative values, and non-finite tokens", () =>
   }
 });
 
-test("rejects removed minimum-length, experience, brand, language, requirement, policy, build-year, date-recency, and page-size filters", () => {
+test("rejects removed maximum-crew, minimum-length, experience, brand, language, requirement, policy, build-year, date-recency, and page-size filters", () => {
   for (const query of [
+    "crewMax=20",
     "lengthMin=40",
     "minimumExperience=3_5_years",
     "yachtBrand=Feadship",
@@ -302,7 +311,6 @@ test("matches every structured public-detail category with normalized yacht unit
     yachtFlagCountryCodes: ["TR"],
     yachtLengthMaxMetres: 50,
     crewMemberCountMin: 10,
-    crewMemberCountMax: 15,
     requiredVisas: ["Schengen Visa"],
     salaryCurrency: "EUR",
     salaryPeriod: "month",
@@ -444,6 +452,59 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
     ),
     false,
   );
+});
+
+test("minimum crew size is inclusive, accepts larger crews, and fails missing values closed", () => {
+  const filters = createDefaultPublicJobSearchFilters();
+  assert.equal(filters.crewMemberCountMin, null);
+  assert.equal(publicJobSearchParams(filters).has("crewMin"), false);
+  assert.equal(publicJobSearchParams(filters).has("crewMax"), false);
+  filters.crewMemberCountMin = 12;
+
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 12 }), filters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 13 }), filters),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: 11 }), filters),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ crewMemberCount: null }), filters),
+    false,
+  );
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({ crewMemberCount: null }),
+      createDefaultPublicJobSearchFilters(),
+    ),
+    true,
+  );
+});
+
+test("minimum crew size round-trips at its supported boundaries", () => {
+  for (const minimum of [1, 200]) {
+    const parsed = parsePublicJobSearchParams(
+      new URLSearchParams(`crewMin=${minimum}`),
+      taxonomy,
+    );
+    assert.equal(parsed.ok, true, String(minimum));
+    if (!parsed.ok) continue;
+    assert.equal(parsed.filters.crewMemberCountMin, minimum);
+    assert.equal(
+      publicJobSearchParams(parsed.filters).get("crewMin"),
+      String(minimum),
+    );
+    assert.equal(
+      publicJobSearchParams(parsed.filters).toString(),
+      `crewMin=${minimum}`,
+    );
+    assert.equal(publicJobSearchParams(parsed.filters).has("crewMax"), false);
+  }
 });
 
 test("salary filters require the published currency and period and use inclusive overlap", () => {
