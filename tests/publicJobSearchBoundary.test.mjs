@@ -129,7 +129,7 @@ test("job filters use explicit keyword and form searches with contextual clear a
   assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
   const numberField = jobsClient.slice(
     jobsClient.indexOf("function NumberField"),
-    jobsClient.indexOf("function MaximumLengthSlider"),
+    jobsClient.indexOf("function YachtLengthRangeSlider"),
   );
   assert.match(numberField, /inputMode=\{integer \? "numeric" : "decimal"\}/);
   assert.match(numberField, /\[appearance:textfield\]/);
@@ -243,7 +243,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
 
   const labels = [
     ...advanced.matchAll(
-      /<(?:MultiSelectField|FilterSelect|MaximumLengthSlider|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
+      /<(?:MultiSelectField|FilterSelect|YachtLengthRangeSlider|NumberField)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
     ),
   ]
     .map((match) => match[1])
@@ -255,7 +255,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
       "teamCouple",
       "yachtType",
       "yachtFlag",
-      "maximumYachtLength",
+      "yachtLength",
       "minimumCrewSize",
       "visas",
     ].sort(),
@@ -303,7 +303,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   );
 });
 
-test("yacht length is a single accessible 0–200 m maximum slider backed by exact unit conversion", async () => {
+test("yacht length is an accessible two-thumb 0–200 m range backed by exact unit conversion", async () => {
   const [client, search, server, manager, yachtSizeField, styles] =
     await Promise.all([
       source("app/jobs/JobsClient.tsx"),
@@ -314,10 +314,19 @@ test("yacht length is a single accessible 0–200 m maximum slider backed by exa
       source("app/globals.css"),
     ]);
 
-  assert.match(client, /<MaximumLengthSlider/);
-  assert.match(client, /type="range"/);
-  assert.match(client, /aria-valuetext=\{valueText\}/);
-  assert.match(client, /value=\{draftFilters\.yachtLengthMaxMetres\}/);
+  assert.match(client, /<YachtLengthRangeSlider/);
+  const rangeStart = client.indexOf("function YachtLengthRangeSlider(");
+  const rangeEnd = client.indexOf("function FilterSelect(", rangeStart);
+  const range = client.slice(rangeStart, rangeEnd);
+  assert.equal(range.match(/type="range"/g)?.length, 2);
+  assert.match(range, /aria-label=\{minimumLabel\}/);
+  assert.match(range, /aria-label=\{maximumLabel\}/);
+  assert.match(range, /aria-valuetext=\{minimumValueText\}/);
+  assert.match(range, /aria-valuetext=\{maximumValueText\}/);
+  assert.match(range, /aria-valuemax=\{upperValue\}/);
+  assert.match(range, /aria-valuemin=\{lowerValue\}/);
+  assert.match(client, /minimumValue=\{draftFilters\.yachtLengthMinMetres\}/);
+  assert.match(client, /maximumValue=\{draftFilters\.yachtLengthMaxMetres\}/);
   assert.match(
     client,
     /minimum=\{publicJobYachtLengthSlider\.minimumMetres\}/,
@@ -327,24 +336,42 @@ test("yacht length is a single accessible 0–200 m maximum slider backed by exa
     /maximum=\{publicJobYachtLengthSlider\.maximumMetres\}/,
   );
   assert.match(client, /step=\{publicJobYachtLengthSlider\.stepMetres\}/);
-  assert.match(client, /nextValue === minimum \? null : nextValue/);
-  assert.doesNotMatch(client, /yachtLengthMinMetres/);
+  assert.match(range, /nextValue === minimum \? null : nextValue/);
+  assert.match(range, /nextValue === maximum \? null : nextValue/);
+  assert.match(range, /Math\.min\([\s\S]*?upperValue/);
+  assert.match(range, /Math\.max\([\s\S]*?lowerValue/);
+  assert.match(range, /onPointerDown=\{handlePointerDown\}/);
+  assert.match(range, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(range, /event\.isPrimary/);
+  assert.match(range, /event\.button !== 0/);
+  assert.match(range, /pointerId: event\.pointerId/);
+  assert.match(range, /onLostPointerCapture=\{handleLostPointerCapture\}/);
+  assert.equal(range.match(/onKeyDown=/g)?.length, 2);
+  assert.match(range, /event\.key === "ArrowLeft"/);
+  assert.match(range, /event\.key === "Home"/);
+  assert.match(range, /event\.key === "End"/);
 
   assert.match(search, /minimumMetres: 0/);
   assert.match(search, /maximumMetres: 200/);
   assert.match(search, /stepMetres: 5/);
   assert.match(search, /const metres = unit === "ft" \? value \* 0\.3048 : value/);
+  assert.match(search, /yachtLengthMetres < filters\.yachtLengthMinMetres/);
   assert.match(
     search,
     /yachtLengthMetres > filters\.yachtLengthMaxMetres/,
   );
-  assert.doesNotMatch(search, /yachtLengthMinMetres/);
-  assert.doesNotMatch(search, /"lengthMin"/);
+  assert.match(search, /yachtLengthMinMetres/);
+  assert.match(search, /"lengthMin"/);
 
-  assert.match(styles, /\.bd-job-length-slider/);
+  assert.match(styles, /\.bd-job-length-range/);
+  assert.match(styles, /\.bd-job-length-range-input/);
   assert.match(styles, /::-webkit-slider-thumb/);
   assert.match(styles, /::-moz-range-thumb/);
-  assert.match(styles, /--bd-range-progress/);
+  assert.match(styles, /--bd-range-start/);
+  assert.match(styles, /--bd-range-end/);
+  assert.match(styles, /--bd-range-thumb-inset: 12px/);
+  assert.match(styles, /height: 2\.75rem/);
+  assert.match(styles, /touch-action: pan-y/);
 
   assert.match(server, /matchesPublicJobSearch\(job, filters\)/);
   assert.match(manager, /<YachtSizeField/);

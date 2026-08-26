@@ -49,6 +49,7 @@ export type PublicJobSearchFilters = {
   candidateTypes: JobCandidateType[];
   yachtTypes: JobYachtType[];
   yachtFlagCountryCodes: string[];
+  yachtLengthMinMetres: number | null;
   yachtLengthMaxMetres: number | null;
   crewMemberCountMin: number | null;
   requiredVisas: JobVisa[];
@@ -90,6 +91,7 @@ const queryKeys = new Set([
   "candidateType",
   "yachtType",
   "yachtFlag",
+  "lengthMin",
   "lengthMax",
   "crewMin",
   "visa",
@@ -114,6 +116,7 @@ const multiValueLimits: Record<string, number> = {
 const scalarKeys = [
   "q",
   "location",
+  "lengthMin",
   "lengthMax",
   "crewMin",
   "salaryCurrency",
@@ -138,6 +141,7 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     candidateTypes: [],
     yachtTypes: [],
     yachtFlagCountryCodes: [],
+    yachtLengthMinMetres: null,
     yachtLengthMaxMetres: null,
     crewMemberCountMin: null,
     requiredVisas: [],
@@ -223,9 +227,15 @@ export function parsePublicJobSearchParams(
     return { ok: false, error: invalidEnumList.error };
   }
 
+  const yachtLengthMinMetres = steppedIntegerFilter(
+    searchParams.get("lengthMin"),
+    publicJobYachtLengthSlider.minimumMetres,
+    publicJobYachtLengthSlider.maximumMetres,
+    publicJobYachtLengthSlider.stepMetres,
+  );
   const yachtLengthMaxMetres = steppedIntegerFilter(
     searchParams.get("lengthMax"),
-    publicJobYachtLengthSlider.stepMetres,
+    publicJobYachtLengthSlider.minimumMetres,
     publicJobYachtLengthSlider.maximumMetres,
     publicJobYachtLengthSlider.stepMetres,
   );
@@ -246,6 +256,7 @@ export function parsePublicJobSearchParams(
   );
 
   const numericFilters = [
+    yachtLengthMinMetres,
     yachtLengthMaxMetres,
     crewMemberCountMin,
     salaryMin,
@@ -293,6 +304,7 @@ export function parsePublicJobSearchParams(
     candidateTypes: successfulList(candidateTypes),
     yachtTypes: successfulList(yachtTypes),
     yachtFlagCountryCodes: successfulList(yachtFlagCountryCodes),
+    yachtLengthMinMetres: numericValue(yachtLengthMinMetres),
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
     crewMemberCountMin: numericValue(crewMemberCountMin),
     requiredVisas: successfulList(requiredVisas),
@@ -304,7 +316,10 @@ export function parsePublicJobSearchParams(
     limit: defaultPublicJobSearchLimit,
   };
 
-  if (reversed(filters.salaryMin, filters.salaryMax)) {
+  if (
+    reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
+    reversed(filters.salaryMin, filters.salaryMax)
+  ) {
     return { ok: false, error: "A minimum filter cannot exceed its maximum." };
   }
 
@@ -338,6 +353,7 @@ export function publicJobSearchParams(
   setList(params, "candidateType", filters.candidateTypes);
   setList(params, "yachtType", filters.yachtTypes);
   setList(params, "yachtFlag", filters.yachtFlagCountryCodes);
+  setNumber(params, "lengthMin", filters.yachtLengthMinMetres);
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
   setNumber(params, "crewMin", filters.crewMemberCountMin);
   setList(params, "visa", filters.requiredVisas);
@@ -406,9 +422,13 @@ export function matchesPublicJobSearch(
     job.yachtLengthUnit,
   );
   if (
-    filters.yachtLengthMaxMetres !== null &&
+    (filters.yachtLengthMinMetres !== null ||
+      filters.yachtLengthMaxMetres !== null) &&
     (yachtLengthMetres === null ||
-      yachtLengthMetres > filters.yachtLengthMaxMetres)
+      (filters.yachtLengthMinMetres !== null &&
+        yachtLengthMetres < filters.yachtLengthMinMetres) ||
+      (filters.yachtLengthMaxMetres !== null &&
+        yachtLengthMetres > filters.yachtLengthMaxMetres))
   ) {
     return false;
   }

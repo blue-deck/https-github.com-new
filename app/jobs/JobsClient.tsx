@@ -8,6 +8,8 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
   BriefcaseBusiness,
@@ -683,16 +685,28 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <MaximumLengthSlider
-                    label={c.maximumYachtLength}
+                  <YachtLengthRangeSlider
+                    label={c.yachtLength}
                     anyLabel={c.anyYachtLength}
+                    fromLabel={c.from}
                     upToLabel={c.upTo}
+                    minimumLabel={c.minimumYachtLength}
+                    maximumLabel={c.maximumYachtLength}
+                    noMinimumLabel={c.noMinimumYachtLength}
+                    noMaximumLabel={c.noMaximumYachtLength}
                     unit={c.metres}
-                    value={draftFilters.yachtLengthMaxMetres}
+                    minimumValue={draftFilters.yachtLengthMinMetres}
+                    maximumValue={draftFilters.yachtLengthMaxMetres}
                     minimum={publicJobYachtLengthSlider.minimumMetres}
                     maximum={publicJobYachtLengthSlider.maximumMetres}
                     step={publicJobYachtLengthSlider.stepMetres}
-                    onChange={(yachtLengthMaxMetres) =>
+                    onMinimumChange={(yachtLengthMinMetres) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtLengthMinMetres,
+                      }))
+                    }
+                    onMaximumChange={(yachtLengthMaxMetres) =>
                       updateDraftFilters((current) => ({
                         ...current,
                         yachtLengthMaxMetres,
@@ -1179,58 +1193,243 @@ function SalaryAmountField({
   );
 }
 
-function MaximumLengthSlider({
+function YachtLengthRangeSlider({
   label,
   anyLabel,
+  fromLabel,
   upToLabel,
+  minimumLabel,
+  maximumLabel,
+  noMinimumLabel,
+  noMaximumLabel,
   unit,
-  value,
+  minimumValue,
+  maximumValue,
   minimum,
   maximum,
   step,
-  onChange,
+  onMinimumChange,
+  onMaximumChange,
 }: {
   label: string;
   anyLabel: string;
+  fromLabel: string;
   upToLabel: string;
+  minimumLabel: string;
+  maximumLabel: string;
+  noMinimumLabel: string;
+  noMaximumLabel: string;
   unit: string;
-  value: number | null;
+  minimumValue: number | null;
+  maximumValue: number | null;
   minimum: number;
   maximum: number;
   step: number;
-  onChange: (value: number | null) => void;
+  onMinimumChange: (value: number | null) => void;
+  onMaximumChange: (value: number | null) => void;
 }) {
-  const sliderValue = value ?? minimum;
-  const progress = ((sliderValue - minimum) / (maximum - minimum)) * 100;
+  const summaryId = useId();
+  const minimumInputRef = useRef<HTMLInputElement>(null);
+  const maximumInputRef = useRef<HTMLInputElement>(null);
+  const draggedThumb = useRef<{
+    pointerId: number;
+    thumb: "minimum" | "maximum";
+  } | null>(null);
+  const lowerValue = minimumValue ?? minimum;
+  const upperValue = maximumValue ?? maximum;
+  const minimumOnTop = lowerValue === upperValue && lowerValue === maximum;
+  const span = maximum - minimum;
+  const start = ((lowerValue - minimum) / span) * 100;
+  const end = ((upperValue - minimum) / span) * 100;
   const valueText =
-    value === null ? anyLabel : `${upToLabel} ${value} ${unit}`;
+    minimumValue === null && maximumValue === null
+      ? anyLabel
+      : minimumValue !== null && maximumValue !== null
+        ? `${minimumValue}–${maximumValue} ${unit}`
+        : minimumValue !== null
+          ? `${fromLabel} ${minimumValue} ${unit}`
+          : `${upToLabel} ${maximumValue} ${unit}`;
+  const minimumValueText =
+    minimumValue === null
+      ? noMinimumLabel
+      : `${minimumValue} ${unit}`;
+  const maximumValueText =
+    maximumValue === null
+      ? noMaximumLabel
+      : `${maximumValue} ${unit}`;
+  const valueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const thumbInset =
+      Number.parseFloat(
+        getComputedStyle(event.currentTarget).getPropertyValue(
+          "--bd-range-thumb-inset",
+        ),
+      ) || 12;
+    const usableWidth = Math.max(1, bounds.width - thumbInset * 2);
+    const ratio = Math.max(
+      0,
+      Math.min(
+        1,
+        (event.clientX - bounds.left - thumbInset) / usableWidth,
+      ),
+    );
+    return Math.min(
+      maximum,
+      minimum + Math.round((ratio * span) / step) * step,
+    );
+  };
+  const updateThumb = (
+    thumb: "minimum" | "maximum",
+    nextValue: number,
+  ) => {
+    if (thumb === "minimum") {
+      const clampedValue = Math.min(nextValue, upperValue);
+      onMinimumChange(clampedValue === minimum ? null : clampedValue);
+      return;
+    }
+    const clampedValue = Math.max(nextValue, lowerValue);
+    onMaximumChange(clampedValue === maximum ? null : clampedValue);
+  };
+  const handleThumbKeyDown = (
+    thumb: "minimum" | "maximum",
+    value: number,
+    event: ReactKeyboardEvent<HTMLInputElement>,
+  ) => {
+    let nextValue: number | null = null;
+    if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+      nextValue = Math.max(minimum, value - step);
+    } else if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+      nextValue = Math.min(maximum, value + step);
+    } else if (event.key === "Home") {
+      nextValue = minimum;
+    } else if (event.key === "End") {
+      nextValue = maximum;
+    }
+    if (nextValue === null) return;
+    event.preventDefault();
+    updateThumb(thumb, nextValue);
+  };
+  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (
+      !event.isPrimary ||
+      (event.pointerType === "mouse" && event.button !== 0)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    const nextValue = valueFromPointer(event);
+    const minimumDistance = Math.abs(nextValue - lowerValue);
+    const maximumDistance = Math.abs(nextValue - upperValue);
+    const thumb =
+      minimumDistance < maximumDistance ||
+      (minimumDistance === maximumDistance && nextValue <= lowerValue)
+        ? "minimum"
+        : "maximum";
+    draggedThumb.current = { pointerId: event.pointerId, thumb };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    if (thumb === "minimum") minimumInputRef.current?.focus();
+    else maximumInputRef.current?.focus();
+    updateThumb(thumb, nextValue);
+  };
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = draggedThumb.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    updateThumb(drag.thumb, valueFromPointer(event));
+  };
+  const stopPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (draggedThumb.current?.pointerId !== event.pointerId) return;
+    draggedThumb.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+  const handleLostPointerCapture = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (draggedThumb.current?.pointerId === event.pointerId) {
+      draggedThumb.current = null;
+    }
+  };
 
   return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 flex min-h-5 items-center justify-between gap-3">
-        <span className="text-xs font-bold text-slate-600">{label}</span>
-        <span className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-800">
+    <fieldset className="block min-w-0">
+      <legend className="sr-only">{label}</legend>
+      <div className="mb-1.5 flex min-h-5 items-center justify-between gap-3">
+        <span aria-hidden className="text-xs font-bold text-slate-600">
+          {label}
+        </span>
+        <span
+          id={summaryId}
+          className="rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-800"
+        >
           {valueText}
         </span>
-      </span>
-      <span className="block rounded-xl border border-slate-200 bg-white px-3 py-2">
-        <input
-          type="range"
-          value={sliderValue}
-          min={minimum}
-          max={maximum}
-          step={step}
-          aria-label={label}
-          aria-valuetext={valueText}
-          onChange={(event) => {
-            const nextValue = Number(event.target.value);
-            onChange(nextValue === minimum ? null : nextValue);
-          }}
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+        <div
+          className="bd-job-length-range"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={stopPointerDrag}
+          onPointerCancel={stopPointerDrag}
+          onLostPointerCapture={handleLostPointerCapture}
           style={
-            { "--bd-range-progress": `${progress}%` } as CSSProperties
+            {
+              "--bd-range-start": `${start}%`,
+              "--bd-range-end": `${end}%`,
+            } as CSSProperties
           }
-          className="bd-job-length-slider"
-        />
+        >
+          <span className="bd-job-length-range-track" aria-hidden />
+          <input
+            ref={minimumInputRef}
+            type="range"
+            value={lowerValue}
+            min={minimum}
+            max={maximum}
+            step={step}
+            aria-label={minimumLabel}
+            aria-describedby={summaryId}
+            aria-valuemax={upperValue}
+            aria-valuetext={minimumValueText}
+            onKeyDown={(event) =>
+              handleThumbKeyDown("minimum", lowerValue, event)
+            }
+            onChange={(event) => {
+              const nextValue = Math.min(
+                Number(event.target.value),
+                upperValue,
+              );
+              onMinimumChange(nextValue === minimum ? null : nextValue);
+            }}
+            style={{ zIndex: minimumOnTop ? 4 : 3 }}
+            className="bd-job-length-range-input"
+          />
+          <input
+            ref={maximumInputRef}
+            type="range"
+            value={upperValue}
+            min={minimum}
+            max={maximum}
+            step={step}
+            aria-label={maximumLabel}
+            aria-describedby={summaryId}
+            aria-valuemin={lowerValue}
+            aria-valuetext={maximumValueText}
+            onKeyDown={(event) =>
+              handleThumbKeyDown("maximum", upperValue, event)
+            }
+            onChange={(event) => {
+              const nextValue = Math.max(
+                Number(event.target.value),
+                lowerValue,
+              );
+              onMaximumChange(nextValue === maximum ? null : nextValue);
+            }}
+            style={{ zIndex: minimumOnTop ? 3 : 4 }}
+            className="bd-job-length-range-input"
+          />
+        </div>
         <span
           aria-hidden
           className="mt-0.5 flex justify-between text-[11px] font-semibold text-slate-400"
@@ -1238,8 +1437,8 @@ function MaximumLengthSlider({
           <span>{minimum} {unit}</span>
           <span>{maximum} {unit}</span>
         </span>
-      </span>
-    </label>
+      </div>
+    </fieldset>
   );
 }
 
@@ -1671,14 +1870,23 @@ function buildActiveFilterChips(
     })),
   );
 
-  addNumberChip(
-    chips,
-    "length-max",
-    filters.yachtLengthMaxMetres,
-    `${c.maximumYachtLength}: ${c.upTo}`,
-    c.metres,
-    (current) => ({ ...current, yachtLengthMaxMetres: null }),
-  );
+  if (
+    filters.yachtLengthMinMetres !== null ||
+    filters.yachtLengthMaxMetres !== null
+  ) {
+    const range =
+      filters.yachtLengthMinMetres !== null &&
+      filters.yachtLengthMaxMetres !== null
+        ? `${filters.yachtLengthMinMetres}–${filters.yachtLengthMaxMetres} ${c.metres}`
+        : filters.yachtLengthMinMetres !== null
+          ? `${c.from} ${filters.yachtLengthMinMetres} ${c.metres}`
+          : `${c.upTo} ${filters.yachtLengthMaxMetres} ${c.metres}`;
+    add("yacht-length", `${c.yachtLength}: ${range}`, (current) => ({
+      ...current,
+      yachtLengthMinMetres: null,
+      yachtLengthMaxMetres: null,
+    }));
+  }
   addNumberChip(
     chips,
     "crew-min",
@@ -1791,8 +1999,17 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
       (integer && !Number.isSafeInteger(value)));
   if (
     outside(
+      filters.yachtLengthMinMetres,
+      publicJobYachtLengthSlider.minimumMetres,
+      publicJobYachtLengthSlider.maximumMetres,
+      true,
+    ) ||
+    (filters.yachtLengthMinMetres !== null &&
+      filters.yachtLengthMinMetres % publicJobYachtLengthSlider.stepMetres !==
+        0) ||
+    outside(
       filters.yachtLengthMaxMetres,
-      publicJobYachtLengthSlider.stepMetres,
+      publicJobYachtLengthSlider.minimumMetres,
       publicJobYachtLengthSlider.maximumMetres,
       true,
     ) ||
@@ -1805,7 +2022,10 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   ) {
     return c.valueError;
   }
-  if (reversed(filters.salaryMin, filters.salaryMax)) {
+  if (
+    reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
+    reversed(filters.salaryMin, filters.salaryMax)
+  ) {
     return c.rangeError;
   }
   if (
@@ -1829,7 +2049,10 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.candidateTypes.length > 0 ? 1 : 0) +
     filters.yachtTypes.length +
     filters.yachtFlagCountryCodes.length +
-    (filters.yachtLengthMaxMetres !== null ? 1 : 0) +
+    (filters.yachtLengthMinMetres !== null ||
+      filters.yachtLengthMaxMetres !== null
+      ? 1
+      : 0) +
     (filters.crewMemberCountMin !== null ? 1 : 0) +
     filters.requiredVisas.length +
     (filters.salaryCurrency ||
@@ -1996,8 +2219,11 @@ const copy = {
     anyFlag: "Any flag",
     searchFlags: "Search flags",
     yachtLength: "Yacht length",
+    minimumYachtLength: "Minimum yacht length",
     maximumYachtLength: "Maximum yacht length",
     anyYachtLength: "Any length",
+    noMinimumYachtLength: "No minimum yacht length",
+    noMaximumYachtLength: "No maximum yacht length",
     upTo: "Up to",
     metres: "m",
     minimumCrewSize: "Minimum crew size",
@@ -2089,8 +2315,11 @@ const copy = {
     anyFlag: "Tüm bayraklar",
     searchFlags: "Bayrak ara",
     yachtLength: "Yat uzunluğu",
+    minimumYachtLength: "Minimum yat uzunluğu",
     maximumYachtLength: "Maksimum yat uzunluğu",
     anyYachtLength: "Tüm uzunluklar",
+    noMinimumYachtLength: "Minimum yat uzunluğu sınırı yok",
+    noMaximumYachtLength: "Maksimum yat uzunluğu sınırı yok",
     upTo: "En fazla",
     metres: "m",
     minimumCrewSize: "Minimum mürettebat sayısı",
