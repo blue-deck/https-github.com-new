@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { FindCrewClient } from "./FindCrewClient";
 import { listDiscoverableCrewPage } from "../lib/findCrewData";
 import {
   crewSearchFingerprintInput,
-  parseCrewSearchFilters,
+  crewSearchParams,
 } from "../lib/crewSearch";
+import { parseCrewSearchRequest } from "../lib/crewSearchRequest";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,15 @@ type FindCrewPageProps = {
 export default async function FindCrewPage({
   searchParams,
 }: FindCrewPageProps) {
-  const filters = parseCrewSearchFilters(await searchParams);
+  const params = searchParamsFromRecord(await searchParams);
+  const parsed = parseCrewSearchRequest(params);
+  if (!parsed.ok) redirect("/find-crew");
+  if (parsed.cursor) {
+    const normalized = crewSearchParams(parsed.filters).toString();
+    redirect(normalized ? `/find-crew?${normalized}` : "/find-crew");
+  }
+
+  const filters = parsed.filters;
   const page = await listDiscoverableCrewPage("", filters);
   return (
     <FindCrewClient
@@ -33,8 +43,21 @@ export default async function FindCrewPage({
       initialNextCursor={page.nextCursor}
       initialHasMore={page.hasMore}
       initialTotal={page.total}
-      initialFacets={page.facets}
       initialFilters={filters}
     />
   );
+}
+
+function searchParamsFromRecord(
+  values: Record<string, string | string[] | undefined>,
+) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) {
+    if (Array.isArray(value)) {
+      for (const item of value) params.append(key, item);
+    } else if (value !== undefined) {
+      params.set(key, value);
+    }
+  }
+  return params;
 }

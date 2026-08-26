@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crewDirectoryAvailabilityStatuses } from "../../lib/crewDiscovery";
-import { nationalityFilterValues } from "../../lib/countries";
 import { listDiscoverableCrewPage } from "../../lib/findCrewData";
-import { jobMinimumYachtExperiences } from "../../lib/jobPosts";
-import {
-  crewGenderOptions,
-  crewSearchParamKeys,
-  crewYesNoOptions,
-  isCrewExperienceType,
-  parseCrewSearchFilters,
-} from "../../lib/crewSearch";
+import { parseCrewSearchRequest } from "../../lib/crewSearchRequest";
 import { consumeRequestRateLimit } from "../../lib/requestRateLimitServer";
 import { getClientIp } from "../../lib/turnstileServer";
 
@@ -17,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  if (!isValidCrewSearchRequest(searchParams)) {
+  const parsed = parseCrewSearchRequest(searchParams);
+  if (!parsed.ok) {
     return directoryResponse(
       { ok: false, error: "Invalid crew directory request." },
       400,
@@ -38,10 +30,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const cursor = searchParams.get("cursor") || "";
-  const filters = parseCrewSearchFilters(searchParams);
   try {
-    const page = await listDiscoverableCrewPage(cursor, filters);
+    const page = await listDiscoverableCrewPage(parsed.cursor, parsed.filters);
     return directoryResponse({ ok: true, ...page });
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
@@ -59,71 +49,6 @@ export async function GET(request: NextRequest) {
       503,
     );
   }
-}
-
-function isValidCrewSearchRequest(searchParams: URLSearchParams) {
-  const keys = Array.from(new Set(searchParams.keys()));
-  if (
-    keys.some(
-      (key) =>
-        !crewSearchParamKeys.has(key) ||
-        searchParams.getAll(key).length !== 1,
-    ) ||
-    Array.from(searchParams.values()).some((value) => value.length > 256)
-  ) {
-    return false;
-  }
-
-  for (const key of ["premium", "photo", "gallery", "teamCouple"]) {
-    const value = searchParams.get(key);
-    if (value !== null && value !== "1") return false;
-  }
-  const maritalStatus = searchParams.get("maritalStatus");
-  if (
-    maritalStatus !== null &&
-    maritalStatus !== "Single" &&
-    maritalStatus !== "Married"
-  ) {
-    return false;
-  }
-  const experienceType = searchParams.get("experienceType");
-  if (experienceType !== null && !isCrewExperienceType(experienceType)) {
-    return false;
-  }
-  if (
-    !isAllowedCrewOption(
-      searchParams.get("availability"),
-      crewDirectoryAvailabilityStatuses,
-    ) ||
-    !isAllowedCrewOption(
-      searchParams.get("experienceMin"),
-      jobMinimumYachtExperiences,
-    ) ||
-    !isAllowedCrewOption(
-      searchParams.get("nationality"),
-      nationalityFilterValues,
-    ) ||
-    !isAllowedCrewOption(searchParams.get("gender"), crewGenderOptions) ||
-    !isAllowedCrewOption(searchParams.get("smoker"), crewYesNoOptions) ||
-    !isAllowedCrewOption(
-      searchParams.get("visibleTattoos"),
-      crewYesNoOptions,
-    )
-  ) {
-    return false;
-  }
-  const cursor = searchParams.get("cursor");
-  return cursor === null ||
-    /^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/.test(
-      cursor,
-    );
-}
-
-function isAllowedCrewOption(
-  value: string | null,
-  options: readonly string[],
-) {
-  return value === null || options.includes(value);
 }
 
 function directoryResponse(

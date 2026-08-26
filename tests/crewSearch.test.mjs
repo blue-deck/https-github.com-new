@@ -4,11 +4,14 @@ import test from "node:test";
 import {
   crewExperienceMatchesFilters,
   crewExperienceMatchesYachtExperienceOption,
+  crewPositionsMatchFilters,
   crewSearchFilterCount,
   crewSearchParamKeys,
   crewSearchParams,
   defaultCrewSearchFilters,
   isCrewExperienceType,
+  isValidCrewPositionSearchValues,
+  maximumCrewPositionSelections,
   parseCrewSearchFilters,
 } from "../app/lib/crewSearch.ts";
 import {
@@ -56,14 +59,17 @@ test("find crew opens directly with the compact filter workspace", async () => {
   assert.match(loading, /<h1 id="crew-filter-heading" className="sr-only">/);
 });
 
-test("find crew filter labels omit all and tüm prefixes", async () => {
+test("find crew keeps concise labels while matching the jobs position prompt", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.doesNotMatch(client, /:\s*"All [^"]+"/);
-  assert.doesNotMatch(client, /:\s*"Tüm [^"]+"/);
+  assert.match(client, /position: "Position"/);
+  assert.match(client, /allPositions: "All positions"/);
+  assert.match(client, /allPositions: "Tüm pozisyonlar"/);
+  assert.doesNotMatch(client, /availability: "All /);
+  assert.doesNotMatch(client, /nationalityFilter: "All /);
 });
 
 test("find crew uses concise English labels for core select filters", async () => {
@@ -112,7 +118,7 @@ test("primary and advanced crew filters apply only through the relocated Search 
   );
 
   for (const field of [
-    "position",
+    "positions",
     "nationality",
     "availability",
     "maritalStatus",
@@ -129,7 +135,7 @@ test("primary and advanced crew filters apply only through the relocated Search 
   }
   assert.match(
     client,
-    /function submitAllCrewFilters\(\) \{\s*setFilters\(normalizeCrewSearchFilters\(draftFilters\)\);/,
+    /function submitAllCrewFilters\(\) \{\s*closeOpenCrewPositionMultiSelects\(\);\s*setFilters\(normalizeCrewSearchFilters\(draftFilters\)\);/,
   );
   assert.match(
     client,
@@ -140,6 +146,68 @@ test("primary and advanced crew filters apply only through the relocated Search 
     /id="crew-advanced-filters"[\s\S]*?<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
   );
   assert.match(client, /placeholder=\{c\.nationalityFilter\}/);
+});
+
+test("find crew position control mirrors the searchable Find Jobs multi-select", async () => {
+  const [crewClient, jobsClient] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/jobs/JobsClient.tsx", import.meta.url), "utf8"),
+  ]);
+
+  const crewStart = crewClient.indexOf("function PositionMultiSelectField");
+  const crewEnd = crewClient.indexOf(
+    "function closeOpenCrewPositionMultiSelects",
+    crewStart,
+  );
+  const jobsStart = jobsClient.indexOf("function MultiSelectField");
+  const jobsEnd = jobsClient.indexOf("function closeOpenJobMultiSelects", jobsStart);
+  const crewControl = crewClient.slice(crewStart, crewEnd);
+  const jobsControl = jobsClient.slice(jobsStart, jobsEnd);
+
+  assert.ok(crewStart >= 0 && crewEnd > crewStart);
+  assert.ok(jobsStart >= 0 && jobsEnd > jobsStart);
+  for (const contract of [
+    /<details/,
+    /<summary/,
+    /type="search"/,
+    /role="group"/,
+    /type="checkbox"/,
+    /disabled=\{!checked && selectionLimitReached\}/,
+    /max-h-64/,
+    /min-w-64/,
+    /values\.length > 0 \? `\$\{values\.length\} \$\{selectedLabel\}` : placeholder/,
+  ]) {
+    assert.match(crewControl, contract);
+    assert.match(jobsControl, contract);
+  }
+  assert.match(crewClient, /maxSelections=\{maximumCrewPositionSelections\}/);
+  assert.equal(maximumCrewPositionSelections, 12);
+  assert.match(crewClient, /event\.key !== "Escape"/);
+  assert.match(crewClient, /closeOpenCrewPositionMultiSelects\(\)/);
+  assert.match(crewClient, /allPositions: "All positions"/);
+  assert.match(crewClient, /searchPositions: "Search positions"/);
+  assert.match(crewClient, /selected: "selected"/);
+  assert.match(crewClient, /noOptions: "No options found"/);
+  assert.match(
+    crewClient,
+    /publicJobSearchTaxonomy\.positions\.map\(\(value\) => \(\{ value, label: value \}\)\)/,
+  );
+  assert.match(
+    crewClient,
+    /import \{ publicJobSearchTaxonomy \} from "\.\.\/lib\/publicJobSearchConfig";/,
+  );
+  assert.doesNotMatch(
+    crewClient,
+    /new Set\(\[\.\.\.facets\.positions, \.\.\.draftFilters\.positions\]\)/,
+  );
+  assert.match(
+    crewClient,
+    /function submitAllCrewFilters\(\) \{\s*closeOpenCrewPositionMultiSelects\(\);\s*setFilters/,
+  );
+  assert.doesNotMatch(crewControl, /autoCapitalize=/);
 });
 
 test("clear filters stays beside both Search actions without closing More filters", async () => {
@@ -370,13 +438,13 @@ test("crew filter controls share equal columns and one select surface", async ()
 });
 
 test("find crew excludes Not available from filters while My Profile keeps it", async () => {
-  const [client, route, profile] = await Promise.all([
+  const [client, searchContract, profile] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
     ),
     readFile(
-      new URL("../app/api/find-crew/route.ts", import.meta.url),
+      new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
       "utf8",
     ),
     readFile(new URL("../app/profile/page.tsx", import.meta.url), "utf8"),
@@ -399,7 +467,7 @@ test("find crew excludes Not available from filters while My Profile keeps it", 
   assert.doesNotMatch(client, /options=\{crewAvailabilityStatuses\}/);
   assert.doesNotMatch(client, /options=\{facets\.availabilities\}/);
   assert.match(
-    route,
+    searchContract,
     /searchParams\.get\("availability"\),\s*crewDirectoryAvailabilityStatuses/,
   );
   assert.match(profile, /crewAvailabilityStatuses\.map/);
@@ -442,52 +510,190 @@ test("missing availability defaults to Available and explicit unavailability sta
 });
 
 test("find crew validates nationality against the complete country dataset", async () => {
-  const route = await readFile(
-    new URL("../app/api/find-crew/route.ts", import.meta.url),
+  const searchContract = await readFile(
+    new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
     "utf8",
   );
 
-  assert.match(route, /import \{ nationalityFilterValues \}/);
+  assert.match(searchContract, /import \{ nationalityFilterValues \}/);
   assert.match(
-    route,
+    searchContract,
     /searchParams\.get\("nationality"\),\s*nationalityFilterValues/,
   );
 });
 
 test("round-trips every public crew search criterion through the URL contract", () => {
-  const source = new URLSearchParams({
-    q: "  Chief   Stewardess  ",
-    position: "Chief Stewardess",
-    availability: "Available",
-    nationality: "Turkish",
-    maritalStatus: "Married",
-    gender: "Female",
-    smoker: "No",
-    visibleTattoos: "Yes",
-    experienceType: "other",
-    experienceMin: "3_5_years",
-    premium: "1",
-    photo: "1",
-    gallery: "1",
-    teamCouple: "1",
-  });
+  const source = new URLSearchParams([
+    ["q", "  Chief   Stewardess  "],
+    ["position", "Deckhand"],
+    ["position", "Chief Stewardess"],
+    ["availability", "Available"],
+    ["nationality", "Turkish"],
+    ["maritalStatus", "Married"],
+    ["gender", "Female"],
+    ["smoker", "No"],
+    ["visibleTattoos", "Yes"],
+    ["experienceType", "other"],
+    ["experienceMin", "3_5_years"],
+    ["premium", "1"],
+    ["photo", "1"],
+    ["gallery", "1"],
+    ["teamCouple", "1"],
+  ]);
 
   const filters = parseCrewSearchFilters(source);
   assert.equal(filters.query, "Chief Stewardess");
   assert.equal(filters.experienceType, "other");
   assert.equal(filters.minimumExperience, "3_5_years");
-  const normalizedSource = new URLSearchParams(source);
-  normalizedSource.set("q", "Chief Stewardess");
-  assert.equal(
-    crewSearchParams(filters).toString(),
-    normalizedSource.toString(),
-  );
+  assert.deepEqual(filters.positions, ["Chief Stewardess", "Deckhand"]);
+  const canonicalParams = crewSearchParams(filters);
+  assert.deepEqual(canonicalParams.getAll("position"), [
+    "Chief Stewardess",
+    "Deckhand",
+  ]);
+  assert.equal(canonicalParams.get("q"), "Chief Stewardess");
   assert.equal(filters.maritalStatus, "Married");
   assert.equal(filters.gender, "Female");
   assert.equal(filters.smoker, "No");
   assert.equal(filters.visibleTattoos, "Yes");
   assert.equal(filters.hasTeamCouple, true);
-  assert.equal(crewSearchFilterCount(filters), 14);
+  assert.equal(crewSearchFilterCount(filters), 15);
+});
+
+test("canonicalizes repeated crew positions and matches any exact selected role", () => {
+  const fromUrl = parseCrewSearchFilters(
+    new URLSearchParams([
+      ["position", "Deckhand"],
+      ["position", "Captain"],
+      ["position", "Deckhand"],
+    ]),
+  );
+  const fromPageProps = parseCrewSearchFilters({
+    position: ["Deckhand", "Captain", "Deckhand"],
+  });
+
+  assert.deepEqual(fromUrl.positions, ["Captain", "Deckhand"]);
+  assert.deepEqual(fromPageProps.positions, fromUrl.positions);
+  assert.equal(
+    crewSearchParams(fromUrl).toString(),
+    "position=Captain&position=Deckhand",
+  );
+  assert.equal(
+    crewSearchParams(fromPageProps).toString(),
+    crewSearchParams(fromUrl).toString(),
+  );
+
+  assert.equal(crewPositionsMatchFilters(["Captain"], []), true);
+  assert.equal(
+    crewPositionsMatchFilters(
+      ["Chief Stewardess", "Deckhand"],
+      ["Captain", "Deckhand"],
+    ),
+    true,
+  );
+  assert.equal(
+    crewPositionsMatchFilters(
+      ["Chief Stewardess", "Relief Captain"],
+      ["Captain", "Deckhand"],
+    ),
+    false,
+  );
+  assert.equal(
+    crewPositionsMatchFilters(["Fleet Captain"], ["Captain"]),
+    false,
+  );
+  assert.equal(
+    crewPositionsMatchFilters(["Captain"], ["Captain!"]),
+    false,
+  );
+  assert.equal(
+    crewPositionsMatchFilters(["CAPTAIN"], ["Captain"]),
+    true,
+  );
+});
+
+test("validates the crew position multi-select request boundary", async () => {
+  const [requestContract, route, page] = await Promise.all([
+    readFile(
+      new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../app/api/find-crew/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/find-crew/page.tsx", import.meta.url), "utf8"),
+  ]);
+  const allowedPositions = Array.from(
+    { length: maximumCrewPositionSelections + 1 },
+    (_, index) => `Position ${index + 1}`,
+  );
+  const twelvePositions = allowedPositions.slice(
+    0,
+    maximumCrewPositionSelections,
+  );
+
+  assert.equal(isValidCrewPositionSearchValues([], allowedPositions), true);
+  assert.equal(
+    isValidCrewPositionSearchValues(twelvePositions, allowedPositions),
+    true,
+  );
+  assert.equal(
+    isValidCrewPositionSearchValues(
+      [...twelvePositions, allowedPositions[12]],
+      allowedPositions,
+    ),
+    false,
+  );
+  assert.equal(
+    isValidCrewPositionSearchValues(["Unknown position"], allowedPositions),
+    false,
+  );
+  assert.equal(
+    isValidCrewPositionSearchValues(["position 1"], allowedPositions),
+    false,
+  );
+  assert.equal(
+    isValidCrewPositionSearchValues([" Position 1 "], allowedPositions),
+    false,
+  );
+  assert.equal(isValidCrewPositionSearchValues([""], allowedPositions), false);
+  assert.equal(
+    isValidCrewPositionSearchValues([" ".repeat(121)], allowedPositions),
+    false,
+  );
+  assert.equal(
+    isValidCrewPositionSearchValues(["Position 1\u0000"], allowedPositions),
+    false,
+  );
+  assert.equal(
+    isValidCrewPositionSearchValues(["Position 1\nMate"], allowedPositions),
+    false,
+  );
+  assert.match(
+    requestContract,
+    /!isValidCrewPositionSearchValues\(\s*searchParams\.getAll\("position"\),\s*publicJobSearchTaxonomy\.positions,\s*\)/,
+  );
+  assert.match(
+    requestContract,
+    /key === "position"[\s\S]*?valueCount > maximumCrewPositionSelections/,
+  );
+  assert.match(
+    requestContract,
+    /filters: parseCrewSearchFilters\(\s*searchParams,\s*publicJobSearchTaxonomy\.positions,\s*\)/,
+  );
+  assert.match(
+    requestContract,
+    /key === "position"[\s\S]*?: valueCount !== 1/,
+  );
+  assert.match(
+    route,
+    /import \{ parseCrewSearchRequest \} from "\.\.\/\.\.\/lib\/crewSearchRequest";/,
+  );
+  assert.match(
+    page,
+    /import \{ parseCrewSearchRequest \} from "\.\.\/lib\/crewSearchRequest";/,
+  );
+  assert.match(route, /const parsed = parseCrewSearchRequest\(searchParams\)/);
+  assert.match(page, /const parsed = parseCrewSearchRequest\(params\)/);
+  assert.match(page, /if \(!parsed\.ok\) redirect\("\/find-crew"\)/);
 });
 
 test("accepts only supported experience types and omits Any from canonical URLs", () => {
@@ -516,24 +722,27 @@ test("accepts only supported experience types and omits Any from canonical URLs"
 });
 
 test("find crew API rejects unsupported experience type values", async () => {
-  const route = await readFile(
-    new URL("../app/api/find-crew/route.ts", import.meta.url),
+  const searchContract = await readFile(
+    new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
     "utf8",
   );
 
   assert.match(
-    route,
+    searchContract,
     /experienceType = searchParams\.get\("experienceType"\)[\s\S]*?!isCrewExperienceType\(experienceType\)/,
   );
 });
 
 test("filters Team/Couple crew as separate profiles from accepted connections", async () => {
-  const [client, route, dataSource] = await Promise.all([
+  const [client, searchContract, dataSource] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
     ),
-    readFile(new URL("../app/api/find-crew/route.ts", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
+      "utf8",
+    ),
     readFile(new URL("../app/lib/findCrewData.ts", import.meta.url), "utf8"),
   ]);
 
@@ -553,7 +762,10 @@ test("filters Team/Couple crew as separate profiles from accepted connections", 
     /label=\{c\.hasTeamCouple\}[\s\S]*?checked=\{draftFilters\.hasTeamCouple\}/,
   );
   assert.match(client, /hasTeamCouple: "Team\/Couple"/);
-  assert.match(route, /"premium", "photo", "gallery", "teamCouple"/);
+  assert.match(
+    searchContract,
+    /const crewBooleanSearchParamKeys = \[\s*"premium",\s*"photo",\s*"gallery",\s*"teamCouple",\s*\]/,
+  );
   assert.match(dataSource, /\.from\("crew_team_relationships"\)/);
   assert.match(dataSource, /\.eq\("status", "accepted"\)/);
   assert.match(
@@ -740,7 +952,7 @@ test("rejects unsupported minimum yacht experience options", () => {
 });
 
 test("find crew uses minimum thresholds while Create a job retains every option", async () => {
-  const [client, manager, route, dataSource] = await Promise.all([
+  const [client, manager, searchContract, dataSource] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
@@ -750,7 +962,7 @@ test("find crew uses minimum thresholds while Create a job retains every option"
       "utf8",
     ),
     readFile(
-      new URL("../app/api/find-crew/route.ts", import.meta.url),
+      new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
       "utf8",
     ),
     readFile(
@@ -801,7 +1013,7 @@ test("find crew uses minimum thresholds while Create a job retains every option"
   );
   assert.match(manager, /jobMinimumYachtExperiences\.map/);
   assert.match(
-    route,
+    searchContract,
     /searchParams\.get\("experienceMin"\),\s*jobMinimumYachtExperiences/,
   );
   assert.match(

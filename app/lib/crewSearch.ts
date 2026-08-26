@@ -26,7 +26,7 @@ const crewYachtExperienceBounds: Record<
 
 export type CrewSearchFilters = {
   query: string;
-  position: string;
+  positions: string[];
   availability: string;
   nationality: string;
   maritalStatus: string;
@@ -58,6 +58,7 @@ export type CrewSearchFacets = {
 export const crewMaritalStatuses = ["Single", "Married"] as const;
 export const crewGenderOptions = ["Female", "Male"] as const;
 export const crewYesNoOptions = ["No", "Yes"] as const;
+export const maximumCrewPositionSelections = 12;
 
 export const emptyCrewSearchFacets: CrewSearchFacets = {
   positions: [],
@@ -72,7 +73,7 @@ export const emptyCrewSearchFacets: CrewSearchFacets = {
 
 export const defaultCrewSearchFilters: CrewSearchFilters = {
   query: "",
-  position: "",
+  positions: [],
   availability: "",
   nationality: "",
   maritalStatus: "",
@@ -111,13 +112,17 @@ type SearchParamSource =
 
 export function parseCrewSearchFilters(
   source: SearchParamSource,
+  allowedPositions?: readonly string[],
 ): CrewSearchFilters {
   const minimumExperience = normalizedMinimumYachtExperience(
     readSearchParam(source, "experienceMin"),
   );
   return normalizeCrewSearchFilters({
     query: limitedText(readSearchParam(source, "q"), 120),
-    position: limitedText(readSearchParam(source, "position"), 120),
+    positions: normalizedCrewPositionList(
+      readSearchParamList(source, "position"),
+      allowedPositions,
+    ),
     availability: normalizedDirectoryAvailability(
       readSearchParam(source, "availability"),
     ),
@@ -156,7 +161,7 @@ export function normalizeCrewSearchFilters(
   );
   return {
     query: limitedText(value.query, 120),
-    position: limitedText(value.position, 120),
+    positions: normalizedCrewPositionList(value.positions),
     availability: normalizedDirectoryAvailability(value.availability),
     nationality: limitedText(value.nationality, 80),
     maritalStatus: normalizedMaritalStatus(value.maritalStatus),
@@ -179,7 +184,7 @@ export function crewSearchParams(filters: CrewSearchFilters) {
   const normalized = normalizeCrewSearchFilters(filters);
   const params = new URLSearchParams();
   setText(params, "q", normalized.query);
-  setText(params, "position", normalized.position);
+  setList(params, "position", normalized.positions);
   setText(params, "availability", normalized.availability);
   setText(params, "nationality", normalized.nationality);
   setText(params, "maritalStatus", normalized.maritalStatus);
@@ -204,6 +209,35 @@ export function crewSearchFilterCount(filters: CrewSearchFilters) {
 
 export function crewSearchFingerprintInput(filters: CrewSearchFilters) {
   return crewSearchParams(filters).toString();
+}
+
+export function crewPositionsMatchFilters(
+  candidatePositions: readonly string[],
+  selectedPositions: readonly string[],
+) {
+  if (selectedPositions.length === 0) return true;
+  const selected = normalizedCrewPositionList(selectedPositions);
+  if (selected.length === 0) return false;
+
+  const candidateValues = new Set(
+    candidatePositions
+      .map(normalizedCrewPositionComparisonValue)
+      .filter(Boolean),
+  );
+  return selected.some((position) =>
+    candidateValues.has(normalizedCrewPositionComparisonValue(position)),
+  );
+}
+
+export function isValidCrewPositionSearchValues(
+  values: readonly string[],
+  allowedPositions: readonly string[],
+) {
+  const allowed = new Set(allowedPositions);
+  return (
+    values.length <= maximumCrewPositionSelections &&
+    values.every((value) => allowed.has(value))
+  );
 }
 
 export function isCrewExperienceType(
@@ -238,6 +272,45 @@ function readSearchParam(source: SearchParamSource, key: string) {
   if (source instanceof URLSearchParams) return source.get(key) || "";
   const value = source[key];
   return Array.isArray(value) ? value[0] || "" : value || "";
+}
+
+function readSearchParamList(source: SearchParamSource, key: string) {
+  if (source instanceof URLSearchParams) return source.getAll(key);
+  const value = source[key];
+  if (Array.isArray(value)) return value;
+  return typeof value === "string" ? [value] : [];
+}
+
+function normalizedCrewPositionList(
+  value: unknown,
+  allowedPositions?: readonly string[],
+) {
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? [value]
+      : [];
+  const normalized = Array.from(
+    new Set(
+      values
+        .map((position) => limitedText(position, 120))
+        .filter(Boolean),
+    ),
+  );
+  const allowed = allowedPositions ? new Set(allowedPositions) : null;
+  return normalized
+    .filter((position) => !allowed || allowed.has(position))
+    .sort((left, right) => left.localeCompare(right, "en-US"))
+    .slice(0, maximumCrewPositionSelections);
+}
+
+function normalizedCrewPositionComparisonValue(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("en-US")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 function limitedText(value: unknown, maximumLength: number) {
@@ -314,6 +387,12 @@ function experienceMeetsMinimum(
 
 function setText(params: URLSearchParams, key: string, value: string) {
   if (value) params.set(key, value);
+}
+
+function setList(params: URLSearchParams, key: string, values: readonly string[]) {
+  for (const value of normalizedCrewPositionList(values)) {
+    params.append(key, value);
+  }
 }
 
 function setNullableText(

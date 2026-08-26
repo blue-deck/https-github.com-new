@@ -29,6 +29,7 @@ import {
   crewExperienceTypes,
   crewGenderOptions,
   crewMaritalStatuses,
+  maximumCrewPositionSelections,
   crewSearchFilterCount,
   crewSearchParams,
   crewYesNoOptions,
@@ -40,6 +41,7 @@ import {
   type CrewSearchFilters,
 } from "../lib/crewSearch";
 import { translatePhrase, type Language } from "../lib/i18n";
+import { publicJobSearchTaxonomy } from "../lib/publicJobSearchConfig";
 
 const experienceTypeLabels = {
   en: { any: "Any", yacht: "Yacht", other: "Other" },
@@ -47,6 +49,8 @@ const experienceTypeLabels = {
 } as const;
 
 const crewFilterSelectClassName = `${NATIONALITY_CONTROL_SIZE_CLASS_NAME} appearance-none cursor-pointer rounded-xl border border-slate-200 bg-slate-50 py-0 pl-4 pr-12 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`;
+const crewPositionMultiSelectSelector =
+  'details[data-crew-position-multi-select="true"]';
 
 const findCrewMinimumExperienceThresholds = [
   "0_6_months",
@@ -64,16 +68,18 @@ type FindCrewClientProps = {
   initialNextCursor: string | null;
   initialHasMore: boolean;
   initialTotal: number;
-  initialFacets: CrewSearchFacets;
   initialFilters: CrewSearchFilters;
 };
+
+type SelectOption = { value: string; label: string };
+const crewPositionSelectOptions: readonly SelectOption[] =
+  publicJobSearchTaxonomy.positions.map((value) => ({ value, label: value }));
 
 export function FindCrewClient({
   profiles: initialProfiles,
   initialNextCursor,
   initialHasMore,
   initialTotal,
-  initialFacets,
   initialFilters,
 }: FindCrewClientProps) {
   const { language } = useLanguage();
@@ -82,7 +88,6 @@ export function FindCrewClient({
   const [nextCursor, setNextCursor] = useState(initialNextCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [total, setTotal] = useState(initialTotal);
-  const [facets, setFacets] = useState(initialFacets);
   const [filters, setFilters] = useState(() =>
     normalizeCrewSearchFilters(initialFilters),
   );
@@ -119,6 +124,34 @@ export function FindCrewClient({
 
     window.addEventListener("popstate", restoreFilters);
     return () => window.removeEventListener("popstate", restoreFilters);
+  }, []);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest(crewPositionMultiSelectSelector)
+      ) {
+        return;
+      }
+      closeOpenCrewPositionMultiSelects();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const openDetails = document.querySelector<HTMLDetailsElement>(
+        `${crewPositionMultiSelectSelector}[open]`,
+      );
+      if (!openDetails) return;
+      closeOpenCrewPositionMultiSelects();
+      openDetails.querySelector<HTMLElement>("summary")?.focus();
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   useEffect(
@@ -171,7 +204,6 @@ export function FindCrewClient({
         setNextCursor(payload.nextCursor);
         setHasMore(payload.hasMore);
         setTotal(payload.total);
-        setFacets(payload.facets);
         loadedFingerprint.current = filterFingerprint;
       } catch (error) {
         if (controller.signal.aborted || requestId !== requestSequence.current) {
@@ -219,6 +251,7 @@ export function FindCrewClient({
   }
 
   function submitAllCrewFilters() {
+    closeOpenCrewPositionMultiSelects();
     setFilters(normalizeCrewSearchFilters(draftFilters));
   }
 
@@ -270,7 +303,6 @@ export function FindCrewClient({
       setNextCursor(payload.nextCursor);
       setHasMore(payload.hasMore);
       setTotal(payload.total);
-      setFacets(payload.facets);
     } catch {
       if (controller.signal.aborted) return;
       setLoadMoreFailed(true);
@@ -375,12 +407,17 @@ export function FindCrewClient({
                   </button>
                 </span>
               </form>
-              <FilterSelect
+              <PositionMultiSelectField
                 label={c.position}
-                value={draftFilters.position}
-                onChange={(value) => setDraftFilter("position", value)}
-                options={facets.positions}
-                language={language}
+                placeholder={c.allPositions}
+                searchPlaceholder={c.searchPositions}
+                selectedLabel={c.selected}
+                emptyLabel={c.noOptions}
+                options={crewPositionSelectOptions}
+                values={draftFilters.positions}
+                maxSelections={maximumCrewPositionSelections}
+                searchLocale={language}
+                onChange={(positions) => setDraftFilter("positions", positions)}
               />
               <NationalitySearchField
                 key={`crew-nationality-${filterResetVersion}`}
@@ -736,6 +773,147 @@ function FilterSelect({
   );
 }
 
+function PositionMultiSelectField({
+  label,
+  placeholder,
+  searchPlaceholder,
+  selectedLabel,
+  emptyLabel,
+  options,
+  values,
+  maxSelections,
+  searchLocale,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  searchPlaceholder: string;
+  selectedLabel: string;
+  emptyLabel: string;
+  options: readonly SelectOption[];
+  values: readonly string[];
+  maxSelections: number;
+  searchLocale: Language;
+  onChange: (values: string[]) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const visibleOptions = normalizedSearch
+    ? options.filter((option) =>
+        option.label.toLocaleLowerCase().includes(normalizedSearch),
+      )
+    : options;
+  const selectionLimitReached = values.length >= maxSelections;
+  const selectionSummary =
+    values.length > 0 ? `${values.length} ${selectedLabel}` : placeholder;
+
+  return (
+    <div className="relative min-w-0">
+      <span className="mb-1.5 block text-xs font-bold text-slate-600">
+        {label}
+      </span>
+      <details
+        name="crew-position-multi-select"
+        data-crew-position-multi-select="true"
+        className="group relative"
+        onToggle={(event) => {
+          if (event.currentTarget.open) {
+            closeOpenCrewPositionMultiSelects(event.currentTarget);
+          }
+        }}
+      >
+        <summary
+          aria-label={`${label}: ${selectionSummary}`}
+          className="bd-focus flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden"
+        >
+          <span className="min-w-0 truncate">{selectionSummary}</span>
+          <ChevronDown
+            className="h-4 w-4 shrink-0 transition group-open:rotate-180"
+            aria-hidden
+          />
+        </summary>
+        <div className="absolute left-0 z-40 mt-2 w-full min-w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-950/10">
+          <label className="mb-2 block">
+            <span className="sr-only">{searchPlaceholder}</span>
+            <input
+              type="search"
+              value={search}
+              placeholder={searchPlaceholder}
+              onChange={(event) =>
+                setSearch(
+                  capitalizeFirstPositionSearchLetter(
+                    event.target.value,
+                    searchLocale,
+                  ),
+                )
+              }
+              className="min-h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+            />
+          </label>
+          <div
+            role="group"
+            aria-label={label}
+            className="max-h-64 space-y-0.5 overflow-y-auto overscroll-contain pr-1"
+          >
+            {visibleOptions.length > 0 ? (
+              visibleOptions.map((option) => {
+                const checked = values.includes(option.value);
+                return (
+                  <label
+                    key={option.value}
+                    className="flex min-h-9 cursor-pointer items-start gap-2 rounded-lg px-2 py-2 text-sm text-slate-700 hover:bg-cyan-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={!checked && selectionLimitReached}
+                      onChange={() =>
+                        onChange(
+                          checked
+                            ? values.filter((value) => value !== option.value)
+                            : [...values, option.value],
+                        )
+                      }
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-cyan-700 focus:ring-cyan-500 disabled:opacity-40"
+                    />
+                    <span data-i18n-ignore>{option.label}</span>
+                  </label>
+                );
+              })
+            ) : (
+              <p className="px-2 py-3 text-sm text-slate-500">{emptyLabel}</p>
+            )}
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function closeOpenCrewPositionMultiSelects(except?: HTMLDetailsElement) {
+  document
+    .querySelectorAll<HTMLDetailsElement>(
+      `${crewPositionMultiSelectSelector}[open]`,
+    )
+    .forEach((details) => {
+      if (details !== except) details.open = false;
+    });
+}
+
+function capitalizeFirstPositionSearchLetter(
+  value: string,
+  language: Language,
+) {
+  const firstLetter = value.match(/\p{L}/u);
+  if (!firstLetter || firstLetter.index === undefined) return value;
+  const index = firstLetter.index;
+  const letter = firstLetter[0];
+  const locale = language === "tr" ? "tr-TR" : "en-US";
+  return `${value.slice(0, index)}${letter.toLocaleUpperCase(locale)}${value.slice(
+    index + letter.length,
+  )}`;
+}
+
 function CrewFilterSelectControl({
   label,
   value,
@@ -1046,6 +1224,10 @@ const copy = {
     any: "Any",
     searchPlaceholder: "Position, skill, language or location",
     position: "Position",
+    allPositions: "All positions",
+    searchPositions: "Search positions",
+    selected: "selected",
+    noOptions: "No options found",
     availability: "Availability",
     selectAvailability: "Select availability",
     nationalityFilter: "Nationality",
@@ -1104,6 +1286,10 @@ const copy = {
     any: "Herhangi",
     searchPlaceholder: "Pozisyon, beceri, dil veya konum",
     position: "Pozisyon",
+    allPositions: "Tüm pozisyonlar",
+    searchPositions: "Pozisyon ara",
+    selected: "seçili",
+    noOptions: "Seçenek bulunamadı",
     availability: "Müsaitlik durumları",
     selectAvailability: "Müsaitlik durumu seçin",
     nationalityFilter: "Uyruklar",

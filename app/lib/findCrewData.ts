@@ -36,6 +36,7 @@ import {
 } from "./crewDiscovery";
 import {
   crewExperienceMatchesFilters,
+  crewPositionsMatchFilters,
   crewSearchFingerprintInput,
   defaultCrewSearchFilters,
   normalizeCrewSearchFilters,
@@ -665,13 +666,10 @@ function crewSearchRecordMatches(
   const preview = record.preview;
   const terms = normalizeCrewSearchText(filters.query).split(" ").filter(Boolean);
   if (terms.some((term) => !record.searchText.includes(term))) return false;
-  if (
-    filters.position &&
-    !hasExactCrewValue(
-      [preview.currentPosition, ...preview.seekingPositions],
-      filters.position,
-    )
-  ) {
+  if (!crewPositionsMatchFilters(
+    [preview.currentPosition, ...preview.seekingPositions],
+    filters.positions,
+  )) {
     return false;
   }
   if (
@@ -715,10 +713,6 @@ function crewSearchRecordMatches(
   if (filters.hasGallery && record.galleryCount === 0) return false;
   if (filters.hasTeamCouple && !record.hasTeamCouple) return false;
   return true;
-}
-
-function hasExactCrewValue(values: string[], expected: string) {
-  return values.some((value) => sameCrewValue(value, expected));
 }
 
 function sameCrewValue(left: string, right: string) {
