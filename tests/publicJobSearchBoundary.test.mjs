@@ -281,9 +281,9 @@ test("advanced job filters keep one symmetric grid for every control", async () 
     advanced.indexOf("label={c.department}"),
     advanced.indexOf("<SalaryFilterGroup"),
     advanced.indexOf("label={c.yachtLength}"),
-    advanced.indexOf("label={c.crewSize}"),
     advanced.indexOf("label={c.yachtType}"),
     advanced.indexOf("label={c.yachtProgram}"),
+    advanced.indexOf("label={c.crewSize}"),
     advanced.indexOf("label={c.yachtFlag}"),
     advanced.indexOf("label={c.teamCouple}"),
   ];

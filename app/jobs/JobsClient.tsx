@@ -714,33 +714,6 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <DualRangeSlider
-                    label={c.crewSize}
-                    anyLabel={c.anyCrewSize}
-                    fromLabel={c.from}
-                    upToLabel={c.upTo}
-                    minimumLabel={c.minimumCrewSize}
-                    maximumLabel={c.maximumCrewSize}
-                    noMinimumLabel={c.noMinimumCrewSize}
-                    noMaximumLabel={c.noMaximumCrewSize}
-                    minimumValue={draftFilters.crewMemberCountMin}
-                    maximumValue={draftFilters.crewMemberCountMax}
-                    minimum={publicJobCrewSizeSlider.minimumCrewMembers}
-                    maximum={publicJobCrewSizeSlider.maximumCrewMembers}
-                    step={publicJobCrewSizeSlider.stepCrewMembers}
-                    onMinimumChange={(crewMemberCountMin) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        crewMemberCountMin,
-                      }))
-                    }
-                    onMaximumChange={(crewMemberCountMax) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        crewMemberCountMax,
-                      }))
-                    }
-                  />
                   <MultiSelectField
                     label={c.yachtType}
                     placeholder={c.allYachtTypes}
@@ -767,6 +740,33 @@ export function JobsClient({
                         ...current,
                         yachtProgram: (value ||
                           null) as PublicJobSearchFilters["yachtProgram"],
+                      }))
+                    }
+                  />
+                  <DualRangeSlider
+                    label={c.crewSize}
+                    anyLabel={c.anyCrewSize}
+                    fromLabel={c.from}
+                    upToLabel={c.upTo}
+                    minimumLabel={c.minimumCrewSize}
+                    maximumLabel={c.maximumCrewSize}
+                    noMinimumLabel={c.noMinimumCrewSize}
+                    noMaximumLabel={c.noMaximumCrewSize}
+                    minimumValue={draftFilters.crewMemberCountMin}
+                    maximumValue={draftFilters.crewMemberCountMax}
+                    minimum={publicJobCrewSizeSlider.minimumCrewMembers}
+                    maximum={publicJobCrewSizeSlider.maximumCrewMembers}
+                    step={publicJobCrewSizeSlider.stepCrewMembers}
+                    onMinimumChange={(crewMemberCountMin) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        crewMemberCountMin,
+                      }))
+                    }
+                    onMaximumChange={(crewMemberCountMax) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        crewMemberCountMax,
                       }))
                     }
                   />
