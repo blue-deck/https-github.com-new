@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { AuthenticatedTopBar } from "./components/AuthenticatedTopBar";
 import { LanguageProvider } from "./components/LanguageProvider";
 import { PlatformBridge } from "./components/PlatformBridge";
+import { WebSessionInactivityGuard } from "./components/WebSessionInactivityGuard";
 import { BLUEDECK_SITE_URL } from "./lib/site";
 import "./globals.css";
 
@@ -94,6 +95,7 @@ export default function RootLayout({
         />
         <LanguageProvider>
           <PlatformBridge />
+          <WebSessionInactivityGuard />
           <AuthenticatedTopBar />
           {children}
         </LanguageProvider>

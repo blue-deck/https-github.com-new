@@ -10,10 +10,26 @@ import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useLanguage } from "../components/LanguageProvider";
 import type { TranslationKey } from "../lib/i18n";
 import { safeInternalPath } from "../lib/site";
-import { supabase } from "../lib/supabase";
+import {
+  supabase,
+  terminatePersistedSupabaseBrowserSession,
+} from "../lib/supabase";
 import { currentLegalAcceptance } from "../lib/legalPolicies";
 import { useTurnstileConfiguration } from "../lib/useTurnstileConfiguration";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
+import {
+  parseWebSessionIdleLock,
+  parseWebSessionActivity,
+  parseWebSessionLogoutMarker,
+  isVerifiedIdleLogoutTransition,
+  resolveWebSessionId,
+  WEB_SESSION_ACTIVITY_STORAGE_KEY,
+  WEB_SESSION_IDLE_LOCK_STORAGE_KEY,
+  WEB_SESSION_LOGOUT_STORAGE_KEY,
+  type WebSessionActivityRecord,
+  type WebSessionIdleLock,
+  type WebSessionLogoutMarker,
+} from "../lib/webSessionInactivity";
 
 type AuthMode = "login" | "signup";
 
@@ -110,6 +126,7 @@ export default function LoginPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const requestedNext = safeInternalPath(searchParams.get("next"));
+    const inactiveSession = searchParams.get("reason") === "inactive";
     const isPasswordRecovery =
       searchParams.get("mode") === "recovery" ||
       searchParams.get("type") === "recovery" ||
@@ -124,8 +141,64 @@ export default function LoginPage() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      if (!active) return;
 
-      if (active && session) router.replace(requestedNext);
+      let idleLock: WebSessionIdleLock | null = null;
+      let activity: WebSessionActivityRecord | null = null;
+      let logoutMarker: WebSessionLogoutMarker | null = null;
+      try {
+        idleLock = parseWebSessionIdleLock(
+          window.localStorage.getItem(WEB_SESSION_IDLE_LOCK_STORAGE_KEY),
+        );
+        activity = parseWebSessionActivity(
+          window.localStorage.getItem(WEB_SESSION_ACTIVITY_STORAGE_KEY),
+        );
+        logoutMarker = parseWebSessionLogoutMarker(
+          window.localStorage.getItem(WEB_SESSION_LOGOUT_STORAGE_KEY),
+        );
+      } catch {
+        // Storage can be unavailable in privacy modes.
+      }
+
+      const sessionId = session
+        ? resolveWebSessionId(session.access_token, session.user.id)
+        : "";
+      const tombstonedSession = Boolean(
+        sessionId && logoutMarker?.sessionId === sessionId,
+      );
+      if (tombstonedSession) {
+        const cleared = await terminatePersistedSupabaseBrowserSession(
+          session?.access_token,
+          session?.refresh_token,
+          sessionId,
+        );
+        if (!cleared) {
+          window.location.reload();
+          return;
+        }
+        if (
+          inactiveSession &&
+          isVerifiedIdleLogoutTransition(
+            idleLock,
+            logoutMarker,
+            activity,
+            sessionId,
+          )
+        ) {
+          setNotice(t("login.notice.inactiveSession"));
+        }
+        return;
+      }
+
+      if (
+        inactiveSession &&
+        isVerifiedIdleLogoutTransition(idleLock, logoutMarker, activity)
+      ) {
+        setNotice(t("login.notice.inactiveSession"));
+        return;
+      }
+
+      if (session) router.replace(requestedNext);
     }
 
     void redirectAuthenticatedUser();
@@ -133,7 +206,7 @@ export default function LoginPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, t]);
 
   async function submit() {
     setNotice("");
@@ -212,6 +285,14 @@ export default function LoginPage() {
           setCaptchaAttempt((attempt) => attempt + 1);
           setNotice(t("login.notice.loginService"));
           return;
+        }
+
+        try {
+          window.localStorage.removeItem(WEB_SESSION_ACTIVITY_STORAGE_KEY);
+          window.localStorage.removeItem(WEB_SESSION_IDLE_LOCK_STORAGE_KEY);
+          window.localStorage.removeItem(WEB_SESSION_LOGOUT_STORAGE_KEY);
+        } catch {
+          // The global session guard maintains an in-memory fallback.
         }
 
         window.location.href = nextPath;

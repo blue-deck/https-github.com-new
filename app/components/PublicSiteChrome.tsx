@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { type TranslationKey } from "../lib/i18n";
-import { clearLegacySensitiveClientStorage } from "../lib/clientStorageSecurity";
+import { endWebBrowserSession } from "../lib/webBrowserSession";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
@@ -113,10 +113,9 @@ export function PublicHeader() {
   }, [menuOpen]);
 
   async function logout() {
-    clearLegacySensitiveClientStorage();
-    const { supabase } = await import("../lib/supabase");
-    await supabase.auth.signOut();
-    window.location.assign("/login");
+    const ended = await endWebBrowserSession("manual");
+    if (ended) window.location.replace("/login");
+    else window.location.reload();
   }
 
   return (

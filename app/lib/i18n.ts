@@ -296,6 +296,8 @@ const en = {
   "login.notice.confirmationSent": "Confirmation email sent again. Please check your inbox.",
   "login.notice.resendFailed":
     "BlueDeck could not resend the confirmation email. Please try again in a moment.",
+  "login.notice.inactiveSession":
+    "For your security, you were signed out after 2 hours without activity. Sign in again to continue.",
   "password.strength": "Password strength",
   "password.weak": "Weak",
   "password.medium": "Medium",
@@ -664,6 +666,8 @@ const tr: Record<TranslationKey, string> = {
   "login.notice.enterEmail": "Önce e-postanızı girin.",
   "login.notice.confirmationSent": "Onay e-postası tekrar gönderildi. Lütfen gelen kutunuzu kontrol edin.",
   "login.notice.resendFailed": "BlueDeck onay e-postasını tekrar gönderemedi. Lütfen biraz sonra tekrar deneyin.",
+  "login.notice.inactiveSession":
+    "Güvenliğiniz için 2 saat işlem yapılmadığından oturumunuz kapatıldı. Devam etmek için yeniden giriş yapın.",
   "password.strength": "Şifre gücü",
   "password.weak": "Zayıf",
   "password.medium": "Orta",

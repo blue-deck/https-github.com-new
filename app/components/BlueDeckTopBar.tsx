@@ -25,9 +25,9 @@ import {
   type AccountIdentity,
 } from "../lib/accountIdentity";
 import { languages } from "../lib/i18n";
-import { clearLegacySensitiveClientStorage } from "../lib/clientStorageSecurity";
 import { canUseCrewWorkspace } from "../lib/marketplaceCapabilities";
 import { supabase } from "../lib/supabase";
+import { endWebBrowserSession } from "../lib/webBrowserSession";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { useLanguage } from "./LanguageProvider";
 
@@ -254,9 +254,9 @@ export function BlueDeckTopBar() {
   ];
 
   async function logout() {
-    clearLegacySensitiveClientStorage();
-    await supabase.auth.signOut();
-    window.location.href = "/login";
+    const ended = await endWebBrowserSession("manual");
+    if (ended) window.location.replace("/login");
+    else window.location.reload();
   }
 
   return (
