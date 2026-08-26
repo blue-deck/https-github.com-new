@@ -385,27 +385,67 @@ test("crew filter controls share equal columns and one select surface", async ()
     client,
     /id="crew-keyword-search"[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
   );
-  const selectClassMatch = client.match(
-    /const crewFilterSelectClassName = `\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\} ([^`]+)`;/,
+  const surfaceClassMatch = client.match(
+    /const crewFilterControlSurfaceClassName = `\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\} ([^`]+)`;/,
   );
-  assert.ok(selectClassMatch);
-  const selectClassTokens = new Set(selectClassMatch[1].split(/\s+/));
+  assert.ok(surfaceClassMatch);
+  const surfaceClassTokens = new Set(surfaceClassMatch[1].split(/\s+/));
   for (const token of [
-    "appearance-none",
     "rounded-xl",
     "border-slate-200",
     "bg-slate-50",
-    "py-0",
-    "pl-4",
-    "pr-12",
     "text-slate-950",
     "focus:border-cyan-500",
     "focus:bg-white",
     "focus:ring-4",
     "focus:ring-cyan-100",
   ]) {
+    assert.ok(surfaceClassTokens.has(token), `missing surface class: ${token}`);
+  }
+
+  const selectClassMatch = client.match(
+    /const crewFilterSelectClassName = `\$\{crewFilterControlSurfaceClassName\} ([^`]+)`;/,
+  );
+  assert.ok(selectClassMatch);
+  const selectClassTokens = new Set(selectClassMatch[1].split(/\s+/));
+  for (const token of [
+    "appearance-none",
+    "cursor-pointer",
+    "py-0",
+    "pl-4",
+    "pr-12",
+  ]) {
     assert.ok(selectClassTokens.has(token), `missing select class: ${token}`);
   }
+
+  const positionStart = client.indexOf("function PositionMultiSelectField");
+  const positionEnd = client.indexOf(
+    "function closeOpenCrewPositionMultiSelects",
+    positionStart,
+  );
+  const positionControl = client.slice(positionStart, positionEnd);
+  const positionClassMatch = positionControl.match(
+    /<summary[\s\S]*?className=\{`\$\{crewFilterControlSurfaceClassName\} ([^`]+)`\}/,
+  );
+
+  assert.ok(positionStart >= 0 && positionEnd > positionStart);
+  assert.ok(positionClassMatch);
+  const positionClassTokens = new Set(positionClassMatch[1].split(/\s+/));
+  for (const token of [
+    "relative",
+    "flex",
+    "cursor-pointer",
+    "list-none",
+    "items-center",
+    "pl-4",
+    "pr-12",
+  ]) {
+    assert.ok(positionClassTokens.has(token), `missing position class: ${token}`);
+  }
+  assert.match(positionControl, /className="min-w-0 flex-1 truncate"/);
+  assert.match(positionControl, /aria-hidden="true"/);
+  assert.match(positionControl, /pointer-events-none/);
+  assert.match(positionControl, /group-open:rotate-180/);
 
   const sharedSelectStart = client.indexOf(
     "function CrewFilterSelectControl",

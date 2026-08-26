@@ -48,7 +48,8 @@ const experienceTypeLabels = {
   tr: { any: "Tümü", yacht: "Yat", other: "Diğer" },
 } as const;
 
-const crewFilterSelectClassName = `${NATIONALITY_CONTROL_SIZE_CLASS_NAME} appearance-none cursor-pointer rounded-xl border border-slate-200 bg-slate-50 py-0 pl-4 pr-12 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`;
+const crewFilterControlSurfaceClassName = `${NATIONALITY_CONTROL_SIZE_CLASS_NAME} rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`;
+const crewFilterSelectClassName = `${crewFilterControlSurfaceClassName} appearance-none cursor-pointer py-0 pl-4 pr-12`;
 const crewPositionMultiSelectSelector =
   'details[data-crew-position-multi-select="true"]';
 
@@ -828,13 +829,15 @@ function PositionMultiSelectField({
       >
         <summary
           aria-label={`${label}: ${selectionSummary}`}
-          className="bd-focus flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden"
+          className={`${crewFilterControlSurfaceClassName} relative flex cursor-pointer list-none items-center pl-4 pr-12 hover:border-cyan-400 [&::-webkit-details-marker]:hidden`}
         >
-          <span className="min-w-0 truncate">{selectionSummary}</span>
-          <ChevronDown
-            className="h-4 w-4 shrink-0 transition group-open:rotate-180"
-            aria-hidden
-          />
+          <span className="min-w-0 flex-1 truncate">{selectionSummary}</span>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-1 top-1/2 flex h-10 w-9 -translate-y-1/2 items-center justify-center text-cyan-700"
+          >
+            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" />
+          </span>
         </summary>
         <div className="absolute left-0 z-40 mt-2 w-full min-w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-950/10">
           <label className="mb-2 block">
