@@ -13,6 +13,7 @@ import {
   isValidCrewPositionSearchValues,
   maximumCrewPositionSelections,
   parseCrewSearchFilters,
+  parseCrewSearchRequestWithOptions,
 } from "../app/lib/crewSearch.ts";
 import {
   crewAvailabilityStatuses,
@@ -206,6 +207,14 @@ test("find crew position control mirrors the searchable Find Jobs multi-select",
   assert.match(
     crewClient,
     /function submitAllCrewFilters\(\) \{\s*closeOpenCrewPositionMultiSelects\(\);\s*setFilters/,
+  );
+  assert.match(
+    crewClient,
+    /const parsed = parseCrewSearchRequest\(\s*new URLSearchParams\(window\.location\.search\),\s*\)/,
+  );
+  assert.match(
+    crewClient,
+    /parsed\.ok && !parsed\.cursor\s*\? parsed\.filters\s*: defaultCrewSearchFilters/,
   );
   assert.doesNotMatch(crewControl, /autoCapitalize=/);
 });
@@ -468,7 +477,7 @@ test("find crew excludes Not available from filters while My Profile keeps it", 
   assert.doesNotMatch(client, /options=\{facets\.availabilities\}/);
   assert.match(
     searchContract,
-    /searchParams\.get\("availability"\),\s*crewDirectoryAvailabilityStatuses/,
+    /availabilities: crewDirectoryAvailabilityStatuses/,
   );
   assert.match(profile, /crewAvailabilityStatuses\.map/);
   assert.doesNotMatch(profile, /<option value="">Select availability<\/option>/);
@@ -518,7 +527,7 @@ test("find crew validates nationality against the complete country dataset", asy
   assert.match(searchContract, /import \{ nationalityFilterValues \}/);
   assert.match(
     searchContract,
-    /searchParams\.get\("nationality"\),\s*nationalityFilterValues/,
+    /nationalities: nationalityFilterValues/,
   );
 });
 
@@ -613,11 +622,12 @@ test("canonicalizes repeated crew positions and matches any exact selected role"
 });
 
 test("validates the crew position multi-select request boundary", async () => {
-  const [requestContract, route, page] = await Promise.all([
+  const [requestContract, searchContract, route, page] = await Promise.all([
     readFile(
       new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
       "utf8",
     ),
+    readFile(new URL("../app/lib/crewSearch.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/find-crew/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/find-crew/page.tsx", import.meta.url), "utf8"),
   ]);
@@ -629,6 +639,12 @@ test("validates the crew position multi-select request boundary", async () => {
     0,
     maximumCrewPositionSelections,
   );
+  const requestOptions = {
+    positions: allowedPositions,
+    availabilities: ["Available"],
+    nationalities: ["Turkish"],
+    minimumExperiences: ["1_year"],
+  };
 
   assert.equal(isValidCrewPositionSearchValues([], allowedPositions), true);
   assert.equal(
@@ -667,20 +683,85 @@ test("validates the crew position multi-select request boundary", async () => {
     isValidCrewPositionSearchValues(["Position 1\nMate"], allowedPositions),
     false,
   );
-  assert.match(
-    requestContract,
-    /!isValidCrewPositionSearchValues\(\s*searchParams\.getAll\("position"\),\s*publicJobSearchTaxonomy\.positions,\s*\)/,
+
+  const validRepeated = parseCrewSearchRequestWithOptions(
+    new URLSearchParams([
+      ["position", "Position 2"],
+      ["position", "Position 1"],
+      ["position", "Position 2"],
+      ["availability", "Available"],
+    ]),
+    requestOptions,
+  );
+  assert.equal(validRepeated.ok, true);
+  assert.deepEqual(
+    validRepeated.ok ? validRepeated.filters.positions : [],
+    ["Position 1", "Position 2"],
+  );
+  assert.equal(
+    parseCrewSearchRequestWithOptions(
+      new URLSearchParams(
+        twelvePositions.map((position) => ["position", position]),
+      ),
+      requestOptions,
+    ).ok,
+    true,
+  );
+  assert.equal(
+    parseCrewSearchRequestWithOptions(
+      new URLSearchParams(
+        allowedPositions.map((position) => ["position", position]),
+      ),
+      requestOptions,
+    ).ok,
+    false,
+  );
+  assert.equal(
+    parseCrewSearchRequestWithOptions(
+      new URLSearchParams({ position: "Unknown position" }),
+      requestOptions,
+    ).ok,
+    false,
+  );
+  assert.equal(
+    parseCrewSearchRequestWithOptions(
+      new URLSearchParams([
+        ["q", "Captain"],
+        ["q", "Deckhand"],
+      ]),
+      requestOptions,
+    ).ok,
+    false,
+  );
+  const validCursor = `v2.${"a".repeat(16)}.b.${"c".repeat(22)}`;
+  assert.equal(
+    parseCrewSearchRequestWithOptions(
+      new URLSearchParams({ cursor: validCursor }),
+      requestOptions,
+    ).ok,
+    true,
+  );
+  assert.equal(
+    parseCrewSearchRequestWithOptions(
+      new URLSearchParams({ cursor: "v2.invalid" }),
+      requestOptions,
+    ).ok,
+    false,
   );
   assert.match(
     requestContract,
+    /positions: publicJobSearchTaxonomy\.positions/,
+  );
+  assert.match(
+    searchContract,
     /key === "position"[\s\S]*?valueCount > maximumCrewPositionSelections/,
   );
   assert.match(
     requestContract,
-    /filters: parseCrewSearchFilters\(\s*searchParams,\s*publicJobSearchTaxonomy\.positions,\s*\)/,
+    /return parseCrewSearchRequestWithOptions\(searchParams, \{/,
   );
   assert.match(
-    requestContract,
+    searchContract,
     /key === "position"[\s\S]*?: valueCount !== 1/,
   );
   assert.match(
@@ -723,7 +804,7 @@ test("accepts only supported experience types and omits Any from canonical URLs"
 
 test("find crew API rejects unsupported experience type values", async () => {
   const searchContract = await readFile(
-    new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
+    new URL("../app/lib/crewSearch.ts", import.meta.url),
     "utf8",
   );
 
@@ -739,10 +820,7 @@ test("filters Team/Couple crew as separate profiles from accepted connections", 
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
     ),
-    readFile(
-      new URL("../app/lib/crewSearchRequest.ts", import.meta.url),
-      "utf8",
-    ),
+    readFile(new URL("../app/lib/crewSearch.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/lib/findCrewData.ts", import.meta.url), "utf8"),
   ]);
 
@@ -1014,7 +1092,7 @@ test("find crew uses minimum thresholds while Create a job retains every option"
   assert.match(manager, /jobMinimumYachtExperiences\.map/);
   assert.match(
     searchContract,
-    /searchParams\.get\("experienceMin"\),\s*jobMinimumYachtExperiences/,
+    /minimumExperiences: jobMinimumYachtExperiences/,
   );
   assert.match(
     dataSource,

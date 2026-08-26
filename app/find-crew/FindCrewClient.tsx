@@ -35,11 +35,11 @@ import {
   crewYesNoOptions,
   defaultCrewSearchFilters,
   normalizeCrewSearchFilters,
-  parseCrewSearchFilters,
   type CrewExperienceType,
   type CrewSearchFacets,
   type CrewSearchFilters,
 } from "../lib/crewSearch";
+import { parseCrewSearchRequest } from "../lib/crewSearchRequest";
 import { translatePhrase, type Language } from "../lib/i18n";
 import { publicJobSearchTaxonomy } from "../lib/publicJobSearchConfig";
 
@@ -114,9 +114,13 @@ export function FindCrewClient({
 
   useEffect(() => {
     function restoreFilters() {
-      const restored = parseCrewSearchFilters(
+      const parsed = parseCrewSearchRequest(
         new URLSearchParams(window.location.search),
       );
+      const restored =
+        parsed.ok && !parsed.cursor
+          ? parsed.filters
+          : defaultCrewSearchFilters;
       setFilters(restored);
       setDraftFilters(restored);
       if (hasAdvancedCrewFilters(restored)) setAdvancedOpen(true);

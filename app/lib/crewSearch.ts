@@ -106,6 +106,30 @@ export const crewSearchParamKeys = new Set([
   "cursor",
 ]);
 
+export type CrewSearchRequestOptions = {
+  positions: readonly string[];
+  availabilities: readonly string[];
+  nationalities: readonly string[];
+  minimumExperiences: readonly string[];
+};
+
+export type CrewSearchRequestParseResult =
+  | {
+      ok: true;
+      filters: CrewSearchFilters;
+      cursor: string;
+    }
+  | { ok: false };
+
+const crewBooleanSearchParamKeys = [
+  "premium",
+  "photo",
+  "gallery",
+  "teamCouple",
+] as const;
+const crewSearchCursorPattern =
+  /^v2\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{1,256}\.[A-Za-z0-9_-]{22}$/;
+
 type SearchParamSource =
   | URLSearchParams
   | Record<string, string | string[] | undefined>;
@@ -151,6 +175,79 @@ export function parseCrewSearchFilters(
     hasGallery: readSearchParam(source, "gallery") === "1",
     hasTeamCouple: readSearchParam(source, "teamCouple") === "1",
   });
+}
+
+export function parseCrewSearchRequestWithOptions(
+  searchParams: URLSearchParams,
+  options: CrewSearchRequestOptions,
+): CrewSearchRequestParseResult {
+  const keys = Array.from(new Set(searchParams.keys()));
+  if (
+    keys.some((key) => {
+      const valueCount = searchParams.getAll(key).length;
+      return (
+        !crewSearchParamKeys.has(key) ||
+        (key === "position"
+          ? valueCount > maximumCrewPositionSelections
+          : valueCount !== 1)
+      );
+    }) ||
+    Array.from(searchParams.values()).some((value) => value.length > 256) ||
+    !isValidCrewPositionSearchValues(
+      searchParams.getAll("position"),
+      options.positions,
+    )
+  ) {
+    return { ok: false };
+  }
+
+  for (const key of crewBooleanSearchParamKeys) {
+    const value = searchParams.get(key);
+    if (value !== null && value !== "1") return { ok: false };
+  }
+
+  const experienceType = searchParams.get("experienceType");
+  if (experienceType !== null && !isCrewExperienceType(experienceType)) {
+    return { ok: false };
+  }
+
+  if (
+    !isAllowedCrewOption(
+      searchParams.get("availability"),
+      options.availabilities,
+    ) ||
+    !isAllowedCrewOption(
+      searchParams.get("experienceMin"),
+      options.minimumExperiences,
+    ) ||
+    !isAllowedCrewOption(
+      searchParams.get("nationality"),
+      options.nationalities,
+    ) ||
+    !isAllowedCrewOption(
+      searchParams.get("maritalStatus"),
+      crewMaritalStatuses,
+    ) ||
+    !isAllowedCrewOption(searchParams.get("gender"), crewGenderOptions) ||
+    !isAllowedCrewOption(searchParams.get("smoker"), crewYesNoOptions) ||
+    !isAllowedCrewOption(
+      searchParams.get("visibleTattoos"),
+      crewYesNoOptions,
+    )
+  ) {
+    return { ok: false };
+  }
+
+  const cursor = searchParams.get("cursor") || "";
+  if (cursor && !crewSearchCursorPattern.test(cursor)) {
+    return { ok: false };
+  }
+
+  return {
+    ok: true,
+    filters: parseCrewSearchFilters(searchParams, options.positions),
+    cursor,
+  };
 }
 
 export function normalizeCrewSearchFilters(
@@ -343,6 +440,13 @@ function normalizedCrewProfileOption(
 ) {
   const normalized = limitedText(value, 60);
   return options.includes(normalized) ? normalized : "";
+}
+
+function isAllowedCrewOption(
+  value: string | null,
+  options: readonly string[],
+) {
+  return value === null || options.includes(value);
 }
 
 function normalizeCrewExperienceType(value: unknown): CrewExperienceType {
