@@ -1085,36 +1085,36 @@ function SalaryFilterGroup({
   return (
     <fieldset className="min-w-0 rounded-2xl border border-cyan-100 bg-white/80 p-3 sm:col-span-2 sm:p-4 lg:col-span-2">
       <legend className="sr-only">{salaryLabel}</legend>
-      <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 md:grid-cols-2">
         <SalaryAmountField
           label={minimumLabel}
           currencyLabel={currencyLabel}
           anyCurrencyLabel={anyCurrencyLabel}
+          periodLabel={periodLabel}
+          anyPeriodLabel={anyPeriodLabel}
           value={minimum}
           currency={currency}
+          period={period}
           currencyOptions={currencyOptions}
+          periodOptions={periodOptions}
           onAmountChange={onMinimumChange}
           onCurrencyChange={onCurrencyChange}
+          onPeriodChange={onPeriodChange}
         />
         <SalaryAmountField
           label={maximumLabel}
           currencyLabel={currencyLabel}
           anyCurrencyLabel={anyCurrencyLabel}
+          periodLabel={periodLabel}
+          anyPeriodLabel={anyPeriodLabel}
           value={maximum}
           currency={currency}
+          period={period}
           currencyOptions={currencyOptions}
+          periodOptions={periodOptions}
           onAmountChange={onMaximumChange}
           onCurrencyChange={onCurrencyChange}
-        />
-      </div>
-      <div className="mt-3 min-w-0 sm:w-[calc(50%-0.375rem)]">
-        <FilterSelect
-          allowEmpty
-          label={periodLabel}
-          placeholder={anyPeriodLabel}
-          value={period}
-          options={periodOptions}
-          onChange={onPeriodChange}
+          onPeriodChange={onPeriodChange}
         />
       </div>
     </fieldset>
@@ -1125,20 +1125,30 @@ function SalaryAmountField({
   label,
   currencyLabel,
   anyCurrencyLabel,
+  periodLabel,
+  anyPeriodLabel,
   value,
   currency,
+  period,
   currencyOptions,
+  periodOptions,
   onAmountChange,
   onCurrencyChange,
+  onPeriodChange,
 }: {
   label: string;
   currencyLabel: string;
   anyCurrencyLabel: string;
+  periodLabel: string;
+  anyPeriodLabel: string;
   value: number | null;
   currency: string;
+  period: string;
   currencyOptions: readonly SelectOption[];
+  periodOptions: readonly SelectOption[];
   onAmountChange: (value: number | null) => void;
   onCurrencyChange: (value: string) => void;
+  onPeriodChange: (value: string) => void;
 }) {
   const inputId = useId();
 
@@ -1150,7 +1160,7 @@ function SalaryAmountField({
       >
         {label}
       </label>
-      <div className="flex min-h-12 min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100">
+      <div className="grid min-h-12 min-w-0 grid-cols-2 overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 min-[390px]:grid-cols-[minmax(0,1fr)_6.75rem_5.75rem] sm:grid-cols-[minmax(0,1fr)_7.25rem_6.75rem]">
         <input
           id={inputId}
           type="text"
@@ -1166,18 +1176,38 @@ function SalaryAmountField({
               ),
             )
           }
-          className="min-w-0 flex-1 bg-transparent px-3 text-sm font-semibold tabular-nums text-slate-950 outline-none placeholder:text-slate-400"
+          className="col-span-2 min-h-12 min-w-0 bg-transparent px-3 text-sm font-semibold tabular-nums text-slate-950 outline-none placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] min-[390px]:col-span-1"
         />
-        <span className="relative flex w-[7.75rem] shrink-0 border-l border-slate-200 bg-slate-50 sm:w-[8.25rem]">
+        <span className="relative flex min-h-12 min-w-0 border-t border-slate-200 bg-slate-50 min-[390px]:border-l min-[390px]:border-t-0">
           <select
             aria-label={`${label} ${currencyLabel}`}
             title={`${label} ${currencyLabel}`}
             value={currency}
             onChange={(event) => onCurrencyChange(event.target.value)}
-            className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-3 pr-7 text-xs font-black text-slate-800 outline-none sm:text-sm"
+            className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-3 pr-7 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] sm:text-sm"
           >
             <option value="">{anyCurrencyLabel}</option>
             {currencyOptions.map((option) => (
+              <option data-i18n-ignore key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+            aria-hidden
+          />
+        </span>
+        <span className="relative flex min-h-12 min-w-0 border-l border-t border-slate-200 bg-slate-50 min-[390px]:border-t-0">
+          <select
+            aria-label={`${label} ${periodLabel}`}
+            title={`${label} ${periodLabel}`}
+            value={period}
+            onChange={(event) => onPeriodChange(event.target.value)}
+            className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-2.5 pr-7 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] sm:pl-3 sm:text-sm"
+          >
+            <option value="">{anyPeriodLabel}</option>
+            {periodOptions.map((option) => (
               <option data-i18n-ignore key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -2234,7 +2264,7 @@ const copy = {
     currency: "Salary currency",
     anyCurrencyOption: "Any",
     payPeriod: "Salary period",
-    anyPeriod: "Any period",
+    anyPeriod: "Any",
     minimumSalary: "Minimum salary",
     maximumSalary: "Maximum salary",
     results: "Current opportunities",
@@ -2330,7 +2360,7 @@ const copy = {
     currency: "Ücret para birimi",
     anyCurrencyOption: "Tümü",
     payPeriod: "Ücret dönemi",
-    anyPeriod: "Tüm dönemler",
+    anyPeriod: "Tümü",
     minimumSalary: "Minimum ücret",
     maximumSalary: "Maksimum ücret",
     results: "Güncel fırsatlar",

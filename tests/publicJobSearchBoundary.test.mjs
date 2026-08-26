@@ -293,14 +293,45 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   assert.notEqual(groupEnd, -1);
   assert.equal(salaryGroup.match(/<SalaryAmountField\b/g)?.length, 2);
   assert.equal(salaryGroup.match(/currency=\{currency\}/g)?.length, 2);
-  assert.ok(
-    salaryGroup.indexOf("label={periodLabel}") >
-      salaryGroup.lastIndexOf("<SalaryAmountField"),
+  assert.equal(salaryGroup.match(/period=\{period\}/g)?.length, 2);
+  assert.equal(
+    salaryGroup.match(/periodOptions=\{periodOptions\}/g)?.length,
+    2,
   );
+  assert.equal(
+    salaryGroup.match(/onPeriodChange=\{onPeriodChange\}/g)?.length,
+    2,
+  );
+  assert.doesNotMatch(salaryGroup, /<FilterSelect/);
+  assert.match(salaryGroup, /md:grid-cols-2/);
   assert.match(
     salaryGroup,
     /rounded-2xl border border-cyan-100 bg-white\/80/,
   );
+
+  const amountStart = client.indexOf("function SalaryAmountField(");
+  const amountEnd = client.indexOf(
+    "function YachtLengthRangeSlider(",
+    amountStart,
+  );
+  const amountField = client.slice(amountStart, amountEnd);
+  assert.notEqual(amountStart, -1);
+  assert.notEqual(amountEnd, -1);
+  assert.equal(amountField.match(/<select\b/g)?.length, 2);
+  assert.match(amountField, /aria-label=\{`\$\{label\} \$\{currencyLabel\}`\}/);
+  assert.match(amountField, /aria-label=\{`\$\{label\} \$\{periodLabel\}`\}/);
+  assert.match(amountField, /onPeriodChange\(event\.target\.value\)/);
+  assert.match(amountField, /periodOptions\.map\(\(option\) =>/);
+  assert.ok(
+    amountField.indexOf('type="text"') <
+      amountField.indexOf('aria-label={`${label} ${currencyLabel}`}'),
+  );
+  assert.ok(
+    amountField.indexOf('aria-label={`${label} ${currencyLabel}`}') <
+      amountField.indexOf('aria-label={`${label} ${periodLabel}`}'),
+  );
+  assert.match(amountField, /grid-cols-2/);
+  assert.match(amountField, /min-\[390px\]:grid-cols-/);
 });
 
 test("yacht length is an accessible two-thumb 0–200 m range backed by exact unit conversion", async () => {
