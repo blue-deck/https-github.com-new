@@ -1594,18 +1594,24 @@ function FilterSelect({
       <span className="mb-1.5 block text-xs font-bold text-slate-600">
         {label}
       </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-      >
-        {!value || allowEmpty ? <option value="">{placeholder}</option> : null}
-        {options.map((option) => (
-          <option data-i18n-ignore key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <span className="relative block h-12 w-full">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="bd-focus h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-4 pr-10 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+        >
+          {!value || allowEmpty ? <option value="">{placeholder}</option> : null}
+          {options.map((option) => (
+            <option data-i18n-ignore key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden
+          className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600"
+        />
+      </span>
     </label>
   );
 }

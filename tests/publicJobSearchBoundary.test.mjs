@@ -605,6 +605,12 @@ test("Team/Couple stays a binary filter while Any listings match either choice",
 
   assert.match(client, /label=\{c\.teamCouple\}/);
   assert.match(client, /placeholder=\{c\.anyTeamCouple\}/);
+  const filterSelectStart = client.indexOf("function FilterSelect(");
+  const filterSelectEnd = client.indexOf("function MultiSelectField(", filterSelectStart);
+  const filterSelect = client.slice(filterSelectStart, filterSelectEnd);
+  assert.match(filterSelect, /className="relative block h-12 w-full"/);
+  assert.match(filterSelect, /className="bd-focus h-12 w-full[^\"]*appearance-none/);
+  assert.match(filterSelect, /<ChevronDown[\s\S]*?pointer-events-none absolute right-4/);
   assert.match(client, /if \(value === "yes"\) return \["team", "couple"\]/);
   assert.match(client, /if \(value === "no"\) return \["individual"\]/);
   assert.match(search, /return value === "any" \|\| includesSelected\(selected, value\)/);
