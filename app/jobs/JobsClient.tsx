@@ -84,6 +84,8 @@ export type JobsClientProps = {
 
 const cursorPattern = /^v1\.[A-Za-z0-9_-]{16}\.[A-Za-z0-9_-]{24,2000}$/;
 const jobMultiSelectSelector = 'details[data-job-multi-select="true"]';
+const defaultSalaryCurrency = "EUR" as const;
+const defaultSalaryPeriod = "month" as const;
 
 export function JobsClient({
   initialFilters,
@@ -383,11 +385,11 @@ export function JobsClient({
       sort,
       salaryCurrency:
         sort.startsWith("salary_") && !current.salaryCurrency
-          ? ("EUR" as const)
+          ? defaultSalaryCurrency
           : current.salaryCurrency,
       salaryPeriod:
         sort.startsWith("salary_") && !current.salaryPeriod
-          ? ("month" as const)
+          ? defaultSalaryPeriod
           : current.salaryPeriod,
     });
     setDraftFilters(withSort);
@@ -747,13 +749,13 @@ export function JobsClient({
                     minimumLabel={c.minimumSalary}
                     maximumLabel={c.maximumSalary}
                     currencyLabel={c.currency}
-                    anyCurrencyLabel={c.anyCurrencyOption}
                     periodLabel={c.payPeriod}
-                    anyPeriodLabel={c.anyPeriod}
                     minimum={draftFilters.salaryMin}
                     maximum={draftFilters.salaryMax}
-                    currency={draftFilters.salaryCurrency || ""}
-                    period={draftFilters.salaryPeriod || ""}
+                    currency={
+                      draftFilters.salaryCurrency ?? defaultSalaryCurrency
+                    }
+                    period={draftFilters.salaryPeriod ?? defaultSalaryPeriod}
                     currencyOptions={optionSets.salaryCurrencies}
                     periodOptions={optionSets.salaryPeriods}
                     onMinimumChange={(salaryMin) =>
@@ -762,11 +764,11 @@ export function JobsClient({
                         salaryMin,
                         salaryCurrency:
                           salaryMin !== null && !current.salaryCurrency
-                            ? "EUR"
+                            ? defaultSalaryCurrency
                             : current.salaryCurrency,
                         salaryPeriod:
                           salaryMin !== null && !current.salaryPeriod
-                            ? "month"
+                            ? defaultSalaryPeriod
                             : current.salaryPeriod,
                       }))
                     }
@@ -776,29 +778,31 @@ export function JobsClient({
                         salaryMax,
                         salaryCurrency:
                           salaryMax !== null && !current.salaryCurrency
-                            ? "EUR"
+                            ? defaultSalaryCurrency
                             : current.salaryCurrency,
                         salaryPeriod:
                           salaryMax !== null && !current.salaryPeriod
-                            ? "month"
+                            ? defaultSalaryPeriod
                             : current.salaryPeriod,
                       }))
                     }
                     onCurrencyChange={(value) =>
-                      updateDraftFilters((current) =>
-                        clearSalaryDependency(current, {
-                          salaryCurrency: (value ||
-                            null) as PublicJobSearchFilters["salaryCurrency"],
-                        }),
-                      )
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        salaryCurrency:
+                          value as PublicJobSearchFilters["salaryCurrency"],
+                        salaryPeriod:
+                          current.salaryPeriod ?? defaultSalaryPeriod,
+                      }))
                     }
                     onPeriodChange={(value) =>
-                      updateDraftFilters((current) =>
-                        clearSalaryDependency(current, {
-                          salaryPeriod: (value ||
-                            null) as PublicJobSearchFilters["salaryPeriod"],
-                        }),
-                      )
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        salaryCurrency:
+                          current.salaryCurrency ?? defaultSalaryCurrency,
+                        salaryPeriod:
+                          value as PublicJobSearchFilters["salaryPeriod"],
+                      }))
                     }
                   />
                 </div>
@@ -1050,9 +1054,7 @@ function SalaryFilterGroup({
   minimumLabel,
   maximumLabel,
   currencyLabel,
-  anyCurrencyLabel,
   periodLabel,
-  anyPeriodLabel,
   minimum,
   maximum,
   currency,
@@ -1068,9 +1070,7 @@ function SalaryFilterGroup({
   minimumLabel: string;
   maximumLabel: string;
   currencyLabel: string;
-  anyCurrencyLabel: string;
   periodLabel: string;
-  anyPeriodLabel: string;
   minimum: number | null;
   maximum: number | null;
   currency: string;
@@ -1089,9 +1089,7 @@ function SalaryFilterGroup({
         <SalaryAmountField
           label={minimumLabel}
           currencyLabel={currencyLabel}
-          anyCurrencyLabel={anyCurrencyLabel}
           periodLabel={periodLabel}
-          anyPeriodLabel={anyPeriodLabel}
           value={minimum}
           currency={currency}
           period={period}
@@ -1104,9 +1102,7 @@ function SalaryFilterGroup({
         <SalaryAmountField
           label={maximumLabel}
           currencyLabel={currencyLabel}
-          anyCurrencyLabel={anyCurrencyLabel}
           periodLabel={periodLabel}
-          anyPeriodLabel={anyPeriodLabel}
           value={maximum}
           currency={currency}
           period={period}
@@ -1124,9 +1120,7 @@ function SalaryFilterGroup({
 function SalaryAmountField({
   label,
   currencyLabel,
-  anyCurrencyLabel,
   periodLabel,
-  anyPeriodLabel,
   value,
   currency,
   period,
@@ -1138,9 +1132,7 @@ function SalaryAmountField({
 }: {
   label: string;
   currencyLabel: string;
-  anyCurrencyLabel: string;
   periodLabel: string;
-  anyPeriodLabel: string;
   value: number | null;
   currency: string;
   period: string;
@@ -1186,7 +1178,6 @@ function SalaryAmountField({
             onChange={(event) => onCurrencyChange(event.target.value)}
             className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-3 pr-7 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] sm:text-sm"
           >
-            <option value="">{anyCurrencyLabel}</option>
             {currencyOptions.map((option) => (
               <option data-i18n-ignore key={option.value} value={option.value}>
                 {option.label}
@@ -1206,7 +1197,6 @@ function SalaryAmountField({
             onChange={(event) => onPeriodChange(event.target.value)}
             className="min-h-12 w-full cursor-pointer appearance-none bg-transparent py-0 pl-2.5 pr-7 text-xs font-black text-slate-800 outline-none focus-visible:bg-cyan-50 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] sm:pl-3 sm:text-sm"
           >
-            <option value="">{anyPeriodLabel}</option>
             {periodOptions.map((option) => (
               <option data-i18n-ignore key={option.value} value={option.value}>
                 {option.label}
@@ -1987,21 +1977,6 @@ function addNumberChip(
   });
 }
 
-function clearSalaryDependency(
-  filters: PublicJobSearchFilters,
-  update: Partial<
-    Pick<PublicJobSearchFilters, "salaryCurrency" | "salaryPeriod">
-  >,
-) {
-  const next = { ...filters, ...update };
-  if (!next.salaryCurrency || !next.salaryPeriod) {
-    next.salaryMin = null;
-    next.salaryMax = null;
-    if (next.sort.startsWith("salary_")) next.sort = "newest";
-  }
-  return next;
-}
-
 function clearSalaryFilters(filters: PublicJobSearchFilters) {
   return {
     ...filters,
@@ -2262,9 +2237,7 @@ const copy = {
     salary: "Salary",
     from: "From",
     currency: "Salary currency",
-    anyCurrencyOption: "Any",
     payPeriod: "Salary period",
-    anyPeriod: "Any",
     minimumSalary: "Minimum salary",
     maximumSalary: "Maximum salary",
     results: "Current opportunities",
@@ -2358,9 +2331,7 @@ const copy = {
     salary: "Maaş",
     from: "Başlangıç",
     currency: "Ücret para birimi",
-    anyCurrencyOption: "Tümü",
     payPeriod: "Ücret dönemi",
-    anyPeriod: "Tümü",
     minimumSalary: "Minimum ücret",
     maximumSalary: "Maksimum ücret",
     results: "Güncel fırsatlar",

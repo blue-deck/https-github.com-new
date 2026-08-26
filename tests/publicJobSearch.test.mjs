@@ -5,6 +5,7 @@ import {
   createDefaultPublicJobSearchFilters,
   decodePublicJobSearchCursor,
   encodePublicJobSearchCursor,
+  hasPublicJobSearchFilters,
   matchesPublicJobSearch,
   parsePublicJobSearchParams,
   publicJobSearchAnchor,
@@ -34,6 +35,35 @@ const taxonomy = {
   salaryPeriods: jobSalaryPeriods,
   yachtFlagCountryCodes: ["TR", "GB"],
 };
+
+test("default salary units stay inactive until the salary filter is used", () => {
+  const defaults = createDefaultPublicJobSearchFilters();
+  const params = publicJobSearchParams(defaults);
+
+  assert.equal(defaults.salaryCurrency, null);
+  assert.equal(defaults.salaryPeriod, null);
+  assert.equal(params.has("salaryCurrency"), false);
+  assert.equal(params.has("salaryPeriod"), false);
+  assert.equal(hasPublicJobSearchFilters(defaults), false);
+  assert.equal(
+    matchesPublicJobSearch(
+      sampleJob({
+        salary: {
+          min: 4_000,
+          max: 5_000,
+          currency: "USD",
+          period: "year",
+        },
+      }),
+      defaults,
+    ),
+    true,
+  );
+  assert.equal(
+    matchesPublicJobSearch(sampleJob({ salary: null }), defaults),
+    true,
+  );
+});
 
 test("strictly parses and round-trips the complete public job filter contract", () => {
   const source = new URLSearchParams();

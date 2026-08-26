@@ -284,7 +284,22 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   assert.match(advanced, /periodOptions=\{optionSets\.salaryPeriods\}/);
   assert.match(advanced, /minimum=\{draftFilters\.salaryMin\}/);
   assert.match(advanced, /maximum=\{draftFilters\.salaryMax\}/);
-  assert.match(advanced, /currency=\{draftFilters\.salaryCurrency \|\| ""\}/);
+  assert.match(
+    advanced,
+    /currency=\{\s*draftFilters\.salaryCurrency \?\? defaultSalaryCurrency\s*\}/,
+  );
+  assert.match(
+    advanced,
+    /period=\{draftFilters\.salaryPeriod \?\? defaultSalaryPeriod\}/,
+  );
+  assert.match(
+    advanced,
+    /salaryPeriod:\s*current\.salaryPeriod \?\? defaultSalaryPeriod/,
+  );
+  assert.match(
+    advanced,
+    /salaryCurrency:\s*current\.salaryCurrency \?\? defaultSalaryCurrency/,
+  );
 
   const groupStart = client.indexOf("function SalaryFilterGroup(");
   const groupEnd = client.indexOf("function SalaryAmountField(", groupStart);
@@ -318,6 +333,8 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   assert.notEqual(amountStart, -1);
   assert.notEqual(amountEnd, -1);
   assert.equal(amountField.match(/<select\b/g)?.length, 2);
+  assert.doesNotMatch(amountField, /<option value="">/);
+  assert.doesNotMatch(amountField, /any(?:Currency|Period)Label/);
   assert.match(amountField, /aria-label=\{`\$\{label\} \$\{currencyLabel\}`\}/);
   assert.match(amountField, /aria-label=\{`\$\{label\} \$\{periodLabel\}`\}/);
   assert.match(amountField, /onPeriodChange\(event\.target\.value\)/);
