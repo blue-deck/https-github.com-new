@@ -80,6 +80,18 @@ test("job filters use explicit searches and clear actions without selection summ
     "bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950";
   assert.ok(jobsClient.includes(sharedKeywordButtonStyle));
   assert.ok(crewClient.includes(sharedKeywordButtonStyle));
+  const sharedMoreFiltersButtonStyle =
+    "bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900";
+  assert.ok(jobsClient.includes(sharedMoreFiltersButtonStyle));
+  assert.ok(crewClient.includes(sharedMoreFiltersButtonStyle));
+  const jobsMoreFiltersControl = jobsClient.indexOf(
+    'aria-controls="advanced-job-filters"',
+  );
+  const jobsMoreFiltersButton = jobsClient.slice(
+    jobsClient.lastIndexOf("<button", jobsMoreFiltersControl),
+    jobsClient.indexOf("</button>", jobsMoreFiltersControl),
+  );
+  assert.doesNotMatch(jobsMoreFiltersButton, /<Filter\b/);
   assert.match(
     jobsClient,
     /const hasPrimaryDraftFilters =[\s\S]*?draftFilters\.positions\.length > 0 \|\|[\s\S]*?draftFilters\.location\.trim\(\)\.length > 0 \|\|[\s\S]*?draftFilters\.employmentTypes\.length > 0/,

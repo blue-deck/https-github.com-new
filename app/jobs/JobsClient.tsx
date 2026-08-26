@@ -480,9 +480,8 @@ export function JobsClient({
                 aria-expanded={advancedOpen}
                 aria-controls="advanced-job-filters"
                 onClick={() => setAdvancedOpen((current) => !current)}
-                className="bd-focus inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-300 bg-white px-3.5 text-xs font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
+                className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
               >
-                <Filter className="h-4 w-4" aria-hidden />
                 {c.advanced}
                 <ChevronDown
                   className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
