@@ -59,6 +59,7 @@ export type PublicJobSearchFilters = {
   yachtLengthMinMetres: number | null;
   yachtLengthMaxMetres: number | null;
   crewMemberCountMin: number | null;
+  crewMemberCountMax: number | null;
   salaryCurrency: JobSalaryCurrency | null;
   salaryPeriod: JobSalaryPeriod | null;
   salaryMin: number | null;
@@ -101,6 +102,7 @@ const queryKeys = new Set([
   "lengthMin",
   "lengthMax",
   "crewMin",
+  "crewMax",
   "salaryCurrency",
   "salaryPeriod",
   "salaryMin",
@@ -125,6 +127,7 @@ const scalarKeys = [
   "lengthMin",
   "lengthMax",
   "crewMin",
+  "crewMax",
   "salaryCurrency",
   "salaryPeriod",
   "salaryMin",
@@ -151,6 +154,7 @@ export function createDefaultPublicJobSearchFilters(): PublicJobSearchFilters {
     yachtLengthMinMetres: null,
     yachtLengthMaxMetres: null,
     crewMemberCountMin: null,
+    crewMemberCountMax: null,
     salaryCurrency: null,
     salaryPeriod: null,
     salaryMin: null,
@@ -243,6 +247,11 @@ export function parsePublicJobSearchParams(
     publicJobCrewSizeSlider.minimumActiveCrewMembers,
     publicJobCrewSizeSlider.maximumCrewMembers,
   );
+  const crewMemberCountMax = integerFilter(
+    searchParams.get("crewMax"),
+    publicJobCrewSizeSlider.minimumCrewMembers,
+    publicJobCrewSizeSlider.maximumCrewMembers,
+  );
   const salaryMin = integerFilter(
     searchParams.get("salaryMin"),
     0,
@@ -258,6 +267,7 @@ export function parsePublicJobSearchParams(
     yachtLengthMinMetres,
     yachtLengthMaxMetres,
     crewMemberCountMin,
+    crewMemberCountMax,
     salaryMin,
     salaryMax,
   ];
@@ -312,6 +322,7 @@ export function parsePublicJobSearchParams(
     yachtLengthMinMetres: numericValue(yachtLengthMinMetres),
     yachtLengthMaxMetres: numericValue(yachtLengthMaxMetres),
     crewMemberCountMin: numericValue(crewMemberCountMin),
+    crewMemberCountMax: numericValue(crewMemberCountMax),
     salaryCurrency,
     salaryPeriod,
     salaryMin: numericValue(salaryMin),
@@ -322,6 +333,7 @@ export function parsePublicJobSearchParams(
 
   if (
     reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
+    reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
     reversed(filters.salaryMin, filters.salaryMax)
   ) {
     return { ok: false, error: "A minimum filter cannot exceed its maximum." };
@@ -361,6 +373,7 @@ export function publicJobSearchParams(
   setNumber(params, "lengthMin", filters.yachtLengthMinMetres);
   setNumber(params, "lengthMax", filters.yachtLengthMaxMetres);
   setNumber(params, "crewMin", filters.crewMemberCountMin);
+  setNumber(params, "crewMax", filters.crewMemberCountMax);
   setText(params, "salaryCurrency", filters.salaryCurrency || "");
   setText(params, "salaryPeriod", filters.salaryPeriod || "");
   setNumber(params, "salaryMin", filters.salaryMin);
@@ -442,9 +455,13 @@ export function matchesPublicJobSearch(
     return false;
   }
   if (
-    filters.crewMemberCountMin !== null &&
+    (filters.crewMemberCountMin !== null ||
+      filters.crewMemberCountMax !== null) &&
     (job.crewMemberCount === null ||
-      job.crewMemberCount < filters.crewMemberCountMin)
+      (filters.crewMemberCountMin !== null &&
+        job.crewMemberCount < filters.crewMemberCountMin) ||
+      (filters.crewMemberCountMax !== null &&
+        job.crewMemberCount > filters.crewMemberCountMax))
   ) {
     return false;
   }

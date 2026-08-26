@@ -703,7 +703,7 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <YachtLengthRangeSlider
+                  <DualRangeSlider
                     label={c.yachtLength}
                     anyLabel={c.anyYachtLength}
                     fromLabel={c.from}
@@ -731,18 +731,30 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <CrewSizeSlider
+                  <DualRangeSlider
                     label={c.crewSize}
                     anyLabel={c.anyCrewSize}
-                    language={language}
-                    value={draftFilters.crewMemberCountMin}
+                    fromLabel={c.from}
+                    upToLabel={c.upTo}
+                    minimumLabel={c.minimumCrewSize}
+                    maximumLabel={c.maximumCrewSize}
+                    noMinimumLabel={c.noMinimumCrewSize}
+                    noMaximumLabel={c.noMaximumCrewSize}
+                    minimumValue={draftFilters.crewMemberCountMin}
+                    maximumValue={draftFilters.crewMemberCountMax}
                     minimum={publicJobCrewSizeSlider.minimumCrewMembers}
                     maximum={publicJobCrewSizeSlider.maximumCrewMembers}
                     step={publicJobCrewSizeSlider.stepCrewMembers}
-                    onChange={(crewMemberCountMin) =>
+                    onMinimumChange={(crewMemberCountMin) =>
                       updateDraftFilters((current) => ({
                         ...current,
                         crewMemberCountMin,
+                      }))
+                    }
+                    onMaximumChange={(crewMemberCountMax) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        crewMemberCountMax,
                       }))
                     }
                   />
@@ -1178,7 +1190,7 @@ function SalaryAmountField({
   );
 }
 
-function YachtLengthRangeSlider({
+function DualRangeSlider({
   label,
   anyLabel,
   fromLabel,
@@ -1187,7 +1199,7 @@ function YachtLengthRangeSlider({
   maximumLabel,
   noMinimumLabel,
   noMaximumLabel,
-  unit,
+  unit = "",
   minimumValue,
   maximumValue,
   minimum,
@@ -1204,7 +1216,7 @@ function YachtLengthRangeSlider({
   maximumLabel: string;
   noMinimumLabel: string;
   noMaximumLabel: string;
-  unit: string;
+  unit?: string;
   minimumValue: number | null;
   maximumValue: number | null;
   minimum: number;
@@ -1226,22 +1238,26 @@ function YachtLengthRangeSlider({
   const span = maximum - minimum;
   const start = ((lowerValue - minimum) / span) * 100;
   const end = ((upperValue - minimum) / span) * 100;
+  const formatValue = (value: number) =>
+    `${value}${unit ? ` ${unit}` : ""}`;
   const valueText =
     minimumValue === null && maximumValue === null
       ? anyLabel
       : minimumValue !== null && maximumValue !== null
-        ? `${minimumValue}–${maximumValue} ${unit}`
+        ? `${minimumValue}–${maximumValue}${unit ? ` ${unit}` : ""}`
         : minimumValue !== null
-          ? `${fromLabel} ${minimumValue} ${unit}`
-          : `${upToLabel} ${maximumValue} ${unit}`;
+          ? `${fromLabel} ${formatValue(minimumValue)}`
+          : maximumValue !== null
+            ? `${upToLabel} ${formatValue(maximumValue)}`
+            : anyLabel;
   const minimumValueText =
     minimumValue === null
       ? noMinimumLabel
-      : `${minimumValue} ${unit}`;
+      : formatValue(minimumValue);
   const maximumValueText =
     maximumValue === null
       ? noMaximumLabel
-      : `${maximumValue} ${unit}`;
+      : formatValue(maximumValue);
   const valueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     const thumbInset =
@@ -1419,155 +1435,17 @@ function YachtLengthRangeSlider({
           aria-hidden
           className="mt-0.5 flex justify-between text-[11px] font-semibold text-slate-400"
         >
-          <span>{minimum} {unit}</span>
-          <span>{maximum} {unit}</span>
+          <span>
+            {minimum}
+            {unit ? ` ${unit}` : ""}
+          </span>
+          <span>
+            {maximum}
+            {unit ? ` ${unit}` : ""}
+          </span>
         </span>
       </div>
     </fieldset>
-  );
-}
-
-function CrewSizeSlider({
-  label,
-  anyLabel,
-  language,
-  value,
-  minimum,
-  maximum,
-  step,
-  onChange,
-}: {
-  label: string;
-  anyLabel: string;
-  language: Language;
-  value: number | null;
-  minimum: number;
-  maximum: number;
-  step: number;
-  onChange: (value: number | null) => void;
-}) {
-  const inputId = useId();
-  const summaryId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const draggedPointerId = useRef<number | null>(null);
-  const sliderValue = value ?? minimum;
-  const span = maximum - minimum;
-  const start = ((sliderValue - minimum) / span) * 100;
-  const summaryText = value === null ? anyLabel : `${value}+`;
-  const accessibleValueText = formatCrewSizeSliderValue(value, language);
-
-  const valueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const thumbInset =
-      Number.parseFloat(
-        getComputedStyle(event.currentTarget).getPropertyValue(
-          "--bd-range-thumb-inset",
-        ),
-      ) || 12;
-    const usableWidth = Math.max(1, bounds.width - thumbInset * 2);
-    const ratio = Math.max(
-      0,
-      Math.min(
-        1,
-        (event.clientX - bounds.left - thumbInset) / usableWidth,
-      ),
-    );
-    return Math.min(
-      maximum,
-      minimum + Math.round((ratio * span) / step) * step,
-    );
-  };
-  const updateValue = (nextValue: number) => {
-    const clampedValue = Math.max(minimum, Math.min(maximum, nextValue));
-    onChange(clampedValue === minimum ? null : clampedValue);
-  };
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (
-      !event.isPrimary ||
-      (event.pointerType === "mouse" && event.button !== 0)
-    ) {
-      return;
-    }
-    event.preventDefault();
-    draggedPointerId.current = event.pointerId;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    inputRef.current?.focus();
-    updateValue(valueFromPointer(event));
-  };
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (draggedPointerId.current !== event.pointerId) return;
-    updateValue(valueFromPointer(event));
-  };
-  const stopPointerDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (draggedPointerId.current !== event.pointerId) return;
-    draggedPointerId.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
-  const handleLostPointerCapture = (
-    event: ReactPointerEvent<HTMLDivElement>,
-  ) => {
-    if (draggedPointerId.current === event.pointerId) {
-      draggedPointerId.current = null;
-    }
-  };
-
-  return (
-    <div className="block min-w-0">
-      <div className="mb-1.5 flex min-h-5 items-center justify-between gap-3">
-        <label
-          htmlFor={inputId}
-          className="min-w-0 text-xs font-bold text-slate-600"
-        >
-          {label}
-        </label>
-        <span
-          id={summaryId}
-          className="shrink-0 rounded-full bg-cyan-50 px-2 py-0.5 text-xs font-bold text-cyan-800"
-        >
-          {summaryText}
-        </span>
-      </div>
-      <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
-        <div
-          className="bd-job-length-range"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={stopPointerDrag}
-          onPointerCancel={stopPointerDrag}
-          onLostPointerCapture={handleLostPointerCapture}
-          style={
-            {
-              "--bd-range-start": `${start}%`,
-              "--bd-range-end": "100%",
-            } as CSSProperties
-          }
-        >
-          <span className="bd-job-length-range-track" aria-hidden />
-          <input
-            id={inputId}
-            ref={inputRef}
-            type="range"
-            value={sliderValue}
-            min={minimum}
-            max={maximum}
-            step={step}
-            aria-describedby={summaryId}
-            aria-valuetext={accessibleValueText}
-            onChange={(event) => updateValue(Number(event.target.value))}
-            className="bd-job-length-range-input"
-          />
-        </div>
-        <span
-          aria-hidden
-          className="mt-0.5 flex justify-between text-[11px] font-semibold text-slate-400"
-        >
-          <span>{minimum}</span>
-          <span>{maximum}</span>
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -2029,12 +1907,22 @@ function buildActiveFilterChips(
       yachtLengthMaxMetres: null,
     }));
   }
-  if (filters.crewMemberCountMin !== null) {
-    add(
-      "crew-min",
-      `${c.crewSize}: ${filters.crewMemberCountMin}+`,
-      (current) => ({ ...current, crewMemberCountMin: null }),
-    );
+  if (
+    filters.crewMemberCountMin !== null ||
+    filters.crewMemberCountMax !== null
+  ) {
+    const range =
+      filters.crewMemberCountMin !== null &&
+      filters.crewMemberCountMax !== null
+        ? `${filters.crewMemberCountMin}–${filters.crewMemberCountMax}`
+        : filters.crewMemberCountMin !== null
+          ? `${c.from} ${filters.crewMemberCountMin}`
+          : `${c.upTo} ${filters.crewMemberCountMax}`;
+    add("crew-size", `${c.crewSize}: ${range}`, (current) => ({
+      ...current,
+      crewMemberCountMin: null,
+      crewMemberCountMax: null,
+    }));
   }
 
   if (
@@ -2125,6 +2013,12 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
       publicJobCrewSizeSlider.maximumCrewMembers,
       true,
     ) ||
+    outside(
+      filters.crewMemberCountMax,
+      publicJobCrewSizeSlider.minimumCrewMembers,
+      publicJobCrewSizeSlider.maximumCrewMembers,
+      true,
+    ) ||
     outside(filters.salaryMin, 0, maximumJobSalaryAmount, true) ||
     outside(filters.salaryMax, 0, maximumJobSalaryAmount, true)
   ) {
@@ -2132,6 +2026,7 @@ function validateFilterRanges(filters: PublicJobSearchFilters, c: SearchCopy) {
   }
   if (
     reversed(filters.yachtLengthMinMetres, filters.yachtLengthMaxMetres) ||
+    reversed(filters.crewMemberCountMin, filters.crewMemberCountMax) ||
     reversed(filters.salaryMin, filters.salaryMax)
   ) {
     return c.rangeError;
@@ -2162,7 +2057,10 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
       filters.yachtLengthMaxMetres !== null
       ? 1
       : 0) +
-    (filters.crewMemberCountMin !== null ? 1 : 0) +
+    (filters.crewMemberCountMin !== null ||
+      filters.crewMemberCountMax !== null
+      ? 1
+      : 0) +
     (filters.salaryCurrency ||
     filters.salaryPeriod ||
     filters.salaryMin !== null ||
@@ -2226,14 +2124,6 @@ function capitalizeFirstLetter(value: string, language: Language) {
   const letter = firstLetter[0];
   const locale = language === "tr" ? "tr-TR" : "en-US";
   return `${value.slice(0, index)}${letter.toLocaleUpperCase(locale)}${value.slice(index + letter.length)}`;
-}
-
-function formatCrewSizeSliderValue(value: number | null, language: Language) {
-  if (value === null) {
-    return language === "tr" ? "Tüm mürettebat sayıları" : "Any crew size";
-  }
-  if (language === "tr") return `En az ${value} mürettebat`;
-  return `At least ${value} crew member${value === 1 ? "" : "s"}`;
 }
 
 function isValidNextCursor(
@@ -2340,6 +2230,10 @@ const copy = {
     metres: "m",
     crewSize: "Crew size",
     anyCrewSize: "Any",
+    minimumCrewSize: "Minimum crew size",
+    maximumCrewSize: "Maximum crew size",
+    noMinimumCrewSize: "No minimum crew size",
+    noMaximumCrewSize: "No maximum crew size",
     salary: "Salary",
     from: "From",
     currency: "Salary currency",
@@ -2435,6 +2329,10 @@ const copy = {
     metres: "m",
     crewSize: "Mürettebat sayısı",
     anyCrewSize: "Tümü",
+    minimumCrewSize: "Minimum mürettebat sayısı",
+    maximumCrewSize: "Maksimum mürettebat sayısı",
+    noMinimumCrewSize: "Minimum mürettebat sayısı sınırı yok",
+    noMaximumCrewSize: "Maksimum mürettebat sayısı sınırı yok",
     salary: "Maaş",
     from: "Başlangıç",
     currency: "Ücret para birimi",

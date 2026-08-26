@@ -258,8 +258,8 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   const requestedFilterOrder = [
     advanced.indexOf("label={c.department}"),
     advanced.indexOf("<SalaryFilterGroup"),
-    advanced.indexOf("<YachtLengthRangeSlider"),
-    advanced.indexOf("<CrewSizeSlider"),
+    advanced.indexOf("label={c.yachtLength}"),
+    advanced.indexOf("label={c.crewSize}"),
     advanced.indexOf("label={c.yachtType}"),
     advanced.indexOf("label={c.yachtProgram}"),
     advanced.indexOf("label={c.yachtFlag}"),
@@ -273,7 +273,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
 
   const labels = [
     ...advanced.matchAll(
-      /<(?:MultiSelectField|FilterSelect|YachtLengthRangeSlider|CrewSizeSlider)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
+      /<(?:MultiSelectField|FilterSelect|DualRangeSlider)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,
     ),
   ]
     .map((match) => match[1])
@@ -366,7 +366,7 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
 
   const amountStart = client.indexOf("function SalaryAmountField(");
   const amountEnd = client.indexOf(
-    "function YachtLengthRangeSlider(",
+    "function DualRangeSlider(",
     amountStart,
   );
   const amountField = client.slice(amountStart, amountEnd);
@@ -473,9 +473,12 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
       source("app/globals.css"),
     ]);
 
-  assert.match(client, /<YachtLengthRangeSlider/);
-  const rangeStart = client.indexOf("function YachtLengthRangeSlider(");
-  const rangeEnd = client.indexOf("function CrewSizeSlider(", rangeStart);
+  assert.match(
+    client,
+    /<DualRangeSlider[\s\S]*?label=\{c\.yachtLength\}[\s\S]*?minimumValue=\{draftFilters\.yachtLengthMinMetres\}[\s\S]*?maximumValue=\{draftFilters\.yachtLengthMaxMetres\}/,
+  );
+  const rangeStart = client.indexOf("function DualRangeSlider(");
+  const rangeEnd = client.indexOf("function FilterSelect(", rangeStart);
   const range = client.slice(rangeStart, rangeEnd);
   assert.equal(range.match(/type="range"/g)?.length, 2);
   assert.match(range, /aria-label=\{minimumLabel\}/);
@@ -538,7 +541,7 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
   assert.match(yachtSizeField, /<option value="m">/);
 });
 
-test("crew size is a single-thumb 0–50 minimum slider with an inclusive server contract", async () => {
+test("crew size is an accessible two-thumb 0–50 inclusive range", async () => {
   const [client, search, server, page, route] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/lib/publicJobSearch.ts"),
@@ -549,38 +552,54 @@ test("crew size is a single-thumb 0–50 minimum slider with an inclusive server
 
   assert.match(
     client,
-    /<CrewSizeSlider[\s\S]*?label=\{c\.crewSize\}[\s\S]*?anyLabel=\{c\.anyCrewSize\}[\s\S]*?value=\{draftFilters\.crewMemberCountMin\}[\s\S]*?minimum=\{publicJobCrewSizeSlider\.minimumCrewMembers\}[\s\S]*?maximum=\{publicJobCrewSizeSlider\.maximumCrewMembers\}[\s\S]*?step=\{publicJobCrewSizeSlider\.stepCrewMembers\}/,
+    /<DualRangeSlider[\s\S]*?label=\{c\.crewSize\}[\s\S]*?anyLabel=\{c\.anyCrewSize\}[\s\S]*?minimumLabel=\{c\.minimumCrewSize\}[\s\S]*?maximumLabel=\{c\.maximumCrewSize\}[\s\S]*?minimumValue=\{draftFilters\.crewMemberCountMin\}[\s\S]*?maximumValue=\{draftFilters\.crewMemberCountMax\}[\s\S]*?minimum=\{publicJobCrewSizeSlider\.minimumCrewMembers\}[\s\S]*?maximum=\{publicJobCrewSizeSlider\.maximumCrewMembers\}[\s\S]*?step=\{publicJobCrewSizeSlider\.stepCrewMembers\}[\s\S]*?onMinimumChange=\{\(crewMemberCountMin\)[\s\S]*?onMaximumChange=\{\(crewMemberCountMax\)/,
   );
   assert.match(client, /crewSize: "Crew size"/);
   assert.match(client, /crewSize: "Mürettebat sayısı"/);
-  assert.doesNotMatch(client, /minimumCrewSize:/);
+  assert.match(client, /minimumCrewSize: "Minimum crew size"/);
+  assert.match(client, /maximumCrewSize: "Maximum crew size"/);
+  assert.match(client, /noMinimumCrewSize: "No minimum crew size"/);
+  assert.match(client, /noMaximumCrewSize: "No maximum crew size"/);
   assert.doesNotMatch(client, /function NumberField\(/);
-  const sliderStart = client.indexOf("function CrewSizeSlider(");
+  const sliderStart = client.indexOf("function DualRangeSlider(");
   const sliderEnd = client.indexOf("function FilterSelect(", sliderStart);
   const slider = client.slice(sliderStart, sliderEnd);
   assert.notEqual(sliderStart, -1);
   assert.notEqual(sliderEnd, -1);
-  assert.equal(slider.match(/type="range"/g)?.length, 1);
-  assert.match(slider, /const sliderValue = value \?\? minimum/);
-  assert.match(slider, /clampedValue === minimum \? null : clampedValue/);
-  assert.match(slider, /aria-valuetext=\{accessibleValueText\}/);
+  assert.equal(slider.match(/type="range"/g)?.length, 2);
+  assert.match(slider, /aria-label=\{minimumLabel\}/);
+  assert.match(slider, /aria-label=\{maximumLabel\}/);
+  assert.match(slider, /aria-valuetext=\{minimumValueText\}/);
+  assert.match(slider, /aria-valuetext=\{maximumValueText\}/);
+  assert.match(slider, /aria-valuemax=\{upperValue\}/);
+  assert.match(slider, /aria-valuemin=\{lowerValue\}/);
+  assert.match(slider, /nextValue === minimum \? null : nextValue/);
+  assert.match(slider, /nextValue === maximum \? null : nextValue/);
   assert.match(slider, /onPointerDown=\{handlePointerDown\}/);
   assert.match(slider, /setPointerCapture\(event\.pointerId\)/);
   assert.match(slider, /onLostPointerCapture=\{handleLostPointerCapture\}/);
+  assert.equal(slider.match(/onKeyDown=/g)?.length, 2);
   assert.match(slider, /"--bd-range-start": `\$\{start\}%`/);
-  assert.match(slider, /"--bd-range-end": "100%"/);
+  assert.match(slider, /"--bd-range-end": `\$\{end\}%`/);
   assert.match(search, /minimumCrewMembers: 0/);
   assert.match(search, /minimumActiveCrewMembers: 1/);
   assert.match(search, /maximumCrewMembers: 50/);
   assert.match(search, /stepCrewMembers: 1/);
-  assert.doesNotMatch(client, /crewMemberCountMax|"crew-max"|function RangeField\(/);
 
   assert.match(search, /setNumber\(params, "crewMin", filters\.crewMemberCountMin\)/);
+  assert.match(search, /setNumber\(params, "crewMax", filters\.crewMemberCountMax\)/);
   assert.match(
     search,
     /job\.crewMemberCount < filters\.crewMemberCountMin/,
   );
-  assert.doesNotMatch(search, /crewMemberCountMax|"crewMax"/);
+  assert.match(
+    search,
+    /job\.crewMemberCount > filters\.crewMemberCountMax/,
+  );
+  assert.match(
+    search,
+    /reversed\(filters\.crewMemberCountMin, filters\.crewMemberCountMax\)/,
+  );
 
   assert.match(server, /matchesPublicJobSearch\(job, filters\)/);
   assert.match(page, /if \(!parsed\.ok\) redirect\("\/jobs"\)/);
