@@ -256,6 +256,7 @@ test("advanced crew filters show readiness toggles first without a heading", asy
     "gender",
     "smoker",
     "visibleTattoos",
+    "experienceType",
     "minimumExperience",
   ];
   const fieldPositions = orderedFields.map((field) =>
@@ -270,7 +271,7 @@ test("advanced crew filters show readiness toggles first without a heading", asy
   assert.doesNotMatch(client, /profileQuality:/);
 });
 
-test("primary crew filter controls use equal desktop columns", async () => {
+test("crew filter controls share equal columns and one select surface", async () => {
   const [client, loading, nationalityField] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
@@ -302,12 +303,64 @@ test("primary crew filter controls use equal desktop columns", async () => {
     client,
     /id="crew-keyword-search"[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
   );
+  const selectClassMatch = client.match(
+    /const crewFilterSelectClassName = `\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\} ([^`]+)`;/,
+  );
+  assert.ok(selectClassMatch);
+  const selectClassTokens = new Set(selectClassMatch[1].split(/\s+/));
+  for (const token of [
+    "appearance-none",
+    "rounded-xl",
+    "border-slate-200",
+    "bg-slate-50",
+    "py-0",
+    "pl-4",
+    "pr-12",
+    "text-slate-950",
+    "focus:border-cyan-500",
+    "focus:bg-white",
+    "focus:ring-4",
+    "focus:ring-cyan-100",
+  ]) {
+    assert.ok(selectClassTokens.has(token), `missing select class: ${token}`);
+  }
+
+  const sharedSelectStart = client.indexOf(
+    "function CrewFilterSelectControl",
+  );
+  const sharedSelectEnd = client.indexOf(
+    "function formatFilterOption",
+    sharedSelectStart,
+  );
+  const sharedSelect = client.slice(sharedSelectStart, sharedSelectEnd);
+
+  assert.ok(sharedSelectStart >= 0 && sharedSelectEnd > sharedSelectStart);
+  assert.match(sharedSelect, /<label className="block min-w-0">/);
+  assert.match(sharedSelect, /<span className="relative block min-w-0">/);
+  assert.match(sharedSelect, /className=\{crewFilterSelectClassName\}/);
+  assert.match(sharedSelect, /aria-hidden="true"/);
+  assert.match(sharedSelect, /pointer-events-none/);
+  assert.match(sharedSelect, /<ChevronDown className="h-4 w-4"/);
+
+  for (const componentName of [
+    "FilterSelect",
+    "ExperienceTypeFilterSelect",
+    "MinimumExperienceFilterSelect",
+  ]) {
+    const componentStart = client.indexOf(`function ${componentName}`);
+    const componentEnd = client.indexOf("\nfunction ", componentStart + 1);
+    const component = client.slice(componentStart, componentEnd);
+
+    assert.ok(componentStart >= 0 && componentEnd > componentStart);
+    assert.match(component, /<CrewFilterSelectControl/);
+    assert.doesNotMatch(component, /<select/);
+  }
+
   assert.match(
     client,
-    /function FilterSelect[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
+    /label=\{c\.position\}[\s\S]*?label=\{c\.availability\}[\s\S]*?label=\{c\.maritalStatus\}[\s\S]*?label=\{c\.gender\}[\s\S]*?label=\{c\.smoker\}[\s\S]*?label=\{c\.visibleTattoos\}[\s\S]*?label=\{c\.experienceType\}[\s\S]*?label=\{c\.minimumExperience\}/,
   );
   assert.match(client, /<form\s+className="block min-w-0"/);
-  assert.match(client, /<label className="block min-w-0">/);
   assert.match(nationalityField, /relative block min-w-0/);
 });
 

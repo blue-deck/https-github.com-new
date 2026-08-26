@@ -10,7 +10,7 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
 import {
   NATIONALITY_CONTROL_SIZE_CLASS_NAME,
@@ -45,6 +45,8 @@ const experienceTypeLabels = {
   en: { any: "Any", yacht: "Yacht", other: "Other" },
   tr: { any: "Tümü", yacht: "Yat", other: "Diğer" },
 } as const;
+
+const crewFilterSelectClassName = `${NATIONALITY_CONTROL_SIZE_CLASS_NAME} appearance-none cursor-pointer rounded-xl border border-slate-200 bg-slate-50 py-0 pl-4 pr-12 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`;
 
 const findCrewMinimumExperienceThresholds = [
   "0_6_months",
@@ -722,22 +724,48 @@ function FilterSelect({
   const visibleOptions =
     value && !options.includes(value) ? [value, ...options] : options;
   return (
+    <CrewFilterSelectControl label={label} value={value} onChange={onChange}>
+      <option value="">{emptyOptionLabel}</option>
+      {visibleOptions.map((option) => (
+        <option key={option} value={option}>
+          {formatFilterOption(option, language)}
+        </option>
+      ))}
+    </CrewFilterSelectControl>
+  );
+}
+
+function CrewFilterSelectControl({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
     <label className="block min-w-0">
       <span className="mb-1.5 block text-xs font-bold text-slate-600">
         {label}
       </span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
-      >
-        <option value="">{emptyOptionLabel}</option>
-        {visibleOptions.map((option) => (
-          <option key={option} value={option}>
-            {formatFilterOption(option, language)}
-          </option>
-        ))}
-      </select>
+      <span className="relative block min-w-0">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className={crewFilterSelectClassName}
+        >
+          {children}
+        </select>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute right-1 top-1/2 flex h-10 w-9 -translate-y-1/2 items-center justify-center text-cyan-700"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </span>
+      </span>
     </label>
   );
 }
@@ -762,27 +790,20 @@ function MinimumExperienceFilterSelect({
   language: Language;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold text-slate-600">
-        {label}
-      </span>
-      <select
-        value={value === null ? "" : String(value)}
-        onChange={(event) =>
-          onChange(
-            (event.target.value as JobMinimumYachtExperience) || null,
-          )
-        }
-        className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-      >
-        <option value="">{label}</option>
-        {findCrewMinimumExperienceThresholds.map((option) => (
-          <option key={option} value={option}>
-            {formatFindCrewMinimumExperience(option, language)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <CrewFilterSelectControl
+      label={label}
+      value={value === null ? "" : String(value)}
+      onChange={(nextValue) =>
+        onChange((nextValue as JobMinimumYachtExperience) || null)
+      }
+    >
+      <option value="">{label}</option>
+      {findCrewMinimumExperienceThresholds.map((option) => (
+        <option key={option} value={option}>
+          {formatFindCrewMinimumExperience(option, language)}
+        </option>
+      ))}
+    </CrewFilterSelectControl>
   );
 }
 
@@ -808,27 +829,22 @@ function ExperienceTypeFilterSelect({
   language: Language;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-bold text-slate-600">
-        {label}
-      </span>
-      <select
-        value={value}
-        onChange={(event) => {
-          const nextValue = event.target.value as CrewExperienceType;
-          onChange(
-            crewExperienceTypes.includes(nextValue) ? nextValue : "any",
-          );
-        }}
-        className="min-h-12 w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-      >
-        {crewExperienceTypes.map((option) => (
-          <option key={option} value={option}>
-            {experienceTypeLabel(option, language)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <CrewFilterSelectControl
+      label={label}
+      value={value}
+      onChange={(nextValue) => {
+        const typedValue = nextValue as CrewExperienceType;
+        onChange(
+          crewExperienceTypes.includes(typedValue) ? typedValue : "any",
+        );
+      }}
+    >
+      {crewExperienceTypes.map((option) => (
+        <option key={option} value={option}>
+          {experienceTypeLabel(option, language)}
+        </option>
+      ))}
+    </CrewFilterSelectControl>
   );
 }
 
