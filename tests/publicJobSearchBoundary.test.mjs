@@ -229,6 +229,22 @@ test("advanced job filters keep a flat grid and group the salary controls", asyn
   assert.match(advanced, /<SalaryFilterGroup/);
   assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 
+  const requestedFilterOrder = [
+    advanced.indexOf("label={c.department}"),
+    advanced.indexOf("<SalaryFilterGroup"),
+    advanced.indexOf("<YachtLengthRangeSlider"),
+    advanced.indexOf("<CrewSizeSlider"),
+    advanced.indexOf("label={c.yachtType}"),
+    advanced.indexOf("label={c.yachtFlag}"),
+    advanced.indexOf("label={c.teamCouple}"),
+    advanced.indexOf("label={c.visas}"),
+  ];
+  assert.equal(requestedFilterOrder.every((index) => index >= 0), true);
+  assert.deepEqual(
+    requestedFilterOrder,
+    [...requestedFilterOrder].sort((left, right) => left - right),
+  );
+
   const labels = [
     ...advanced.matchAll(
       /<(?:MultiSelectField|FilterSelect|YachtLengthRangeSlider|CrewSizeSlider)\b[\s\S]*?\blabel=\{c\.([A-Za-z]+)\}/g,

@@ -642,110 +642,6 @@ export function JobsClient({
                       }))
                     }
                   />
-                  <FilterSelect
-                    allowEmpty
-                    label={c.teamCouple}
-                    placeholder={c.anyTeamCouple}
-                    options={optionSets.teamCouple}
-                    value={teamCoupleFilterValue(draftFilters.candidateTypes)}
-                    onChange={(value) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        candidateTypes: candidateTypesForTeamCouple(
-                          value as TeamCoupleFilterValue,
-                        ),
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.yachtType}
-                    placeholder={c.allYachtTypes}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.yachtTypes}
-                    values={draftFilters.yachtTypes}
-                    onChange={(yachtTypes) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtTypes:
-                          yachtTypes as PublicJobSearchFilters["yachtTypes"],
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.yachtFlag}
-                    placeholder={c.anyFlag}
-                    searchPlaceholder={c.searchFlags}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.flags}
-                    values={draftFilters.yachtFlagCountryCodes}
-                    maxSelections={12}
-                    onChange={(yachtFlagCountryCodes) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtFlagCountryCodes,
-                      }))
-                    }
-                  />
-                  <YachtLengthRangeSlider
-                    label={c.yachtLength}
-                    anyLabel={c.anyYachtLength}
-                    fromLabel={c.from}
-                    upToLabel={c.upTo}
-                    minimumLabel={c.minimumYachtLength}
-                    maximumLabel={c.maximumYachtLength}
-                    noMinimumLabel={c.noMinimumYachtLength}
-                    noMaximumLabel={c.noMaximumYachtLength}
-                    unit={c.metres}
-                    minimumValue={draftFilters.yachtLengthMinMetres}
-                    maximumValue={draftFilters.yachtLengthMaxMetres}
-                    minimum={publicJobYachtLengthSlider.minimumMetres}
-                    maximum={publicJobYachtLengthSlider.maximumMetres}
-                    step={publicJobYachtLengthSlider.stepMetres}
-                    onMinimumChange={(yachtLengthMinMetres) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtLengthMinMetres,
-                      }))
-                    }
-                    onMaximumChange={(yachtLengthMaxMetres) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtLengthMaxMetres,
-                      }))
-                    }
-                  />
-                  <CrewSizeSlider
-                    label={c.crewSize}
-                    anyLabel={c.anyCrewSize}
-                    language={language}
-                    value={draftFilters.crewMemberCountMin}
-                    minimum={publicJobCrewSizeSlider.minimumCrewMembers}
-                    maximum={publicJobCrewSizeSlider.maximumCrewMembers}
-                    step={publicJobCrewSizeSlider.stepCrewMembers}
-                    onChange={(crewMemberCountMin) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        crewMemberCountMin,
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.visas}
-                    placeholder={c.anyVisa}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.visas}
-                    values={draftFilters.requiredVisas}
-                    onChange={(requiredVisas) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        requiredVisas:
-                          requiredVisas as PublicJobSearchFilters["requiredVisas"],
-                      }))
-                    }
-                  />
                   <SalaryFilterGroup
                     salaryLabel={c.salary}
                     minimumLabel={c.minimumSalary}
@@ -804,6 +700,110 @@ export function JobsClient({
                           current.salaryCurrency ?? defaultSalaryCurrency,
                         salaryPeriod:
                           value as PublicJobSearchFilters["salaryPeriod"],
+                      }))
+                    }
+                  />
+                  <YachtLengthRangeSlider
+                    label={c.yachtLength}
+                    anyLabel={c.anyYachtLength}
+                    fromLabel={c.from}
+                    upToLabel={c.upTo}
+                    minimumLabel={c.minimumYachtLength}
+                    maximumLabel={c.maximumYachtLength}
+                    noMinimumLabel={c.noMinimumYachtLength}
+                    noMaximumLabel={c.noMaximumYachtLength}
+                    unit={c.metres}
+                    minimumValue={draftFilters.yachtLengthMinMetres}
+                    maximumValue={draftFilters.yachtLengthMaxMetres}
+                    minimum={publicJobYachtLengthSlider.minimumMetres}
+                    maximum={publicJobYachtLengthSlider.maximumMetres}
+                    step={publicJobYachtLengthSlider.stepMetres}
+                    onMinimumChange={(yachtLengthMinMetres) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtLengthMinMetres,
+                      }))
+                    }
+                    onMaximumChange={(yachtLengthMaxMetres) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtLengthMaxMetres,
+                      }))
+                    }
+                  />
+                  <CrewSizeSlider
+                    label={c.crewSize}
+                    anyLabel={c.anyCrewSize}
+                    language={language}
+                    value={draftFilters.crewMemberCountMin}
+                    minimum={publicJobCrewSizeSlider.minimumCrewMembers}
+                    maximum={publicJobCrewSizeSlider.maximumCrewMembers}
+                    step={publicJobCrewSizeSlider.stepCrewMembers}
+                    onChange={(crewMemberCountMin) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        crewMemberCountMin,
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.yachtType}
+                    placeholder={c.allYachtTypes}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.yachtTypes}
+                    values={draftFilters.yachtTypes}
+                    onChange={(yachtTypes) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtTypes:
+                          yachtTypes as PublicJobSearchFilters["yachtTypes"],
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.yachtFlag}
+                    placeholder={c.anyFlag}
+                    searchPlaceholder={c.searchFlags}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.flags}
+                    values={draftFilters.yachtFlagCountryCodes}
+                    maxSelections={12}
+                    onChange={(yachtFlagCountryCodes) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        yachtFlagCountryCodes,
+                      }))
+                    }
+                  />
+                  <FilterSelect
+                    allowEmpty
+                    label={c.teamCouple}
+                    placeholder={c.anyTeamCouple}
+                    options={optionSets.teamCouple}
+                    value={teamCoupleFilterValue(draftFilters.candidateTypes)}
+                    onChange={(value) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        candidateTypes: candidateTypesForTeamCouple(
+                          value as TeamCoupleFilterValue,
+                        ),
+                      }))
+                    }
+                  />
+                  <MultiSelectField
+                    label={c.visas}
+                    placeholder={c.anyVisa}
+                    selectedLabel={c.selected}
+                    emptyLabel={c.noOptions}
+                    options={optionSets.visas}
+                    values={draftFilters.requiredVisas}
+                    onChange={(requiredVisas) =>
+                      updateDraftFilters((current) => ({
+                        ...current,
+                        requiredVisas:
+                          requiredVisas as PublicJobSearchFilters["requiredVisas"],
                       }))
                     }
                   />
