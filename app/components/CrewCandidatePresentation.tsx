@@ -834,10 +834,10 @@ function candidateExperienceValue(
   const labels = crewExperienceLabels[language];
   const lines = [
     yachtExperienceYears !== null && yachtExperienceYears > 0
-      ? `${labels.yacht} — ${formatCrewExperienceDuration(yachtExperienceYears, language)}`
+      ? `${labels.yacht}: ${formatCrewExperienceDuration(yachtExperienceYears, language)}`
       : "",
     otherExperienceYears !== null && otherExperienceYears > 0
-      ? `${labels.other} — ${formatCrewExperienceDuration(otherExperienceYears, language)}`
+      ? `${labels.other}: ${formatCrewExperienceDuration(otherExperienceYears, language)}`
       : "",
   ].filter(Boolean);
 
