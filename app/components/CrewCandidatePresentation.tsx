@@ -389,11 +389,11 @@ export function CrewCandidateEmployerProfileOverview({
   headingLevel?: "h1" | "h2";
   reserveTrailingActionSpace?: boolean;
   experienceLanguage?: "en" | "tr";
-  appearance?: "split" | "midnight-overlay";
+  appearance?: "split" | "horizon-sweep";
 }) {
   const Heading = headingLevel;
   const summaryHeadingLevel = headingLevel === "h1" ? "h2" : "h3";
-  const midnightOverlay = appearance === "midnight-overlay";
+  const horizonSweep = appearance === "horizon-sweep";
   const experienceValue = candidateExperienceValue(
     candidate,
     experienceLanguage,
@@ -409,24 +409,31 @@ export function CrewCandidateEmployerProfileOverview({
   return (
     <section
       className={
-        midnightOverlay
-          ? "relative grid gap-4 border-b border-slate-200 bg-[linear-gradient(145deg,#f9fbfd,#f1f6fa)] px-4 py-6 sm:px-6 sm:py-8 lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.08fr)] lg:items-center lg:gap-0 lg:px-9 lg:py-10"
+        horizonSweep
+          ? "relative isolate m-3 grid overflow-hidden rounded-[26px] border border-white/90 bg-[radial-gradient(ellipse_at_45%_55%,rgba(115,205,214,0.42),rgba(221,242,243,0.2)_26%,transparent_50%),linear-gradient(115deg,#ddf2f3_0%,#f7fbfc_54%,#ffffff_100%)] shadow-[0_24px_55px_-38px_rgba(7,31,60,0.55)] sm:m-5 sm:rounded-[28px] lg:m-6 lg:min-h-[360px] lg:grid-cols-[minmax(0,0.49fr)_minmax(0,0.51fr)]"
           : "grid overflow-hidden border-b border-slate-200 bg-white lg:grid-cols-2"
       }
     >
+      {horizonSweep ? <HorizonSweepBackdrop /> : null}
+      {horizonSweep ? (
+        <span
+          className="pointer-events-none absolute left-[36.5%] top-[38%] z-20 hidden h-px w-[16%] bg-cyan-300/75 before:absolute before:-left-1 before:-top-[3px] before:h-[7px] before:w-[7px] before:rounded-full before:bg-cyan-300 after:absolute after:-right-1 after:-top-[3px] after:h-[7px] after:w-[7px] after:rounded-full after:bg-cyan-400 lg:block"
+          aria-hidden
+        />
+      ) : null}
       <div
         className={
-          midnightOverlay
-            ? "relative isolate z-10 flex min-h-[300px] overflow-visible rounded-[28px] rounded-bl-[48px] bg-[radial-gradient(circle_at_18%_8%,rgba(103,232,249,0.14),transparent_34%),linear-gradient(135deg,#041226,#071a35_58%,#0a2446)] text-white shadow-[0_26px_55px_-38px_rgba(3,18,38,0.9)] sm:min-h-[330px] lg:min-h-[360px] lg:rounded-[34px] lg:rounded-bl-[58px]"
+          horizonSweep
+            ? "relative isolate z-10 flex min-h-[300px] overflow-hidden bg-[radial-gradient(circle_at_15%_8%,rgba(103,232,249,0.12),transparent_36%),linear-gradient(135deg,#061a33,#0b5361)] text-white sm:min-h-[330px] lg:min-h-[360px] lg:overflow-visible lg:bg-none"
             : "relative isolate flex min-h-[248px] overflow-hidden bg-[radial-gradient(circle_at_14%_8%,rgba(34,211,238,0.15),transparent_34%),linear-gradient(132deg,#031126,#071631_56%,#0d254f)] text-white sm:min-h-[290px] lg:min-h-[340px] lg:border-r lg:border-cyan-900/10"
         }
       >
-        {midnightOverlay ? null : <BlueDeckYachtBlueprint />}
+        {horizonSweep ? null : <BlueDeckYachtBlueprint />}
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
           <div
             className={
-              midnightOverlay
-                ? "flex min-w-0 flex-1 items-center gap-4 px-5 py-7 min-[390px]:gap-5 sm:px-7 sm:py-8 lg:gap-6 lg:pl-0 lg:pr-10 xl:pr-12"
+              horizonSweep
+                ? "flex min-w-0 flex-1 items-center gap-3 px-4 py-7 min-[360px]:gap-4 min-[360px]:px-5 min-[390px]:gap-5 sm:gap-6 sm:px-7 sm:py-8 lg:px-7 xl:px-9"
                 : `flex min-w-0 flex-1 items-center gap-3 px-4 py-5 min-[390px]:gap-4 sm:gap-6 sm:px-7 sm:py-7 xl:px-8 ${reserveTrailingActionSpace ? "pr-14 sm:pr-7" : ""}`
             }
           >
@@ -435,8 +442,8 @@ export function CrewCandidateEmployerProfileOverview({
               displayName={candidate.displayName}
               initials={candidate.initials}
               className={
-                midnightOverlay
-                  ? "h-24 w-24 rounded-full border-[5px] border-white ring-1 ring-cyan-200/80 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.85)] min-[390px]:h-28 min-[390px]:w-28 sm:h-32 sm:w-32 lg:-ml-9 lg:-translate-y-6 xl:h-36 xl:w-36"
+                horizonSweep
+                  ? "h-20 w-20 rounded-full border-[3px] border-[#061a33] ring-2 ring-cyan-300/85 ring-offset-2 ring-offset-[#08263d] shadow-[0_18px_38px_-24px_rgba(0,0,0,0.8)] min-[360px]:h-24 min-[360px]:w-24 min-[390px]:h-28 min-[390px]:w-28 sm:h-32 sm:w-32 xl:h-36 xl:w-36"
                   : "h-20 w-20 rounded-full border-[3px] border-[#071631] ring-2 ring-cyan-200/70 ring-offset-2 ring-offset-[#071631] shadow-xl shadow-black/30 min-[390px]:h-[92px] min-[390px]:w-[92px] sm:h-28 sm:w-28 xl:h-32 xl:w-32"
               }
               textClassName="text-xl sm:text-2xl"
@@ -467,7 +474,11 @@ export function CrewCandidateEmployerProfileOverview({
                 <Heading
                   id={titleId}
                   data-i18n-ignore
-                  className="min-w-0 break-words text-[clamp(1.45rem,7vw,2.25rem)] font-black uppercase leading-[0.98] tracking-[-0.045em] sm:text-4xl lg:text-[2rem] xl:text-[2.55rem]"
+                  className={
+                    horizonSweep
+                      ? "min-w-0 break-words text-[clamp(1.2rem,6.5vw,2.25rem)] font-black uppercase leading-[0.98] tracking-[-0.045em] min-[390px]:text-[clamp(1.4rem,7vw,2.25rem)] sm:text-4xl lg:text-[2rem] xl:text-[2.55rem]"
+                      : "min-w-0 break-words text-[clamp(1.45rem,7vw,2.25rem)] font-black uppercase leading-[0.98] tracking-[-0.045em] sm:text-4xl lg:text-[2rem] xl:text-[2.55rem]"
+                  }
                 >
                   {candidate.displayName}
                 </Heading>
@@ -488,19 +499,21 @@ export function CrewCandidateEmployerProfileOverview({
 
           <dl
             className={
-              midnightOverlay
-                ? "mx-5 mb-5 grid grid-cols-2 border-t border-cyan-100/25 sm:mx-7 sm:mb-6 lg:ml-8 lg:mr-10"
+              horizonSweep
+                ? "mx-5 mb-5 grid grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)] border-t border-cyan-100/25 min-[390px]:grid-cols-2 sm:mx-7 sm:mb-6 lg:mr-20"
                 : "grid grid-cols-2 border-t border-cyan-100/30 bg-[#020f22]/20"
             }
           >
             <EmployerHeroMetric
               label={copy.experiences}
               value={experienceValue}
+              compact={horizonSweep}
             />
             <EmployerHeroMetric
               label={copy.references}
               value={candidate.referenceCount}
               divided
+              compact={horizonSweep}
             />
           </dl>
         </div>
@@ -508,8 +521,8 @@ export function CrewCandidateEmployerProfileOverview({
 
       <div
         className={
-          midnightOverlay
-            ? "relative z-20 flex min-w-0 flex-col justify-center rounded-[24px] border border-white/90 bg-[linear-gradient(145deg,#ffffff,#fbfdff)] px-5 py-7 shadow-[0_28px_70px_-38px_rgba(7,31,60,0.48)] sm:px-8 sm:py-9 lg:-ml-8 lg:my-6 lg:min-h-[306px] lg:rounded-[28px] lg:pl-12 lg:pr-10 xl:pl-14 xl:pr-14"
+          horizonSweep
+            ? "relative z-10 flex min-w-0 flex-col justify-center border-t border-cyan-100/80 bg-[linear-gradient(145deg,#e8f6f7,#ffffff)] px-5 py-8 sm:px-8 sm:py-10 lg:min-h-[360px] lg:border-0 lg:bg-none lg:pl-16 lg:pr-10 xl:pl-20 xl:pr-14"
             : `flex min-w-0 flex-col justify-center bg-[linear-gradient(145deg,#ffffff,#f4f9fb)] px-5 py-6 sm:px-8 sm:py-8 lg:min-h-[340px] ${reserveTrailingActionSpace ? "lg:pr-20 xl:px-10 xl:pr-20" : "lg:px-8 xl:px-10"}`
         }
       >
@@ -1235,14 +1248,16 @@ function EmployerHeroMetric({
   label,
   value,
   divided = false,
+  compact = false,
 }: {
   label: string;
   value: ReactNode;
   divided?: boolean;
+  compact?: boolean;
 }) {
   return (
     <div
-      className={`min-w-0 px-5 py-4 sm:px-7 ${divided ? "border-l border-cyan-100/30" : ""}`}
+      className={`min-w-0 py-4 ${compact ? "px-3 min-[390px]:px-4 sm:px-5" : "px-5 sm:px-7"} ${divided ? "border-l border-cyan-100/30" : ""}`}
     >
       <dt className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-200 sm:text-[10px]">
         {label}
@@ -1254,6 +1269,36 @@ function EmployerHeroMetric({
         {value}
       </dd>
     </div>
+  );
+}
+
+function HorizonSweepBackdrop() {
+  return (
+    <svg
+      viewBox="0 0 1000 400"
+      preserveAspectRatio="none"
+      className="pointer-events-none absolute inset-0 hidden h-full w-full lg:block"
+      aria-hidden
+      focusable="false"
+    >
+      <defs>
+        <linearGradient
+          id="crew-horizon-sweep-gradient"
+          x1="0"
+          y1="0"
+          x2="1"
+          y2="0"
+        >
+          <stop offset="0" stopColor="#061a33" />
+          <stop offset="0.7" stopColor="#083f4d" />
+          <stop offset="1" stopColor="#0b5361" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M0 0H555C505 38 486 110 468 194C447 291 423 356 385 400H0Z"
+        fill="url(#crew-horizon-sweep-gradient)"
+      />
+    </svg>
   );
 }
 

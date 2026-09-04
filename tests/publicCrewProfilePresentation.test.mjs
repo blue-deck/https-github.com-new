@@ -18,7 +18,7 @@ test("public crew profiles reuse the responsive application overview", async () 
   assert.match(profile, /<CrewCandidateEmployerProfileOverview/);
   assert.match(profile, /headingLevel="h1"/);
   assert.match(profile, /reserveTrailingActionSpace=\{false\}/);
-  assert.match(publicProfile, /appearance="midnight-overlay"/);
+  assert.match(publicProfile, /appearance="horizon-sweep"/);
   assert.match(
     profile,
     /<CrewCandidateProfileBody[\s\S]*?variant="public"[\s\S]*?sectionHeadingLevel="h2"/,
@@ -44,8 +44,9 @@ test("shared overview preserves public heading semantics and compact section ord
   assert.match(presentation, /variant\?: "default" \| "employer" \| "public"/);
   assert.match(
     presentation,
-    /appearance\?: "split" \| "midnight-overlay"/,
+    /appearance\?: "split" \| "horizon-sweep"/,
   );
+  assert.match(presentation, /function HorizonSweepBackdrop\(\)/);
   assert.match(
     presentation,
     /if \(compactVariant\)[\s\S]*?\{gallerySection\}[\s\S]*?\{personalDetailsSection\}[\s\S]*?\{languagesSection\}[\s\S]*?\{skillsSection\}/,
