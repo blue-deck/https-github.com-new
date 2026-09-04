@@ -210,17 +210,17 @@ export function JobsClient({
       const serverPage = initialPageRef.current;
       const initialMatchesUrl = Boolean(
         parsed.ok &&
-        serverFilters &&
-        publicJobSearchParams(serverFilters).toString() ===
-          publicJobSearchParams(nextFilters).toString(),
+          serverFilters &&
+          publicJobSearchParams(serverFilters).toString() ===
+            publicJobSearchParams(nextFilters).toString(),
       );
       const useInitialPage = Boolean(
         allowInitialPage &&
-        initialMatchesUrl &&
-        serverPage &&
-        serverFilters &&
-        isValidInitialPage(serverPage, serverFilters.limit) &&
-        !initialLoadErrorRef.current,
+          initialMatchesUrl &&
+          serverPage &&
+          serverFilters &&
+          isValidInitialPage(serverPage, serverFilters.limit) &&
+          !initialLoadErrorRef.current,
       );
       const useInitialError = Boolean(
         allowInitialPage && initialMatchesUrl && initialLoadErrorRef.current,
@@ -455,487 +455,527 @@ export function JobsClient({
           aria-label={c.results}
           className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
         >
-          <section
-            aria-labelledby="jobs-filter-heading"
-            className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-200/40 sm:p-5"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2
-                  id="jobs-filter-heading"
-                  className="flex items-center gap-2 text-sm font-black text-[#071f3c]"
+          <div className="rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,45,72,0.07)]">
+            <section
+              aria-labelledby="jobs-filter-heading"
+              className="p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2
+                    id="jobs-filter-heading"
+                    className="flex items-center gap-2 text-base font-black text-[#071f3c]"
+                  >
+                    <SlidersHorizontal
+                      className="h-5 w-5 text-cyan-700"
+                      aria-hidden
+                    />
+                    {c.filters}
+                  </h2>
+                  <p className="mt-1 text-sm leading-5 text-slate-500">
+                    {c.filterHint}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-expanded={advancedOpen}
+                  aria-controls="advanced-job-filters"
+                  onClick={() => setAdvancedOpen((current) => !current)}
+                  className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
                 >
-                  <SlidersHorizontal
-                    className="h-5 w-5 text-cyan-700"
+                  {c.advanced}
+                  <ChevronDown
+                    className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
                     aria-hidden
                   />
-                  {c.filters}
-                </h2>
-                <p className="mt-1 text-xs leading-5 text-slate-500">
-                  {c.filterHint}
-                </p>
+                </button>
               </div>
-              <button
-                type="button"
-                aria-expanded={advancedOpen}
-                aria-controls="advanced-job-filters"
-                onClick={() => setAdvancedOpen((current) => !current)}
-                className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
+
+              <div
+                className={`mt-4 grid items-end gap-3 md:grid-cols-2 ${
+                  advancedOpen
+                    ? "xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))]"
+                    : "xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))_auto]"
+                } ${!advancedOpen && hasPrimaryDraftFilters ? "pb-11" : ""}`}
               >
-                {c.advanced}
-                <ChevronDown
-                  className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
-                  aria-hidden
+                <div className="block min-w-0">
+                  <label
+                    htmlFor="jobs-keyword-search"
+                    className="mb-1.5 block text-xs font-bold text-slate-600"
+                  >
+                    {c.search}
+                  </label>
+                  <span className="relative block">
+                    <input
+                      id="jobs-keyword-search"
+                      type="search"
+                      value={draftFilters.query}
+                      onChange={(event) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          query: capitalizeFirstLetter(
+                            event.target.value,
+                            language,
+                          ),
+                        }))
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") return;
+                        event.preventDefault();
+                        applyKeywordSearch();
+                      }}
+                      placeholder={c.searchPlaceholder}
+                      maxLength={120}
+                      className="min-h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyKeywordSearch}
+                      aria-label={c.searchKeyword}
+                      title={c.searchKeyword}
+                      className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
+                    >
+                      <Search className="h-5 w-5" aria-hidden />
+                    </button>
+                  </span>
+                </div>
+                <MultiSelectField
+                  label={c.position}
+                  placeholder={c.allPositions}
+                  searchPlaceholder={c.searchPositions}
+                  selectedLabel={c.selected}
+                  emptyLabel={c.noOptions}
+                  options={optionSets.positions}
+                  values={draftFilters.positions}
+                  maxSelections={12}
+                  capitalizeSearch
+                  searchLocale={language}
+                  onChange={(positions) =>
+                    updateDraftFilters((current) => ({ ...current, positions }))
+                  }
                 />
-              </button>
-            </div>
+                <LocationSearchField
+                  label={c.location}
+                  ariaLabel={c.location}
+                  value={draftFilters.location}
+                  placeholder={c.locationPlaceholder}
+                  searchingText={c.locationSearching}
+                  noResultsText={c.locationNoResults}
+                  resultsText={c.locationResults}
+                  maxLength={120}
+                  className="relative min-w-0"
+                  labelClassName="mb-1.5 block text-xs font-bold text-slate-600"
+                  popupClassName="absolute left-0 top-full z-50 w-full min-w-64"
+                  popupListClassName="max-h-72 overflow-y-auto overscroll-contain"
+                  onChange={(location) =>
+                    updateDraftFilters((current) => ({
+                      ...current,
+                      location,
+                    }))
+                  }
+                />
+                <MultiSelectField
+                  label={c.employmentType}
+                  placeholder={c.allEmploymentTypes}
+                  selectedLabel={c.selected}
+                  emptyLabel={c.noOptions}
+                  options={optionSets.employmentTypes}
+                  values={draftFilters.employmentTypes}
+                  onChange={(employmentTypes) =>
+                    updateDraftFilters((current) => ({
+                      ...current,
+                      employmentTypes:
+                        employmentTypes as PublicJobSearchFilters["employmentTypes"],
+                    }))
+                  }
+                />
+                {!advancedOpen ? (
+                  <div className="relative flex min-h-12 items-end justify-end self-end md:col-span-2 xl:col-span-1">
+                    <JobFilterSearchButton
+                      label={c.applyFilters}
+                      searchDisabled={Boolean(draftValidationError)}
+                      onSearch={applyAllFilters}
+                    />
+                    {hasPrimaryDraftFilters ? (
+                      <JobFilterClearAction
+                        label={c.clear}
+                        onClick={clearFilters}
+                        className="absolute right-0 top-full mt-1 whitespace-nowrap"
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+              {!advancedOpen && draftValidationError ? (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+                >
+                  {draftValidationError}
+                </p>
+              ) : null}
+            </section>
 
             <div
-              className={`mt-4 grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))_auto] ${
-                !advancedOpen && hasPrimaryDraftFilters ? "pb-11" : ""
+              className={`grid items-start border-t border-slate-200 ${
+                advancedOpen
+                  ? "xl:grid-cols-[minmax(0,18fr)_minmax(22rem,7fr)]"
+                  : ""
               }`}
             >
-              <div className="block min-w-0">
-                <label
-                  htmlFor="jobs-keyword-search"
-                  className="mb-1.5 block text-xs font-bold text-slate-600"
+              {advancedOpen ? (
+                <aside
+                  id="advanced-job-filters"
+                  role="region"
+                  aria-label={c.advanced}
+                  className="min-w-0 border-b border-slate-200 bg-white p-4 sm:p-5 lg:p-6 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start xl:border-b-0"
                 >
-                  {c.search}
-                </label>
-                <span className="relative block">
-                  <input
-                    id="jobs-keyword-search"
-                    type="search"
-                    value={draftFilters.query}
-                    onChange={(event) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        query: capitalizeFirstLetter(
-                          event.target.value,
-                          language,
-                        ),
-                      }))
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter") return;
-                      event.preventDefault();
-                      applyKeywordSearch();
-                    }}
-                    placeholder={c.searchPlaceholder}
-                    maxLength={120}
-                    className="min-h-12 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={applyKeywordSearch}
-                    aria-label={c.searchKeyword}
-                    title={c.searchKeyword}
-                    className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
-                  >
-                    <Search className="h-5 w-5" aria-hidden />
-                  </button>
-                </span>
-              </div>
-              <MultiSelectField
-                label={c.position}
-                placeholder={c.allPositions}
-                searchPlaceholder={c.searchPositions}
-                selectedLabel={c.selected}
-                emptyLabel={c.noOptions}
-                options={optionSets.positions}
-                values={draftFilters.positions}
-                maxSelections={12}
-                capitalizeSearch
-                searchLocale={language}
-                onChange={(positions) =>
-                  updateDraftFilters((current) => ({ ...current, positions }))
-                }
-              />
-              <LocationSearchField
-                label={c.location}
-                ariaLabel={c.location}
-                value={draftFilters.location}
-                placeholder={c.locationPlaceholder}
-                searchingText={c.locationSearching}
-                noResultsText={c.locationNoResults}
-                resultsText={c.locationResults}
-                maxLength={120}
-                className="relative min-w-0"
-                labelClassName="mb-1.5 block text-xs font-bold text-slate-600"
-                popupClassName="absolute left-0 top-full z-50 w-full min-w-64"
-                popupListClassName="max-h-72 overflow-y-auto overscroll-contain"
-                onChange={(location) =>
-                  updateDraftFilters((current) => ({
-                    ...current,
-                    location,
-                  }))
-                }
-              />
-              <MultiSelectField
-                label={c.employmentType}
-                placeholder={c.allEmploymentTypes}
-                selectedLabel={c.selected}
-                emptyLabel={c.noOptions}
-                options={optionSets.employmentTypes}
-                values={draftFilters.employmentTypes}
-                onChange={(employmentTypes) =>
-                  updateDraftFilters((current) => ({
-                    ...current,
-                    employmentTypes:
-                      employmentTypes as PublicJobSearchFilters["employmentTypes"],
-                  }))
-                }
-              />
-              {!advancedOpen ? (
-                <div className="relative flex min-h-12 items-end justify-end self-end md:col-span-2 xl:col-span-1">
-                  <JobFilterSearchButton
-                    label={c.applyFilters}
-                    searchDisabled={Boolean(draftValidationError)}
-                    onSearch={applyAllFilters}
-                  />
-                  {hasPrimaryDraftFilters ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    <MultiSelectField
+                      label={c.department}
+                      placeholder={c.allDepartments}
+                      selectedLabel={c.selected}
+                      emptyLabel={c.noOptions}
+                      options={optionSets.departments}
+                      values={draftFilters.departments}
+                      onChange={(departments) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          departments,
+                        }))
+                      }
+                    />
+                    <SalaryFilterGroup
+                      minimumLabel={c.minimumSalary}
+                      maximumLabel={c.maximumSalary}
+                      currencyLabel={c.currency}
+                      periodLabel={c.payPeriod}
+                      minimum={draftFilters.salaryMin}
+                      maximum={draftFilters.salaryMax}
+                      currency={
+                        draftFilters.salaryCurrency ?? defaultSalaryCurrency
+                      }
+                      period={draftFilters.salaryPeriod ?? defaultSalaryPeriod}
+                      currencyOptions={optionSets.salaryCurrencies}
+                      periodOptions={optionSets.salaryPeriods}
+                      onMinimumChange={(salaryMin) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          salaryMin,
+                          salaryCurrency:
+                            salaryMin !== null && !current.salaryCurrency
+                              ? defaultSalaryCurrency
+                              : current.salaryCurrency,
+                          salaryPeriod:
+                            salaryMin !== null && !current.salaryPeriod
+                              ? defaultSalaryPeriod
+                              : current.salaryPeriod,
+                        }))
+                      }
+                      onMaximumChange={(salaryMax) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          salaryMax,
+                          salaryCurrency:
+                            salaryMax !== null && !current.salaryCurrency
+                              ? defaultSalaryCurrency
+                              : current.salaryCurrency,
+                          salaryPeriod:
+                            salaryMax !== null && !current.salaryPeriod
+                              ? defaultSalaryPeriod
+                              : current.salaryPeriod,
+                        }))
+                      }
+                      onCurrencyChange={(value) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          salaryCurrency:
+                            value as PublicJobSearchFilters["salaryCurrency"],
+                          salaryPeriod:
+                            current.salaryPeriod ?? defaultSalaryPeriod,
+                        }))
+                      }
+                      onPeriodChange={(value) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          salaryCurrency:
+                            current.salaryCurrency ?? defaultSalaryCurrency,
+                          salaryPeriod:
+                            value as PublicJobSearchFilters["salaryPeriod"],
+                        }))
+                      }
+                    />
+                    <DualRangeSlider
+                      label={c.yachtLength}
+                      anyLabel={c.anyYachtLength}
+                      fromLabel={c.from}
+                      upToLabel={c.upTo}
+                      minimumLabel={c.minimumYachtLength}
+                      maximumLabel={c.maximumYachtLength}
+                      noMinimumLabel={c.noMinimumYachtLength}
+                      noMaximumLabel={c.noMaximumYachtLength}
+                      unit={c.metres}
+                      minimumValue={draftFilters.yachtLengthMinMetres}
+                      maximumValue={draftFilters.yachtLengthMaxMetres}
+                      minimum={publicJobYachtLengthSlider.minimumMetres}
+                      maximum={publicJobYachtLengthSlider.maximumMetres}
+                      step={publicJobYachtLengthSlider.stepMetres}
+                      onMinimumChange={(yachtLengthMinMetres) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          yachtLengthMinMetres,
+                        }))
+                      }
+                      onMaximumChange={(yachtLengthMaxMetres) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          yachtLengthMaxMetres,
+                        }))
+                      }
+                    />
+                    <MultiSelectField
+                      label={c.yachtType}
+                      placeholder={c.allYachtTypes}
+                      selectedLabel={c.selected}
+                      emptyLabel={c.noOptions}
+                      options={optionSets.yachtTypes}
+                      values={draftFilters.yachtTypes}
+                      onChange={(yachtTypes) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          yachtTypes:
+                            yachtTypes as PublicJobSearchFilters["yachtTypes"],
+                        }))
+                      }
+                    />
+                    <FilterSelect
+                      allowEmpty
+                      label={c.yachtProgram}
+                      placeholder={c.allYachtPrograms}
+                      options={optionSets.yachtPrograms}
+                      value={draftFilters.yachtProgram || ""}
+                      onChange={(value) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          yachtProgram: (value ||
+                            null) as PublicJobSearchFilters["yachtProgram"],
+                        }))
+                      }
+                    />
+                    <DualRangeSlider
+                      label={c.crewSize}
+                      anyLabel={c.anyCrewSize}
+                      fromLabel={c.from}
+                      upToLabel={c.upTo}
+                      minimumLabel={c.minimumCrewSize}
+                      maximumLabel={c.maximumCrewSize}
+                      noMinimumLabel={c.noMinimumCrewSize}
+                      noMaximumLabel={c.noMaximumCrewSize}
+                      minimumValue={draftFilters.crewMemberCountMin}
+                      maximumValue={draftFilters.crewMemberCountMax}
+                      minimum={publicJobCrewSizeSlider.minimumCrewMembers}
+                      maximum={publicJobCrewSizeSlider.maximumCrewMembers}
+                      step={publicJobCrewSizeSlider.stepCrewMembers}
+                      onMinimumChange={(crewMemberCountMin) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          crewMemberCountMin,
+                        }))
+                      }
+                      onMaximumChange={(crewMemberCountMax) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          crewMemberCountMax,
+                        }))
+                      }
+                    />
+                    <MultiSelectField
+                      label={c.yachtFlag}
+                      placeholder={c.anyFlag}
+                      searchPlaceholder={c.searchFlags}
+                      selectedLabel={c.selected}
+                      emptyLabel={c.noOptions}
+                      options={optionSets.flags}
+                      values={draftFilters.yachtFlagCountryCodes}
+                      maxSelections={12}
+                      onChange={(yachtFlagCountryCodes) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          yachtFlagCountryCodes,
+                        }))
+                      }
+                    />
+                    <FilterSelect
+                      allowEmpty
+                      label={c.teamCouple}
+                      placeholder={c.anyTeamCouple}
+                      options={optionSets.teamCouple}
+                      value={teamCoupleFilterValue(draftFilters.candidateTypes)}
+                      onChange={(value) =>
+                        updateDraftFilters((current) => ({
+                          ...current,
+                          candidateTypes: candidateTypesForTeamCouple(
+                            value as TeamCoupleFilterValue,
+                          ),
+                        }))
+                      }
+                    />
+                  </div>
+                  {draftValidationError ? (
+                    <p
+                      role="alert"
+                      className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+                    >
+                      {draftValidationError}
+                    </p>
+                  ) : null}
+                  <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
                     <JobFilterClearAction
                       label={c.clear}
                       onClick={clearFilters}
-                      className="absolute right-0 top-full mt-1 whitespace-nowrap"
                     />
-                  ) : null}
-                </div>
+                    <JobFilterSearchButton
+                      label={c.applyFilters}
+                      searchDisabled={Boolean(draftValidationError)}
+                      onSearch={applyAllFilters}
+                      className="min-w-40 flex-1"
+                    />
+                  </div>
+                </aside>
               ) : null}
-            </div>
 
-            {advancedOpen ? (
-              <div
-                id="advanced-job-filters"
-                role="region"
-                aria-label={c.advanced}
-                className="mt-5 border-t border-slate-200 pt-5"
-              >
-                <div className="grid grid-cols-1 gap-x-3 gap-y-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
-                  <MultiSelectField
-                    label={c.department}
-                    placeholder={c.allDepartments}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.departments}
-                    values={draftFilters.departments}
-                    onChange={(departments) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        departments,
-                      }))
-                    }
-                  />
-                  <SalaryFilterGroup
-                    minimumLabel={c.minimumSalary}
-                    maximumLabel={c.maximumSalary}
-                    currencyLabel={c.currency}
-                    periodLabel={c.payPeriod}
-                    minimum={draftFilters.salaryMin}
-                    maximum={draftFilters.salaryMax}
-                    currency={
-                      draftFilters.salaryCurrency ?? defaultSalaryCurrency
-                    }
-                    period={draftFilters.salaryPeriod ?? defaultSalaryPeriod}
-                    currencyOptions={optionSets.salaryCurrencies}
-                    periodOptions={optionSets.salaryPeriods}
-                    onMinimumChange={(salaryMin) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        salaryMin,
-                        salaryCurrency:
-                          salaryMin !== null && !current.salaryCurrency
-                            ? defaultSalaryCurrency
-                            : current.salaryCurrency,
-                        salaryPeriod:
-                          salaryMin !== null && !current.salaryPeriod
-                            ? defaultSalaryPeriod
-                            : current.salaryPeriod,
-                      }))
-                    }
-                    onMaximumChange={(salaryMax) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        salaryMax,
-                        salaryCurrency:
-                          salaryMax !== null && !current.salaryCurrency
-                            ? defaultSalaryCurrency
-                            : current.salaryCurrency,
-                        salaryPeriod:
-                          salaryMax !== null && !current.salaryPeriod
-                            ? defaultSalaryPeriod
-                            : current.salaryPeriod,
-                      }))
-                    }
-                    onCurrencyChange={(value) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        salaryCurrency:
-                          value as PublicJobSearchFilters["salaryCurrency"],
-                        salaryPeriod:
-                          current.salaryPeriod ?? defaultSalaryPeriod,
-                      }))
-                    }
-                    onPeriodChange={(value) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        salaryCurrency:
-                          current.salaryCurrency ?? defaultSalaryCurrency,
-                        salaryPeriod:
-                          value as PublicJobSearchFilters["salaryPeriod"],
-                      }))
-                    }
-                  />
-                  <DualRangeSlider
-                    label={c.yachtLength}
-                    anyLabel={c.anyYachtLength}
-                    fromLabel={c.from}
-                    upToLabel={c.upTo}
-                    minimumLabel={c.minimumYachtLength}
-                    maximumLabel={c.maximumYachtLength}
-                    noMinimumLabel={c.noMinimumYachtLength}
-                    noMaximumLabel={c.noMaximumYachtLength}
-                    unit={c.metres}
-                    minimumValue={draftFilters.yachtLengthMinMetres}
-                    maximumValue={draftFilters.yachtLengthMaxMetres}
-                    minimum={publicJobYachtLengthSlider.minimumMetres}
-                    maximum={publicJobYachtLengthSlider.maximumMetres}
-                    step={publicJobYachtLengthSlider.stepMetres}
-                    onMinimumChange={(yachtLengthMinMetres) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtLengthMinMetres,
-                      }))
-                    }
-                    onMaximumChange={(yachtLengthMaxMetres) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtLengthMaxMetres,
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.yachtType}
-                    placeholder={c.allYachtTypes}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.yachtTypes}
-                    values={draftFilters.yachtTypes}
-                    onChange={(yachtTypes) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtTypes:
-                          yachtTypes as PublicJobSearchFilters["yachtTypes"],
-                      }))
-                    }
-                  />
-                  <FilterSelect
-                    allowEmpty
-                    label={c.yachtProgram}
-                    placeholder={c.allYachtPrograms}
-                    options={optionSets.yachtPrograms}
-                    value={draftFilters.yachtProgram || ""}
-                    onChange={(value) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtProgram: (value ||
-                          null) as PublicJobSearchFilters["yachtProgram"],
-                      }))
-                    }
-                  />
-                  <DualRangeSlider
-                    label={c.crewSize}
-                    anyLabel={c.anyCrewSize}
-                    fromLabel={c.from}
-                    upToLabel={c.upTo}
-                    minimumLabel={c.minimumCrewSize}
-                    maximumLabel={c.maximumCrewSize}
-                    noMinimumLabel={c.noMinimumCrewSize}
-                    noMaximumLabel={c.noMaximumCrewSize}
-                    minimumValue={draftFilters.crewMemberCountMin}
-                    maximumValue={draftFilters.crewMemberCountMax}
-                    minimum={publicJobCrewSizeSlider.minimumCrewMembers}
-                    maximum={publicJobCrewSizeSlider.maximumCrewMembers}
-                    step={publicJobCrewSizeSlider.stepCrewMembers}
-                    onMinimumChange={(crewMemberCountMin) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        crewMemberCountMin,
-                      }))
-                    }
-                    onMaximumChange={(crewMemberCountMax) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        crewMemberCountMax,
-                      }))
-                    }
-                  />
-                  <MultiSelectField
-                    label={c.yachtFlag}
-                    placeholder={c.anyFlag}
-                    searchPlaceholder={c.searchFlags}
-                    selectedLabel={c.selected}
-                    emptyLabel={c.noOptions}
-                    options={optionSets.flags}
-                    values={draftFilters.yachtFlagCountryCodes}
-                    maxSelections={12}
-                    onChange={(yachtFlagCountryCodes) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        yachtFlagCountryCodes,
-                      }))
-                    }
-                  />
-                  <FilterSelect
-                    allowEmpty
-                    label={c.teamCouple}
-                    placeholder={c.anyTeamCouple}
-                    options={optionSets.teamCouple}
-                    value={teamCoupleFilterValue(draftFilters.candidateTypes)}
-                    onChange={(value) =>
-                      updateDraftFilters((current) => ({
-                        ...current,
-                        candidateTypes: candidateTypesForTeamCouple(
-                          value as TeamCoupleFilterValue,
-                        ),
-                      }))
-                    }
-                  />
-                </div>
-                <div className="mt-4 flex items-center justify-end gap-4">
-                  <JobFilterClearAction
-                    label={c.clear}
-                    onClick={clearFilters}
-                  />
-                  <JobFilterSearchButton
-                    label={c.applyFilters}
-                    searchDisabled={Boolean(draftValidationError)}
-                    onSearch={applyAllFilters}
-                    className="w-full sm:w-auto sm:min-w-40"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            {draftValidationError ? (
-              <p
-                role="alert"
-                className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
-              >
-                {draftValidationError}
-              </p>
-            ) : null}
-
-          </section>
-
-          <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
-            <div aria-live="polite" aria-atomic="true">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                {c.results}
-              </p>
-              <h2
-                id="jobs-results-heading"
-                className="mt-1 flex items-center gap-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
-              >
-                <span>
-                  <span data-i18n-ignore>{total}</span> {c.roles}
-                </span>
-                {refreshing && !validationError ? (
-                  <LoaderCircle
-                    className="h-5 w-5 animate-spin text-cyan-700"
-                    aria-label={c.searching}
-                  />
-                ) : null}
-              </h2>
-            </div>
-            <div className="flex flex-wrap items-end gap-3">
-              <FilterSelect
-                compact
-                label={c.sortBy}
-                placeholder={c.sortBy}
-                value={filters.sort}
-                options={optionSets.sorts}
-                onChange={(value) => updateSort(value as PublicJobSearchSort)}
-              />
-            </div>
-          </div>
-
-          {validationError ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 px-6 py-10 text-center">
-              <Filter className="mx-auto h-9 w-9 text-amber-700" aria-hidden />
-              <h3 className="mt-4 text-xl font-semibold text-[#071f3c]">
-                {c.fixFiltersTitle}
-              </h3>
-              <p className="mx-auto mt-2 max-w-xl leading-7 text-slate-600">
-                {validationError}
-              </p>
-            </div>
-          ) : loadState === "loading" && jobs.length === 0 ? (
-            <JobsLoadingState label={c.loading} />
-          ) : loadState === "error" ? (
-            <RequestError
-              title={c.errorTitle}
-              text={c.errorText}
-              retry={c.retry}
-              onRetry={retry}
-            />
-          ) : total === 0 && !hasFilters ? (
-            <EmptyState
-              title={c.emptyTitle}
-              text={isEmployerViewer ? c.employerEmptyText : c.emptyText}
-              action={emptyAction}
-            />
-          ) : total === 0 ? (
-            <NoMatches copy={c} onClear={clearFilters} />
-          ) : (
-            <div aria-busy={refreshing}>
-              <div
-                className={`mt-5 grid gap-5 transition-opacity ${
-                  refreshing ? "opacity-55" : "opacity-100"
+              <section
+                aria-labelledby="jobs-results-heading"
+                className={`min-w-0 ${
+                  advancedOpen
+                    ? "xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200"
+                    : ""
                 }`}
               >
-                {jobs.map((job) => (
-                  <PublicJobListingCard
-                    key={job.id}
-                    job={job}
-                    language={language}
-                    viewer={viewer}
-                  />
-                ))}
-              </div>
-
-              {hasMore || loadMoreFailed ? (
-                <div className="mt-7 text-center">
-                  {loadMoreFailed ? (
-                    <p
-                      role="alert"
-                      className="mb-3 text-sm font-semibold text-rose-700"
-                    >
-                      {c.loadMoreError}
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4 pb-0 sm:p-5 sm:pb-0 lg:p-6 lg:pb-0">
+                  <div aria-live="polite" aria-atomic="true">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                      {c.results}
                     </p>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={loadingMore || refreshing || !nextCursor}
-                    onClick={() => void loadMoreJobs()}
-                    className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-sm font-black text-slate-800 transition hover:border-cyan-500 hover:text-cyan-900 disabled:cursor-not-allowed disabled:opacity-55"
-                  >
-                    {loadingMore ? (
-                      <LoaderCircle
-                        className="h-4 w-4 animate-spin"
+                    <h2
+                      id="jobs-results-heading"
+                      className="mt-1 flex items-center gap-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
+                    >
+                      <span>
+                        <span data-i18n-ignore>{total}</span> {c.roles}
+                      </span>
+                      {refreshing && !validationError ? (
+                        <LoaderCircle
+                          className="h-5 w-5 animate-spin text-cyan-700"
+                          aria-label={c.searching}
+                        />
+                      ) : null}
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-3">
+                    <FilterSelect
+                      compact
+                      label={c.sortBy}
+                      placeholder={c.sortBy}
+                      value={filters.sort}
+                      options={optionSets.sorts}
+                      onChange={(value) =>
+                        updateSort(value as PublicJobSearchSort)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 pt-0 sm:p-5 sm:pt-0 lg:p-6 lg:pt-0">
+                  {validationError ? (
+                    <div className="mt-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 px-6 py-10 text-center">
+                      <Filter
+                        className="mx-auto h-9 w-9 text-amber-700"
                         aria-hidden
                       />
-                    ) : null}
-                    {loadingMore ? c.loadingMore : c.loadMore}
-                  </button>
-                  <p className="mt-2 text-xs text-slate-500">
-                    <span data-i18n-ignore>{jobs.length}</span> /{" "}
-                    <span data-i18n-ignore>{total}</span> {c.shown}
-                  </p>
+                      <h3 className="mt-4 text-xl font-semibold text-[#071f3c]">
+                        {c.fixFiltersTitle}
+                      </h3>
+                      <p className="mx-auto mt-2 max-w-xl leading-7 text-slate-600">
+                        {validationError}
+                      </p>
+                    </div>
+                  ) : loadState === "loading" && jobs.length === 0 ? (
+                    <JobsLoadingState
+                      compact={advancedOpen}
+                      label={c.loading}
+                    />
+                  ) : loadState === "error" ? (
+                    <RequestError
+                      title={c.errorTitle}
+                      text={c.errorText}
+                      retry={c.retry}
+                      onRetry={retry}
+                    />
+                  ) : total === 0 && !hasFilters ? (
+                    <EmptyState
+                      title={c.emptyTitle}
+                      text={
+                        isEmployerViewer ? c.employerEmptyText : c.emptyText
+                      }
+                      action={emptyAction}
+                    />
+                  ) : total === 0 ? (
+                    <NoMatches copy={c} onClear={clearFilters} />
+                  ) : (
+                    <div aria-busy={refreshing}>
+                      <div
+                        className={`mt-5 grid gap-5 transition-opacity ${
+                          refreshing ? "opacity-55" : "opacity-100"
+                        }`}
+                      >
+                        {jobs.map((job) => (
+                          <PublicJobListingCard
+                            key={job.id}
+                            job={job}
+                            language={language}
+                            viewer={viewer}
+                            compact={advancedOpen}
+                          />
+                        ))}
+                      </div>
+
+                      {hasMore || loadMoreFailed ? (
+                        <div className="mt-7 text-center">
+                          {loadMoreFailed ? (
+                            <p
+                              role="alert"
+                              className="mb-3 text-sm font-semibold text-rose-700"
+                            >
+                              {c.loadMoreError}
+                            </p>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={loadingMore || refreshing || !nextCursor}
+                            onClick={() => void loadMoreJobs()}
+                            className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-sm font-black text-slate-800 transition hover:border-cyan-500 hover:text-cyan-900 disabled:cursor-not-allowed disabled:opacity-55"
+                          >
+                            {loadingMore ? (
+                              <LoaderCircle
+                                className="h-4 w-4 animate-spin"
+                                aria-hidden
+                              />
+                            ) : null}
+                            {loadingMore ? c.loadingMore : c.loadMore}
+                          </button>
+                          <p className="mt-2 text-xs text-slate-500">
+                            <span data-i18n-ignore>{jobs.length}</span> /{" "}
+                            <span data-i18n-ignore>{total}</span> {c.shown}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </div>
-              ) : null}
+              </section>
             </div>
-          )}
+          </div>
         </section>
       </main>
 
@@ -1214,8 +1254,7 @@ function DualRangeSlider({
   const span = maximum - minimum;
   const start = ((lowerValue - minimum) / span) * 100;
   const end = ((upperValue - minimum) / span) * 100;
-  const formatValue = (value: number) =>
-    `${value}${unit ? ` ${unit}` : ""}`;
+  const formatValue = (value: number) => `${value}${unit ? ` ${unit}` : ""}`;
   const valueText =
     minimumValue === null && maximumValue === null
       ? anyLabel
@@ -1227,13 +1266,9 @@ function DualRangeSlider({
             ? `${upToLabel} ${formatValue(maximumValue)}`
             : anyLabel;
   const minimumValueText =
-    minimumValue === null
-      ? noMinimumLabel
-      : formatValue(minimumValue);
+    minimumValue === null ? noMinimumLabel : formatValue(minimumValue);
   const maximumValueText =
-    maximumValue === null
-      ? noMaximumLabel
-      : formatValue(maximumValue);
+    maximumValue === null ? noMaximumLabel : formatValue(maximumValue);
   const valueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
     const bounds = event.currentTarget.getBoundingClientRect();
     const thumbInset =
@@ -1245,20 +1280,14 @@ function DualRangeSlider({
     const usableWidth = Math.max(1, bounds.width - thumbInset * 2);
     const ratio = Math.max(
       0,
-      Math.min(
-        1,
-        (event.clientX - bounds.left - thumbInset) / usableWidth,
-      ),
+      Math.min(1, (event.clientX - bounds.left - thumbInset) / usableWidth),
     );
     return Math.min(
       maximum,
       minimum + Math.round((ratio * span) / step) * step,
     );
   };
-  const updateThumb = (
-    thumb: "minimum" | "maximum",
-    nextValue: number,
-  ) => {
+  const updateThumb = (thumb: "minimum" | "maximum", nextValue: number) => {
     if (thumb === "minimum") {
       const clampedValue = Math.min(nextValue, upperValue);
       onMinimumChange(clampedValue === minimum ? null : clampedValue);
@@ -1456,7 +1485,9 @@ function FilterSelect({
           onChange={(event) => onChange(event.target.value)}
           className="bd-focus h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-4 pr-10 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
         >
-          {!value || allowEmpty ? <option value="">{placeholder}</option> : null}
+          {!value || allowEmpty ? (
+            <option value="">{placeholder}</option>
+          ) : null}
           {options.map((option) => (
             <option data-i18n-ignore key={option.value} value={option.value}>
               {option.label}
@@ -1601,7 +1632,13 @@ function closeOpenJobMultiSelects(except?: HTMLDetailsElement) {
     });
 }
 
-function JobsLoadingState({ label }: { label: string }) {
+function JobsLoadingState({
+  compact,
+  label,
+}: {
+  compact: boolean;
+  label: string;
+}) {
   return (
     <div className="mt-5" aria-live="polite" aria-busy="true">
       <div className="flex items-center gap-3 text-sm font-black text-cyan-800">
@@ -1610,7 +1647,7 @@ function JobsLoadingState({ label }: { label: string }) {
       </div>
       <div className="mt-5 grid gap-5">
         {[0, 1].map((item) => (
-          <PublicJobListingSkeleton key={item} />
+          <PublicJobListingSkeleton compact={compact} key={item} />
         ))}
       </div>
     </div>
@@ -1867,11 +1904,10 @@ function countAdvancedPublicJobFilters(filters: PublicJobSearchFilters) {
     (filters.yachtProgram ? 1 : 0) +
     filters.yachtFlagCountryCodes.length +
     (filters.yachtLengthMinMetres !== null ||
-      filters.yachtLengthMaxMetres !== null
+    filters.yachtLengthMaxMetres !== null
       ? 1
       : 0) +
-    (filters.crewMemberCountMin !== null ||
-      filters.crewMemberCountMax !== null
+    (filters.crewMemberCountMin !== null || filters.crewMemberCountMax !== null
       ? 1
       : 0) +
     (filters.salaryCurrency ||
@@ -2011,7 +2047,8 @@ const copy = {
     location: "Location",
     locationPlaceholder: "Search location",
     locationSearching: "Searching locations…",
-    locationNoResults: "No matching location found. You can keep your own text.",
+    locationNoResults:
+      "No matching location found. You can keep your own text.",
     locationResults: "location options available.",
     employmentType: "Employment type",
     allEmploymentTypes: "All employment types",

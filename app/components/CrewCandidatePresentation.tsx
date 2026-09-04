@@ -144,6 +144,7 @@ export function CrewCandidatePassportCard({
   profileHref,
   onView,
   experienceLanguage = "en",
+  compact = false,
 }: {
   candidate: CrewCandidateCardProfile;
   availabilityValue: string;
@@ -157,6 +158,7 @@ export function CrewCandidatePassportCard({
   profileHref?: string;
   onView?: () => void;
   experienceLanguage?: "en" | "tr";
+  compact?: boolean;
 }) {
   const titleId = useId();
   const actionLabel = `${copy.viewProfile}: ${candidate.displayName}`;
@@ -173,19 +175,31 @@ export function CrewCandidatePassportCard({
     </>
   );
   const actionClassName =
-    "bd-focus flex min-h-14 w-full items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800";
+    `bd-focus flex min-h-14 w-full items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800 ${
+      compact ? "lg:max-w-sm" : ""
+    }`.trim();
 
   return (
     <article
       aria-labelledby={titleId}
-      className="group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] focus-within:border-cyan-400 motion-reduce:transform-none lg:min-h-[190px] lg:grid-cols-[minmax(17rem,1fr)_minmax(24rem,1.55fr)_minmax(14rem,0.75fr)]"
+      className={`group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] focus-within:border-cyan-400 motion-reduce:transform-none ${
+        compact
+          ? "lg:grid-cols-[minmax(15rem,0.78fr)_minmax(0,1.4fr)]"
+          : "lg:min-h-[190px] lg:grid-cols-[minmax(17rem,1fr)_minmax(24rem,1.55fr)_minmax(14rem,0.75fr)]"
+      }`.trim()}
     >
-      <div className="flex min-w-0 items-center gap-4 px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 lg:px-7 lg:py-7 xl:px-8">
+      <div
+        className={`flex min-w-0 items-center gap-4 px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 lg:px-7 lg:py-7 ${
+          compact ? "lg:row-span-2 lg:px-6 xl:px-7" : "xl:px-8"
+        }`}
+      >
         <CandidateAvatar
           profilePhotoUrl={candidate.profilePhotoUrl}
           displayName={candidate.displayName}
           initials={candidate.initials}
-          className="h-20 w-20 rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-24 sm:w-24 lg:h-20 lg:w-20 xl:h-24 xl:w-24"
+          className={`h-20 w-20 rounded-2xl border border-slate-200 bg-white shadow-sm sm:h-24 sm:w-24 lg:h-20 lg:w-20 ${
+            compact ? "xl:h-20 xl:w-20" : "xl:h-24 xl:w-24"
+          }`}
           textClassName="text-lg sm:text-xl"
           mediaSize={192}
           decorative
@@ -225,7 +239,13 @@ export function CrewCandidatePassportCard({
         </div>
       </div>
 
-      <dl className="grid min-w-0 grid-cols-2 content-center gap-x-7 gap-y-5 border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10">
+      <dl
+        className={`grid min-w-0 grid-cols-2 content-center gap-x-7 gap-y-5 border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-t-0 lg:px-8 lg:py-7 ${
+          compact
+            ? "lg:col-start-2 lg:row-start-1 lg:gap-x-6 lg:px-6 xl:px-7"
+            : "xl:gap-x-10 xl:px-10"
+        }`}
+      >
         <PassportFact
           icon={<Flag />}
           label={copy.nationality}
@@ -257,7 +277,13 @@ export function CrewCandidatePassportCard({
         />
       </dl>
 
-      <div className="flex min-w-0 flex-col justify-center border-t border-slate-200 px-5 py-6 sm:px-7 lg:border-l lg:border-t-0 lg:px-6 lg:py-7 xl:px-7">
+      <div
+        className={`flex min-w-0 flex-col justify-center border-t border-slate-200 px-5 py-6 sm:px-7 lg:py-7 ${
+          compact
+            ? "lg:col-start-2 lg:row-start-2 lg:px-6 xl:px-7"
+            : "lg:border-l lg:border-t-0 lg:px-6 xl:px-7"
+        }`}
+      >
         {profileHref ? (
           <Link
             href={profileHref}
@@ -403,7 +429,10 @@ export function CrewCandidateEmployerProfileOverview({
                     className="inline-flex shrink-0 text-cyan-100"
                     title={premiumLabel}
                   >
-                    <BadgeCheck className="h-[18px] w-[18px] sm:h-5 sm:w-5" aria-hidden />
+                    <BadgeCheck
+                      className="h-[18px] w-[18px] sm:h-5 sm:w-5"
+                      aria-hidden
+                    />
                     <span className="sr-only">{premiumLabel}</span>
                   </span>
                 ) : null}
@@ -417,7 +446,10 @@ export function CrewCandidateEmployerProfileOverview({
                 >
                   {candidate.displayName}
                 </Heading>
-                <LockKeyhole className="mt-0.5 h-4 w-4 shrink-0 text-white/55 sm:h-5 sm:w-5" aria-hidden />
+                <LockKeyhole
+                  className="mt-0.5 h-4 w-4 shrink-0 text-white/55 sm:h-5 sm:w-5"
+                  aria-hidden
+                />
               </div>
 
               <p
@@ -935,9 +967,7 @@ export function PassportFact({
         >
           {icon}
         </span>
-        <span className="min-w-0 break-words">
-          {label}
-        </span>
+        <span className="min-w-0 break-words">{label}</span>
       </dt>
       <dd
         data-i18n-ignore
@@ -1210,7 +1240,10 @@ function BlueDeckYachtBlueprint() {
         <path d="M119 103h82M111 132h98M100 214h120M96 252h128M100 351h120M96 399h128M93 520h134M90 566h140" />
         <path d="M125 187h28v58h-28zM167 187h28v58h-28zM122 329h76v78h-76zM112 489h96v80h-96z" />
         <path d="M160 48v72M160 285v25M160 442v26M160 607v23" />
-        <path d="M80 194 58 604M240 194l22 410M89 628l-20 17M231 628l20 17" strokeDasharray="8 10" />
+        <path
+          d="M80 194 58 604M240 194l22 410M89 628l-20 17M231 628l20 17"
+          strokeDasharray="8 10"
+        />
       </g>
     </svg>
   );

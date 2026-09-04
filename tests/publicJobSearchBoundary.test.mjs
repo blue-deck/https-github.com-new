@@ -111,7 +111,7 @@ test("job filters use explicit searches and clear actions without selection summ
   );
   assert.match(
     jobsClient,
-    /id="advanced-job-filters"[\s\S]*?className="mt-4 flex items-center justify-end gap-4"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
+    /id="advanced-job-filters"[\s\S]*?className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
   );
   const clearFilters = jobsClient.slice(
     jobsClient.indexOf("function clearFilters()"),
@@ -251,8 +251,11 @@ test("published requirements remain searchable job data without structured filte
   );
 });
 
-test("advanced job filters keep one symmetric grid for every control", async () => {
-  const client = await source("app/jobs/JobsClient.tsx");
+test("advanced job filters use one stacked sidebar and compact result cards", async () => {
+  const [client, card] = await Promise.all([
+    source("app/jobs/JobsClient.tsx"),
+    source("app/jobs/PublicJobListingCard.tsx"),
+  ]);
   const start = client.indexOf("{advancedOpen ? (");
   const end = client.indexOf("{draftValidationError ? (", start);
 
@@ -270,10 +273,30 @@ test("advanced job filters keep one symmetric grid for every control", async () 
     client,
     /\b(roleAndContract|yachtDetails|requirements|salaryAndDisplay):/,
   );
+  assert.match(advanced, /<aside[\s\S]*?id="advanced-job-filters"/);
+  assert.match(advanced, /className="grid grid-cols-1 gap-4"/);
+  assert.match(advanced, /xl:sticky xl:top-6/);
   assert.match(
-    advanced,
-    /grid-cols-1[^"\n]*sm:grid-cols-2[^"\n]*lg:grid-cols-3/,
+    client,
+    /className="rounded-\[1\.35rem\] border border-slate-200 bg-white shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\]"/,
   );
+  assert.match(client, /xl:grid-cols-\[minmax\(0,18fr\)_minmax\(22rem,7fr\)\]/);
+  assert.match(client, /grid items-start border-t border-slate-200/);
+  assert.match(
+    client,
+    /advancedOpen[\s\S]*?\? "xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200"[\s\S]*?: ""/,
+  );
+  assert.ok(
+    client.indexOf('id="advanced-job-filters"') <
+      client.indexOf('id="jobs-results-heading"'),
+  );
+  assert.match(client, /compact=\{advancedOpen\}/);
+  assert.match(card, /compact = false/);
+  assert.match(
+    card,
+    /lg:grid-cols-\[minmax\(12rem,0\.78fr\)_minmax\(0,1\.45fr\)\]/,
+  );
+  assert.match(card, /lg:row-span-2/);
   assert.match(advanced, /<SalaryFilterGroup/);
   assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 

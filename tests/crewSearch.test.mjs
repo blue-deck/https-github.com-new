@@ -353,6 +353,50 @@ test("advanced crew filters show readiness toggles first without a heading", asy
   assert.doesNotMatch(client, /profileQuality:/);
 });
 
+test("More filters shares the unified shell and uses a sticky right rail on desktop", async () => {
+  const [client, presentation] = await Promise.all([
+    readFile(
+      new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(
+      new URL(
+        "../app/components/CrewCandidatePresentation.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ]);
+  const sidebarStart = client.indexOf('id="crew-advanced-filters"');
+  const resultsStart = client.indexOf('aria-labelledby="crew-results-heading"');
+
+  assert.match(
+    client,
+    /rounded-\[1\.35rem\] border border-slate-200 bg-white shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\][\s\S]*?<section\s+aria-labelledby="crew-filter-heading"\s+className="p-4 sm:p-5"/,
+  );
+  assert.match(
+    client,
+    /grid items-start border-t border-slate-200[\s\S]*?xl:grid-cols-\[minmax\(0,18fr\)_minmax\(22rem,7fr\)\]/,
+  );
+  assert.match(
+    client,
+    /id="crew-advanced-filters"[\s\S]*?xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start/,
+  );
+  assert.match(
+    client,
+    /aria-labelledby="crew-results-heading"[\s\S]*?xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200/,
+  );
+  assert.ok(sidebarStart >= 0 && resultsStart > sidebarStart);
+  assert.match(client, /compact=\{advancedOpen\}/);
+  assert.match(presentation, /compact = false/);
+  assert.match(
+    presentation,
+    /compact[\s\S]*?lg:grid-cols-\[minmax\(15rem,0\.78fr\)_minmax\(0,1\.4fr\)\]/,
+  );
+  assert.match(presentation, /compact \? "lg:row-span-2/);
+  assert.match(presentation, /compact[\s\S]*?lg:col-start-2 lg:row-start-2/);
+});
+
 test("crew filter controls share equal columns and one select surface", async () => {
   const [client, loading, nationalityField] = await Promise.all([
     readFile(

@@ -119,9 +119,7 @@ export function FindCrewClient({
         new URLSearchParams(window.location.search),
       );
       const restored =
-        parsed.ok && !parsed.cursor
-          ? parsed.filters
-          : defaultCrewSearchFilters;
+        parsed.ok && !parsed.cursor ? parsed.filters : defaultCrewSearchFilters;
       setFilters(restored);
       setDraftFilters(restored);
       if (hasAdvancedCrewFilters(restored)) setAdvancedOpen(true);
@@ -211,7 +209,10 @@ export function FindCrewClient({
         setTotal(payload.total);
         loadedFingerprint.current = filterFingerprint;
       } catch (error) {
-        if (controller.signal.aborted || requestId !== requestSequence.current) {
+        if (
+          controller.signal.aborted ||
+          requestId !== requestSequence.current
+        ) {
           return;
         }
         console.error("Crew directory search failed", {
@@ -324,369 +325,407 @@ export function FindCrewClient({
       <PublicHeader />
 
       <main id="main-content">
-        <section
-          aria-labelledby="crew-results-heading"
-          className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10"
-        >
-          <section
-            aria-labelledby="crew-filter-heading"
-            className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] sm:p-6"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h1
-                  id="crew-filter-heading"
-                  className="flex items-center gap-2 text-base font-black text-[#071f3c]"
+        <div className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10">
+          <div className="rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,45,72,0.07)]">
+            <section
+              aria-labelledby="crew-filter-heading"
+              className="p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h1
+                    id="crew-filter-heading"
+                    className="flex items-center gap-2 text-base font-black text-[#071f3c]"
+                  >
+                    <SlidersHorizontal
+                      className="h-5 w-5 text-cyan-700"
+                      aria-hidden
+                    />
+                    {c.filters}
+                  </h1>
+                  <p className="mt-1 text-sm text-slate-500">{c.filterHint}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen((current) => !current)}
+                  aria-expanded={advancedOpen}
+                  aria-controls="crew-advanced-filters"
+                  className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
                 >
-                  <SlidersHorizontal
-                    className="h-5 w-5 text-cyan-700"
+                  {c.advanced}
+                  <ChevronDown
+                    className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
                     aria-hidden
                   />
-                  {c.filters}
-                </h1>
-                <p className="mt-1 text-sm text-slate-500">{c.filterHint}</p>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setAdvancedOpen((current) => !current)}
-                aria-expanded={advancedOpen}
-                aria-controls="crew-advanced-filters"
-                className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900"
+
+              <div
+                className={`mt-4 grid gap-3 md:grid-cols-2 ${
+                  advancedOpen
+                    ? "xl:grid-cols-4"
+                    : "xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+                }`}
               >
-                {c.advanced}
-                <ChevronDown
-                  className={`h-4 w-4 transition ${advancedOpen ? "rotate-180" : ""}`}
-                  aria-hidden
+                <form
+                  className="block min-w-0"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    submitCrewKeywordSearch();
+                  }}
+                >
+                  <label
+                    htmlFor="crew-keyword-search"
+                    className="mb-1.5 block text-xs font-bold text-slate-600"
+                  >
+                    {c.search}
+                  </label>
+                  <span className="relative block min-w-0">
+                    <input
+                      id="crew-keyword-search"
+                      type="search"
+                      value={draftFilters.query}
+                      onChange={(event) =>
+                        setDraftFilter(
+                          "query",
+                          capitalizeInitialInput(event.target.value, language),
+                        )
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") return;
+                        event.preventDefault();
+                        submitCrewKeywordSearch();
+                      }}
+                      placeholder={c.searchPlaceholder}
+                      maxLength={120}
+                      autoCapitalize="sentences"
+                      className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
+                    />
+                    <button
+                      type="submit"
+                      aria-label={c.keywordSearchAction}
+                      title={c.keywordSearchAction}
+                      className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
+                    >
+                      <Search className="h-5 w-5" aria-hidden />
+                    </button>
+                  </span>
+                </form>
+                <PositionMultiSelectField
+                  label={c.position}
+                  placeholder={c.allPositions}
+                  searchPlaceholder={c.searchPositions}
+                  selectedLabel={c.selected}
+                  emptyLabel={c.noOptions}
+                  options={crewPositionSelectOptions}
+                  values={draftFilters.positions}
+                  maxSelections={maximumCrewPositionSelections}
+                  searchLocale={language}
+                  onChange={(positions) =>
+                    setDraftFilter("positions", positions)
+                  }
                 />
-              </button>
-            </div>
+                <NationalitySearchField
+                  key={`crew-nationality-${filterResetVersion}`}
+                  label={c.nationalityFilter}
+                  value={draftFilters.nationality}
+                  onChange={(value) => setDraftFilter("nationality", value)}
+                  placeholder={c.nationalityFilter}
+                />
+                <FilterSelect
+                  label={c.availability}
+                  emptyOptionLabel={c.selectAvailability}
+                  value={draftFilters.availability}
+                  onChange={(value) => setDraftFilter("availability", value)}
+                  options={crewDirectoryAvailabilityStatuses}
+                  language={language}
+                />
+                {!advancedOpen ? (
+                  <div className="flex items-center justify-end gap-3 self-end md:col-span-2 xl:col-span-1">
+                    <CrewFilterClearAction
+                      label={c.clear}
+                      onClick={clearFilters}
+                    />
+                    <CrewFilterSearchButton
+                      label={c.applyFilters}
+                      accessibleLabel={c.applyFiltersLabel}
+                      searchingLabel={c.searching}
+                      searching={searching}
+                      onClick={submitAllCrewFilters}
+                      className="min-w-32 flex-1 md:flex-none"
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </section>
 
             <div
-              className={`mt-4 grid gap-3 md:grid-cols-2 ${
+              className={`grid items-start border-t border-slate-200 ${
                 advancedOpen
-                  ? "xl:grid-cols-4"
-                  : "xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+                  ? "xl:grid-cols-[minmax(0,18fr)_minmax(22rem,7fr)]"
+                  : ""
               }`}
             >
-              <form
-                className="block min-w-0"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  submitCrewKeywordSearch();
-                }}
-              >
-                <label
-                  htmlFor="crew-keyword-search"
-                  className="mb-1.5 block text-xs font-bold text-slate-600"
+              {advancedOpen ? (
+                <aside
+                  id="crew-advanced-filters"
+                  role="region"
+                  aria-label={c.advanced}
+                  className="min-w-0 border-b border-slate-200 bg-white p-4 sm:p-5 lg:p-6 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start xl:border-b-0"
                 >
-                  {c.search}
-                </label>
-                <span className="relative block min-w-0">
-                  <input
-                    id="crew-keyword-search"
-                    type="search"
-                    value={draftFilters.query}
-                    onChange={(event) =>
-                      setDraftFilter(
-                        "query",
-                        capitalizeInitialInput(event.target.value, language),
-                      )
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter") return;
-                      event.preventDefault();
-                      submitCrewKeywordSearch();
-                    }}
-                    placeholder={c.searchPlaceholder}
-                    maxLength={120}
-                    autoCapitalize="sentences"
-                    className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
-                  />
-                  <button
-                    type="submit"
-                    aria-label={c.keywordSearchAction}
-                    title={c.keywordSearchAction}
-                    className="bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950"
-                  >
-                    <Search className="h-5 w-5" aria-hidden />
-                  </button>
-                </span>
-              </form>
-              <PositionMultiSelectField
-                label={c.position}
-                placeholder={c.allPositions}
-                searchPlaceholder={c.searchPositions}
-                selectedLabel={c.selected}
-                emptyLabel={c.noOptions}
-                options={crewPositionSelectOptions}
-                values={draftFilters.positions}
-                maxSelections={maximumCrewPositionSelections}
-                searchLocale={language}
-                onChange={(positions) => setDraftFilter("positions", positions)}
-              />
-              <NationalitySearchField
-                key={`crew-nationality-${filterResetVersion}`}
-                label={c.nationalityFilter}
-                value={draftFilters.nationality}
-                onChange={(value) => setDraftFilter("nationality", value)}
-                placeholder={c.nationalityFilter}
-              />
-              <FilterSelect
-                label={c.availability}
-                emptyOptionLabel={c.selectAvailability}
-                value={draftFilters.availability}
-                onChange={(value) => setDraftFilter("availability", value)}
-                options={crewDirectoryAvailabilityStatuses}
-                language={language}
-              />
-              {!advancedOpen ? (
-                <div className="flex items-center justify-end gap-3 self-end md:col-span-2 xl:col-span-1">
-                  <CrewFilterClearAction
-                    label={c.clear}
-                    onClick={clearFilters}
-                  />
-                  <CrewFilterSearchButton
-                    label={c.applyFilters}
-                    accessibleLabel={c.applyFiltersLabel}
-                    searchingLabel={c.searching}
-                    searching={searching}
-                    onClick={submitAllCrewFilters}
-                    className="min-w-32 flex-1 md:flex-none"
-                  />
-                </div>
+                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                    <FilterToggle
+                      label={c.premiumOnly}
+                      checked={draftFilters.premiumOnly}
+                      onChange={(checked) =>
+                        setDraftFilter("premiumOnly", checked)
+                      }
+                    />
+                    <FilterToggle
+                      label={c.hasPhoto}
+                      checked={draftFilters.hasPhoto}
+                      onChange={(checked) =>
+                        setDraftFilter("hasPhoto", checked)
+                      }
+                    />
+                    <FilterToggle
+                      label={c.hasGallery}
+                      checked={draftFilters.hasGallery}
+                      onChange={(checked) =>
+                        setDraftFilter("hasGallery", checked)
+                      }
+                    />
+                    <FilterToggle
+                      label={c.hasTeamCouple}
+                      checked={draftFilters.hasTeamCouple}
+                      onChange={(checked) =>
+                        setDraftFilter("hasTeamCouple", checked)
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <FilterSelect
+                      label={c.maritalStatus}
+                      emptyOptionLabel={c.any}
+                      value={draftFilters.maritalStatus}
+                      onChange={(value) =>
+                        setDraftFilter("maritalStatus", value)
+                      }
+                      options={crewMaritalStatuses}
+                      language={language}
+                    />
+                    <FilterSelect
+                      label={c.gender}
+                      emptyOptionLabel={c.any}
+                      value={draftFilters.gender}
+                      onChange={(value) => setDraftFilter("gender", value)}
+                      options={crewGenderOptions}
+                      language={language}
+                    />
+                    <FilterSelect
+                      label={c.smoker}
+                      emptyOptionLabel={c.any}
+                      value={draftFilters.smoker}
+                      onChange={(value) => setDraftFilter("smoker", value)}
+                      options={crewYesNoOptions}
+                      language={language}
+                    />
+                    <FilterSelect
+                      label={c.visibleTattoos}
+                      emptyOptionLabel={c.any}
+                      value={draftFilters.visibleTattoos}
+                      onChange={(value) =>
+                        setDraftFilter("visibleTattoos", value)
+                      }
+                      options={crewYesNoOptions}
+                      language={language}
+                    />
+                    <ExperienceTypeFilterSelect
+                      label={c.experienceType}
+                      value={draftFilters.experienceType}
+                      onChange={(value) =>
+                        setDraftFilter("experienceType", value)
+                      }
+                      language={language}
+                    />
+                    <MinimumExperienceFilterSelect
+                      label={c.minimumExperience}
+                      value={draftFilters.minimumExperience}
+                      onChange={(value) =>
+                        setDraftFilter("minimumExperience", value)
+                      }
+                      language={language}
+                    />
+                  </div>
+                  <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
+                    <ShieldCheck
+                      className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700"
+                      aria-hidden
+                    />
+                    {c.fairHiringNote}
+                  </p>
+                  <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
+                    <CrewFilterClearAction
+                      label={c.clear}
+                      onClick={clearFilters}
+                    />
+                    <CrewFilterSearchButton
+                      label={c.applyFilters}
+                      accessibleLabel={c.applyFiltersLabel}
+                      searchingLabel={c.searching}
+                      searching={searching}
+                      onClick={submitAllCrewFilters}
+                          className="min-w-40 flex-1"
+                    />
+                  </div>
+                </aside>
               ) : null}
-            </div>
 
-            {advancedOpen ? (
-              <div
-                id="crew-advanced-filters"
-                className="mt-5 border-t border-slate-200 pt-5"
+              <section
+                aria-labelledby="crew-results-heading"
+                className={`min-w-0 ${
+                  advancedOpen
+                    ? "xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200"
+                    : ""
+                }`}
               >
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                  <FilterToggle
-                    label={c.premiumOnly}
-                    checked={draftFilters.premiumOnly}
-                    onChange={(checked) => setDraftFilter("premiumOnly", checked)}
-                  />
-                  <FilterToggle
-                    label={c.hasPhoto}
-                    checked={draftFilters.hasPhoto}
-                    onChange={(checked) => setDraftFilter("hasPhoto", checked)}
-                  />
-                  <FilterToggle
-                    label={c.hasGallery}
-                    checked={draftFilters.hasGallery}
-                    onChange={(checked) => setDraftFilter("hasGallery", checked)}
-                  />
-                  <FilterToggle
-                    label={c.hasTeamCouple}
-                    checked={draftFilters.hasTeamCouple}
-                    onChange={(checked) =>
-                      setDraftFilter("hasTeamCouple", checked)
-                    }
-                  />
+                <div className="flex flex-wrap items-center justify-between gap-4 p-4 pb-0 sm:p-5 sm:pb-0 lg:p-6 lg:pb-0">
+                  <div aria-live="polite" aria-atomic="true">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
+                      {c.results}
+                    </p>
+                    <h2
+                      id="crew-results-heading"
+                      className="mt-1 flex items-center gap-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
+                    >
+                      <span>
+                        <span data-i18n-ignore>{total}</span> {c.profiles}
+                      </span>
+                      {searching ? (
+                        <LoaderCircle
+                          className="h-5 w-5 animate-spin text-cyan-700"
+                          aria-label={c.searching}
+                        />
+                      ) : null}
+                    </h2>
+                  </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  <FilterSelect
-                    label={c.maritalStatus}
-                    emptyOptionLabel={c.any}
-                    value={draftFilters.maritalStatus}
-                    onChange={(value) => setDraftFilter("maritalStatus", value)}
-                    options={crewMaritalStatuses}
-                    language={language}
-                  />
-                  <FilterSelect
-                    label={c.gender}
-                    emptyOptionLabel={c.any}
-                    value={draftFilters.gender}
-                    onChange={(value) => setDraftFilter("gender", value)}
-                    options={crewGenderOptions}
-                    language={language}
-                  />
-                  <FilterSelect
-                    label={c.smoker}
-                    emptyOptionLabel={c.any}
-                    value={draftFilters.smoker}
-                    onChange={(value) => setDraftFilter("smoker", value)}
-                    options={crewYesNoOptions}
-                    language={language}
-                  />
-                  <FilterSelect
-                    label={c.visibleTattoos}
-                    emptyOptionLabel={c.any}
-                    value={draftFilters.visibleTattoos}
-                    onChange={(value) => setDraftFilter("visibleTattoos", value)}
-                    options={crewYesNoOptions}
-                    language={language}
-                  />
-                  <ExperienceTypeFilterSelect
-                    label={c.experienceType}
-                    value={draftFilters.experienceType}
-                    onChange={(value) =>
-                      setDraftFilter("experienceType", value)
-                    }
-                    language={language}
-                  />
-                  <MinimumExperienceFilterSelect
-                    label={c.minimumExperience}
-                    value={draftFilters.minimumExperience}
-                    onChange={(value) => setDraftFilter("minimumExperience", value)}
-                    language={language}
-                  />
-                </div>
-                <p className="mt-4 flex items-start gap-2 text-xs leading-5 text-slate-500">
-                  <ShieldCheck
-                    className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700"
-                    aria-hidden
-                  />
-                  {c.fairHiringNote}
-                </p>
-                <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
-                  <CrewFilterClearAction
-                    label={c.clear}
-                    onClick={clearFilters}
-                  />
-                  <CrewFilterSearchButton
-                    label={c.applyFilters}
-                    accessibleLabel={c.applyFiltersLabel}
-                    searchingLabel={c.searching}
-                    searching={searching}
-                    onClick={submitAllCrewFilters}
-                    className="w-full sm:w-auto sm:min-w-40"
-                  />
-                </div>
-              </div>
-            ) : null}
-          </section>
+                <div className="p-4 pt-0 sm:p-5 sm:pt-0 lg:p-6 lg:pt-0">
+                  {searchFailed ? (
+                    <div
+                      role="alert"
+                      className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-8 text-center"
+                    >
+                      <h3 className="text-xl font-semibold text-rose-950">
+                        {c.searchErrorTitle}
+                      </h3>
+                      <p className="mt-2 text-rose-800">{c.searchErrorText}</p>
+                      <button
+                        type="button"
+                        onClick={() => setRefreshVersion((value) => value + 1)}
+                        className="bd-focus mt-4 min-h-11 rounded-xl bg-rose-900 px-5 text-sm font-black text-white transition hover:bg-rose-800"
+                      >
+                        {c.retry}
+                      </button>
+                    </div>
+                  ) : profiles.length > 0 ? (
+                    <div
+                      className={`mt-5 grid gap-5 transition-opacity ${searching ? "opacity-55" : "opacity-100"}`}
+                      aria-busy={searching}
+                    >
+                      {profiles.map((profile) => (
+                        <CrewCandidatePassportCard
+                          key={profile.crewId}
+                          compact={advancedOpen}
+                          candidate={profile}
+                          availabilityValue={
+                            profile.availabilityStatus
+                              ? candidateAvailabilityLabel(
+                                  profile.availabilityStatus,
+                                  language,
+                                )
+                              : c.notProvided
+                          }
+                          primaryBadge={
+                            <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-emerald-800">
+                              {c.activeProfile}
+                            </span>
+                          }
+                          fourthFact={{
+                            icon: <Clock3 />,
+                            label: c.memberSince,
+                            value: profile.memberSince
+                              ? formatMonthYear(profile.memberSince, language)
+                              : c.notProvided,
+                          }}
+                          copy={c}
+                          profileHref={`/find-crew/${encodeURIComponent(profile.crewId)}`}
+                          experienceLanguage={language}
+                        />
+                      ))}
+                    </div>
+                  ) : !searching ? (
+                    <div className="mt-5 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-12 text-center">
+                      <UserRound
+                        className="mx-auto h-9 w-9 text-cyan-700"
+                        aria-hidden
+                      />
+                      <h3 className="mt-4 text-2xl font-semibold text-[#071f3c]">
+                        {hasFilters ? c.noMatchesTitle : c.emptyTitle}
+                      </h3>
+                      <p className="mx-auto mt-2 max-w-xl leading-7 text-slate-600">
+                        {hasFilters ? c.noMatchesText : c.emptyText}
+                      </p>
+                      {hasFilters ? (
+                        <CrewFilterClearAction
+                          label={c.clear}
+                          onClick={clearFilters}
+                          className="mt-4"
+                        />
+                      ) : (
+                        <Link
+                          href="/login?mode=signup&role=crew"
+                          className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                        >
+                          {c.createCrewAccount}
+                        </Link>
+                      )}
+                    </div>
+                  ) : null}
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-            <div aria-live="polite" aria-atomic="true">
-              <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
-                {c.results}
-              </p>
-              <h2
-                id="crew-results-heading"
-                className="mt-1 flex items-center gap-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c]"
-              >
-                <span>
-                  <span data-i18n-ignore>{total}</span> {c.profiles}
-                </span>
-                {searching ? (
-                  <LoaderCircle
-                    className="h-5 w-5 animate-spin text-cyan-700"
-                    aria-label={c.searching}
-                  />
-                ) : null}
-              </h2>
+                  {hasMore && !searchFailed ? (
+                    <div className="mt-8 text-center">
+                      <button
+                        type="button"
+                        onClick={() => void loadMoreProfiles()}
+                        disabled={loadingMore || searching}
+                        className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-700 bg-white px-6 text-sm font-black text-cyan-900 transition hover:bg-cyan-50 disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {loadingMore ? (
+                          <LoaderCircle
+                            className="h-4 w-4 animate-spin"
+                            aria-hidden
+                          />
+                        ) : null}
+                        {loadingMore ? c.loadingMore : c.loadMore}
+                      </button>
+                    </div>
+                  ) : null}
+                  {loadMoreFailed ? (
+                    <p
+                      role="alert"
+                      className="mt-3 text-center text-sm font-semibold text-rose-700"
+                    >
+                      {c.loadMoreError}
+                    </p>
+                  ) : null}
+                </div>
+              </section>
             </div>
           </div>
-
-          {searchFailed ? (
-            <div
-              role="alert"
-              className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-8 text-center"
-            >
-              <h3 className="text-xl font-semibold text-rose-950">
-                {c.searchErrorTitle}
-              </h3>
-              <p className="mt-2 text-rose-800">{c.searchErrorText}</p>
-              <button
-                type="button"
-                onClick={() => setRefreshVersion((value) => value + 1)}
-                className="bd-focus mt-4 min-h-11 rounded-xl bg-rose-900 px-5 text-sm font-black text-white transition hover:bg-rose-800"
-              >
-                {c.retry}
-              </button>
-            </div>
-          ) : profiles.length > 0 ? (
-            <div
-              className={`mt-5 grid gap-5 transition-opacity ${searching ? "opacity-55" : "opacity-100"}`}
-              aria-busy={searching}
-            >
-              {profiles.map((profile) => (
-                <CrewCandidatePassportCard
-                  key={profile.crewId}
-                  candidate={profile}
-                  availabilityValue={
-                    profile.availabilityStatus
-                      ? candidateAvailabilityLabel(
-                          profile.availabilityStatus,
-                          language,
-                        )
-                      : c.notProvided
-                  }
-                  primaryBadge={
-                    <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-emerald-800">
-                      {c.activeProfile}
-                    </span>
-                  }
-                  fourthFact={{
-                    icon: <Clock3 />,
-                    label: c.memberSince,
-                    value: profile.memberSince
-                      ? formatMonthYear(profile.memberSince, language)
-                      : c.notProvided,
-                  }}
-                  copy={c}
-                  profileHref={`/find-crew/${encodeURIComponent(profile.crewId)}`}
-                  experienceLanguage={language}
-                />
-              ))}
-            </div>
-          ) : !searching ? (
-            <div className="mt-5 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/50 px-6 py-12 text-center">
-              <UserRound
-                className="mx-auto h-9 w-9 text-cyan-700"
-                aria-hidden
-              />
-              <h3 className="mt-4 text-2xl font-semibold text-[#071f3c]">
-                {hasFilters ? c.noMatchesTitle : c.emptyTitle}
-              </h3>
-              <p className="mx-auto mt-2 max-w-xl leading-7 text-slate-600">
-                {hasFilters ? c.noMatchesText : c.emptyText}
-              </p>
-              {hasFilters ? (
-                <CrewFilterClearAction
-                  label={c.clear}
-                  onClick={clearFilters}
-                  className="mt-4"
-                />
-              ) : (
-                <Link
-                  href="/login?mode=signup&role=crew"
-                  className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
-                >
-                  {c.createCrewAccount}
-                </Link>
-              )}
-            </div>
-          ) : null}
-
-          {hasMore && !searchFailed ? (
-            <div className="mt-8 text-center">
-              <button
-                type="button"
-                onClick={() => void loadMoreProfiles()}
-                disabled={loadingMore || searching}
-                className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-cyan-700 bg-white px-6 text-sm font-black text-cyan-900 transition hover:bg-cyan-50 disabled:cursor-wait disabled:opacity-60"
-              >
-                {loadingMore ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
-                ) : null}
-                {loadingMore ? c.loadingMore : c.loadMore}
-              </button>
-            </div>
-          ) : null}
-          {loadMoreFailed ? (
-            <p
-              role="alert"
-              className="mt-3 text-center text-sm font-semibold text-rose-700"
-            >
-              {c.loadMoreError}
-            </p>
-          ) : null}
-        </section>
+        </div>
       </main>
 
       <PublicFooter />
@@ -956,10 +995,7 @@ function CrewFilterSelectControl({
   );
 }
 
-function formatFilterOption(
-  option: string,
-  language: Language,
-) {
+function formatFilterOption(option: string, language: Language) {
   if (language === "en") return option;
   return translatePhrase(option, language);
 }
@@ -1020,9 +1056,7 @@ function ExperienceTypeFilterSelect({
       value={value}
       onChange={(nextValue) => {
         const typedValue = nextValue as CrewExperienceType;
-        onChange(
-          crewExperienceTypes.includes(typedValue) ? typedValue : "any",
-        );
+        onChange(crewExperienceTypes.includes(typedValue) ? typedValue : "any");
       }}
     >
       {crewExperienceTypes.map((option) => (
@@ -1034,10 +1068,7 @@ function ExperienceTypeFilterSelect({
   );
 }
 
-function experienceTypeLabel(
-  value: CrewExperienceType,
-  language: Language,
-) {
+function experienceTypeLabel(value: CrewExperienceType, language: Language) {
   return experienceTypeLabels[language][value];
 }
 
