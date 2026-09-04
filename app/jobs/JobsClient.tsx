@@ -869,7 +869,7 @@ export function JobsClient({
                   advancedOpen ? "xl:col-start-1 xl:row-start-1" : ""
                 }`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-4 p-5 pb-0 pr-7">
+                <div className="flex flex-col gap-7 px-1 pb-0 pt-5 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4 sm:p-5 sm:pb-0 sm:pr-7">
                   <div aria-live="polite" aria-atomic="true">
                     <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
                       {c.results}
@@ -889,7 +889,7 @@ export function JobsClient({
                       ) : null}
                     </h2>
                   </div>
-                  <div className="flex flex-wrap items-end gap-3">
+                  <div className="flex w-full flex-wrap items-end gap-3 sm:w-auto">
                     <FilterSelect
                       compact
                       label={c.sortBy}
@@ -903,7 +903,7 @@ export function JobsClient({
                   </div>
                 </div>
 
-                <div className="p-5 pr-7 pt-0">
+                <div className="-mx-1 px-0 pt-0 sm:mx-0 sm:p-5 sm:pr-7 sm:pt-0">
                   {validationError ? (
                     <div className="mt-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 px-6 py-10 text-center">
                       <Filter
