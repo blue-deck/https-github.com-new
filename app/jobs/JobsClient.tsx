@@ -1156,7 +1156,7 @@ function SalaryAmountField({
         {label}
       </label>
       <div
-        className={`${dense ? "h-11" : "h-12"} grid min-w-0 grid-cols-[minmax(3.25rem,1fr)_4.5rem_4rem] overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 sm:grid-cols-[minmax(3.5rem,1fr)_4.75rem_4.25rem]`}
+        className={`${dense ? "h-11" : "h-12"} grid min-w-0 grid-cols-[minmax(3.25rem,1fr)_4.5rem_4rem] overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 sm:grid-cols-[minmax(3.5rem,1fr)_4.75rem_4.25rem] xl:grid-cols-[minmax(0,1fr)_3.625rem_2.875rem]`}
       >
         <input
           id={inputId}
@@ -1173,7 +1173,7 @@ function SalaryAmountField({
               ),
             )
           }
-          className="h-full min-h-0 min-w-0 bg-transparent px-1 text-[11px] font-semibold tracking-[-0.08em] tabular-nums text-slate-950 outline-none placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] min-[390px]:px-2 min-[390px]:text-xs min-[390px]:tracking-normal sm:px-3 lg:text-sm"
+          className="h-full min-h-0 min-w-0 bg-transparent px-1 text-[11px] font-semibold tracking-[-0.08em] tabular-nums text-slate-950 outline-none placeholder:text-slate-400 focus-visible:bg-cyan-50/60 focus-visible:shadow-[inset_0_0_0_2px_#06b6d4] min-[390px]:px-2 min-[390px]:text-xs min-[390px]:tracking-normal sm:px-3 lg:text-sm xl:px-2 xl:text-[13px]"
         />
         <span className="relative flex h-full min-h-0 min-w-0 border-l border-slate-200 bg-slate-50">
           <select
@@ -1191,14 +1191,16 @@ function SalaryAmountField({
           </select>
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs"
+            className="pointer-events-none absolute inset-0 flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden bg-slate-50 px-0.5 text-[10px] font-black leading-none text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:text-[11px]"
           >
-            {selectedCurrencyLabel}
+            <span className="max-w-full truncate whitespace-nowrap">
+              {selectedCurrencyLabel}
+            </span>
+            <ChevronDown
+              className="h-2.5 w-2.5 shrink-0 text-slate-500"
+              aria-hidden
+            />
           </span>
-          <ChevronDown
-            className="pointer-events-none absolute right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 text-slate-500 min-[390px]:h-3.5 min-[390px]:w-3.5 lg:right-2 lg:h-4 lg:w-4"
-            aria-hidden
-          />
         </span>
         <span className="relative flex h-full min-h-0 min-w-0 border-l border-slate-200 bg-slate-50">
           <select
@@ -1216,14 +1218,16 @@ function SalaryAmountField({
           </select>
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs"
+            className="pointer-events-none absolute inset-0 flex min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden bg-slate-50 px-0.5 text-[10px] font-black leading-none text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:text-[11px]"
           >
-            {selectedPeriodLabel}
+            <span className="max-w-full truncate whitespace-nowrap">
+              {selectedPeriodLabel}
+            </span>
+            <ChevronDown
+              className="h-2.5 w-2.5 shrink-0 text-slate-500"
+              aria-hidden
+            />
           </span>
-          <ChevronDown
-            className="pointer-events-none absolute right-1 top-1/2 z-10 h-3 w-3 -translate-y-1/2 text-slate-500 min-[390px]:h-3.5 min-[390px]:w-3.5 lg:right-2 lg:h-4 lg:w-4"
-            aria-hidden
-          />
         </span>
       </div>
     </div>

@@ -445,6 +445,23 @@ test("advanced job filters use a separate two-column sidebar and horizontal resu
     amountField,
     /sm:grid-cols-\[minmax\(3\.5rem,1fr\)_4\.75rem_4\.25rem\]/,
   );
+  assert.match(
+    amountField,
+    /xl:grid-cols-\[minmax\(0,1fr\)_3\.625rem_2\.875rem\]/,
+  );
+  assert.match(amountField, /xl:px-2 xl:text-\[13px\]/);
+  assert.equal(
+    amountField.match(
+      /flex-col items-center justify-center gap-0\.5/g,
+    )?.length,
+    2,
+  );
+  assert.equal(amountField.match(/<ChevronDown\b/g)?.length, 2);
+  assert.equal(
+    amountField.match(/max-w-full truncate whitespace-nowrap/g)?.length,
+    2,
+  );
+  assert.doesNotMatch(amountField, /absolute right-1 top-1\/2/);
   assert.doesNotMatch(amountField, /min-\[390px\]:grid-cols-|col-span-2|border-t/);
 });
 
