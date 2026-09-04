@@ -453,12 +453,11 @@ export function JobsClient({
         <section
           id="jobs-board"
           aria-label={c.results}
-          className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10"
+          className="bd-page-frame mx-auto w-full max-w-7xl px-5 pb-12 pt-5 sm:px-8 lg:px-[2.625rem] lg:pb-14"
         >
-          <div className="rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,45,72,0.07)]">
-            <section
+          <section
               aria-labelledby="jobs-filter-heading"
-              className="p-4 sm:p-5"
+              className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] sm:p-6 lg:pb-[1.625rem]"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -494,7 +493,7 @@ export function JobsClient({
               <div
                 className={`mt-4 grid items-end gap-3 md:grid-cols-2 ${
                   advancedOpen
-                    ? "xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))]"
+                    ? "xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)] xl:gap-6"
                     : "xl:grid-cols-[minmax(240px,1.45fr)_repeat(3,minmax(145px,1fr))_auto]"
                 } ${!advancedOpen && hasPrimaryDraftFilters ? "pb-11" : ""}`}
               >
@@ -617,9 +616,9 @@ export function JobsClient({
             </section>
 
             <div
-              className={`grid items-start border-t border-slate-200 ${
+              className={`mt-2.5 grid items-start ${
                 advancedOpen
-                  ? "xl:grid-cols-[minmax(0,18fr)_minmax(22rem,7fr)]"
+                  ? "xl:grid-cols-[minmax(0,2.157fr)_minmax(28rem,1fr)]"
                   : ""
               }`}
             >
@@ -627,25 +626,35 @@ export function JobsClient({
                 <aside
                   id="advanced-job-filters"
                   role="region"
-                  aria-label={c.advanced}
-                  className="min-w-0 border-b border-slate-200 bg-white p-4 sm:p-5 lg:p-6 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start xl:border-b-0"
+                  aria-labelledby="advanced-job-filters-heading"
+                  className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start"
                 >
-                  <div className="grid grid-cols-1 gap-4">
-                    <MultiSelectField
-                      label={c.department}
-                      placeholder={c.allDepartments}
-                      selectedLabel={c.selected}
-                      emptyLabel={c.noOptions}
-                      options={optionSets.departments}
-                      values={draftFilters.departments}
-                      onChange={(departments) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          departments,
-                        }))
-                      }
-                    />
+                  <h2
+                    id="advanced-job-filters-heading"
+                    className="text-base font-black tracking-[-0.02em] text-[#071f3c]"
+                  >
+                    {c.advanced}
+                  </h2>
+                  <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <MultiSelectField
+                        dense
+                        label={c.department}
+                        placeholder={c.allDepartments}
+                        selectedLabel={c.selected}
+                        emptyLabel={c.noOptions}
+                        options={optionSets.departments}
+                        values={draftFilters.departments}
+                        onChange={(departments) =>
+                          updateDraftFilters((current) => ({
+                            ...current,
+                            departments,
+                          }))
+                        }
+                      />
+                    </div>
                     <SalaryFilterGroup
+                      dense
                       minimumLabel={c.minimumSalary}
                       maximumLabel={c.maximumSalary}
                       currencyLabel={c.currency}
@@ -705,35 +714,39 @@ export function JobsClient({
                         }))
                       }
                     />
-                    <DualRangeSlider
-                      label={c.yachtLength}
-                      anyLabel={c.anyYachtLength}
-                      fromLabel={c.from}
-                      upToLabel={c.upTo}
-                      minimumLabel={c.minimumYachtLength}
-                      maximumLabel={c.maximumYachtLength}
-                      noMinimumLabel={c.noMinimumYachtLength}
-                      noMaximumLabel={c.noMaximumYachtLength}
-                      unit={c.metres}
-                      minimumValue={draftFilters.yachtLengthMinMetres}
-                      maximumValue={draftFilters.yachtLengthMaxMetres}
-                      minimum={publicJobYachtLengthSlider.minimumMetres}
-                      maximum={publicJobYachtLengthSlider.maximumMetres}
-                      step={publicJobYachtLengthSlider.stepMetres}
-                      onMinimumChange={(yachtLengthMinMetres) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          yachtLengthMinMetres,
-                        }))
-                      }
-                      onMaximumChange={(yachtLengthMaxMetres) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          yachtLengthMaxMetres,
-                        }))
-                      }
-                    />
+                    <div className="sm:col-span-2">
+                      <DualRangeSlider
+                        dense
+                        label={c.yachtLength}
+                        anyLabel={c.anyYachtLength}
+                        fromLabel={c.from}
+                        upToLabel={c.upTo}
+                        minimumLabel={c.minimumYachtLength}
+                        maximumLabel={c.maximumYachtLength}
+                        noMinimumLabel={c.noMinimumYachtLength}
+                        noMaximumLabel={c.noMaximumYachtLength}
+                        unit={c.metres}
+                        minimumValue={draftFilters.yachtLengthMinMetres}
+                        maximumValue={draftFilters.yachtLengthMaxMetres}
+                        minimum={publicJobYachtLengthSlider.minimumMetres}
+                        maximum={publicJobYachtLengthSlider.maximumMetres}
+                        step={publicJobYachtLengthSlider.stepMetres}
+                        onMinimumChange={(yachtLengthMinMetres) =>
+                          updateDraftFilters((current) => ({
+                            ...current,
+                            yachtLengthMinMetres,
+                          }))
+                        }
+                        onMaximumChange={(yachtLengthMaxMetres) =>
+                          updateDraftFilters((current) => ({
+                            ...current,
+                            yachtLengthMaxMetres,
+                          }))
+                        }
+                      />
+                    </div>
                     <MultiSelectField
+                      dense
                       label={c.yachtType}
                       placeholder={c.allYachtTypes}
                       selectedLabel={c.selected}
@@ -749,6 +762,7 @@ export function JobsClient({
                       }
                     />
                     <FilterSelect
+                      dense
                       allowEmpty
                       label={c.yachtProgram}
                       placeholder={c.allYachtPrograms}
@@ -762,34 +776,38 @@ export function JobsClient({
                         }))
                       }
                     />
-                    <DualRangeSlider
-                      label={c.crewSize}
-                      anyLabel={c.anyCrewSize}
-                      fromLabel={c.from}
-                      upToLabel={c.upTo}
-                      minimumLabel={c.minimumCrewSize}
-                      maximumLabel={c.maximumCrewSize}
-                      noMinimumLabel={c.noMinimumCrewSize}
-                      noMaximumLabel={c.noMaximumCrewSize}
-                      minimumValue={draftFilters.crewMemberCountMin}
-                      maximumValue={draftFilters.crewMemberCountMax}
-                      minimum={publicJobCrewSizeSlider.minimumCrewMembers}
-                      maximum={publicJobCrewSizeSlider.maximumCrewMembers}
-                      step={publicJobCrewSizeSlider.stepCrewMembers}
-                      onMinimumChange={(crewMemberCountMin) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          crewMemberCountMin,
-                        }))
-                      }
-                      onMaximumChange={(crewMemberCountMax) =>
-                        updateDraftFilters((current) => ({
-                          ...current,
-                          crewMemberCountMax,
-                        }))
-                      }
-                    />
+                    <div className="sm:col-span-2">
+                      <DualRangeSlider
+                        dense
+                        label={c.crewSize}
+                        anyLabel={c.anyCrewSize}
+                        fromLabel={c.from}
+                        upToLabel={c.upTo}
+                        minimumLabel={c.minimumCrewSize}
+                        maximumLabel={c.maximumCrewSize}
+                        noMinimumLabel={c.noMinimumCrewSize}
+                        noMaximumLabel={c.noMaximumCrewSize}
+                        minimumValue={draftFilters.crewMemberCountMin}
+                        maximumValue={draftFilters.crewMemberCountMax}
+                        minimum={publicJobCrewSizeSlider.minimumCrewMembers}
+                        maximum={publicJobCrewSizeSlider.maximumCrewMembers}
+                        step={publicJobCrewSizeSlider.stepCrewMembers}
+                        onMinimumChange={(crewMemberCountMin) =>
+                          updateDraftFilters((current) => ({
+                            ...current,
+                            crewMemberCountMin,
+                          }))
+                        }
+                        onMaximumChange={(crewMemberCountMax) =>
+                          updateDraftFilters((current) => ({
+                            ...current,
+                            crewMemberCountMax,
+                          }))
+                        }
+                      />
+                    </div>
                     <MultiSelectField
+                      dense
                       label={c.yachtFlag}
                       placeholder={c.anyFlag}
                       searchPlaceholder={c.searchFlags}
@@ -806,6 +824,7 @@ export function JobsClient({
                       }
                     />
                     <FilterSelect
+                      dense
                       allowEmpty
                       label={c.teamCouple}
                       placeholder={c.anyTeamCouple}
@@ -829,7 +848,7 @@ export function JobsClient({
                       {draftValidationError}
                     </p>
                   ) : null}
-                  <div className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5">
+                  <div className="mt-4 flex items-center justify-end gap-4 border-t border-slate-200 pt-4">
                     <JobFilterClearAction
                       label={c.clear}
                       onClick={clearFilters}
@@ -847,12 +866,10 @@ export function JobsClient({
               <section
                 aria-labelledby="jobs-results-heading"
                 className={`min-w-0 ${
-                  advancedOpen
-                    ? "xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200"
-                    : ""
+                  advancedOpen ? "xl:col-start-1 xl:row-start-1" : ""
                 }`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 p-4 pb-0 sm:p-5 sm:pb-0 lg:p-6 lg:pb-0">
+                <div className="flex flex-wrap items-start justify-between gap-4 p-5 pb-0 pr-7">
                   <div aria-live="polite" aria-atomic="true">
                     <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
                       {c.results}
@@ -886,7 +903,7 @@ export function JobsClient({
                   </div>
                 </div>
 
-                <div className="p-4 pt-0 sm:p-5 sm:pt-0 lg:p-6 lg:pt-0">
+                <div className="p-5 pr-7 pt-0">
                   {validationError ? (
                     <div className="mt-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 px-6 py-10 text-center">
                       <Filter
@@ -925,7 +942,7 @@ export function JobsClient({
                   ) : (
                     <div aria-busy={refreshing}>
                       <div
-                        className={`mt-5 grid gap-5 transition-opacity ${
+                        className={`${advancedOpen ? "mt-0.5 gap-2" : "mt-5 gap-5"} grid transition-opacity ${
                           refreshing ? "opacity-55" : "opacity-100"
                         }`}
                       >
@@ -975,7 +992,6 @@ export function JobsClient({
                 </div>
               </section>
             </div>
-          </div>
         </section>
       </main>
 
@@ -1031,6 +1047,7 @@ function JobFilterClearAction({
 }
 
 function SalaryFilterGroup({
+  dense = false,
   minimumLabel,
   maximumLabel,
   currencyLabel,
@@ -1046,6 +1063,7 @@ function SalaryFilterGroup({
   onCurrencyChange,
   onPeriodChange,
 }: {
+  dense?: boolean;
   minimumLabel: string;
   maximumLabel: string;
   currencyLabel: string;
@@ -1064,6 +1082,7 @@ function SalaryFilterGroup({
   return (
     <>
       <SalaryAmountField
+        dense={dense}
         label={minimumLabel}
         currencyLabel={currencyLabel}
         periodLabel={periodLabel}
@@ -1077,6 +1096,7 @@ function SalaryFilterGroup({
         onPeriodChange={onPeriodChange}
       />
       <SalaryAmountField
+        dense={dense}
         label={maximumLabel}
         currencyLabel={currencyLabel}
         periodLabel={periodLabel}
@@ -1094,6 +1114,7 @@ function SalaryFilterGroup({
 }
 
 function SalaryAmountField({
+  dense = false,
   label,
   currencyLabel,
   periodLabel,
@@ -1106,6 +1127,7 @@ function SalaryAmountField({
   onCurrencyChange,
   onPeriodChange,
 }: {
+  dense?: boolean;
   label: string;
   currencyLabel: string;
   periodLabel: string;
@@ -1133,7 +1155,9 @@ function SalaryAmountField({
       >
         {label}
       </label>
-      <div className="grid h-12 min-w-0 grid-cols-[minmax(4.5rem,1fr)_4.875rem_3.875rem] overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 sm:grid-cols-[minmax(4.5rem,1fr)_5rem_4.5rem] lg:grid-cols-[minmax(4.5rem,1fr)_6.25rem_5.25rem]">
+      <div
+        className={`${dense ? "h-11" : "h-12"} grid min-w-0 grid-cols-[minmax(3.25rem,1fr)_4.5rem_4rem] overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-100 sm:grid-cols-[minmax(3.5rem,1fr)_4.75rem_4.25rem]`}
+      >
         <input
           id={inputId}
           type="text"
@@ -1167,7 +1191,7 @@ function SalaryAmountField({
           </select>
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs lg:pl-3 lg:pr-7 lg:text-sm"
+            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs"
           >
             {selectedCurrencyLabel}
           </span>
@@ -1192,7 +1216,7 @@ function SalaryAmountField({
           </select>
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs lg:pl-3 lg:pr-7 lg:text-sm"
+            className="pointer-events-none absolute inset-0 flex min-w-0 items-center overflow-hidden whitespace-nowrap bg-slate-50 pl-2 pr-4 text-[11px] font-black text-slate-800 peer-focus-visible:bg-cyan-50 min-[390px]:pr-5 min-[390px]:text-xs"
           >
             {selectedPeriodLabel}
           </span>
@@ -1207,6 +1231,7 @@ function SalaryAmountField({
 }
 
 function DualRangeSlider({
+  dense = false,
   label,
   anyLabel,
   fromLabel,
@@ -1224,6 +1249,7 @@ function DualRangeSlider({
   onMinimumChange,
   onMaximumChange,
 }: {
+  dense?: boolean;
   label: string;
   anyLabel: string;
   fromLabel: string;
@@ -1374,7 +1400,9 @@ function DualRangeSlider({
           {valueText}
         </span>
       </div>
-      <div className="relative h-12 rounded-xl border border-slate-200 bg-white px-3">
+      <div
+        className={`${dense ? "h-11" : "h-12"} relative rounded-xl border border-slate-200 bg-white px-3`}
+      >
         <div
           className="bd-job-length-range bd-job-length-range-compact"
           onPointerDown={handlePointerDown}
@@ -1463,6 +1491,7 @@ function FilterSelect({
   options,
   placeholder,
   compact = false,
+  dense = false,
   allowEmpty = false,
   onChange,
 }: {
@@ -1471,6 +1500,7 @@ function FilterSelect({
   options: readonly SelectOption[];
   placeholder: string;
   compact?: boolean;
+  dense?: boolean;
   allowEmpty?: boolean;
   onChange: (value: string) => void;
 }) {
@@ -1479,11 +1509,11 @@ function FilterSelect({
       <span className="mb-1.5 block text-xs font-bold text-slate-600">
         {label}
       </span>
-      <span className="relative block h-12 w-full">
+      <span className={`relative block w-full ${dense ? "h-11" : "h-12"}`}>
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="bd-focus h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-4 pr-10 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+          className={`bd-focus w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-0 pl-4 pr-10 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 ${dense ? "h-11" : "h-12"}`}
         >
           {!value || allowEmpty ? (
             <option value="">{placeholder}</option>
@@ -1512,6 +1542,7 @@ function MultiSelectField({
   options,
   values,
   maxSelections,
+  dense = false,
   capitalizeSearch = false,
   searchLocale = "en",
   onChange,
@@ -1524,6 +1555,7 @@ function MultiSelectField({
   options: readonly SelectOption[];
   values: readonly string[];
   maxSelections?: number;
+  dense?: boolean;
   capitalizeSearch?: boolean;
   searchLocale?: Language;
   onChange: (values: string[]) => void;
@@ -1557,7 +1589,7 @@ function MultiSelectField({
       >
         <summary
           aria-label={`${label}: ${selectionSummary}`}
-          className="bd-focus flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden"
+          className={`bd-focus flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-cyan-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 [&::-webkit-details-marker]:hidden ${dense ? "min-h-11" : "min-h-12"}`}
         >
           <span className="min-w-0 truncate">{selectionSummary}</span>
           <ChevronDown

@@ -325,11 +325,10 @@ export function FindCrewClient({
       <PublicHeader />
 
       <main id="main-content">
-        <div className="bd-page-frame bd-page-gutter mx-auto w-full max-w-7xl px-5 pb-12 pt-7 sm:px-8 sm:pt-8 lg:px-10 lg:pb-14 lg:pt-10">
-          <div className="rounded-[1.35rem] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,45,72,0.07)]">
-            <section
+        <div className="bd-page-frame mx-auto w-full max-w-7xl px-5 pb-12 pt-5 sm:px-8 lg:px-[2.625rem] lg:pb-14">
+          <section
               aria-labelledby="crew-filter-heading"
-              className="p-4 sm:p-5"
+              className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] sm:p-6 lg:pb-[1.625rem]"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -363,7 +362,7 @@ export function FindCrewClient({
               <div
                 className={`mt-4 grid gap-3 md:grid-cols-2 ${
                   advancedOpen
-                    ? "xl:grid-cols-4"
+                    ? "xl:grid-cols-4 xl:gap-6"
                     : "xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
                 }`}
               >
@@ -460,9 +459,9 @@ export function FindCrewClient({
             </section>
 
             <div
-              className={`grid items-start border-t border-slate-200 ${
+              className={`mt-2.5 grid items-start ${
                 advancedOpen
-                  ? "xl:grid-cols-[minmax(0,18fr)_minmax(22rem,7fr)]"
+                  ? "xl:grid-cols-[minmax(0,2.157fr)_minmax(28rem,1fr)]"
                   : ""
               }`}
             >
@@ -470,10 +469,16 @@ export function FindCrewClient({
                 <aside
                   id="crew-advanced-filters"
                   role="region"
-                  aria-label={c.advanced}
-                  className="min-w-0 border-b border-slate-200 bg-white p-4 sm:p-5 lg:p-6 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start xl:border-b-0"
+                  aria-labelledby="crew-advanced-filters-heading"
+                  className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start"
                 >
-                  <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                  <h2
+                    id="crew-advanced-filters-heading"
+                    className="text-lg font-black tracking-[-0.02em] text-[#071f3c]"
+                  >
+                    {c.advanced}
+                  </h2>
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
                     <FilterToggle
                       label={c.premiumOnly}
                       checked={draftFilters.premiumOnly}
@@ -504,7 +509,7 @@ export function FindCrewClient({
                     />
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <FilterSelect
                       label={c.maritalStatus}
                       emptyOptionLabel={c.any}
@@ -576,7 +581,7 @@ export function FindCrewClient({
                       searchingLabel={c.searching}
                       searching={searching}
                       onClick={submitAllCrewFilters}
-                          className="min-w-40 flex-1"
+                      className="min-w-40 flex-1"
                     />
                   </div>
                 </aside>
@@ -585,12 +590,10 @@ export function FindCrewClient({
               <section
                 aria-labelledby="crew-results-heading"
                 className={`min-w-0 ${
-                  advancedOpen
-                    ? "xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200"
-                    : ""
+                  advancedOpen ? "xl:col-start-1 xl:row-start-1" : ""
                 }`}
               >
-                <div className="flex flex-wrap items-center justify-between gap-4 p-4 pb-0 sm:p-5 sm:pb-0 lg:p-6 lg:pb-0">
+                <div className="flex flex-wrap items-start justify-between gap-4 p-5 pb-0 pr-7">
                   <div aria-live="polite" aria-atomic="true">
                     <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
                       {c.results}
@@ -612,7 +615,7 @@ export function FindCrewClient({
                   </div>
                 </div>
 
-                <div className="p-4 pt-0 sm:p-5 sm:pt-0 lg:p-6 lg:pt-0">
+                <div className="p-5 pr-7 pt-0">
                   {searchFailed ? (
                     <div
                       role="alert"
@@ -632,7 +635,7 @@ export function FindCrewClient({
                     </div>
                   ) : profiles.length > 0 ? (
                     <div
-                      className={`mt-5 grid gap-5 transition-opacity ${searching ? "opacity-55" : "opacity-100"}`}
+                      className={`${advancedOpen ? "mt-0.5 gap-2" : "mt-5 gap-5"} grid transition-opacity ${searching ? "opacity-55" : "opacity-100"}`}
                       aria-busy={searching}
                     >
                       {profiles.map((profile) => (
@@ -724,7 +727,6 @@ export function FindCrewClient({
                 </div>
               </section>
             </div>
-          </div>
         </div>
       </main>
 

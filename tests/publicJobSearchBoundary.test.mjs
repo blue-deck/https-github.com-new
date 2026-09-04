@@ -111,7 +111,7 @@ test("job filters use explicit searches and clear actions without selection summ
   );
   assert.match(
     jobsClient,
-    /id="advanced-job-filters"[\s\S]*?className="mt-5 flex items-center justify-end gap-4 border-t border-slate-200 pt-5"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
+    /id="advanced-job-filters"[\s\S]*?className="mt-4 flex items-center justify-end gap-4 border-t border-slate-200 pt-4"[\s\S]*?<JobFilterClearAction[\s\S]*?<JobFilterSearchButton/,
   );
   const clearFilters = jobsClient.slice(
     jobsClient.indexOf("function clearFilters()"),
@@ -251,7 +251,7 @@ test("published requirements remain searchable job data without structured filte
   );
 });
 
-test("advanced job filters use one stacked sidebar and compact result cards", async () => {
+test("advanced job filters use a separate two-column sidebar and horizontal result cards", async () => {
   const [client, card] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/jobs/PublicJobListingCard.tsx"),
@@ -274,18 +274,26 @@ test("advanced job filters use one stacked sidebar and compact result cards", as
     /\b(roleAndContract|yachtDetails|requirements|salaryAndDisplay):/,
   );
   assert.match(advanced, /<aside[\s\S]*?id="advanced-job-filters"/);
-  assert.match(advanced, /className="grid grid-cols-1 gap-4"/);
+  assert.match(
+    advanced,
+    /className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2"/,
+  );
   assert.match(advanced, /xl:sticky xl:top-6/);
   assert.match(
     client,
-    /className="rounded-\[1\.35rem\] border border-slate-200 bg-white shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\]"/,
+    /aria-labelledby="jobs-filter-heading"[\s\S]*?className="rounded-\[1\.35rem\] border border-slate-200 bg-white p-5 shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\] sm:p-6 lg:pb-\[1\.625rem\]"/,
   );
-  assert.match(client, /xl:grid-cols-\[minmax\(0,18fr\)_minmax\(22rem,7fr\)\]/);
-  assert.match(client, /grid items-start border-t border-slate-200/);
   assert.match(
     client,
-    /advancedOpen[\s\S]*?\? "xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200"[\s\S]*?: ""/,
+    /xl:grid-cols-\[minmax\(0,2\.157fr\)_minmax\(28rem,1fr\)\]/,
   );
+  assert.match(client, /mt-2\.5 grid items-start/);
+  assert.doesNotMatch(client, /grid items-start border-t border-slate-200/);
+  assert.match(
+    client,
+    /advancedOpen \? "xl:col-start-1 xl:row-start-1" : ""/,
+  );
+  assert.doesNotMatch(client, /xl:border-r xl:border-slate-200/);
   assert.ok(
     client.indexOf('id="advanced-job-filters"') <
       client.indexOf('id="jobs-results-heading"'),
@@ -294,9 +302,9 @@ test("advanced job filters use one stacked sidebar and compact result cards", as
   assert.match(card, /compact = false/);
   assert.match(
     card,
-    /lg:grid-cols-\[minmax\(12rem,0\.78fr\)_minmax\(0,1\.45fr\)\]/,
+    /lg:grid-cols-\[27\.6%_46\.3%_26\.1%\]/,
   );
-  assert.match(card, /lg:row-span-2/);
+  assert.doesNotMatch(card, /lg:row-span-2/);
   assert.match(advanced, /<SalaryFilterGroup/);
   assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 
@@ -354,7 +362,7 @@ test("advanced job filters use one stacked sidebar and compact result cards", as
 
   assert.match(
     advanced,
-    /<FilterSelect\s+allowEmpty\s+label=\{c\.yachtProgram\}\s+placeholder=\{c\.allYachtPrograms\}\s+options=\{optionSets\.yachtPrograms\}\s+value=\{draftFilters\.yachtProgram \|\| ""\}/,
+    /<FilterSelect\s+dense\s+allowEmpty\s+label=\{c\.yachtProgram\}\s+placeholder=\{c\.allYachtPrograms\}\s+options=\{optionSets\.yachtPrograms\}\s+value=\{draftFilters\.yachtProgram \|\| ""\}/,
   );
   assert.match(
     advanced,
@@ -431,11 +439,11 @@ test("advanced job filters use one stacked sidebar and compact result cards", as
   );
   assert.match(
     amountField,
-    /grid h-12 min-w-0 grid-cols-\[minmax\(4\.5rem,1fr\)_4\.875rem_3\.875rem\]/,
+    /\$\{dense \? "h-11" : "h-12"\} grid min-w-0 grid-cols-\[minmax\(3\.25rem,1fr\)_4\.5rem_4rem\]/,
   );
   assert.match(
     amountField,
-    /sm:grid-cols-\[minmax\(4\.5rem,1fr\)_5rem_4\.5rem\]/,
+    /sm:grid-cols-\[minmax\(3\.5rem,1fr\)_4\.75rem_4\.25rem\]/,
   );
   assert.doesNotMatch(amountField, /min-\[390px\]:grid-cols-|col-span-2|border-t/);
 });
@@ -560,7 +568,7 @@ test("yacht length is an accessible two-thumb 0–200 m range backed by exact un
   assert.match(range, /event\.key === "End"/);
   assert.match(
     range,
-    /className="relative h-12 rounded-xl border border-slate-200 bg-white px-3"/,
+    /className=\{`\$\{dense \? "h-11" : "h-12"\} relative rounded-xl border border-slate-200 bg-white px-3`\}/,
   );
   assert.match(
     range,
@@ -816,8 +824,14 @@ test("Team/Couple stays a binary filter while Any listings match either choice",
   const filterSelectStart = client.indexOf("function FilterSelect(");
   const filterSelectEnd = client.indexOf("function MultiSelectField(", filterSelectStart);
   const filterSelect = client.slice(filterSelectStart, filterSelectEnd);
-  assert.match(filterSelect, /className="relative block h-12 w-full"/);
-  assert.match(filterSelect, /className="bd-focus h-12 w-full[^\"]*appearance-none/);
+  assert.match(
+    filterSelect,
+    /className=\{`relative block w-full \$\{dense \? "h-11" : "h-12"\}`\}/,
+  );
+  assert.match(
+    filterSelect,
+    /className=\{`bd-focus w-full[^`]*appearance-none[^`]*\$\{dense \? "h-11" : "h-12"\}`\}/,
+  );
   assert.match(filterSelect, /<ChevronDown[\s\S]*?pointer-events-none absolute right-4/);
   assert.match(client, /if \(value === "yes"\) return \["team", "couple"\]/);
   assert.match(client, /if \(value === "no"\) return \["individual"\]/);

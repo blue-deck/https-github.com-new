@@ -34,7 +34,7 @@ import {
 } from "../app/lib/jobPosts.ts";
 import { capitalizeInitialInput } from "../app/lib/inputText.ts";
 
-test("find crew opens directly with the compact filter workspace", async () => {
+test("find crew opens directly with the standalone filter workspace", async () => {
   const [client, loading] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
@@ -55,7 +55,7 @@ test("find crew opens directly with the compact filter workspace", async () => {
   assert.match(client, /<h1\s+id="crew-filter-heading"/);
   assert.match(
     client,
-    /max-w-7xl px-5 pb-12 pt-7[\s\S]*?<section[\s\S]*?aria-labelledby="crew-filter-heading"/,
+    /max-w-7xl px-5 pb-12 pt-5[\s\S]*?<section[\s\S]*?aria-labelledby="crew-filter-heading"/,
   );
   assert.match(loading, /<h1 id="crew-filter-heading" className="sr-only">/);
 });
@@ -321,7 +321,7 @@ test("keeps nationality in primary filters and removes the location filter", asy
   assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
 });
 
-test("advanced crew filters show readiness toggles first without a heading", async () => {
+test("advanced crew filters show a heading followed by readiness toggles", async () => {
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
@@ -346,6 +346,10 @@ test("advanced crew filters show readiness toggles first without a heading", asy
   );
 
   assert.ok(advancedStart >= 0 && advancedEnd > advancedStart);
+  assert.match(
+    advancedFilters,
+    /aria-labelledby="crew-advanced-filters-heading"[\s\S]*?id="crew-advanced-filters-heading"[\s\S]*?\{c\.advanced\}/,
+  );
   assert.ok(fieldPositions.every((position) => position >= 0));
   assert.deepEqual(fieldPositions, [...fieldPositions].sort((a, b) => a - b));
   assert.doesNotMatch(advancedFilters, /profileQuality|Profile readiness/);
@@ -353,7 +357,7 @@ test("advanced crew filters show readiness toggles first without a heading", asy
   assert.doesNotMatch(client, /profileQuality:/);
 });
 
-test("More filters shares the unified shell and uses a sticky right rail on desktop", async () => {
+test("More filters is a separate sticky right card beside horizontal crew cards", async () => {
   const [client, presentation] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
@@ -372,29 +376,33 @@ test("More filters shares the unified shell and uses a sticky right rail on desk
 
   assert.match(
     client,
-    /rounded-\[1\.35rem\] border border-slate-200 bg-white shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\][\s\S]*?<section\s+aria-labelledby="crew-filter-heading"\s+className="p-4 sm:p-5"/,
+    /<section\s+aria-labelledby="crew-filter-heading"\s+className="rounded-\[1\.35rem\] border border-slate-200 bg-white p-5 shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\] sm:p-6 lg:pb-\[1\.625rem\]"/,
   );
   assert.match(
     client,
-    /grid items-start border-t border-slate-200[\s\S]*?xl:grid-cols-\[minmax\(0,18fr\)_minmax\(22rem,7fr\)\]/,
+    /mt-2\.5 grid items-start[\s\S]*?xl:grid-cols-\[minmax\(0,2\.157fr\)_minmax\(28rem,1fr\)\]/,
   );
   assert.match(
     client,
-    /id="crew-advanced-filters"[\s\S]*?xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start/,
+    /id="crew-advanced-filters"[\s\S]*?rounded-\[1\.35rem\][\s\S]*?xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start/,
   );
   assert.match(
     client,
-    /aria-labelledby="crew-results-heading"[\s\S]*?xl:col-start-1 xl:row-start-1 xl:border-r xl:border-slate-200/,
+    /aria-labelledby="crew-results-heading"[\s\S]*?advancedOpen \? "xl:col-start-1 xl:row-start-1" : ""/,
   );
+  assert.doesNotMatch(client, /xl:border-r xl:border-slate-200/);
   assert.ok(sidebarStart >= 0 && resultsStart > sidebarStart);
   assert.match(client, /compact=\{advancedOpen\}/);
   assert.match(presentation, /compact = false/);
   assert.match(
     presentation,
-    /compact[\s\S]*?lg:grid-cols-\[minmax\(15rem,0\.78fr\)_minmax\(0,1\.4fr\)\]/,
+    /compact[\s\S]*?lg:grid-cols-\[28%_46%_26%\]/,
   );
-  assert.match(presentation, /compact \? "lg:row-span-2/);
-  assert.match(presentation, /compact[\s\S]*?lg:col-start-2 lg:row-start-2/);
+  assert.doesNotMatch(presentation, /lg:row-span-2/);
+  assert.match(
+    presentation,
+    /compact[\s\S]*?lg:border-l lg:border-t-0 lg:px-5/,
+  );
 });
 
 test("crew filter controls share equal columns and one select surface", async () => {
@@ -410,7 +418,7 @@ test("crew filter controls share equal columns and one select surface", async ()
     ),
   ]);
 
-  assert.match(client, /\? "xl:grid-cols-4"/);
+  assert.match(client, /\? "xl:grid-cols-4 xl:gap-6"/);
   assert.match(
     client,
     /: "xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\]"/,

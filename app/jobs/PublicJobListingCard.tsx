@@ -55,13 +55,13 @@ export function PublicJobListingCard({
       aria-labelledby={titleId}
       className={`group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] motion-reduce:transform-none ${
         compact
-          ? "lg:grid-cols-[minmax(12rem,0.78fr)_minmax(0,1.45fr)]"
+          ? "lg:grid-cols-[27.6%_46.3%_26.1%]"
           : "lg:grid-cols-[minmax(13rem,0.9fr)_minmax(24rem,1.75fr)_minmax(16.5rem,0.85fr)]"
       }`}
     >
       <div
-        className={`flex min-w-0 flex-col justify-center px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 lg:py-7 ${
-          compact ? "lg:row-span-2 lg:px-6 xl:px-7" : "lg:px-7 xl:px-8"
+        className={`flex min-w-0 flex-col justify-center px-5 py-6 sm:px-7 lg:border-r lg:border-slate-200 ${
+          compact ? "lg:px-6 lg:py-3.5 xl:px-7" : "lg:px-7 lg:py-7 xl:px-8"
         }`}
       >
         <h3
@@ -104,10 +104,10 @@ export function PublicJobListingCard({
       </div>
 
       <div
-        className={`grid min-w-0 gap-y-3 border-t border-slate-200 px-5 py-6 sm:grid-cols-2 sm:px-7 lg:border-t-0 lg:py-7 ${
+        className={`grid min-w-0 gap-y-3 border-t border-slate-200 px-5 py-6 sm:grid-cols-2 sm:px-7 lg:border-t-0 ${
           compact
-            ? "gap-x-6 lg:col-start-2 lg:row-start-1 lg:px-6 xl:px-7"
-            : "gap-x-8 lg:px-8 xl:gap-x-10 xl:px-10"
+            ? "gap-x-6 lg:px-6 lg:py-3.5 xl:px-7"
+            : "gap-x-8 lg:px-8 lg:py-7 xl:gap-x-10 xl:px-10"
         }`}
       >
         <div className="grid content-center gap-3">
@@ -136,17 +136,15 @@ export function PublicJobListingCard({
       </div>
 
       <div
-        className={`flex min-w-0 flex-col justify-center gap-2 border-t border-slate-200 px-5 py-6 sm:px-7 lg:py-7 ${
+        className={`flex min-w-0 flex-col justify-center gap-2 border-t border-slate-200 px-5 py-6 sm:px-7 ${
           compact
-            ? "lg:col-start-2 lg:row-start-2 lg:flex-row lg:items-stretch lg:px-6 xl:px-7"
-            : "lg:border-l lg:border-t-0 lg:px-6 xl:px-7"
+            ? "lg:border-l lg:border-t-0 lg:px-5 lg:py-3.5 xl:px-6"
+            : "lg:border-l lg:border-t-0 lg:px-6 lg:py-7 xl:px-7"
         }`}
       >
         <Link
           href={action.detailHref}
-          className={`bd-focus flex min-h-14 items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800 ${
-            compact ? "lg:flex-1" : ""
-          }`}
+          className="bd-focus flex min-h-14 items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800"
         >
           {c.viewRole}
           <ArrowRight
@@ -157,9 +155,7 @@ export function PublicJobListingCard({
         {action.intent !== "view" ? (
           <Link
             href={action.href}
-            className={`bd-focus flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-center text-sm font-black text-[#071f3c] transition hover:border-cyan-500 hover:bg-cyan-50 ${
-              compact ? "lg:flex-1" : ""
-            }`}
+            className="bd-focus flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-center text-sm font-black text-[#071f3c] transition hover:border-cyan-500 hover:bg-cyan-50"
           >
             {action.intent === "signup" ? (
               <UserRoundPlus className="h-4 w-4" aria-hidden />
@@ -181,24 +177,16 @@ export function PublicJobListingSkeleton({
     <div
       className={`grid min-h-[250px] animate-pulse overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white motion-reduce:animate-none lg:min-h-[190px] ${
         compact
-          ? "lg:grid-cols-[minmax(12rem,0.78fr)_minmax(0,1.45fr)]"
+          ? "lg:grid-cols-[27.6%_46.3%_26.1%]"
           : "lg:grid-cols-[minmax(13rem,0.9fr)_minmax(24rem,1.75fr)_minmax(16.5rem,0.85fr)]"
       }`}
     >
-      <div
-        className={`px-7 py-7 lg:border-r lg:border-slate-100 ${
-          compact ? "lg:row-span-2" : ""
-        }`}
-      >
+      <div className="px-7 py-7 lg:border-r lg:border-slate-100">
         <div className="h-8 w-3/4 rounded bg-slate-100" />
         <div className="mt-4 h-4 w-1/2 rounded bg-slate-100" />
         <div className="mt-4 h-4 w-2/3 rounded bg-slate-100" />
       </div>
-      <div
-        className={`grid gap-5 border-t border-slate-100 px-7 py-7 sm:grid-cols-2 lg:border-t-0 ${
-          compact ? "lg:col-start-2 lg:row-start-1" : ""
-        }`}
-      >
+      <div className="grid gap-5 border-t border-slate-100 px-7 py-7 sm:grid-cols-2 lg:border-t-0">
         <div className="space-y-4">
           <div className="h-4 rounded bg-slate-100" />
           <div className="h-4 w-3/4 rounded bg-slate-100" />
@@ -210,13 +198,7 @@ export function PublicJobListingSkeleton({
           <div className="h-4 w-2/3 rounded bg-slate-100" />
         </div>
       </div>
-      <div
-        className={`border-t border-slate-100 px-7 py-7 ${
-          compact
-            ? "lg:col-start-2 lg:row-start-2"
-            : "lg:border-l lg:border-t-0"
-        }`}
-      >
+      <div className="border-t border-slate-100 px-7 py-7 lg:border-l lg:border-t-0">
         <div className="h-14 rounded-xl bg-slate-100" />
         <div className="mt-2 h-12 rounded-xl bg-slate-100" />
       </div>
