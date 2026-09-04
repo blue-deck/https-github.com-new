@@ -291,6 +291,7 @@ export function PublicCrewProfileContent({
             headingLevel="h1"
             reserveTrailingActionSpace={false}
             experienceLanguage={language}
+            appearance="midnight-overlay"
           />
 
           <CrewCandidateProfileBody
