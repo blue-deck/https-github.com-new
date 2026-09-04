@@ -342,16 +342,6 @@ export function PublicCrewProfileContent({
             </p>
           </CrewCandidateProfileBody>
         </article>
-
-        <div className="mx-auto mt-6 max-w-xl">
-          <InviteCrewPanel
-            crewId={profile.crewId}
-            fullName={profile.displayName}
-            defaultPosition={
-              profile.seekingPositions[0] || profile.currentPosition
-            }
-          />
-        </div>
       </div>
     </section>
   );

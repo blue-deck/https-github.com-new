@@ -10,6 +10,10 @@ async function source(path) {
 
 test("public crew profiles reuse the responsive application overview", async () => {
   const profile = await source("app/find-crew/[crewId]/InviteCrewPanel.tsx");
+  const publicProfile = profile.slice(
+    profile.indexOf("export function PublicCrewProfileContent"),
+    profile.indexOf("export function InviteCrewPanel"),
+  );
 
   assert.match(profile, /<CrewCandidateEmployerProfileOverview/);
   assert.match(profile, /headingLevel="h1"/);
@@ -18,9 +22,12 @@ test("public crew profiles reuse the responsive application overview", async () 
     profile,
     /<CrewCandidateProfileBody[\s\S]*?variant="public"[\s\S]*?sectionHeadingLevel="h2"/,
   );
+  assert.match(publicProfile, /<CrewCandidateProfileBody/);
   assert.doesNotMatch(profile, /My Blue gallery|My Blue galerisi/);
   assert.match(profile, /gallery: "Blue Gallery"/);
   assert.match(profile, /experiences: "Experience"/);
+  assert.doesNotMatch(publicProfile, /<InviteCrewPanel/);
+  assert.doesNotMatch(publicProfile, /hiring-actions-heading/);
 });
 
 test("shared overview preserves public heading semantics and compact section order", async () => {
