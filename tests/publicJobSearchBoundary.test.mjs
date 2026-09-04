@@ -251,7 +251,7 @@ test("published requirements remain searchable job data without structured filte
   );
 });
 
-test("advanced job filters use a separate two-column sidebar and horizontal result cards", async () => {
+test("advanced job filters use a separate two-column sidebar and quiet-divider result cards", async () => {
   const [client, card] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/jobs/PublicJobListingCard.tsx"),
@@ -300,11 +300,16 @@ test("advanced job filters use a separate two-column sidebar and horizontal resu
   );
   assert.match(client, /compact=\{advancedOpen\}/);
   assert.match(card, /compact = false/);
+  assert.match(card, /data-job-card-layout="quiet-divider"/);
   assert.match(
     card,
-    /lg:grid-cols-\[27\.6%_46\.3%_26\.1%\]/,
+    /bg-\[linear-gradient\(90deg,#071f3c_0%,#0891b2_100%\)\]/,
   );
-  assert.doesNotMatch(card, /lg:row-span-2/);
+  assert.match(card, /min-\[360px\]:grid-cols-2/);
+  assert.match(card, /lg:grid-cols-3/);
+  assert.match(card, /sm:grid-cols-2/);
+  assert.doesNotMatch(card, /lg:grid-cols-\[27\.6%_46\.3%_26\.1%\]/);
+  assert.doesNotMatch(card, /lg:border-[lr]/);
   assert.match(advanced, /<SalaryFilterGroup/);
   assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 
@@ -862,10 +867,23 @@ test("Team/Couple stays a binary filter while Any listings match either choice",
     card,
     /formatJobTeamCoupleAnswer\(job\.candidateType, language\)/,
   );
-  assert.match(card, /isJobTeamCouple\(job\.candidateType\) \? \(/);
   assert.match(
     card,
-    /\{c\.posted\}: \{formatJobDate\(job\.publishedAt, language\)\}[\s\S]*?isJobTeamCouple\(job\.candidateType\)/,
+    /const teamCouple = isJobTeamCouple\(job\.candidateType\)/,
+  );
+  assert.match(card, /<MetaLine icon=\{<MapPin \/>\} value=\{job\.location\} \/>/);
+  assert.match(
+    card,
+    /<InfoLine[\s\S]*?icon=\{<UsersRound \/>\}[\s\S]*?value=\{teamCouple\}[\s\S]*?emphasized/,
+  );
+  assert.ok(
+    card.indexOf('<MetaLine icon={<MapPin />} value={job.location} />') <
+      card.indexOf('icon={<UsersRound />}'),
+  );
+  assert.doesNotMatch(card, /function StatusPill/);
+  assert.equal(
+    (card.match(/\{salary \|\| c\.salaryNotSpecified\}/g) || []).length,
+    1,
   );
   assert.match(detail, /label: c\.teamCouple/);
   assert.match(
