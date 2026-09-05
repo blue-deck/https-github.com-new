@@ -83,7 +83,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_20%,rgba(95,211,229,0.22),transparent_30%),linear-gradient(120deg,#06111f_0%,#0d2534_56%,#123748_100%)]" />
           <div className="relative flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-[3px] border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25 sm:h-20 sm:w-20">
+              <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-[3px] border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25 sm:h-32 sm:w-32 sm:rounded-[20px]">
                 {profilePhoto ? (
                   <img
                     src={profilePhoto}
@@ -92,7 +92,7 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-[#2d7482]">
-                    <UserRound className="h-9 w-9" aria-hidden="true" />
+                    <UserRound className="h-12 w-12 sm:h-16 sm:w-16" aria-hidden="true" />
                   </div>
                 )}
               </div>

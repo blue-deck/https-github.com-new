@@ -4,14 +4,15 @@ import { notFound } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   BriefcaseBusiness,
+  Mail,
   MapPin,
+  Phone,
   UserRound,
 } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
 import { CrewBackLink } from "../../components/CrewBackLink";
 import { CvScaleFrame } from "../../components/CvScaleFrame";
 import {
-  publicStringArray,
   redactPublicContactDetails,
   safeOwnedPublicMediaUrl,
 } from "../../lib/publicCrewSafety";
@@ -22,6 +23,7 @@ import {
 import { referencesForExperience, unlinkedExperienceReferences } from "../../lib/crewExperienceReferences";
 import { loadEligiblePublicCrewContext } from "../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../lib/site";
+import { cleanCvContactText, cvContactHref, projectPublicCrewCvProfile } from "../../lib/publicCrewCv";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +89,12 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
   const visibleSkills = [
     ...stringArray(profile.personal_skills),
     ...stringArray(profile.personal_characteristics),
-  ].slice(0, 18);
+  ];
+  const preferenceGroups = [
+    { label: "Employment types", items: stringArray(profile.employment_types) },
+    { label: "Preferred hiring regions", items: stringArray(profile.preferred_locations) },
+    { label: "Work preferences", items: stringArray(profile.work_preferences) },
+  ].filter((group) => group.items.length > 0);
   const cleanReferences = publicReferenceEntries(references);
   const standaloneReferences = unlinkedExperienceReferences(experiences, cleanReferences);
   const yachtExperiences = experiences.filter(
@@ -160,6 +167,11 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
           </dl>
         </section>
 
+        <div className="bd-cv-mobile-details">
+          <PersonalDetails profile={profile} />
+          <CvContactDetails profile={profile} />
+        </div>
+
         <div className="bd-cv-layout grid min-h-[1120px] grid-cols-[320px_1fr] bg-white print:min-h-0 print:grid-cols-[300px_1fr]">
           <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
             <CvSidebarSignature />
@@ -178,13 +190,10 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             </div>
 
             <div className="bd-cv-side-stack space-y-8">
-              <SideSection title="Profile" className="bd-cv-profile-section">
-                <div className="space-y-2.5">
-                  <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
-                  <SidebarLine label="Current location" value={text(profile, "location") || "-"} />
-                  <SidebarLine label="Current role" value={position} />
-                </div>
-              </SideSection>
+              <div className="bd-cv-desktop-details space-y-8">
+                <PersonalDetails profile={profile} />
+                <CvContactDetails profile={profile} />
+              </div>
 
               <SideSection title="Language">
                 <div className="space-y-3">
@@ -211,19 +220,28 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               </SideSection>
 
               <SideSection title="Preferences">
-                <Pills items={stringArray(profile.work_preferences)} />
+                {preferenceGroups.length > 0 ? (
+                  <div className="space-y-3.5">
+                    {preferenceGroups.map((group) => (
+                      <div key={group.label}>
+                        <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#2d7482]">{group.label}</p>
+                        <Pills items={group.items} />
+                      </div>
+                    ))}
+                  </div>
+                ) : <Pills items={[]} />}
               </SideSection>
 
               <SideSection title="Documents & Certificates" className="bd-cv-documents-section">
                 <div className="space-y-2">
                   {documents.length === 0 && <p className="text-sm text-[#6b747a]">No CV documents selected.</p>}
-                  {documents.slice(0, 10).map((document) => (
+                  {documents.map((document) => (
                     <div key={text(document, "id") || text(document, "document_type")} className="bd-cv-document-row rounded-lg border border-[#c7d2d6] bg-white px-3 py-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="truncate text-[12px] font-black leading-4 text-[#06111f]">{text(document, "document_type") || "Document"}</p>
+                          <p className="break-words text-[12px] font-black leading-4 text-[#06111f]">{text(document, "document_type") || "Document"}</p>
                           <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.1em] text-[#7a858b]">{text(document, "category") || "Certificate"}</p>
-                          {text(document, "issuer") && <p className="mt-1 truncate text-[10px] font-semibold text-[#5a6870]">{text(document, "issuer")}</p>}
+                          {text(document, "issuer") && <p className="mt-1 break-words text-[10px] font-semibold text-[#5a6870]">{text(document, "issuer")}</p>}
                         </div>
                         <p className="shrink-0 text-right text-[10px] font-black text-[#2d7482]">
                           {boolean(document, "no_expiry") ? "No expiry" : formatCvDate(text(document, "expiry_date"))}
@@ -271,10 +289,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
                   experiences={otherExperiences}
                   references={cleanReferences}
                   kind="other"
-                  indexOffset={Math.min(
-                    yachtExperiences.length,
-                    maximumRenderedPublicExperiencesPerType,
-                  )}
+                  indexOffset={yachtExperiences.length}
                 />
               )}
 
@@ -289,13 +304,13 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             {standaloneReferences.length > 0 && (
               <CvSection title="References">
                 <div className="bd-cv-standalone-references grid grid-cols-2 gap-3">
-                  {standaloneReferences.slice(0, 4).map((reference) => (
+                  {standaloneReferences.map((reference) => (
                     <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                       <p className="font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
                       <p className="mt-1 text-sm font-semibold text-[#2d7482]">
                         {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || "Yacht reference"}
                       </p>
-                      <p className="mt-2 text-xs text-[#5a6870]">Contact details are protected by request.</p>
+                      <ReferenceContactDetails reference={reference} />
                     </div>
                   ))}
                 </div>
@@ -328,15 +343,15 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(500),
     loadPublicCvExperienceRows(serviceClient, profileId),
     serviceClient
       .from("crew_references")
-      .select("id,role,vessel,company,crew_experience_id")
+      .select("id,name,role,vessel,company,phone,email,crew_experience_id")
       .eq("crew_profile_id", profileId)
       .eq("show_on_cv", true)
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(500),
   ]);
 
   if (documentRes.error || experienceResult.error || referenceRes.error) {
@@ -345,38 +360,14 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
 
   return {
     profile: {
+      ...projectPublicCrewCvProfile(profile, context.discovery),
       public_crew_id: cleanCrewId,
-      full_name: redactPublicContactDetails(profile.full_name, 120) || "Crew Member",
       profile_photo_url: safeOwnedPublicMediaUrl(profile.profile_photo_url, [
         profileId,
         profile.user_id,
       ])
         ? publicCrewMediaProxyUrl(cleanCrewId, "avatar")
         : "",
-      current_position: redactPublicContactDetails(
-        profile.current_position,
-        120,
-      ),
-      current_positions: publicStringArray(
-        profile.current_positions,
-        18,
-        120,
-      ),
-      location: redactPublicContactDetails(profile.location, 160),
-      nationality: redactPublicContactDetails(profile.nationality, 80),
-      bio: redactPublicContactDetails(profile.bio, 2_000),
-      languages: publicLanguageEntries(profile.languages),
-      personal_skills: publicStringArray(profile.personal_skills, 18, 120),
-      personal_characteristics: publicStringArray(
-        profile.personal_characteristics,
-        18,
-        120,
-      ),
-      work_preferences: publicStringArray(
-        profile.work_preferences,
-        18,
-        120,
-      ),
     },
     documents: (documentRes.data || []).map((document) => ({
       id: text(document as Row, "id"),
@@ -396,6 +387,9 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
     references: (referenceRes.data || []).map((reference) => ({
       id: text(reference as Row, "id"),
       crew_experience_id: text(reference as Row, "crew_experience_id"),
+      name: cleanCvContactText(reference.name, 160),
+      phone: cleanCvContactText(reference.phone, 80),
+      email: cleanCvContactText(reference.email, 254),
       role: redactPublicContactDetails(reference.role, 120),
       vessel: redactPublicContactDetails(reference.vessel, 160),
       company: redactPublicContactDetails(reference.company, 160),
@@ -405,7 +399,6 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
 
 const publicCvExperiencePageSize = 100;
 const maximumPublicCvExperienceRows = 500;
-const maximumRenderedPublicExperiencesPerType = 30;
 const richPublicExperienceSelect =
   "id,yacht_name,yacht_type,yacht_program,yacht_size,location,position,start_date,end_date,description,photo_url";
 const fallbackPublicExperienceSelect =
@@ -565,13 +558,6 @@ function languageEntries(value: unknown): LanguageEntry[] {
     .filter((item): item is LanguageEntry => Boolean(item));
 }
 
-function publicLanguageEntries(value: unknown) {
-  return languageEntries(value).map((language) => ({
-    name: redactPublicContactDetails(language.name, 80),
-    level: redactPublicContactDetails(language.level, 80),
-  }));
-}
-
 function publicExperienceRow(
   row: Row,
   crewId: string,
@@ -674,7 +660,7 @@ function formatDateRange(start?: string, end?: string) {
 function publicReferenceEntries(references: Row[]) {
   return references.filter((reference) =>
     Boolean(
-      text(reference, "role") ||
+      text(reference, "name") || text(reference, "phone") || text(reference, "email") || text(reference, "role") ||
         text(reference, "vessel") ||
         text(reference, "company"),
     ),
@@ -683,6 +669,7 @@ function publicReferenceEntries(references: Row[]) {
 
 function publicReferenceDisplayName(reference: Row) {
   return (
+    text(reference, "name") ||
     text(reference, "company") ||
     text(reference, "vessel") ||
     "Reference available on request"
@@ -714,11 +701,6 @@ function PublicExperienceSection({
   kind: PublicExperienceKind;
   indexOffset?: number;
 }) {
-  const renderedExperiences = experiences.slice(
-    0,
-    maximumRenderedPublicExperiencesPerType,
-  );
-
   return (
     <CvSection
       title={title}
@@ -726,7 +708,7 @@ function PublicExperienceSection({
       icon={<BriefcaseBusiness className="h-4 w-4" aria-hidden="true" />}
     >
       <div className="bd-cv-experience-list space-y-4">
-        {renderedExperiences.map((experience, index) => {
+        {experiences.map((experience, index) => {
           const experienceReferences = referencesForExperience(experience, references);
           const organizationName =
             text(experience, "yacht_name") || (kind === "yacht" ? "Yacht" : "Company");
@@ -777,7 +759,7 @@ function PublicExperienceSection({
                 <div className="bd-cv-experience-body h-full bg-white p-4">
                   <div className="bd-cv-experience-titlebar mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[#d8e2e6] pb-3">
                     <h2
-                      className="min-w-0 truncate font-black uppercase leading-[1.05] text-[#06111f]"
+                      className="min-w-0 break-words font-black uppercase leading-tight text-[#06111f]"
                       style={{ fontSize: yachtNameFontSize(organizationName) }}
                     >
                       {organizationName}
@@ -796,11 +778,6 @@ function PublicExperienceSection({
             </article>
           );
         })}
-        {experiences.length > renderedExperiences.length && (
-          <p className="rounded-xl border border-[#d8e2e6] bg-[#f6f8f8] px-4 py-3 text-xs font-semibold text-[#5a6870]">
-            Showing the latest {renderedExperiences.length} of {experiences.length} {kind === "yacht" ? "yacht" : "other"} experience entries.
-          </p>
-        )}
       </div>
     </CvSection>
   );
@@ -857,11 +834,69 @@ function CvSidebarSignature() {
   );
 }
 
+function PersonalDetails({ profile }: { profile: Row }) {
+  const birthDate = text(profile, "date_of_birth");
+  return (
+    <SideSection title="Personal details" className="bd-cv-profile-section">
+      <dl className="bd-cv-personal-details space-y-2.5">
+        <SidebarLine label="Date of birth" value={birthDate ? new Date(`${birthDate}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "-"} />
+        <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
+        <SidebarLine label="Gender" value={text(profile, "gender") || "-"} />
+        <SidebarLine label="Marital status" value={text(profile, "marital_status") || "-"} />
+        <SidebarLine label="Height" value={profile.height_cm ? `${profile.height_cm} cm` : "-"} />
+        <SidebarLine label="Weight" value={profile.weight_kg ? `${profile.weight_kg} kg` : "-"} />
+        <SidebarLine label="Smoker" value={text(profile, "smoker") || "-"} />
+        <SidebarLine label="Visible tattoos" value={text(profile, "visible_tattoos") || "-"} />
+      </dl>
+    </SideSection>
+  );
+}
+
+function CvContactDetails({ profile }: { profile: Row }) {
+  return (
+    <SideSection title="Contact">
+      <div className="space-y-1 text-[13px] font-semibold text-[#3d454c]">
+        <ContactLine kind="phone" value={text(profile, "phone")} />
+        <ContactLine kind="email" value={text(profile, "email")} />
+        {text(profile, "location") && (
+          <p className="flex items-start gap-2.5 py-2">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#2d7482]" aria-hidden="true" />
+            <span className="min-w-0 break-words">{text(profile, "location")}</span>
+          </p>
+        )}
+      </div>
+    </SideSection>
+  );
+}
+
+function ContactLine({ kind, value }: { kind: "phone" | "email"; value: string }) {
+  if (!value) return null;
+  const href = cvContactHref(kind, value);
+  const content = <>
+    {kind === "phone"
+      ? <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#2d7482]" aria-hidden="true" />
+      : <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#2d7482]" aria-hidden="true" />}
+    <span className="min-w-0 break-words [overflow-wrap:anywhere]" data-i18n-ignore>{value}</span>
+  </>;
+  return href ? (
+    <a href={href} className="bd-focus flex min-h-11 items-start gap-2.5 rounded-md py-2.5 underline decoration-[#2d7482]/30 underline-offset-4 transition hover:text-[#2d7482]">{content}</a>
+  ) : <p className="flex items-start gap-2.5 py-2.5">{content}</p>;
+}
+
+function ReferenceContactDetails({ reference }: { reference: Row }) {
+  return (
+    <div className="mt-2 text-xs font-semibold text-[#5a6870]">
+      <ContactLine kind="phone" value={text(reference, "phone")} />
+      <ContactLine kind="email" value={text(reference, "email")} />
+    </div>
+  );
+}
+
 function SidebarLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-3 border-b border-[#cbd7dc] pb-2 text-[13px] last:border-b-0 last:pb-0">
-      <p className="font-semibold text-[#6b747a]">{label}</p>
-      <p className="break-words text-right font-black text-[#242a31]">{value}</p>
+    <div className="bd-cv-personal-field grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3 border-b border-[#cbd7dc] pb-2 text-[13px] last:border-b-0 last:pb-0">
+      <dt className="font-semibold text-[#6b747a]">{label}</dt>
+      <dd className="break-words text-right font-black text-[#242a31]">{value}</dd>
     </div>
   );
 }
@@ -879,13 +914,13 @@ function PublicExperienceReferences({
     <div className="bd-cv-reference-list mt-3 border-t border-[#c7d2d6] pt-3">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
       <div className="mt-2 grid">
-        {references.slice(0, 2).map((reference) => (
+        {references.map((reference) => (
           <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="bd-cv-reference-card border-t border-[#e2e8eb] py-2 first:border-t-0 first:pt-0 last:pb-0">
             <p className="text-[13px] font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
             <p className="mt-1 text-xs font-semibold text-[#2d7482]">
               {[text(reference, "role"), text(reference, "vessel") || text(reference, "company")].filter(Boolean).join(" / ") || (kind === "yacht" ? "Yacht reference" : "Professional reference")}
             </p>
-            <p className="mt-1 text-xs text-[#5a6870]">Contact details are protected by request.</p>
+            <ReferenceContactDetails reference={reference} />
           </div>
         ))}
       </div>

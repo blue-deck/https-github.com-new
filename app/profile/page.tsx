@@ -1802,6 +1802,9 @@ export default function ProfilePage() {
 
             {activeStudioTab === "preview" && (
               <div className="space-y-5">
+                <p className="px-1 text-xs leading-relaxed text-slate-500">
+                  Your saved personal and contact details, plus references selected for CV including their contact details, appear in your public Crew CV.
+                </p>
                 <SeazoneStyleCvPreview
                   profile={profile}
                   documents={cvDocuments}
@@ -1839,7 +1842,7 @@ export default function ProfilePage() {
             <span className="font-black uppercase tracking-[0.12em] text-[#071f3c]">
               Find Crew directory
             </span>{" "}
-            Active, email-confirmed Crew and Captain accounts are listed automatically unless Availability is set to Not available. Public cards use a masked name and approved profile details; email, phone, private files and reference contact details stay hidden.{" "}
+            Active, email-confirmed Crew and Captain accounts are listed automatically unless Availability is set to Not available. Public cards use a masked name and approved profile details; email, phone, private files and reference contact details stay hidden on directory cards.{" "}
             <Link
               href="/privacy"
               className="bd-focus font-bold text-cyan-800 underline decoration-cyan-300 underline-offset-2"

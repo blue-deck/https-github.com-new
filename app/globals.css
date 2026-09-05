@@ -2403,6 +2403,7 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   will-change: transform;
 }
 
+.bd-cv-mobile-details,
 .bd-cv-mobile-hero {
   display: none;
 }
@@ -2576,13 +2577,44 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-avatar,
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-sidebar-signature,
-  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-profile-section,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-desktop-details,
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-header {
     display: none !important;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-main {
     padding: 1.25rem !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-details {
+    display: grid;
+    gap: 1.5rem;
+    padding: 1.5rem 1.25rem;
+    border-bottom: 1px solid #d8e2e6;
+    background: #ffffff;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-personal-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-personal-field {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-personal-field dt {
+    font-size: 0.75rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-personal-field dd {
+    margin-top: 0.25rem;
+    text-align: left;
+    font-size: 0.9375rem;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-side-stack > :first-child + section {

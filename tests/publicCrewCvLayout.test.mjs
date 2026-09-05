@@ -32,8 +32,9 @@ test("public crew CV uses the full mobile width with a readable layout and prese
 
 test("public CV and QR entry show the crew name with a return link and simple branding", async () => {
   const page = await source("app/crew/[crewId]/page.tsx");
+  const projection = await source("app/lib/publicCrewCv.ts");
 
-  assert.match(page, /full_name: redactPublicContactDetails\(profile\.full_name, 120\) \|\| "Crew Member"/);
+  assert.match(projection, /full_name: redactPublicContactDetails\(profile\.full_name, 120\) \|\| "Crew Member"/);
   assert.doesNotMatch(page, /maskedPersonName|bd-cv-public-toolbar|Public profile opened from Crew ID QR|YACHT-OS/);
   assert.match(page, /<CrewBackLink href=\{`\/crew\/\$\{encodeURIComponent\(publicCrewId\)\}\/gallery`\}/);
   assert.match(page, />Crew CV<\/p>/);
@@ -59,7 +60,7 @@ test("public crew CV separates yacht and other experience without exposing inter
   assert.match(experienceLoader, /\.order\("id", \{ ascending: true \}\)/);
   assert.match(experienceLoader, /\.range\(offset, offset \+ requestedPageSize - 1\)/);
   assert.doesNotMatch(experienceLoader, /\.limit\(30\)/);
-  assert.match(page, /maximumRenderedPublicExperiencesPerType = 30/);
+  assert.doesNotMatch(page, /maximumRenderedPublicExperiencesPerType|experiences\.slice\(/);
 });
 
 test("profile snapshots report yacht and other experience independently", async () => {
