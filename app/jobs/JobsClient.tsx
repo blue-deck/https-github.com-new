@@ -903,7 +903,7 @@ export function JobsClient({
                   </div>
                 </div>
 
-                <div className="-mx-1 px-0 pt-0 sm:mx-0 sm:p-5 sm:pr-7 sm:pt-0">
+                <div className="px-0 pt-0 sm:p-5 sm:pr-7 sm:pt-0">
                   {validationError ? (
                     <div className="mt-5 rounded-2xl border border-dashed border-amber-300 bg-amber-50/60 px-6 py-10 text-center">
                       <Filter

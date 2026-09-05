@@ -251,7 +251,7 @@ test("published requirements remain searchable job data without structured filte
   );
 });
 
-test("advanced job filters use a separate two-column sidebar and quiet-divider result cards", async () => {
+test("advanced job filters use a separate two-column sidebar and compact result cards", async () => {
   const [client, card] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/jobs/PublicJobListingCard.tsx"),
@@ -300,35 +300,7 @@ test("advanced job filters use a separate two-column sidebar and quiet-divider r
   );
   assert.match(client, /compact=\{advancedOpen\}/);
   assert.match(card, /compact = false/);
-  assert.match(card, /data-job-card-layout="quiet-divider"/);
-  assert.match(
-    card,
-    /bg-\[linear-gradient\(90deg,#071f3c_0%,#0891b2_100%\)\]/,
-  );
-  assert.match(card, /grid min-w-0 grid-cols-3 gap-y-8/);
-  assert.match(card, /grid min-w-0 grid-cols-2 gap-2\.5/);
-  assert.match(
-    card,
-    /col-start-3 row-start-1[^\"]*before:h-6[^\"]*before:bg-slate-200/,
-  );
-  assert.match(
-    client,
-    /flex flex-col gap-7 px-1 pb-0 pt-5[^"]*sm:flex-row/,
-  );
-  assert.match(
-    client,
-    /flex w-full flex-wrap items-end gap-3 sm:w-auto/,
-  );
-  assert.match(
-    client,
-    /-mx-1 px-0 pt-0 sm:mx-0 sm:p-5 sm:pr-7 sm:pt-0/,
-  );
-  assert.doesNotMatch(card, /min-\[360px\]:grid-cols-2/);
-  assert.doesNotMatch(card, /sm:grid-cols-2/);
-  assert.doesNotMatch(card, /shadow-\[/);
-  assert.doesNotMatch(card, /gap-2\.5 border-t/);
-  assert.doesNotMatch(card, /lg:grid-cols-\[27\.6%_46\.3%_26\.1%\]/);
-  assert.doesNotMatch(card, /lg:border-[lr]/);
+  assert.match(card, /data-job-card-layout="navy-ticket"/);
   assert.match(advanced, /<SalaryFilterGroup/);
   assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 
@@ -890,15 +862,17 @@ test("Team/Couple stays a binary filter while Any listings match either choice",
     card,
     /const teamCouple = isJobTeamCouple\(job\.candidateType\)/,
   );
-  assert.match(card, /<MetaLine icon=\{<MapPin \/>\} value=\{job\.location\} \/>/);
   assert.match(
     card,
-    /<InfoLine[\s\S]*?icon=\{<UsersRound \/>\}[\s\S]*?value=\{teamCouple\}[\s\S]*?className="relative col-start-3 row-start-1[^\"]*before:h-6/,
+    /<MetaLine\b[\s\S]*?icon=\{<MapPin \/>\}[\s\S]*?value=\{job\.location\}/,
   );
-  assert.doesNotMatch(card, /value=\{teamCouple\}[\s\S]*?emphasized/);
+  assert.match(
+    card,
+    /<InfoLine\b[\s\S]*?icon=\{<UsersRound \/>\}[\s\S]*?value=\{teamCouple\}/,
+  );
   assert.ok(
-    card.indexOf('<MetaLine icon={<MapPin />} value={job.location} />') <
-      card.indexOf('icon={<UsersRound />}'),
+    card.indexOf("value={job.location}") <
+      card.indexOf("value={teamCouple}"),
   );
   assert.doesNotMatch(card, /function StatusPill/);
   assert.equal(
