@@ -33,8 +33,9 @@ const sections = [
     title: "Public crew directory",
     paragraphs: [
       "Active, email-confirmed accounts registered as Crew or Captain are automatically included in the public Find Crew directory unless Availability is set to Not available. Find Crew can be viewed without creating or signing in to a BlueDeck account.",
-      "Public results use a masked display name and may show selected professional and physical profile details, availability, work preferences, profile and gallery images, and counts of completed profile records. A linked Crew ID CV or gallery may also show CV-selected certificate metadata, work-experience details and reference role, vessel or company information.",
+      "Public results use a masked display name and may show selected professional and physical profile details, availability, work preferences, profile and gallery images, and counts of completed profile records.",
       "Full legal names, email addresses, phone numbers, reference contact details, private document files, storage paths and yacht workspaces are not included in the public directory.",
+      "The linked public Crew CV, available through Open CV or a Crew ID link, displays the saved CV details from My Profile, including full name, personal details, phone, email, work experience and CV-selected certificate metadata. References marked Show on CV also display their names, roles, vessel or company and contact details. Private document files, storage paths and yacht workspaces remain private.",
     ],
   },
   {
