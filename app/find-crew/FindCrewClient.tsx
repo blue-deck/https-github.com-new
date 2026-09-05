@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   ChevronDown,
-  Clock3,
   LoaderCircle,
   Search,
   ShieldCheck,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
+import crewCardStyles from "../components/CrewCandidateCard.module.css";
 import {
   NATIONALITY_CONTROL_SIZE_CLASS_NAME,
   NationalitySearchField,
@@ -593,7 +593,7 @@ export function FindCrewClient({
                   advancedOpen ? "xl:col-start-1 xl:row-start-1" : ""
                 }`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-4 p-5 pb-0 pr-7">
+                <div className="flex flex-wrap items-start justify-between gap-4 pt-5 sm:pl-5 sm:pr-7">
                   <div aria-live="polite" aria-atomic="true">
                     <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-800">
                       {c.results}
@@ -615,7 +615,7 @@ export function FindCrewClient({
                   </div>
                 </div>
 
-                <div className="p-5 pr-7 pt-0">
+                <div className="pb-5 sm:pl-5 sm:pr-7">
                   {searchFailed ? (
                     <div
                       role="alert"
@@ -641,6 +641,7 @@ export function FindCrewClient({
                       {profiles.map((profile) => (
                         <CrewCandidatePassportCard
                           key={profile.crewId}
+                          layout="navy-ticket"
                           compact={advancedOpen}
                           candidate={profile}
                           availabilityValue={
@@ -652,12 +653,12 @@ export function FindCrewClient({
                               : c.notProvided
                           }
                           primaryBadge={
-                            <span className="inline-flex w-fit items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-emerald-800">
+                            <span className={crewCardStyles.activeBadge}>
                               {c.activeProfile}
                             </span>
                           }
                           fourthFact={{
-                            icon: <Clock3 />,
+                            icon: <UserRound />,
                             label: c.memberSince,
                             value: profile.memberSince
                               ? formatMonthYear(profile.memberSince, language)

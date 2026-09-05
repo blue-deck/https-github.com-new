@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Anchor,
   ArrowRight,
   BadgeCheck,
   BriefcaseBusiness,
@@ -10,6 +11,7 @@ import {
   Eye,
   FileText,
   Flag,
+  Globe2,
   Languages,
   LockKeyhole,
   UserRound,
@@ -19,6 +21,7 @@ import { useEffect, useId, useState, type ReactNode } from "react";
 import { formatCrewExperienceDuration } from "../lib/crewExperience";
 import type { EmployerJobApplicationDetails } from "../lib/jobApplications";
 import { AccessibleImageLightbox } from "./AccessibleImageLightbox";
+import cardStyles from "./CrewCandidateCard.module.css";
 
 const crewExperienceLabels = {
   en: { yacht: "Yacht", other: "Other" },
@@ -145,6 +148,7 @@ export function CrewCandidatePassportCard({
   onView,
   experienceLanguage = "en",
   compact = false,
+  layout = "passport",
 }: {
   candidate: CrewCandidateCardProfile;
   availabilityValue: string;
@@ -159,6 +163,7 @@ export function CrewCandidatePassportCard({
   onView?: () => void;
   experienceLanguage?: "en" | "tr";
   compact?: boolean;
+  layout?: "passport" | "navy-ticket";
 }) {
   const titleId = useId();
   const actionLabel = `${copy.viewProfile}: ${candidate.displayName}`;
@@ -176,6 +181,100 @@ export function CrewCandidatePassportCard({
   );
   const actionClassName =
     "bd-focus flex min-h-14 w-full items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800";
+
+  if (layout === "navy-ticket") {
+    return (
+      <article
+        aria-labelledby={titleId}
+        data-crew-card-layout={layout}
+        data-compact={compact}
+        className={cardStyles.card}
+      >
+        <div className={cardStyles.header}>
+          <CandidateAvatar
+            profilePhotoUrl={candidate.profilePhotoUrl}
+            displayName={candidate.displayName}
+            initials={candidate.initials}
+            className={cardStyles.avatar}
+            textClassName={cardStyles.initials}
+            mediaSize={256}
+            decorative
+          />
+          <div className={cardStyles.identity}>
+            <div className={cardStyles.nameAndRole}>
+              <div className={cardStyles.nameRow}>
+                <h3 id={titleId} data-i18n-ignore className={cardStyles.name}>
+                  {candidate.displayName}
+                  <span className="sr-only"> — {copy.nameLocked}</span>
+                </h3>
+                <LockKeyhole className={cardStyles.lock} aria-hidden />
+              </div>
+              <p data-i18n-ignore className={cardStyles.position}>
+                {candidate.currentPosition || copy.crewMember}
+              </p>
+            </div>
+            <div className={cardStyles.badges}>
+              {primaryBadge}
+              {candidate.premiumProfile ? (
+                <span className={cardStyles.premium}>{copy.premium}</span>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        <dl className={cardStyles.facts}>
+          <NavyTicketFact
+            icon={<Globe2 />}
+            label={copy.nationality}
+            value={candidate.nationality || copy.notProvided}
+          />
+          <NavyTicketFact
+            icon={<CalendarDays />}
+            label={copy.availableToStart}
+            value={availabilityValue || copy.notProvided}
+          />
+          <NavyTicketFact
+            icon={<Anchor />}
+            label={copy.experience}
+            value={candidateExperienceValue(
+              candidate,
+              experienceLanguage,
+              profileExperienceLabel(
+                candidate.experienceYears,
+                copy.years,
+                copy.lessThanOneYear,
+                copy.noExperience,
+              ),
+            )}
+          />
+          <NavyTicketFact
+            icon={fourthFact.icon}
+            label={fourthFact.label}
+            value={fourthFact.value}
+          />
+        </dl>
+        <div className={cardStyles.actions}>
+          {profileHref ? (
+            <Link
+              href={profileHref}
+              aria-label={actionLabel}
+              className={`bd-focus ${cardStyles.action}`}
+            >
+              {actionContent}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={onView}
+              aria-label={actionLabel}
+              className={`bd-focus ${cardStyles.action}`}
+            >
+              {actionContent}
+            </button>
+          )}
+        </div>
+      </article>
+    );
+  }
 
   return (
     <article
@@ -306,6 +405,26 @@ export function CrewCandidatePassportCard({
         )}
       </div>
     </article>
+  );
+}
+
+function NavyTicketFact({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+}) {
+  return (
+    <div className={cardStyles.fact}>
+      <dt>
+        <span className={cardStyles.factIcon} aria-hidden>{icon}</span>
+        {label}
+      </dt>
+      <dd data-i18n-ignore>{value}</dd>
+    </div>
   );
 }
 
