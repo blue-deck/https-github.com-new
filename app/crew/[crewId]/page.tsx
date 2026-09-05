@@ -8,21 +8,18 @@ import {
   UserRound,
 } from "lucide-react";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
+import { CrewBackLink } from "../../components/CrewBackLink";
 import { CvScaleFrame } from "../../components/CvScaleFrame";
 import {
   publicStringArray,
   redactPublicContactDetails,
   safeOwnedPublicMediaUrl,
 } from "../../lib/publicCrewSafety";
-import { maskedPersonName } from "../../lib/crewCandidateDataServer";
 import {
   crewExperienceBreakdownFromDateRanges,
   formatCrewExperienceDuration,
 } from "../../lib/crewExperience";
-import {
-  referencesForExperience,
-  unlinkedExperienceReferences,
-} from "../../lib/crewExperienceReferences";
+import { referencesForExperience, unlinkedExperienceReferences } from "../../lib/crewExperienceReferences";
 import { loadEligiblePublicCrewContext } from "../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../lib/site";
 
@@ -83,6 +80,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
   if (!cv) notFound();
 
   const { profile, documents, experiences, references } = cv;
+  const publicCrewId = text(profile, "public_crew_id") || crewId;
   const name = text(profile, "full_name") || "Crew Member";
   const position = primaryPosition(profile);
   const languages = languageEntries(profile.languages);
@@ -104,25 +102,21 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
     `I am a ${position.toLowerCase()} looking for a professional yacht opportunity. I am reliable, guest-focused and ready to contribute to a well-run crew.`;
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <CvScaleFrame>
+    <main className="bd-cv-public-page min-h-screen bg-[#eef3f4] px-4 py-6 text-slate-950 sm:px-6 lg:px-8 print:p-0">
+      <nav aria-label="CV navigation" className="bd-cv-public-navigation mx-auto mb-3 flex max-w-[980px] items-center justify-between gap-4 print:hidden">
+        <a href={absoluteSiteUrl("/")} className="bd-cv-mobile-brand items-center gap-2.5">
+          <BlueDeckMark className="h-9 w-12 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
+          <span>
+            <span className="block text-[10px] font-black tracking-[0.12em] text-[#173f4a]">BlueDeck.app</span>
+            <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.16em] text-slate-500">Crew CV</span>
+          </span>
+        </a>
+        <CrewBackLink href={`/crew/${encodeURIComponent(publicCrewId)}/gallery`} className="ml-auto">
+          Back
+        </CrewBackLink>
+      </nav>
+      <CvScaleFrame responsiveOnMobile>
       <section id="bluedeck-cv" className="bd-cv-root bd-cv-public-sheet mx-auto w-[980px] max-w-none overflow-hidden rounded-[24px] border border-[#b9c8cd] bg-white shadow-2xl shadow-slate-950/14 print:rounded-none print:border-0 print:shadow-none">
-        <div className="bd-cv-public-toolbar flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
-          <div className="flex items-center gap-3">
-            <BlueDeckMark className="h-12 w-16 rounded-2xl border-slate-200 bg-slate-950" imageClassName="p-1" />
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#228fc4]">BlueDeck crew CV</p>
-              <p className="mt-1 text-sm text-slate-500">Public profile opened from Crew ID QR.</p>
-            </div>
-          </div>
-          <a
-            href={absoluteSiteUrl("/")}
-            className="rounded-xl bg-[#06111f] px-4 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/20"
-          >
-            BlueDeck
-          </a>
-        </div>
-
         <section className="bd-cv-mobile-hero" aria-labelledby="bd-cv-mobile-name">
           <div className="bd-cv-mobile-profile">
             <div className="bd-cv-mobile-avatar">
@@ -145,6 +139,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
               <h1
                 id="bd-cv-mobile-name"
                 className="mt-2 break-words text-3xl font-black uppercase leading-tight text-white"
+                data-i18n-ignore
               >
                 {name}
               </h1>
@@ -183,7 +178,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             </div>
 
             <div className="bd-cv-side-stack space-y-8">
-              <SideSection title="Profile">
+              <SideSection title="Profile" className="bd-cv-profile-section">
                 <div className="space-y-2.5">
                   <SidebarLine label="Nationality" value={text(profile, "nationality") || "-"} />
                   <SidebarLine label="Current location" value={text(profile, "location") || "-"} />
@@ -241,13 +236,13 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             </div>
           </aside>
 
-          <section className="bg-white">
+          <section className="bd-cv-content min-w-0 bg-white">
             <header className="bd-cv-header relative bg-transparent pb-3 pt-8 text-white print:py-9">
-              <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 pl-28 shadow-lg shadow-slate-950/10">
-                <div>
+              <div className="bd-cv-name-band mr-10 -ml-10 flex min-h-[150px] items-center rounded-r-full bg-[#20242a] px-8 py-5 pl-28 shadow-lg shadow-slate-950/10">
+                <div className="min-w-0 max-w-full">
                   <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8ed8e6]">Verified Crew Profile</p>
-                  <h1 className="bd-cv-crew-name mt-3 block max-w-full whitespace-nowrap font-black uppercase leading-none text-white" style={crewNameStyle(name)}>{name}</h1>
-                  <p className="mt-3 text-lg font-semibold tracking-[0.26em] text-white/82">{position}</p>
+                  <h1 className="bd-cv-crew-name mt-3 block max-w-full break-words whitespace-normal font-black uppercase leading-tight text-white" style={crewNameStyle(name)}>{name}</h1>
+                  <p className="mt-3 break-words text-lg font-semibold tracking-[0.26em] text-white/82">{position}</p>
                 </div>
               </div>
             </header>
@@ -293,7 +288,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
 
             {standaloneReferences.length > 0 && (
               <CvSection title="References">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="bd-cv-standalone-references grid grid-cols-2 gap-3">
                   {standaloneReferences.slice(0, 4).map((reference) => (
                     <div key={text(reference, "id") || text(reference, "vessel") || text(reference, "company")} className="rounded-xl border border-[#c7d2d6] bg-[#f6f8f8] p-4">
                       <p className="font-black text-[#06111f]">{publicReferenceDisplayName(reference)}</p>
@@ -308,7 +303,7 @@ export default async function PublicCrewCvPage({ params }: PageProps) {
             )}
 
             <footer className="mt-8 border-t border-slate-200 pt-4 text-xs text-slate-400">
-              This CV is generated from BlueDeck profile data and opened through a Crew ID QR code.
+              CV generated from the crew member’s BlueDeck profile.
             </footer>
             </div>
           </section>
@@ -351,10 +346,7 @@ const getPublicCrewCv = cache(async function getPublicCrewCv(crewId: string): Pr
   return {
     profile: {
       public_crew_id: cleanCrewId,
-      full_name: maskedPersonName(
-        redactPublicContactDetails(profile.full_name, 120) ||
-          "BlueDeck candidate",
-      ),
+      full_name: redactPublicContactDetails(profile.full_name, 120) || "Crew Member",
       profile_photo_url: safeOwnedPublicMediaUrl(profile.profile_photo_url, [
         profileId,
         profile.user_id,
@@ -859,7 +851,7 @@ function CvSidebarSignature() {
       <BlueDeckMark className="h-10 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
       <div className="min-w-0">
         <p className="text-[9px] font-black uppercase leading-3 tracking-[0.22em] text-[#2d7482]">BlueDeck.app</p>
-        <p className="mt-0.5 text-[10px] font-bold uppercase leading-3 tracking-[0.16em] text-[#59666d]">YACHT-OS</p>
+        <p className="mt-0.5 text-[10px] font-bold uppercase leading-3 tracking-[0.16em] text-[#59666d]">Crew CV</p>
       </div>
     </div>
   );

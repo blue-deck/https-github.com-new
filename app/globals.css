@@ -2407,6 +2407,10 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   display: none;
 }
 
+.bd-cv-mobile-brand {
+  display: none;
+}
+
 body.bd-pdf-exporting #bluedeck-cv .bd-cv-sheet,
 body.bd-pdf-exporting #bluedeck-cv.bd-cv-root,
 body.bd-pdf-exporting .bd-cv-scale-content {
@@ -2463,6 +2467,19 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 }
 
 @media screen and (max-width: 900px) {
+  .bd-cv-public-page {
+    padding: 0 env(safe-area-inset-right, 0px) max(1.5rem, env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px);
+  }
+
+  .bd-cv-public-navigation {
+    margin-bottom: 0;
+    padding: max(0.75rem, env(safe-area-inset-top, 0px)) 1rem 0.75rem;
+  }
+
+  .bd-cv-mobile-brand {
+    display: flex;
+  }
+
   .bd-cv-scale-wrap-mobile-readable {
     height: auto !important;
     max-width: none;
@@ -2479,20 +2496,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv.bd-cv-public-sheet {
     width: 100% !important;
     max-width: none !important;
-    border-radius: 20px;
-  }
-
-  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-public-toolbar {
-    align-items: stretch;
-    padding: 1rem;
-  }
-
-  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-public-toolbar > div {
-    min-width: 0;
-  }
-
-  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-public-toolbar > a {
-    align-self: flex-start;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow-wrap: anywhere;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-hero {
@@ -2505,17 +2513,22 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-profile {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.875rem;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-avatar {
-    width: 6rem;
-    height: 6rem;
-    flex: 0 0 6rem;
+    width: 5rem;
+    height: 5rem;
+    flex: 0 0 5rem;
     overflow: hidden;
     border: 5px solid #ffffff;
     border-radius: 999px;
     background: #ffffff;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bd-cv-mobile-name {
+    font-size: clamp(1.375rem, 5.5vw, 2rem);
+    overflow-wrap: anywhere;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-mobile-facts {
@@ -2550,23 +2563,39 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-layout {
-    display: block !important;
+    display: flex !important;
+    flex-direction: column;
     min-height: 0 !important;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-sidebar {
-    padding: 1.5rem !important;
+    order: 1;
+    padding: 1.25rem !important;
     background: #eef3f4;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-avatar,
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-sidebar-signature,
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-profile-section,
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-header {
     display: none !important;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-main {
-    padding: 1.5rem !important;
+    padding: 1.25rem !important;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-side-stack > :first-child + section {
+    margin-top: 0;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-standalone-references {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-section > div:first-child {
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-grid {
@@ -2614,6 +2643,7 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-titlebar span {
     justify-self: start;
+    max-width: 100%;
   }
 
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-experience-body > p:first-of-type {
@@ -2629,6 +2659,11 @@ body.bd-pdf-exporting .bd-cv-scale-wrap {
   .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-side-section p {
     font-size: 0.8125rem;
     line-height: 1.25rem;
+  }
+
+  .bd-cv-scale-wrap-mobile-readable #bluedeck-cv .bd-cv-pill-list span {
+    min-width: 0;
+    max-width: 100%;
   }
 }
 

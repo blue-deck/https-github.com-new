@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { Camera, Ship, UserRound } from "lucide-react";
+import { Camera, FileText, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../../../components/BlueDeckLogo";
+import { CrewBackLink } from "../../../components/CrewBackLink";
 import {
   publicStringArray,
   redactPublicContactDetails,
   safeOwnedPublicMediaUrl,
 } from "../../../lib/publicCrewSafety";
-import { maskedPersonName } from "../../../lib/crewCandidateDataServer";
 import { loadEligiblePublicCrewContext } from "../../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../../lib/site";
 import { PublicCrewGallery, type PublicGalleryPhoto } from "./GalleryClient";
@@ -69,13 +70,20 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
   const publicCrewId = text(gallery.profile, "public_crew_id") || crewId;
 
   return (
-    <main className="bd-page-gutter min-h-screen bg-[#eef5f6] px-4 py-6 text-[#06111f] sm:px-6 lg:px-8">
-      <section className="bd-page-frame mx-auto max-w-6xl overflow-hidden rounded-[32px] border border-[#c7d9df] bg-white shadow-2xl shadow-slate-950/10">
-        <header className="relative overflow-hidden bg-[#06111f] px-6 py-7 text-white sm:px-8">
+    <main className="bd-page-gutter min-h-screen min-w-0 bg-[#eef5f6] px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(0.75rem,env(safe-area-inset-top))] text-[#06111f] sm:px-6 sm:pb-6 lg:px-8">
+      <nav aria-label="Crew portal navigation" className="bd-page-frame mx-auto mb-3 flex max-w-6xl items-center justify-between gap-3">
+        <CrewBackLink href={`/find-crew/${encodeURIComponent(publicCrewId)}`} />
+        <Link href="/" aria-label="BlueDeck home" className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1">
+          <BlueDeckMark className="h-9 w-9" />
+          <span className="text-xs font-black tracking-wide text-[#173f4a]">BlueDeck.app</span>
+        </Link>
+      </nav>
+      <section className="bd-page-frame mx-auto max-w-6xl overflow-hidden rounded-2xl border border-[#c7d9df] bg-white shadow-xl shadow-slate-950/5 sm:rounded-[28px]">
+        <header className="relative overflow-hidden bg-[#06111f] px-4 py-6 text-white sm:px-8 sm:py-7">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_20%,rgba(95,211,229,0.22),transparent_30%),linear-gradient(120deg,#06111f_0%,#0d2534_56%,#123748_100%)]" />
-          <div className="relative flex flex-wrap items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25">
+          <div className="relative flex min-w-0 flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-[3px] border-white bg-[#dce8ec] shadow-xl shadow-slate-950/25 sm:h-20 sm:w-20">
                 {profilePhoto ? (
                   <img
                     src={profilePhoto}
@@ -88,49 +96,34 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
                   </div>
                 )}
               </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-[#9be7f1]">Verified BlueDeck Gallery</p>
-                <h1 className="mt-2 text-3xl font-black leading-tight sm:text-4xl">{name}</h1>
-                <p className="mt-1 text-sm font-semibold tracking-[0.22em] text-white/80">{position}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#9be7f1]">Crew portal</p>
+                <h1 className="mt-1 break-words text-2xl font-black leading-tight sm:text-4xl" data-i18n-ignore>{name}</h1>
+                <p className="mt-2 break-words text-sm font-semibold text-white/80">{position}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <BlueDeckMark className="h-11 w-14 !rounded-none !border-0 !bg-transparent !shadow-none" imageClassName="!p-0" />
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#9be7f1]">BlueDeck.app</p>
-                <p className="mt-1 text-sm font-semibold text-white/75">Professional yacht work photos</p>
-              </div>
-            </div>
+            <Link
+              href={`/crew/${encodeURIComponent(publicCrewId)}`}
+              className="bd-focus inline-flex min-h-12 w-full shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-[#173f4a] transition hover:bg-cyan-50 sm:w-auto"
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Open CV
+            </Link>
           </div>
         </header>
 
         <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
-          <aside className="border-b border-[#d8e5e9] bg-[#e8eff1] p-6 lg:border-b-0 lg:border-r">
-            <div className="space-y-5">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#2d7482]">Gallery purpose</p>
-                <p className="mt-2 text-sm font-semibold leading-6 text-[#4b5960]">
-                  A clean visual portfolio of yacht work, service moments, onboard projects and maritime experience.
-                </p>
-              </div>
-              <div className="grid gap-3 rounded-2xl border border-white/70 bg-white/72 p-4 shadow-sm">
+          <aside className="min-w-0 border-b border-[#d8e5e9] bg-[#e8eff1] p-4 lg:border-b-0 lg:border-r lg:p-6">
+              <div className="grid gap-3 rounded-xl border border-white/70 bg-white/72 p-4">
                 <InfoLine label="Crew ID" value={publicCrewId.toUpperCase()} />
                 <InfoLine label="Photos" value={String(gallery.photos.length)} />
                 <InfoLine label="Profile" value={position} />
               </div>
-              <a
-                href={absoluteSiteUrl(`/crew/${encodeURIComponent(publicCrewId)}`)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#173f4a] px-4 py-3 text-sm font-black text-white shadow-lg shadow-[#173f4a]/15 transition hover:bg-[#235f6f]"
-              >
-                <Ship className="h-4 w-4" aria-hidden="true" />
-                Open CV
-              </a>
-            </div>
           </aside>
 
-          <section className="p-4 sm:p-6 lg:p-7">
+          <section className="min-w-0 p-4 sm:p-6 lg:p-7">
             <div className="mb-5 flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#173f4a] text-white shadow-lg shadow-[#173f4a]/15">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#173f4a] text-white shadow-lg shadow-[#173f4a]/15">
                 <Camera className="h-5 w-5" aria-hidden="true" />
               </span>
               <div>
@@ -165,10 +158,7 @@ const getPublicCrewGallery = cache(async function getPublicCrewGallery(crewId: s
   return {
     profile: {
       public_crew_id: cleanCrewId,
-      full_name: maskedPersonName(
-        redactPublicContactDetails(profile.full_name, 120) ||
-          "BlueDeck candidate",
-      ),
+      full_name: redactPublicContactDetails(profile.full_name, 120) || "Crew Member",
       profile_photo_url: safeOwnedPublicMediaUrl(profile.profile_photo_url, [
         profile.id,
         profile.user_id,
@@ -239,9 +229,9 @@ function gallerySortValue(photo: Row) {
 
 function InfoLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-[#d5e0e4] pb-2 text-sm last:border-b-0 last:pb-0">
-      <span className="font-semibold text-[#65727a]">{label}</span>
-      <span className="text-right font-black text-[#06111f]">{value}</span>
+    <div className="flex min-w-0 items-start justify-between gap-4 border-b border-[#d5e0e4] pb-2 text-sm last:border-b-0 last:pb-0">
+      <span className="shrink-0 font-semibold text-[#65727a]">{label}</span>
+      <span className="min-w-0 break-words text-right font-black text-[#06111f]">{value}</span>
     </div>
   );
 }

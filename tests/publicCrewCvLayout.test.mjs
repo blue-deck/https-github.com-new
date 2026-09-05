@@ -8,15 +8,15 @@ async function source(path) {
   return readFile(new URL(path, root), "utf8");
 }
 
-test("public crew CV keeps the desktop composition at every screen width", async () => {
+test("public crew CV uses the full mobile width with a readable layout and preserves the desktop composition", async () => {
   const page = await source("app/crew/[crewId]/page.tsx");
+  const styles = await source("app/globals.css");
   const cvMarkup = page.slice(
-    page.indexOf("<CvScaleFrame>"),
+    page.indexOf("<CvScaleFrame responsiveOnMobile>"),
     page.indexOf("</CvScaleFrame>") + "</CvScaleFrame>".length,
   );
 
-  assert.match(cvMarkup, /<CvScaleFrame>/);
-  assert.doesNotMatch(cvMarkup, /responsiveOnMobile|\b(?:sm|md|lg|xl|2xl):/);
+  assert.match(cvMarkup, /<CvScaleFrame responsiveOnMobile>/);
   assert.match(cvMarkup, /w-\[980px\]/);
   assert.match(cvMarkup, /grid-cols-\[320px_1fr\]/);
   assert.match(cvMarkup, /className="bd-cv-main p-8 print:p-7"/);
@@ -24,7 +24,19 @@ test("public crew CV keeps the desktop composition at every screen width", async
     page,
     /className="bd-cv-experience-grid grid grid-cols-\[136px_1fr\] items-stretch"/,
   );
-  assert.match(cvMarkup, /className="grid grid-cols-2 gap-3"/);
+  assert.match(cvMarkup, /className="bd-cv-standalone-references grid grid-cols-2 gap-3"/);
+  assert.match(styles, /\.bd-cv-scale-wrap-mobile-readable \.bd-cv-scale-content \{\s*width: 100% !important;\s*transform: none !important;/);
+  assert.match(styles, /\.bd-cv-scale-wrap-mobile-readable #bluedeck-cv \.bd-cv-standalone-references \{\s*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(styles, /\.bd-cv-public-page \{\s*padding: 0 env\(safe-area-inset-right, 0px\) max\(1\.5rem, env\(safe-area-inset-bottom, 0px\)\) env\(safe-area-inset-left, 0px\);/);
+});
+
+test("public CV and QR entry show the crew name with a return link and simple branding", async () => {
+  const page = await source("app/crew/[crewId]/page.tsx");
+
+  assert.match(page, /full_name: redactPublicContactDetails\(profile\.full_name, 120\) \|\| "Crew Member"/);
+  assert.doesNotMatch(page, /maskedPersonName|bd-cv-public-toolbar|Public profile opened from Crew ID QR|YACHT-OS/);
+  assert.match(page, /<CrewBackLink href=\{`\/crew\/\$\{encodeURIComponent\(publicCrewId\)\}\/gallery`\}/);
+  assert.match(page, />Crew CV<\/p>/);
 });
 
 test("public crew CV separates yacht and other experience without exposing internal markers", async () => {
