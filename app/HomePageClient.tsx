@@ -5,12 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
-  Check,
-  ClipboardCheck,
-  FileCheck2,
   Search,
   ShieldCheck,
-  UsersRound,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
@@ -21,6 +17,8 @@ import {
   PublicJobListingSkeleton,
 } from "./jobs/PublicJobListingCard";
 import styles from "./homepage.module.css";
+import homeStyles from "./homeContent.module.css";
+import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy, type JournalPreview } from "./HomePageSections";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -60,32 +58,7 @@ const copy = {
     hiringPromptTitle: "Publish and manage roles in one place.",
     hiringPromptText:
       "Create listings, review applications and keep every shortlist organized.",
-    platformEyebrow: "BlueDeck Yacht-OS",
-    platformTitle: "The work behind a well-run yacht, finally connected.",
-    platformIntro:
-      "Recruitment, crew records and daily operations share one clear structure—without another crowded dashboard.",
-    feature1Title: "Hire with context",
-    feature1Text:
-      "Move from a focused profile to a secure invitation and hiring conversation.",
-    feature2Title: "Keep records ready",
-    feature2Text:
-      "Crew details, contracts, certificates and expiry dates stay with the right account.",
-    feature3Title: "Run daily operations",
-    feature3Text:
-      "Checklists, responsibilities and readiness remain visible to the people who own them.",
-    explorePlatform: "Explore Yacht-OS",
-    previewLabel: "Yacht workspace",
-    previewCrew: "Crew",
-    previewRecords: "Records",
-    previewOperations: "Operations",
-    trustEyebrow: "Private by design",
-    trustTitle: "A calmer system for decisions that matter.",
-    trustText:
-      "Crew discovery can show faces in profile and gallery photos, along with selected professional and physical details. Full names, contact details and private documents remain protected.",
-    trust1: "Role-based account access",
-    trust2: "Visible crew profiles, protected private data",
-    trust3: "Traceable yacht workflows",
-    getStarted: "Create a BlueDeck account",
+
   },
   tr: {
     eyebrow: "Yat kariyeri · işe alım · operasyon",
@@ -122,38 +95,15 @@ const copy = {
     hiringPromptTitle: "İlanları tek yerden yayınlayın ve yönetin.",
     hiringPromptText:
       "İlan oluşturun, başvuruları inceleyin ve aday listelerinizi düzenli tutun.",
-    platformEyebrow: "BlueDeck Yacht-OS",
-    platformTitle: "İyi yönetilen bir yatın arkasındaki işler, artık bağlantılı.",
-    platformIntro:
-      "İşe alım, mürettebat kayıtları ve günlük operasyonlar kalabalık bir panel yaratmadan tek yapıda buluşur.",
-    feature1Title: "Doğru bilgiyle işe alın",
-    feature1Text:
-      "Odaklı profilden güvenli davete ve işe alım görüşmesine kesintisiz ilerleyin.",
-    feature2Title: "Kayıtları hazır tutun",
-    feature2Text:
-      "Mürettebat bilgileri, kontratlar, sertifikalar ve tarihler doğru hesapla bağlı kalır.",
-    feature3Title: "Günlük operasyonu yönetin",
-    feature3Text:
-      "Kontrol listeleri, sorumluluklar ve hazırlık durumu doğru kişilere görünür kalır.",
-    explorePlatform: "Yacht-OS’u keşfet",
-    previewLabel: "Yat çalışma alanı",
-    previewCrew: "Mürettebat",
-    previewRecords: "Kayıtlar",
-    previewOperations: "Operasyon",
-    trustEyebrow: "Gizlilik temelden tasarlandı",
-    trustTitle: "Önemli kararlar için daha sakin bir sistem.",
-    trustText:
-      "Crew keşfinde profil ve galeri fotoğraflarındaki yüzler ile seçili profesyonel ve fiziksel bilgiler gösterilebilir. Tam adlar, iletişim bilgileri ve özel belgeler korumalı kalır.",
-    trust1: "Rol bazlı hesap erişimi",
-    trust2: "Görünür crew profilleri, korumalı özel veriler",
-    trust3: "İzlenebilir yat iş akışları",
-    getStarted: "BlueDeck hesabı oluştur",
+
   },
 } as const;
 
-export default function HomePageClient() {
+export default function HomePageClient({ articles }: { articles: JournalPreview[] }) {
   const { language } = useLanguage();
   const c = copy[language];
+  const hc = homeCopy[language];
+  const [department, setDepartment] = useState("");
   const jobViewer = useJobListingViewer();
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [jobs, setJobs] = useState<PublicJobCard[]>([]);
@@ -199,21 +149,14 @@ export default function HomePageClient() {
             : jobViewer.kind === "signed-in"
               ? { href: "/dashboard", label: c.openDashboard }
               : null;
-  const trustAction = isEmployerViewer
-    ? { href: "/hiring", label: c.openHiring }
-    : jobViewer.kind === "signed-in" &&
-        (jobViewer.role === "crew" || jobViewer.role === "captain")
-      ? { href: "/profile", label: c.manageProfile }
-      : jobViewer.kind === "signed-in"
-        ? { href: "/dashboard", label: c.openDashboard }
-        : { href: "/login?mode=signup", label: c.getStarted };
 
   useEffect(() => {
     const controller = new AbortController();
 
     async function loadJobs() {
       try {
-        const response = await fetch("/api/jobs", {
+        const query = department ? `?department=${encodeURIComponent(department)}` : "";
+        const response = await fetch(`/api/jobs${query}`, {
           cache: "no-store",
           headers: { Accept: "application/json" },
           signal: controller.signal,
@@ -225,25 +168,28 @@ export default function HomePageClient() {
         }
 
         const parsedJobs = parsePublicJobCards(payload.jobs);
-        if (!parsedJobs) throw new Error("jobs_response_invalid");
+        if (!parsedJobs || !Array.isArray(payload.jobs) || parsedJobs.length !== payload.jobs.length) {
+          throw new Error("jobs_response_invalid");
+        }
 
+        if (controller.signal.aborted) return;
         setJobs(parsedJobs.slice(0, 3));
         setLoadState("ready");
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return;
         setLoadState("error");
       }
     }
 
     void loadJobs();
     return () => controller.abort();
-  }, []);
+  }, [department]);
 
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page}`}>
       <PublicHeader />
 
-      <main id="main-content">
+      <main id="main-content" data-i18n-ignore>
         <section className={styles.hero} aria-labelledby="home-heading">
           <div className={styles.heroVisual} aria-hidden="true">
             <Image
@@ -281,65 +227,51 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <section className={styles.jobsSection} aria-labelledby="jobs-heading">
-          <div className={styles.container}>
-            <div className={styles.sectionHeadingRow}>
+        <HomeJobSearch language={language} />
+
+        <section className={homeStyles.jobsSection} aria-labelledby="jobs-heading">
+          <div className={homeStyles.container}>
+            <div className={homeStyles.headingRow}>
               <div>
-                <h2 id="jobs-heading" className={styles.eyebrow}>
-                  {c.jobsEyebrow}
-                </h2>
-                <p className={styles.sectionIntro}>{c.jobsIntro}</p>
+                <p className={homeStyles.eyebrow}>{c.jobsEyebrow}</p>
+                <h2 id="jobs-heading" className={homeStyles.title}>{hc.jobsTitle}</h2>
+                <p className={homeStyles.intro}>{c.jobsIntro}</p>
               </div>
-              <Link href="/jobs" className={styles.sectionLink}>
-                {c.allJobs}
-                <ArrowRight aria-hidden />
+              <Link href={department ? `/jobs?department=${encodeURIComponent(department)}` : "/jobs"} className={homeStyles.textLink}>
+                {c.allJobs}<ArrowRight aria-hidden />
               </Link>
             </div>
-
-            <div className={styles.jobsGrid} aria-live="polite">
+            <div className={homeStyles.filters} role="group" aria-label={hc.department}>
+              {["", "Deck", "Interior", "Engineering", "Galley"].map((value) => (
+                <button key={value} type="button" aria-pressed={department === value} aria-controls="home-job-results" onClick={() => {
+                  if (department === value) return;
+                  setLoadState("loading");
+                  setDepartment(value);
+                }}>{value ? departmentLabel(value, language) : hc.all}</button>
+              ))}
+            </div>
+            <div id="home-job-results" className={homeStyles.jobsGrid} data-count={loadState === "loading" ? 3 : jobs.length + (jobs.length > 0 && jobs.length < 3 && rolePrompt ? 1 : 0)} aria-live="polite" aria-busy={loadState === "loading"}>
               {loadState === "loading" ? (
                 <>
-                  {[0, 1].map((item) => (
-                    <PublicJobListingSkeleton key={item} />
-                  ))}
+                  {[0, 1, 2].map((item) => <PublicJobListingSkeleton key={item} compact appearance="homepage" />)}
                   <span className="sr-only">{c.loadingJobs}</span>
                 </>
               ) : loadState === "ready" && jobs.length > 0 ? (
                 <>
-                  {jobs.map((job) => (
-                    <PublicJobListingCard
-                      key={job.id}
-                      job={job}
-                      language={language}
-                      viewer={jobViewer}
-                    />
-                  ))}
-                  {jobs.length < 3 && rolePrompt ? (
-                    <RolePrompt {...rolePrompt} />
-                  ) : null}
+                  {jobs.map((job) => <PublicJobListingCard key={job.id} job={job} language={language} viewer={jobViewer} compact appearance="homepage" />)}
+                  {jobs.length < 3 && rolePrompt ? <RolePrompt {...rolePrompt} /> : null}
                 </>
               ) : (
-                <div className={styles.jobsEmpty}>
+                <div className={homeStyles.jobsEmpty}>
                   <Search aria-hidden />
                   <div>
-                    <h3>
-                      {loadState === "error"
-                        ? c.jobsErrorTitle
-                        : c.noJobsTitle}
-                    </h3>
-                    <p>
-                      {loadState === "error"
-                        ? c.jobsErrorText
-                        : isEmployerViewer
-                          ? c.noJobsEmployerText
-                          : c.noJobsText}
-                    </p>
+                    <h3>{loadState === "error" ? c.jobsErrorTitle : department ? hc.filteredEmpty : c.noJobsTitle}</h3>
+                    <p>{loadState === "error" ? c.jobsErrorText : department ? hc.filteredText : isEmployerViewer ? c.noJobsEmployerText : c.noJobsText}</p>
                   </div>
-                  {noJobsAction ? (
-                    <Link href={noJobsAction.href}>
-                      {noJobsAction.label}
-                      <ArrowRight aria-hidden />
-                    </Link>
+                  {loadState !== "error" && department ? (
+                    <button type="button" className={homeStyles.textLink} onClick={() => { setLoadState("loading"); setDepartment(""); }}>{hc.clearFilter}<ArrowRight aria-hidden /></button>
+                  ) : noJobsAction ? (
+                    <Link href={noJobsAction.href} className={homeStyles.textLink}>{noJobsAction.label}<ArrowRight aria-hidden /></Link>
                   ) : null}
                 </div>
               )}
@@ -347,119 +279,10 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <section
-          className={styles.platformSection}
-          aria-labelledby="platform-heading"
-        >
-          <div className={`${styles.container} ${styles.platformGrid}`}>
-            <div className={styles.platformVisual}>
-              <Image
-                src="/bluedeck-platform-home.webp"
-                alt=""
-                fill
-                sizes="(max-width: 900px) 100vw, 48vw"
-                className={styles.platformImage}
-              />
-              <div className={styles.previewCard}>
-                <span>{c.previewLabel}</span>
-                <div>
-                  <small>
-                    <UsersRound aria-hidden />
-                    {c.previewCrew}
-                  </small>
-                  <small>
-                    <FileCheck2 aria-hidden />
-                    {c.previewRecords}
-                  </small>
-                  <small>
-                    <ClipboardCheck aria-hidden />
-                    {c.previewOperations}
-                  </small>
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.platformCopy}>
-              <p className={styles.eyebrow}>{c.platformEyebrow}</p>
-              <h2 id="platform-heading" className={styles.sectionTitle}>
-                {c.platformTitle}
-              </h2>
-              <p className={styles.sectionIntro}>{c.platformIntro}</p>
-
-              <div className={styles.featureList}>
-                <FeatureRow
-                  icon={<UsersRound aria-hidden />}
-                  title={c.feature1Title}
-                  text={c.feature1Text}
-                />
-                <FeatureRow
-                  icon={<FileCheck2 aria-hidden />}
-                  title={c.feature2Title}
-                  text={c.feature2Text}
-                />
-                <FeatureRow
-                  icon={<ClipboardCheck aria-hidden />}
-                  title={c.feature3Title}
-                  text={c.feature3Text}
-                />
-              </div>
-
-              <Link href="/yacht-os" className={styles.darkButton}>
-                {c.explorePlatform}
-                <ArrowRight aria-hidden />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.trustSection} aria-labelledby="trust-heading">
-          <div className={`${styles.container} ${styles.trustGrid}`}>
-            <div>
-              <p className={styles.eyebrow}>{c.trustEyebrow}</p>
-              <h2 id="trust-heading" className={styles.trustTitle}>
-                {c.trustTitle}
-              </h2>
-              <p className={styles.trustIntro}>{c.trustText}</p>
-            </div>
-            <div className={styles.trustActions}>
-              <ul>
-                {[c.trust1, c.trust2, c.trust3].map((item) => (
-                  <li key={item}>
-                    <Check aria-hidden />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link href={trustAction.href} className={styles.primaryButton}>
-                {trustAction.label}
-                <ArrowRight aria-hidden />
-              </Link>
-            </div>
-          </div>
-        </section>
+        <HomePageSections language={language} viewer={jobViewer} articles={articles} />
       </main>
 
       <PublicFooter />
-    </div>
-  );
-}
-
-function FeatureRow({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className={styles.featureRow}>
-      <span>{icon}</span>
-      <div>
-        <h3>{title}</h3>
-        <p>{text}</p>
-      </div>
     </div>
   );
 }
@@ -478,14 +301,14 @@ function RolePrompt({
   href: string;
 }) {
   return (
-    <aside className={styles.rolePrompt}>
+    <aside className={homeStyles.rolePrompt}>
       <ShieldCheck aria-hidden />
       <div>
-        <p>{eyebrow}</p>
+        <p className={homeStyles.eyebrow}>{eyebrow}</p>
         <h3>{title}</h3>
         <span>{text}</span>
       </div>
-      <Link href={href}>
+      <Link href={href} className={homeStyles.textLink}>
         {action}
         <ArrowRight aria-hidden />
       </Link>

@@ -17,11 +17,13 @@ import { endWebBrowserSession } from "../lib/webBrowserSession";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useLanguage } from "./LanguageProvider";
+import styles from "./PublicSiteChrome.module.css";
 
 const publicNavigation = [
   { labelKey: "nav.findJob", href: "/jobs", desktop: true },
   { labelKey: "nav.findCrew", href: "/find-crew", desktop: true },
   { labelKey: "nav.forYachts", href: "/yacht-os", desktop: true },
+  { labelKey: "nav.journal", href: "/journal", desktop: true },
   { labelKey: "nav.about", href: "/about", desktop: true },
   { labelKey: "nav.trust", href: "/trust", desktop: false },
   { labelKey: "nav.contact", href: "/contact", desktop: true },
@@ -271,7 +273,7 @@ export function PublicFooter() {
 
   return (
     <footer className="bd-public-footer">
-      <div className="bd-public-footer-grid">
+      <div className={`bd-public-footer-grid ${styles.footerGrid}`}>
         <div className="bd-public-footer-brand">
           <BlueDeckLogoLink
             href="/"
@@ -287,6 +289,14 @@ export function PublicFooter() {
             [t("nav.forYachts"), "/yacht-os"],
             [t("nav.findJob"), "/jobs"],
             [t("nav.findCrew"), "/find-crew"],
+          ]}
+        />
+        <FooterColumn
+          title={t("footer.resources")}
+          links={[
+            [t("nav.journal"), "/journal"],
+            [t("footer.careerGuides"), "/journal/crew-profile-guide"],
+            [t("footer.lifeOnboard"), "/journal/life-on-board"],
           ]}
         />
         <FooterColumn

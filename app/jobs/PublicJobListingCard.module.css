@@ -302,6 +302,42 @@
 .actionPlaceholder { height: 47px; border-radius: 10px; }
 
 .skeleton > * { animation: ticket-pulse 1.5s ease-in-out infinite; }
+
+/* The public homepage keeps the same job data and actions in a quiet, light card. */
+.card[data-appearance="homepage"] {
+  display: flex;
+  flex-direction: column;
+  border-radius: .85rem;
+  box-shadow: none;
+}
+.card[data-appearance="homepage"] .header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2eaf2;
+  background: linear-gradient(145deg, #f2f7fc, #fff 80%);
+  color: #102b47;
+}
+.card[data-appearance="homepage"] .headline { grid-template-columns: 1fr; gap: .65rem; }
+.card[data-appearance="homepage"] .title { font-size: clamp(1.5rem, 2.1vw, 1.9rem); line-height: 1.2; }
+.card[data-appearance="homepage"] .salary { max-width: none; font-size: 1rem; text-align: left; color: #2b629f; font-weight: 600; }
+.card[data-appearance="homepage"] .meta { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.25rem; }
+.card[data-appearance="homepage"] .metaItem { font-size: .8125rem; line-height: 1.5; gap: .4rem; }
+.card[data-appearance="homepage"] .metaItem[data-variant="employment"] { background: #e8f1fb; color: #2a5e98; }
+.card[data-appearance="homepage"] .metaItem[data-variant="location"] { background: #f0f4f8; color: #405a73; }
+.card[data-appearance="homepage"] .metaItem[data-variant="posted"] { flex-basis: 100%; color: #65788c; margin-top: .2rem; }
+.card[data-appearance="homepage"] .details { display: flex; flex-wrap: wrap; gap: .75rem 1rem; padding: 1.5rem; background: #fff; }
+.card[data-appearance="homepage"] .info { min-height: 0; flex: 1 1 42%; flex-direction: row; align-items: start; justify-content: start; gap: .6rem; padding: 0; text-align: left; }
+.card[data-appearance="homepage"] .info::after,
+.card[data-appearance="homepage"] .info::before { display: none !important; }
+.card[data-appearance="homepage"] .infoIcon { color: #6684a3; }
+.card[data-appearance="homepage"] .infoIcon svg { width: 1.125rem; height: 1.125rem; }
+.card[data-appearance="homepage"] .infoValue { font-size: .875rem; line-height: 1.5; }
+.card[data-appearance="homepage"] .actions { margin-top: auto; padding: 1.1rem 1.5rem; gap: .65rem; }
+.card[data-appearance="homepage"] .primaryAction,
+.card[data-appearance="homepage"] .secondaryAction { font-size: .875rem; border-radius: .5rem; padding: .7rem .65rem; }
+.card[data-appearance="homepage"] .primaryAction { background: #285fa6; }
+.card[data-appearance="homepage"] .primaryAction:hover { background: #1c4e8f; }
+.card[data-appearance="homepage"] .secondaryAction { border-color: #c5d4e5; color: #275b96; }
+.card[data-appearance="homepage"] :is(.titlePlaceholder, .salaryPlaceholder, .metaPlaceholder) { background: #dfe8f2; }
 @keyframes ticket-pulse { 50% { opacity: 0.55; } }
 @media (prefers-reduced-motion: reduce) {
   .skeleton > * { animation: none; }

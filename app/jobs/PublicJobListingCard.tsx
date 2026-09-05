@@ -30,11 +30,13 @@ export function PublicJobListingCard({
   language,
   viewer,
   compact = false,
+  appearance = "default",
 }: {
   job: PublicJobCard;
   language: "en" | "tr";
   viewer: JobListingViewer;
   compact?: boolean;
+  appearance?: "default" | "homepage";
 }) {
   const c = cardCopy[language];
   const salary = formatJobSalary(job.salary, language);
@@ -59,6 +61,7 @@ export function PublicJobListingCard({
       aria-labelledby={titleId}
       data-job-card-layout="navy-ticket"
       data-compact={compact}
+      data-appearance={appearance}
       className={styles.card}
     >
       <div className={styles.header}>
@@ -136,11 +139,13 @@ export function PublicJobListingCard({
 
 export function PublicJobListingSkeleton({
   compact = false,
+  appearance = "default",
 }: {
   compact?: boolean;
+  appearance?: "default" | "homepage";
 }) {
   return (
-    <div className={`${styles.card} ${styles.skeleton}`} data-compact={compact} aria-hidden="true">
+    <div className={`${styles.card} ${styles.skeleton}`} data-compact={compact} data-appearance={appearance} aria-hidden="true">
       <div className={styles.header}>
         <div className={styles.headline}>
           <div className={styles.titlePlaceholder} />

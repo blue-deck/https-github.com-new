@@ -1,0 +1,19 @@
+.footerGrid {
+  grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, .8fr));
+  gap: clamp(1.5rem, 3vw, 3.5rem);
+}
+.footerGrid :global(.bd-public-footer-links) a,
+.footerGrid :global(.bd-public-footer-contact) :is(a, p):not(:global(.bd-public-footer-title)) {
+  font-size: .875rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.footerGrid > :global(.bd-public-footer-contact) { grid-column: auto; }
+@media (max-width: 1100px) {
+  .footerGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .footerGrid > :global(.bd-public-footer-brand) { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .footerGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
+  .footerGrid > :global(.bd-public-footer-contact) { grid-column: auto; }
+}
