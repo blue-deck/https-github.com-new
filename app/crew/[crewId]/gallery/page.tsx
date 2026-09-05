@@ -112,28 +112,18 @@ export default async function PublicCrewGalleryPage({ params }: PageProps) {
           </div>
         </header>
 
-        <div className="grid min-w-0 gap-0 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
-          <aside className="min-w-0 border-b border-[#d8e5e9] bg-[#e8eff1] p-4 lg:border-b-0 lg:border-r lg:p-6">
-              <div className="grid gap-3 rounded-xl border border-white/70 bg-white/72 p-4">
-                <InfoLine label="Crew ID" value={publicCrewId.toUpperCase()} />
-                <InfoLine label="Photos" value={String(gallery.photos.length)} />
-                <InfoLine label="Profile" value={position} />
-              </div>
-          </aside>
-
-          <section className="min-w-0 p-4 sm:p-6 lg:p-7">
-            <div className="mb-5 flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#173f4a] text-white shadow-lg shadow-[#173f4a]/15">
-                <Camera className="h-5 w-5" aria-hidden="true" />
-              </span>
-              <div>
-                <h2 className="text-lg font-black text-[#06111f]">Photo Gallery</h2>
-                <p className="text-sm font-semibold text-[#64727a]">Tap a photo to view it larger.</p>
-              </div>
+        <section className="min-w-0 p-4 sm:p-6 lg:p-7">
+          <div className="mb-5 flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#173f4a] text-white shadow-lg shadow-[#173f4a]/15">
+              <Camera className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-lg font-black text-[#06111f]">Photo Gallery</h2>
+              <p className="text-sm font-semibold text-[#64727a]">Tap a photo to view it larger.</p>
             </div>
-            <PublicCrewGallery photos={gallery.photos} crewName={name} />
-          </section>
-        </div>
+          </div>
+          <PublicCrewGallery photos={gallery.photos} crewName={name} />
+        </section>
       </section>
     </main>
   );
@@ -225,15 +215,6 @@ function gallerySortValue(photo: Row) {
 
   const createdAt = Date.parse(text(photo, "created_at"));
   return createdAt ? -createdAt : 0;
-}
-
-function InfoLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 items-start justify-between gap-4 border-b border-[#d5e0e4] pb-2 text-sm last:border-b-0 last:pb-0">
-      <span className="shrink-0 font-semibold text-[#65727a]">{label}</span>
-      <span className="min-w-0 break-words text-right font-black text-[#06111f]">{value}</span>
-    </div>
-  );
 }
 
 function publicCrewMediaProxyUrl(
