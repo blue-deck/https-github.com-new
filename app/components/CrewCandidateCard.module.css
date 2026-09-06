@@ -30,6 +30,8 @@
 .avatar {
   width: 76px;
   height: 84px;
+  transform: translateX(-2px) scale(1.2);
+  transform-origin: center;
   border: 1px solid #cadff2;
   border-radius: 12px;
   background: #e4effa;
