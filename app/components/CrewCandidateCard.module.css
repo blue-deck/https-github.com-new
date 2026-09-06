@@ -120,14 +120,31 @@
 }
 @media (prefers-reduced-motion: reduce) { .card, .action { transition: none; } }
 
-@container (max-width: 339px) {
-  .content { gap: 18px; padding: 18px 15px; }
+@container (width < 680px) {
+  .content { gap: 14px; padding: 14px 18px; }
   .header { gap: 12px; }
-  .avatar { width: 64px; height: 74px; }
+  .avatar { width: 99px; height: 109px; transform: none; }
+  .facts { display: block; padding-top: 10px; }
+  .fact {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0;
+  }
+  .fact + .fact { border-left: 0; border-top: 1px solid var(--card-line); }
+  .fact dt { display: flex; align-items: center; gap: 8px; line-height: 1.4; }
+  .fact dd { margin: 0; font-size: 13px; line-height: 1.4; text-align: right; }
+  .factIcon { flex: 0 0 auto; margin-bottom: 0; }
+  .factIcon svg { width: 16px; height: 16px; }
+}
+
+@container (width < 340px) {
+  .content { padding-inline: 16px; }
+  .avatar { width: 84px; height: 96px; }
   .name { font-size: 21px; }
   .nameRow { gap: 6px; }
   .premium { width: 24px; height: 24px; }
-  .fact { padding-inline: 8px; }
 }
 
 @container (min-width: 680px) {
