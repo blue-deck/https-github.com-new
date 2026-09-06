@@ -362,7 +362,14 @@ export function crewExperienceMatchesFilters(
 
   if (experienceType === "yacht") return yachtMatches;
   if (experienceType === "other") return otherMatches;
-  return minimumExperience === null || yachtMatches || otherMatches;
+  if (minimumExperience === null) return true;
+  return experienceMeetsMinimum(
+    Math.max(
+      experience.yachtExperienceYears,
+      experience.otherExperienceYears,
+    ),
+    minimumExperience,
+  );
 }
 
 function readSearchParam(source: SearchParamSource, key: string) {
@@ -480,13 +487,14 @@ function experienceMeetsMinimum(
   years: number,
   option: JobMinimumYachtExperience | null,
 ) {
-  if (!Number.isFinite(years) || years <= 0) return false;
+  if (!Number.isFinite(years) || years < 0) return false;
+  if (option === "0_6_months") {
+    return crewExperienceMatchesYachtExperienceOption(years, option);
+  }
+  if (years === 0) return false;
   if (option === null) return true;
 
-  const minimum = option === "0_6_months"
-    ? 0.5
-    : crewYachtExperienceBounds[option].minimum;
-  return years >= minimum;
+  return years >= crewYachtExperienceBounds[option].minimum;
 }
 
 function setText(params: URLSearchParams, key: string, value: string) {

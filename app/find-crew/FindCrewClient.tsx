@@ -555,6 +555,7 @@ export function FindCrewClient({
                     />
                     <MinimumExperienceFilterSelect
                       label={c.minimumExperience}
+                      emptyOptionLabel={c.any}
                       value={draftFilters.minimumExperience}
                       onChange={(value) =>
                         setDraftFilter("minimumExperience", value)
@@ -992,11 +993,13 @@ function formatFilterOption(option: string, language: Language) {
 
 function MinimumExperienceFilterSelect({
   label,
+  emptyOptionLabel,
   value,
   onChange,
   language,
 }: {
   label: string;
+  emptyOptionLabel: string;
   value: JobMinimumYachtExperience | null;
   onChange: (value: JobMinimumYachtExperience | null) => void;
   language: Language;
@@ -1009,24 +1012,14 @@ function MinimumExperienceFilterSelect({
         onChange((nextValue as JobMinimumYachtExperience) || null)
       }
     >
-      <option value="">{label}</option>
+      <option value="">{emptyOptionLabel}</option>
       {findCrewMinimumExperienceThresholds.map((option) => (
         <option key={option} value={option}>
-          {formatFindCrewMinimumExperience(option, language)}
+          {formatJobMinimumYachtExperience(option, language)}
         </option>
       ))}
     </CrewFilterSelectControl>
   );
-}
-
-function formatFindCrewMinimumExperience(
-  value: JobMinimumYachtExperience,
-  language: Language,
-) {
-  if (value === "0_6_months") {
-    return language === "tr" ? "6+ ay" : "6+ months";
-  }
-  return formatJobMinimumYachtExperience(value, language);
 }
 
 function ExperienceTypeFilterSelect({
