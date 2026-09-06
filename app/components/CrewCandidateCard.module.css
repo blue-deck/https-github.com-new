@@ -4,26 +4,34 @@
   --card-line: #dbe5ed;
   container-type: inline-size;
   overflow: hidden;
-  border: 1px solid #d6e1eb;
-  border-radius: 20px;
-  background: #fff;
-  color: var(--card-navy);
-  box-shadow: 0 8px 22px -18px rgb(6 29 56 / 28%);
+  border: 1px solid var(--card-navy);
+  border-radius: 18px;
+  background: var(--card-navy);
+  color: #fff;
+  box-shadow: 0 10px 28px -20px rgb(6 29 56 / 35%);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.content {
+  display: grid;
+  align-items: center;
+  gap: 22px;
+  padding: 22px;
 }
 
 .header {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 16px;
-  padding: 18px 16px;
   background: var(--card-navy);
   color: #fff;
 }
 
 .avatar {
-  width: 100px;
-  height: 110px;
-  border: 1px solid rgb(255 255 255 / 24%);
+  width: 76px;
+  height: 84px;
+  border: 1px solid rgb(255 255 255 / 25%);
   border-radius: 12px;
   background: #e8eff4;
   color: var(--card-navy);
@@ -32,7 +40,7 @@
 .initials { font-size: 24px; font-weight: 600; }
 .identity, .nameAndRole { min-width: 0; }
 .identity { flex: 1; }
-.nameRow { display: flex; align-items: baseline; gap: 8px; }
+.nameRow { display: flex; align-items: center; gap: 8px; }
 
 .name {
   min-width: 0;
@@ -43,64 +51,47 @@
   letter-spacing: -0.035em;
 }
 
-.lock { width: 15px; height: 15px; flex: 0 0 auto; color: #d5e1ee; }
-.position { margin-top: 6px; overflow-wrap: anywhere; font-size: 16px; font-weight: 450; line-height: 1.4; color: #fff; }
-.badges { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 15px; }
-
-.activeBadge, .premium {
+.lock { width: 13px; height: 13px; flex: 0 0 auto; color: #a8bccf; }
+.position { margin-top: 7px; overflow-wrap: anywhere; font-size: 15px; font-weight: 450; line-height: 1.45; color: #d5e8f2; }
+.premium {
   display: inline-flex;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 auto;
   align-items: center;
-  min-height: 27px;
-  max-width: 100%;
-  padding: 5px 9px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
+  justify-content: center;
+  border: 1px solid rgb(165 243 252 / 25%);
+  border-radius: 50%;
+  background: rgb(165 243 252 / 9%);
+  color: #a5f3fc;
 }
-
-.activeBadge { background: var(--card-teal); color: #fff; }
-.premium { background: #effbfe; color: #07526a; }
+.premium svg { width: 19px; height: 19px; stroke-width: 1.8; }
 
 .facts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   margin: 0;
-  padding: 12px 14px 0;
-  background: #fff;
+  padding: 20px 0 0;
+  border-top: 1px solid rgb(219 229 237 / 18%);
 }
 
 .fact {
   position: relative;
-  display: flex;
   min-width: 0;
-  min-height: 89px;
-  flex-direction: column;
-  justify-content: center;
-  padding: 16px 9px 16px 40px;
+  padding: 0 12px;
   overflow-wrap: anywhere;
 }
+.fact:first-child { padding-left: 0; }
+.fact:last-child { padding-right: 0; }
+.fact + .fact { border-left: 1px solid rgb(219 229 237 / 18%); }
+.fact dt { font-size: 12px; line-height: 1.5; font-weight: 450; color: #b4c7d8; }
+.fact dd { margin: 6px 0 0; font-size: 14px; font-weight: 550; line-height: 1.5; letter-spacing: -0.015em; }
+.factIcon { display: block; margin-bottom: 8px; color: #9cdae9; }
+.factIcon svg { width: 19px; height: 19px; stroke-width: 1.6; }
 
-.fact:nth-child(even) { padding-left: 51px; padding-right: 0; }
-.fact:nth-child(n + 3) { border-top: 1px solid var(--card-line); }
-.fact:nth-child(odd)::after {
-  content: "";
-  position: absolute;
-  top: 13px;
-  right: 0;
-  bottom: 13px;
-  width: 1px;
-  background: var(--card-line);
-}
-
-.fact dt { font-size: 12px; line-height: 1.4; font-weight: 400; color: #647184; }
-.fact dd { margin: 4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.4; letter-spacing: -0.02em; }
-.factIcon { position: absolute; top: 50%; left: 1px; transform: translateY(-50%); color: var(--card-teal); }
-.fact:nth-child(even) .factIcon { left: 14px; }
-.factIcon svg { width: 27px; height: 27px; stroke-width: 1.6; }
-
-.actions { padding: 11px 14px 14px; background: #fff; }
+.actions { min-width: 0; }
 .action {
   display: flex;
   width: 100%;
@@ -108,70 +99,48 @@
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 18px;
   padding: 12px 15px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  background: var(--card-navy);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
+  border: 1px solid #fff;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--card-navy);
+  font-size: 14px;
+  font-weight: 650;
   line-height: 1.4;
   text-decoration: none;
-  transition: background-color 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease;
 }
 .action > span { min-width: 0; overflow-wrap: anywhere; }
-.action svg { width: 21px; height: 21px; flex-shrink: 0; stroke-width: 1.7; }
-.action:focus-visible { outline: 3px solid var(--card-teal); outline-offset: 3px; }
-@media (hover: hover) { .action:hover { background: #0a3558; } }
-@media (prefers-reduced-motion: reduce) { .action { transition: none; } }
+.action svg { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.8; }
+.action:focus-visible { outline: 3px solid #a5f3fc; outline-offset: 4px; }
+.card:focus-within { border-color: #91d6e5; }
+@media (hover: hover) {
+  .card:hover { border-color: #558ba1; box-shadow: 0 14px 32px -20px rgb(6 29 56 / 50%); }
+  .action:hover { background: #e4f7fc; border-color: #e4f7fc; }
+}
+@media (prefers-reduced-motion: reduce) { .card, .action { transition: none; } }
 
 @container (max-width: 339px) {
-  .header { gap: 12px; padding: 16px 13px; }
-  .avatar { width: 78px; height: 94px; }
+  .content { gap: 18px; padding: 18px 15px; }
+  .header { gap: 12px; }
+  .avatar { width: 64px; height: 74px; }
   .name { font-size: 21px; }
-  .badges { gap: 6px; margin-top: 12px; }
-  .activeBadge, .premium { padding-inline: 7px; }
-  .facts { padding-inline: 12px; }
-  .fact { padding-left: 30px; padding-right: 7px; }
-  .fact:nth-child(even) { padding-left: 40px; }
-  .factIcon svg { width: 22px; height: 22px; }
-  .fact:nth-child(even) .factIcon { left: 10px; }
-  .fact dd { font-size: 14px; }
+  .nameRow { gap: 6px; }
+  .premium { width: 24px; height: 24px; }
+  .fact { padding-inline: 8px; }
 }
 
-@container (min-width: 560px) {
-  .header { gap: 22px; padding: 22px 26px; }
-  .avatar { width: 94px; height: 100px; }
-  .name { font-size: 27px; }
-  .position { font-size: 17px; }
-  .activeBadge, .premium { font-size: 13px; padding: 6px 11px; }
-  .facts { padding: 13px 26px 0; }
-  .fact { min-height: 95px; padding-left: 44px; }
-  .fact:nth-child(even) { padding-left: 62px; }
-  .fact:nth-child(even) .factIcon { left: 20px; }
-  .fact dt { font-size: 13px; }
-  .fact dd { font-size: 16px; }
-  .factIcon svg { width: 29px; height: 29px; }
-  .actions { padding: 13px 26px 20px; }
-  .action { min-height: 49px; padding-inline: 18px; font-size: 16px; }
+@container (min-width: 680px) {
+  .content { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.8fr); gap: 18px 26px; padding: 24px; }
+  .facts { border-top: 0; border-left: 1px solid rgb(219 229 237 / 18%); padding: 0 0 0 24px; }
+  .actions { grid-column: 1 / -1; justify-self: end; }
+  .action { width: auto; }
+  .fact { padding-inline: 16px; }
+  .fact dd { font-size: 15px; }
 }
 
-@container (min-width: 800px) {
-  .identity { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-  .badges { flex-shrink: 0; max-width: 45%; margin-top: 0; }
-  .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .fact { padding: 17px 16px 17px 44px; }
-  .fact:nth-child(even), .fact:nth-child(3) { padding-left: 62px; }
-  .fact:nth-child(3) .factIcon { left: 20px; }
-  .fact:nth-child(n + 3) { border-top: 0; }
-  .fact:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    top: 17px;
-    right: 0;
-    bottom: 17px;
-    width: 1px;
-    background: var(--card-line);
-  }
+@container (min-width: 960px) {
+  .content { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.8fr) auto; gap: 26px; padding: 26px; }
+  .actions { grid-column: auto; }
 }

@@ -152,8 +152,8 @@ export function CrewCandidatePassportCard({
 }: {
   candidate: CrewCandidateCardProfile;
   availabilityValue: string;
-  primaryBadge: ReactNode;
-  fourthFact: {
+  primaryBadge?: ReactNode;
+  fourthFact?: {
     icon: ReactNode;
     label: string;
     value: string;
@@ -190,87 +190,84 @@ export function CrewCandidatePassportCard({
         data-compact={compact}
         className={cardStyles.card}
       >
-        <div className={cardStyles.header}>
-          <CandidateAvatar
-            profilePhotoUrl={candidate.profilePhotoUrl}
-            displayName={candidate.displayName}
-            initials={candidate.initials}
-            className={cardStyles.avatar}
-            textClassName={cardStyles.initials}
-            mediaSize={256}
-            decorative
-          />
-          <div className={cardStyles.identity}>
-            <div className={cardStyles.nameAndRole}>
-              <div className={cardStyles.nameRow}>
-                <h3 id={titleId} data-i18n-ignore className={cardStyles.name}>
-                  {candidate.displayName}
-                  <span className="sr-only"> — {copy.nameLocked}</span>
-                </h3>
-                <LockKeyhole className={cardStyles.lock} aria-hidden />
+        <div className={cardStyles.content}>
+          <div className={cardStyles.header}>
+            <CandidateAvatar
+              profilePhotoUrl={candidate.profilePhotoUrl}
+              displayName={candidate.displayName}
+              initials={candidate.initials}
+              className={cardStyles.avatar}
+              textClassName={cardStyles.initials}
+              mediaSize={256}
+              decorative
+            />
+            <div className={cardStyles.identity}>
+              <div className={cardStyles.nameAndRole}>
+                <div className={cardStyles.nameRow}>
+                  <h3 id={titleId} data-i18n-ignore className={cardStyles.name}>
+                    {candidate.displayName}
+                    <span className="sr-only"> — {copy.nameLocked}</span>
+                  </h3>
+                  {candidate.premiumProfile ? (
+                    <span className={cardStyles.premium} title={copy.premium}>
+                      <BadgeCheck aria-hidden />
+                      <span className="sr-only">{copy.premium}</span>
+                    </span>
+                  ) : null}
+                  <LockKeyhole className={cardStyles.lock} aria-hidden />
+                </div>
+                <p data-i18n-ignore className={cardStyles.position}>
+                  {candidate.currentPosition || copy.crewMember}
+                </p>
               </div>
-              <p data-i18n-ignore className={cardStyles.position}>
-                {candidate.currentPosition || copy.crewMember}
-              </p>
-            </div>
-            <div className={cardStyles.badges}>
-              {primaryBadge}
-              {candidate.premiumProfile ? (
-                <span className={cardStyles.premium}>{copy.premium}</span>
-              ) : null}
             </div>
           </div>
-        </div>
-        <dl className={cardStyles.facts}>
-          <NavyTicketFact
-            icon={<Globe2 />}
-            label={copy.nationality}
-            value={candidate.nationality || copy.notProvided}
-          />
-          <NavyTicketFact
-            icon={<CalendarDays />}
-            label={copy.availableToStart}
-            value={availabilityValue || copy.notProvided}
-          />
-          <NavyTicketFact
-            icon={<Anchor />}
-            label={copy.experience}
-            value={candidateExperienceValue(
-              candidate,
-              experienceLanguage,
-              profileExperienceLabel(
-                candidate.experienceYears,
-                copy.years,
-                copy.lessThanOneYear,
-                copy.noExperience,
-              ),
+          <dl className={cardStyles.facts}>
+            <NavyTicketFact
+              icon={<Globe2 />}
+              label={copy.nationality}
+              value={candidate.nationality || copy.notProvided}
+            />
+            <NavyTicketFact
+              icon={<CalendarDays />}
+              label={copy.availableToStart}
+              value={availabilityValue || copy.notProvided}
+            />
+            <NavyTicketFact
+              icon={<Anchor />}
+              label={copy.experience}
+              value={candidateExperienceValue(
+                candidate,
+                experienceLanguage,
+                profileExperienceLabel(
+                  candidate.experienceYears,
+                  copy.years,
+                  copy.lessThanOneYear,
+                  copy.noExperience,
+                ),
+              )}
+            />
+          </dl>
+          <div className={cardStyles.actions}>
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                aria-label={actionLabel}
+                className={`bd-focus ${cardStyles.action}`}
+              >
+                {actionContent}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={onView}
+                aria-label={actionLabel}
+                className={`bd-focus ${cardStyles.action}`}
+              >
+                {actionContent}
+              </button>
             )}
-          />
-          <NavyTicketFact
-            icon={fourthFact.icon}
-            label={fourthFact.label}
-            value={fourthFact.value}
-          />
-        </dl>
-        <div className={cardStyles.actions}>
-          {profileHref ? (
-            <Link
-              href={profileHref}
-              aria-label={actionLabel}
-              className={`bd-focus ${cardStyles.action}`}
-            >
-              {actionContent}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={onView}
-              aria-label={actionLabel}
-              className={`bd-focus ${cardStyles.action}`}
-            >
-              {actionContent}
-            </button>
-          )}
+          </div>
         </div>
       </article>
     );
@@ -371,11 +368,13 @@ export function CrewCandidatePassportCard({
             ),
           )}
         />
-        <PassportFact
-          icon={fourthFact.icon}
-          label={fourthFact.label}
-          value={fourthFact.value}
-        />
+        {fourthFact ? (
+          <PassportFact
+            icon={fourthFact.icon}
+            label={fourthFact.label}
+            value={fourthFact.value}
+          />
+        ) : null}
       </dl>
 
       <div

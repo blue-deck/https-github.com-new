@@ -59,7 +59,7 @@ test("Find Crew explicitly opts into the navy card without changing hiring cards
   assert.match(hiring, /<CrewCandidatePassportCard/);
 });
 
-test("navy crew cards retain masked identity, avatar, role and existing badges", async () => {
+test("navy crew cards retain masked identity with an accessible premium icon", async () => {
   const [{ navy }, data] = await Promise.all([
     cardSources(),
     source("app/lib/findCrewData.ts"),
@@ -72,9 +72,11 @@ test("navy crew cards retain masked identity, avatar, role and existing badges",
   assert.match(navy, /\{candidate\.displayName\}/);
   assert.match(navy, /\{copy\.nameLocked\}/);
   assert.match(navy, /candidate\.currentPosition \|\| copy\.crewMember/);
-  assert.match(navy, /\{primaryBadge\}/);
+  assert.doesNotMatch(navy, /\{primaryBadge\}/);
   assert.match(navy, /candidate\.premiumProfile/);
-  assert.match(navy, /\{copy\.premium\}/);
+  assert.match(navy, /<BadgeCheck aria-hidden/);
+  assert.match(navy, /title=\{copy\.premium\}/);
+  assert.match(navy, /<span className="sr-only">\{copy\.premium\}<\/span>/);
   assert.match(data, /displayName: maskedPersonName\(rawName\)/);
   assert.doesNotMatch(navy, /candidate\.(?:email|phone|fullName|full_name)/);
 });
@@ -83,7 +85,7 @@ test("navy facts preserve existing labels, fallbacks and experience formatting",
   const { navy } = await cardSources();
 
   assert.match(navy, /<dl\b/);
-  assert.equal((navy.match(/<NavyTicketFact\b/g) || []).length, 4);
+  assert.equal((navy.match(/<NavyTicketFact\b/g) || []).length, 3);
   assert.match(navy, /label=\{copy\.nationality\}/);
   assert.match(navy, /candidate\.nationality \|\| copy\.notProvided/);
   assert.match(navy, /label=\{copy\.availableToStart\}/);
@@ -91,8 +93,7 @@ test("navy facts preserve existing labels, fallbacks and experience formatting",
   assert.match(navy, /label=\{copy\.experience\}/);
   assert.match(navy, /candidateExperienceValue\(\s*candidate,\s*experienceLanguage,/);
   assert.match(navy, /profileExperienceLabel\(\s*candidate\.experienceYears,/);
-  assert.match(navy, /label=\{fourthFact\.label\}/);
-  assert.match(navy, /value=\{fourthFact\.value\}/);
+  assert.doesNotMatch(navy, /fourthFact/);
 });
 
 test("navy crew cards keep one profile destination and accessible action copy", async () => {
@@ -111,7 +112,7 @@ test("navy crew cards keep one profile destination and accessible action copy", 
   assert.doesNotMatch(navy, /Sign up|Invite crew|Apply now/);
 });
 
-test("navy header and white facts remain one clipped card without decorative gradients", async () => {
+test("identity and facts share one navy card without decorative gradients", async () => {
   const [{ styles }, jobStyles] = await Promise.all([
     cardSources(),
     source("app/jobs/PublicJobListingCard.module.css"),
@@ -131,20 +132,22 @@ test("navy header and white facts remain one clipped card without decorative gra
     assert.equal(crewToken[1], jobToken[1], `${token} must match the existing job card`);
   }
   assert.match(header, /background(?:-color)?:\s*var\(--card-navy\)/);
-  assert.match(facts, /background(?:-color)?:\s*(?:#fff(?:fff)?|white)\b/i);
+  assert.match(outer, /background(?:-color)?:\s*var\(--card-navy\)/);
+  assert.doesNotMatch(facts, /background(?:-color)?:/);
   assert.doesNotMatch(header, /border-radius|box-shadow|margin(?:-bottom)?:/);
   assert.doesNotMatch(facts, /border-radius|box-shadow/);
   assert.match(facts, /margin:\s*0;/);
   assert.doesNotMatch(styles, /(?:linear|radial|conic)-gradient/);
 });
 
-test("crew facts adapt to the card width with two mobile columns and four wide columns", async () => {
+test("crew identity and three facts align horizontally when the card has room", async () => {
   const { styles } = await cardSources();
   const outer = cssRule(styles, ".card");
   const facts = cssRule(styles, ".facts");
 
   assert.match(outer, /container-type:\s*inline-size/);
-  assert.match(facts, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(styles, /@container[\s\S]*?\.facts\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(facts, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(styles, /@container \(min-width: 680px\)[\s\S]*?\.content\s*\{[^}]*grid-template-columns:/);
+  assert.match(styles, /@container \(min-width: 960px\)[\s\S]*?\.content\s*\{[^}]*grid-template-columns:[^;]+auto/);
   assert.match(styles, /overflow-wrap:\s*anywhere/);
 });

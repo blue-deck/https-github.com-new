@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CrewCandidatePassportCard } from "../components/CrewCandidatePresentation";
-import crewCardStyles from "../components/CrewCandidateCard.module.css";
 import {
   NATIONALITY_CONTROL_SIZE_CLASS_NAME,
   NationalitySearchField,
@@ -652,18 +651,6 @@ export function FindCrewClient({
                                 )
                               : c.notProvided
                           }
-                          primaryBadge={
-                            <span className={crewCardStyles.activeBadge}>
-                              {c.activeProfile}
-                            </span>
-                          }
-                          fourthFact={{
-                            icon: <UserRound />,
-                            label: c.memberSince,
-                            value: profile.memberSince
-                              ? formatMonthYear(profile.memberSince, language)
-                              : c.notProvided,
-                          }}
                           copy={c}
                           profileHref={`/find-crew/${encodeURIComponent(profile.crewId)}`}
                           experienceLanguage={language}
@@ -1136,15 +1123,6 @@ function candidateAvailabilityLabel(value: string, language: Language) {
   return labels[value]?.[language] || translatePhrase(value, language);
 }
 
-function formatMonthYear(value: string, language: Language) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(language === "tr" ? "tr-TR" : "en-GB", {
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
 function isCrewPageResponse(value: unknown): value is {
   ok: true;
   profiles: DiscoverableCrewPreview[];
@@ -1288,8 +1266,6 @@ const copy = {
     profiles: "crew profiles",
     searching: "Searching crew",
     clear: "Clear filters",
-    activeProfile: "Active profile",
-    memberSince: "Member since",
     nameLocked: "Crew member name protected",
     crewMember: "Yacht crew",
     premium: "Premium",
@@ -1350,8 +1326,6 @@ const copy = {
     profiles: "crew profili",
     searching: "Crew aranıyor",
     clear: "Filtreleri temizle",
-    activeProfile: "Aktif profil",
-    memberSince: "Üyelik",
     nameLocked: "Crew üyesinin adı korumalı",
     crewMember: "Yat mürettebatı",
     premium: "Premium",
