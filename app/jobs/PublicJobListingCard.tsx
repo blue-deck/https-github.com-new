@@ -1,19 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import styles from "./PublicJobListingCard.module.css";
-import {
-  Anchor,
-  ArrowRight,
-  BriefcaseBusiness,
-  CalendarDays,
-  Clock3,
-  MapPin,
-  Ruler,
-  Ship,
-  UserRoundPlus,
-  UsersRound,
-} from "lucide-react";
 import {
   formatJobEmploymentType,
   formatJobTeamCoupleAnswer,
@@ -53,85 +42,65 @@ export function PublicJobListingCard({
   const action = getJobListingAction(job.id, viewer, language);
   const titleId = `job-title-${job.id}`;
   const teamCouple = isJobTeamCouple(job.candidateType)
-    ? `${c.teamCouple}: ${formatJobTeamCoupleAnswer(job.candidateType, language)}`
+    ? formatJobTeamCoupleAnswer(job.candidateType, language)
     : "";
 
   return (
     <article
       aria-labelledby={titleId}
-      data-job-card-layout="navy-ticket"
+      data-job-card-layout="compact-porcelain"
       data-compact={compact}
       data-appearance={appearance}
       className={styles.card}
     >
-      <div className={styles.header}>
-        <div className={styles.headline}>
+      <div className={styles.layout}>
+        <div className={styles.header}>
           <h3 id={titleId} data-i18n-ignore className={styles.title}>
             {job.position}
           </h3>
           <p data-i18n-ignore className={styles.salary}>
             {salary || c.salaryNotSpecified}
           </p>
+          <p data-i18n-ignore className={styles.meta}>
+            <span>{job.location}</span>
+            <span aria-hidden className={styles.metaSeparator}>·</span>
+            <span>{formatJobEmploymentType(job.employmentType, language)}</span>
+          </p>
         </div>
 
-        <div className={styles.meta}>
-          <MetaLine
-            icon={<BriefcaseBusiness />}
-            value={formatJobEmploymentType(job.employmentType, language)}
-            variant="employment"
-          />
-          <MetaLine
-            icon={<MapPin />}
-            value={job.location}
-            variant="location"
-          />
-          <MetaLine
-            icon={<Clock3 />}
-            value={`${c.posted}: ${formatJobDate(job.publishedAt, language)}`}
-            variant="posted"
-          />
-        </div>
-      </div>
-
-      <div className={styles.details}>
-        <InfoLine icon={<Ship />} value={yachtType || c.notSpecified} field="type" />
-        <InfoLine icon={<Ruler />} value={yachtLength || c.notSpecified} field="length" />
-        {teamCouple ? (
+        <dl className={styles.details}>
           <InfoLine
-            icon={<UsersRound />}
-            value={teamCouple}
-            field="team"
+            label={c.vessel}
+            value={`${yachtType || c.notSpecified} · ${yachtLength || c.notSpecified}`}
+            field="vessel"
           />
-        ) : null}
-        {yachtProgram ? (
+          {yachtProgram ? (
+            <InfoLine label={c.program} value={yachtProgram} field="program" />
+          ) : null}
           <InfoLine
-            icon={<Anchor />}
-            value={yachtProgram}
-            field="program"
+            label={c.start}
+            value={job.startDate ? formatJobDate(job.startDate, language) : c.notSpecified}
+            field="start"
           />
-        ) : null}
-        <InfoLine
-          icon={<CalendarDays />}
-          value={`${c.start}: ${
-            job.startDate
-              ? formatJobDate(job.startDate, language)
-              : c.notSpecified
-          }`}
-          field="start"
-        />
-      </div>
+          {teamCouple ? (
+            <InfoLine label={c.teamCouple} value={teamCouple} field="team" />
+          ) : null}
+        </dl>
 
-      <div className={styles.actions} data-single-action={action.intent === "view"}>
-        <Link href={action.detailHref} className={`bd-focus ${styles.primaryAction}`}>
-          <span>{c.viewRole}</span>
-          <ArrowRight aria-hidden />
-        </Link>
-        {action.intent !== "view" ? (
-          <Link href={action.href} className={`bd-focus ${styles.secondaryAction}`}>
-            {action.intent === "signup" ? <UserRoundPlus aria-hidden /> : null}
-            <span>{action.label}</span>
+        <div className={styles.actions} data-single-action={action.intent === "view"}>
+          <Link href={action.detailHref} className={`bd-focus ${styles.primaryAction}`}>
+            <span>{c.viewRole}</span>
+            <ArrowRight aria-hidden />
           </Link>
-        ) : null}
+          {action.intent !== "view" ? (
+            <Link href={action.href} className={`bd-focus ${styles.secondaryAction}`}>
+              {action.label}
+            </Link>
+          ) : null}
+          <p data-i18n-ignore className={styles.posted}>
+            {c.posted}: {formatJobDate(job.publishedAt, language)}
+          </p>
+        </div>
       </div>
     </article>
   );
@@ -146,69 +115,51 @@ export function PublicJobListingSkeleton({
 }) {
   return (
     <div className={`${styles.card} ${styles.skeleton}`} data-compact={compact} data-appearance={appearance} aria-hidden="true">
-      <div className={styles.header}>
-        <div className={styles.headline}>
+      <div className={styles.layout}>
+        <div className={styles.header}>
           <div className={styles.titlePlaceholder} />
           <div className={styles.salaryPlaceholder} />
+          <div className={styles.metaPlaceholder} />
         </div>
-        <div className={styles.meta}>
-          {["employment", "location", "posted"].map((item) => (
-            <div className={styles.metaPlaceholder} key={item} />
+        <div className={styles.details}>
+          {["vessel", "program", "start", "team"].map((field) => (
+            <div className={styles.info} data-field={field} key={field}>
+              <div className={styles.labelPlaceholder} />
+              <div className={styles.valuePlaceholder} />
+            </div>
           ))}
         </div>
-      </div>
-      <div className={styles.details}>
-        {["type", "length", "team", "program", "start"].map((field) => (
-          <div className={styles.info} data-field={field} key={field}>
-            <div className={styles.iconPlaceholder} />
-            <div className={styles.valuePlaceholder} />
-          </div>
-        ))}
-      </div>
-      <div className={styles.actions}>
-        <div className={styles.actionPlaceholder} />
-        <div className={styles.actionPlaceholder} />
+        <div className={styles.actions}>
+          <div className={styles.actionPlaceholder} />
+          <div className={styles.secondaryPlaceholder} />
+          <div className={styles.postedPlaceholder} />
+        </div>
       </div>
     </div>
   );
 }
 
-function MetaLine({
-  icon,
-  value,
-  variant,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  variant: "employment" | "location" | "posted";
-}) {
-  return (
-    <p data-i18n-ignore className={styles.metaItem} data-variant={variant}>
-      <span className={styles.metaIcon}>{icon}</span>
-      <span className={styles.metaValue}>{value}</span>
-    </p>
-  );
-}
-
 function InfoLine({
-  icon,
+  label,
   value,
   field,
 }: {
-  icon: React.ReactNode;
+  label: string;
   value: string;
-  field: "type" | "length" | "team" | "program" | "start";
+  field: "vessel" | "team" | "program" | "start";
 }) {
   return (
-    <p data-i18n-ignore className={styles.info} data-field={field}>
-      <span className={styles.infoIcon}>{icon}</span>
-      <span className={styles.infoValue}>{value}</span>
-    </p>
+    <div data-i18n-ignore className={styles.info} data-field={field}>
+      <dt className={styles.infoLabel}>{label}</dt>
+      <dd className={styles.infoValue}>{value}</dd>
+    </div>
   );
 }
 
 const cardCopy = {
   en: {
+    vessel: "Vessel",
+    program: "Use",
     teamCouple: "Team/Couple",
     start: "Start",
     posted: "Posted",
@@ -217,6 +168,8 @@ const cardCopy = {
     viewRole: "View role details",
   },
   tr: {
+    vessel: "Tekne",
+    program: "Kullanım",
     teamCouple: "Team/Couple",
     start: "Başlangıç",
     posted: "Yayınlandı",

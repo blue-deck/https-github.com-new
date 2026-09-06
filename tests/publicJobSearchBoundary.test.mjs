@@ -300,7 +300,7 @@ test("advanced job filters use a separate two-column sidebar and compact result 
   );
   assert.match(client, /compact=\{advancedOpen\}/);
   assert.match(card, /compact = false/);
-  assert.match(card, /data-job-card-layout="navy-ticket"/);
+  assert.match(card, /data-job-card-layout="compact-porcelain"/);
   assert.match(advanced, /<SalaryFilterGroup/);
   assert.doesNotMatch(advanced, /<FilterSelect\b[^>]*label=\{c\.currency\}/);
 
@@ -864,14 +864,14 @@ test("Team/Couple stays a binary filter while Any listings match either choice",
   );
   assert.match(
     card,
-    /<MetaLine\b[\s\S]*?icon=\{<MapPin \/>\}[\s\S]*?value=\{job\.location\}/,
+    /\{job\.location\}/,
   );
   assert.match(
     card,
-    /<InfoLine\b[\s\S]*?icon=\{<UsersRound \/>\}[\s\S]*?value=\{teamCouple\}/,
+    /<InfoLine\b[^>]*label=\{c\.teamCouple\}[^>]*value=\{teamCouple\}/,
   );
   assert.ok(
-    card.indexOf("value={job.location}") <
+    card.indexOf("{job.location}") <
       card.indexOf("value={teamCouple}"),
   );
   assert.doesNotMatch(card, /function StatusPill/);
@@ -944,11 +944,11 @@ test("Yacht program is mapped through public cards and renders above Start", asy
   );
   assert.match(
     card,
-    /\{yachtProgram \? \([\s\S]*?<InfoLine[\s\S]*?icon=\{<Anchor \/>\}[\s\S]*?value=\{yachtProgram\}[\s\S]*?\) : null\}/,
+    /\{yachtProgram \? \([\s\S]*?<InfoLine\b[^>]*label=\{c\.program\}[^>]*value=\{yachtProgram\}[\s\S]*?\) : null\}/,
   );
   assert.ok(
     card.indexOf('value={yachtProgram}') <
-      card.indexOf('value={`${c.start}: ${'),
+      card.indexOf('label={c.start}'),
   );
 });
 
