@@ -208,13 +208,13 @@ export function CrewCandidatePassportCard({
                     {candidate.displayName}
                     <span className="sr-only"> — {copy.nameLocked}</span>
                   </h3>
+                  <LockKeyhole className={cardStyles.lock} aria-hidden />
                   {candidate.premiumProfile ? (
                     <span className={cardStyles.premium} title={copy.premium}>
                       <BadgeCheck aria-hidden />
                       <span className="sr-only">{copy.premium}</span>
                     </span>
                   ) : null}
-                  <LockKeyhole className={cardStyles.lock} aria-hidden />
                 </div>
                 <p data-i18n-ignore className={cardStyles.position}>
                   {candidate.currentPosition || copy.crewMember}
