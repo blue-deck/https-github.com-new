@@ -33,12 +33,6 @@ import {
 
 type AuthMode = "login" | "signup";
 
-const roleAccessCopy: Record<string, TranslationKey> = {
-  captain: "login.roleCaptainAccess",
-  owner: "login.roleOwnerAccess",
-  management: "login.roleManagementAccess",
-};
-
 const crewFeatureBullets = [
   "login.bullet1",
   "login.bullet2",
@@ -523,11 +517,6 @@ export default function LoginPage() {
                     <option value="owner">{t("login.roleOwner")}</option>
                     <option value="management">{t("login.roleManagement")}</option>
                   </select>
-                  {role && roleAccessCopy[role] ? (
-                    <p className="mt-3 rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-sm leading-6 text-slate-700">
-                      {t(roleAccessCopy[role])}
-                    </p>
-                  ) : null}
                 </div>
                 <div className="block">
                   <label
