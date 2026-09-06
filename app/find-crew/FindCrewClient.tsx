@@ -477,7 +477,7 @@ export function FindCrewClient({
                   >
                     {c.advanced}
                   </h2>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  <div className="mt-4 grid grid-cols-2 gap-2">
                     <FilterToggle
                       label={c.premiumOnly}
                       checked={draftFilters.premiumOnly}
@@ -508,7 +508,7 @@ export function FindCrewClient({
                     />
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-5 grid grid-cols-2 items-end gap-x-2 gap-y-3 sm:gap-3">
                     <FilterSelect
                       label={c.maritalStatus}
                       emptyOptionLabel={c.any}
@@ -1073,7 +1073,7 @@ function FilterToggle({
 }) {
   return (
     <label
-      className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-3.5 text-sm font-bold transition ${
+      className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border px-2.5 text-sm font-bold transition sm:gap-3 sm:px-3.5 ${
         checked
           ? "border-cyan-500 bg-cyan-50 text-cyan-950"
           : "border-slate-200 bg-slate-50 text-slate-700 hover:border-cyan-300"
