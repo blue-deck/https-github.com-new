@@ -112,7 +112,7 @@ test("navy crew cards keep one profile destination and accessible action copy", 
   assert.doesNotMatch(navy, /Sign up|Invite crew|Apply now/);
 });
 
-test("directory cards use the ice-blue surface with a distinct blue profile action", async () => {
+test("directory cards use a porcelain surface with a navy profile action", async () => {
   const [{ styles }, jobStyles] = await Promise.all([
     cardSources(),
     source("app/jobs/PublicJobListingCard.module.css"),
@@ -133,12 +133,12 @@ test("directory cards use the ice-blue surface with a distinct blue profile acti
   }
   assert.match(outer, /background(?:-color)?:\s*var\(--card-surface\)/);
   assert.match(outer, /color:\s*var\(--card-navy\)/);
-  assert.match(facts, /background(?:-color)?:\s*var\(--card-facts\)/);
-  assert.match(cssRule(styles, ".action"), /background(?:-color)?:\s*var\(--card-blue\)/);
+  assert.match(outer, /--card-surface:\s*#fff/);
+  assert.doesNotMatch(facts, /background(?:-color)?:/);
+  assert.match(cssRule(styles, ".action"), /background(?:-color)?:\s*var\(--card-navy\)/);
   assert.match(cssRule(styles, ".action"), /color:\s*#fff/);
   assert.doesNotMatch(header, /border-radius|box-shadow|margin(?:-bottom)?:/);
-  assert.match(facts, /border-radius:/);
-  assert.doesNotMatch(facts, /box-shadow/);
+  assert.doesNotMatch(facts, /border-radius|box-shadow/);
   assert.match(facts, /margin:\s*0;/);
   assert.doesNotMatch(styles, /(?:linear|radial|conic)-gradient/);
 });

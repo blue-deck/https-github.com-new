@@ -1,10 +1,8 @@
 .card {
   --card-navy: #061d38;
-  --card-blue: #0868d9;
-  --card-icon: #0898ce;
-  --card-line: #d5e5f7;
-  --card-surface: #f8fbff;
-  --card-facts: #edf5fd;
+  --card-icon: #2189b3;
+  --card-line: #d6e3ef;
+  --card-surface: #fff;
   container-type: inline-size;
   overflow: hidden;
   border: 1px solid var(--card-line);
@@ -71,10 +69,8 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   margin: 0;
-  padding: 16px 12px;
-  border: 1px solid #e0edfa;
-  border-radius: 14px;
-  background: var(--card-facts);
+  padding: 20px 0 0;
+  border-top: 1px solid var(--card-line);
 }
 
 .fact {
@@ -102,9 +98,9 @@
   justify-content: space-between;
   gap: 18px;
   padding: 12px 15px;
-  border: 1px solid var(--card-blue);
+  border: 1px solid var(--card-navy);
   border-radius: 11px;
-  background: var(--card-blue);
+  background: var(--card-navy);
   color: #fff;
   font-size: 14px;
   font-weight: 650;
@@ -118,7 +114,7 @@
 .card:focus-within { border-color: #8bbbe9; }
 @media (hover: hover) {
   .card:hover { border-color: #a2c8ed; box-shadow: 0 14px 34px -22px rgb(20 65 110 / 30%); }
-  .action:hover { background: #0758bc; border-color: #0758bc; }
+  .action:hover { background: #0a3558; border-color: #0a3558; }
 }
 @media (prefers-reduced-motion: reduce) { .card, .action { transition: none; } }
 
@@ -129,7 +125,6 @@
   .name { font-size: 21px; }
   .nameRow { gap: 6px; }
   .premium { width: 24px; height: 24px; }
-  .facts { padding-inline: 10px; }
   .fact { padding-inline: 8px; }
 }
 
@@ -144,7 +139,7 @@
   .premium { width: 23px; height: 23px; }
   .premium svg { width: 22px; height: 22px; }
   .lock { width: 12px; height: 12px; }
-  .facts { padding: 14px 10px; }
+  .facts { padding: 0 0 0 12px; border-top: 0; border-left: 1px solid var(--card-line); }
   .fact { padding-inline: 8px; }
   .fact dd { font-size: 13px; }
   .factIcon svg { width: 18px; height: 18px; }
@@ -165,7 +160,7 @@
   .premium { width: 27px; height: 27px; }
   .premium svg { width: 24px; height: 24px; }
   .lock { width: 13px; height: 13px; }
-  .facts { padding: 16px; }
+  .facts { padding: 0 0 0 22px; }
   .fact { padding-inline: 16px; }
   .fact dd { font-size: 15px; }
   .factIcon svg { width: 20px; height: 20px; }
