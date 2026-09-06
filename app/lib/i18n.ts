@@ -230,8 +230,6 @@ const en = {
   "login.roleCaptain": "Captain",
   "login.roleOwner": "Owner / Employer",
   "login.roleManagement": "Management",
-  "login.roleCrewAccess":
-    "After email confirmation, your active Crew account is automatically listed in Find Crew with a masked, privacy-protected professional profile unless you select Not available. You can still find roles and apply to published yacht jobs.",
   "login.roleCaptainAccess":
     "After email confirmation, your active Captain account is automatically listed in Find Crew with a masked, privacy-protected professional profile unless you select Not available. You can still apply to roles or publish and manage jobs for your yachts.",
   "login.roleOwnerAccess":
@@ -612,8 +610,6 @@ const tr: Record<TranslationKey, string> = {
   "login.roleCaptain": "Kaptan",
   "login.roleOwner": "Sahip / İşveren",
   "login.roleManagement": "Yönetim",
-  "login.roleCrewAccess":
-    "E-posta onayından sonra aktif Crew hesabınız, Müsait değil seçeneğini işaretlemediğiniz sürece maskelenmiş ve gizlilik korumalı profesyonel profiliyle Find Crew’da otomatik olarak listelenir. İlanları bulmaya ve yayınlanmış yat işlerine başvurmaya devam edebilirsiniz.",
   "login.roleCaptainAccess":
     "E-posta onayından sonra aktif Captain hesabınız, Müsait değil seçeneğini işaretlemediğiniz sürece maskelenmiş ve gizlilik korumalı profesyonel profiliyle Find Crew’da otomatik olarak listelenir. İşlere başvurmaya veya yatlarınız için ilan yayınlayıp yönetmeye devam edebilirsiniz.",
   "login.roleOwnerAccess":

@@ -34,7 +34,6 @@ import {
 type AuthMode = "login" | "signup";
 
 const roleAccessCopy: Record<string, TranslationKey> = {
-  crew: "login.roleCrewAccess",
   captain: "login.roleCaptainAccess",
   owner: "login.roleOwnerAccess",
   management: "login.roleManagementAccess",
