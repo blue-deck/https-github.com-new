@@ -112,7 +112,7 @@ test("navy crew cards keep one profile destination and accessible action copy", 
   assert.doesNotMatch(navy, /Sign up|Invite crew|Apply now/);
 });
 
-test("identity and facts share one navy card without decorative gradients", async () => {
+test("directory cards use the ice-blue surface with a distinct blue profile action", async () => {
   const [{ styles }, jobStyles] = await Promise.all([
     cardSources(),
     source("app/jobs/PublicJobListingCard.module.css"),
@@ -123,7 +123,7 @@ test("identity and facts share one navy card without decorative gradients", asyn
 
   assert.match(outer, /overflow:\s*hidden/);
   assert.match(outer, /border-radius:/);
-  for (const token of ["navy", "teal", "line"]) {
+  for (const token of ["navy"]) {
     const pattern = new RegExp(`--card-${token}:\\s*([^;]+)`);
     const crewToken = outer.match(pattern);
     const jobToken = jobStyles.match(pattern);
@@ -131,11 +131,14 @@ test("identity and facts share one navy card without decorative gradients", asyn
     assert.ok(jobToken, `job card needs the shared ${token} color`);
     assert.equal(crewToken[1], jobToken[1], `${token} must match the existing job card`);
   }
-  assert.match(header, /background(?:-color)?:\s*var\(--card-navy\)/);
-  assert.match(outer, /background(?:-color)?:\s*var\(--card-navy\)/);
-  assert.doesNotMatch(facts, /background(?:-color)?:/);
+  assert.match(outer, /background(?:-color)?:\s*var\(--card-surface\)/);
+  assert.match(outer, /color:\s*var\(--card-navy\)/);
+  assert.match(facts, /background(?:-color)?:\s*var\(--card-facts\)/);
+  assert.match(cssRule(styles, ".action"), /background(?:-color)?:\s*var\(--card-blue\)/);
+  assert.match(cssRule(styles, ".action"), /color:\s*#fff/);
   assert.doesNotMatch(header, /border-radius|box-shadow|margin(?:-bottom)?:/);
-  assert.doesNotMatch(facts, /border-radius|box-shadow/);
+  assert.match(facts, /border-radius:/);
+  assert.doesNotMatch(facts, /box-shadow/);
   assert.match(facts, /margin:\s*0;/);
   assert.doesNotMatch(styles, /(?:linear|radial|conic)-gradient/);
 });
@@ -147,7 +150,8 @@ test("crew identity and three facts align horizontally when the card has room", 
 
   assert.match(outer, /container-type:\s*inline-size/);
   assert.match(facts, /grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(styles, /@container \(min-width: 680px\)[\s\S]*?\.content\s*\{[^}]*grid-template-columns:/);
-  assert.match(styles, /@container \(min-width: 960px\)[\s\S]*?\.content\s*\{[^}]*grid-template-columns:[^;]+auto/);
+  assert.match(styles, /@container \(min-width: 680px\)[\s\S]*?\.content\s*\{[^}]*grid-template-columns:[^;]+max-content/);
+  assert.match(styles, /@container \(min-width: 960px\)[\s\S]*?\.content\s*\{[^}]*grid-template-columns:[^;]+max-content/);
+  assert.doesNotMatch(styles, /grid-column:\s*1\s*\/\s*-1/);
   assert.match(styles, /overflow-wrap:\s*anywhere/);
 });
