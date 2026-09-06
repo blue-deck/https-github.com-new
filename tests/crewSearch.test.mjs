@@ -357,6 +357,34 @@ test("advanced crew filters show a heading followed by readiness toggles", async
   assert.doesNotMatch(client, /profileQuality:/);
 });
 
+test("mobile More filters groups related controls into compact pairs", async () => {
+  const client = await readFile(
+    new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
+    "utf8",
+  );
+  const advancedStart = client.indexOf('id="crew-advanced-filters"');
+  const advancedEnd = client.indexOf("{c.fairHiringNote}", advancedStart);
+  const advancedFilters = client.slice(advancedStart, advancedEnd);
+
+  assert.ok(advancedStart >= 0 && advancedEnd > advancedStart);
+  assert.match(
+    advancedFilters,
+    /className="mt-4 grid grid-cols-2 gap-2"[\s\S]*?draftFilters\.premiumOnly[\s\S]*?draftFilters\.hasPhoto[\s\S]*?draftFilters\.hasGallery[\s\S]*?draftFilters\.hasTeamCouple/,
+  );
+  assert.match(
+    advancedFilters,
+    /className="mt-5 grid grid-cols-2 items-end gap-x-2 gap-y-3 sm:gap-3"[\s\S]*?draftFilters\.maritalStatus[\s\S]*?draftFilters\.gender[\s\S]*?draftFilters\.smoker[\s\S]*?draftFilters\.visibleTattoos[\s\S]*?draftFilters\.experienceType[\s\S]*?draftFilters\.minimumExperience/,
+  );
+  assert.match(
+    client,
+    /items-center gap-2 rounded-xl border px-2\.5[\s\S]*?sm:gap-3 sm:px-3\.5/,
+  );
+  assert.doesNotMatch(
+    advancedFilters,
+    /className="mt-(?:4|5) grid gap-[23] sm:grid-cols-2"/,
+  );
+});
+
 test("More filters is a separate sticky right card beside horizontal crew cards", async () => {
   const [client, presentation] = await Promise.all([
     readFile(
