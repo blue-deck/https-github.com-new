@@ -362,7 +362,7 @@ export function FindCrewClient({
                 className={`mt-4 grid gap-3 md:grid-cols-2 ${
                   advancedOpen
                     ? "xl:grid-cols-4 xl:gap-6"
-                    : "xl:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+                    : "xl:grid-cols-4 xl:gap-6 2xl:grid-cols-[repeat(4,minmax(0,1fr))_auto] 2xl:gap-3"
                 }`}
               >
                 <form
@@ -397,7 +397,7 @@ export function FindCrewClient({
                       placeholder={c.searchPlaceholder}
                       maxLength={120}
                       autoCapitalize="sentences"
-                      className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-14 text-sm font-semibold text-slate-950 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
+                      className={`${NATIONALITY_CONTROL_SIZE_CLASS_NAME} appearance-none rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-12 text-sm font-semibold text-slate-950 outline-none transition placeholder:text-[clamp(0.72rem,3.6vw,0.875rem)] placeholder:font-normal placeholder:tracking-[-0.01em] [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden focus:border-cyan-500 focus:bg-white focus:ring-4 focus:ring-cyan-100`}
                     />
                     <button
                       type="submit"
@@ -439,7 +439,7 @@ export function FindCrewClient({
                   language={language}
                 />
                 {!advancedOpen ? (
-                  <div className="flex items-center justify-end gap-3 self-end md:col-span-2 xl:col-span-1">
+                  <div className="flex items-center justify-end gap-3 self-end md:col-span-2 xl:col-span-4 2xl:col-span-1">
                     <CrewFilterClearAction
                       label={c.clear}
                       onClick={clearFilters}
@@ -1234,7 +1234,7 @@ const copy = {
     applyFilters: "Search",
     applyFiltersLabel: "Search with selected filters",
     any: "Any",
-    searchPlaceholder: "Position, skill, language or location",
+    searchPlaceholder: "Position, skills, language or any",
     position: "Position",
     allPositions: "All positions",
     searchPositions: "Search positions",
@@ -1294,7 +1294,7 @@ const copy = {
     applyFilters: "Ara",
     applyFiltersLabel: "Seçili filtrelerle ara",
     any: "Herhangi",
-    searchPlaceholder: "Pozisyon, beceri, dil veya konum",
+    searchPlaceholder: "Pozisyon, beceri, dil veya diğer",
     position: "Pozisyon",
     allPositions: "Tüm pozisyonlar",
     searchPositions: "Pozisyon ara",

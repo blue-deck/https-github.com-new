@@ -110,6 +110,14 @@ test("crew keyword search waits for its right-side search button", async () => {
   assert.match(client, /if \(event\.key !== "Enter"\) return;\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
   assert.match(client, /type="submit"\s+aria-label=\{c\.keywordSearchAction\}/);
   assert.match(client, /absolute right-1 top-1\/2/);
+  assert.match(client, /searchPlaceholder: "Position, skills, language or any"/);
+  assert.match(client, /searchPlaceholder: "Pozisyon, beceri, dil veya diğer"/);
+  assert.doesNotMatch(client, /Position, skill, language or location/);
+  assert.doesNotMatch(client, /Pozisyon, beceri, dil veya konum/);
+  assert.match(
+    client,
+    /id="crew-keyword-search"[\s\S]*?appearance-none[\s\S]*?pr-12[\s\S]*?placeholder:text-\[clamp\(0\.72rem,3\.6vw,0\.875rem\)\][\s\S]*?placeholder:font-normal[\s\S]*?\[&::\-webkit-search-cancel-button\]:hidden[\s\S]*?\[&::\-webkit-search-decoration\]:hidden/,
+  );
 });
 
 test("primary and advanced crew filters apply only through the relocated Search button", async () => {
@@ -449,12 +457,14 @@ test("crew filter controls share equal columns and one select surface", async ()
   assert.match(client, /\? "xl:grid-cols-4 xl:gap-6"/);
   assert.match(
     client,
-    /: "xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\]"/,
+    /: "xl:grid-cols-4 xl:gap-6 2xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\] 2xl:gap-3"/,
   );
   assert.match(
     loading,
-    /xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\]/,
+    /xl:grid-cols-4 xl:gap-6 2xl:grid-cols-\[repeat\(4,minmax\(0,1fr\)\)_auto\] 2xl:gap-3/,
   );
+  assert.match(client, /xl:col-span-4 2xl:col-span-1/);
+  assert.match(loading, /xl:col-span-4[\s\S]*?2xl:col-span-1/);
   assert.doesNotMatch(client, /1\.35fr|0\.9fr/);
   assert.doesNotMatch(loading, /1\.35fr|0\.9fr/);
   assert.match(
