@@ -1,17 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import {
   LayoutDashboard,
   LogOut,
   Mail,
   MapPin,
   Menu,
+  Settings,
   ShieldCheck,
   X,
 } from "lucide-react";
+import type { AccountIdentity } from "../lib/accountIdentity";
 import { type TranslationKey } from "../lib/i18n";
 import { endWebBrowserSession } from "../lib/webBrowserSession";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
@@ -37,6 +41,19 @@ function isCurrentRoute(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function accountInitials(name: string) {
+  return (
+    name
+      .split("@")[0]
+      .trim()
+      .split(/[\s._-]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toLocaleUpperCase())
+      .join("") || "BD"
+  );
+}
+
 type PublicHeaderProps = {
   mobileVariant?: "default" | "cinematic";
 };
@@ -44,11 +61,27 @@ type PublicHeaderProps = {
 export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = {}) {
   const pathname = usePathname() || "/";
   const { language, t } = useLanguage();
-  const [sessionEmail, setSessionEmail] = useState("");
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const [identity, setIdentity] = useState<AccountIdentity | null>(null);
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState("");
+  const [phoneViewport, setPhoneViewport] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const menuId = useId();
+  const accountId = useId();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuPanelRef = useRef<HTMLDivElement>(null);
+  const accountButtonRef = useRef<HTMLButtonElement>(null);
+  const accountPanelRef = useRef<HTMLDivElement>(null);
+  const sessionEmail = sessionUser?.email || "";
+  const currentIdentity = identity?.userId === sessionUser?.id ? identity : null;
+  const metadataName = sessionUser?.user_metadata?.full_name;
+  const displayName =
+    currentIdentity?.fullName ||
+    (typeof metadataName === "string" ? metadataName.trim() : "") ||
+    sessionEmail.split("@")[0] ||
+    t("topbar.account");
+  const photoUrl = currentIdentity?.dashboardPhotoUrl || "";
 
   useEffect(() => {
     let active = true;
@@ -61,7 +94,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (active) setSessionEmail(session?.user?.email || "");
+        if (active) setSessionUser(session?.user || null);
       });
       unsubscribe = () => subscription.unsubscribe();
 
@@ -69,7 +102,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (active) setSessionEmail(session?.user?.email || "");
+      if (active) setSessionUser(session?.user || null);
     }
 
     void watchSession();
@@ -81,44 +114,131 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
   }, []);
 
   useEffect(() => {
+    if (mobileVariant !== "cinematic" || !phoneViewport || !sessionUser) {
+      setIdentity(null);
+      return;
+    }
+
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+
+    async function refreshIdentity() {
+      const { loadAccountIdentity, subscribeDashboardPhotoUpdates } =
+        await import("../lib/accountIdentity");
+      if (!active) return;
+
+      unsubscribe = subscribeDashboardPhotoUpdates((update) => {
+        if (!active || update.userId !== sessionUser?.id) return;
+        setIdentity((current) =>
+          current?.userId === update.userId
+            ? {
+                ...current,
+                dashboardPhotoUrl: update.photoUrl,
+                fullName: update.fullName || current.fullName,
+                email: update.email || current.email,
+              }
+            : current,
+        );
+      });
+
+      try {
+        const nextIdentity = await loadAccountIdentity();
+        if (active && nextIdentity?.userId === sessionUser?.id) {
+          setIdentity(nextIdentity);
+        }
+      } catch {
+        // Session initials remain usable when the optional profile cannot load.
+      }
+    }
+
+    void refreshIdentity();
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, [mobileVariant, phoneViewport, sessionUser]);
+
+  useEffect(() => {
     setMenuOpen(false);
+    setAccountOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    setMenuOpen(false);
+    setAccountOpen(false);
+  }, [sessionUser?.id]);
+
+  useEffect(() => {
+    const phoneBreakpoint = window.matchMedia("(max-width: 640px)");
+    setPhoneViewport(phoneBreakpoint.matches);
+    const breakpoints = [
+      phoneBreakpoint,
+      window.matchMedia(
+        mobileVariant === "cinematic"
+          ? "(max-width: 959px)"
+          : "(max-width: 1040px)",
+      ),
+    ];
+    function closeMenus() {
+      setPhoneViewport(phoneBreakpoint.matches);
+      setMenuOpen(false);
+      setAccountOpen(false);
+    }
+    breakpoints.forEach((breakpoint) =>
+      breakpoint.addEventListener("change", closeMenus),
+    );
+    return () => breakpoints.forEach((breakpoint) =>
+      breakpoint.removeEventListener("change", closeMenus),
+    );
+  }, [mobileVariant]);
+
+  useEffect(() => {
+    if (!menuOpen && !accountOpen) return;
+
+    const panelRef = accountOpen ? accountPanelRef : menuPanelRef;
+    const buttonRef = accountOpen ? accountButtonRef : menuButtonRef;
+    function closePanel() {
+      if (accountOpen) setAccountOpen(false);
+      else setMenuOpen(false);
+    }
 
     const frame = window.requestAnimationFrame(() => {
-      menuPanelRef.current?.querySelector<HTMLAnchorElement>("a[href]")?.focus();
+      panelRef.current?.querySelector<HTMLAnchorElement>("a[href]")?.focus();
     });
 
-    function onPointerDown(event: PointerEvent) {
+    function onOutsideInteraction(event: PointerEvent | FocusEvent) {
       const target = event.target as Node;
       if (
-        !menuPanelRef.current?.contains(target) &&
-        !menuButtonRef.current?.contains(target)
+        !panelRef.current?.contains(target) &&
+        !buttonRef.current?.contains(target)
       ) {
-        setMenuOpen(false);
+        closePanel();
       }
     }
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (menuPanelRef.current?.querySelector('[role="menu"]')) return;
-      setMenuOpen(false);
-      window.setTimeout(() => menuButtonRef.current?.focus(), 0);
+      if (panelRef.current?.querySelector('[role="menu"]')) return;
+      event.preventDefault();
+      closePanel();
+      window.setTimeout(() => buttonRef.current?.focus(), 0);
     }
 
-    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("pointerdown", onOutsideInteraction);
+    document.addEventListener("focusin", onOutsideInteraction);
     document.addEventListener("keydown", onKeyDown);
 
     return () => {
       window.cancelAnimationFrame(frame);
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("pointerdown", onOutsideInteraction);
+      document.removeEventListener("focusin", onOutsideInteraction);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [menuOpen]);
+  }, [menuOpen, accountOpen]);
 
   async function logout() {
+    setMenuOpen(false);
+    setAccountOpen(false);
     const ended = await endWebBrowserSession("manual");
     if (ended) window.location.replace("/login");
     else window.location.reload();
@@ -139,7 +259,10 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
       }
       aria-expanded={menuOpen}
       aria-controls={menuOpen ? menuId : undefined}
-      onClick={() => setMenuOpen((current) => !current)}
+      onClick={() => {
+        setAccountOpen(false);
+        setMenuOpen((current) => !current);
+      }}
       className="bd-focus bd-public-menu-button"
     >
       {menuOpen ? <X aria-hidden /> : <Menu aria-hidden />}
@@ -154,7 +277,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
 
       <div className="bd-public-header-inner">
         <div className="bd-public-brand-group">
-          {mobileVariant === "default" ? menuButton : null}
+          {menuButton}
 
           <BlueDeckLogoLink
             href="/"
@@ -162,7 +285,88 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
             className="bd-public-brand"
             imageClassName="object-contain object-left p-0"
           />
-          {mobileVariant === "cinematic" ? menuButton : null}
+          {mobileVariant === "cinematic" ? (
+            <div className="bd-public-mobile-account">
+              {sessionUser ? (
+                <>
+                  <button
+                    ref={accountButtonRef}
+                    type="button"
+                    aria-label={language === "tr" ? "Hesap menüsü" : "Account menu"}
+                    aria-expanded={accountOpen}
+                    aria-controls={accountOpen ? accountId : undefined}
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setAccountOpen((current) => !current);
+                    }}
+                    className="bd-focus bd-public-account-trigger"
+                  >
+                    {photoUrl && failedPhotoUrl !== photoUrl ? (
+                      <Image
+                        src={photoUrl}
+                        alt=""
+                        width={44}
+                        height={44}
+                        unoptimized
+                        onError={() => setFailedPhotoUrl(photoUrl)}
+                        className="bd-public-account-avatar"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        data-i18n-ignore
+                        className="bd-public-account-avatar"
+                      >
+                        {accountInitials(displayName)}
+                      </span>
+                    )}
+                  </button>
+                  {accountOpen ? (
+                    <div
+                      ref={accountPanelRef}
+                      id={accountId}
+                      className="bd-public-account-panel"
+                    >
+                      <div data-i18n-ignore className="bd-public-account-identity">
+                        <strong>{displayName}</strong>
+                        <span>{sessionEmail}</span>
+                      </div>
+                      <nav aria-label={language === "tr" ? "Hesap" : "Account"}>
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setAccountOpen(false)}
+                          className="bd-focus bd-public-account-link"
+                        >
+                          <LayoutDashboard aria-hidden />
+                          <span>{t("topbar.dashboard")}</span>
+                        </Link>
+                        <Link
+                          href="/settings"
+                          onClick={() => setAccountOpen(false)}
+                          className="bd-focus bd-public-account-link"
+                        >
+                          <Settings aria-hidden />
+                          <span>{t("topbar.settings")}</span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => void logout()}
+                          className="bd-focus bd-public-account-link"
+                        >
+                          <LogOut aria-hidden />
+                          <span>{t("topbar.logout")}</span>
+                        </button>
+                      </nav>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <Link href="/login" className="bd-focus bd-public-mobile-login">
+                  {language === "tr" ? "Giriş yap" : "Log in"}
+                </Link>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <nav
