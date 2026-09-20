@@ -1379,17 +1379,6 @@ textarea:-webkit-autofill:focus {
   background: transparent;
 }
 
-.bd-yacht-section-nav {
-  display: block;
-  top: 0 !important;
-  background: rgba(250, 252, 255, 0.94) !important;
-  box-shadow:
-    0 1px 0 var(--bluedeck-line),
-    0 14px 34px rgba(4, 16, 36, 0.045) !important;
-  backdrop-filter: blur(22px) !important;
-  -webkit-backdrop-filter: blur(22px) !important;
-}
-
 .bd-public-footer {
   background: var(--bluedeck-header-surface);
   padding-right: var(--safe-area-right);
@@ -1424,10 +1413,6 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   padding-right: max(1rem, var(--safe-area-right));
   padding-bottom: max(1rem, var(--safe-area-bottom));
   padding-left: max(1rem, var(--safe-area-left));
-}
-
-.bd-yacht-section-nav > div {
-  background: transparent;
 }
 
 .bd-glass-card {
@@ -1935,15 +1920,6 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 
 }
 
-.bd-yacht-section-nav {
-  scrollbar-width: none;
-}
-
-.bd-yacht-section-nav::-webkit-scrollbar,
-.bd-yacht-section-nav > div::-webkit-scrollbar {
-  display: none;
-}
-
 .bd-contract-preview-grid,
 .bd-contract-preview-card,
 .bd-contract-preview-frame,
@@ -2057,11 +2033,6 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
   .bd-yacht-page-content {
     width: 100%;
     min-width: 0;
-  }
-
-  .bd-yacht-section-nav {
-    display: block;
-    top: 0 !important;
   }
 
   input,
@@ -2210,20 +2181,6 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
 
   .bd-account-topbar .bd-account-menu-scroll {
     max-height: none;
-  }
-
-  .bd-yacht-section-nav {
-    top: calc(76px + var(--safe-area-top)) !important;
-  }
-
-  .bd-yacht-section-nav > div {
-    padding: 0.65rem 0.9rem !important;
-  }
-
-  .bd-yacht-section-nav a {
-    border-radius: 0.9rem !important;
-    padding: 0.7rem 0.85rem !important;
-    font-size: 0.86rem !important;
   }
 
   .bd-yacht-portal main {
