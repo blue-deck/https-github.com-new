@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { getImageProps } from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -22,17 +22,38 @@ import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./Ho
 
 type LoadState = "loading" | "ready" | "error";
 
+// Art direction keeps the full yacht visible in both the wide and stacked layouts.
+const { props: desktopHeroImage } = getImageProps({
+  src: "/media/bluedeck-signature-panorama-v1.webp",
+  alt: "",
+  fill: true,
+  quality: 90,
+  sizes: "100vw",
+});
+const { props: mobileHeroImage } = getImageProps({
+  src: "/media/bluedeck-yacht-hero-v2.webp",
+  alt: "",
+  fill: true,
+  quality: 90,
+  sizes: "100vw",
+  loading: "eager",
+  fetchPriority: "high",
+});
+
 const copy = {
   en: {
-    eyebrow: "Yacht careers · hiring · operations",
-    titleLine1: "Build the right crew.",
-    titleLine2: "Run a better yacht.",
-    intro:
-      "Find trusted yacht roles, hire with clarity and keep essential onboard work connected in one focused platform.",
-    browseJobs: "Explore open roles",
-    findCrew: "Find professional crew",
-    heroTrust:
-      "Visible profiles. Protected names, contacts and private records.",
+    eyebrow: "Yacht careers · crew · operations",
+    titleLine1: "Your career.",
+    titleLine2: "Your crew.",
+    titleLine3: "Your BlueDeck.",
+    introLine1: "Find your next role. Build your team.",
+    introLine2: "Keep life onboard connected.",
+    browseJobs: "Explore yacht jobs",
+    findCrew: "Find crew",
+    explorePlatform: "Explore Yacht-OS",
+    heroNavigation: "Explore BlueDeck",
+    careers: "Careers",
+    crew: "Crew",
     jobsEyebrow: "Latest opportunities",
     jobsIntro:
       "Review the newest opportunities first. Create an account only when you are ready to apply.",
@@ -61,15 +82,18 @@ const copy = {
 
   },
   tr: {
-    eyebrow: "Yat kariyeri · işe alım · operasyon",
-    titleLine1: "Doğru ekibi kurun.",
-    titleLine2: "Yatı daha iyi yönetin.",
-    intro:
-      "Güvenilir yat ilanlarını bulun, doğru bilgilerle işe alım yapın ve teknedeki temel işleri tek, odaklı platformda yönetin.",
-    browseJobs: "Açık ilanları keşfet",
-    findCrew: "Profesyonel mürettebat bul",
-    heroTrust:
-      "Görünür profiller. Korumalı adlar, iletişim bilgileri ve özel kayıtlar.",
+    eyebrow: "Yat kariyeri · mürettebat · operasyon",
+    titleLine1: "Kariyerin.",
+    titleLine2: "Ekibin.",
+    titleLine3: "Senin BlueDeck’in.",
+    introLine1: "Yeni işini bul. Ekibini kur.",
+    introLine2: "Teknedeki yaşamı birbirine bağla.",
+    browseJobs: "Yat ilanlarını keşfet",
+    findCrew: "Ekip bul",
+    explorePlatform: "Yacht-OS’u keşfet",
+    heroNavigation: "BlueDeck’i keşfet",
+    careers: "Kariyer",
+    crew: "Mürettebat",
     jobsEyebrow: "Güncel fırsatlar",
     jobsIntro:
       "Önce en yeni fırsatları inceleyin. Yalnızca başvurmaya hazır olduğunuzda hesap oluşturun.",
@@ -99,7 +123,7 @@ const copy = {
   },
 } as const;
 
-export default function HomePageClient() {
+export default function HomePageClient({ heroFontClassName }: { heroFontClassName: string }) {
   const { language } = useLanguage();
   const c = copy[language];
   const hc = homeCopy[language];
@@ -186,45 +210,81 @@ export default function HomePageClient() {
   }, [department]);
 
   return (
-    <div className={`bd-site-shell min-h-screen ${styles.page}`}>
+    <div className={`bd-site-shell min-h-screen ${styles.page} ${heroFontClassName}`}>
       <PublicHeader />
 
       <main id="main-content" data-i18n-ignore>
         <section className={styles.hero} aria-labelledby="home-heading">
-          <div className={styles.heroVisual} aria-hidden="true">
-            <Image
-              src="/media/bluedeck-yacht-hero-v2.webp"
-              alt=""
-              fill
-              preload
-              sizes="100vw"
-              className={styles.heroImage}
-            />
-            <div className={styles.heroOverlay} />
-          </div>
-          <div className={`${styles.container} ${styles.heroInner}`}>
-            <div className={styles.heroCopy}>
-              <p className={styles.eyebrow}>{c.eyebrow}</p>
-              <h1 id="home-heading" className={styles.heroTitle}>
-                <span>{c.titleLine1}</span>
-                <span>{c.titleLine2}</span>
-              </h1>
-              <p className={styles.heroIntro}>{c.intro}</p>
-              <div className={styles.heroActions}>
-                <Link href="/jobs" className={styles.primaryButton}>
-                  {c.browseJobs}
+          <div className={styles.heroStage}>
+            <div className={styles.heroArt} aria-hidden="true">
+              <div className={styles.imageFrame}>
+                <picture>
+                  <source media="(min-width: 960px)" srcSet={desktopHeroImage.srcSet} sizes="100vw" />
+                  {/* getImageProps supplies Next.js optimization for the native picture element. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img {...mobileHeroImage} alt="" className={styles.heroImage} />
+                </picture>
+              </div>
+              <svg className={styles.desktopWave} viewBox="0 0 1600 800" preserveAspectRatio="none" focusable="false">
+                <defs>
+                  <linearGradient id="home-wave-navy" x1="0" y1="0" x2="1" y2="1">
+                    <stop stopColor="#06182c" />
+                    <stop offset="1" stopColor="#031323" />
+                  </linearGradient>
+                  <linearGradient id="home-wave-silver" x1="0" y1="1" x2="1" y2="0">
+                    <stop stopColor="#788da5" stopOpacity="0.2" />
+                    <stop offset="0.4" stopColor="#f1f6ff" />
+                    <stop offset="1" stopColor="#c4d4eb" />
+                  </linearGradient>
+                  <linearGradient id="home-wave-blue" x1="0" y1="1" x2="1" y2="0">
+                    <stop stopColor="#0877cd" stopOpacity="0" />
+                    <stop offset="0.4" stopColor="#0877cd" />
+                    <stop offset="1" stopColor="#0877cd" stopOpacity="0.25" />
+                  </linearGradient>
+                </defs>
+                <path d="M1230 0C1040 0 935 140 815 355C660 635 580 745 0 800" fill="none" stroke="url(#home-wave-blue)" strokeWidth="12" />
+                <path d="M0 0H1230C1040 0 935 140 815 355C660 635 580 745 0 800Z" fill="url(#home-wave-navy)" />
+                <path d="M1230 0C1040 0 935 140 815 355C660 635 580 745 0 800" fill="none" stroke="url(#home-wave-silver)" strokeWidth="2.5" />
+              </svg>
+              <svg className={styles.mobileWave} viewBox="0 0 800 120" preserveAspectRatio="none" focusable="false">
+                <path d="M0 0H800V10C510 10 410 112 0 112Z" fill="#06182c" />
+                <path d="M0 112C410 112 510 10 800 10" fill="none" stroke="#0877cd" strokeWidth="6" />
+                <path d="M0 110C410 110 510 8 800 8" fill="none" stroke="#c4d4eb" strokeWidth="1.5" />
+              </svg>
+            </div>
+            <div className={styles.heroInner}>
+              <div className={styles.heroCopy}>
+                <p className={styles.eyebrow}>{c.eyebrow}</p>
+                <h1 id="home-heading" className={styles.heroTitle}>
+                  <span>{c.titleLine1}</span>
+                  <span>{c.titleLine2}</span>
+                  <span className={styles.signature}>{c.titleLine3}</span>
+                </h1>
+                <p className={styles.heroIntro}>
+                  <span>{c.introLine1}</span>
+                  <span>{c.introLine2}</span>
+                </p>
+                <div className={styles.heroActions}>
+                  <Link href="/jobs" className={styles.primaryButton}>
+                    {c.browseJobs}
+                    <ArrowRight aria-hidden />
+                  </Link>
+                  <Link href="/find-crew" className={styles.secondaryButton}>
+                    {c.findCrew}
+                  </Link>
+                </div>
+                <Link href="/yacht-os" className={styles.platformLink}>
+                  {c.explorePlatform}
                   <ArrowRight aria-hidden />
                 </Link>
-                <Link href="/find-crew" className={styles.secondaryButton}>
-                  {c.findCrew}
-                </Link>
               </div>
-              <p className={styles.heroTrust}>
-                <ShieldCheck aria-hidden />
-                {c.heroTrust}
-              </p>
             </div>
           </div>
+          <nav className={styles.heroRail} aria-label={c.heroNavigation}>
+            <Link href="/jobs">{c.careers}</Link>
+            <Link href="/find-crew">{c.crew}</Link>
+            <Link href="/yacht-os">Yacht-OS</Link>
+          </nav>
         </section>
 
         <HomeJobSearch language={language} />
