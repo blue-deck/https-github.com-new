@@ -67,8 +67,25 @@
   height: 100%;
 }
 
-.mobileWave {
+.mobileWave,
+.cinematicWave,
+.cinematicShade {
   display: none;
+}
+
+.heroMessage,
+.heroControls {
+  display: contents;
+}
+
+.page :global(.bd-public-mobile-utilities) {
+  display: none;
+}
+
+@media (min-width: 641px) {
+  .page :global(.bd-public-menu-button) {
+    order: -1;
+  }
 }
 
 .heroInner {
@@ -409,9 +426,209 @@
   }
 }
 
-@media (max-width: 359px) {
-  .heroActions > a {
+@media (max-width: 640px) {
+  .page {
+    --hero-navy: #041629;
+    --cinematic-scene-height: clamp(580px, 169.23vw, 1000px);
+    --cinematic-header-height: 64px;
+  }
+
+  .page :global(.bd-public-header) {
+    border-bottom: 0;
+  }
+
+  .page :global(.bd-public-header-inner) {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: var(--cinematic-header-height);
+    padding-inline: max(1.25rem, var(--safe-area-left)) max(0.75rem, var(--safe-area-right));
+  }
+
+  .page :global(.bd-public-brand-group) {
+    justify-content: space-between;
     width: 100%;
+  }
+
+  .page :global(.bd-public-brand) {
+    width: clamp(9.5rem, 43vw, 12rem);
+    height: 2.75rem;
+  }
+
+  .page :global(.bd-public-menu-button) {
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+  }
+
+  .page :global(.bd-public-menu-button svg) {
+    width: 1.75rem;
+    height: 1.75rem;
+    stroke-width: 1.5;
+  }
+
+  .page :global(.bd-public-actions) {
+    display: none;
+  }
+
+  .page :global(.bd-public-mobile-panel) {
+    top: calc(100% + 0.25rem);
+    max-height: calc(100svh - var(--cinematic-header-height) - 1.5rem);
+    overflow-y: auto;
+  }
+
+  .page :global(.bd-public-mobile-utilities) {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+    border-top: 1px solid #ffffff24;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .page :global(.bd-public-mobile-language-row) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    color: #edf3fb;
+    font-size: 0.875rem;
+  }
+
+  .page :global(.bd-public-mobile-utilities .bd-public-mobile-link) {
+    gap: 0.6rem;
+  }
+
+  .page :global(.bd-public-mobile-utilities .bd-public-mobile-link svg) {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .heroStage {
+    display: block;
+    overflow: clip;
+  }
+
+  .heroArt {
+    position: absolute;
+    inset: calc(-1 * var(--cinematic-header-height)) 0 auto;
+    z-index: -1;
+    height: var(--cinematic-scene-height);
+    margin: 0;
+  }
+
+  .heroImage {
+    object-fit: cover;
+    object-position: center bottom;
+    transform: translateY(1.6%);
+  }
+
+  .mobileWave {
+    display: none;
+  }
+
+  .cinematicShade {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: linear-gradient(180deg, #041629 0%, #041629f2 9%, #041629b3 26%, #04162999 33%, #04162900 37%);
+  }
+
+  .cinematicWave {
+    position: absolute;
+    inset: auto 0 -1px;
+    display: block;
+    width: 100%;
+    height: 8%;
+  }
+
+  .heroInner {
+    padding: 0;
+  }
+
+  .heroCopy {
+    max-width: none;
+    text-align: center;
+  }
+
+  .heroMessage {
+    display: block;
+    min-height: calc(var(--cinematic-scene-height) - var(--cinematic-header-height));
+    padding: 0.2rem 1.375rem 0;
+  }
+
+  .eyebrow,
+  .heroRail {
+    display: none;
+  }
+
+  .heroTitle {
+    font-size: clamp(1.55rem, 8.2vw, 3.2rem);
+    font-weight: 700;
+    font-synthesis: weight;
+    line-height: 1.17;
+    letter-spacing: -0.05em;
+    -webkit-text-stroke: 0.3px currentColor;
+  }
+
+  .heroTitle:lang(tr) {
+    font-size: clamp(1.4rem, 7.15vw, 2.8rem);
+  }
+
+  .heroTitle > span:not(.signature) {
+    letter-spacing: -0.01em;
+  }
+
+  .heroIntro {
+    margin-top: 0.8rem;
+    color: #d4dff0;
+    font-size: clamp(0.9rem, 3.75vw, 1.3rem);
+    line-height: 1.4;
+    letter-spacing: -0.015em;
+  }
+
+  .heroControls {
+    display: block;
+    padding: 0.75rem 1.375rem 0.75rem;
+    background: var(--hero-navy);
+  }
+
+  .heroActions {
+    display: grid;
+    gap: 0.625rem;
+    margin: 0;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.55rem 1rem;
+    border-radius: 4px;
+    font-size: clamp(1.05rem, 4.6vw, 1.4rem);
+    font-weight: 400;
+  }
+
+  .primaryButton {
+    gap: 1.25rem;
+    border-color: #098eeb;
+    background: linear-gradient(115deg, #008de7, #0652bf);
+  }
+
+  .secondaryButton {
+    border-color: #d6e0ee;
+    background: transparent;
+  }
+
+  .platformLink {
+    min-height: 2.75rem;
+    margin-top: 1rem;
+    padding-bottom: 0;
+    color: #d4dff0;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .heroMessage {
+    padding-inline: 1rem;
   }
 }
 

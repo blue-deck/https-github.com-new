@@ -22,7 +22,7 @@ import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./Ho
 
 type LoadState = "loading" | "ready" | "error";
 
-// Art direction keeps the full yacht visible in both the wide and stacked layouts.
+// Art direction preserves the approved desktop, tablet, and phone compositions.
 const { props: desktopHeroImage } = getImageProps({
   src: "/media/bluedeck-signature-panorama-v1.webp",
   alt: "",
@@ -30,8 +30,15 @@ const { props: desktopHeroImage } = getImageProps({
   quality: 90,
   sizes: "100vw",
 });
-const { props: mobileHeroImage } = getImageProps({
+const { props: tabletHeroImage } = getImageProps({
   src: "/media/bluedeck-yacht-hero-v2.webp",
+  alt: "",
+  fill: true,
+  quality: 90,
+  sizes: "100vw",
+});
+const { props: mobileHeroImage } = getImageProps({
+  src: "/media/bluedeck-mobile-cinematic-v1.webp",
   alt: "",
   fill: true,
   quality: 90,
@@ -211,7 +218,7 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
 
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page} ${heroFontClassName}`}>
-      <PublicHeader />
+      <PublicHeader mobileVariant="cinematic" />
 
       <main id="main-content" data-i18n-ignore>
         <section className={styles.hero} aria-labelledby="home-heading">
@@ -220,8 +227,8 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
               <div className={styles.imageFrame}>
                 <picture>
                   <source media="(min-width: 960px)" srcSet={desktopHeroImage.srcSet} sizes="100vw" />
+                  <source media="(min-width: 641px)" srcSet={tabletHeroImage.srcSet} sizes="100vw" />
                   {/* getImageProps supplies Next.js optimization for the native picture element. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img {...mobileHeroImage} alt="" className={styles.heroImage} />
                 </picture>
               </div>
@@ -251,32 +258,42 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
                 <path d="M0 112C410 112 510 10 800 10" fill="none" stroke="#0877cd" strokeWidth="6" />
                 <path d="M0 110C410 110 510 8 800 8" fill="none" stroke="#c4d4eb" strokeWidth="1.5" />
               </svg>
+              <div className={styles.cinematicShade} />
+              <svg className={styles.cinematicWave} viewBox="0 0 800 120" preserveAspectRatio="none" focusable="false">
+                <path d="M0 8Q400 210 800 8V120H0Z" fill="#041629" />
+                <path d="M0 10Q400 212 800 10" fill="none" stroke="#0756ae" strokeWidth="8" />
+                <path d="M0 7Q400 209 800 7" fill="none" stroke="#c4d4eb" strokeWidth="2.5" />
+              </svg>
             </div>
             <div className={styles.heroInner}>
               <div className={styles.heroCopy}>
-                <p className={styles.eyebrow}>{c.eyebrow}</p>
-                <h1 id="home-heading" className={styles.heroTitle}>
-                  <span>{c.titleLine1}</span>
-                  <span>{c.titleLine2}</span>
-                  <span className={styles.signature}>{c.titleLine3}</span>
-                </h1>
-                <p className={styles.heroIntro}>
-                  <span>{c.introLine1}</span>
-                  <span>{c.introLine2}</span>
-                </p>
-                <div className={styles.heroActions}>
-                  <Link href="/jobs" className={styles.primaryButton}>
-                    {c.browseJobs}
+                <div className={styles.heroMessage}>
+                  <p className={styles.eyebrow}>{c.eyebrow}</p>
+                  <h1 id="home-heading" className={styles.heroTitle}>
+                    <span>{c.titleLine1}</span>
+                    <span>{c.titleLine2}</span>
+                    <span className={styles.signature}>{c.titleLine3}</span>
+                  </h1>
+                  <p className={styles.heroIntro}>
+                    <span>{c.introLine1}</span>
+                    <span>{c.introLine2}</span>
+                  </p>
+                </div>
+                <div className={styles.heroControls}>
+                  <div className={styles.heroActions}>
+                    <Link href="/jobs" className={styles.primaryButton}>
+                      {c.browseJobs}
+                      <ArrowRight aria-hidden />
+                    </Link>
+                    <Link href="/find-crew" className={styles.secondaryButton}>
+                      {c.findCrew}
+                    </Link>
+                  </div>
+                  <Link href="/yacht-os" className={styles.platformLink}>
+                    {c.explorePlatform}
                     <ArrowRight aria-hidden />
                   </Link>
-                  <Link href="/find-crew" className={styles.secondaryButton}>
-                    {c.findCrew}
-                  </Link>
                 </div>
-                <Link href="/yacht-os" className={styles.platformLink}>
-                  {c.explorePlatform}
-                  <ArrowRight aria-hidden />
-                </Link>
               </div>
             </div>
           </div>

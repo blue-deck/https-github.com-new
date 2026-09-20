@@ -37,7 +37,11 @@ function isCurrentRoute(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function PublicHeader() {
+type PublicHeaderProps = {
+  mobileVariant?: "default" | "cinematic";
+};
+
+export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = {}) {
   const pathname = usePathname() || "/";
   const { language, t } = useLanguage();
   const [sessionEmail, setSessionEmail] = useState("");
@@ -99,6 +103,7 @@ export function PublicHeader() {
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
+      if (menuPanelRef.current?.querySelector('[role="menu"]')) return;
       setMenuOpen(false);
       window.setTimeout(() => menuButtonRef.current?.focus(), 0);
     }
@@ -119,33 +124,37 @@ export function PublicHeader() {
     else window.location.reload();
   }
 
+  const menuButton = (
+    <button
+      ref={menuButtonRef}
+      type="button"
+      aria-label={
+        menuOpen
+          ? language === "tr"
+            ? "Menüyü kapat"
+            : "Close menu"
+          : language === "tr"
+            ? "Menüyü aç"
+            : "Open menu"
+      }
+      aria-expanded={menuOpen}
+      aria-controls={menuOpen ? menuId : undefined}
+      onClick={() => setMenuOpen((current) => !current)}
+      className="bd-focus bd-public-menu-button"
+    >
+      {menuOpen ? <X aria-hidden /> : <Menu aria-hidden />}
+    </button>
+  );
+
   return (
-    <header className="bd-public-header">
+    <header className="bd-public-header" data-mobile-variant={mobileVariant}>
       <a className="bd-skip-link" href="#main-content">
         {language === "tr" ? "İçeriğe geç" : "Skip to content"}
       </a>
 
       <div className="bd-public-header-inner">
         <div className="bd-public-brand-group">
-          <button
-            ref={menuButtonRef}
-            type="button"
-            aria-label={
-              menuOpen
-                ? language === "tr"
-                  ? "Menüyü kapat"
-                  : "Close menu"
-                : language === "tr"
-                  ? "Menüyü aç"
-                  : "Open menu"
-            }
-            aria-expanded={menuOpen}
-            aria-controls={menuOpen ? menuId : undefined}
-            onClick={() => setMenuOpen((current) => !current)}
-            className="bd-focus bd-public-menu-button"
-          >
-            {menuOpen ? <X aria-hidden /> : <Menu aria-hidden />}
-          </button>
+          {mobileVariant === "default" ? menuButton : null}
 
           <BlueDeckLogoLink
             href="/"
@@ -153,6 +162,7 @@ export function PublicHeader() {
             className="bd-public-brand"
             imageClassName="object-contain object-left p-0"
           />
+          {mobileVariant === "cinematic" ? menuButton : null}
         </div>
 
         <nav
@@ -260,6 +270,40 @@ export function PublicHeader() {
                 </div>
               ) : null}
             </nav>
+            {mobileVariant === "cinematic" ? (
+              <div className="bd-public-mobile-utilities">
+                <div className="bd-public-mobile-language-row">
+                  <span>{language === "tr" ? "Dil" : "Language"}</span>
+                  <LanguageSwitcher
+                    size="compact"
+                    className="bd-public-mobile-language"
+                  />
+                </div>
+                {sessionEmail ? (
+                  <div
+                    className="bd-public-mobile-auth"
+                    role="group"
+                    aria-label={language === "tr" ? "Hesap" : "Account"}
+                  >
+                    <Link
+                      href="/dashboard"
+                      title={sessionEmail}
+                      onClick={() => setMenuOpen(false)}
+                      className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
+                    >
+                      {t("topbar.dashboard")}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => void logout()}
+                      className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
+                    >
+                      {t("topbar.logout")}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
