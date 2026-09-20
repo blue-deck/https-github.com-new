@@ -284,7 +284,7 @@ function JobDetail({
 
   return (
     <>
-      <section className="border-b border-[#071f3c]/10 bg-white">
+      <section className="border-b border-[var(--bluedeck-tint-line)] bg-[var(--bluedeck-tint)]">
         <div className="bd-page-frame bd-page-gutter mx-auto max-w-[1180px] px-5 py-8 sm:px-8 sm:py-10 lg:px-10 lg:py-12">
           {!embedded ? (
             <Link
@@ -408,7 +408,7 @@ function JobDetail({
             <section
               id="apply"
               aria-labelledby="apply-title"
-              className="min-w-0 scroll-mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-950/5 sm:p-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]"
+              className="bd-filter-panel min-w-0 scroll-mt-6 rounded-2xl border p-5 sm:p-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]"
             >
               <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
                 {c.applicationEyebrow}
@@ -628,14 +628,14 @@ function DetailMessage({
           <button
             type="button"
             onClick={onAction}
-            className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+            className="bd-focus bd-primary-action mt-6 inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-sm font-black text-white transition"
           >
             {actionLabel}
           </button>
         ) : (
           <Link
             href="/jobs"
-            className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+            className="bd-focus bd-primary-action mt-6 inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-sm font-black text-white transition"
           >
             {actionLabel}
           </Link>

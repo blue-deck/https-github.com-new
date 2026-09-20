@@ -657,7 +657,7 @@ export default function CrewTasksPage() {
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
       <div className="bd-ocean-content bd-crew-task-content bd-page-frame bd-page-gutter mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
-        <header className="mb-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+        <header className="bd-page-hero mb-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <p className="bd-kicker">BlueDeck Crew Workspace</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl">
             My Deck
@@ -699,7 +699,7 @@ export default function CrewTasksPage() {
                   <h2 className="mt-2 text-2xl font-black text-slate-950">Yacht crew access</h2>
                   <p className="mt-2 text-sm text-slate-600">{invitations[0].position || "Crew"} · Sent {formatPortalDate(invitations[0].created_at)}</p>
                 </div>
-                <button type="button" onClick={() => acceptInvitation(invitations[0])} disabled={acceptingInviteId === invitations[0].id} className="rounded-xl bg-[#071631] px-5 py-3 text-sm font-black text-white disabled:opacity-60">
+                <button type="button" onClick={() => acceptInvitation(invitations[0])} disabled={acceptingInviteId === invitations[0].id} className="bd-primary-action rounded-xl bg-[#071631] px-5 py-3 text-sm font-black text-white disabled:opacity-60">
                   {acceptingInviteId === invitations[0].id ? "Accepting..." : "Accept Invitation"}
                 </button>
               </div>
@@ -757,7 +757,7 @@ export default function CrewTasksPage() {
                     type="button"
                     onClick={downloadCrewArchivePdf}
                     disabled={pdfAction === "archive"}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
+                    className="bd-primary-action inline-flex items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
                   >
                     {pdfAction === "archive" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     Download Archive PDF
@@ -900,7 +900,7 @@ export default function CrewTasksPage() {
                     <h3 className="mt-2 text-xl font-black text-slate-950" data-i18n-ignore>{yachts[contract.yacht_id]?.name || "Seafarer Employment Agreement"}</h3>
                     <p className="mt-2 text-sm text-slate-500">Received {formatPortalDate(contract.sent_at || contract.created_at)}</p>
                   </div>
-                  <Link href="/contracts" className="rounded-xl bg-[#071631] px-5 py-3 text-center text-sm font-black text-white">Open Contract</Link>
+                  <Link href="/contracts" className="bd-primary-action rounded-xl bg-[#071631] px-5 py-3 text-center text-sm font-black text-white">Open Contract</Link>
                 </div>
               </article>
             ))}
@@ -922,7 +922,7 @@ export default function CrewTasksPage() {
                     type="button"
                     onClick={downloadYachtLogPdf}
                     disabled={pdfAction === "yacht-log"}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
+                    className="bd-primary-action inline-flex items-center justify-center gap-2 rounded-xl bg-[#071631] px-4 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
                   >
                     {pdfAction === "yacht-log" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     Download PDF
@@ -1066,7 +1066,7 @@ export default function CrewTasksPage() {
                       <button
                         onClick={() => acceptInvitation(invitation)}
                         disabled={acceptingInviteId === invitation.id}
-                        className="mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-5 py-4 text-base font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
+                        className="bd-primary-action mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-5 py-4 text-base font-black text-white transition hover:bg-cyan-700 disabled:opacity-60"
                       >
                         {acceptingInviteId === invitation.id && (
                           <Loader2 className="h-5 w-5 animate-spin" />

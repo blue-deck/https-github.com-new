@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
         tabIndex={-1}
         className="bd-site-shell min-h-screen text-[#071f3c]"
       >
-        <section className="border-b border-[#071f3c]/10 bg-white/64">
+        <section className="border-b border-[var(--bluedeck-tint-line)] bg-[var(--bluedeck-tint)]">
           <div className="bd-page-frame bd-page-gutter mx-auto max-w-[1500px] px-5 py-14 sm:px-8 lg:px-12">
             <p className="bd-kicker">{t("forgot.eyebrow")}</p>
             <h1 className="mt-5 text-4xl font-semibold tracking-[-0.02em] text-[#07182d] sm:text-5xl">
@@ -124,7 +124,7 @@ export default function ForgotPasswordPage() {
             >
               {t("forgot.email")}
             </label>
-            <span className="flex h-14 items-center gap-3 rounded-xl border border-[#071f3c]/16 bg-white px-4 text-cyan-700 shadow-sm transition focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10">
+            <span className="flex h-14 items-center gap-3 rounded-xl border border-[#071f3c]/16 bg-white px-4 text-[var(--bluedeck-accent-on-light)] shadow-sm transition focus-within:border-[var(--bluedeck-action)] focus-within:ring-4 focus-within:ring-cyan-500/10">
               <Mail className="h-5 w-5" aria-hidden />
               <input
                 id={emailId}
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
             <div className="mt-5 max-w-xl">
               <div className="rounded-xl border border-[#071f3c]/12 bg-white p-4 shadow-sm">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#07182d]">
-                  <ShieldCheck className="h-4 w-4 text-cyan-700" aria-hidden />
+                  <ShieldCheck className="h-4 w-4 text-[var(--bluedeck-accent-on-light)]" aria-hidden />
                   {t("forgot.security")}
                 </div>
                 <TurnstileWidget
@@ -204,13 +204,13 @@ export default function ForgotPasswordPage() {
             type="submit"
             disabled={loading || sent || !turnstileReady}
             aria-busy={loading}
-            className="mt-6 inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-cyan-600 px-7 text-base font-bold text-white shadow-lg shadow-cyan-700/20 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="bd-focus bd-primary-action mt-6 inline-flex min-h-14 items-center justify-center gap-3 rounded-xl px-7 text-base font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Send className="h-5 w-5" aria-hidden />
             {loading ? t("forgot.sending") : t("forgot.send")}
           </button>
 
-          <Link href="/login" className="mt-6 flex w-fit items-center gap-2 text-sm font-bold text-cyan-700 transition hover:text-[#07182d]">
+          <Link href="/login" className="mt-6 flex w-fit items-center gap-2 text-sm font-bold text-[var(--bluedeck-accent-on-light)] transition hover:text-[#07182d]">
             <ArrowLeft className="h-4 w-4" aria-hidden />
             {t("login.backToLogin")}
           </Link>

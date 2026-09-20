@@ -327,7 +327,7 @@ export function FindCrewClient({
         <div className="bd-page-frame mx-auto w-full max-w-7xl px-5 pb-12 pt-5 sm:px-8 lg:px-[2.625rem] lg:pb-14">
           <section
               aria-labelledby="crew-filter-heading"
-              className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] sm:p-6 lg:pb-[1.625rem]"
+              className="bd-filter-panel rounded-[1.35rem] border p-5 sm:p-6 lg:pb-[1.625rem]"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -469,7 +469,7 @@ export function FindCrewClient({
                   id="crew-advanced-filters"
                   role="region"
                   aria-labelledby="crew-advanced-filters-heading"
-                  className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start"
+                  className="bd-filter-panel min-w-0 rounded-[1.35rem] border p-5 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start"
                 >
                   <h2
                     id="crew-advanced-filters-heading"
@@ -679,7 +679,7 @@ export function FindCrewClient({
                       ) : (
                         <Link
                           href="/login?mode=signup&role=crew"
-                          className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                          className="bd-focus bd-primary-action mt-5 inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-sm font-black text-white transition"
                         >
                           {c.createCrewAccount}
                         </Link>
@@ -746,7 +746,7 @@ function CrewFilterSearchButton({
         aria-label={searching ? searchingLabel : accessibleLabel}
         onClick={onClick}
         disabled={searching}
-        className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-6 text-sm font-black text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
+        className="bd-focus bd-primary-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-6 text-sm font-black text-white shadow-sm transition disabled:cursor-wait disabled:opacity-60"
       >
         {searching ? (
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />

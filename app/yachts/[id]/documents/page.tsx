@@ -302,7 +302,7 @@ export default function DocumentsPage() {
           Back to yacht
         </Link>
 
-        <header className="mt-3 flex flex-col gap-5 border-b border-slate-200 pb-7 sm:mt-5 md:flex-row md:items-end md:justify-between">
+        <header className="bd-page-hero mt-3 flex flex-col gap-5 rounded-[24px] border border-slate-200 p-5 sm:mt-5 sm:p-7 md:flex-row md:items-end md:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm">
               <FolderOpen className="h-6 w-6" aria-hidden />
@@ -470,7 +470,7 @@ export default function DocumentsPage() {
                   type="submit"
                   disabled={uploading}
                   aria-busy={uploading}
-                  className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-cyan-900 disabled:cursor-wait disabled:opacity-60"
+                  className="bd-primary-action bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-cyan-900 disabled:cursor-wait disabled:opacity-60"
                 >
                   {uploading ? (
                     <LoaderCircle

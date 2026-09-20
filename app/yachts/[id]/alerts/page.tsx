@@ -327,7 +327,7 @@ export default function AlertsPage() {
           Back to yacht
         </Link>
 
-        <header className="mt-3 flex flex-col gap-5 border-b border-slate-200 pb-7 sm:mt-5 lg:flex-row lg:items-end lg:justify-between">
+        <header className="bd-page-hero mt-3 flex flex-col gap-5 rounded-[24px] border border-slate-200 p-5 sm:mt-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white shadow-sm">
               <BellRing className="h-6 w-6" aria-hidden />
@@ -356,7 +356,7 @@ export default function AlertsPage() {
             </div>
             <Link
               href={`/yachts/${yachtId}/documents`}
-              className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-black text-white shadow-sm transition hover:bg-cyan-900"
+              className="bd-primary-action bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-black text-white shadow-sm transition hover:bg-cyan-900"
             >
               Manage documents
               <ArrowRight className="h-4 w-4" aria-hidden />

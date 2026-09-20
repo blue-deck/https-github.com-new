@@ -597,7 +597,7 @@ function YachtOverviewState({
               <button
                 type="button"
                 onClick={onRetry}
-                className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-cyan-800"
               >
                 Try again
               </button>
@@ -636,7 +636,7 @@ function PrimaryLink({
   return (
     <Link
       href={href}
-      className="bd-focus inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800"
+      className="bd-primary-action bd-focus inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800"
     >
       <Icon className="h-5 w-5 text-cyan-300" />
       {label}

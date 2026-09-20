@@ -1,10 +1,10 @@
 .page {
-  --home-ink: #07182d;
+  --home-ink: var(--bluedeck-feature);
   --home-muted: #52657a;
-  --home-blue: #075fad;
-  --home-blue-hover: #064f91;
+  --home-blue: var(--bluedeck-action);
+  --home-blue-hover: var(--bluedeck-action-hover);
   --home-line: rgba(7, 24, 45, 0.12);
-  background: #f7f9fc;
+  background: var(--bluedeck-canvas);
   color: var(--home-ink);
 }
 
@@ -113,7 +113,7 @@
 }
 
 .eyebrow {
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -224,7 +224,7 @@
 
 .jobsSection {
   position: relative;
-  background: linear-gradient(180deg, #fff 0%, #f7f9fc 14rem, #f7f9fc 100%);
+  background: linear-gradient(180deg, #fff 0%, var(--bluedeck-tint) 14rem, var(--bluedeck-tint) 100%);
 }
 
 .sectionHeadingRow {
@@ -258,13 +258,13 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 0.5rem;
-  color: #075fad;
+  color: var(--home-blue);
   font-size: 0.88rem;
   font-weight: 800;
 }
 
 .sectionLink:hover {
-  color: #064f91;
+  color: var(--home-blue-hover);
 }
 
 .jobsGrid {
@@ -280,16 +280,16 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  border: 1px dashed rgba(14, 116, 144, 0.35);
+  border: 1px dashed var(--bluedeck-tint-line);
   border-radius: 0.9rem;
-  background: #f3fafb;
+  background: var(--bluedeck-tint);
   padding: 1.5rem;
 }
 
 .jobsEmpty > svg {
   width: 1.5rem;
   height: 1.5rem;
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
 }
 
 .jobsEmpty h3 {
@@ -310,11 +310,15 @@
   align-items: center;
   gap: 0.5rem;
   border-radius: 0.6rem;
-  background: var(--home-ink);
+  background: var(--home-blue);
   padding-inline: 0.9rem;
   color: #fff;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.jobsEmpty a:hover {
+  background: var(--home-blue-hover);
 }
 
 .rolePrompt {
@@ -323,9 +327,9 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.9rem 1rem;
   align-content: center;
-  border: 1px solid rgba(14, 116, 144, 0.22);
+  border: 1px solid var(--bluedeck-tint-line);
   border-radius: 0.9rem;
-  background: #edf8fa;
+  background: var(--bluedeck-tint);
   padding: 1.35rem;
 }
 
@@ -333,11 +337,11 @@
 .rolePrompt > svg {
   width: 1.35rem;
   height: 1.35rem;
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
 }
 
 .rolePrompt p {
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
   font-size: 0.69rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -366,7 +370,7 @@
   align-items: center;
   gap: 0.5rem;
   justify-self: start;
-  color: #075fad;
+  color: var(--home-blue);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -430,9 +434,9 @@
   align-items: center;
   gap: 0.3rem;
   border-radius: 999px;
-  background: #edf6f9;
+  background: var(--bluedeck-tint);
   padding: 0.35rem 0.5rem;
-  color: #155e75;
+  color: var(--bluedeck-accent-on-light);
   font-size: 0.65rem;
   font-weight: 750;
 }
@@ -463,8 +467,8 @@
   height: 2.3rem;
   place-items: center;
   border-radius: 0.6rem;
-  background: #eaf7fa;
-  color: #0e7490;
+  background: var(--bluedeck-tint-strong);
+  color: var(--bluedeck-accent-on-light);
 }
 
 .featureRow svg {
@@ -486,12 +490,12 @@
 
 .darkButton {
   margin-top: 1.75rem;
-  background: var(--home-ink);
+  background: var(--home-blue);
   color: #fff;
 }
 
 .darkButton:hover {
-  background: #123d63;
+  background: var(--home-blue-hover);
   transform: translateY(-1px);
 }
 
@@ -561,7 +565,7 @@
 }
 
 .trustActions .primaryButton:hover {
-  background: #e9f6fb;
+  background: var(--bluedeck-tint);
 }
 
 @media (max-width: 900px) {

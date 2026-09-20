@@ -167,7 +167,7 @@ export default function YachtsPage() {
           <button
             type="button"
             onClick={() => void fetchYachts()}
-            className="bd-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-cyan-600 px-6 font-bold text-white transition hover:bg-cyan-700"
+            className="bd-primary-action bd-focus mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-cyan-600 px-6 font-bold text-white transition hover:bg-cyan-700"
           >
             Try again
           </button>
@@ -189,7 +189,7 @@ export default function YachtsPage() {
           Dashboard
         </Link>
 
-        <div className="bd-glass-card-strong overflow-hidden rounded-[34px]">
+        <div className="bd-page-hero bd-glass-card-strong overflow-hidden rounded-[34px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-8">
             <p className="bd-kicker">Captain Workspace</p>
@@ -266,7 +266,7 @@ export default function YachtsPage() {
               <button
                 type="submit"
                 disabled={creating}
-                className="bd-focus min-h-12 w-full rounded-xl bg-[#071f3c] px-5 py-3 font-bold text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
+                className="bd-primary-action bd-focus min-h-12 w-full rounded-xl bg-[#071f3c] px-5 py-3 font-bold text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
               >
                 {creating ? "Creating yacht..." : "Create Yacht"}
               </button>

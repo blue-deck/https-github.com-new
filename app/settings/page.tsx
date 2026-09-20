@@ -315,7 +315,7 @@ export default function SettingsPage() {
       />
 
       <div className="bd-page-frame relative mx-auto max-w-[1080px]">
-        <header className="border-b-2 border-[#17394a] pb-7 sm:pb-8">
+        <header className="bd-page-hero rounded-[24px] border border-[#cbd8dc] p-5 sm:p-7">
           <div className="grid gap-7 md:grid-cols-[minmax(0,1fr)_340px] md:items-end">
             <div>
               <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#0b7682] sm:text-[11px]">
@@ -414,7 +414,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={savingProfile || !profileChanged}
-                  className="bd-focus inline-flex min-h-11 items-center justify-center rounded-[6px] bg-[#09263a] px-5 text-sm font-semibold text-white transition hover:bg-[#123e54] disabled:cursor-not-allowed disabled:bg-[#dce5e8] disabled:text-[#8797a0]"
+                  className="bd-primary-action bd-focus inline-flex min-h-11 items-center justify-center rounded-[6px] bg-[#09263a] px-5 text-sm font-semibold text-white transition hover:bg-[#123e54] disabled:cursor-not-allowed disabled:bg-[#dce5e8] disabled:text-[#8797a0]"
                 >
                   {savingProfile ? t("settings.savingProfile") : t("settings.saveProfile")}
                 </button>
@@ -598,7 +598,7 @@ export default function SettingsPage() {
                     <button
                       type="submit"
                       disabled={savingPassword}
-                      className="bd-focus min-h-11 rounded-[6px] bg-[#09263a] px-5 text-sm font-semibold text-white transition hover:bg-[#123e54] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="bd-primary-action bd-focus min-h-11 rounded-[6px] bg-[#09263a] px-5 text-sm font-semibold text-white transition hover:bg-[#123e54] disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {savingPassword ? t("settings.changingPassword") : t("settings.changePassword")}
                     </button>

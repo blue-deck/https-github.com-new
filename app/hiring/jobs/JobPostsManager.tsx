@@ -695,7 +695,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
               </p>
               <Link
                 href="/hiring"
-                className="bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden />
                 {c.reviewAccess}
@@ -710,7 +710,7 @@ export function JobPostsManager({ initialJobId = "" }: { initialJobId?: string }
   return (
     <main className="bd-app-page bd-page-gutter min-h-screen overflow-x-hidden bg-slate-50 px-4 pb-24 pt-6 text-slate-900 sm:px-7 sm:pt-8 lg:px-10">
       <div className="bd-page-frame mx-auto w-full max-w-[1180px]">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <header className="bd-page-hero flex flex-col gap-4 rounded-2xl border border-slate-200 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
           <div>
             <h1 className="text-3xl font-semibold tracking-[-0.04em] text-[#071f3c] sm:text-4xl">
               {selectedJob ? c.editTitle : c.createTitle}
@@ -1739,7 +1739,7 @@ function ActionButton({
   onClick: () => void;
 }) {
   const tone = primary
-    ? "border-[#071f3c] bg-[#071f3c] text-white hover:bg-cyan-800"
+    ? "bd-primary-action border-[#071f3c] bg-[#071f3c] text-white hover:bg-cyan-800"
     : danger
       ? "border-rose-200 bg-white text-rose-700 hover:bg-rose-50"
       : "border-slate-200 bg-white text-[#071f3c] hover:border-cyan-300 hover:bg-cyan-50";
@@ -1803,7 +1803,7 @@ function MessageState({
             <button
               type="button"
               onClick={onAction}
-              className="bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
             >
               <RefreshCw className="h-4 w-4" aria-hidden />
               {action}

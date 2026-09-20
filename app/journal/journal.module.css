@@ -1,6 +1,6 @@
 .shell {
   min-height: 100vh;
-  color: #0b2844;
+  color: var(--bluedeck-feature);
   background: #fff;
 }
 
@@ -16,7 +16,7 @@
 
 .eyebrow {
   margin: 0;
-  color: #47708c;
+  color: var(--bluedeck-accent-on-light);
   font-size: 11px;
   font-weight: 650;
   line-height: 1.5;
@@ -28,7 +28,7 @@
 .articleHeader h1,
 .notFound h1 {
   margin: 18px 0 20px;
-  color: #0b2844;
+  color: var(--bluedeck-feature);
   font-size: clamp(36px, 4.7vw, 62px);
   font-weight: 500;
   line-height: 1.1;
@@ -68,7 +68,7 @@
 .readLink:focus-visible,
 .backLink:focus-visible,
 .contents a:focus-visible {
-  outline: 3px solid #377aa5;
+  outline: 3px solid var(--bluedeck-action);
   outline-offset: 5px;
 }
 
@@ -102,7 +102,7 @@
 .cardCopy h2,
 .cardCopy h3 {
   margin: 12px 0;
-  color: #0b2844;
+  color: var(--bluedeck-feature);
   font-size: 26px;
   font-weight: 550;
   line-height: 1.25;
@@ -146,7 +146,7 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  color: #123e61;
+  color: var(--bluedeck-action);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.5;
@@ -155,7 +155,7 @@
 
 .readLink:hover,
 .backLink:hover {
-  color: #267bb0;
+  color: var(--bluedeck-action-hover);
 }
 
 .sideCard + .sideCard {
@@ -198,8 +198,8 @@
   gap: 40px;
   padding: 40px 44px;
   margin-bottom: 80px;
-  background: #f0f5f8;
-  border: 1px solid #e3ebf1;
+  background: var(--bluedeck-tint);
+  border: 1px solid var(--bluedeck-tint-line);
   border-radius: 10px;
 }
 
@@ -229,7 +229,7 @@
   min-height: 48px;
   padding: 13px 20px;
   color: #fff;
-  background: #103554;
+  background: var(--bluedeck-action);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 550;
@@ -241,7 +241,7 @@
 
 .primaryLink:hover {
   color: #fff;
-  background: #1c4f77;
+  background: var(--bluedeck-action-hover);
 }
 
 .articleHeader {
@@ -322,7 +322,7 @@
 }
 
 .contents a:hover {
-  color: #173f61;
+  color: var(--bluedeck-action-hover);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
@@ -338,7 +338,7 @@
 
 .articleSection h2 {
   margin: 0 0 20px;
-  color: #0b2844;
+  color: var(--bluedeck-feature);
   font-size: clamp(23px, 2.25vw, 29px);
   font-weight: 550;
   line-height: 1.3;

@@ -51,7 +51,7 @@ export function PublicJobListingCard({
       data-job-card-layout="compact-porcelain"
       data-compact={compact}
       data-appearance={appearance}
-      className={styles.card}
+      className={`bd-listing-card ${styles.card}`}
     >
       <div className={styles.layout}>
         <div className={styles.header}>
@@ -88,7 +88,7 @@ export function PublicJobListingCard({
         </dl>
 
         <div className={styles.actions} data-single-action={action.intent === "view"}>
-          <Link href={action.detailHref} className={`bd-focus ${styles.primaryAction}`}>
+          <Link href={action.detailHref} className={`bd-focus bd-primary-action ${styles.primaryAction}`}>
             <span>{c.viewRole}</span>
             <ArrowRight aria-hidden />
           </Link>
@@ -114,7 +114,7 @@ export function PublicJobListingSkeleton({
   appearance?: "default" | "homepage";
 }) {
   return (
-    <div className={`${styles.card} ${styles.skeleton}`} data-compact={compact} data-appearance={appearance} aria-hidden="true">
+    <div className={`bd-listing-card ${styles.card} ${styles.skeleton}`} data-compact={compact} data-appearance={appearance} aria-hidden="true">
       <div className={styles.layout}>
         <div className={styles.header}>
           <div className={styles.titlePlaceholder} />

@@ -182,7 +182,7 @@ export default function ConfirmAuthPage() {
         {status !== "loading" && (
           <Link
             href={loginHref}
-            className="mt-7 inline-flex rounded-2xl bg-cyan-600 px-6 py-4 font-black text-white transition hover:bg-cyan-700"
+            className="bd-focus bd-primary-action mt-7 inline-flex rounded-2xl px-6 py-4 font-black text-white transition"
           >
             Login to BlueDeck
           </Link>

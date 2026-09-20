@@ -337,7 +337,7 @@ export function BlueDeckTopBar() {
               >
                 <div className="bd-brand-rule h-1 shrink-0" />
 
-                <div className="bd-account-drawer-header shrink-0 border-b border-slate-200 bg-white px-5 pb-5 pt-5">
+                <div className="bd-account-drawer-header bd-filter-panel shrink-0 border-b border-slate-200 bg-white px-5 pb-5 pt-5">
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
                       {t("topbar.account")}

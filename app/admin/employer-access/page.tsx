@@ -534,7 +534,7 @@ export default function AdminEmployerAccessPage() {
               <button
                 type="button"
                 onClick={() => void loadRequests()}
-                className="bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden />
                 {c.retry}
@@ -580,7 +580,7 @@ export default function AdminEmployerAccessPage() {
                 type="button"
                 onClick={() => void loadRequests("refresh")}
                 disabled={refreshing}
-                className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
+                className="bd-primary-action bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
@@ -1301,7 +1301,7 @@ function AccessDenied({
             </p>
             <Link
               href="/dashboard"
-              className="bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
               {c.dashboard}

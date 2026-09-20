@@ -457,7 +457,7 @@ export function JobsClient({
         >
           <section
               aria-labelledby="jobs-filter-heading"
-              className="rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] sm:p-6 lg:pb-[1.625rem]"
+              className="bd-filter-panel rounded-[1.35rem] border p-5 sm:p-6 lg:pb-[1.625rem]"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -627,7 +627,7 @@ export function JobsClient({
                   id="advanced-job-filters"
                   role="region"
                   aria-labelledby="advanced-job-filters-heading"
-                  className="min-w-0 rounded-[1.35rem] border border-slate-200 bg-white p-5 shadow-[0_18px_55px_rgba(15,45,72,0.07)] xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start"
+                  className="bd-filter-panel min-w-0 rounded-[1.35rem] border p-5 xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start"
                 >
                   <h2
                     id="advanced-job-filters-heading"
@@ -1017,7 +1017,7 @@ function JobFilterSearchButton({
         type="button"
         onClick={onSearch}
         disabled={searchDisabled}
-        className="bd-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-sm transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45"
+        className="bd-focus bd-primary-action inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-black text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-45"
       >
         <Search className="h-4 w-4" aria-hidden />
         {label}
@@ -1712,7 +1712,7 @@ function RequestError({
       <button
         type="button"
         onClick={onRetry}
-        className="bd-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+        className="bd-focus bd-primary-action mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl px-5 text-sm font-black text-white transition"
       >
         <RefreshCw className="h-4 w-4" aria-hidden />
         {retry}
@@ -1741,7 +1741,7 @@ function EmptyState({
       {action ? (
         <Link
           href={action.href}
-          className="bd-focus mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+          className="bd-focus bd-primary-action mt-6 inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-sm font-black text-white transition"
         >
           {action.label}
         </Link>
@@ -1769,7 +1769,7 @@ function NoMatches({
       <button
         type="button"
         onClick={onClear}
-        className="bd-focus mt-5 inline-flex min-h-11 items-center justify-center rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+        className="bd-focus bd-primary-action mt-5 inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-sm font-black text-white transition"
       >
         {c.clear}
       </button>

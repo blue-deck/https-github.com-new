@@ -267,7 +267,7 @@ export default function HiringPage() {
               <button
                 type="button"
                 onClick={() => void loadHiringWorkspace()}
-                className="bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden />
                 {c.retry}
@@ -306,7 +306,7 @@ export default function HiringPage() {
             {canCreateJob ? (
               <Link
                 href="/hiring/jobs"
-                className="bd-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition hover:bg-cyan-800"
               >
                 <Plus className="h-4 w-4" aria-hidden />
                 {c.createPost}
@@ -533,7 +533,7 @@ function JobPostCard({
         <Link
           href={`/hiring/jobs/${encodeURIComponent(job.id)}/applications`}
           aria-label={`${c.viewApplicants}: ${title}`}
-          className="bd-focus flex min-h-14 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800 motion-reduce:transition-none"
+          className="bd-primary-action bd-focus flex min-h-14 items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800 motion-reduce:transition-none"
         >
           {c.viewApplicants}
           <ArrowRight

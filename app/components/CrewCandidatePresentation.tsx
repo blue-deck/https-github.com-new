@@ -38,6 +38,7 @@ export type CrewCandidateCardProfile = {
   yachtExperienceYears?: number;
   otherExperienceYears?: number;
   premiumProfile: boolean;
+  availabilityStatus?: string;
 };
 
 export type CrewCandidateCardCopy = {
@@ -180,7 +181,7 @@ export function CrewCandidatePassportCard({
     </>
   );
   const actionClassName =
-    "bd-focus flex min-h-14 w-full items-center justify-between rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-[0_12px_28px_-18px_rgba(7,31,60,0.9)] transition hover:bg-cyan-800";
+    "bd-focus bd-primary-action flex min-h-14 w-full items-center justify-between rounded-xl px-5 text-sm font-black text-white transition";
 
   if (layout === "navy-ticket") {
     return (
@@ -188,7 +189,7 @@ export function CrewCandidatePassportCard({
         aria-labelledby={titleId}
         data-crew-card-layout={layout}
         data-compact={compact}
-        className={cardStyles.card}
+        className={`bd-listing-card ${cardStyles.card}`}
       >
         <div className={cardStyles.content}>
           <div className={cardStyles.header}>
@@ -231,7 +232,12 @@ export function CrewCandidatePassportCard({
             <NavyTicketFact
               icon={<CalendarDays />}
               label={copy.availableToStart}
-              value={availabilityValue || copy.notProvided}
+              value={
+                <CrewAvailabilityBadge
+                  status={candidate.availabilityStatus}
+                  label={availabilityValue || copy.notProvided}
+                />
+              }
             />
             <NavyTicketFact
               icon={<Anchor />}
@@ -253,7 +259,7 @@ export function CrewCandidatePassportCard({
               <Link
                 href={profileHref}
                 aria-label={actionLabel}
-                className={`bd-focus ${cardStyles.action}`}
+                className={`bd-focus bd-primary-action ${cardStyles.action}`}
               >
                 {actionContent}
               </Link>
@@ -262,7 +268,7 @@ export function CrewCandidatePassportCard({
                 type="button"
                 onClick={onView}
                 aria-label={actionLabel}
-                className={`bd-focus ${cardStyles.action}`}
+                className={`bd-focus bd-primary-action ${cardStyles.action}`}
               >
                 {actionContent}
               </button>
@@ -276,7 +282,7 @@ export function CrewCandidatePassportCard({
   return (
     <article
       aria-labelledby={titleId}
-      className={`group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] focus-within:border-cyan-400 motion-reduce:transform-none ${
+      className={`bd-listing-card group relative grid overflow-hidden rounded-[1.35rem] border border-slate-200/90 bg-white shadow-[0_18px_55px_-42px_rgba(7,31,60,0.48)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-[0_24px_70px_-42px_rgba(8,145,178,0.38)] focus-within:border-cyan-400 motion-reduce:transform-none ${
         compact
           ? "lg:grid-cols-[28%_46%_26%]"
           : "lg:min-h-[190px] lg:grid-cols-[minmax(17rem,1fr)_minmax(24rem,1.55fr)_minmax(14rem,0.75fr)]"
@@ -352,7 +358,12 @@ export function CrewCandidatePassportCard({
         <PassportFact
           icon={<CalendarDays />}
           label={copy.availableToStart}
-          value={availabilityValue || copy.notProvided}
+          value={
+            <CrewAvailabilityBadge
+              status={candidate.availabilityStatus}
+              label={availabilityValue || copy.notProvided}
+            />
+          }
         />
         <PassportFact
           icon={<BriefcaseBusiness />}
@@ -404,6 +415,29 @@ export function CrewCandidatePassportCard({
         )}
       </div>
     </article>
+  );
+}
+
+export function CrewAvailabilityBadge({
+  status,
+  label,
+}: {
+  status?: string;
+  label: string;
+}) {
+  const statusClass =
+    status === "Available"
+      ? "bd-status-available"
+      : status === "In 1 week" || status === "In 1 month"
+        ? "bd-status-pending"
+        : "bd-status-neutral";
+
+  return (
+    <span
+      className={`${statusClass} inline-flex max-w-full items-center rounded-full border px-2.5 py-1 text-xs font-semibold leading-4`}
+    >
+      {label}
+    </span>
   );
 }
 

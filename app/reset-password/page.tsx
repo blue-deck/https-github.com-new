@@ -255,7 +255,7 @@ export default function ResetPasswordPage() {
                   aria-label={showPassword ? t("settings.hidePassword") : t("settings.showPassword")}
                   aria-controls={`${passwordId} ${confirmPasswordId}`}
                   aria-pressed={showPassword}
-                  className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-cyan-700"
+                  className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[var(--bluedeck-accent-on-light)]"
                 >
                   {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
                 </button>
@@ -265,7 +265,7 @@ export default function ResetPasswordPage() {
 
               <p
                 id={passwordRequirementsId}
-                className="rounded-2xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600"
+                className="rounded-2xl border border-[var(--bluedeck-tint-line)] bg-[var(--bluedeck-tint)] px-4 py-3 text-xs leading-5 text-slate-600"
               >
                 {t("login.minimumSignupPassword")}. {t("login.passwordRequirements")}
               </p>
@@ -293,7 +293,7 @@ export default function ResetPasswordPage() {
                 type="submit"
                 disabled={saving}
                 aria-busy={saving}
-                className="inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-[#0b2fba] px-6 py-4 text-base font-black text-white shadow-xl shadow-blue-950/18 transition hover:bg-[#09248f] disabled:opacity-60"
+                className="bd-focus bd-primary-action inline-flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-black text-white transition disabled:opacity-60"
               >
                 {saving ? t("reset.saving") : t("reset.save")}
               </button>
@@ -304,7 +304,7 @@ export default function ResetPasswordPage() {
             <button
               type="button"
               onClick={() => void confirmRecovery()}
-              className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-[#0b2fba] px-6 py-4 text-base font-black text-white shadow-xl shadow-blue-950/18 transition hover:bg-[#09248f]"
+              className="bd-focus bd-primary-action mt-7 inline-flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-base font-black text-white transition"
             >
               <ShieldCheck className="h-5 w-5" aria-hidden />
               {t("reset.continueSecurely")}
@@ -312,13 +312,13 @@ export default function ResetPasswordPage() {
           )}
 
           {(status === "done" || status === "error") && (
-            <Link href={status === "done" ? "/login" : "/forgot-password"} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#07182d] px-6 py-4 font-black text-white transition hover:bg-[#0b2842]">
+            <Link href={status === "done" ? "/login" : "/forgot-password"} className="bd-focus bd-primary-action mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 font-black text-white transition">
               {status === "done" ? t("login.backToLogin") : t("reset.requestNew")}
             </Link>
           )}
 
           {status === "ready" && (
-            <Link href="/login" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#0b2fba] transition hover:text-cyan-700">
+            <Link href="/login" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[var(--bluedeck-action)] transition hover:text-[var(--bluedeck-accent-on-light)]">
               <ArrowLeft className="h-4 w-4" aria-hidden />
               {t("login.backToLogin")}
             </Link>
@@ -381,7 +381,7 @@ function AuthField({
       >
         {label}
       </label>
-      <span className="flex items-center gap-3 rounded-2xl border border-[#071f3c]/14 bg-white px-4 py-4 text-cyan-700 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-100">
+      <span className="flex items-center gap-3 rounded-2xl border border-[#071f3c]/14 bg-white px-4 py-4 text-[var(--bluedeck-accent-on-light)] focus-within:border-[var(--bluedeck-action)] focus-within:ring-4 focus-within:ring-cyan-100">
         {icon}
         {children}
       </span>

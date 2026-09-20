@@ -411,9 +411,9 @@ export default function LoginPage() {
             {featureBullets.map((item) => (
               <div
                 key={item}
-                className="flex items-center gap-3 rounded-xl border border-[#071f3c]/10 bg-white/80 px-4 py-3"
+                className="flex items-center gap-3 rounded-xl border border-[var(--bluedeck-tint-line)] bg-[var(--bluedeck-tint)] px-4 py-3"
               >
-                <CheckCircle2 className="h-5 w-5 text-cyan-700" aria-hidden />
+                <CheckCircle2 className="h-5 w-5 text-[var(--bluedeck-accent-on-light)]" aria-hidden />
                 {t(item)}
               </div>
             ))}
@@ -448,7 +448,7 @@ export default function LoginPage() {
                 setCaptchaToken("");
               }}
               aria-pressed={mode === "login"}
-              className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "login" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
+              className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "login" ? "bg-[var(--bluedeck-tint-strong)] text-[var(--bluedeck-accent-on-light)] shadow-sm" : "text-slate-600 hover:bg-white"}`}
             >
               {t("login.tabLogin")}
             </button>
@@ -460,7 +460,7 @@ export default function LoginPage() {
                 setCaptchaAttempt((attempt) => attempt + 1);
               }}
               aria-pressed={mode === "signup"}
-              className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "signup" ? "bg-[#071f3c] text-white" : "text-slate-600 hover:bg-white"}`}
+              className={`bd-focus min-h-11 rounded-lg px-4 py-2.5 text-sm font-semibold ${mode === "signup" ? "bg-[var(--bluedeck-tint-strong)] text-[var(--bluedeck-accent-on-light)] shadow-sm" : "text-slate-600 hover:bg-white"}`}
             >
               {t("login.tabSignup")}
             </button>
@@ -509,7 +509,7 @@ export default function LoginPage() {
                       setRole(nextRole);
                       setPosition(getDefaultPositionForAccountType(nextRole));
                     }}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-[var(--bluedeck-action)] focus:ring-4 focus:ring-cyan-100"
                   >
                     <option value="">{t("login.selectAccountType")}</option>
                     <option value="crew">{t("login.roleCrew")}</option>
@@ -531,7 +531,7 @@ export default function LoginPage() {
                     value={position}
                     required
                     onChange={(event) => setPosition(event.target.value)}
-                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                    className="min-h-12 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-[var(--bluedeck-action)] focus:ring-4 focus:ring-cyan-100"
                   >
                     <option value="">{t("login.selectPosition")}</option>
                     {positionSelectGroups.map((group) => (
@@ -592,7 +592,7 @@ export default function LoginPage() {
                 aria-label={showPassword ? t("settings.hidePassword") : t("settings.showPassword")}
                 aria-controls={passwordId}
                 aria-pressed={showPassword}
-                className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-cyan-700"
+                className="bd-focus flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-[var(--bluedeck-accent-on-light)]"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
               </button>
@@ -601,7 +601,7 @@ export default function LoginPage() {
             {mode === "signup" && (
               <>
                 <PasswordStrengthMeter strength={passwordStrength} />
-                <p className="rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs leading-5 text-slate-600">
+                <p className="rounded-xl border border-[var(--bluedeck-tint-line)] bg-[var(--bluedeck-tint)] px-4 py-3 text-xs leading-5 text-slate-600">
                   {t("login.passwordRequirements")}
                 </p>
               </>
@@ -618,11 +618,11 @@ export default function LoginPage() {
                 />
                 <span>
                   {t("login.legalAgree")}{" "}
-                  <Link href="/privacy" className="bd-focus rounded-sm font-semibold text-cyan-700">
+                  <Link href="/privacy" className="bd-focus rounded-sm font-semibold text-[var(--bluedeck-accent-on-light)]">
                     {t("login.privacyPolicy")}
                   </Link>
                   {" "}{t("login.legalAnd")}{" "}
-                  <Link href="/terms" className="bd-focus rounded-sm font-semibold text-cyan-700">
+                  <Link href="/terms" className="bd-focus rounded-sm font-semibold text-[var(--bluedeck-accent-on-light)]">
                     {t("login.termsOfUse")}
                   </Link>
                   . <span aria-hidden="true" className="text-rose-500">*</span>
@@ -645,7 +645,7 @@ export default function LoginPage() {
             {turnstileEnabled && turnstileSiteKey ? (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                  <ShieldCheck className="h-4 w-4 text-cyan-700" aria-hidden />
+                  <ShieldCheck className="h-4 w-4 text-[var(--bluedeck-accent-on-light)]" aria-hidden />
                   {t("login.security")}
                 </div>
                 <TurnstileWidget
@@ -681,13 +681,13 @@ export default function LoginPage() {
               type="submit"
               disabled={loading || !turnstileReady}
               aria-busy={loading}
-              className="bd-focus min-h-12 w-full rounded-xl bg-[#071f3c] px-5 py-3 font-bold text-white transition hover:bg-[#0d355f] disabled:cursor-wait disabled:opacity-60"
+              className="bd-focus bd-primary-action min-h-12 w-full rounded-xl px-5 py-3 font-bold text-white transition disabled:cursor-wait disabled:opacity-60"
             >
               {loading ? t("login.wait") : mode === "login" ? t("login.loginButton") : t("login.createButton")}
             </button>
 
             <div className="flex flex-wrap justify-between gap-3 text-sm">
-              <Link href={forgotPasswordHref} className="bd-focus inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-cyan-700">
+              <Link href={forgotPasswordHref} className="bd-focus inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-[var(--bluedeck-accent-on-light)]">
                 {t("login.forgot")}
               </Link>
               <button type="button" disabled={loading || !turnstileReady} onClick={resendConfirmation} className="bd-focus min-h-11 rounded-lg px-1 font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50">
@@ -696,7 +696,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-500">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[var(--bluedeck-accent-on-light)]" aria-hidden />
               {t("login.protection")}
             </div>
           </div>
@@ -729,7 +729,7 @@ function AuthField({
         {label}{" "}
         {required ? <span aria-hidden="true" className="text-rose-500">*</span> : null}
       </label>
-      <span className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-cyan-700 focus-within:border-cyan-400 focus-within:ring-4 focus-within:ring-cyan-100">
+      <span className="flex min-h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-[var(--bluedeck-accent-on-light)] focus-within:border-[var(--bluedeck-action)] focus-within:ring-4 focus-within:ring-cyan-100">
         {icon}
         {children}
       </span>

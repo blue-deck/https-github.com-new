@@ -16,7 +16,7 @@
 }
 
 .eyebrow {
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -27,7 +27,7 @@
 .sectionHeading h2,
 .trust h2 {
   margin-top: 0.8rem;
-  color: #07182d;
+  color: var(--bluedeck-feature);
   font-size: clamp(2.15rem, 4vw, 3.75rem);
   font-weight: 650;
   letter-spacing: -0.045em;
@@ -61,7 +61,7 @@
   height: 1rem;
   flex: 0 0 auto;
   margin-top: 0.2rem;
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
 }
 
 .overviewVisual {
@@ -88,7 +88,7 @@
   border-radius: 0.65rem;
   background: rgba(255, 255, 255, 0.92);
   padding: 0.85rem;
-  color: #07182d;
+  color: var(--bluedeck-feature);
   font-size: 0.78rem;
   font-weight: 800;
   backdrop-filter: blur(12px);
@@ -97,7 +97,7 @@
 .overviewVisual svg {
   width: 1rem;
   height: 1rem;
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
 }
 
 .capabilities {
@@ -130,8 +130,8 @@
   height: 2.5rem;
   place-items: center;
   border-radius: 0.6rem;
-  background: #eaf7fa;
-  color: #0e7490;
+  background: var(--bluedeck-tint-strong);
+  color: var(--bluedeck-accent-on-light);
 }
 
 .capability svg {
@@ -142,7 +142,7 @@
 .capability h3,
 .step h3 {
   margin-top: 1.2rem;
-  color: #07182d;
+  color: var(--bluedeck-feature);
   font-size: 1.15rem;
   font-weight: 800;
 }
@@ -160,12 +160,12 @@
 }
 
 .step {
-  border-top: 2px solid #0e7490;
+  border-top: 2px solid var(--bluedeck-tint-line);
   padding: 1.25rem 0.25rem 0;
 }
 
 .step small {
-  color: #0e7490;
+  color: var(--bluedeck-accent-on-light);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -183,7 +183,7 @@
   gap: 2.5rem;
   margin-bottom: clamp(4rem, 8vw, 7rem);
   border-radius: 1rem;
-  background: #07182d;
+  background: var(--bluedeck-feature);
   padding: clamp(1.75rem, 5vw, 3.5rem);
   color: #ffffff;
 }
@@ -242,12 +242,21 @@
 
 .primaryAction {
   background: #ffffff;
-  color: #07182d;
+  color: var(--bluedeck-feature);
+}
+
+.primaryAction:hover {
+  background: var(--bluedeck-tint);
 }
 
 .secondaryAction {
   border: 1px solid rgba(255, 255, 255, 0.34);
   color: #ffffff;
+}
+
+.secondaryAction:hover {
+  border-color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 @media (max-width: 900px) {

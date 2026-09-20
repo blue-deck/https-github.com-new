@@ -80,7 +80,7 @@ export default function ImoCrewListPage() {
           </div>
           <button
             onClick={() => window.print()}
-            className="flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 font-black text-black"
+            className="bd-primary-action flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 font-black text-black"
           >
             <Download className="h-5 w-5" />
             Download / Save PDF

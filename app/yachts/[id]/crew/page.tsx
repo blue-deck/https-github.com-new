@@ -2586,7 +2586,7 @@ export default function CrewPage({
                       <button
                         type="submit"
                         disabled={loading || (!crewPublicId.trim() && !inviteEmail.trim())}
-                        className="bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-7 py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
+                        className="bd-primary-action bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-slate-950 px-7 py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
                       >
                         <Send className="h-5 w-5" />
                         {loading ? "Sending..." : "Send Yacht Invite"}
@@ -2678,7 +2678,7 @@ export default function CrewPage({
                         <button
                           type="button"
                           onClick={() => setCrewCommandSection("invite")}
-                          className="bd-focus mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"
+                          className="bd-primary-action bd-focus mt-4 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white"
                         >
                           Open Crew Invitation
                         </button>
@@ -2874,7 +2874,7 @@ export default function CrewPage({
                                       type="button"
                                       onClick={() => void saveCrewEdit(member)}
                                       disabled={savingCrewId === member.id}
-                                      className="bd-focus inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-50"
+                                      className="bd-primary-action bd-focus inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-50"
                                     >
                                       <Save className="h-4 w-4" />
                                       {savingCrewId === member.id ? "Saving..." : "Save changes"}
@@ -3560,7 +3560,7 @@ export default function CrewPage({
                         type="button"
                         onClick={assignContract}
                         disabled={loading || !selectedCrew}
-                        className="bd-surface-inverse mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#08313b] py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-[#0e4f5d] disabled:opacity-50"
+                        className="bd-primary-action mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#08313b] py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-[#0e4f5d] disabled:opacity-50"
                       >
                         <Send className="h-5 w-5" />
                         Send for Signature
@@ -3595,7 +3595,7 @@ export default function CrewPage({
                   type="button"
                   onClick={() => navigateContractStep(nextContractStep)}
                   disabled={contractStepIndex === contractStepCards.length - 1}
-                  className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="bd-primary-action bd-focus rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Next
                 </button>
@@ -3883,7 +3883,7 @@ export default function CrewPage({
                         type="button"
                         onClick={() => addManualTask()}
                         aria-label="Add manual checklist item"
-                        className="bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
+                        className="bd-primary-action bd-focus flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800"
                         title="Add manual checklist item"
                       >
                         <Plus className="h-5 w-5" aria-hidden="true" />
@@ -4012,7 +4012,7 @@ export default function CrewPage({
                     type="button"
                     onClick={createManualChecklist}
                     disabled={loading || manualTasks.length === 0 || !selectedCrew}
-                    className="bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 px-6 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
+                    className="bd-primary-action bd-focus flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-cyan-700 px-6 py-4 text-base font-black text-white shadow-lg shadow-cyan-700/20 transition hover:bg-slate-950 disabled:cursor-not-allowed disabled:opacity-45 lg:w-auto"
                   >
                     <ListChecks className="h-5 w-5" />
                     {loading ? "Sending..." : "Send"}
@@ -5768,7 +5768,7 @@ function ContractSectionSaveButton({
       className={`bd-focus inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
         saved
           ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3] disabled:opacity-70"
+          : "bd-primary-action bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3] disabled:opacity-70"
       }`}
     >
       {saving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}

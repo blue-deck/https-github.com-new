@@ -483,7 +483,7 @@ export default function MyBluePage() {
         </Link>
 
         <header
-          className="overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/95 shadow-lg shadow-slate-950/6 backdrop-blur"
+          className="bd-page-hero overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/95 shadow-lg shadow-slate-950/6 backdrop-blur"
           aria-busy={uploading || saving}
         >
           <div className="bd-brand-rule h-0.5" />
@@ -531,7 +531,7 @@ export default function MyBluePage() {
                   type="button"
                   disabled={uploading || saving}
                   onClick={() => photoInputRef.current?.click()}
-                  className={`inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#173f4a] px-4 text-sm font-bold text-white shadow-sm transition sm:min-w-40 sm:flex-none ${
+                  className={`bd-primary-action inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#173f4a] px-4 text-sm font-bold text-white shadow-sm transition sm:min-w-40 sm:flex-none ${
                     uploading || saving
                       ? "cursor-progress opacity-70"
                       : "cursor-pointer hover:bg-[#0d5968] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"

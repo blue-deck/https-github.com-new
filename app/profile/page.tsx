@@ -1172,7 +1172,7 @@ export default function ProfilePage() {
           Dashboard
         </Link>
 
-        <header className="bd-glass-card-strong overflow-hidden rounded-[30px]">
+        <header className="bd-page-hero bd-glass-card-strong overflow-hidden rounded-[30px]">
           <div className="bd-brand-rule h-1.5" />
           <div className="p-5 sm:p-8">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-end">
@@ -1954,7 +1954,7 @@ function DocumentCreator({
           type="button"
           disabled={formLocked}
           onClick={handleSave}
-          className="min-h-11 w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:min-w-[180px]"
+          className="bd-primary-action min-h-11 w-full rounded-xl bg-cyan-400 px-5 py-2 text-sm font-semibold text-[#020817] shadow-sm shadow-cyan-950/10 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 sm:w-auto sm:min-w-[180px]"
         >
           {saving ? "Saving..." : "Add document"}
         </button>
@@ -3870,7 +3870,7 @@ function DropdownChoiceGroup({
                 onChange(draft);
                 setGroupOpen(false);
               }}
-              className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white"
+              className="bd-primary-action rounded-xl bg-slate-950 px-4 py-2 text-sm font-semibold text-white"
             >
               Save
             </button>
@@ -3959,7 +3959,7 @@ function LanguagePicker({ value, onChange }: { value: LanguageEntry[]; onChange:
               type="button"
               onClick={addLanguage}
               disabled={!canAdd}
-              className="bd-focus inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+              className="bd-primary-action bd-focus inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-black text-white shadow-lg shadow-slate-950/10 transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               Add language
@@ -4103,7 +4103,7 @@ function DocumentCard({ document, onChange, onDelete }: { document: CrewDocument
             className={`inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-default sm:w-auto ${
               saved
                 ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "cursor-pointer bg-cyan-400 text-[#020817] hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+                : "bd-primary-action cursor-pointer bg-cyan-400 text-[#020817] hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
             }`}
           >
             {saving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
@@ -4259,7 +4259,7 @@ function ExperienceEditor({
                 }}
               />
               <div className="mt-3 grid gap-2">
-                <label htmlFor={photoInputId} className={`inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
+                <label htmlFor={photoInputId} className={`bd-primary-action inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
                   <Upload className="h-4 w-4" />
                   <span aria-live="polite">{uploading ? "Uploading..." : draft.photo_url ? "Change photo" : "Add photo"}</span>
                 </label>
@@ -4677,7 +4677,7 @@ function UnlinkedReferencesPanel({
                   type="button"
                   disabled={saving || !selectedTarget}
                   onClick={() => onSaveReference({ ...reference, crew_experience_id: selectedTarget })}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bd-primary-action inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                   Link reference
@@ -5257,7 +5257,7 @@ function EditorButtons({
         className={`flex items-center gap-2 rounded-lg text-sm font-semibold transition disabled:cursor-default ${mobileWide ? "min-h-11 w-full justify-center px-4 py-2 sm:w-auto" : "px-3 py-2"} ${
           saved
             ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-            : "cursor-pointer bg-cyan-400 text-[#020817] hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
+            : "bd-primary-action cursor-pointer bg-cyan-400 text-[#020817] hover:bg-cyan-300 disabled:cursor-wait disabled:opacity-60"
         }`}
       >
         {activeSaving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}

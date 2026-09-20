@@ -410,17 +410,28 @@ test("More filters is a separate sticky right card beside horizontal crew cards"
   const sidebarStart = client.indexOf('id="crew-advanced-filters"');
   const resultsStart = client.indexOf('aria-labelledby="crew-results-heading"');
 
-  assert.match(
-    client,
-    /<section\s+aria-labelledby="crew-filter-heading"\s+className="rounded-\[1\.35rem\] border border-slate-200 bg-white p-5 shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\] sm:p-6 lg:pb-\[1\.625rem\]"/,
-  );
+  const primaryFilterClassName = client.match(
+    /<section\s+aria-labelledby="crew-filter-heading"\s+className="([^"]+)"/,
+  )?.[1];
+  assert.ok(primaryFilterClassName, "primary filters must remain a standalone section");
+  const primaryFilterClasses = new Set(primaryFilterClassName.split(/\s+/));
+  for (const token of [
+    "bd-filter-panel",
+    "rounded-[1.35rem]",
+    "border",
+    "p-5",
+    "sm:p-6",
+    "lg:pb-[1.625rem]",
+  ]) {
+    assert.ok(primaryFilterClasses.has(token), `missing filter panel class: ${token}`);
+  }
   assert.match(
     client,
     /mt-2\.5 grid items-start[\s\S]*?xl:grid-cols-\[minmax\(0,2\.157fr\)_minmax\(28rem,1fr\)\]/,
   );
   assert.match(
     client,
-    /id="crew-advanced-filters"[\s\S]*?rounded-\[1\.35rem\][\s\S]*?xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start/,
+    /id="crew-advanced-filters"[\s\S]*?bd-filter-panel[\s\S]*?rounded-\[1\.35rem\][\s\S]*?xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1 xl:self-start/,
   );
   assert.match(
     client,

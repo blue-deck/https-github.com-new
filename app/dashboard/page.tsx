@@ -640,7 +640,7 @@ export default function DashboardPage() {
             ? t("login.roleOwner")
             : t("login.roleCrew");
   const dashboardCardClass =
-    "bd-focus bd-glass-card rounded-2xl p-6 transition-colors hover:border-cyan-300 [&>h2]:text-xl [&>h2]:tracking-[-0.02em] [&>p]:text-sm";
+    "bd-focus bd-dashboard-card rounded-2xl p-6 transition-colors [&>h2]:text-xl [&>h2]:tracking-[-0.02em] [&>p]:text-sm";
   const inviteSenderRole = deckInvites[0]?.sender_role?.trim().toLowerCase();
   const inviteSenderRoleLabel =
     inviteSenderRole === "owner"
@@ -658,7 +658,7 @@ export default function DashboardPage() {
       className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10"
     >
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
-        <section className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="bd-filter-panel relative overflow-hidden rounded-2xl border">
           <div className="bd-brand-rule h-0.5" />
           <div className="p-5 sm:p-7">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">
@@ -717,7 +717,7 @@ export default function DashboardPage() {
           {hasCrewWorkspace ? (
             <Link
               href="/profile"
-              className={dashboardCardClass}
+              className={`${dashboardCardClass} bd-card-featured`}
             >
               <UserRound className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">
@@ -745,7 +745,7 @@ export default function DashboardPage() {
           ) : null}
 
           {hasCrewWorkspace && deckInvites.length > 0 ? (
-            <div className="bd-glass-card-strong rounded-2xl p-6">
+            <div className="bd-dashboard-card rounded-2xl p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-700 text-white shadow-lg shadow-cyan-950/15">
                   <UserPlus className="h-6 w-6" />
@@ -810,7 +810,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => acceptDashboardInvite(deckInvites[0])}
                 disabled={acceptingInviteId === deckInvites[0].id}
-                className="mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-60"
+                className="bd-focus bd-primary-action mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black text-white transition disabled:opacity-60"
               >
                 <CheckCircle2 className="h-5 w-5" />
                 {acceptingInviteId === deckInvites[0].id
@@ -844,7 +844,7 @@ export default function DashboardPage() {
           {canManageYachts ? (
             <Link
               href="/yachts"
-              className={dashboardCardClass}
+              className={`${dashboardCardClass}${!hasCrewWorkspace && !canPostJobs ? " bd-card-featured" : ""}`}
             >
               <Ship className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">
@@ -859,7 +859,7 @@ export default function DashboardPage() {
           {canPostJobs ? (
             <Link
               href="/hiring"
-              className={dashboardCardClass}
+              className={`${dashboardCardClass}${!hasCrewWorkspace ? " bd-card-featured" : ""}`}
             >
               <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
               <h2 className="mt-5 text-3xl font-semibold text-slate-950">

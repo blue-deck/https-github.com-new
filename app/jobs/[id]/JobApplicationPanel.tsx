@@ -267,7 +267,7 @@ export function JobApplicationPanel({
       <div className="mt-5 border-t border-slate-200 pt-5">
         <Link
           href={loginHref}
-          className="bd-focus flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+          className="bd-focus bd-primary-action flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white transition"
         >
           <LogIn className="h-4 w-4" aria-hidden />
           {c.signIn}
@@ -488,7 +488,7 @@ export function JobApplicationPanel({
         type="submit"
         disabled={submitting}
         aria-busy={submitting}
-        className="bd-focus mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
+        className="bd-focus bd-primary-action mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white transition disabled:cursor-wait disabled:opacity-60"
       >
         {submitting ? (
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />

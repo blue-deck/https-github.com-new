@@ -22,6 +22,7 @@ import {
   UserRound,
 } from "lucide-react";
 import {
+  CrewAvailabilityBadge,
   CrewCandidateEmployerProfileOverview,
   CrewCandidateProfileBody,
 } from "../../components/CrewCandidatePresentation";
@@ -137,12 +138,17 @@ export function CrewProfileContent({
                 icon={<CalendarDays aria-hidden />}
                 label={c.availability}
                 value={
-                  profile.discovery.availabilityStatus
-                    ? translatePhrase(
-                        profile.discovery.availabilityStatus,
-                        language,
-                      )
-                    : c.notSpecified
+                  <CrewAvailabilityBadge
+                    status={profile.discovery.availabilityStatus}
+                    label={
+                      profile.discovery.availabilityStatus
+                        ? translatePhrase(
+                            profile.discovery.availabilityStatus,
+                            language,
+                          )
+                        : c.notSpecified
+                    }
+                  />
                 }
               />
               <ProfileFact
@@ -580,7 +586,7 @@ export function InviteCrewPanel({
       aria-labelledby="hiring-actions-heading"
       className="lg:sticky lg:top-[calc(var(--public-header-height)+2rem)]"
     >
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+      <div className="bd-filter-panel rounded-2xl border p-5 sm:p-6">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#071f3c] text-cyan-200">
           <ShieldCheck className="h-5 w-5" aria-hidden />
         </div>
@@ -614,7 +620,7 @@ export function InviteCrewPanel({
             <button
               type="button"
               onClick={() => setAccessLoadAttempt((current) => current + 1)}
-              className="bd-focus mt-3 flex min-h-12 w-full items-center justify-center rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-focus bd-primary-action mt-3 flex min-h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-black text-white transition"
             >
               {c.tryAgain}
             </button>
@@ -622,7 +628,7 @@ export function InviteCrewPanel({
         ) : !sessionToken ? (
           <Link
             href={loginHref}
-            className="bd-focus mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+            className="bd-focus bd-primary-action mt-5 flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white transition"
           >
             <LogIn className="h-4 w-4" aria-hidden />
             {c.logInToContinue}
@@ -634,7 +640,7 @@ export function InviteCrewPanel({
             </p>
             <Link
               href="/yachts"
-              className="bd-focus mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-focus bd-primary-action mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white transition"
             >
               <Ship className="h-4 w-4" aria-hidden />
               {c.openYachtWorkspace}
@@ -647,7 +653,7 @@ export function InviteCrewPanel({
             </p>
             <Link
               href="/hiring"
-              className="bd-focus mt-3 flex min-h-12 items-center justify-center rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-focus bd-primary-action mt-3 flex min-h-12 items-center justify-center rounded-xl px-4 text-sm font-black text-white transition"
             >
               {c.requestHiringAccess}
             </Link>
@@ -698,7 +704,7 @@ export function InviteCrewPanel({
               type="submit"
               disabled={sending}
               aria-busy={sending}
-              className="bd-focus flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800 disabled:cursor-wait disabled:opacity-60"
+              className="bd-focus bd-primary-action flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-sm font-black text-white transition disabled:cursor-wait disabled:opacity-60"
             >
               {sending ? (
                 <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden />
@@ -789,7 +795,7 @@ function ProfileFact({
 }: {
   icon: ReactNode;
   label: string;
-  value: string;
+  value: ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

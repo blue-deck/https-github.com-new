@@ -873,7 +873,7 @@ function CandidateProfileModal({
             <button
               type="button"
               onClick={onRetry}
-              className="bd-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white"
+              className="bd-primary-action bd-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white"
             >
               <RefreshCw className="h-4 w-4" aria-hidden />
               {c.retry}
@@ -901,7 +901,7 @@ function CandidateProfileModal({
                     href={`/crew/${encodeURIComponent(candidate.publicCrewId)}/gallery`}
                     target="_blank"
                     rel="noreferrer"
-                    className="bd-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white shadow-lg shadow-[#071631]/15 transition hover:bg-[#0d3e72]"
+                    className="bd-primary-action bd-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#071631] px-5 text-sm font-black text-white shadow-lg shadow-[#071631]/15 transition hover:bg-[#0d3e72]"
                   >
                     {c.openCrewPortal}
                     <ExternalLink className="h-4 w-4" aria-hidden />
@@ -1127,7 +1127,7 @@ function CenteredState({
             <button
               type="button"
               onClick={onRetry}
-              className="bd-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
             >
               <RefreshCw className="h-4 w-4" aria-hidden />
               Retry

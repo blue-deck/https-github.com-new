@@ -273,16 +273,27 @@ test("advanced job filters use a separate two-column sidebar and compact result 
     client,
     /\b(roleAndContract|yachtDetails|requirements|salaryAndDisplay):/,
   );
-  assert.match(advanced, /<aside[\s\S]*?id="advanced-job-filters"/);
+  assert.match(advanced, /<aside[\s\S]*?id="advanced-job-filters"[\s\S]*?className="[^"]*\bbd-filter-panel\b/);
   assert.match(
     advanced,
     /className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2"/,
   );
   assert.match(advanced, /xl:sticky xl:top-6/);
-  assert.match(
-    client,
-    /aria-labelledby="jobs-filter-heading"[\s\S]*?className="rounded-\[1\.35rem\] border border-slate-200 bg-white p-5 shadow-\[0_18px_55px_rgba\(15,45,72,0\.07\)\] sm:p-6 lg:pb-\[1\.625rem\]"/,
-  );
+  const primaryFilterClassName = client.match(
+    /<section\s+aria-labelledby="jobs-filter-heading"\s+className="([^"]+)"/,
+  )?.[1];
+  assert.ok(primaryFilterClassName, "primary filters must remain a standalone section");
+  const primaryFilterClasses = new Set(primaryFilterClassName.split(/\s+/));
+  for (const token of [
+    "bd-filter-panel",
+    "rounded-[1.35rem]",
+    "border",
+    "p-5",
+    "sm:p-6",
+    "lg:pb-[1.625rem]",
+  ]) {
+    assert.ok(primaryFilterClasses.has(token), `missing filter panel class: ${token}`);
+  }
   assert.match(
     client,
     /xl:grid-cols-\[minmax\(0,2\.157fr\)_minmax\(28rem,1fr\)\]/,

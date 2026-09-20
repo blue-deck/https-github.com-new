@@ -154,7 +154,7 @@ export default function ContractsPage() {
             <button
               type="button"
               onClick={() => void loadContracts()}
-              className="bd-focus mt-6 min-h-12 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus mt-6 min-h-12 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
             >
               Try again
             </button>
@@ -168,7 +168,7 @@ export default function ContractsPage() {
     <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-5xl">
         <DashboardReturnLink />
-        <header className="bd-glass-card-strong rounded-[34px] p-8">
+        <header className="bd-page-hero bd-glass-card-strong rounded-[34px] p-8">
           <p className="text-cyan-300">My Contracts</p>
           <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">Mobile Signature</h1>
           <p className="mt-4 max-w-2xl text-slate-600">
@@ -232,7 +232,7 @@ export default function ContractsPage() {
                     type="button"
                     onClick={() => signContract(contract.id)}
                     disabled={!signatureConsent || !signatureName.trim()}
-                    className="flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 font-black text-black disabled:cursor-not-allowed disabled:opacity-50"
+                    className="bd-primary-action flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 font-black text-black disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <PenLine className="h-5 w-5" aria-hidden="true" />
                     Sign

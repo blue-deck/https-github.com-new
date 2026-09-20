@@ -153,7 +153,7 @@ export function MyJobApplicationsPortal() {
           Dashboard
         </Link>
 
-        <section className="relative overflow-hidden rounded-[30px] border border-white/80 bg-white/95 shadow-2xl shadow-slate-950/8 backdrop-blur">
+        <section className="bd-page-hero relative overflow-hidden rounded-[30px] border border-white/80 bg-white/95 shadow-2xl shadow-slate-950/8 backdrop-blur">
           <div className="bd-brand-rule h-0.5" />
           <div className="grid gap-8 p-6 sm:p-9 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:p-11">
             <div>
@@ -170,7 +170,7 @@ export function MyJobApplicationsPortal() {
             </div>
             <Link
               href="/jobs"
-              className="bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#071f3c] px-5 text-sm font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-cyan-800"
             >
               <Search className="h-4 w-4" aria-hidden />
               {c.findJobs}
@@ -195,7 +195,7 @@ export function MyJobApplicationsPortal() {
               <>
                 <Link
                   href={`/login?next=${encodeURIComponent("/portal/applications")}`}
-                  className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                  className="bd-primary-action bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
                 >
                   <LogIn className="h-4 w-4" aria-hidden />
                   {c.signIn}
@@ -226,7 +226,7 @@ export function MyJobApplicationsPortal() {
                     .getSession()
                     .then(({ data }) => loadApplications(data.session))
                 }
-                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <RefreshCw className="h-4 w-4" aria-hidden />
                 {c.retry}
@@ -243,7 +243,7 @@ export function MyJobApplicationsPortal() {
             actions={
               <Link
                 href="/hiring"
-                className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                className="bd-primary-action bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
               >
                 <BriefcaseBusiness className="h-4 w-4" aria-hidden />
                 {c.manageJobs}
@@ -297,7 +297,7 @@ export function MyJobApplicationsPortal() {
                 actions={
                   <Link
                     href="/jobs"
-                    className="bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
+                    className="bd-primary-action bd-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-5 text-sm font-black text-white transition hover:bg-cyan-800"
                   >
                     <Search className="h-4 w-4" aria-hidden />
                     {c.findJobs}
@@ -422,7 +422,7 @@ function ApplicationCard({
           {listingAvailable ? (
             <Link
               href={`/jobs/${encodeURIComponent(application.job.id)}`}
-              className="bd-focus flex min-h-12 w-full items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus flex min-h-12 w-full items-center justify-between rounded-xl bg-[#071f3c] px-4 text-sm font-black text-white transition hover:bg-cyan-800"
             >
               {c.viewJob}
               <ArrowRight className="h-4 w-4" aria-hidden />

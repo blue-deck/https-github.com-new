@@ -97,7 +97,7 @@ export default function YachtAppLayout({
             <button
               type="button"
               onClick={() => setVerificationAttempt((current) => current + 1)}
-              className="bd-focus rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-cyan-800"
+              className="bd-primary-action bd-focus rounded-2xl bg-slate-950 px-5 py-3 font-black text-white transition hover:bg-cyan-800"
             >
               {language === "tr" ? "Yeniden dene" : "Try again"}
             </button>
