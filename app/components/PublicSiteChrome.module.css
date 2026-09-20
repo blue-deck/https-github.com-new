@@ -1,5 +1,5 @@
 .footerGrid {
-  grid-template-columns: minmax(0, 1.4fr) repeat(4, minmax(0, .8fr));
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, .8fr));
   gap: clamp(1.5rem, 3vw, 3.5rem);
 }
 .footerGrid :global(.bd-public-footer-links) a,
@@ -10,10 +10,10 @@
 }
 .footerGrid > :global(.bd-public-footer-contact) { grid-column: auto; }
 @media (max-width: 1100px) {
-  .footerGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .footerGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .footerGrid > :global(.bd-public-footer-brand) { grid-column: 1 / -1; }
 }
 @media (max-width: 700px) {
   .footerGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
-  .footerGrid > :global(.bd-public-footer-contact) { grid-column: auto; }
+  .footerGrid > :global(.bd-public-footer-contact) { grid-column: 1 / -1; }
 }

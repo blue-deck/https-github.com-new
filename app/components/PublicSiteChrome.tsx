@@ -23,7 +23,6 @@ const publicNavigation = [
   { labelKey: "nav.findJob", href: "/jobs", desktop: true },
   { labelKey: "nav.findCrew", href: "/find-crew", desktop: true },
   { labelKey: "nav.forYachts", href: "/yacht-os", desktop: true },
-  { labelKey: "nav.journal", href: "/journal", desktop: true },
   { labelKey: "nav.about", href: "/about", desktop: true },
   { labelKey: "nav.trust", href: "/trust", desktop: false },
   { labelKey: "nav.contact", href: "/contact", desktop: true },
@@ -289,14 +288,6 @@ export function PublicFooter() {
             [t("nav.forYachts"), "/yacht-os"],
             [t("nav.findJob"), "/jobs"],
             [t("nav.findCrew"), "/find-crew"],
-          ]}
-        />
-        <FooterColumn
-          title={t("footer.resources")}
-          links={[
-            [t("nav.journal"), "/journal"],
-            [t("footer.careerGuides"), "/journal/crew-profile-guide"],
-            [t("footer.lifeOnboard"), "/journal/life-on-board"],
           ]}
         />
         <FooterColumn

@@ -18,7 +18,7 @@ import {
 } from "./jobs/PublicJobListingCard";
 import styles from "./homepage.module.css";
 import homeStyles from "./homeContent.module.css";
-import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy, type JournalPreview } from "./HomePageSections";
+import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./HomePageSections";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -99,7 +99,7 @@ const copy = {
   },
 } as const;
 
-export default function HomePageClient({ articles }: { articles: JournalPreview[] }) {
+export default function HomePageClient() {
   const { language } = useLanguage();
   const c = copy[language];
   const hc = homeCopy[language];
@@ -279,7 +279,7 @@ export default function HomePageClient({ articles }: { articles: JournalPreview[
           </div>
         </section>
 
-        <HomePageSections language={language} viewer={jobViewer} articles={articles} />
+        <HomePageSections language={language} viewer={jobViewer} />
       </main>
 
       <PublicFooter />

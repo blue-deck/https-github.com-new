@@ -119,38 +119,16 @@
 .trustItem h3 { font-size: 1rem; font-weight: 650; line-height: 1.4; }
 .trustItem p { margin-top: .45rem; color: #536880; font-size: .875rem; line-height: 1.6; }
 
-.journalSection { padding-block: clamp(3.5rem, 6vw, 6rem); }
-.journalGrid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.75rem 2.5rem; margin-top: 2.5rem; }
-.featuredArticle { grid-row: span 2; min-width: 0; }
-.smallArticle { min-width: 0; }
-.smallArticle + .smallArticle { border-top: 1px solid #e0e7ee; padding-top: 1.75rem; }
-.articleLink { display: block; height: 100%; }
-.smallArticle .articleLink { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1fr); gap: 1.3rem; align-items: center; }
-.smallArticle .articleCopy { min-width: 0; }
-.articleImage { position: relative; isolation: isolate; overflow: hidden; border-radius: .65rem; min-height: 11rem; aspect-ratio: 1.6; background: #e9eff5; }
-.featuredArticle .articleImage { aspect-ratio: 1.9; }
-.smallArticle .articleImage { width: 100%; min-width: 0; min-height: 0; aspect-ratio: 1.45; }
-.articleImage img { object-fit: cover; transition: transform 220ms ease; }
-.articleLink:hover .articleImage img { transform: scale(1.025); }
-.articleLink:hover h3 { color: var(--bluedeck-action); }
-.featuredArticle .articleCopy { padding-top: 1.35rem; }
-.articleCopy h3 { margin-top: .6rem; font-weight: 650; line-height: 1.3; letter-spacing: -.025em; font-size: clamp(1.2rem, 1.5vw, 1.65rem); transition: color 150ms ease; }
-.featuredArticle h3 { font-size: clamp(1.5rem, 2vw, 2rem); }
-.articleSummary { max-width: 43rem; margin-top: .65rem; font-size: .9375rem; color: #596b80; line-height: 1.7; }
-.readingTime { display: flex; align-items: center; gap: .4rem; margin-top: 1rem; font-size: .8125rem; color: #5a6b80; }
-.readingTime svg { width: .95rem; height: .95rem; }
-.readingTime .articleArrow { margin-left: auto; color: var(--bluedeck-accent-on-light); }
-
-.closingSection { padding-bottom: clamp(3rem, 5vw, 5rem); }
+.closingSection { padding-block: clamp(3rem, 5vw, 5rem); }
 .closingCard { display: flex; align-items: center; justify-content: space-between; gap: 2rem; isolation: isolate; border-radius: .85rem; overflow: hidden; padding: clamp(2rem, 4vw, 4rem); color: #fff; background: linear-gradient(100deg, #061629 0%, #081b30f5 50%, #0a2c49b5 100%), url('/media/bluedeck-yacht-hero-v2.webp') right 72% / cover; }
 .closingCard h2 { font-size: clamp(1.75rem, 2.4vw, 2.6rem); font-weight: 650; letter-spacing: -.035em; line-height: 1.2; }
 .closingCard p { margin-top: .9rem; font-size: 1rem; line-height: 1.65; color: #c7d3e2; }
 .closingActions { display: flex; flex-direction: column; gap: .7rem; flex-shrink: 0; }
 
-@media (min-width: 1700px) { .journalGrid { gap: 2rem 4rem; } .audienceCard { min-height: 25rem; } }
+@media (min-width: 1700px) { .audienceCard { min-height: 25rem; } }
 @media (max-width: 1100px) { .searchForm { grid-template-columns: 1fr 1fr; } .jobsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobsGrid > :last-child:nth-child(3) { grid-column: 1 / -1; } .audienceGrid { grid-template-columns: 1fr; } .audienceCard { min-height: 20rem; grid-template-columns: 1fr 1fr; } .closingCard { align-items: start; flex-direction: column; } .closingActions { flex-direction: row; flex-wrap: wrap; } }
 @media (max-width: 900px) { .platformGrid { grid-template-columns: 1fr; } .platformCopy { max-width: 45rem; } .platformVisual { min-height: 29rem; padding-inline: 2rem; align-items: center; } .workspace { width: min(100%, 37rem); } .trustItem { gap: .65rem; padding-inline: 1rem; } .trustItem > svg { width: 1.5rem; height: 1.5rem; } }
-@media (max-width: 800px) { .journalGrid { grid-template-columns: 1fr; } .featuredArticle { grid-row: auto; } .featuredArticle .articleImage { aspect-ratio: 1.8; } .smallArticle { border-top: 1px solid #e0e7ee; padding-top: 1.5rem; } .headingRow { flex-direction: column; align-items: start; gap: .8rem; } .trustGrid { grid-template-columns: 1fr; gap: 1.25rem; } .trustItem + .trustItem { border-left: 0; } .trustItem { padding-inline: 0; } .trustItem p { max-width: 36rem; } .trustSection { text-align: left; } }
-@media (max-width: 640px) { .searchSection { margin-top: -4rem; } .searchForm { grid-template-columns: 1fr; padding: .65rem; } .searchField { min-height: 3rem; } .searchField input, .searchField select { min-height: 3rem; } .jobsGrid { grid-template-columns: 1fr; } .jobsGrid > :last-child:nth-child(3) { grid-column: auto; } .jobsEmpty { padding: 1.5rem; align-items: start; flex-wrap: wrap; } .jobsEmpty > div { flex-basis: calc(100% - 3rem); } .jobsEmpty > :is(a, button) { margin-left: 3rem; } .audienceCard { grid-template-columns: minmax(0, 1.35fr) minmax(0, .8fr); min-height: 22rem; } .audienceCopy { padding: 1.4rem 1.2rem; } .audienceCopy h2 { font-size: 1.5rem; } .audienceCopy .textLink { font-size: .875rem; } .platformVisual { padding: 1.25rem .9rem; min-height: 29rem; } .workspaceBody { padding: 1.15rem; } .workspaceHeader { padding-inline: 1.15rem; } .workspaceRow { gap: .7rem; } .workspaceRow > span { width: 2.3rem; height: 2.3rem; } .smallArticle .articleLink { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); gap: 1rem; } .articleImage { min-height: 10rem; } .smallArticle h3 { font-size: 1.125rem; } .articleCopy .eyebrow { font-size: .75rem; letter-spacing: .07em; } .closingCard { padding: 1.75rem; } .closingActions { width: 100%; flex-direction: column; } .closingActions > a { width: 100%; } }
+@media (max-width: 800px) { .headingRow { flex-direction: column; align-items: start; gap: .8rem; } .trustGrid { grid-template-columns: 1fr; gap: 1.25rem; } .trustItem + .trustItem { border-left: 0; } .trustItem { padding-inline: 0; } .trustItem p { max-width: 36rem; } .trustSection { text-align: left; } }
+@media (max-width: 640px) { .searchSection { margin-top: -4rem; } .searchForm { grid-template-columns: 1fr; padding: .65rem; } .searchField { min-height: 3rem; } .searchField input, .searchField select { min-height: 3rem; } .jobsGrid { grid-template-columns: 1fr; } .jobsGrid > :last-child:nth-child(3) { grid-column: auto; } .jobsEmpty { padding: 1.5rem; align-items: start; flex-wrap: wrap; } .jobsEmpty > div { flex-basis: calc(100% - 3rem); } .jobsEmpty > :is(a, button) { margin-left: 3rem; } .audienceCard { grid-template-columns: minmax(0, 1.35fr) minmax(0, .8fr); min-height: 22rem; } .audienceCopy { padding: 1.4rem 1.2rem; } .audienceCopy h2 { font-size: 1.5rem; } .audienceCopy .textLink { font-size: .875rem; } .platformVisual { padding: 1.25rem .9rem; min-height: 29rem; } .workspaceBody { padding: 1.15rem; } .workspaceHeader { padding-inline: 1.15rem; } .workspaceRow { gap: .7rem; } .workspaceRow > span { width: 2.3rem; height: 2.3rem; } .closingCard { padding: 1.75rem; } .closingActions { width: 100%; flex-direction: column; } .closingActions > a { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .content *, .filters button { transition: none; } }
 @media (max-width: 640px) { .jobsGrid[data-count] { grid-template-columns: 1fr; } }
