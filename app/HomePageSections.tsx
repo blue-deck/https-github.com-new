@@ -13,7 +13,7 @@ type Language = "en" | "tr";
 export const homeCopy = {
   en: {
     searchLabel: "Find your next yacht role", keyword: "Position or keyword", location: "Location", department: "All departments", search: "Search jobs", all: "All roles",
-    jobsTitle: "Find your next place on board.", filteredEmpty: "No open roles in this department yet.", filteredText: "Explore the other departments or visit the full jobs board.", clearFilter: "View all departments",
+    filteredEmpty: "No open roles in this department yet.", filteredText: "Explore the other departments or visit the full jobs board.", clearFilter: "View all departments",
     crewEyebrow: "For crew", crewTitle: "A career that moves with you.", crewText: "Bring your experience, availability and next opportunity together.", crewAction: "Build your crew profile", profile: "Manage your crew profile", roles: "Explore open roles",
     hiringEyebrow: "For captains & owners", hiringTitle: "The right people. A stronger crew.", hiringText: "Discover professional crew, publish roles and manage applications in one place.", hiringAction: "Find professional crew", hiringWorkspace: "Open hiring workspace",
     platformEyebrow: "BlueDeck Yacht-OS", platformTitle: "A clearer view of life on board.", platformText: "Connect your crew, essential records and daily work in one yacht workspace.", platformAction: "Explore Yacht-OS",
@@ -24,7 +24,7 @@ export const homeCopy = {
   },
   tr: {
     searchLabel: "Bir sonraki yat ilanınızı bulun", keyword: "Pozisyon veya anahtar kelime", location: "Konum", department: "Tüm departmanlar", search: "İlan ara", all: "Tüm ilanlar",
-    jobsTitle: "Teknede bir sonraki yerinizi bulun.", filteredEmpty: "Bu departmanda henüz açık ilan yok.", filteredText: "Diğer departmanları veya tüm ilan panosunu inceleyin.", clearFilter: "Tüm departmanları gör",
+    filteredEmpty: "Bu departmanda henüz açık ilan yok.", filteredText: "Diğer departmanları veya tüm ilan panosunu inceleyin.", clearFilter: "Tüm departmanları gör",
     crewEyebrow: "Mürettebat için", crewTitle: "Sizinle ilerleyen bir kariyer.", crewText: "Deneyiminizi, müsaitliğinizi ve yeni fırsatları bir araya getirin.", crewAction: "Mürettebat profili oluştur", profile: "Mürettebat profilini yönet", roles: "Açık ilanları keşfet",
     hiringEyebrow: "Kaptanlar ve yat sahipleri için", hiringTitle: "Doğru insanlar. Daha güçlü bir ekip.", hiringText: "Profesyonel mürettebatı keşfedin, ilan yayınlayın ve başvuruları tek yerden yönetin.", hiringAction: "Profesyonel mürettebat bul", hiringWorkspace: "İşe alım alanını aç",
     platformEyebrow: "BlueDeck Yacht-OS", platformTitle: "Teknedeki işlere daha net bir bakış.", platformText: "Mürettebatınızı, temel kayıtlarınızı ve günlük işlerinizi tek yat çalışma alanında buluşturun.", platformAction: "Yacht-OS’u keşfet",

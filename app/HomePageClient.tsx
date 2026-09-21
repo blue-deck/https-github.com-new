@@ -58,8 +58,6 @@ const copy = {
     careers: "Careers",
     crew: "Crew",
     jobsEyebrow: "Latest opportunities",
-    jobsIntro:
-      "Review the newest opportunities first. Create an account only when you are ready to apply.",
     allJobs: "View all roles",
     loadingJobs: "Loading the latest roles",
     noJobsTitle: "New opportunities are on the horizon.",
@@ -98,8 +96,6 @@ const copy = {
     careers: "Kariyer",
     crew: "Mürettebat",
     jobsEyebrow: "Güncel fırsatlar",
-    jobsIntro:
-      "Önce en yeni fırsatları inceleyin. Yalnızca başvurmaya hazır olduğunuzda hesap oluşturun.",
     allJobs: "Tüm ilanları gör",
     loadingJobs: "Güncel ilanlar yükleniyor",
     noJobsTitle: "Yeni fırsatlar yakında.",
@@ -288,12 +284,8 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
 
         <section className={homeStyles.jobsSection} aria-labelledby="jobs-heading">
           <div className={homeStyles.container}>
-            <div className={homeStyles.headingRow}>
-              <div>
-                <p className={homeStyles.eyebrow}>{c.jobsEyebrow}</p>
-                <h2 id="jobs-heading" className={homeStyles.title}>{hc.jobsTitle}</h2>
-                <p className={homeStyles.intro}>{c.jobsIntro}</p>
-              </div>
+            <div className={`${homeStyles.headingRow} ${homeStyles.jobsHeadingRow}`}>
+              <h2 id="jobs-heading" className={homeStyles.eyebrow}>{c.jobsEyebrow}</h2>
               <Link href={department ? `/jobs?department=${encodeURIComponent(department)}` : "/jobs"} className={homeStyles.textLink}>
                 {c.allJobs}<ArrowRight aria-hidden />
               </Link>
