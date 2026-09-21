@@ -19,17 +19,12 @@ import {
 import styles from "./homepage.module.css";
 import homeStyles from "./homeContent.module.css";
 import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./HomePageSections";
+import { DesktopReferenceHeader, DesktopReferenceHero } from "./DesktopReferenceHero";
+import { LanguageSwitcher } from "./components/LanguageSwitcher";
 
 type LoadState = "loading" | "ready" | "error";
 
-// Art direction preserves the approved desktop, tablet, and phone compositions.
-const { props: desktopHeroImage } = getImageProps({
-  src: "/media/bluedeck-signature-panorama-v1.webp",
-  alt: "",
-  fill: true,
-  quality: 90,
-  sizes: "100vw",
-});
+// Tablet and phone art direction remains independent of the desktop artwork.
 const { props: tabletHeroImage } = getImageProps({
   src: "/media/bluedeck-yacht-hero-v2.webp",
   alt: "",
@@ -218,85 +213,24 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
 
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page} ${heroFontClassName}`}>
+      <link rel="preload" as="image" href="/media/bluedeck-desktop-reference-v1.png" media="(min-width: 960px)" />
+      <DesktopReferenceHeader />
       <PublicHeader mobileVariant="cinematic" />
 
       <main id="main-content" data-i18n-ignore>
+        <DesktopReferenceHero />
         <section className={styles.hero} aria-labelledby="home-heading">
           <div className={styles.heroStage}>
             <div className={styles.heroArt} aria-hidden="true">
               <div className={styles.imageFrame}>
                 <picture>
-                  <source media="(min-width: 960px)" srcSet={desktopHeroImage.srcSet} sizes="100vw" />
+                  {/* Avoid downloading the hidden mobile artwork on desktop. */}
+                  <source media="(min-width: 960px)" srcSet="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" />
                   <source media="(min-width: 641px)" srcSet={tabletHeroImage.srcSet} sizes="100vw" />
                   {/* getImageProps supplies Next.js optimization for the native picture element. */}
                   <img {...mobileHeroImage} alt="" className={styles.heroImage} />
                 </picture>
               </div>
-              <svg className={styles.desktopWave} viewBox="0 0 1600 800" preserveAspectRatio="none" focusable="false">
-                <defs>
-                  <linearGradient id="home-wave-navy" x1="0" y1="0" x2="1" y2="1">
-                    <stop stopColor="#06182c" />
-                    <stop offset="1" stopColor="#031323" />
-                  </linearGradient>
-                  <linearGradient id="home-wave-metal" gradientUnits="userSpaceOnUse" x1="1238" y1="0" x2="0" y2="800">
-                    <stop stopColor="#e5edf3" stopOpacity="0.06" />
-                    <stop offset="0.12" stopColor="#eef4f7" stopOpacity="0.42" />
-                    <stop offset="0.28" stopColor="#c5d0d8" stopOpacity="0.88" />
-                    <stop offset="0.47" stopColor="#f1f5f3" stopOpacity="0.9" />
-                    <stop offset="0.67" stopColor="#85929d" stopOpacity="0.66" />
-                    <stop offset="0.84" stopColor="#cad5da" stopOpacity="0.44" />
-                    <stop offset="1" stopColor="#697883" stopOpacity="0.14" />
-                  </linearGradient>
-                  <linearGradient id="home-wave-blue-edge" gradientUnits="userSpaceOnUse" x1="1238" y1="0" x2="0" y2="800">
-                    <stop stopColor="#0b9dff" stopOpacity="0.08" />
-                    <stop offset="0.16" stopColor="#0b9dff" stopOpacity="0.68" />
-                    <stop offset="0.46" stopColor="#078cf3" stopOpacity="0.98" />
-                    <stop offset="0.74" stopColor="#076bc6" stopOpacity="0.78" />
-                    <stop offset="1" stopColor="#076bc6" stopOpacity="0" />
-                  </linearGradient>
-                  <filter id="home-wave-blue-halo" x="-8%" y="-8%" width="116%" height="116%">
-                    <feGaussianBlur stdDeviation="4" />
-                  </filter>
-                </defs>
-                <path
-                  d="M0 0H1235C1062 1 949 84 844 219C732 402 642 571 482 691C347 793 175 801 -12 801V800H0Z"
-                  fill="url(#home-wave-navy)"
-                />
-                <path
-                  d="M1243 -5C1072 8 958 91 852 226C740 409 650 578 490 698C355 800 180 814 -12 815"
-                  fill="none"
-                  stroke="url(#home-wave-blue-edge)"
-                  strokeOpacity="0.26"
-                  strokeWidth="14"
-                  filter="url(#home-wave-blue-halo)"
-                  vectorEffect="non-scaling-stroke"
-                />
-                <path
-                  d="M1240 -5C1069 5 955 88 848 223C736 406 646 575 486 695C351 797 177 808 -12 808"
-                  fill="none"
-                  stroke="url(#home-wave-blue-edge)"
-                  strokeWidth="6"
-                  vectorEffect="non-scaling-stroke"
-                  shapeRendering="geometricPrecision"
-                />
-                <path
-                  d="M1236 -5C1065 3 952 86 845 220C733 403 643 572 483 692C348 794 176 803 -12 803"
-                  fill="none"
-                  stroke="url(#home-wave-metal)"
-                  strokeWidth="3.6"
-                  vectorEffect="non-scaling-stroke"
-                  shapeRendering="geometricPrecision"
-                />
-                <path
-                  d="M1236 -5C1065 3 952 86 845 220C733 403 643 572 483 692C348 794 176 803 -12 803"
-                  fill="none"
-                  stroke="#f4f8f7"
-                  strokeOpacity="0.72"
-                  strokeWidth="0.75"
-                  vectorEffect="non-scaling-stroke"
-                  shapeRendering="geometricPrecision"
-                />
-              </svg>
               <svg className={styles.mobileWave} viewBox="0 0 800 120" preserveAspectRatio="none" focusable="false">
                 <path d="M0 0H800V10C510 10 410 112 0 112Z" fill="#06182c" />
                 <path d="M0 112C410 112 510 10 800 10" fill="none" stroke="#0877cd" strokeWidth="6" />
@@ -403,6 +337,9 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
         <HomePageSections language={language} viewer={jobViewer} />
       </main>
 
+      <div className={styles.desktopLanguage}>
+        <LanguageSwitcher size="compact" />
+      </div>
       <PublicFooter />
     </div>
   );

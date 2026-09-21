@@ -4,6 +4,35 @@
   background: var(--bluedeck-canvas);
 }
 
+.desktopLanguage {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .page {
+    background-image: url("/media/bluedeck-desktop-reference-v1.png");
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-size: 100% auto;
+  }
+
+  .page > :global(.bd-public-header),
+  .page .hero {
+    display: none;
+  }
+
+  .page > main {
+    background: transparent;
+  }
+
+  .desktopLanguage {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem var(--hero-gutter);
+    background: var(--hero-navy);
+  }
+}
+
 .page :global(.bd-public-header) {
   background: var(--hero-navy);
   box-shadow: none;
@@ -42,8 +71,7 @@
 }
 
 .heroArt,
-.imageFrame,
-.desktopWave {
+.imageFrame {
   position: absolute;
   inset: 0;
 }
@@ -60,11 +88,6 @@
 .heroImage {
   object-fit: cover;
   object-position: center;
-}
-
-.desktopWave {
-  width: 100%;
-  height: 100%;
 }
 
 .mobileWave,
@@ -329,10 +352,6 @@
 
   .heroImage {
     object-position: 50% 42%;
-  }
-
-  .desktopWave {
-    display: none;
   }
 
   .mobileWave {
