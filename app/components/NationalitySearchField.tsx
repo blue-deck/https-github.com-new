@@ -35,6 +35,7 @@ export function NationalitySearchField({
   className = "",
   labelClassName = defaultLabelClassName,
   controlClassName = defaultControlClassName,
+  dismissOnBlur = false,
 }: {
   label: string;
   value: string;
@@ -43,6 +44,7 @@ export function NationalitySearchField({
   className?: string;
   labelClassName?: string;
   controlClassName?: string;
+  dismissOnBlur?: boolean;
 }) {
   const { language } = useLanguage();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -159,6 +161,11 @@ export function NationalitySearchField({
     <div
       ref={wrapperRef}
       className={`relative block min-w-0 ${className}`.trim()}
+      onBlur={(event) => {
+        if (dismissOnBlur && !event.currentTarget.contains(event.relatedTarget)) {
+          closePicker();
+        }
+      }}
     >
       <label htmlFor={inputId} className={labelClassName}>
         {label}
@@ -262,6 +269,7 @@ export function NationalitySearchField({
                     id={`${listboxId}-option-${index}`}
                     type="button"
                     role="option"
+                    tabIndex={dismissOnBlur ? -1 : undefined}
                     aria-selected={isSelected}
                     onMouseEnter={() => setActiveIndex(index)}
                     onMouseDown={(event) => event.preventDefault()}

@@ -103,17 +103,7 @@ export function DesktopReferenceHero() {
       <Link href="/yacht-os" className={styles.link} style={area(71, 595, 173, 44, 880)}>
         <span className={styles.label}>Explore Yacht-OS</span>
       </Link>
-      <nav aria-label="Explore BlueDeck">
-        <Link href="/jobs" className={styles.link} style={area(235, 810, 168, 48, 880)}>
-          <span className={styles.label}>Careers</span>
-        </Link>
-        <Link href="/find-crew" className={styles.link} style={area(715, 810, 158, 48, 880)}>
-          <span className={styles.label}>Crew</span>
-        </Link>
-        <Link href="/yacht-os" className={styles.link} style={area(1180, 810, 168, 48, 880)}>
-          <span className={styles.label}>Yacht-OS</span>
-        </Link>
-      </nav>
+
     </section>
   );
 }

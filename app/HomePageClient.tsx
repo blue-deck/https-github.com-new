@@ -20,6 +20,7 @@ import styles from "./homepage.module.css";
 import homeStyles from "./homeContent.module.css";
 import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./HomePageSections";
 import { DesktopReferenceHeader, DesktopReferenceHero } from "./DesktopReferenceHero";
+import { DesktopHomeSearch } from "./DesktopHomeSearch";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
 
 type LoadState = "loading" | "ready" | "error";
@@ -219,6 +220,7 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
 
       <main id="main-content" data-i18n-ignore>
         <DesktopReferenceHero />
+        <DesktopHomeSearch language={language} />
         <section className={styles.hero} aria-labelledby="home-heading">
           <div className={styles.heroStage}>
             <div className={styles.heroArt} aria-hidden="true">

@@ -132,3 +132,8 @@
 @media (max-width: 640px) { .searchSection { padding-top: 1.25rem; } .searchForm { grid-template-columns: 1fr; padding: .65rem; } .searchField { min-height: 3rem; } .searchField input, .searchField select { min-height: 3rem; } .jobsGrid { grid-template-columns: 1fr; } .jobsGrid > :last-child:nth-child(3) { grid-column: auto; } .jobsEmpty { padding: 1.5rem; align-items: start; flex-wrap: wrap; } .jobsEmpty > div { flex-basis: calc(100% - 3rem); } .jobsEmpty > :is(a, button) { margin-left: 3rem; } .audienceCard { grid-template-columns: minmax(0, 1.35fr) minmax(0, .8fr); min-height: 22rem; } .audienceCopy { padding: 1.4rem 1.2rem; } .audienceCopy h2 { font-size: 1.5rem; } .audienceCopy .textLink { font-size: .875rem; } .platformVisual { padding: 1.25rem .9rem; min-height: 29rem; } .workspaceBody { padding: 1.15rem; } .workspaceHeader { padding-inline: 1.15rem; } .workspaceRow { gap: .7rem; } .workspaceRow > span { width: 2.3rem; height: 2.3rem; } .closingCard { padding: 1.75rem; } .closingActions { width: 100%; flex-direction: column; } .closingActions > a { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .content *, .filters button { transition: none; } }
 @media (max-width: 640px) { .jobsGrid[data-count] { grid-template-columns: 1fr; } }
+
+/* Desktop has a connected Careers / Crew search; keep the existing mobile form. */
+@media (min-width: 960px) {
+  .searchSection { display: none; }
+}
