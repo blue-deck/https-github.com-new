@@ -238,20 +238,64 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
                     <stop stopColor="#06182c" />
                     <stop offset="1" stopColor="#031323" />
                   </linearGradient>
-                  <linearGradient id="home-wave-silver" x1="0" y1="1" x2="1" y2="0">
-                    <stop stopColor="#788da5" stopOpacity="0.2" />
-                    <stop offset="0.4" stopColor="#f1f6ff" />
-                    <stop offset="1" stopColor="#c4d4eb" />
+                  <linearGradient id="home-wave-metal" gradientUnits="userSpaceOnUse" x1="1238" y1="0" x2="0" y2="800">
+                    <stop stopColor="#e5edf3" stopOpacity="0.06" />
+                    <stop offset="0.12" stopColor="#eef4f7" stopOpacity="0.42" />
+                    <stop offset="0.28" stopColor="#c5d0d8" stopOpacity="0.88" />
+                    <stop offset="0.47" stopColor="#f1f5f3" stopOpacity="0.9" />
+                    <stop offset="0.67" stopColor="#85929d" stopOpacity="0.66" />
+                    <stop offset="0.84" stopColor="#cad5da" stopOpacity="0.44" />
+                    <stop offset="1" stopColor="#697883" stopOpacity="0.14" />
                   </linearGradient>
-                  <linearGradient id="home-wave-blue" x1="0" y1="1" x2="1" y2="0">
-                    <stop stopColor="#0877cd" stopOpacity="0" />
-                    <stop offset="0.4" stopColor="#0877cd" />
-                    <stop offset="1" stopColor="#0877cd" stopOpacity="0.25" />
+                  <linearGradient id="home-wave-blue-edge" gradientUnits="userSpaceOnUse" x1="1238" y1="0" x2="0" y2="800">
+                    <stop stopColor="#0b9dff" stopOpacity="0.08" />
+                    <stop offset="0.16" stopColor="#0b9dff" stopOpacity="0.68" />
+                    <stop offset="0.46" stopColor="#078cf3" stopOpacity="0.98" />
+                    <stop offset="0.74" stopColor="#076bc6" stopOpacity="0.78" />
+                    <stop offset="1" stopColor="#076bc6" stopOpacity="0" />
                   </linearGradient>
+                  <filter id="home-wave-blue-halo" x="-8%" y="-8%" width="116%" height="116%">
+                    <feGaussianBlur stdDeviation="4" />
+                  </filter>
                 </defs>
-                <path d="M1230 0C1040 0 935 140 815 355C660 635 580 745 0 800" fill="none" stroke="url(#home-wave-blue)" strokeWidth="12" />
-                <path d="M0 0H1230C1040 0 935 140 815 355C660 635 580 745 0 800Z" fill="url(#home-wave-navy)" />
-                <path d="M1230 0C1040 0 935 140 815 355C660 635 580 745 0 800" fill="none" stroke="url(#home-wave-silver)" strokeWidth="2.5" />
+                <path
+                  d="M0 0H1235C1062 1 949 84 844 219C732 402 642 571 482 691C347 793 175 801 -12 801V800H0Z"
+                  fill="url(#home-wave-navy)"
+                />
+                <path
+                  d="M1243 -5C1072 8 958 91 852 226C740 409 650 578 490 698C355 800 180 814 -12 815"
+                  fill="none"
+                  stroke="url(#home-wave-blue-edge)"
+                  strokeOpacity="0.26"
+                  strokeWidth="14"
+                  filter="url(#home-wave-blue-halo)"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <path
+                  d="M1240 -5C1069 5 955 88 848 223C736 406 646 575 486 695C351 797 177 808 -12 808"
+                  fill="none"
+                  stroke="url(#home-wave-blue-edge)"
+                  strokeWidth="6"
+                  vectorEffect="non-scaling-stroke"
+                  shapeRendering="geometricPrecision"
+                />
+                <path
+                  d="M1236 -5C1065 3 952 86 845 220C733 403 643 572 483 692C348 794 176 803 -12 803"
+                  fill="none"
+                  stroke="url(#home-wave-metal)"
+                  strokeWidth="3.6"
+                  vectorEffect="non-scaling-stroke"
+                  shapeRendering="geometricPrecision"
+                />
+                <path
+                  d="M1236 -5C1065 3 952 86 845 220C733 403 643 572 483 692C348 794 176 803 -12 803"
+                  fill="none"
+                  stroke="#f4f8f7"
+                  strokeOpacity="0.72"
+                  strokeWidth="0.75"
+                  vectorEffect="non-scaling-stroke"
+                  shapeRendering="geometricPrecision"
+                />
               </svg>
               <svg className={styles.mobileWave} viewBox="0 0 800 120" preserveAspectRatio="none" focusable="false">
                 <path d="M0 0H800V10C510 10 410 112 0 112Z" fill="#06182c" />
