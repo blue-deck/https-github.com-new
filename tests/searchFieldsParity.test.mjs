@@ -83,7 +83,7 @@ for (const language of ["en", "tr"]) {
     const fixture = loadFields(language);
     for (const [Component, placeholder] of [
       [fixture.jobs.JobKeywordSearchField, language === "en"
-        ? "Position, skill, language or any"
+        ? "Position, location, yacht type or any"
         : "Pozisyon, beceri, dil veya herhangi bir anahtar kelime"],
       [fixture.crew.CrewKeywordSearchField, language === "en"
         ? "Position, skills, language or any"
@@ -181,7 +181,7 @@ test("homepage initially renders the real Careers fields with an accessible sele
   assert.equal(panel["aria-labelledby"], tabs[0].props.id);
   assert.equal(panel.id, tabs[0].props["aria-controls"]);
   assert.match(html, /href="\/yacht-os"/);
-  assert.ok(html.includes("Position, skill, language or any"));
+  assert.ok(html.includes("Position, location, yacht type or any"));
   assert.ok(html.includes("Search location"));
   fixture.elements.find(({ type, props }) => type === "button" && props.className === "submit").props.onClick();
   assert.deepEqual(fixture.navigations, ["/jobs"]);

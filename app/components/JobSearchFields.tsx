@@ -16,7 +16,7 @@ const jobPositionSelectOptions = publicJobSearchTaxonomy.positions.map(
 export const jobPrimarySearchCopy = {
   en: {
     search: "Keyword",
-    searchPlaceholder: "Position, skill, language or any",
+    searchPlaceholder: "Position, location, yacht type or any",
     searchKeyword: "Search this keyword",
     position: "Position",
     allPositions: "All positions",

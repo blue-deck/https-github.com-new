@@ -134,7 +134,7 @@ test("job filters use explicit searches and clear actions without selection summ
   assert.match(crewFields, /search: "Keyword"/);
   assert.match(
     jobFields,
-    /searchPlaceholder: "Position, skill, language or any"/,
+    /searchPlaceholder: "Position, location, yacht type or any"/,
   );
   assert.match(jobFields, /search: "Anahtar kelime"/);
   assert.match(jobsClient, /advanced: "More filters"/);
