@@ -1,6 +1,37 @@
 import assert from "node:assert/strict";
+import { registerHooks } from "node:module";
 import test from "node:test";
 import {
+  getPosition,
+  positionSelectGroups,
+} from "../app/lib/yachtOperations.ts";
+import {
+  formatJobYachtProgram,
+  formatJobSalaryCurrencyOption,
+  formatJobSalaryPeriod,
+  formatJobTeamCoupleAnswer,
+  isJobSalaryCurrency,
+  isJobTeamCouple,
+  jobSalaryCurrencyOptions,
+  jobSalaryPeriods,
+  jobYachtPrograms,
+} from "../app/lib/jobPosts.ts";
+
+// Match Next's resolution of extensionless local TypeScript imports in Node.
+const libraryRoot = new URL("../app/lib/", import.meta.url);
+const loader = registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (
+      specifier.startsWith(".") &&
+      context.parentURL?.startsWith(libraryRoot.href) &&
+      !/\.[a-z]+$/i.test(specifier)
+    ) {
+      return nextResolve(`${specifier}.ts`, context);
+    }
+    return nextResolve(specifier, context);
+  },
+});
+const {
   comparePublicJobs,
   createDefaultPublicJobSearchFilters,
   decodePublicJobSearchCursor,
@@ -13,18 +44,8 @@ import {
   publicJobSearchParams,
   publicJobSearchResultFingerprint,
   publicJobYachtLengthMetres,
-} from "../app/lib/publicJobSearch.ts";
-import {
-  formatJobYachtProgram,
-  formatJobSalaryCurrencyOption,
-  formatJobSalaryPeriod,
-  formatJobTeamCoupleAnswer,
-  isJobSalaryCurrency,
-  isJobTeamCouple,
-  jobSalaryCurrencyOptions,
-  jobSalaryPeriods,
-  jobYachtPrograms,
-} from "../app/lib/jobPosts.ts";
+} = await import("../app/lib/publicJobSearch.ts");
+loader.deregister();
 
 const taxonomy = {
   positions: ["Captain", "Chief Stewardess"],
@@ -623,7 +644,7 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
   assert.equal(matchesPublicJobSearch(sampleJob(), filters, snapshot), true);
   assert.equal(
     matchesPublicJobSearch(
-      { ...sampleJob(), department: "Interior" },
+      { ...sampleJob(), position: "Chief Stewardess", department: "Interior" },
       filters,
       snapshot,
     ),
@@ -637,6 +658,56 @@ test("uses OR within a category, AND between categories, inclusive ranges, and f
     ),
     false,
   );
+});
+
+test("department filters follow every job creation position group despite stale stored departments", () => {
+  for (const group of positionSelectGroups) {
+    const otherDepartment = group.department === "Deck" ? "Command" : "Deck";
+    for (const position of group.positions) {
+      const job = sampleJob({ position, department: otherDepartment });
+      const filters = createDefaultPublicJobSearchFilters();
+
+      assert.equal(matchesPublicJobSearch(job, filters), true, position);
+      filters.departments = [group.department];
+      assert.equal(matchesPublicJobSearch(job, filters), true, position);
+      filters.departments = [otherDepartment];
+      assert.equal(matchesPublicJobSearch(job, filters), false, position);
+    }
+  }
+});
+
+test("captain, deckhand, and deck engineer listings use their canonical position departments", () => {
+  for (const [position, department] of [
+    ["Captain", "Command"],
+    ["Deckhand", "Deck"],
+    ["Deck Engineer", "Engineering"],
+    [" chase boat captain ", "Command"],
+  ]) {
+    const filters = createDefaultPublicJobSearchFilters();
+    filters.departments = [department];
+    assert.equal(
+      matchesPublicJobSearch(sampleJob({ position, department: "Interior" }), filters),
+      true,
+      position,
+    );
+  }
+
+  const command = positionSelectGroups.find((group) => group.department === "Command");
+  assert.ok(command.positions.includes("Chase Boat Captain"));
+  assert.equal(getPosition("Chase Boat Captain").department, "Command");
+});
+
+test("unknown legacy positions retain their stored department without defaulting to Deck", () => {
+  const filters = createDefaultPublicJobSearchFilters();
+  const job = sampleJob({ position: "Legacy Specialist", department: "Interior" });
+
+  filters.departments = ["Interior"];
+  assert.equal(matchesPublicJobSearch(job, filters), true);
+  filters.departments = ["Deck"];
+  assert.equal(matchesPublicJobSearch(job, filters), false);
+  assert.equal(matchesPublicJobSearch({ ...job, department: "" }, filters), false);
+  filters.departments = [];
+  assert.equal(matchesPublicJobSearch(job, filters), true);
 });
 
 test("crew size range is inclusive and preserves legacy minimum-only searches", () => {

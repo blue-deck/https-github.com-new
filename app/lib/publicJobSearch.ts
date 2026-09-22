@@ -8,6 +8,7 @@ import type {
   PublicJobPost,
 } from "./jobPosts";
 import { maximumJobSalaryAmount } from "./jobSalaryAmount.js";
+import { getPosition } from "./yachtOperations";
 
 export const publicJobSearchSorts = [
   "newest",
@@ -415,7 +416,10 @@ export function matchesPublicJobSearch(
     return false;
   }
   if (!includesSelected(filters.positions, job.position)) return false;
-  if (!includesSelected(filters.departments, job.department)) return false;
+  if (filters.departments.length > 0) {
+    const department = getPosition(job.position)?.department ?? job.department;
+    if (!includesSelected(filters.departments, department)) return false;
+  }
   if (
     filters.location &&
     !foldText(job.location).includes(foldText(filters.location))

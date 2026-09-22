@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Search,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
@@ -22,8 +23,17 @@ import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./Ho
 import { DesktopReferenceHeader, DesktopReferenceHero } from "./DesktopReferenceHero";
 import { DesktopHomeSearch } from "./DesktopHomeSearch";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
+import type { YachtDepartmentId } from "./lib/yachtOperations";
 
 type LoadState = "loading" | "ready" | "error";
+
+const opportunityDepartments = [
+  "Command",
+  "Engineering",
+  "Deck",
+  "Interior",
+  "Galley",
+] as const satisfies readonly YachtDepartmentId[];
 
 // Tablet and phone art direction remains independent of the desktop artwork.
 const { props: tabletHeroImage } = getImageProps({
@@ -291,13 +301,30 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
               </Link>
             </div>
             <div className={homeStyles.filters} role="group" aria-label={hc.department}>
-              {["", "Deck", "Interior", "Engineering", "Galley"].map((value) => (
-                <button key={value} type="button" aria-pressed={department === value} aria-controls="home-job-results" onClick={() => {
-                  if (department === value) return;
-                  setLoadState("loading");
-                  setDepartment(value);
-                }}>{value ? departmentLabel(value, language) : hc.all}</button>
-              ))}
+              {opportunityDepartments.map((value) => {
+                const selected = department === value;
+                const label = departmentLabel(value, language);
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selected}
+                    aria-controls="home-job-results"
+                    aria-label={selected ? `${label} — ${hc.clearFilter}` : label}
+                    onClick={() => {
+                      setLoadState("loading");
+                      setDepartment((current) => current === value ? "" : value);
+                    }}
+                  >
+                    {selected ? (
+                      <span className={homeStyles.filterClear} aria-hidden="true">
+                        <X />
+                      </span>
+                    ) : null}
+                    {label}
+                  </button>
+                );
+              })}
             </div>
             <div id="home-job-results" className={homeStyles.jobsGrid} data-count={loadState === "loading" ? 3 : jobs.length + (jobs.length > 0 && jobs.length < 3 && rolePrompt ? 1 : 0)} aria-live="polite" aria-busy={loadState === "loading"}>
               {loadState === "loading" ? (

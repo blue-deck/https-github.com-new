@@ -134,6 +134,7 @@ export const yachtCrewPositions: YachtPosition[] = [
   { title: "Relief Captain", department: "Command", rank: 96, level: "Command" },
   { title: "Staff Captain", department: "Command", rank: 94, level: "Command" },
   { title: "Build Captain", department: "Command", rank: 92, level: "Command" },
+  { title: "Chase Boat Captain", department: "Command", rank: 91, level: "Command" },
   { title: "Chief Officer", department: "Deck", rank: 90, level: "Department Head" },
   { title: "Chief Mate", department: "Deck", rank: 89, level: "Department Head" },
   { title: "First Officer", department: "Deck", rank: 88, level: "Department Head" },
