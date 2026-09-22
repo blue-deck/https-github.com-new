@@ -58,9 +58,11 @@ test("client restores URL filters, advances a filter-bound cursor, and exposes b
 });
 
 test("job filters use explicit searches and clear actions without selection summaries", async () => {
-  const [jobsClient, crewClient] = await Promise.all([
+  const [jobsClient, crewClient, jobFields, crewFields] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/find-crew/FindCrewClient.tsx"),
+    source("app/components/JobSearchFields.tsx"),
+    source("app/components/CrewSearchFields.tsx"),
   ]);
 
   assert.match(
@@ -75,11 +77,12 @@ test("job filters use explicit searches and clear actions without selection summ
     jobsClient,
     /function applyAllFilters\(\) \{[\s\S]*?applyFilterUpdate\(\(\) => draftFilters\)/,
   );
-  assert.match(jobsClient, /aria-label=\{c\.searchKeyword\}/);
+  assert.match(jobsClient, /<JobKeywordSearchField[\s\S]*?value=\{draftFilters\.query\}[\s\S]*?onKeywordSearch=\{applyKeywordSearch\}/);
+  assert.match(jobFields, /aria-label=\{c\.searchKeyword\}/);
   const sharedKeywordButtonStyle =
     "bd-focus absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 hover:text-cyan-950";
-  assert.ok(jobsClient.includes(sharedKeywordButtonStyle));
-  assert.ok(crewClient.includes(sharedKeywordButtonStyle));
+  assert.ok(jobFields.includes(sharedKeywordButtonStyle));
+  assert.ok(crewFields.includes(sharedKeywordButtonStyle));
   const sharedMoreFiltersButtonStyle =
     "bd-focus inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:border-cyan-500 hover:text-cyan-900";
   assert.ok(jobsClient.includes(sharedMoreFiltersButtonStyle));
@@ -127,28 +130,28 @@ test("job filters use explicit searches and clear actions without selection summ
     "inline-flex min-h-11 items-center justify-center px-1 text-sm font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-900";
   assert.ok(jobsClient.includes(sharedClearStyle));
   assert.ok(crewClient.includes(sharedClearStyle));
-  assert.match(jobsClient, /search: "Keyword"/);
-  assert.match(crewClient, /search: "Keyword"/);
+  assert.match(jobFields, /search: "Keyword"/);
+  assert.match(crewFields, /search: "Keyword"/);
   assert.match(
-    jobsClient,
+    jobFields,
     /searchPlaceholder: "Position, skill, language or any"/,
   );
-  assert.match(jobsClient, /search: "Anahtar kelime"/);
+  assert.match(jobFields, /search: "Anahtar kelime"/);
   assert.match(jobsClient, /advanced: "More filters"/);
   assert.match(jobsClient, /advanced: "Daha fazla filtre"/);
   assert.doesNotMatch(
     jobsClient,
     /advanced: "(?:Advanced filters|Gelişmiş filtreler)"/,
   );
-  assert.match(crewClient, /search: "Anahtar kelime"/);
+  assert.match(crewFields, /search: "Anahtar kelime"/);
   assert.match(
-    jobsClient,
+    jobFields,
     /searchPlaceholder: "Pozisyon, beceri, dil veya herhangi bir anahtar kelime"/,
   );
   assert.doesNotMatch(jobsClient, /Position, skill, language or location/);
   assert.doesNotMatch(jobsClient, /Pozisyon, beceri, dil veya konum/);
   assert.match(jobsClient, /employmentType: "Employment type"/);
-  assert.match(jobsClient, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
+  assert.match(jobFields, /capitalizeSearch[\s\S]*?searchLocale=\{language\}/);
   assert.doesNotMatch(jobsClient, /function NumberField\(/);
   assert.doesNotMatch(jobsClient, /readNullableNumber/);
   assert.doesNotMatch(jobsClient, /function RangeField\(/);
@@ -159,33 +162,35 @@ test("job filters use explicit searches and clear actions without selection summ
 });
 
 test("Find Jobs reuses the Create Job Post location search without auto-applying it", async () => {
-  const [jobsClient, manager, locationSearch] = await Promise.all([
+  const [jobsClient, manager, locationSearch, jobFields] = await Promise.all([
     source("app/jobs/JobsClient.tsx"),
     source("app/hiring/jobs/JobPostsManager.tsx"),
     source("app/components/LocationSearchField.tsx"),
+    source("app/components/JobSearchFields.tsx"),
   ]);
 
   assert.match(
-    jobsClient,
-    /import \{ LocationSearchField \} from "\.\.\/components\/LocationSearchField"/,
+    jobFields,
+    /import \{ LocationSearchField \} from "\.\/LocationSearchField"/,
   );
   assert.match(manager, /<LocationSearchField/);
   assert.match(
-    jobsClient,
-    /<LocationSearchField[\s\S]*?value=\{draftFilters\.location\}[\s\S]*?searchingText=\{c\.locationSearching\}[\s\S]*?noResultsText=\{c\.locationNoResults\}[\s\S]*?resultsText=\{c\.locationResults\}[\s\S]*?maxLength=\{120\}/,
+    jobFields,
+    /<LocationSearchField[\s\S]*?value=\{value\}[\s\S]*?searchingText=\{c\.locationSearching\}[\s\S]*?noResultsText=\{c\.locationNoResults\}[\s\S]*?resultsText=\{c\.locationResults\}[\s\S]*?maxLength=\{120\}/,
   );
   const locationField = jobsClient.slice(
-    jobsClient.indexOf("<LocationSearchField"),
+    jobsClient.indexOf("<JobLocationSearchField"),
     jobsClient.indexOf(
       "<MultiSelectField",
-      jobsClient.indexOf("<LocationSearchField"),
+      jobsClient.indexOf("<JobLocationSearchField"),
     ),
   );
   assert.match(locationField, /updateDraftFilters/);
+  assert.match(locationField, /value=\{draftFilters\.location\}/);
   assert.doesNotMatch(locationField, /applyFilterUpdate|applyAllFilters/);
-  assert.match(locationField, /popupClassName="absolute left-0 top-full z-50/);
+  assert.match(jobFields, /popupClassName="absolute left-0 top-full z-50/);
   assert.match(
-    locationField,
+    jobFields,
     /popupListClassName="max-h-72 overflow-y-auto overscroll-contain"/,
   );
   assert.doesNotMatch(jobsClient, /function TextField\(/);
@@ -200,10 +205,10 @@ test("Find Jobs reuses the Create Job Post location search without auto-applying
   assert.match(locationSearch, /role="combobox"/);
   assert.match(locationSearch, /role="listbox"/);
 
-  assert.match(jobsClient, /locationPlaceholder: "Search location"/);
-  assert.match(jobsClient, /locationSearching: "Searching locations…"/);
-  assert.match(jobsClient, /locationPlaceholder: "Konum ara"/);
-  assert.match(jobsClient, /locationSearching: "Konumlar aranıyor…"/);
+  assert.match(jobFields, /locationPlaceholder: "Search location"/);
+  assert.match(jobFields, /locationSearching: "Searching locations…"/);
+  assert.match(jobFields, /locationPlaceholder: "Konum ara"/);
+  assert.match(jobFields, /locationSearching: "Konumlar aranıyor…"/);
 });
 
 test("published requirements remain searchable job data without structured filters", async () => {
@@ -819,7 +824,7 @@ test("yacht brand remains job data but is not exposed as a public job filter", a
 });
 
 test("multi-select filters are exclusive and dismiss on outside click or Escape", async () => {
-  const client = await source("app/jobs/JobsClient.tsx");
+  const client = await source("app/components/JobSearchFields.tsx");
 
   assert.match(client, /name="job-multi-select"/);
   assert.match(client, /data-job-multi-select="true"/);

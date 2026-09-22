@@ -34,6 +34,11 @@ import {
 } from "../app/lib/jobPosts.ts";
 import { capitalizeInitialInput } from "../app/lib/inputText.ts";
 
+const crewFieldsSource = () => readFile(
+  new URL("../app/components/CrewSearchFields.tsx", import.meta.url),
+  "utf8",
+);
+
 test("find crew opens directly with the standalone filter workspace", async () => {
   const [client, loading] = await Promise.all([
     readFile(
@@ -61,36 +66,39 @@ test("find crew opens directly with the standalone filter workspace", async () =
 });
 
 test("find crew keeps concise labels while matching the jobs position prompt", async () => {
+  const fields = await crewFieldsSource();
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(client, /position: "Position"/);
-  assert.match(client, /allPositions: "All positions"/);
-  assert.match(client, /allPositions: "Tüm pozisyonlar"/);
+  assert.match(fields, /position: "Position"/);
+  assert.match(fields, /allPositions: "All positions"/);
+  assert.match(fields, /allPositions: "Tüm pozisyonlar"/);
   assert.doesNotMatch(client, /availability: "All /);
-  assert.doesNotMatch(client, /nationalityFilter: "All /);
+  assert.doesNotMatch(fields, /nationalityFilter: "All /);
 });
 
 test("find crew uses concise English labels for core select filters", async () => {
+  const fields = await crewFieldsSource();
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(client, /position: "Position"/);
+  assert.match(fields, /position: "Position"/);
   assert.match(client, /availability: "Availability"/);
-  assert.match(client, /nationalityFilter: "Nationality"/);
+  assert.match(fields, /nationalityFilter: "Nationality"/);
   assert.match(client, /maritalStatus: "Marital status"/);
-  assert.doesNotMatch(client, /position: "Positions"/);
+  assert.doesNotMatch(fields, /position: "Positions"/);
   assert.doesNotMatch(
-    client,
+    `${client}\n${fields}`,
     /:\s*"Any (?:availability|contract|nationality|marital status|skill|professional trait|work preference|language)"/,
   );
 });
 
 test("crew keyword search waits for its right-side search button", async () => {
+  const fields = await crewFieldsSource();
   const client = await readFile(
     new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
     "utf8",
@@ -102,21 +110,22 @@ test("crew keyword search waits for its right-side search button", async () => {
   );
   assert.match(client, /value=\{draftFilters\.query\}/);
   assert.match(
-    client,
-    /setDraftFilter\(\s*"query",\s*capitalizeInitialInput\(event\.target\.value, language\)/,
+    fields,
+    /onChange\(capitalizeInitialInput\(event\.target\.value, language\)/,
   );
+  assert.match(client, /<CrewKeywordSearchField[\s\S]*?onChange=\{\(value\) => setDraftFilter\("query", value\)\}[\s\S]*?onKeywordSearch=\{submitCrewKeywordSearch\}/);
   assert.match(client, /function submitCrewKeywordSearch\(\) \{\s*setFilters\(\(current\) =>\s*normalizeCrewSearchFilters\(\{ \.\.\.current, query: draftFilters\.query \}\)/);
-  assert.match(client, /onSubmit=\{\(event\) => \{\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
-  assert.match(client, /if \(event\.key !== "Enter"\) return;\s*event\.preventDefault\(\);\s*submitCrewKeywordSearch\(\);/);
-  assert.match(client, /type="submit"\s+aria-label=\{c\.keywordSearchAction\}/);
-  assert.match(client, /absolute right-1 top-1\/2/);
-  assert.match(client, /searchPlaceholder: "Position, skills, language or any"/);
-  assert.match(client, /searchPlaceholder: "Pozisyon, beceri, dil veya diğer"/);
-  assert.doesNotMatch(client, /Position, skill, language or location/);
-  assert.doesNotMatch(client, /Pozisyon, beceri, dil veya konum/);
+  assert.match(fields, /if \(event\.key !== "Enter"\) return;\s*event\.preventDefault\(\);\s*onKeywordSearch\(\);/);
+  assert.match(fields, /type="button"\s+onClick=\{onKeywordSearch\}\s+aria-label=\{c\.keywordSearchAction\}/);
+  assert.match(fields, /absolute right-1 top-1\/2/);
+  assert.match(fields, /searchPlaceholder: "Position, skills, language or any"/);
+  assert.match(fields, /searchPlaceholder: "Pozisyon, beceri, dil veya diğer"/);
+  assert.doesNotMatch(fields, /Position, skill, language or location/);
+  assert.doesNotMatch(fields, /Pozisyon, beceri, dil veya konum/);
+  assert.match(client, /inputId="crew-keyword-search"/);
   assert.match(
-    client,
-    /id="crew-keyword-search"[\s\S]*?appearance-none[\s\S]*?pr-12[\s\S]*?placeholder:text-\[clamp\(0\.72rem,3\.6vw,0\.875rem\)\][\s\S]*?placeholder:font-normal[\s\S]*?\[&::\-webkit-search-cancel-button\]:hidden[\s\S]*?\[&::\-webkit-search-decoration\]:hidden/,
+    fields,
+    /id=\{id\}[\s\S]*?appearance-none[\s\S]*?pr-12[\s\S]*?placeholder:text-\[clamp\(0\.72rem,3\.6vw,0\.875rem\)\][\s\S]*?placeholder:font-normal[\s\S]*?\[&::\-webkit-search-cancel-button\]:hidden[\s\S]*?\[&::\-webkit-search-decoration\]:hidden/,
   );
 });
 
@@ -154,27 +163,28 @@ test("primary and advanced crew filters apply only through the relocated Search 
     client,
     /id="crew-advanced-filters"[\s\S]*?<CrewFilterSearchButton[\s\S]*?onClick=\{submitAllCrewFilters\}/,
   );
-  assert.match(client, /placeholder=\{c\.nationalityFilter\}/);
+  assert.match(await crewFieldsSource(), /placeholder=\{c\.nationalityFilter\}/);
 });
 
 test("find crew position control mirrors the searchable Find Jobs multi-select", async () => {
-  const [crewClient, jobsClient] = await Promise.all([
+  const [crewClient, crewFields, jobFields] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
     ),
-    readFile(new URL("../app/jobs/JobsClient.tsx", import.meta.url), "utf8"),
+    crewFieldsSource(),
+    readFile(new URL("../app/components/JobSearchFields.tsx", import.meta.url), "utf8"),
   ]);
 
-  const crewStart = crewClient.indexOf("function PositionMultiSelectField");
-  const crewEnd = crewClient.indexOf(
+  const crewStart = crewFields.indexOf("function PositionMultiSelectField");
+  const crewEnd = crewFields.indexOf(
     "function closeOpenCrewPositionMultiSelects",
     crewStart,
   );
-  const jobsStart = jobsClient.indexOf("function MultiSelectField");
-  const jobsEnd = jobsClient.indexOf("function closeOpenJobMultiSelects", jobsStart);
-  const crewControl = crewClient.slice(crewStart, crewEnd);
-  const jobsControl = jobsClient.slice(jobsStart, jobsEnd);
+  const jobsStart = jobFields.indexOf("function MultiSelectField");
+  const jobsEnd = jobFields.indexOf("function closeOpenJobMultiSelects", jobsStart);
+  const crewControl = crewFields.slice(crewStart, crewEnd);
+  const jobsControl = jobFields.slice(jobsStart, jobsEnd);
 
   assert.ok(crewStart >= 0 && crewEnd > crewStart);
   assert.ok(jobsStart >= 0 && jobsEnd > jobsStart);
@@ -192,20 +202,20 @@ test("find crew position control mirrors the searchable Find Jobs multi-select",
     assert.match(crewControl, contract);
     assert.match(jobsControl, contract);
   }
-  assert.match(crewClient, /maxSelections=\{maximumCrewPositionSelections\}/);
+  assert.match(crewFields, /maxSelections=\{maximumCrewPositionSelections\}/);
   assert.equal(maximumCrewPositionSelections, 12);
-  assert.match(crewClient, /event\.key !== "Escape"/);
-  assert.match(crewClient, /closeOpenCrewPositionMultiSelects\(\)/);
-  assert.match(crewClient, /allPositions: "All positions"/);
-  assert.match(crewClient, /searchPositions: "Search positions"/);
-  assert.match(crewClient, /selected: "selected"/);
-  assert.match(crewClient, /noOptions: "No options found"/);
+  assert.match(crewFields, /event\.key !== "Escape"/);
+  assert.match(crewFields, /closeOpenCrewPositionMultiSelects\(\)/);
+  assert.match(crewFields, /allPositions: "All positions"/);
+  assert.match(crewFields, /searchPositions: "Search positions"/);
+  assert.match(crewFields, /selected: "selected"/);
+  assert.match(crewFields, /noOptions: "No options found"/);
   assert.match(
-    crewClient,
+    crewFields,
     /publicJobSearchTaxonomy\.positions\.map\(\(value\) => \(\{ value, label: value \}\)\)/,
   );
   assert.match(
-    crewClient,
+    crewFields,
     /import \{ publicJobSearchTaxonomy \} from "\.\.\/lib\/publicJobSearchConfig";/,
   );
   assert.doesNotMatch(
@@ -322,8 +332,8 @@ test("keeps nationality in primary filters and removes the location filter", asy
   const advancedSelects = client.slice(advancedStart, advancedEnd);
   assert.ok(primaryStart >= 0 && advancedStart > primaryStart);
   assert.ok(advancedEnd > advancedStart);
-  assert.match(primaryFilters, /label=\{c\.nationalityFilter\}/);
-  assert.match(primaryFilters, /<NationalitySearchField/);
+  assert.match(primaryFilters, /<CrewNationalitySearchField[\s\S]*?value=\{draftFilters\.nationality\}/);
+  assert.match(await crewFieldsSource(), /<NationalitySearchField\s+label=\{c\.nationalityFilter\}/);
   assert.doesNotMatch(primaryFilters, /label=\{c\.location\}/);
   assert.doesNotMatch(advancedSelects, /label=\{c\.location\}/);
   assert.doesNotMatch(advancedSelects, /label=\{c\.nationalityFilter\}/);
@@ -453,6 +463,7 @@ test("More filters is a separate sticky right card beside horizontal crew cards"
 });
 
 test("crew filter controls share equal columns and one select surface", async () => {
+  const fields = await crewFieldsSource();
   const [client, loading, nationalityField] = await Promise.all([
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
@@ -483,10 +494,10 @@ test("crew filter controls share equal columns and one select surface", async ()
     /NATIONALITY_CONTROL_SIZE_CLASS_NAME =\s*\n\s*"h-12 min-h-12 w-full min-w-0"/,
   );
   assert.match(
-    client,
-    /id="crew-keyword-search"[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
+    fields,
+    /id=\{id\}[\s\S]*?className=\{`\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\}/,
   );
-  const surfaceClassMatch = client.match(
+  const surfaceClassMatch = fields.match(
     /const crewFilterControlSurfaceClassName = `\$\{NATIONALITY_CONTROL_SIZE_CLASS_NAME\} ([^`]+)`;/,
   );
   assert.ok(surfaceClassMatch);
@@ -519,12 +530,12 @@ test("crew filter controls share equal columns and one select surface", async ()
     assert.ok(selectClassTokens.has(token), `missing select class: ${token}`);
   }
 
-  const positionStart = client.indexOf("function PositionMultiSelectField");
-  const positionEnd = client.indexOf(
+  const positionStart = fields.indexOf("function PositionMultiSelectField");
+  const positionEnd = fields.indexOf(
     "function closeOpenCrewPositionMultiSelects",
     positionStart,
   );
-  const positionControl = client.slice(positionStart, positionEnd);
+  const positionControl = fields.slice(positionStart, positionEnd);
   const positionClassMatch = positionControl.match(
     /<summary[\s\S]*?className=\{`\$\{crewFilterControlSurfaceClassName\} ([^`]+)`\}/,
   );
@@ -581,9 +592,10 @@ test("crew filter controls share equal columns and one select surface", async ()
 
   assert.match(
     client,
-    /label=\{c\.position\}[\s\S]*?label=\{c\.availability\}[\s\S]*?label=\{c\.maritalStatus\}[\s\S]*?label=\{c\.gender\}[\s\S]*?label=\{c\.smoker\}[\s\S]*?label=\{c\.visibleTattoos\}[\s\S]*?label=\{c\.experienceType\}[\s\S]*?label=\{c\.minimumExperience\}/,
+    /<CrewPositionSearchField[\s\S]*?label=\{c\.availability\}[\s\S]*?label=\{c\.maritalStatus\}[\s\S]*?label=\{c\.gender\}[\s\S]*?label=\{c\.smoker\}[\s\S]*?label=\{c\.visibleTattoos\}[\s\S]*?label=\{c\.experienceType\}[\s\S]*?label=\{c\.minimumExperience\}/,
   );
-  assert.match(client, /<form\s+className="block min-w-0"/);
+  assert.match(fields, /<div className="block min-w-0">/);
+  assert.doesNotMatch(fields, /<form\b/);
   assert.match(nationalityField, /relative block min-w-0/);
 });
 

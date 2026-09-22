@@ -82,20 +82,25 @@ test("country values are unique for new profiles and recognize legacy demonyms",
 });
 
 test("My Profile and Find Crew use the shared nationality search field", async () => {
-  const [profilePage, findCrewClient] = await Promise.all([
+  const [profilePage, findCrewClient, crewFields] = await Promise.all([
     readFile(new URL("../app/profile/page.tsx", import.meta.url), "utf8"),
     readFile(
       new URL("../app/find-crew/FindCrewClient.tsx", import.meta.url),
       "utf8",
     ),
+    readFile(
+      new URL("../app/components/CrewSearchFields.tsx", import.meta.url),
+      "utf8",
+    ),
   ]);
 
   assert.match(profilePage, /<NationalitySearchField/);
-  assert.match(findCrewClient, /<NationalitySearchField/);
+  assert.match(findCrewClient, /<CrewNationalitySearchField/);
+  assert.match(crewFields, /<NationalitySearchField[\s\S]*?value=\{value\}/);
   assert.match(profilePage, /nationality: canonicalNationalityValue\(profile\.nationality\)/);
   assert.match(
     findCrewClient,
-    /<NationalitySearchField[\s\S]*?value=\{draftFilters\.nationality\}/,
+    /<CrewNationalitySearchField[\s\S]*?value=\{draftFilters\.nationality\}/,
   );
   assert.doesNotMatch(profilePage, /function NationalitySelect/);
   assert.doesNotMatch(findCrewClient, /optionKind="nationality"/);
