@@ -60,7 +60,7 @@ export function DesktopHomeSearch({ language }: { language: "en" | "tr" }) {
               <svg viewBox="0 0 280 56" preserveAspectRatio="none" aria-hidden className={styles.tabShape}>
                 <path d="M0 56C16 56 20 49 24 34L29 15C32 4 36 0 49 0H231C244 0 248 4 251 15L256 34C260 49 264 56 280 56Z" />
               </svg>
-              <span>{tab === "careers" ? "Careers" : "Crew"}</span>
+              <span>{tab === "careers" ? "Jobs" : "Crews"}</span>
             </button>
           ))}
         </div>
