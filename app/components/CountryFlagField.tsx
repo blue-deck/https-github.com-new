@@ -125,7 +125,7 @@ export function CountryFlagField({
   return (
     <div
       ref={wrapperRef}
-      className="relative block"
+      className="relative block min-w-0"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
           closePicker();
@@ -187,7 +187,7 @@ export function CountryFlagField({
       </div>
 
       {open && !disabled ? (
-        <div className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-50 w-full min-w-[260px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/18">
+        <div className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-50 w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/18">
           <div id={listboxId} role="listbox" className="max-h-72 overflow-auto">
             {filteredCountries.length ? (
               filteredCountries.map((country, index) => (

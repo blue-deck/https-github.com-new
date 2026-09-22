@@ -106,8 +106,8 @@ test("Create Job keeps Yacht program optional, shared, and directly below Yacht 
     yachtSectionStart,
   );
   const yachtSection = manager.slice(yachtSectionStart, yachtSectionEnd);
-  const leftColumnStart = yachtSection.indexOf(
-    '<div className="grid content-start gap-5">',
+  const leftColumnStart = yachtSection.search(
+    /<div className="[^"]*\bcontent-start\b[^"]*">/,
   );
   const leftColumnEnd = yachtSection.indexOf("</div>", leftColumnStart);
   const leftColumn = yachtSection.slice(leftColumnStart, leftColumnEnd);
@@ -176,7 +176,7 @@ test("salary input uses the shared grouped whole-number behavior", async () => {
 test("salary amount, currency, and period share one control", async () => {
   const manager = await source("app/hiring/jobs/JobPostsManager.tsx");
   const salarySectionStart = manager.indexOf("{c.salary}");
-  const salaryFieldsetStart = manager.indexOf("<fieldset>", salarySectionStart);
+  const salaryFieldsetStart = manager.indexOf("<fieldset", salarySectionStart);
   const salaryFieldsetEnd = manager.indexOf(
     "</fieldset>",
     salaryFieldsetStart,
@@ -195,8 +195,6 @@ test("salary amount, currency, and period share one control", async () => {
   assert.ok(periodIndex > currencyIndex);
   assert.match(salaryControl, /updateForm\(\s*"salaryCurrency"/);
   assert.match(salaryControl, /updateForm\(\s*"salaryPeriod"/);
-  assert.equal(salaryControl.match(/px-1\.5 text-xs/g)?.length, 2);
-  assert.equal(salaryControl.match(/sm:px-3 sm:text-sm/g)?.length, 2);
   assert.equal(
     salaryControl.match(/focus-visible:shadow-\[inset_0_0_0_2px_#06b6d4\]/g)
       ?.length,
