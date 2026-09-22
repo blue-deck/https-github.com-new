@@ -1,23 +1,19 @@
-.header,
 .hero {
   display: none;
 }
 
 @media (min-width: 960px) {
-  .header,
   .hero {
     position: relative;
     display: block;
     width: 100%;
     color: #f3f6fc;
-  }
-
-  .header {
-    aspect-ratio: 1586 / 112;
-  }
-
-  .hero {
     aspect-ratio: 1586 / 880;
+    /* Crop the artwork's original 112px header; navigation is shared HTML. */
+    background-image: url("/media/bluedeck-desktop-reference-v1.png");
+    background-size: 100% auto;
+    background-position: center bottom;
+    background-repeat: no-repeat;
   }
 
   .link {
@@ -44,37 +40,10 @@
     box-shadow: 0 0 0 1px #b8e0ff70;
   }
 
-  .link:focus-visible,
-  .account :is(a, button):focus-visible {
+  .link:focus-visible {
     outline: 3px solid #9cdbff;
     outline-offset: 4px;
     background: #ffffff12;
-  }
-
-  .account {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 1.5vw;
-    padding: 0 0.8vw;
-    background: #041426;
-    font-size: clamp(0.8125rem, 1.08vw, 1.375rem);
-  }
-
-  .account :is(a, button) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    border-radius: 4px;
-    padding: 0.7vw 1.4vw;
-    color: #f3f6fc;
-    cursor: pointer;
-  }
-
-  .account button {
-    border: 1px solid #d5deeb;
   }
 }
 

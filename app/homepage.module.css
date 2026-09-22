@@ -4,19 +4,7 @@
   background: var(--bluedeck-canvas);
 }
 
-.desktopLanguage {
-  display: none;
-}
-
 @media (min-width: 960px) {
-  .page {
-    background-image: url("/media/bluedeck-desktop-reference-v1.png");
-    background-position: center top;
-    background-repeat: no-repeat;
-    background-size: 100% auto;
-  }
-
-  .page > :global(.bd-public-header),
   .page .hero {
     display: none;
   }
@@ -24,38 +12,34 @@
   .page > main {
     background: transparent;
   }
+}
 
-  .desktopLanguage {
-    display: flex;
-    justify-content: flex-end;
-    padding: 1rem var(--hero-gutter);
+/* Desktop shares the standard public header; retain the mobile art direction. */
+@media (max-width: 959px) {
+  .page :global(.bd-public-header) {
     background: var(--hero-navy);
+    box-shadow: none;
   }
-}
 
-.page :global(.bd-public-header) {
-  background: var(--hero-navy);
-  box-shadow: none;
-}
+  .page :global(.bd-public-header-inner) {
+    padding-inline: var(--hero-gutter);
+  }
 
-.page :global(.bd-public-header-inner) {
-  padding-inline: var(--hero-gutter);
-}
+  .page :global(.bd-public-nav-link),
+  .page :global(.bd-public-auth-action) {
+    color: #edf3fb;
+    font-weight: 500;
+  }
 
-.page :global(.bd-public-nav-link),
-.page :global(.bd-public-auth-action) {
-  color: #edf3fb;
-  font-weight: 500;
-}
+  .page :global(.bd-public-action-primary) {
+    border-color: #cfdbed;
+    border-radius: 4px;
+    background: transparent;
+  }
 
-.page :global(.bd-public-action-primary) {
-  border-color: #cfdbed;
-  border-radius: 4px;
-  background: transparent;
-}
-
-.page :global(.bd-public-action-primary:hover) {
-  background: #18324c;
+  .page :global(.bd-public-action-primary:hover) {
+    background: #18324c;
+  }
 }
 
 .hero {
@@ -280,20 +264,6 @@
 }
 
 @media (min-width: 1200px) {
-  .page :global(.bd-public-nav-link),
-  .page :global(.bd-public-auth-action) {
-    font-size: clamp(0.875rem, 1vw, 1rem);
-  }
-
-  .page :global(.bd-public-header-inner) {
-    min-height: clamp(88px, 7vw, 112px);
-  }
-
-  .page :global(.bd-public-brand) {
-    width: clamp(14rem, 21vw, 21rem);
-    height: 4rem;
-  }
-
   .heroRail a:first-child::after,
   .heroRail a:last-child::after {
     position: absolute;

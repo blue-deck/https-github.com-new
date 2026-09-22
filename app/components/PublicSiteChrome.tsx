@@ -173,11 +173,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
     setPhoneViewport(phoneBreakpoint.matches);
     const breakpoints = [
       phoneBreakpoint,
-      window.matchMedia(
-        mobileVariant === "cinematic"
-          ? "(max-width: 959px)"
-          : "(max-width: 1040px)",
-      ),
+      window.matchMedia("(max-width: 1040px)"),
     ];
     function closeMenus() {
       setPhoneViewport(phoneBreakpoint.matches);

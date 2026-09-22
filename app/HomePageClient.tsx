@@ -20,9 +20,8 @@ import {
 import styles from "./homepage.module.css";
 import homeStyles from "./homeContent.module.css";
 import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./HomePageSections";
-import { DesktopReferenceHeader, DesktopReferenceHero } from "./DesktopReferenceHero";
+import { DesktopReferenceHero } from "./DesktopReferenceHero";
 import { DesktopHomeSearch } from "./DesktopHomeSearch";
-import { LanguageSwitcher } from "./components/LanguageSwitcher";
 import type { YachtDepartmentId } from "./lib/yachtOperations";
 
 type LoadState = "loading" | "ready" | "error";
@@ -221,7 +220,6 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page} ${heroFontClassName}`}>
       <link rel="preload" as="image" href="/media/bluedeck-desktop-reference-v1.png" media="(min-width: 960px)" />
-      <DesktopReferenceHeader />
       <PublicHeader mobileVariant="cinematic" />
 
       <main id="main-content" data-i18n-ignore>
@@ -358,9 +356,6 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
         <HomePageSections language={language} viewer={jobViewer} />
       </main>
 
-      <div className={styles.desktopLanguage}>
-        <LanguageSwitcher size="compact" />
-      </div>
       <PublicFooter />
     </div>
   );
