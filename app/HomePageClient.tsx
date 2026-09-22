@@ -19,7 +19,7 @@ import {
 } from "./jobs/PublicJobListingCard";
 import styles from "./homepage.module.css";
 import homeStyles from "./homeContent.module.css";
-import { HomeJobSearch, HomePageSections, departmentLabel, homeCopy } from "./HomePageSections";
+import { HomePageSections, departmentLabel, homeCopy } from "./HomePageSections";
 import { DesktopReferenceHero } from "./DesktopReferenceHero";
 import { DesktopHomeSearch } from "./DesktopHomeSearch";
 import type { YachtDepartmentId } from "./lib/yachtOperations";
@@ -224,7 +224,6 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
 
       <main id="main-content" data-i18n-ignore>
         <DesktopReferenceHero />
-        <DesktopHomeSearch language={language} />
         <section className={styles.hero} aria-labelledby="home-heading">
           <div className={styles.heroStage}>
             <div className={styles.heroArt} aria-hidden="true">
@@ -263,32 +262,12 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
                     <span>{c.introLine2}</span>
                   </p>
                 </div>
-                <div className={styles.heroControls}>
-                  <div className={styles.heroActions}>
-                    <Link href="/jobs" className={styles.primaryButton}>
-                      {c.browseJobs}
-                      <ArrowRight aria-hidden />
-                    </Link>
-                    <Link href="/find-crew" className={styles.secondaryButton}>
-                      {c.findCrew}
-                    </Link>
-                  </div>
-                  <Link href="/yacht-os" className={styles.platformLink}>
-                    {c.explorePlatform}
-                    <ArrowRight aria-hidden />
-                  </Link>
-                </div>
               </div>
             </div>
           </div>
-          <nav className={styles.heroRail} aria-label={c.heroNavigation}>
-            <Link href="/jobs">{c.careers}</Link>
-            <Link href="/find-crew">{c.crew}</Link>
-            <Link href="/yacht-os">Yacht-OS</Link>
-          </nav>
         </section>
 
-        <HomeJobSearch language={language} />
+        <DesktopHomeSearch language={language} />
 
         <section className={homeStyles.jobsSection} aria-labelledby="jobs-heading">
           <div className={homeStyles.container}>
