@@ -81,10 +81,6 @@ const copy = {
     jobsErrorTitle: "Roles are temporarily unavailable.",
     jobsErrorText: "Open the full jobs board to try again.",
     openJobs: "Open jobs board",
-    profilePromptEyebrow: "Stay ready",
-    profilePromptTitle: "Make your experience easy to trust.",
-    profilePromptText:
-      "Keep your role, availability and essential records in one professional crew profile.",
     hiringPromptEyebrow: "Build your team",
     hiringPromptTitle: "Publish and manage roles in one place.",
     hiringPromptText:
@@ -119,10 +115,6 @@ const copy = {
     jobsErrorTitle: "İlanlara şu anda ulaşılamıyor.",
     jobsErrorText: "Tekrar denemek için tam ilan panosunu açın.",
     openJobs: "İlan panosunu aç",
-    profilePromptEyebrow: "Hazır kalın",
-    profilePromptTitle: "Deneyiminizi güvenilir biçimde sunun.",
-    profilePromptText:
-      "Pozisyonunuzu, müsaitliğinizi ve temel kayıtlarınızı tek profesyonel profilde tutun.",
     hiringPromptEyebrow: "Ekibinizi kurun",
     hiringPromptTitle: "İlanları tek yerden yayınlayın ve yönetin.",
     hiringPromptText:
@@ -150,21 +142,7 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
         action: c.openHiring,
         href: "/hiring",
       }
-    : jobViewer.kind === "signed-out" ||
-        (jobViewer.kind === "signed-in" &&
-          (jobViewer.role === "crew" || jobViewer.role === "captain"))
-      ? {
-          eyebrow: c.profilePromptEyebrow,
-          title: c.profilePromptTitle,
-          text: c.profilePromptText,
-          action:
-            jobViewer.kind === "signed-in" ? c.manageProfile : c.createProfile,
-          href:
-            jobViewer.kind === "signed-in"
-              ? "/profile"
-              : "/login?mode=signup&role=crew",
-        }
-      : null;
+    : null;
   const noJobsAction =
     loadState === "error"
       ? { href: "/jobs", label: c.openJobs }
