@@ -46,7 +46,7 @@ export function DesktopHomeSearch({ language }: { language: "en" | "tr" }) {
   }
 
   return (
-    <section className={styles.search} aria-label={c.navigation} data-i18n-ignore>
+    <section className={styles.search} aria-label={c.navigation} data-mode={mode} data-i18n-ignore>
       <div className={styles.rail}>
         <div role="tablist" aria-label={c.navigation} className={styles.tabs}>
           {(["careers", "crew"] as const).map((tab) => (

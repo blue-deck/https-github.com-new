@@ -6,12 +6,12 @@
     position: relative;
     z-index: 2;
     display: block;
-    background: #fff;
-    color: #071a2a;
-  }
-  .rail {
-    padding-top: 8px;
+    /* Overlap the hero by one pixel so fractional zoom cannot expose a seam. */
+    margin-top: -1px;
+    padding-top: 9px;
+    /* A single backing prevents seams between the rail and panel when zoomed. */
     background: var(--hero-navy, #041629);
+    color: #071a2a;
   }
   .tabs {
     display: grid;
@@ -52,7 +52,6 @@
   .yacht { display: none; }
   .panelStage {
     position: relative;
-    background: linear-gradient(to bottom, var(--hero-navy, #041629) 16px, #fff 16px);
   }
   .panel {
     position: relative;
@@ -60,6 +59,9 @@
     background: #fff;
     padding: 20px max(16px, var(--safe-area-right, 0px)) 24px max(16px, var(--safe-area-left, 0px));
   }
+  /* Join the active tab to the form without a rounded cut-out below it. */
+  .search[data-mode="careers"] .panel { border-top-left-radius: 0; }
+  .search[data-mode="crew"] .panel { border-top-right-radius: 0; }
   .fields {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
