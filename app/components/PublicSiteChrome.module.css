@@ -17,3 +17,208 @@
   .footerGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem; }
   .footerGrid > :global(.bd-public-footer-contact) { grid-column: 1 / -1; }
 }
+
+/* Public pages share the same phone navigation and account controls. */
+.header :global(.bd-public-mobile-utilities),
+.header :global(.bd-public-mobile-account) {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .header:global(.bd-public-header) {
+    border-bottom: 0;
+    background: #041629;
+    box-shadow: none;
+  }
+
+  .header :global(.bd-public-header-inner) {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: var(--public-header-height-mobile);
+    padding-inline: max(0.75rem, var(--safe-area-left), var(--safe-area-right));
+  }
+
+  .header :global(.bd-public-brand-group) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .header :global(.bd-public-brand) {
+    justify-self: center;
+    width: clamp(8.5rem, 41vw, 11.25rem);
+    height: 2.75rem;
+  }
+
+  .header :global(.bd-public-menu-button) {
+    justify-self: start;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+  }
+
+  .header :global(.bd-public-menu-button svg) {
+    width: 1.5rem;
+    height: 1.5rem;
+    stroke-width: 1.5;
+  }
+
+  .header :global(.bd-public-mobile-account) {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    min-width: 0;
+  }
+
+  .header :global(.bd-public-mobile-login) {
+    position: relative;
+    display: inline-flex;
+    min-width: 4.25rem;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    padding-inline: 0.5rem;
+    color: #f3f6fc;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .header :global(.bd-public-mobile-login::before) {
+    position: absolute;
+    inset: 5px 0;
+    border: 1px solid #c6d2e2;
+    border-radius: 4px;
+    content: "";
+    pointer-events: none;
+  }
+
+  .header :global(.bd-public-mobile-login:hover),
+  .header :global(.bd-public-account-trigger:hover) {
+    background: #ffffff0d;
+  }
+
+  .header :global(.bd-public-account-trigger) {
+    display: inline-flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #a6bed2;
+    border-radius: 50%;
+    background: #102a43;
+    color: #eff6ff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+  }
+
+  .header :global(.bd-public-account-avatar) {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    object-fit: cover;
+  }
+
+  .header :global(.bd-public-account-panel) {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    right: 0;
+    z-index: 90;
+    display: grid;
+    gap: 0.2rem;
+    width: min(17.5rem, calc(100vw - 1.5rem));
+    max-height: calc(100svh - var(--public-header-height-mobile) - 1.5rem);
+    overflow-y: auto;
+    border: 1px solid #ffffff24;
+    border-radius: 0.65rem;
+    background: #0a2039;
+    padding: 0.45rem;
+    box-shadow: 0 18px 48px #02081752;
+  }
+
+  .header :global(.bd-public-account-identity) {
+    display: grid;
+    gap: 0.25rem;
+    margin-bottom: 0.3rem;
+    border-bottom: 1px solid #ffffff24;
+    padding: 0.65rem 0.8rem 0.85rem;
+    color: #f3f6fc;
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+
+  .header :global(.bd-public-account-identity span) {
+    color: #c3d0e0;
+    font-size: 0.75rem;
+  }
+
+  .header :global(.bd-public-account-link) {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.65rem;
+    border-radius: 0.4rem;
+    padding: 0.55rem 0.8rem;
+    color: #edf3fb;
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .header :global(.bd-public-account-link:hover),
+  .header :global(.bd-public-account-link:focus-visible) {
+    background: #ffffff12;
+  }
+
+  .header :global(.bd-public-account-link svg) {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+  }
+
+  .header :global(.bd-public-actions) {
+    display: none;
+  }
+
+  .header :global(.bd-public-mobile-panel) {
+    top: calc(100% + 0.25rem);
+    right: auto;
+    left: max(0.75rem, var(--safe-area-left), var(--safe-area-right));
+    max-height: calc(100svh - var(--public-header-height-mobile) - 1.5rem);
+    overflow-y: auto;
+  }
+
+  .header :global(.bd-public-mobile-utilities) {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+    border-top: 1px solid #ffffff24;
+    padding: 0.65rem 0.8rem;
+  }
+
+  .header :global(.bd-public-mobile-language-row) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    color: #edf3fb;
+    font-size: 0.875rem;
+  }
+
+  .header :global(.bd-public-mobile-utilities .bd-public-mobile-link) {
+    gap: 0.6rem;
+  }
+
+  .header :global(.bd-public-mobile-utilities .bd-public-mobile-link svg) {
+    width: 1rem;
+    height: 1rem;
+  }
+}

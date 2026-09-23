@@ -198,7 +198,7 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page} ${heroFontClassName}`}>
       <link rel="preload" as="image" href="/media/bluedeck-desktop-reference-v1.png" media="(min-width: 960px)" />
-      <PublicHeader mobileVariant="cinematic" />
+      <PublicHeader />
 
       <main id="main-content" data-i18n-ignore>
         <DesktopReferenceHero />

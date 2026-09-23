@@ -54,11 +54,7 @@ function accountInitials(name: string) {
   );
 }
 
-type PublicHeaderProps = {
-  mobileVariant?: "default" | "cinematic";
-};
-
-export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = {}) {
+export function PublicHeader() {
   const pathname = usePathname() || "/";
   const { language, t } = useLanguage();
   const [sessionUser, setSessionUser] = useState<User | null>(null);
@@ -114,7 +110,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
   }, []);
 
   useEffect(() => {
-    if (mobileVariant !== "cinematic" || !phoneViewport || !sessionUser) {
+    if (!phoneViewport || !sessionUser) {
       setIdentity(null);
       return;
     }
@@ -156,7 +152,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
       active = false;
       unsubscribe?.();
     };
-  }, [mobileVariant, phoneViewport, sessionUser]);
+  }, [phoneViewport, sessionUser]);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -186,7 +182,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
     return () => breakpoints.forEach((breakpoint) =>
       breakpoint.removeEventListener("change", closeMenus),
     );
-  }, [mobileVariant]);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen && !accountOpen) return;
@@ -266,7 +262,7 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
   );
 
   return (
-    <header className="bd-public-header" data-mobile-variant={mobileVariant}>
+    <header className={`bd-public-header ${styles.header}`}>
       <a className="bd-skip-link" href="#main-content">
         {language === "tr" ? "İçeriğe geç" : "Skip to content"}
       </a>
@@ -281,88 +277,86 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
             className="bd-public-brand"
             imageClassName="object-contain object-left p-0"
           />
-          {mobileVariant === "cinematic" ? (
-            <div className="bd-public-mobile-account">
-              {sessionUser ? (
-                <>
-                  <button
-                    ref={accountButtonRef}
-                    type="button"
-                    aria-label={language === "tr" ? "Hesap menüsü" : "Account menu"}
-                    aria-expanded={accountOpen}
-                    aria-controls={accountOpen ? accountId : undefined}
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setAccountOpen((current) => !current);
-                    }}
-                    className="bd-focus bd-public-account-trigger"
-                  >
-                    {photoUrl && failedPhotoUrl !== photoUrl ? (
-                      <Image
-                        src={photoUrl}
-                        alt=""
-                        width={44}
-                        height={44}
-                        unoptimized
-                        onError={() => setFailedPhotoUrl(photoUrl)}
-                        className="bd-public-account-avatar"
-                      />
-                    ) : (
-                      <span
-                        aria-hidden
-                        data-i18n-ignore
-                        className="bd-public-account-avatar"
-                      >
-                        {accountInitials(displayName)}
-                      </span>
-                    )}
-                  </button>
-                  {accountOpen ? (
-                    <div
-                      ref={accountPanelRef}
-                      id={accountId}
-                      className="bd-public-account-panel"
+          <div className="bd-public-mobile-account">
+            {sessionUser ? (
+              <>
+                <button
+                  ref={accountButtonRef}
+                  type="button"
+                  aria-label={language === "tr" ? "Hesap menüsü" : "Account menu"}
+                  aria-expanded={accountOpen}
+                  aria-controls={accountOpen ? accountId : undefined}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setAccountOpen((current) => !current);
+                  }}
+                  className="bd-focus bd-public-account-trigger"
+                >
+                  {photoUrl && failedPhotoUrl !== photoUrl ? (
+                    <Image
+                      src={photoUrl}
+                      alt=""
+                      width={44}
+                      height={44}
+                      unoptimized
+                      onError={() => setFailedPhotoUrl(photoUrl)}
+                      className="bd-public-account-avatar"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden
+                      data-i18n-ignore
+                      className="bd-public-account-avatar"
                     >
-                      <div data-i18n-ignore className="bd-public-account-identity">
-                        <strong>{displayName}</strong>
-                        <span>{sessionEmail}</span>
-                      </div>
-                      <nav aria-label={language === "tr" ? "Hesap" : "Account"}>
-                        <Link
-                          href="/dashboard"
-                          onClick={() => setAccountOpen(false)}
-                          className="bd-focus bd-public-account-link"
-                        >
-                          <LayoutDashboard aria-hidden />
-                          <span>{t("topbar.dashboard")}</span>
-                        </Link>
-                        <Link
-                          href="/settings"
-                          onClick={() => setAccountOpen(false)}
-                          className="bd-focus bd-public-account-link"
-                        >
-                          <Settings aria-hidden />
-                          <span>{t("topbar.settings")}</span>
-                        </Link>
-                        <button
-                          type="button"
-                          onClick={() => void logout()}
-                          className="bd-focus bd-public-account-link"
-                        >
-                          <LogOut aria-hidden />
-                          <span>{t("topbar.logout")}</span>
-                        </button>
-                      </nav>
+                      {accountInitials(displayName)}
+                    </span>
+                  )}
+                </button>
+                {accountOpen ? (
+                  <div
+                    ref={accountPanelRef}
+                    id={accountId}
+                    className="bd-public-account-panel"
+                  >
+                    <div data-i18n-ignore className="bd-public-account-identity">
+                      <strong>{displayName}</strong>
+                      <span>{sessionEmail}</span>
                     </div>
-                  ) : null}
-                </>
-              ) : (
-                <Link href="/login" className="bd-focus bd-public-mobile-login">
-                  {language === "tr" ? "Giriş yap" : "Log in"}
-                </Link>
-              )}
-            </div>
-          ) : null}
+                    <nav aria-label={language === "tr" ? "Hesap" : "Account"}>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setAccountOpen(false)}
+                        className="bd-focus bd-public-account-link"
+                      >
+                        <LayoutDashboard aria-hidden />
+                        <span>{t("topbar.dashboard")}</span>
+                      </Link>
+                      <Link
+                        href="/settings"
+                        onClick={() => setAccountOpen(false)}
+                        className="bd-focus bd-public-account-link"
+                      >
+                        <Settings aria-hidden />
+                        <span>{t("topbar.settings")}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => void logout()}
+                        className="bd-focus bd-public-account-link"
+                      >
+                        <LogOut aria-hidden />
+                        <span>{t("topbar.logout")}</span>
+                      </button>
+                    </nav>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <Link href="/login" className="bd-focus bd-public-mobile-login">
+                {language === "tr" ? "Giriş yap" : "Log in"}
+              </Link>
+            )}
+          </div>
         </div>
 
         <nav
@@ -470,40 +464,38 @@ export function PublicHeader({ mobileVariant = "default" }: PublicHeaderProps = 
                 </div>
               ) : null}
             </nav>
-            {mobileVariant === "cinematic" ? (
-              <div className="bd-public-mobile-utilities">
-                <div className="bd-public-mobile-language-row">
-                  <span>{language === "tr" ? "Dil" : "Language"}</span>
-                  <LanguageSwitcher
-                    size="compact"
-                    className="bd-public-mobile-language"
-                  />
-                </div>
-                {sessionEmail ? (
-                  <div
-                    className="bd-public-mobile-auth"
-                    role="group"
-                    aria-label={language === "tr" ? "Hesap" : "Account"}
-                  >
-                    <Link
-                      href="/dashboard"
-                      title={sessionEmail}
-                      onClick={() => setMenuOpen(false)}
-                      className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
-                    >
-                      {t("topbar.dashboard")}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => void logout()}
-                      className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
-                    >
-                      {t("topbar.logout")}
-                    </button>
-                  </div>
-                ) : null}
+            <div className="bd-public-mobile-utilities">
+              <div className="bd-public-mobile-language-row">
+                <span>{language === "tr" ? "Dil" : "Language"}</span>
+                <LanguageSwitcher
+                  size="compact"
+                  className="bd-public-mobile-language"
+                />
               </div>
-            ) : null}
+              {sessionEmail ? (
+                <div
+                  className="bd-public-mobile-auth"
+                  role="group"
+                  aria-label={language === "tr" ? "Hesap" : "Account"}
+                >
+                  <Link
+                    href="/dashboard"
+                    title={sessionEmail}
+                    onClick={() => setMenuOpen(false)}
+                    className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
+                  >
+                    {t("topbar.dashboard")}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => void logout()}
+                    className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
+                  >
+                    {t("topbar.logout")}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
       </div>
