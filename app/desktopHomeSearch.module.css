@@ -114,17 +114,6 @@
     padding: 0 5%;
     align-items: end;
   }
-  .rail::before, .rail::after {
-    content: "";
-    position: absolute;
-    top: 52%;
-    width: 10%;
-    height: 1px;
-    background: #6c8194;
-    opacity: .7;
-  }
-  .rail::before { left: 3.1%; }
-  .rail::after { right: 3.1%; }
   .tabs { display: grid; grid-template-columns: 1fr 1fr; height: 100%; align-items: end; }
   .tab, .yacht {
     position: relative;
