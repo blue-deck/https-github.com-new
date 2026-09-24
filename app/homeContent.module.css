@@ -80,15 +80,110 @@
 .rolePrompt h3 { margin-top: .6rem; font-size: 1.5rem; line-height: 1.25; letter-spacing: -.025em; font-weight: 650; }
 .rolePrompt span { display: block; margin-top: .75rem; color: #52657b; font-size: .9375rem; line-height: 1.6; }
 
-.audienceSection { padding-bottom: clamp(3rem, 5vw, 5rem); }
-.audienceGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
-.audienceCard { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .9fr); min-height: 22rem; overflow: hidden; border: 1px solid var(--bluedeck-tint-line); border-radius: .85rem; background: var(--bluedeck-tint); }
-.audienceCopy { display: flex; flex-direction: column; align-items: start; padding: clamp(1.5rem, 2.5vw, 2.8rem); }
-.audienceCopy h2 { margin-top: .9rem; font-size: clamp(1.5rem, 2.1vw, 2.15rem); line-height: 1.17; letter-spacing: -.035em; font-weight: 650; }
-.audienceCopy > p:not(.eyebrow) { margin-block: 1rem 1.4rem; color: #506378; font-size: .9375rem; line-height: 1.7; }
-.audienceCopy > a { margin-top: auto; }
-.audienceImage { position: relative; min-width: 0; }
-.audienceImage img { object-fit: cover; }
+.audienceSection {
+  padding-block: clamp(2.5rem, 4.5vw, 4.5rem);
+  background: #edf5fa;
+}
+
+.audienceGrid {
+  display: grid;
+  max-width: 1440px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1.25rem, 2.4vw, 2rem);
+}
+
+.audienceCard {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #cfe2ef;
+  border-radius: 1.4rem;
+  background: #fff;
+}
+
+.audienceImage {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #d9e9f3;
+}
+
+.audienceImage img { object-fit: cover; object-position: center; }
+
+.audienceCopy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(1.75rem, 3vw, 2.75rem);
+}
+
+.audienceCopy .eyebrow {
+  color: #1e6c89;
+  font-size: .75rem;
+  font-weight: 750;
+  letter-spacing: .13em;
+}
+
+.audienceCopy h2 {
+  max-width: 16ch;
+  margin-top: .85rem;
+  color: #081f3b;
+  font-size: clamp(2rem, 3.2vw, 3rem);
+  font-weight: 650;
+  letter-spacing: -.045em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.audienceCopy > p:not(.eyebrow) {
+  max-width: 43ch;
+  margin-block: 1.1rem 1.75rem;
+  color: #53677d;
+  font-size: clamp(1rem, 1.25vw, 1.125rem);
+  line-height: 1.65;
+}
+
+.audienceButton {
+  display: inline-flex;
+  min-height: 3.5rem;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: auto;
+  border: 1px solid #123e64;
+  border-radius: .7rem;
+  padding: .9rem 1.5rem;
+  background: #123e64;
+  color: #fff;
+  font-size: .9375rem;
+  font-weight: 650;
+  line-height: 1.5;
+  text-align: center;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.audienceButton svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; stroke-width: 1.7; }
+.audienceButton:hover { border-color: #0c2d4c; background: #0c2d4c; }
+.audienceButton:active { border-color: #08233e; background: #08233e; }
+.content .audienceButton:focus-visible { outline: 3px solid #1e6c89; outline-offset: 4px; }
+
+@media (max-width: 900px) {
+  .audienceGrid { max-width: 44rem; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+  .audienceCopy h2 { font-size: clamp(2rem, 5vw, 2.75rem); }
+}
+
+@media (max-width: 640px) {
+  .audienceSection { padding-block: 2rem; }
+  .audienceCard { border-radius: 1.15rem; }
+  .audienceCopy { padding: 1.5rem; }
+  .audienceCopy h2 { font-size: clamp(1.875rem, 8vw, 2.5rem); }
+  .audienceCopy > p:not(.eyebrow) { margin-block: 1rem 1.5rem; font-size: 1rem; }
+  .audienceButton { width: 100%; justify-content: space-between; gap: .5rem; padding-inline: 1rem; font-size: .875rem; }
+}
 
 .platformSection { padding-block: clamp(3.5rem, 6vw, 6rem); background: var(--bluedeck-feature); color: #fff; }
 .platformGrid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.3fr); align-items: center; gap: clamp(2rem, 5vw, 6rem); }
@@ -128,11 +223,10 @@
 .closingCard p { margin-top: .9rem; font-size: 1rem; line-height: 1.65; color: #c7d3e2; }
 .closingActions { display: flex; flex-direction: column; gap: .7rem; flex-shrink: 0; }
 
-@media (min-width: 1700px) { .audienceCard { min-height: 25rem; } }
-@media (max-width: 1100px) { .searchForm { grid-template-columns: 1fr 1fr; } .jobsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobsGrid > :last-child:nth-child(3) { grid-column: 1 / -1; } .audienceGrid { grid-template-columns: 1fr; } .audienceCard { min-height: 20rem; grid-template-columns: 1fr 1fr; } .closingCard { align-items: start; flex-direction: column; } .closingActions { flex-direction: row; flex-wrap: wrap; } }
+@media (max-width: 1100px) { .searchForm { grid-template-columns: 1fr 1fr; } .jobsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobsGrid > :last-child:nth-child(3) { grid-column: 1 / -1; } .closingCard { align-items: start; flex-direction: column; } .closingActions { flex-direction: row; flex-wrap: wrap; } }
 @media (max-width: 900px) { .platformGrid { grid-template-columns: 1fr; } .platformCopy { max-width: 45rem; } .platformVisual { min-height: 29rem; padding-inline: 2rem; align-items: center; } .workspace { width: min(100%, 37rem); } .trustItem { gap: .65rem; padding-inline: 1rem; } .trustItem > svg { width: 1.5rem; height: 1.5rem; } }
 @media (max-width: 800px) { .headingRow { flex-direction: column; align-items: start; gap: .8rem; } .trustGrid { grid-template-columns: 1fr; gap: 1.25rem; } .trustItem + .trustItem { border-left: 0; } .trustItem { padding-inline: 0; } .trustItem p { max-width: 36rem; } .trustSection { text-align: left; } }
-@media (max-width: 640px) { .searchSection { padding-top: 1.25rem; } .searchForm { grid-template-columns: 1fr; padding: .65rem; } .searchField { min-height: 3rem; } .searchField input, .searchField select { min-height: 3rem; } .jobsGrid { grid-template-columns: 1fr; } .jobsGrid > :last-child:nth-child(3) { grid-column: auto; } .jobsEmpty { padding: 1.5rem; align-items: start; flex-wrap: wrap; } .jobsEmpty > div { flex-basis: calc(100% - 3rem); } .jobsEmpty > :is(a, button) { margin-left: 3rem; } .audienceCard { grid-template-columns: minmax(0, 1.35fr) minmax(0, .8fr); min-height: 22rem; } .audienceCopy { padding: 1.4rem 1.2rem; } .audienceCopy h2 { font-size: 1.5rem; } .audienceCopy .textLink { font-size: .875rem; } .platformVisual { padding: 1.25rem .9rem; min-height: 29rem; } .workspaceBody { padding: 1.15rem; } .workspaceHeader { padding-inline: 1.15rem; } .workspaceRow { gap: .7rem; } .workspaceRow > span { width: 2.3rem; height: 2.3rem; } .closingCard { padding: 1.75rem; } .closingActions { width: 100%; flex-direction: column; } .closingActions > a { width: 100%; } }
+@media (max-width: 640px) { .searchSection { padding-top: 1.25rem; } .searchForm { grid-template-columns: 1fr; padding: .65rem; } .searchField { min-height: 3rem; } .searchField input, .searchField select { min-height: 3rem; } .jobsGrid { grid-template-columns: 1fr; } .jobsGrid > :last-child:nth-child(3) { grid-column: auto; } .jobsEmpty { padding: 1.5rem; align-items: start; flex-wrap: wrap; } .jobsEmpty > div { flex-basis: calc(100% - 3rem); } .jobsEmpty > :is(a, button) { margin-left: 3rem; } .platformVisual { padding: 1.25rem .9rem; min-height: 29rem; } .workspaceBody { padding: 1.15rem; } .workspaceHeader { padding-inline: 1.15rem; } .workspaceRow { gap: .7rem; } .workspaceRow > span { width: 2.3rem; height: 2.3rem; } .closingCard { padding: 1.75rem; } .closingActions { width: 100%; flex-direction: column; } .closingActions > a { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .content *, .filters button { transition: none; } }
 @media (max-width: 640px) { .jobsGrid[data-count] { grid-template-columns: 1fr; } }
 

@@ -695,7 +695,8 @@ export default function ProfilePage() {
     } = await supabase.auth.getUser();
 
     if (!user?.email) {
-      window.location.href = "/login";
+      const nextPath = window.location.hash === "#cv-studio" ? "/profile#cv-studio" : "/profile";
+      window.location.replace(`/login?next=${encodeURIComponent(nextPath)}`);
       return;
     }
 
@@ -1149,6 +1150,19 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
+  useEffect(() => {
+    if (loading || window.location.hash !== "#cv-studio") return;
+
+    // The studio mounts after the authenticated profile and CV records load,
+    // so the browser's initial fragment navigation cannot reach it on its own.
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("cv-studio")?.scrollIntoView({ block: "start" });
+      document.getElementById("cv-studio-title")?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [loading]);
+
   if (loading) {
     return (
       <main className="bd-app-page bd-ocean-shell min-h-screen p-8 text-slate-900" aria-busy="true">
@@ -1269,13 +1283,13 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <section className="mt-6 min-w-0 overflow-hidden rounded-[24px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:rounded-[28px]">
+        <section id="cv-studio" aria-labelledby="cv-studio-title" className="mt-6 min-w-0 scroll-mt-6 overflow-hidden rounded-[24px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:rounded-[28px]">
           <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
           <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-4 py-5 text-white sm:px-6">
             <div className="flex min-w-0 flex-wrap items-end justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#8ed8e6]">BlueDeck CV Studio</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
+                <h2 id="cv-studio-title" tabIndex={-1} className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
                 <p className="mt-1 text-sm font-semibold text-white/70">{activeStudioTabInfo.description}</p>
               </div>
               <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:justify-start">

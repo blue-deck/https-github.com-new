@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight, ChevronDown, ClipboardCheck, FileCheck2, Layers3, LockKeyhole, MapPin, Search, ShieldCheck, UsersRound } from "lucide-react";
 import type { JobListingViewer } from "./jobs/JobListingAction";
+import { getHomeAudienceNavigation } from "./lib/homeAudienceNavigation";
 import { yachtDepartments } from "./lib/yachtOperations";
 import styles from "./homeContent.module.css";
 
@@ -14,8 +15,10 @@ export const homeCopy = {
   en: {
     searchLabel: "Find your next yacht role", keyword: "Position or keyword", location: "Location", department: "All departments", search: "Search jobs", all: "All roles",
     filteredEmpty: "No open roles in this department yet.", filteredText: "Explore the other departments or visit the full jobs board.", clearFilter: "View all departments",
-    crewEyebrow: "For crew", crewTitle: "A career that moves with you.", crewText: "Bring your experience, availability and next opportunity together.", crewAction: "Build your crew profile", profile: "Manage your crew profile", roles: "Explore open roles",
-    hiringEyebrow: "For captains & owners", hiringTitle: "The right people. A stronger crew.", hiringText: "Discover professional crew, publish roles and manage applications in one place.", hiringAction: "Find professional crew", hiringWorkspace: "Open hiring workspace",
+    crewEyebrow: "For crew", crewTitle: "Your next chapter at sea.", crewText: "Bring your experience and availability together. Find the role that fits.", crewAction: "Create your crew profile",
+    crewImageAlt: "A white superyacht cruising across the sparkling blue Mediterranean Sea",
+    hiringEyebrow: "For captains & owners", hiringTitle: "Find your professionals", hiringText: "Find experienced crew, publish roles and manage applications in one place.", hiringAction: "Create a job post",
+    hiringImageAlt: "Five professional yacht crew members together on deck in white and navy uniforms",
     platformEyebrow: "BlueDeck Yacht-OS", platformTitle: "A clearer view of life on board.", platformText: "Connect your crew, essential records and daily work in one yacht workspace.", platformAction: "Explore Yacht-OS",
     crewFeature: "Crew & recruitment", recordsFeature: "Documents & contracts", tasksFeature: "Checklists & daily operations",
     workspace: "Your yacht workspace", preview: "A look inside Yacht-OS", crew: "Crew", records: "Records", operations: "Operations", crewDetail: "Crew profiles and invitations", recordsDetail: "Documents, contracts and expiry dates", tasksDetail: "Responsibilities and recurring checklists",
@@ -25,8 +28,10 @@ export const homeCopy = {
   tr: {
     searchLabel: "Bir sonraki yat ilanınızı bulun", keyword: "Pozisyon veya anahtar kelime", location: "Konum", department: "Tüm departmanlar", search: "İlan ara", all: "Tüm ilanlar",
     filteredEmpty: "Bu departmanda henüz açık ilan yok.", filteredText: "Diğer departmanları veya tüm ilan panosunu inceleyin.", clearFilter: "Tüm departmanları gör",
-    crewEyebrow: "Mürettebat için", crewTitle: "Sizinle ilerleyen bir kariyer.", crewText: "Deneyiminizi, müsaitliğinizi ve yeni fırsatları bir araya getirin.", crewAction: "Mürettebat profili oluştur", profile: "Mürettebat profilini yönet", roles: "Açık ilanları keşfet",
-    hiringEyebrow: "Kaptanlar ve yat sahipleri için", hiringTitle: "Doğru insanlar. Daha güçlü bir ekip.", hiringText: "Profesyonel mürettebatı keşfedin, ilan yayınlayın ve başvuruları tek yerden yönetin.", hiringAction: "Profesyonel mürettebat bul", hiringWorkspace: "İşe alım alanını aç",
+    crewEyebrow: "Mürettebat için", crewTitle: "Denizde yeni bir başlangıç.", crewText: "Deneyiminizi ve müsaitliğinizi bir araya getirin. Size uygun pozisyonu bulun.", crewAction: "Mürettebat profilini oluştur",
+    crewImageAlt: "Akdeniz’in parıldayan mavi sularında seyreden beyaz bir süperyat",
+    hiringEyebrow: "Kaptanlar ve yat sahipleri için", hiringTitle: "Profesyonel ekibinizi bulun", hiringText: "Deneyimli mürettebatı bulun, ilan yayınlayın ve başvuruları tek yerden yönetin.", hiringAction: "İş ilanı oluştur",
+    hiringImageAlt: "Beyaz ve lacivert üniformalarıyla güvertede bir araya gelen beş profesyonel yat çalışanı",
     platformEyebrow: "BlueDeck Yacht-OS", platformTitle: "Teknedeki işlere daha net bir bakış.", platformText: "Mürettebatınızı, temel kayıtlarınızı ve günlük işlerinizi tek yat çalışma alanında buluşturun.", platformAction: "Yacht-OS’u keşfet",
     crewFeature: "Mürettebat ve işe alım", recordsFeature: "Belgeler ve kontratlar", tasksFeature: "Kontrol listeleri ve günlük işler",
     workspace: "Yat çalışma alanınız", preview: "Yacht-OS’a bir bakış", crew: "Mürettebat", records: "Kayıtlar", operations: "Operasyon", crewDetail: "Mürettebat profilleri ve davetler", recordsDetail: "Belgeler, kontratlar ve bitiş tarihleri", tasksDetail: "Sorumluluklar ve tekrarlayan kontrol listeleri",
@@ -74,36 +79,49 @@ export function HomeJobSearch({ language }: { language: Language }) {
 
 export function HomePageSections({ language, viewer }: { language: Language; viewer: JobListingViewer }) {
   const c = homeCopy[language];
-  const isCrew = viewer.kind === "signed-in" && (viewer.role === "crew" || viewer.role === "captain");
-  const canHire = viewer.kind === "signed-in" && (viewer.role === "owner" || viewer.role === "management" || viewer.role === "captain");
-  const crewHref = isCrew ? "/profile" : viewer.kind === "signed-in" ? "/jobs" : "/login?mode=signup&role=crew";
-  const crewLabel = isCrew ? c.profile : viewer.kind === "signed-in" ? c.roles : c.crewAction;
+  const { crewProfileHref, hiringHref } = getHomeAudienceNavigation(viewer);
   const signedIn = viewer.kind === "signed-in";
 
   return (
     <div className={styles.content} data-i18n-ignore>
-      <section aria-label={language === "tr" ? "Size uygun başlangıç" : "Find your way forward"} className={styles.audienceSection}>
+      <section id="careers-and-hiring" aria-label={language === "tr" ? "Size uygun başlangıç" : "Find your way forward"} className={styles.audienceSection}>
         <div className={`${styles.container} ${styles.audienceGrid}`}>
-          <article className={styles.audienceCard}>
+          <article className={styles.audienceCard} aria-labelledby="crew-careers-heading">
+            <div className={styles.audienceImage}>
+              <Image
+                src="/media/home-yacht-careers-v3.webp"
+                alt={c.crewImageAlt}
+                fill
+                quality={90}
+                sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 900px) 704px, (max-width: 1500px) 48vw, 704px"
+              />
+            </div>
             <div className={styles.audienceCopy}>
               <p className={styles.eyebrow}>{c.crewEyebrow}</p>
-              <h2>{c.crewTitle}</h2>
+              <h2 id="crew-careers-heading">{c.crewTitle}</h2>
               <p>{c.crewText}</p>
-              <Link href={crewHref} className={styles.textLink}>{crewLabel}<ArrowRight aria-hidden /></Link>
-            </div>
-            <div className={styles.audienceImage}>
-              <Image src="/media/crew-careers.webp" alt="" fill sizes="(max-width: 640px) 38vw, (max-width: 1000px) 35vw, 23vw" style={{ objectPosition: "70% center" }} />
+              <Link href={crewProfileHref} className={styles.audienceButton}>
+                {c.crewAction}<ArrowRight aria-hidden />
+              </Link>
             </div>
           </article>
-          <article className={styles.audienceCard}>
+          <article className={styles.audienceCard} aria-labelledby="crew-hiring-heading">
+            <div className={styles.audienceImage}>
+              <Image
+                src="/media/home-crew-professionals-v3.webp"
+                alt={c.hiringImageAlt}
+                fill
+                quality={90}
+                sizes="(max-width: 767px) calc(100vw - 32px), (max-width: 900px) 704px, (max-width: 1500px) 48vw, 704px"
+              />
+            </div>
             <div className={styles.audienceCopy}>
               <p className={styles.eyebrow}>{c.hiringEyebrow}</p>
-              <h2>{c.hiringTitle}</h2>
+              <h2 id="crew-hiring-heading">{c.hiringTitle}</h2>
               <p>{c.hiringText}</p>
-              <Link href={canHire ? "/hiring" : "/find-crew"} className={styles.textLink}>{canHire ? c.hiringWorkspace : c.hiringAction}<ArrowRight aria-hidden /></Link>
-            </div>
-            <div className={styles.audienceImage}>
-              <Image src="/media/crew-hiring.webp" alt="" fill sizes="(max-width: 640px) 38vw, (max-width: 1000px) 35vw, 23vw" style={{ objectPosition: "72% center" }} />
+              <Link href={hiringHref} className={styles.audienceButton}>
+                {c.hiringAction}<ArrowRight aria-hidden />
+              </Link>
             </div>
           </article>
         </div>
