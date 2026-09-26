@@ -78,66 +78,42 @@
 .paper .field :is(.textInput, .dateInput):focus { background: #f0f8fc !important; border-color: #6e9eb5 !important; box-shadow: none !important; }
 .paper .field .dateInput[aria-invalid="true"] { border-color: #c36758 !important; background: #fff4f1 !important; }
 .paper .signatureFields :is(.textInput, .dateInput) { border-bottom-color: #9ca2a8 !important; }
-.mobileOnly { display: none; }
 .previewLoading { display: grid; flex: 1; place-items: center; min-height: 180px; color: #587085; font-size: 13px; }
 @media (max-width: 1100px) {
   .page { padding: 22px 16px 36px; }
-  .container { max-width: 760px; }
+  .container { max-width: 100%; }
   .hero { align-items: flex-start; flex-direction: column; gap: 18px; margin-top: 20px; }
   .hero h1 { font-size: 27px; }
   .heroActions { width: 100%; gap: 7px; }
   .heroActions > button { flex: 1; min-width: 0; padding: 11px 8px; font-size: 12px; }
-  .documentViewport { overflow: visible; padding: 0; }
-  .paper { width: 100%; min-width: 0; min-height: 0; padding: 22px; }
-  .paperHeading { gap: 12px; margin-bottom: 18px; }
-  .paperHeading h2 { font-size: 23px; }
-  .paperHeading > span { font-size: 12px; white-space: nowrap; }
-  .movement { gap: 30px; margin-bottom: 18px; }
-  .movement label { min-height: 36px; font-size: 13px; }
-  .movement input { width: 18px; height: 18px; }
-  .voyageBand { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-  .voyageBand[data-band="1"] { grid-template-columns: minmax(0, 1fr) !important; }
-  .voyageBand > .field { min-height: 76px; padding: 8px; }
-  .fieldLabel { font-size: 11px; min-height: 16px; }
-  .textInput, .dateInput, .crewTable .textInput, .crewTable .dateInput { font-size: 16px; min-height: 42px; padding: 6px 3px; }
-  .dateInput::placeholder, .crewTable .dateInput::placeholder { font-size: 13px; }
-  .crewTable { display: block; margin-top: 20px; }
-  .crewTable > colgroup, .crewTable > thead { display: none; }
-  .crewTable > tbody { display: grid; gap: 18px; }
-  .crewTable tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #68717b; }
-  .crewTable td { display: block; min-width: 0; height: auto; padding: 8px; border: 0; border-top: 1px solid #9aa2aa; }
-  .crewTable td[data-field="fullName"] { grid-column: 1 / -1; }
-  .crewTable td[data-field="fullName"] .textInput { font-weight: 600; }
-  .crewTable td:is([data-field="nationality"], [data-field="placeOfBirth"], [data-field="documentType"], [data-field="documentExpiry"]) { border-left: 1px solid #9aa2aa; }
-  .crewTable .field label { position: static; display: block; width: auto; height: auto; margin: 0 0 4px; overflow: visible; clip: auto; white-space: normal; color: #4c5863; font-size: 11px; font-weight: 500; line-height: 1.45; }
-  .crewTable .sequence { grid-column: 1 / -1; padding: 0; border: 0; background: #f4f6f8; }
-  .rowTrigger { min-height: 43px; flex-direction: row; justify-content: space-between; padding: 8px 11px; font-size: 12px; }
-  .rowTrigger > span { color: #243b4c; font-size: 14px; line-height: 1.4; }
-  .rowTrigger > .rowIndex { font-size: 12px; font-weight: 600; }
-  .mobileOnly { display: inline; }
-  .rowActions { top: calc(100% + 2px); left: auto; right: 4px; min-width: 160px; }
-  .rowActions button { min-height: 42px; }
-  .crewTable tr.blankRow { display: none; }
-  .declaration { margin-top: 22px; padding: 12px; }
-  .declaration > p { font-size: 11px; line-height: 1.6; }
-  .signatureFields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .signatureFields .fieldLabel, .signature > span { font-size: 11px; }
-  .signature > div { height: 46px; }
-  .undoBar { padding-top: 10px; }
+  .documentViewport { overflow: hidden; padding: 0; }
+  /* Keep every column and vessel band intact; scale the whole portrait sheet. */
+  .paper { display: flex; flex-direction: column; width: 1120px; min-width: 1120px; min-height: 1584px; padding: 36px 40px 42px; zoom: var(--document-scale); }
+  .paperHeading, .movement, .voyageGrid, .crewTable, .declaration { flex-shrink: 0; }
+  .crewTable { margin-bottom: 32px; }
+  .declaration { margin-top: auto; }
+  .rowTrigger > .rowIndex { color: #273d4f; }
+  .field { cursor: text; }
   .previewDialog { width: calc(100vw - 16px); height: calc(100dvh - 20px); }
   .previewHeader { padding: 12px; gap: 10px; flex-wrap: wrap; }
   .previewHeader .primary { font-size: 11px; padding: 10px; }
   .previewHeader h2 { font-size: 14px; }
+  .undoBar { padding-top: 10px; }
 }
 @media (max-width: 480px) {
   .page { padding: 18px 12px 28px; }
-  .paper { padding: 14px 12px 20px; }
-  .paperHeading h2 { font-size: 21px; }
-  .paperHeading > span { font-size: 11px; }
-  .voyageBand > .field, .crewTable td { padding: 7px 6px; }
   .heroActions > button { font-size: 11px; padding-inline: 6px; gap: 6px; }
 }
 @media (max-width: 360px) {
   .heroActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .heroActions > button:last-child { grid-column: 1 / -1; }
 }
+.rowDialog { position: fixed; inset: auto 12px 12px; width: calc(100% - 24px); max-width: 480px; margin: 0 auto; padding: 18px; border: 1px solid #d0dce4; border-radius: 14px; background: #fff; color: #203e54; }
+.rowDialog::backdrop { background: #10283970; }
+.rowDialog > header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rowDialog h2 { font-size: 16px; font-weight: 600; }
+.rowDialog button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px; border: 0; border-radius: 6px; background: #fff; color: #355369; font-size: 14px; cursor: pointer; }
+.rowDialog > button { width: 100%; }
+.rowDialog button:hover { background: #f0f5f8; }
+.rowDialog button:disabled { opacity: .35; }
+.rowDialog button.remove { color: #a54444; }

@@ -36,12 +36,12 @@ function makeDraft(crewCount = 0) {
     fullName: `Crew ${String(index + 1).padStart(2, "0")} Ana María de la Cruz`,
     rank: "Chief Officer",
     nationality: "Türkiye",
-    dateOfBirth: `1990-12-${String(index + 1).padStart(2, "0")}`,
+    dateOfBirth: `1990-12-${String(index % 28 + 1).padStart(2, "0")}`,
     placeOfBirth: "İstanbul",
     gender: "Female",
     documentType: "Passport",
     documentNumber: `PASSPORT-${String(index + 1).padStart(4, "0")}`,
-    documentExpiry: `2032-01-${String(index + 1).padStart(2, "0")}`,
+    documentExpiry: `2032-01-${String(index % 28 + 1).padStart(2, "0")}`,
   }));
   return draft;
 }
@@ -103,15 +103,15 @@ test("exports an empty editable list as a readable portrait A4 PDF", async (cont
   assert.equal(pages.length, 1);
   assertPortraitPages(pages);
   const text = compact(pages[0].text);
-  for (const expected of ["M/Y Ege Işığı", "7. Full name", "14. Document number", "Name of signatory", "Şule Öztürk", "19/04/2027"]) {
+  for (const expected of ["M/Y Ege Işığı", "7. Full name", "14. Number", "Name of signatory", "Şule Öztürk", "19/04/2027"]) {
     assert.ok(text.includes(compact(expected)), `Empty form retains ${expected}`);
   }
 });
 
 test("preserves every crew member and document across portrait PDF pages", async (context) => {
-  const draft = makeDraft(12);
+  const draft = makeDraft(40);
   const pages = await readGeneratedPdf(context, draft);
-  assert.ok(pages.length > 1, "12 crew members exercise pagination");
+  assert.ok(pages.length > 1, "40 crew members exercise table pagination");
   assertPortraitPages(pages);
   const text = compact(pages.map((page) => page.text).join(" "));
   for (const row of draft.crew) {
@@ -122,6 +122,51 @@ test("preserves every crew member and document across portrait PDF pages", async
       assert.ok(text.includes(date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3/$2/$1")), `Export preserves ${date}`);
     }
   }
+});
+
+test("keeps the desktop ten-column table geometry in the portrait PDF", async (context) => {
+  const draft = makeDraft(2);
+  const expectedRows = [
+    ["1", "Ada", "Mate", "Oman", "02/03/1991", "Lima", "F", "ID", "A01", "04/05/2031"],
+    ["2", "Grace", "Chef", "Italy", "06/07/1992", "Rome", "M", "Pass", "B02", "08/09/2032"],
+  ];
+  const keys = ["fullName", "rank", "nationality", "dateOfBirth", "placeOfBirth", "gender", "documentType", "documentNumber", "documentExpiry"];
+  for (const [index, values] of expectedRows.entries()) {
+    for (const [column, key] of keys.entries()) {
+      const value = values[column + 1];
+      draft.crew[index][key] = key === "dateOfBirth" || key === "documentExpiry"
+        ? value.replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, "$3-$2-$1")
+        : value;
+    }
+  }
+  const pages = await readGeneratedPdf(context, draft);
+  assert.equal(pages.length, 1);
+  assertPortraitPages(pages);
+  const items = pages[0].items.filter((item) => item.str.trim());
+  const rows = expectedRows.map((values) => values.map((value) => {
+    const matches = items.filter((item) => item.str.trim() === value);
+    assert.equal(matches.length, 1, `A distinct table cell renders ${value} exactly once`);
+    return matches[0];
+  }));
+  for (const [index, row] of rows.entries()) {
+    const baseline = row[0].transform[5];
+    for (const [column, item] of row.entries()) {
+      assert.ok(Math.abs(item.transform[5] - baseline) < 0.1, `Crew ${index + 1}, column ${column + 1} stays on the same row`);
+      if (column > 0) assert.ok(item.transform[4] > row[column - 1].transform[4], "Crew columns retain their desktop order");
+      if (index > 0) assert.ok(Math.abs(item.transform[4] - rows[0][column].transform[4]) < 0.1, "Successive crew rows use the same column boundaries");
+    }
+  }
+  assert.ok(rows[1][0].transform[5] < rows[0][0].transform[5], "Second crew appears below the first table row");
+  for (let column = 0; column < 10; column += 1) {
+    const number = column + 6;
+    const headings = items.filter((item) => item.str.trim().startsWith(`${number}.`));
+    assert.equal(headings.length, 1, `Column ${number} has one shared table header`);
+    assert.ok(Math.abs(headings[0].transform[4] - rows[0][column].transform[4]) < 0.1, `Column ${number} header aligns with its crew values`);
+    assert.ok(headings[0].transform[5] > rows[0][column].transform[5], "Shared headers sit above the crew rows");
+  }
+  const identity = items.find((item) => item.str.trim() === "Identity document");
+  assert.ok(identity, "Identity document remains a grouped table header");
+  assert.ok(identity.transform[5] > items.find((item) => item.str.trim().startsWith("13.")).transform[5]);
 });
 
 test("retains long names and document numbers without clipping or dropping wrapped text", async (context) => {
