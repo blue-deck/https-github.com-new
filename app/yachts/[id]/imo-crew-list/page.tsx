@@ -1,161 +1,88 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Download, FileText, Ship } from "lucide-react";
+import { ArrowLeft, FileText, RefreshCw } from "lucide-react";
+import { useLanguage } from "../../../components/LanguageProvider";
 import { supabase } from "../../../lib/supabase";
+import { createImoCrewListDraft, type ImoCrewListDraft } from "../../../lib/imoCrewList";
+import ImoCrewListEditor from "./ImoCrewListEditor";
+import styles from "./imoCrewList.module.css";
 
 export default function ImoCrewListPage() {
   const params = useParams();
-  const yachtId = String(params?.id || "");
-  const [yacht, setYacht] = useState<any>(null);
-  const [crew, setCrew] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  async function loadData() {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      window.location.href = `/login?next=${encodeURIComponent(
-        `/yachts/${yachtId}/imo-crew-list`,
-      )}`;
-      return;
-    }
-
-    const response = await fetch(
-      `/api/yachts/${encodeURIComponent(yachtId)}/crew-data`,
-      {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: "no-store",
-      },
-    );
-    const payload = (await response.json().catch(() => null)) as {
-      ok?: boolean;
-      error?: string;
-      yacht?: unknown;
-      crew?: unknown[];
-    } | null;
-
-    if (!response.ok || !payload?.ok) {
-      alert(payload?.error || "IMO crew list could not be loaded.");
-      setLoading(false);
-      return;
-    }
-
-    setYacht(payload.yacht || null);
-    setCrew(
-      (payload.crew || []).filter(
-        (member: any) =>
-          String(member?.status || "").trim().toLowerCase() === "active",
-      ),
-    );
-    setLoading(false);
-  }
+  const yachtId = String(params?.id || "").trim().toLowerCase();
+  const { language } = useLanguage();
+  const [loaded, setLoaded] = useState<{ yachtId: string; draft: ImoCrewListDraft } | null>(null);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      controller.abort();
+      if (active) setError("timeout");
+    }, 20000);
 
-  if (loading) {
-    return (
-      <main className="bd-app-page min-h-screen bg-[#020817] p-8 text-white">
-        Loading IMO crew list...
-      </main>
-    );
+    async function load() {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (!active || controller.signal.aborted) return;
+        if (sessionError) throw sessionError;
+        if (!session?.access_token) {
+          window.location.replace(`/login?next=${encodeURIComponent(`/yachts/${yachtId}/imo-crew-list`)}`);
+          return;
+        }
+        const response = await fetch(`/api/yachts/${encodeURIComponent(yachtId)}/crew-data`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!active || controller.signal.aborted) return;
+        if (response.status === 401) {
+          window.location.replace(`/login?next=${encodeURIComponent(`/yachts/${yachtId}/imo-crew-list`)}`);
+          return;
+        }
+        if (!response.ok || !payload?.ok || !payload.yacht || !Array.isArray(payload.crew)) {
+          setError(response.status === 403 ? "forbidden" : response.status === 404 ? "not-found" : "load");
+          return;
+        }
+        setLoaded({ yachtId, draft: createImoCrewListDraft(yachtId, payload.yacht, payload.crew) });
+      } catch {
+        if (active && !controller.signal.aborted) setError("load");
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    }
+    void load();
+    return () => { active = false; controller.abort(); window.clearTimeout(timeout); };
+  }, [yachtId, attempt]);
+
+  if (loaded?.yachtId === yachtId && !error) {
+    return <ImoCrewListEditor key={yachtId} initialDraft={loaded.draft} language={language} />;
   }
 
+  const tr = language === "tr";
   return (
-    <main className="bd-app-page bd-page-gutter min-h-screen bg-[#020817] px-5 py-8 text-white sm:px-8 lg:px-10">
-      <div className="bd-page-frame mx-auto max-w-7xl">
-        <header className="bd-page-hero mb-8 flex flex-col justify-between gap-5 rounded-[32px] border border-cyan-500/20 bg-cyan-500/10 p-8 print:hidden md:flex-row md:items-end">
-          <div>
-            <p className="text-cyan-300">Captain Document</p>
-            <h1 className="mt-3 text-5xl font-black">IMO Crew List</h1>
-            <p className="mt-4 max-w-3xl text-gray-300">
-              Crew details are pulled automatically from each member’s BlueDeck
-              profile, including passport and expiry information.
-            </p>
-          </div>
-          <button
-            onClick={() => window.print()}
-            className="bd-primary-action flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 font-black text-black"
-          >
-            <Download className="h-5 w-5" />
-            Download / Save PDF
-          </button>
-        </header>
-
-        <section className="bd-document-surface rounded-[28px] border border-white/10 bg-white p-8 text-black print:border-0">
-          <div className="flex items-start justify-between gap-8 border-b border-black/20 pb-6">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.14em]">
-                International Maritime Crew List
-              </p>
-              <h2 className="mt-3 text-4xl font-black">
-                {yacht?.name || "Yacht"}
-              </h2>
-              <p className="mt-2">
-                Flag: {yacht?.flag || "-"} · Model: {yacht?.model || "-"}
-              </p>
-            </div>
-            <div className="text-right">
-              <Ship className="ml-auto h-10 w-10" />
-              <p className="mt-3 text-sm">Generated: {new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-black/20">
-                  <Th>No</Th>
-                  <Th>Name</Th>
-                  <Th>Position</Th>
-                  <Th>Nationality</Th>
-                  <Th>Passport No</Th>
-                  <Th>Passport Expiry</Th>
-                  <Th>Visa</Th>
-                  <Th>Status</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {crew.map((member, index) => (
-                  <tr key={member.id} className="border-b border-black/10">
-                    <Td>{index + 1}</Td>
-                    <Td>{member.crew_profiles?.full_name || member.invited_email}</Td>
-                    <Td>{member.position}</Td>
-                    <Td>{member.crew_profiles?.nationality || "-"}</Td>
-                    <Td>{member.crew_profiles?.passport_number || "-"}</Td>
-                    <Td>{member.crew_profiles?.passport_expiry || "-"}</Td>
-                    <Td>
-                      {member.crew_profiles?.visa_country || "-"}{" "}
-                      {member.crew_profiles?.visa_expiry ? `(${member.crew_profiles.visa_expiry})` : ""}
-                    </Td>
-                    <Td>{member.status}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {crew.length === 0 && (
-            <div className="mt-8 rounded-2xl border border-black/20 p-6 text-center">
-              <FileText className="mx-auto h-10 w-10" />
-              <p className="mt-3 font-bold">No crew members found.</p>
-            </div>
-          )}
-        </section>
+    <main className={`bd-app-page ${styles.page}`} data-i18n-ignore>
+      <div className={styles.container}>
+        <Link className={styles.back} href={`/yachts/${yachtId}`}><ArrowLeft size={16} />{tr ? "Yat çalışma alanı" : "Yacht workspace"}</Link>
+        <div className={styles.loading} role={error ? "alert" : "status"} aria-busy={!error}>
+          <FileText size={32} />
+          <h1>IMO Crew List</h1>
+          <p>{error === "forbidden"
+            ? (tr ? "Bu yatın mürettebat listesine erişim yetkiniz yok." : "You do not have access to this yacht’s crew list.")
+            : error === "not-found"
+              ? (tr ? "Yat çalışma alanı bulunamadı." : "This yacht workspace could not be found.")
+              : error
+                ? (tr ? "Mürettebat listesi yüklenemedi. Bağlantınızı kontrol edip yeniden deneyin." : "The crew list could not be loaded. Check your connection and try again.")
+                : (tr ? "Gemi ve aktif mürettebat bilgileri yükleniyor…" : "Loading vessel and active crew details…")}</p>
+          {error && error !== "forbidden" && error !== "not-found" && <button className={styles.secondary} onClick={() => { setError(""); setLoaded(null); setAttempt((value) => value + 1); }}><RefreshCw size={16} />{tr ? "Yeniden dene" : "Try again"}</button>}
+        </div>
       </div>
     </main>
   );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-3 py-3 font-black">{children}</th>;
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-3 py-4 align-top">{children}</td>;
 }

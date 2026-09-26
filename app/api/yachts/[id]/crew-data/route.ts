@@ -127,6 +127,7 @@ export async function GET(
         current_position,
         phone,
         nationality,
+        gender,
         date_of_birth,
         passport_number,
         passport_expiry,
