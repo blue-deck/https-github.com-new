@@ -23,7 +23,7 @@ const copy = {
     proof: "Before / After proof",
     before: "Before",
     after: "After",
-    beforeAlt: "Wet teak deck before the washdown is finished",
+    beforeAlt: "Dry, lightly weathered teak deck before cleaning",
     afterAlt: "The same teak deck after rinsing and drying",
   },
   tr: {
@@ -45,7 +45,7 @@ const copy = {
     proof: "Öncesi / Sonrası fotoğrafları",
     before: "Öncesi",
     after: "Sonrası",
-    beforeAlt: "Yıkama tamamlanmadan önceki ıslak tik güverte",
+    beforeAlt: "Temizlik öncesindeki kuru ve hafif kirlenmiş tik güverte",
     afterAlt: "Durulandıktan ve kurulandıktan sonra aynı tik güverte",
   },
 } as const;
@@ -110,7 +110,7 @@ export function YachtOsSection({ language }: { language: "en" | "tr" }) {
               <p>{c.proof}</p>
               <div className={styles.proofGrid}>
                 {[
-                  { src: "/media/yacht-os-proof-before-v1.webp", alt: c.beforeAlt, label: c.before },
+                  { src: "/media/yacht-os-proof-before-v2.webp", alt: c.beforeAlt, label: c.before },
                   { src: "/media/yacht-os-proof-after-v1.webp", alt: c.afterAlt, label: c.after },
                 ].map((photo) => (
                   <div key={photo.src} className={styles.proofPhoto}>
