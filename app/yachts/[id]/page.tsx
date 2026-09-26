@@ -15,21 +15,15 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { loadAccountCapabilities } from "../../lib/accountCapabilities";
-import {
-  daysUntilExpiry,
-  isInsideThreeMonthAlertWindow,
-} from "../../lib/expiryAlerts";
+import { daysUntilExpiry } from "../../lib/expiryAlerts";
 import { supabase } from "../../lib/supabase";
 
 type OverviewStats = {
   crewCount: number;
-  invitedCrew: number;
-  checklistCount: number;
   openChecklists: number;
   completedTasks: number;
   totalTasks: number;
   documentCount: number;
-  expiringDocuments: number;
   criticalDocuments: number;
   recent: ActivityItem[];
 };
@@ -74,13 +68,10 @@ async function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, messag
 
 const emptyStats: OverviewStats = {
   crewCount: 0,
-  invitedCrew: 0,
-  checklistCount: 0,
   openChecklists: 0,
   completedTasks: 0,
   totalTasks: 0,
   documentCount: 0,
-  expiringDocuments: 0,
   criticalDocuments: 0,
   recent: [],
 };
@@ -141,7 +132,6 @@ export default function YachtDashboard() {
 
         const [
           crewDataResponse,
-          invitationResponse,
           documentResponse,
           capabilities,
         ] = await withTimeout(
@@ -152,11 +142,6 @@ export default function YachtDashboard() {
               },
               cache: "no-store",
             }),
-            supabase
-              .from("crew_invitations")
-              .select("id,status,position,department,invited_email,created_at")
-              .eq("yacht_id", yachtId)
-              .order("created_at", { ascending: false }),
             supabase
               .from("yacht_documents")
               .select("id,title,file_name,category,expiry_date,created_at")
@@ -230,7 +215,7 @@ export default function YachtDashboard() {
           return;
         }
 
-        const supplementalErrors = [invitationResponse, documentResponse]
+        const supplementalErrors = [documentResponse]
           .map((response) => response.error?.message)
           .filter(Boolean);
 
@@ -242,21 +227,11 @@ export default function YachtDashboard() {
         const checklists = Array.isArray(crewRecord.checklists)
           ? crewRecord.checklists
           : [];
-        const invitations = invitationResponse.data || [];
         const documents = documentResponse.data || [];
         const taskItems = checklists.flatMap(
           (checklist: any) => checklist.yacht_checklist_items || [],
         );
         const completedTasks = taskItems.filter((task: any) => task.completed).length;
-        const pendingInvites = invitations.filter((item: any) => item.status === "pending").length;
-        const expiringDocuments = documents.filter((item: any) => {
-          const days = daysUntilExpiry(item.expiry_date);
-          return (
-            days !== null &&
-            days >= 0 &&
-            isInsideThreeMonthAlertWindow(item.expiry_date)
-          );
-        }).length;
         const criticalDocuments = documents.filter((item: any) => {
           const days = daysUntilExpiry(item.expiry_date);
           return days !== null && days <= 30;
@@ -291,20 +266,17 @@ export default function YachtDashboard() {
         setHasCrewWorkspace(capabilities?.canUseCrewWorkspace === true);
         setStats({
           crewCount: crew.length,
-          invitedCrew: pendingInvites,
-          checklistCount: checklists.length,
           openChecklists: checklists.filter((item: any) => item.status !== "completed").length,
           completedTasks,
           totalTasks: taskItems.length,
           documentCount: documents.length,
-          expiringDocuments,
           criticalDocuments,
           recent,
         });
         setYacht({ ...loadedYacht, id: loadedYachtId });
         setLoadError(
           supplementalErrors.length
-            ? "Some invitation or document details could not be refreshed."
+            ? "Some document details could not be refreshed."
             : "",
         );
         setLoadState("ready");
@@ -394,10 +366,6 @@ export default function YachtDashboard() {
       />
     );
   }
-
-  const taskProgress = stats.totalTasks
-    ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
-    : 0;
 
   const crewWorkspaceModules: YachtModule[] = hasCrewWorkspace
     ? [
@@ -494,37 +462,6 @@ export default function YachtDashboard() {
             )}
           </div>
 
-        </section>
-
-        <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <StatusPanel
-            icon={Users}
-            title="Crew"
-            value={String(stats.crewCount)}
-            text={stats.invitedCrew ? `${stats.invitedCrew} pending invitation` : "Crew portal ready"}
-            tone="cyan"
-          />
-          <StatusPanel
-            icon={ClipboardCheck}
-            title={`${stats.openChecklists} Open Checklist`}
-            value={`${taskProgress}%`}
-            text={`${stats.completedTasks} completed of ${stats.totalTasks} assigned tasks across ${stats.checklistCount} checklists`}
-            tone="emerald"
-          />
-          <StatusPanel
-            icon={FileText}
-            title="Documents"
-            value={String(stats.documentCount)}
-            text={stats.expiringDocuments ? `${stats.expiringDocuments} expiry dates need attention` : "Vault organized"}
-            tone="gold"
-          />
-          <StatusPanel
-            icon={Bell}
-            title="Critical"
-            value={String(stats.criticalDocuments)}
-            text={stats.criticalDocuments ? "Open alerts and update expiry dates" : "No critical document alert"}
-            tone={stats.criticalDocuments ? "rose" : "emerald"}
-          />
         </section>
 
         <section className="mt-10">
@@ -641,38 +578,6 @@ function PrimaryLink({
       <Icon className="h-5 w-5 text-cyan-300" />
       {label}
     </Link>
-  );
-}
-
-function StatusPanel({
-  icon: Icon,
-  title,
-  value,
-  text,
-  tone,
-}: {
-  icon: LucideIcon;
-  title: string;
-  value: string;
-  text: string;
-  tone: "emerald" | "cyan" | "gold" | "rose";
-}) {
-  const tones = {
-    emerald: "bg-emerald-50 text-emerald-800 border-emerald-200",
-    cyan: "bg-cyan-50 text-cyan-800 border-cyan-200",
-    gold: "bg-amber-50 text-amber-800 border-amber-200",
-    rose: "bg-rose-50 text-rose-800 border-rose-200",
-  };
-
-  return (
-    <article className="bd-app-card rounded-[28px] border border-slate-200 bg-white p-6 shadow-xl shadow-cyan-950/5">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${tones[tone]}`}>
-        <Icon className="h-6 w-6" />
-      </div>
-      <p className="mt-5 text-sm font-bold uppercase tracking-[0.12em] text-slate-500">{title}</p>
-      <h3 className="mt-1 text-4xl font-black text-slate-950">{value}</h3>
-      <p className="mt-3 leading-7 text-slate-600">{text}</p>
-    </article>
   );
 }
 
