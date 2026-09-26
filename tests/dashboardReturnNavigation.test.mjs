@@ -12,7 +12,7 @@ test("Captain Workspace, My Applications, and Contracts expose the shared dashbo
   const pages = [
     {
       path: "app/yachts/page.tsx",
-      contentMarker: /<div className="[^"]*\bbd-page-hero\b[^"]*">/,
+      contentMarker: /<header className=\{styles\.header\}>/,
     },
     {
       path: "app/portal/applications/MyJobApplicationsPortal.tsx",
@@ -31,8 +31,8 @@ test("Captain Workspace, My Applications, and Contracts expose the shared dashbo
 
     assert.ok(backLinkIndex >= 0, `${page.path} must link back to the dashboard`);
     assert.ok(contentIndex > backLinkIndex, `${page.path} must place the return control before its hero`);
-    assert.match(pageSource, /aria-label="Back to dashboard"/);
-    assert.match(pageSource, /title="Back to dashboard"/);
+    assert.match(pageSource, /aria-label=(?:"Back to dashboard"|\{c\.back\})/);
+    assert.match(pageSource, /title=(?:"Back to dashboard"|\{c\.back\})/);
     assert.match(pageSource, /<ChevronLeft className="h-4 w-4" aria-hidden \/>/);
   }
 });
