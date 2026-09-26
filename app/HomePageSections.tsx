@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, ChevronDown, ClipboardCheck, FileCheck2, Layers3, LockKeyhole, MapPin, Search, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, ChevronDown, LockKeyhole, MapPin, Search, ShieldCheck, UsersRound } from "lucide-react";
 import type { JobListingViewer } from "./jobs/JobListingAction";
 import { getHomeAudienceNavigation } from "./lib/homeAudienceNavigation";
 import { yachtDepartments } from "./lib/yachtOperations";
+import { YachtOsSection } from "./YachtOsSection";
 import styles from "./homeContent.module.css";
 
 type Language = "en" | "tr";
@@ -19,9 +20,7 @@ export const homeCopy = {
     crewImageAlt: "A white superyacht cruising across the sparkling blue Mediterranean Sea",
     hiringEyebrow: "For captains & owners", hiringTitle: "Find your professionals", hiringText: "Find experienced crew, publish roles and manage applications in one place.", hiringAction: "Create a job post",
     hiringImageAlt: "Five professional yacht crew members together on deck in white and navy uniforms",
-    platformEyebrow: "BlueDeck Yacht-OS", platformTitle: "A clearer view of life on board.", platformText: "Connect your crew, essential records and daily work in one yacht workspace.", platformAction: "Explore Yacht-OS",
-    crewFeature: "Crew & recruitment", recordsFeature: "Documents & contracts", tasksFeature: "Checklists & daily operations",
-    workspace: "Your yacht workspace", preview: "A look inside Yacht-OS", crew: "Crew", records: "Records", operations: "Operations", crewDetail: "Crew profiles and invitations", recordsDetail: "Documents, contracts and expiry dates", tasksDetail: "Responsibilities and recurring checklists",
+    platformAction: "Explore Yacht-OS",
     trustTitle: "Built around professional trust.", trust1: "Discover professional crew", trust1Text: "Selected profile details help you find the right fit.", trust2: "Private details stay protected", trust2Text: "Full names, contacts and private documents remain protected.", trust3: "Access follows your role", trust3Text: "Account permissions keep each workspace in the right hands.", trustAction: "Explore trust & privacy",
     ctaTitle: "Your next chapter starts here.", ctaText: "Find your opportunity. Build your crew. Bring it all together.", ctaAction: "Create your BlueDeck account", dashboard: "Open your dashboard",
   },
@@ -32,9 +31,7 @@ export const homeCopy = {
     crewImageAlt: "Akdeniz’in parıldayan mavi sularında seyreden beyaz bir süperyat",
     hiringEyebrow: "Kaptanlar ve yat sahipleri için", hiringTitle: "Profesyonel ekibinizi bulun", hiringText: "Deneyimli mürettebatı bulun, ilan yayınlayın ve başvuruları tek yerden yönetin.", hiringAction: "İş ilanı oluştur",
     hiringImageAlt: "Beyaz ve lacivert üniformalarıyla güvertede bir araya gelen beş profesyonel yat çalışanı",
-    platformEyebrow: "BlueDeck Yacht-OS", platformTitle: "Teknedeki işlere daha net bir bakış.", platformText: "Mürettebatınızı, temel kayıtlarınızı ve günlük işlerinizi tek yat çalışma alanında buluşturun.", platformAction: "Yacht-OS’u keşfet",
-    crewFeature: "Mürettebat ve işe alım", recordsFeature: "Belgeler ve kontratlar", tasksFeature: "Kontrol listeleri ve günlük işler",
-    workspace: "Yat çalışma alanınız", preview: "Yacht-OS’a bir bakış", crew: "Mürettebat", records: "Kayıtlar", operations: "Operasyon", crewDetail: "Mürettebat profilleri ve davetler", recordsDetail: "Belgeler, kontratlar ve bitiş tarihleri", tasksDetail: "Sorumluluklar ve tekrarlayan kontrol listeleri",
+    platformAction: "Yacht-OS’u keşfet",
     trustTitle: "Profesyonel ilişkiler, güvenilir bir temel.", trust1: "Profesyonel mürettebat keşfi", trust1Text: "Seçili profil bilgileri, uygun adayları bulmanıza yardımcı olur.", trust2: "Özel bilgiler korumalı kalır", trust2Text: "Tam adlar, iletişim bilgileri ve özel belgeler koruma altındadır.", trust3: "Rolünüze uygun erişim", trust3Text: "Hesap izinleri her çalışma alanını doğru kişilerle sınırlar.", trustAction: "Güven ve gizliliği incele",
     ctaTitle: "Yeni yolculuğunuz burada başlıyor.", ctaText: "Fırsatınızı bulun. Ekibinizi kurun. İşlerinizi bir araya getirin.", ctaAction: "BlueDeck hesabınızı oluşturun", dashboard: "Panelinizi açın",
   },
@@ -127,34 +124,7 @@ export function HomePageSections({ language, viewer }: { language: Language; vie
         </div>
       </section>
 
-      <section className={styles.platformSection} aria-labelledby="platform-heading">
-        <div className={`${styles.container} ${styles.platformGrid}`}>
-          <div className={styles.platformCopy}>
-            <p className={styles.eyebrow}>{c.platformEyebrow}</p>
-            <h2 id="platform-heading" className={styles.title}>{c.platformTitle}</h2>
-            <p className={styles.intro}>{c.platformText}</p>
-            <ul className={styles.platformFeatures}>
-              <li><UsersRound aria-hidden />{c.crewFeature}</li>
-              <li><FileCheck2 aria-hidden />{c.recordsFeature}</li>
-              <li><ClipboardCheck aria-hidden />{c.tasksFeature}</li>
-            </ul>
-            <Link href="/yacht-os" className={styles.button}>{c.platformAction}<ArrowRight aria-hidden /></Link>
-          </div>
-          <figure className={styles.platformVisual}>
-            <Image src="/bluedeck-platform-home.webp" alt="" fill sizes="(max-width: 900px) 100vw, 58vw" className={styles.deckImage} />
-            <div className={styles.workspace}>
-              <div className={styles.workspaceHeader}><Layers3 aria-hidden /><span>Yacht-OS</span></div>
-              <div className={styles.workspaceBody}>
-                <p className={styles.workspaceLabel}>{c.workspace}</p>
-                <div className={styles.workspaceRow}><span><UsersRound aria-hidden /></span><div><h3>{c.crew}</h3><p>{c.crewDetail}</p></div></div>
-                <div className={styles.workspaceRow}><span><FileCheck2 aria-hidden /></span><div><h3>{c.records}</h3><p>{c.recordsDetail}</p></div></div>
-                <div className={styles.workspaceRow}><span><ClipboardCheck aria-hidden /></span><div><h3>{c.operations}</h3><p>{c.tasksDetail}</p></div></div>
-              </div>
-            </div>
-            <figcaption>{c.preview}</figcaption>
-          </figure>
-        </div>
-      </section>
+      <YachtOsSection language={language} />
 
       <section className={styles.trustSection} aria-labelledby="trust-heading">
         <div className={styles.container}>
