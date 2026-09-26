@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { BLUEDECK_SITE_URL } from "./lib/site";
-import { guideBase, guideHref, guideSummaries as guides } from "./guides/_components/guide-index";
+import { guideBase, guideHref, guideSummaries as guides } from "./blog/_components/guide-index";
 
 const publicRoutes = [
   { path: "", changeFrequency: "weekly", priority: 1 },

@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { GuideCard } from "./GuideCard";
-import { guideSummaries as guides } from "./guide-index";
+import { getGuideSummaries, type GuideLanguage } from "./guide-index";
+import { getBlogCopy, slidePosition } from "./blog-copy";
 import styles from "./GuidesCarousel.module.css";
 
 const DWELL_MS = 4_000;
 const TRANSITION_MS = 720;
 const modulo = (value: number, length: number) => ((value % length) + length) % length;
 
-export function GuidesCarousel() {
+export function GuidesCarousel({ language }: { language: GuideLanguage }) {
+  const guides = getGuideSummaries(language);
+  const copy = getBlogCopy(language);
   const count = guides.length;
   const viewportRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(count);
@@ -27,7 +30,7 @@ export function GuidesCarousel() {
   const [reducedMotion, setReducedMotion] = useState(true);
   const [inView, setInView] = useState(false);
   const [pageVisible, setPageVisible] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
+  const [announcedIndex, setAnnouncedIndex] = useState<number | null>(null);
 
   const canScroll = count > visibleCount;
   const running = canScroll && !manuallyPaused && !reducedMotion && inView && pageVisible;
@@ -58,7 +61,7 @@ export function GuidesCarousel() {
     setAnimated(true);
     setMoving(true);
     setPosition(next);
-    if (manual) setAnnouncement(`${modulo(next, count) + 1} / ${count}: ${guides[modulo(next, count)].title}`);
+    if (manual) setAnnouncedIndex(modulo(next, count));
     // A fallback also settles the track if a resize or background tab cancels transitionend.
     transitionTimer.current = setTimeout(finishMovement, (reducedMotion ? 120 : TRANSITION_MS) + 100);
   }, [count, canScroll, finishMovement, reducedMotion]);
@@ -166,8 +169,8 @@ export function GuidesCarousel() {
       className={styles.carousel}
       style={carouselStyle}
       role="region"
-      aria-roledescription="karusel"
-      aria-label="Rehberler"
+      aria-roledescription={copy.carousel}
+      aria-label="Blog"
       data-autoplay={running ? "playing" : "paused"}
       data-position={active + 1}
       data-visible-count={visibleCount}
@@ -205,12 +208,12 @@ export function GuidesCarousel() {
                 key={`${guide.slug}-${index}`}
                 data-guide-slide={index}
                 role="group"
-                aria-roledescription="slayt"
-                aria-label={`${modulo(index, count) + 1} / ${count}`}
+                aria-roledescription={copy.slide}
+                aria-label={slidePosition(modulo(index, count) + 1, count, language)}
                 aria-hidden={visible ? undefined : true}
                 inert={!visible}
               >
-                <GuideCard guide={guide} tabIndex={visible ? 0 : -1} />
+                <GuideCard guide={guide} language={language} tabIndex={visible ? 0 : -1} />
               </div>
             );
           })}
@@ -224,12 +227,12 @@ export function GuidesCarousel() {
             <span>{String(count).padStart(2, "0")}</span>
           </div>
           <div className={styles.buttons}>
-            <button type="button" className={styles.arrowButton} aria-label="Önceki rehber" aria-disabled={moving} onClick={() => move(-1, true)}><ArrowLeft aria-hidden /></button>
-            <button type="button" className={styles.arrowButton} aria-label="Sonraki rehber" aria-disabled={moving} onClick={() => move(1, true)}><ArrowRight aria-hidden /></button>
+            <button type="button" className={styles.arrowButton} aria-label={copy.previousArticle} aria-disabled={moving} onClick={() => move(-1, true)}><ArrowLeft aria-hidden /></button>
+            <button type="button" className={styles.arrowButton} aria-label={copy.nextArticleControl} aria-disabled={moving} onClick={() => move(1, true)}><ArrowRight aria-hidden /></button>
           </div>
         </div>
       )}
-      <p className={styles.srOnly} aria-live="polite" aria-atomic="true">{announcement}</p>
+      <p className={styles.srOnly} aria-live="polite" aria-atomic="true">{announcedIndex !== null ? `${slidePosition(announcedIndex + 1, count, language)}: ${guides[announcedIndex].title}` : ""}</p>
     </div>
   );
 }

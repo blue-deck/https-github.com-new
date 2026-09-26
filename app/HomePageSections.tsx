@@ -8,7 +8,7 @@ import type { JobListingViewer } from "./jobs/JobListingAction";
 import { getHomeAudienceNavigation } from "./lib/homeAudienceNavigation";
 import { yachtDepartments } from "./lib/yachtOperations";
 import { YachtOsSection } from "./YachtOsSection";
-import { GuidesHomeSection } from "./guides/_components/GuideCards";
+import { GuidesHomeSection } from "./blog/_components/GuideCards";
 import styles from "./homeContent.module.css";
 
 type Language = "en" | "tr";

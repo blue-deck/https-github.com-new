@@ -27,6 +27,7 @@ const publicNavigation = [
   { labelKey: "nav.findJob", href: "/jobs", desktop: true },
   { labelKey: "nav.findCrew", href: "/find-crew", desktop: true },
   { labelKey: "nav.forYachts", href: "/yacht-os", desktop: true },
+  { labelKey: "nav.blog", href: "/blog", desktop: true },
   { labelKey: "nav.about", href: "/about", desktop: true },
   { labelKey: "nav.trust", href: "/trust", desktop: false },
   { labelKey: "nav.contact", href: "/contact", desktop: true },

@@ -1,5 +1,5 @@
 import "server-only";
-import { getGuideSummary, type GuideSummary } from "./guide-index";
+import { getGuideSummary, legacyGuideSlugs, type GuideLanguage, type GuideSummary } from "./guide-index";
 
 // Preserve server consumers while public components import guide-index directly.
 export { guideBase, guideHref } from "./guide-index";
@@ -21,9 +21,9 @@ export type Guide = GuideSummary & {
   ctaHref: string;
 };
 
-export const guides: Guide[] = [
+const turkishGuides: Guide[] = [
   {
-    ...getGuideSummary("ilk-yat-isine-hazirlik"),
+    ...getGuideSummary("first-yacht-job", "tr"),
     takeaway:
       "İyi bir başlangıç, her ilana başvurmakla değil; ne yapabildiğini, ne öğrenmek istediğini ve ne zaman hazır olduğunu açıkça anlatmakla başlar.",
     sections: [
@@ -80,7 +80,7 @@ export const guides: Guide[] = [
     ctaHref: "/login?mode=signup&role=crew",
   },
   {
-    ...getGuideSummary("crew-cv-hazirlama"),
+    ...getGuideSummary("yacht-crew-cv", "tr"),
     takeaway:
       "CV’nin görevi bütün hayatını anlatmak değil; başvurduğun işi yapabilmeni sağlayan deneyim ve becerileri kolayca görünür kılmaktır.",
     sections: [
@@ -137,7 +137,7 @@ export const guides: Guide[] = [
     ctaHref: "/profile",
   },
   {
-    ...getGuideSummary("teknede-ilk-hafta"),
+    ...getGuideSummary("first-week-onboard", "tr"),
     takeaway:
       "İlk hafta her şeyi bilmek zorunda değilsin. Dikkatle dinlemek, doğru kişiye soru sormak ve öğrendiklerini düzenli uygulamak iyi bir başlangıç sağlar.",
     sections: [
@@ -194,3 +194,188 @@ export const guides: Guide[] = [
     ctaHref: "/jobs",
   },
 ];
+
+const englishGuides: Guide[] = [
+  {
+    ...getGuideSummary("first-yacht-job"),
+    takeaway:
+      "A strong start comes from explaining what you can do, what you want to learn and when you are available, rather than applying to every vacancy.",
+    sections: [
+      {
+        id: "sana-uygun-rol",
+        title: "Start by finding the right role for you",
+        paragraphs: [
+          "Once you decide to enter the yachting industry, your first step is to understand the day-to-day work of each department. Deck, interior, galley and engineering roles call for different skills. Compare job descriptions side by side and look beyond the title to the tasks you would actually do. Are you most motivated by an active outdoor environment, detailed service preparation or solving technical problems?",
+          "You do not need previous yacht experience to have something valuable to offer. Look for specific examples from hospitality, restaurants, maintenance, event planning or customer service. Prioritising tasks during a busy service or handing over a shift clearly to your team are real experiences you can draw on when explaining why you would suit a new role.",
+        ],
+      },
+      {
+        id: "basvuru-dosyasi",
+        title: "Prepare a concise, complete application",
+        paragraphs: [
+          "Keep your CV, short introduction and current contact details consistent. Make your target role, current location, availability and languages easy to find. Describe the work you have done and the responsibilities you have held in short, specific sentences without overstating your experience. Help the reader understand who you are before explaining why you are applying for this particular role.",
+          "Check each document the vacancy asks for and list only the training you actually hold. If you are unsure which documents are required, ask the employer to clarify. Before sending personal documents that have not been requested, confirm what to share and which application channel to use. Give your file a clear name and check that its links open on another device.",
+        ],
+      },
+      {
+        id: "ilan-secimi",
+        title: "Connect your application to the role",
+        paragraphs: [
+          "Create a short checklist for assessing vacancies: duties, experience required, contract period, location and start date. Compare each point with your own circumstances. Once you have found suitable roles, tailor the first two sentences of your application message to each one. Clearly naming the position and explaining which part of your experience is relevant is more useful than a long, general introduction.",
+          "Track your applications in a simple table. Record the vacancy link, application date, contact person and next step. This helps you avoid sending different messages for the same role and remember which team has contacted you when an interview comes through. While you wait, fill any gaps in your profile and review similar roles to keep your search organised.",
+        ],
+      },
+      {
+        id: "ilk-gorusme",
+        title: "Prepare real examples for your interview",
+        paragraphs: [
+          "Practise a natural, one-minute introduction: what you have done so far, the role you are looking for and what you could contribute to the crew. Then choose three real examples. Describe a time you handled pressure, solved a problem with a team and learned a new task. If you are asked about something you have not done, say so clearly and explain how you approach learning.",
+          "Your questions matter too. Ask about your responsibilities in the first week, who you would report to, how the crew works together and how your progress would be reviewed. Before the interview ends, clarify the next step and the likely timing. Write down the key points afterwards so you can compare opportunities thoughtfully.",
+        ],
+      },
+      {
+        id: "harekete-gec",
+        title: "Make your next step specific",
+        paragraphs: [
+          "Replace an open-ended goal with a small, practical plan. Choose your target role today, then make sure the information in your CV and profile matches. Before applying, read the vacancy again and check whether there is an expectation your message has not addressed. Your first application does not have to be perfect, but it should represent you clearly and accurately.",
+        ],
+      },
+    ],
+    checklist: [
+      "I have chosen my target role and availability date.",
+      "My CV and profile are up to date.",
+      "I have checked each requirement in the vacancy.",
+      "I have prepared three real examples for my interview.",
+    ],
+    ctaTitle: "Start with your crew profile.",
+    ctaDescription:
+      "Bring your experience, skills and career ambitions together in one place.",
+    ctaLabel: "Create your crew profile",
+    ctaHref: "/login?mode=signup&role=crew",
+  },
+  {
+    ...getGuideSummary("yacht-crew-cv"),
+    takeaway:
+      "Your CV does not need to tell your entire life story. It should make the experience and skills that matter for the role easy to find.",
+    sections: [
+      {
+        id: "ilk-bakis",
+        title: "Answer the essentials at a glance",
+        paragraphs: [
+          "Place your name, target position, contact details, current location and availability at the top of your CV. Use this space to answer the reader’s first questions instead of filling it with a lengthy personal introduction. Check that your email address is correct, your phone number includes a country code and your profile link works. These small details make it easier for someone to get in touch.",
+          "Tailor your short profile paragraph to the role you are applying for. Focus on the experience you bring and where you want to develop, rather than a string of flattering adjectives. If you are moving from hospitality into interior work, connect your experience in service preparation, guest communication and teamwork. If you are new to yachting, be open about that and describe your strengths clearly.",
+        ],
+      },
+      {
+        id: "somut-deneyim",
+        title: "Turn a list of duties into specific experience",
+        paragraphs: [
+          "List your experience with the most recent role first. For each position, include the dates, job title and the setting you worked in. Then use a few short points to explain what you actually did. Instead of simply writing “responsible for service”, describe how you prepared for service, tracked supplies and handled shift handovers. Any figures you include should be accurate and something you can explain.",
+          "You can describe confidential work without naming a yacht or its guests. What matters is making your role and responsibilities clear. If you are just starting out, include relevant internships, projects and seasonal jobs, but do not present them as professional yacht experience. Keeping your CV consistent with what you say in an interview will also help you speak with confidence.",
+        ],
+      },
+      {
+        id: "beceriler",
+        title: "Describe skills in terms of the work",
+        paragraphs: [
+          "Build your skills section around the duties in the vacancy. Group the tools you can use, your service or maintenance experience, language abilities and relevant training under clear headings. Rather than relying on vague claims such as “strong communicator”, show where you have used that skill in your experience section. Repeating the same information in several places adds length and makes the important points harder to find.",
+          "Be realistic about how you use each language in everyday conversation, with guests or at work. Write the names of courses and certificates as they appear on your documents, and make it clear when a programme is still in progress. Shorten long lists that are not relevant to the position. The aim is to give the reader easy access to the information they need for an initial assessment.",
+        ],
+      },
+      {
+        id: "duzen-ve-kontrol",
+        title: "Create a document that is easy to read",
+        paragraphs: [
+          "Use simple headings, consistent date formatting and a comfortable text size. Leave space between sections instead of squeezing your experience onto one page in tiny type. For early-career applications in particular, concise and focused content helps. After exporting your CV as a PDF, open it on both a computer and a phone. Check for text that overflows, gets cut off or contains broken links.",
+          "Use your name and target role in the file name to keep different versions organised. Make sure a position title from an earlier application has not been left in the new document. Let your referees know before sharing their contact details. If possible, read the text aloud for your final check; this can help you spot long sentences, repeated words and inconsistent dates.",
+        ],
+      },
+      {
+        id: "profil-uyumu",
+        title: "Keep your CV and profile in step",
+        paragraphs: [
+          "Whenever you update your CV, review your digital profile too. Position titles, dates, location and availability should match. After adding a new role or course, check the older information as well. Instead of rewriting the whole document for every application, maintain an accurate master version and highlight the experience most relevant to each role.",
+        ],
+      },
+    ],
+    checklist: [
+      "My target role and contact details are easy to find.",
+      "I have explained my experience through specific responsibilities.",
+      "I have checked my PDF on a phone as well.",
+      "The information in my CV and digital profile matches.",
+    ],
+    ctaTitle: "Make your profile as ready as your CV.",
+    ctaDescription:
+      "Keep your experience, skills and availability up to date for a consistent introduction.",
+    ctaLabel: "Edit your profile",
+    ctaHref: "/profile",
+  },
+  {
+    ...getGuideSummary("first-week-onboard"),
+    takeaway:
+      "You do not have to know everything in your first week. Listening carefully, asking the right person and putting what you learn into practice will help you make a strong start.",
+    sections: [
+      {
+        id: "gelmeden-once",
+        title: "Clarify expectations before you arrive",
+        paragraphs: [
+          "Before joining the yacht, confirm the meeting place, arrival time and person you should contact. Ask what to bring, what to wear and what to expect from your personal space on board. Use the crew’s packing list as your starting point instead of guessing. If your travel or arrival plans change, let the relevant person know in good time. A calmer first day often starts with these small arrangements.",
+          "Have a notebook or a notes app ready to use. You will hear many names, locations and instructions on your first day. Brief notes can make it easier to settle in than trying to remember everything at once. If there is any uncertainty between the role discussed before you joined and the responsibilities explained on board, ask about it early and clearly.",
+        ],
+      },
+      {
+        id: "ekip-duzeni",
+        title: "Learn who to turn to",
+        paragraphs: [
+          "When meeting the crew, focus on learning people’s names and roles. Clarify who you report to, where to find the daily plan and how to let someone know a task is complete. If different people give you competing priorities, check the order with your supervisor instead of guessing. This makes work easier for you and the crew, especially during busy periods.",
+          "Listen carefully to the yacht’s own procedures during your induction. Do not assume that a method you learned elsewhere will be the same here. If you encounter unfamiliar equipment or a task you have not done, ask someone who knows it to explain. Clarifying something in your notes before acting on it is better than developing the wrong habit.",
+        ],
+      },
+      {
+        id: "ortak-yasam",
+        title: "Small habits matter in shared spaces",
+        paragraphs: [
+          "On board, work and shared living are closely connected. Keeping belongings in the right places, leaving spaces tidy and returning shared equipment all support the daily routine. Learn how the crew manages cabins, meals and laundry. Be mindful that something which seems like a small mess to you may affect someone else’s work or rest.",
+          "Keep communication brief, respectful and clear. If you notice supplies running low or a task taking longer than expected, tell the relevant person. Learn the yacht’s rules for sharing information about guests and crew, and ask about the process for taking photographs or posting on social media. Trust in a shared living environment grows through small, consistent actions.",
+        ],
+      },
+      {
+        id: "is-takibi",
+        title: "A clear handover matters as much as the task",
+        paragraphs: [
+          "When you receive a new task, make sure you understand the expected result, its priority and the timing. If helpful, briefly repeat the instructions in your own words. When you finish, mention any detail that still needs checking or any step that remains, rather than simply saying the job is done. This gives the next person the information they need without having to find it again.",
+          "At the end of the day, take a moment to reflect: what did you learn, where do you still need help and what could you organise better tomorrow? Grouping your notes by task can gradually give you a useful personal reference. Always follow the crew’s current instructions, and check the accuracy of your own notes before passing them on as an official procedure.",
+        ],
+      },
+      {
+        id: "geri-bildirim",
+        title: "Finish your first week with feedback",
+        paragraphs: [
+          "At a suitable moment, ask your supervisor for a brief review of your first week. As well as asking what you could do better, bring up a specific task you would like feedback on. Choose one or two suggestions to focus on during the following week. Settling into a crew takes time; measure progress by how clearly you understand your responsibilities and how consistently you carry them out.",
+        ],
+      },
+    ],
+    checklist: [
+      "I have confirmed my arrival plan and contact person.",
+      "I know where to find the daily plan and who to report to.",
+      "I have noted the rules for shared spaces.",
+      "I have asked for a short review of my first week.",
+    ],
+    ctaTitle: "Find the right crew for you.",
+    ctaDescription:
+      "Explore what different roles involve and discover opportunities that fit your next step.",
+    ctaLabel: "Explore open positions",
+    ctaHref: "/jobs",
+  },
+];
+
+export function getGuides(language: GuideLanguage = "en"): Guide[] {
+  return language === "tr" ? turkishGuides : englishGuides;
+}
+
+export function getGuide(slug: string, language: GuideLanguage = "en"): Guide | undefined {
+  const canonicalSlug = legacyGuideSlugs[slug] ?? slug;
+  return getGuides(language).find((guide) => guide.slug === canonicalSlug);
+}
+
+export const guides = getGuides();
