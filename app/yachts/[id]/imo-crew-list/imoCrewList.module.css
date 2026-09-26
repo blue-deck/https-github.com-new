@@ -63,13 +63,6 @@
 .loading h1 { font-size: 30px; }
 .loading p { color: #73879a; font-size: 14px; }
 .srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.previewDialog { position: fixed; inset: 0; margin: auto; max-width: 1200px; width: calc(100vw - 48px); height: calc(100dvh - 48px); max-height: none; padding: 0; border: 1px solid #c9d8e1; border-radius: 12px; background: #f1f5f8; color: #173e54; overflow: hidden; }
-.previewDialog[open] { display: flex; flex-direction: column; }
-.previewDialog::backdrop { background: #041a31b8; backdrop-filter: blur(3px); }
-.previewHeader { display: flex; align-items: center; gap: 16px; padding: 16px 22px; background: white; border-bottom: 1px solid #dce5ee; }
-.previewHeader > a { margin-left: auto; }
-.previewHeader h2 { font-size: 17px; }
-.close { border: 0; border-radius: 6px; background: #eef3f6; padding: 9px; color: #4a697e; cursor: pointer; }
 @media (prefers-reduced-motion: no-preference) { .textInput, .dateInput { transition: background .12s, border-color .12s; } }
 
 /* The document controls intentionally override the shared app input skin. */
@@ -78,7 +71,6 @@
 .paper .field :is(.textInput, .dateInput):focus { background: #f0f8fc !important; border-color: #6e9eb5 !important; box-shadow: none !important; }
 .paper .field .dateInput[aria-invalid="true"] { border-color: #c36758 !important; background: #fff4f1 !important; }
 .paper .signatureFields :is(.textInput, .dateInput) { border-bottom-color: #9ca2a8 !important; }
-.previewLoading { display: grid; flex: 1; place-items: center; min-height: 180px; color: #587085; font-size: 13px; }
 @media (max-width: 1100px) {
   .page { padding: 22px 16px 36px; }
   .container { max-width: 100%; }
@@ -94,10 +86,6 @@
   .declaration { margin-top: auto; }
   .rowTrigger > .rowIndex { color: #273d4f; }
   .field { cursor: text; }
-  .previewDialog { width: calc(100vw - 16px); height: calc(100dvh - 20px); }
-  .previewHeader { padding: 12px; gap: 10px; flex-wrap: wrap; }
-  .previewHeader .primary { font-size: 11px; padding: 10px; }
-  .previewHeader h2 { font-size: 14px; }
   .undoBar { padding-top: 10px; }
 }
 @media (max-width: 480px) {

@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { ArrowDown, ArrowLeft, ArrowUp, Download, Eye, Plus, Trash2, Undo2, X } from "lucide-react";
 import { DateTextField } from "../../../components/DateTextField";
 import {
@@ -12,12 +11,8 @@ import {
 } from "../../../lib/imoCrewList";
 import { IMO_CREW_LIST_COLUMNS, IMO_CREW_LIST_CONTENT_WIDTH, IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX, IMO_CREW_LIST_DOCUMENT_GROUP_LABEL, IMO_CREW_LIST_SIGNATURE_LABEL } from "../../../lib/imoCrewListLayout";
 import ImoCrewCellEditor from "./ImoCrewCellEditor";
+import ImoCrewListPreviewDialog from "./ImoCrewListPreviewDialog";
 import styles from "./imoCrewList.module.css";
-
-const ImoCrewListPreview = dynamic(() => import("./ImoCrewListPreview"), {
-  ssr: false,
-  loading: () => <div className={styles.previewLoading} role="status">Loading PDF…</div>,
-});
 
 const crewFieldLabels: Partial<Record<keyof ImoCrewRow, string>> = {
   documentType: "Document type",
@@ -85,7 +80,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
   const rowDialogRef = useRef<HTMLDialogElement>(null);
   const suppressCellFocus = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const previewTriggerRef = useRef<HTMLButtonElement>(null);
   const busyRef = useRef(false);
   const mountedRef = useRef(true);
   const snapshot = JSON.stringify(draft);
@@ -121,7 +116,6 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
 
   useEffect(() => {
     if (!preview) return;
-    dialogRef.current?.showModal();
     return () => URL.revokeObjectURL(preview.url);
   }, [preview]);
 
@@ -233,7 +227,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
           <h1>IMO Crew List</h1>
           <div className={styles.heroActions}>
             <button type="button" className={styles.secondary} onClick={addCrew} disabled={draft.crew.length >= IMO_CREW_LIST_MAX_ROWS}><Plus size={16} />{copy("Add crew", "Personel ekle")}</button>
-            <button type="button" className={styles.secondary} disabled={!!busy} onClick={() => void exportPdf("preview")}><Eye size={16} />{busy === "preview" ? copy("Preparing…", "Hazırlanıyor…") : copy("Preview", "Önizleme")}</button>
+            <button ref={previewTriggerRef} type="button" className={styles.secondary} disabled={!!busy} onClick={() => void exportPdf("preview")}><Eye size={16} />{busy === "preview" ? copy("Preparing…", "Hazırlanıyor…") : copy("Preview", "Önizleme")}</button>
             <button type="button" className={styles.primary} disabled={!!busy} onClick={() => void exportPdf("download")}><Download size={16} />{busy === "download" ? copy("Preparing…", "Hazırlanıyor…") : copy("Download PDF", "PDF indir")}</button>
           </div>
         </header>
@@ -303,10 +297,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
         <button type="button" disabled={activeRowIndex === draft.crew.length - 1} onClick={() => moveCrew(activeRowIndex, 1)}><ArrowDown size={17} />{copy("Move down", "Aşağı taşı")}</button>
         <button type="button" className={styles.remove} onClick={() => { const row = draft.crew[activeRowIndex]; setRemoved({ row, index: activeRowIndex }); changeDraft((current) => ({ ...current, crew: current.crew.filter((member) => member.id !== row.id) })); setActiveRow(null); }}><Trash2 size={17} />{copy("Remove", "Sil")}</button>
       </dialog>}
-      {preview && <dialog ref={dialogRef} className={styles.previewDialog} onCancel={() => setPreview(null)} onClose={() => setPreview(null)}>
-        <div className={styles.previewHeader}><h2>{copy("Document preview", "Belge önizlemesi")}</h2><a className={styles.primary} href={preview.url} download={preview.filename} onClick={() => { setDownloadedSnapshot(preview.snapshot); setDownloadedInputRevision(preview.inputRevision); }}><Download size={16} />{copy("Download PDF", "PDF indir")}</a><button type="button" className={styles.close} aria-label={copy("Close preview", "Önizlemeyi kapat")} onClick={() => setPreview(null)}><X size={20} /></button></div>
-        <ImoCrewListPreview blob={preview.blob} language={language} />
-      </dialog>}
+      {preview && <ImoCrewListPreviewDialog blob={preview.blob} url={preview.url} filename={preview.filename} language={language} returnFocusRef={previewTriggerRef} onClose={() => setPreview(null)} onDownload={() => { setDownloadedSnapshot(preview.snapshot); setDownloadedInputRevision(preview.inputRevision); }} />}
     </main>
   );
 }
