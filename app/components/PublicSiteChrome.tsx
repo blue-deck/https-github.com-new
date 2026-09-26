@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import type { AccountIdentity } from "../lib/accountIdentity";
-import { type TranslationKey } from "../lib/i18n";
+import { languages, type TranslationKey } from "../lib/i18n";
 import { endWebBrowserSession } from "../lib/webBrowserSession";
 import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -56,7 +56,7 @@ function accountInitials(name: string) {
 
 export function PublicHeader() {
   const pathname = usePathname() || "/";
-  const { language, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [sessionUser, setSessionUser] = useState<User | null>(null);
   const [identity, setIdentity] = useState<AccountIdentity | null>(null);
   const [failedPhotoUrl, setFailedPhotoUrl] = useState("");
@@ -441,36 +441,31 @@ export function PublicHeader() {
                   </Link>
                 );
               })}
-              {!sessionEmail ? (
-                <div
-                  className="bd-public-mobile-auth"
-                  role="group"
-                  aria-label={language === "tr" ? "Hesap" : "Account"}
-                >
-                  <Link
-                    href="/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link"
-                  >
-                    {t("auth.login")}
-                  </Link>
-                  <Link
-                    href="/login?mode=signup"
-                    onClick={() => setMenuOpen(false)}
-                    className="bd-focus bd-public-mobile-link bd-public-mobile-auth-link bd-public-mobile-auth-primary"
-                  >
-                    {t("auth.signUp")}
-                  </Link>
-                </div>
-              ) : null}
             </nav>
             <div className="bd-public-mobile-utilities">
               <div className="bd-public-mobile-language-row">
                 <span>{language === "tr" ? "Dil" : "Language"}</span>
-                <LanguageSwitcher
-                  size="compact"
-                  className="bd-public-mobile-language"
-                />
+                <div
+                  data-i18n-ignore
+                  role="group"
+                  aria-label={t("language.select")}
+                  className={styles.languageOptions}
+                >
+                  {languages.map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      aria-label={item.name}
+                      aria-pressed={language === item.code}
+                      title={item.name}
+                      onClick={() => setLanguage(item.code)}
+                      className={`bd-focus ${styles.languageOption}`}
+                    >
+                      <span aria-hidden="true">{item.flag}</span>
+                      <span aria-hidden="true">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
               {sessionEmail ? (
                 <div
