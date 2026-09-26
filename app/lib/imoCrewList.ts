@@ -4,8 +4,7 @@ export const IMO_CREW_LIST_MAX_FILE_BYTES = 1_048_576;
 
 export type ImoCrewRow = {
   id: string;
-  familyName: string;
-  givenNames: string;
+  fullName: string;
   rank: string;
   nationality: string;
   dateOfBirth: string;
@@ -13,7 +12,6 @@ export type ImoCrewRow = {
   gender: string;
   documentType: string;
   documentNumber: string;
-  issuingState: string;
   documentExpiry: string;
 };
 
@@ -43,8 +41,7 @@ export type ImoCrewListIssue = {
 };
 
 const rowFields = [
-  "familyName",
-  "givenNames",
+  "fullName",
   "rank",
   "nationality",
   "dateOfBirth",
@@ -52,7 +49,6 @@ const rowFields = [
   "gender",
   "documentType",
   "documentNumber",
-  "issuingState",
   "documentExpiry",
 ] as const;
 
@@ -108,8 +104,12 @@ function sourceDate(value: unknown): string {
 }
 
 function sourceName(value: unknown): string {
-  const name = sourceText(value).replace(/\s+/gu, " ");
+  const name = sourceText(value);
   return name.includes("@") ? "" : name;
+}
+
+export function capitalizeImoField(value: string): string {
+  return value.replace(/\S/u, (character) => character.toLocaleUpperCase("en"));
 }
 
 function fieldText(value: unknown, field: string): string {
@@ -135,8 +135,7 @@ function newRowId(): string {
 export function createEmptyImoCrewRow(): ImoCrewRow {
   return {
     id: newRowId(),
-    familyName: "",
-    givenNames: "",
+    fullName: "",
     rank: "",
     nationality: "",
     dateOfBirth: "",
@@ -144,7 +143,6 @@ export function createEmptyImoCrewRow(): ImoCrewRow {
     gender: "",
     documentType: "",
     documentNumber: "",
-    issuingState: "",
     documentExpiry: "",
   };
 }
@@ -167,13 +165,11 @@ export function createImoCrewListDraft(
 
   const rows = activeCrew.map((member) => {
     const profile = record(member.crew_profiles) ?? {};
-    const nameParts = sourceName(profile.full_name).split(" ").filter(Boolean);
     const documentNumber = sourceText(profile.passport_number);
     const documentExpiry = sourceDate(profile.passport_expiry);
     return {
       ...createEmptyImoCrewRow(),
-      familyName: nameParts.pop() ?? "",
-      givenNames: nameParts.join(" "),
+      fullName: sourceName(profile.full_name),
       rank: sourceText(member.position) || sourceText(profile.current_position),
       nationality: sourceText(profile.nationality),
       dateOfBirth: sourceDate(profile.date_of_birth),

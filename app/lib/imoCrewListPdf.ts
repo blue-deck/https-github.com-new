@@ -1,32 +1,18 @@
 import type { jsPDF } from "jspdf";
-import type { ImoCrewListDraft, ImoCrewRow } from "./imoCrewList";
+import type { ImoCrewListDraft } from "./imoCrewList";
+import {
+  IMO_CREW_LIST_COLUMNS,
+  IMO_CREW_LIST_CONTENT_WIDTH,
+  IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX,
+  IMO_CREW_LIST_DOCUMENT_GROUP_LABEL,
+  IMO_CREW_LIST_SIGNATURE_LABEL,
+} from "./imoCrewListLayout";
 
 const FONT_FAMILY = "NotoSans";
 const FONT_SIZE = 7.5;
 const LINE_HEIGHT = 3.5;
 const CELL_PADDING = 1.8;
 const MARGIN = 10;
-
-type CrewColumn = {
-  key: keyof ImoCrewRow | "sequence";
-  label: string;
-  width: number;
-};
-
-const CREW_COLUMNS: CrewColumn[] = [
-  { key: "sequence", label: "6. No.", width: 9 },
-  { key: "familyName", label: "7. Family name", width: 31 },
-  { key: "givenNames", label: "8. Given names", width: 31 },
-  { key: "rank", label: "9. Rank or rating", width: 25 },
-  { key: "nationality", label: "10. Nationality", width: 23 },
-  { key: "dateOfBirth", label: "11. Date of birth", width: 22 },
-  { key: "placeOfBirth", label: "12. Place of birth", width: 30 },
-  { key: "gender", label: "13. Gender", width: 13 },
-  { key: "documentType", label: "14. Type", width: 25 },
-  { key: "documentNumber", label: "15. Number", width: 25 },
-  { key: "issuingState", label: "16. Issuing State", width: 23 },
-  { key: "documentExpiry", label: "17. Expiry date", width: 20 },
-];
 
 let fontDataPromise: Promise<[string, string]> | undefined;
 
@@ -56,6 +42,10 @@ function loadFonts(): Promise<[string, string]> {
 
 function plainText(value: string): string {
   return value.normalize("NFC").replace(/\s+/g, " ").trim();
+}
+
+function formatPdfDate(value: string): string {
+  return value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, "$3/$2/$1");
 }
 
 function wrap(doc: jsPDF, value: string, width: number): string[] {
@@ -93,7 +83,10 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
   const pageHeight = doc.internal.pageSize.getHeight();
   const width = pageWidth - MARGIN * 2;
   // Account for the small decimal difference between the A4 width and 297 mm.
-  const columns = CREW_COLUMNS.map((column) => ({ ...column, width: column.width * width / 277 }));
+  const columns = IMO_CREW_LIST_COLUMNS.map((column) => ({
+    ...column,
+    width: column.width * width / IMO_CREW_LIST_CONTENT_WIDTH,
+  }));
   const voyage = draft.voyage;
 
   const setBodyFont = () => {
@@ -115,8 +108,13 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
       throw new Error("The PDF font cannot display one or more characters. Please use the Latin spelling from the travel document.");
     }
   }
-  const masterLines = wrap(doc, voyage.masterName, width * 0.43 - 5);
-  const signatureHeight = Math.max(19, masterLines.length * LINE_HEIGHT + 13);
+  const signaturePadding = 3;
+  const signatureGap = 7;
+  const signatureFieldUnit = (width - signaturePadding * 2 - signatureGap * 2) / 2.9;
+  const signatureFieldWidths = [signatureFieldUnit * 1.25, signatureFieldUnit * 0.65, signatureFieldUnit];
+  const masterLines = wrap(doc, voyage.masterName, signatureFieldWidths[0]);
+  const signatureUnderlineOffset = 13 + Math.max(7, masterLines.length * LINE_HEIGHT + 2);
+  const signatureHeight = signatureUnderlineOffset + signaturePadding;
   const tableBottom = pageHeight - MARGIN - signatureHeight - 9;
   let tableTop = 0;
   let y = 0;
@@ -172,7 +170,7 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     ]);
     drawVoyageRow([
       { label: "2. Port of arrival / departure", value: voyage.portOfArrivalDeparture, fraction: 0.65 },
-      { label: "3. Date of arrival / departure", value: voyage.arrivalDepartureDate, fraction: 0.35 },
+      { label: "3. Date of arrival / departure", value: formatPdfDate(voyage.arrivalDepartureDate), fraction: 0.35 },
     ]);
     drawVoyageRow([
       { label: "4. Flag State of ship", value: voyage.flagState, fraction: 0.5 },
@@ -186,15 +184,16 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     doc.setFillColor(244, 246, 248);
     doc.rect(MARGIN, y, width, headerHeight, "F");
     columns.forEach((column, index) => {
-      const groupHeight = index >= 8 ? 5 : 0;
+      const groupHeight = index >= IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX ? 5 : 0;
       doc.rect(x, y + groupHeight, column.width, headerHeight - groupHeight);
       const label = wrap(doc, column.label, column.width - CELL_PADDING * 2);
       drawLines(doc, label, x + CELL_PADDING, y + groupHeight + 4.4, 3.25);
       x += column.width;
     });
-    const identityStart = MARGIN + columns.slice(0, 8).reduce((total, column) => total + column.width, 0);
+    const identityStart = MARGIN + columns.slice(0, IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX)
+      .reduce((total, column) => total + column.width, 0);
     doc.rect(identityStart, y, pageWidth - MARGIN - identityStart, 5);
-    doc.text("Identity document", identityStart + CELL_PADDING, y + 3.5);
+    doc.text(IMO_CREW_LIST_DOCUMENT_GROUP_LABEL, identityStart + CELL_PADDING, y + 3.5);
     y += headerHeight;
     tableTop = y;
     setBodyFont();
@@ -228,7 +227,11 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     draft.crew.forEach((crew, index) => {
       const cells = columns.map((column) => wrap(
         doc,
-        column.key === "sequence" ? String(index + 1) : crew[column.key],
+        column.key === "sequence"
+          ? String(index + 1)
+          : column.key === "dateOfBirth" || column.key === "documentExpiry"
+            ? formatPdfDate(crew[column.key])
+            : crew[column.key],
         column.width - CELL_PADDING * 2,
       ));
       const lineCount = Math.max(...cells.map((cell) => cell.length));
@@ -254,17 +257,32 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     doc.setFont(FONT_FAMILY, "bold");
     doc.setFontSize(7.2);
     doc.setTextColor(25, 31, 39);
-    doc.text("18. Date and signature by master, authorized agent or officer", MARGIN, signatureY + 3.8);
+    doc.setDrawColor(90, 99, 112);
+    doc.setLineWidth(0.2);
+    doc.rect(MARGIN, signatureY, width, signatureHeight);
+    doc.text(IMO_CREW_LIST_SIGNATURE_LABEL, MARGIN + signaturePadding, signatureY + 4.3);
+    const signatureFields = [
+      { label: "Name of signatory", lines: masterLines },
+      { label: "Date", lines: [formatPdfDate(voyage.declarationDate)] },
+      { label: "Signature", lines: [] },
+    ];
+    let signatureX = MARGIN + signaturePadding;
+    signatureFields.forEach((field, index) => {
+      doc.setFont(FONT_FAMILY, "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(69, 78, 87);
+      doc.text(field.label, signatureX, signatureY + 10.5);
+      setBodyFont();
+      drawLines(doc, field.lines, signatureX, signatureY + 15);
+      doc.setDrawColor(156, 162, 168);
+      doc.setLineWidth(0.15);
+      doc.line(signatureX, signatureY + signatureUnderlineOffset, signatureX + signatureFieldWidths[index], signatureY + signatureUnderlineOffset);
+      signatureX += signatureFieldWidths[index] + signatureGap;
+    });
     setBodyFont();
-    doc.text(`Date: ${plainText(voyage.declarationDate)}`, MARGIN, signatureY + 10);
-    doc.text("Name:", MARGIN + width * 0.22, signatureY + 10);
-    drawLines(doc, masterLines, MARGIN + width * 0.22 + 12, signatureY + 10);
-    const signatureX = MARGIN + width * 0.72;
-    doc.text("Signature:", signatureX, signatureY + 10);
-    doc.line(signatureX + 16, signatureY + 12, pageWidth - MARGIN, signatureY + 12);
     doc.setFontSize(6.5);
     doc.setTextColor(88, 97, 109);
-    doc.text("Prepared in BlueDeck | Dates: YYYY-MM-DD", MARGIN, pageHeight - MARGIN);
+    doc.text("Prepared in BlueDeck | Dates: DD/MM/YYYY", MARGIN, pageHeight - MARGIN);
     doc.text(`Page ${page} of ${pageCount}`, pageWidth - MARGIN, pageHeight - MARGIN, { align: "right" });
   }
 
