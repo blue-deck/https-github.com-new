@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "public/pdfjs/**", // Vendored, version-matched PDF.js worker.
   ]),
   {
     rules: {

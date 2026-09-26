@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowDown, ArrowLeft, ArrowUp, Download, Eye, Plus, Trash2, Undo2, X } from "lucide-react";
 import { DateTextField } from "../../../components/DateTextField";
 import {
@@ -11,6 +12,17 @@ import {
 } from "../../../lib/imoCrewList";
 import { IMO_CREW_LIST_COLUMNS, IMO_CREW_LIST_CONTENT_WIDTH, IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX, IMO_CREW_LIST_DOCUMENT_GROUP_LABEL, IMO_CREW_LIST_SIGNATURE_LABEL } from "../../../lib/imoCrewListLayout";
 import styles from "./imoCrewList.module.css";
+
+const ImoCrewListPreview = dynamic(() => import("./ImoCrewListPreview"), {
+  ssr: false,
+  loading: () => <div className={styles.previewLoading} role="status">Loading PDF…</div>,
+});
+
+const crewFieldLabels: Partial<Record<keyof ImoCrewRow, string>> = {
+  documentType: "Document type",
+  documentNumber: "Document number",
+  documentExpiry: "Expiry date",
+};
 
 type VoyageKey = Exclude<keyof ImoCrewListDraft["voyage"], "movement">;
 const voyageBands: { key: VoyageKey; label: string; date?: boolean; fraction: number }[][] = [
@@ -62,7 +74,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
   const [downloadedInputRevision, setDownloadedInputRevision] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"preview" | "download" | null>(null);
-  const [preview, setPreview] = useState<{ url: string; filename: string; snapshot: string; inputRevision: number } | null>(null);
+  const [preview, setPreview] = useState<{ blob: Blob; url: string; filename: string; snapshot: string; inputRevision: number } | null>(null);
   const [removed, setRemoved] = useState<{ row: ImoCrewRow; index: number } | null>(null);
   const [activeRow, setActiveRow] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -128,7 +140,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
       const blob = await createImoCrewListPdf(draft);
       if (!mountedRef.current) return;
       const filename = getImoCrewListFilename(draft, "pdf");
-      if (mode === "preview") setPreview({ url: URL.createObjectURL(blob), filename, snapshot, inputRevision });
+      if (mode === "preview") setPreview({ blob, url: URL.createObjectURL(blob), filename, snapshot, inputRevision });
       else {
         downloadBlob(blob, filename);
         setDownloadedSnapshot(snapshot);
@@ -172,7 +184,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
               {(["arrival", "departure"] as const).map((movement) => <label key={movement}><input type="radio" name="movement" value={movement} checked={draft.voyage.movement === movement} onChange={() => changeDraft((current) => ({ ...current, voyage: { ...current.voyage, movement } }))} /><span>{movement === "arrival" ? "Arrival" : "Departure"}</span></label>)}
             </fieldset>
             <div className={styles.voyageGrid}>
-              {voyageBands.map((band, index) => <div className={styles.voyageBand} key={index} style={{ gridTemplateColumns: band.map((field) => `${field.fraction}fr`).join(" ") }}>
+              {voyageBands.map((band, index) => <div className={styles.voyageBand} key={index} data-band={index} style={{ gridTemplateColumns: band.map((field) => `${field.fraction}fr`).join(" ") }}>
                 {band.map((field) => <DocumentField key={field.key} id={`voyage-${field.key}`} label={field.label} value={draft.voyage[field.key]} date={field.date} dateError={dateError} onChange={(value) => changeVoyage(field.key, value)} />)}
               </div>)}
             </div>
@@ -187,7 +199,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
                 {draft.crew.map((row, index) => <tr key={row.id} aria-label={copy(`Crew member ${index + 1}`, `Personel ${index + 1}`)}>
                   <td className={styles.sequence}>
                     <div className={styles.rowTools} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setActiveRow(null); }} onKeyDown={(event) => { if (event.key === "Escape") { setActiveRow(null); event.currentTarget.querySelector("button")?.focus(); } }}>
-                      <button type="button" className={styles.rowTrigger} aria-label={copy(`Crew member ${index + 1} actions`, `Personel ${index + 1} işlemleri`)} aria-expanded={activeRow === row.id} aria-controls={`actions-${row.id}`} title={copy("Row actions", "Satır işlemleri")} onClick={() => setActiveRow(activeRow === row.id ? null : row.id)}>{index + 1}<span aria-hidden="true">···</span></button>
+                      <button type="button" className={styles.rowTrigger} aria-label={copy(`Crew member ${index + 1} actions`, `Personel ${index + 1} işlemleri`)} aria-expanded={activeRow === row.id} aria-controls={`actions-${row.id}`} title={copy("Row actions", "Satır işlemleri")} onClick={() => setActiveRow(activeRow === row.id ? null : row.id)}><span className={styles.rowIndex}><span className={styles.mobileOnly}>Crew member </span>{index + 1}</span><span aria-hidden="true">···</span></button>
                       {activeRow === row.id && <div id={`actions-${row.id}`} className={styles.rowActions}>
                         <button type="button" disabled={index === 0} onClick={() => moveCrew(index, -1)}><ArrowUp size={14} />{copy("Move up", "Yukarı taşı")}</button>
                         <button type="button" disabled={index === draft.crew.length - 1} onClick={() => moveCrew(index, 1)}><ArrowDown size={14} />{copy("Move down", "Aşağı taşı")}</button>
@@ -195,7 +207,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
                       </div>}
                     </div>
                   </td>
-                  {IMO_CREW_LIST_COLUMNS.slice(1).map((column) => <td key={column.key}><DocumentField id={`crew-${row.id}-${column.key}`} label={column.label.replace(/^\d+\.\s*/, "")} hiddenLabel value={row[column.key as keyof ImoCrewRow]} date={column.key === "dateOfBirth" || column.key === "documentExpiry"} dateError={dateError} onChange={(value) => changeDraft((current) => ({ ...current, crew: current.crew.map((member) => member.id === row.id ? { ...member, [column.key]: value } : member) }))} /></td>)}
+                  {IMO_CREW_LIST_COLUMNS.slice(1).map((column) => <td key={column.key} data-field={column.key}><DocumentField id={`crew-${row.id}-${column.key}`} label={crewFieldLabels[column.key as keyof ImoCrewRow] || column.label.replace(/^\d+\.\s*/, "")} hiddenLabel value={row[column.key as keyof ImoCrewRow]} date={column.key === "dateOfBirth" || column.key === "documentExpiry"} dateError={dateError} onChange={(value) => changeDraft((current) => ({ ...current, crew: current.crew.map((member) => member.id === row.id ? { ...member, [column.key]: value } : member) }))} /></td>)}
                 </tr>)}
                 {Array.from({ length: Math.max(0, 6 - draft.crew.length) }, (_, index) => <tr className={styles.blankRow} key={`blank-${index}`} aria-hidden="true">{IMO_CREW_LIST_COLUMNS.map((column) => <td key={column.key}>&nbsp;</td>)}</tr>)}
               </tbody>
@@ -214,8 +226,7 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
       </div>
       {preview && <dialog ref={dialogRef} className={styles.previewDialog} onCancel={() => setPreview(null)} onClose={() => setPreview(null)}>
         <div className={styles.previewHeader}><h2>{copy("Document preview", "Belge önizlemesi")}</h2><a className={styles.primary} href={preview.url} download={preview.filename} onClick={() => { setDownloadedSnapshot(preview.snapshot); setDownloadedInputRevision(preview.inputRevision); }}><Download size={16} />{copy("Download PDF", "PDF indir")}</a><button type="button" className={styles.close} aria-label={copy("Close preview", "Önizlemeyi kapat")} onClick={() => setPreview(null)}><X size={20} /></button></div>
-        <iframe title={copy("IMO crew list PDF preview", "IMO mürettebat listesi PDF önizlemesi")} src={preview.url} />
-        <p className={styles.previewHint}>{copy("If the preview is unavailable on your device, download the PDF to open it.", "Cihazınızda önizleme görüntülenmiyorsa PDF’yi indirerek açabilirsiniz.")}</p>
+        <ImoCrewListPreview blob={preview.blob} language={language} />
       </dialog>}
     </main>
   );
@@ -228,8 +239,19 @@ function DocumentField({ id, label, value, onChange, date = false, hiddenLabel =
   useLayoutEffect(() => {
     const input = textRef.current;
     if (!input) return;
-    input.style.height = "auto";
-    input.style.height = `${input.scrollHeight + 2}px`;
+    const resize = () => {
+      input.style.height = "auto";
+      input.style.height = `${input.scrollHeight + 2}px`;
+    };
+    resize();
+    let width = input.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (width === input.clientWidth) return;
+      width = input.clientWidth;
+      resize();
+    });
+    observer.observe(input);
+    return () => observer.disconnect();
   }, [value]);
   const labelClass = hiddenLabel ? styles.srOnly : styles.fieldLabel;
   if (date) return <DateTextField label={label} value={value} onChange={onChange} placeholder="DD/MM/YYYY" invalidText={dateError} autoComplete="off" className={styles.field} labelClassName={labelClass} inputClassName={styles.dateInput} />;
