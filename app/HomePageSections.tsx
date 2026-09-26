@@ -8,6 +8,7 @@ import type { JobListingViewer } from "./jobs/JobListingAction";
 import { getHomeAudienceNavigation } from "./lib/homeAudienceNavigation";
 import { yachtDepartments } from "./lib/yachtOperations";
 import { YachtOsSection } from "./YachtOsSection";
+import { GuidesHomeSection } from "./guides/_components/GuideCards";
 import styles from "./homeContent.module.css";
 
 type Language = "en" | "tr";
@@ -125,6 +126,8 @@ export function HomePageSections({ language, viewer }: { language: Language; vie
       </section>
 
       <YachtOsSection language={language} />
+
+      <GuidesHomeSection />
 
       <section className={styles.trustSection} aria-labelledby="trust-heading">
         <div className={styles.container}>
