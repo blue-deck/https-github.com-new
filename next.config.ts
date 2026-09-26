@@ -27,6 +27,12 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Sharp loads libvips dynamically; include its native libraries in the
+  // serverless bundles for yacht photo reads and writes.
+  outputFileTracingIncludes: {
+    "/api/yachts": ["./node_modules/@img/sharp-*/lib/**/*"],
+    "/api/yachts/*": ["./node_modules/@img/sharp-*/lib/**/*"],
+  },
   images: {
     qualities: [75, 90],
   },
