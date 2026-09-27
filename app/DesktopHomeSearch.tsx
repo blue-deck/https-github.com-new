@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Search } from "lucide-react";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
@@ -64,7 +63,6 @@ export function DesktopHomeSearch({ language }: { language: "en" | "tr" }) {
             </button>
           ))}
         </div>
-        <Link href="/yacht-os" className={styles.yacht}>Yacht-OS</Link>
       </div>
       <div className={styles.panelStage}>
         <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${mode}-tab`} className={styles.panel}>

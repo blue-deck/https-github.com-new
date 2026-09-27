@@ -49,7 +49,6 @@
   .tab[aria-selected="true"] { color: #071a2a; font-weight: 700; }
   .tab[aria-selected="true"] .tabShape { opacity: 1; }
   .tab:focus-visible { outline: 2px solid #287baa; outline-offset: -6px; border-radius: 16px; }
-  .yacht { display: none; }
   .panelStage {
     position: relative;
   }
@@ -110,14 +109,22 @@
   .rail {
     position: relative;
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
     aspect-ratio: 1586 / 86;
     min-height: 66px;
     padding: 0 5%;
     align-items: end;
   }
-  .tabs { display: grid; grid-template-columns: 1fr 1fr; height: 100%; align-items: end; }
-  .tab, .yacht {
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 840px);
+    height: 100%;
+    margin-inline: auto;
+    align-items: end;
+  }
+  .tab {
     position: relative;
     display: flex;
     align-items: center;
@@ -134,7 +141,7 @@
     text-decoration: none;
   }
   .tab { cursor: pointer; isolation: isolate; }
-  .tab::after {
+  .tab:first-child::after {
     content: "";
     position: absolute;
     right: 0;
@@ -157,8 +164,8 @@
   }
   .tab[aria-selected="true"] { color: #1d527a; font-weight: 650; }
   .tab[aria-selected="true"] .tabShape { opacity: 1; }
-  .tab[aria-selected="false"]:hover, .yacht:hover { color: #a7dbff; }
-  .tab:focus-visible, .yacht:focus-visible { outline: 2px solid #7fc9ff; outline-offset: -5px; border-radius: 8px; }
+  .tab[aria-selected="false"]:hover { color: #a7dbff; }
+  .tab:focus-visible { outline: 2px solid #7fc9ff; outline-offset: -5px; border-radius: 8px; }
   .panelStage {
     position: relative;
     padding-inline: var(--panel-gutter);
