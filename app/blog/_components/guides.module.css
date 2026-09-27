@@ -72,10 +72,7 @@
 .breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 32px; font-size: 11px; color: #77828c; }
 .breadcrumb a:hover { color: var(--blue); }
 .breadcrumb > span:last-child { color: #2f5369; }
-.libraryIntro { padding: 70px 0 49px; }
-.libraryIntro h1 { font-size: clamp(36px, 4.8vw, 64px); line-height: 1.1; font-weight: 500; letter-spacing: -.055em; margin-top: 20px; }
-.libraryIntro h1 > span { color: #7d8992; }
-.libraryIntro > p:last-child { margin-top: 24px; font-size: 15px; line-height: 1.9; color: var(--muted); }
+.libraryIntro { padding: 32px 0; }
 .filterBar { display: flex; justify-content: space-between; align-items: center; gap: 25px; border-block: 1px solid var(--line); padding: 17px 0; }
 .filters { display: flex; gap: 7px; flex-wrap: wrap; }
 .filters button { padding: 10px 16px; font-size: 12px; color: #647787; cursor: pointer; border-radius: 4px; white-space: nowrap; }
@@ -220,10 +217,7 @@
   .sectionFoot { margin-top: 27px; padding-top: 20px; font-size: 8px; gap: 12px; }
   .sectionFoot > span:last-child { font-size: 9px; }
   .breadcrumb { font-size: 10px; padding-top: 24px; }
-  .libraryIntro { padding: 44px 0 32px; }
-  .libraryIntro h1 { font-size: 38px; }
-  .libraryIntro > p:last-child { font-size: 14px; margin-top: 19px; }
-  .desktopBreak { display: none; }
+  .libraryIntro { padding: 24px 0; }
   .filterBar { flex-direction: column; align-items: stretch; gap: 14px; }
   .filters { gap: 4px; }
   .filters button { padding: 9px 10px; font-size: 10px; }

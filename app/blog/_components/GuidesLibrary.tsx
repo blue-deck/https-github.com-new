@@ -42,9 +42,7 @@ export function GuidesLibrary() {
           <Link href="/">{copy.home}</Link><span>/</span><span aria-current="page">Blog</span>
         </nav>
         <div className={styles.libraryIntro}>
-          <p className={styles.eyebrow}><span /> BLUEDECK BLOG</p>
-          <h1>{copy.libraryTitle}<br /><span>{copy.libraryTitleAccent}</span></h1>
-          <p>{copy.libraryDescription}<br className={styles.desktopBreak} /> {copy.libraryDescriptionEnd}</p>
+          <h1 className={styles.eyebrow}><span /> BLUEDECK BLOG</h1>
         </div>
         <div className={styles.filterBar}>
           <div className={styles.filters} role="group" aria-label={copy.categories}>
