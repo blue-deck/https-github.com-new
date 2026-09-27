@@ -65,9 +65,6 @@
 .editorialNote > svg { width: 32px; height: 32px; color: #577f91; stroke-width: 1.25; }
 .editorialNote p { color: #73818a; font-size: 12px; line-height: 1.8; }
 .editorialNote strong { color: #28465a; font-weight: 500; }
-.sectionFoot { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-top: 51px; padding-top: 21px; border-top: 1px solid #ccd8df; font-size: 9px; letter-spacing: .13em; color: #6a7c89; }
-.sectionFoot > span:last-child { display: flex; align-items: center; gap: 16px; font-size: 10px; letter-spacing: .01em; }
-.sectionFoot i { width: 3px; height: 3px; background: #98a9b4; border-radius: 100%; }
 .library, .articlePage { background: #fff; }
 .breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 32px; font-size: 11px; color: #77828c; }
 .breadcrumb a:hover { color: var(--blue); }
@@ -214,8 +211,6 @@
   .compactCard .meta { column-gap: 9px; row-gap: 2px; }
   .compactCard .cardCopy h3 { font-size: 18px; }
   .compactCard .cardCopy .readLink { margin-top: 13px; }
-  .sectionFoot { margin-top: 27px; padding-top: 20px; font-size: 8px; gap: 12px; }
-  .sectionFoot > span:last-child { font-size: 9px; }
   .breadcrumb { font-size: 10px; padding-top: 24px; }
   .libraryIntro { padding: 24px 0; }
   .filterBar { flex-direction: column; align-items: stretch; gap: 14px; }

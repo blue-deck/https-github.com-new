@@ -35,10 +35,6 @@ export function GuidesHomeSection() {
           </div>
         </div>
         <GuidesCarousel language={language} />
-        <div className={styles.sectionFoot}>
-          <span>{copy.homeFooter}</span>
-          <span>{copy.career} <i /> {copy.cvProfile} <i /> {copy.onboardLife}</span>
-        </div>
       </div>
     </section>
   );

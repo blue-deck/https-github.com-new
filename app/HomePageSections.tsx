@@ -22,7 +22,7 @@ export const homeCopy = {
     hiringEyebrow: "For captains & owners", hiringTitle: "Find your professionals", hiringText: "Find experienced crew, publish roles and manage applications in one place.", hiringAction: "Create a job post",
     hiringImageAlt: "Five professional yacht crew members together on deck in white and navy uniforms",
     platformAction: "Explore Yacht-OS",
-    trustTitle: "Built around professional trust.", trust1: "Discover professional crew", trust1Text: "Selected profile details help you find the right fit.", trust2: "Private details stay protected", trust2Text: "Full names, contacts and private documents remain protected.", trust3: "Access follows your role", trust3Text: "Account permissions keep each workspace in the right hands.", trustAction: "Explore trust & privacy",
+    trust1: "Discover professional crew", trust1Text: "Selected profile details help you find the right fit.", trust2: "Private details stay protected", trust2Text: "Full names, contacts and private documents remain protected.", trust3: "Access follows your role", trust3Text: "Account permissions keep each workspace in the right hands.", trustAction: "Explore trust & privacy",
     ctaTitle: "Your next chapter starts here.", ctaText: "Find your opportunity. Build your crew. Bring it all together.", ctaAction: "Create your BlueDeck account", dashboard: "Open your dashboard",
   },
   tr: {
@@ -33,7 +33,7 @@ export const homeCopy = {
     hiringEyebrow: "Kaptanlar ve yat sahipleri için", hiringTitle: "Profesyonel ekibinizi bulun", hiringText: "Deneyimli mürettebatı bulun, ilan yayınlayın ve başvuruları tek yerden yönetin.", hiringAction: "İş ilanı oluştur",
     hiringImageAlt: "Beyaz ve lacivert üniformalarıyla güvertede bir araya gelen beş profesyonel yat çalışanı",
     platformAction: "Yacht-OS’u keşfet",
-    trustTitle: "Profesyonel ilişkiler, güvenilir bir temel.", trust1: "Profesyonel mürettebat keşfi", trust1Text: "Seçili profil bilgileri, uygun adayları bulmanıza yardımcı olur.", trust2: "Özel bilgiler korumalı kalır", trust2Text: "Tam adlar, iletişim bilgileri ve özel belgeler koruma altındadır.", trust3: "Rolünüze uygun erişim", trust3Text: "Hesap izinleri her çalışma alanını doğru kişilerle sınırlar.", trustAction: "Güven ve gizliliği incele",
+    trust1: "Profesyonel mürettebat keşfi", trust1Text: "Seçili profil bilgileri, uygun adayları bulmanıza yardımcı olur.", trust2: "Özel bilgiler korumalı kalır", trust2Text: "Tam adlar, iletişim bilgileri ve özel belgeler koruma altındadır.", trust3: "Rolünüze uygun erişim", trust3Text: "Hesap izinleri her çalışma alanını doğru kişilerle sınırlar.", trustAction: "Güven ve gizliliği incele",
     ctaTitle: "Yeni yolculuğunuz burada başlıyor.", ctaText: "Fırsatınızı bulun. Ekibinizi kurun. İşlerinizi bir araya getirin.", ctaAction: "BlueDeck hesabınızı oluşturun", dashboard: "Panelinizi açın",
   },
 } as const;
@@ -129,9 +129,8 @@ export function HomePageSections({ language, viewer }: { language: Language; vie
 
       <GuidesHomeSection />
 
-      <section className={styles.trustSection} aria-labelledby="trust-heading">
+      <section className={styles.trustSection} aria-label={language === "tr" ? "Güven ve gizlilik" : "Trust and privacy"}>
         <div className={styles.container}>
-          <h2 id="trust-heading">{c.trustTitle}</h2>
           <div className={styles.trustGrid}>
             {[{ Icon: UsersRound, title: c.trust1, text: c.trust1Text }, { Icon: LockKeyhole, title: c.trust2, text: c.trust2Text }, { Icon: ShieldCheck, title: c.trust3, text: c.trust3Text }].map(({ Icon, title, text }) => (
               <div key={title} className={styles.trustItem}><Icon aria-hidden /><div><h3>{title}</h3><p>{text}</p></div></div>
