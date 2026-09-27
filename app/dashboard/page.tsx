@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   FileText,
+  Inbox,
   LoaderCircle,
   Plus,
   ShieldCheck,
@@ -882,6 +883,24 @@ export default function DashboardPage() {
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
                 {copy.applicationsDescription}
+              </p>
+            </Link>
+          ) : null}
+
+          {profile?.is_admin ? (
+            <Link
+              href="/admin/contact-messages"
+              className={dashboardCardClass}
+              data-i18n-ignore
+            >
+              <Inbox className="h-8 w-8 text-cyan-700" aria-hidden />
+              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
+                {language === "tr" ? "İletişim mesajları" : "Contact messages"}
+              </h2>
+              <p className="mt-3 leading-7 text-slate-600">
+                {language === "tr"
+                  ? "Gelen mesajları okuyun, işaretleyin ve arşivleyin."
+                  : "Read, mark and archive incoming contact messages."}
               </p>
             </Link>
           ) : null}

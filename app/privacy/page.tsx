@@ -16,6 +16,7 @@ const sections = [
     ],
     bullets: [
       "Account and identity details, including name, email, phone number, account type and yacht position.",
+      "Contact form submissions, including your name, email address, selected subject and message. These are stored in a private inbox accessible only to authorized BlueDeck administration.",
       "Crew profile, experience, availability, language, reference, CV, profile photo and gallery information.",
       "Yacht workspaces, memberships, invitations, job posts, applications, contracts, checklists, alerts and audit records.",
       "Maritime and operational documents, expiry dates and files you choose to upload.",

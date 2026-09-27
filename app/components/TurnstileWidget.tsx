@@ -30,6 +30,7 @@ type TurnstileWidgetProps = {
   action?: string;
   className?: string;
   theme?: "light" | "dark" | "auto";
+  size?: "normal" | "compact" | "flexible";
   onVerify: (token: string) => void;
   onExpire: () => void;
   onError: () => void;
@@ -40,6 +41,7 @@ export function TurnstileWidget({
   action = "forgot_password",
   className = "",
   theme = "light",
+  size = "normal",
   onVerify,
   onExpire,
   onError,
@@ -63,7 +65,7 @@ export function TurnstileWidget({
         sitekey: siteKey,
         action,
         theme,
-        size: "normal",
+        size,
         callback: (token) => callbacksRef.current.onVerify(token),
         "expired-callback": () => callbacksRef.current.onExpire(),
         "timeout-callback": () => callbacksRef.current.onExpire(),
@@ -102,7 +104,7 @@ export function TurnstileWidget({
       if (widgetIdRef.current && window.turnstile) window.turnstile.remove(widgetIdRef.current);
       widgetIdRef.current = null;
     };
-  }, [action, siteKey, theme]);
+  }, [action, siteKey, theme, size]);
 
   return <div ref={containerRef} className={className} />;
 }
