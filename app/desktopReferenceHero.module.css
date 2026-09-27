@@ -45,6 +45,28 @@
     outline-offset: 4px;
     background: #ffffff12;
   }
+
+  /* Replace the button copy embedded in the artwork with editable text. */
+  .jobsLink {
+    gap: 1.1em;
+    border: 1px solid #4385d9;
+    background: linear-gradient(110deg, #326bd3, #2053b3);
+    color: #f3f6fc;
+    font-size: clamp(12px, 1.36vw, 24px);
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  .jobsLink svg {
+    width: 1.1em;
+    height: 1.1em;
+    stroke-width: 1.6;
+  }
+
+  .jobsLink:hover,
+  .jobsLink:focus-visible {
+    background: linear-gradient(110deg, #3b75df, #285fc4);
+  }
 }
 
 /* Native text remains available when the browser suppresses page artwork. */

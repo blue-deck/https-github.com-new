@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import styles from "./desktopReferenceHero.module.css";
 
 // Coordinates are measured in the approved 1586 × 992 artwork. Keeping the
@@ -23,8 +24,9 @@ export function DesktopReferenceHero() {
         <h1 id="desktop-home-heading">Your career. Your crew. Your BlueDeck.</h1>
         <p>Find your next role. Build your team. Keep life onboard connected.</p>
       </div>
-      <Link href="/jobs" className={styles.link} style={area(71, 507, 284, 61, 880)}>
-        <span className={styles.label}>Explore yacht jobs</span>
+      <Link href="/jobs" className={`${styles.link} ${styles.jobsLink}`} style={area(71, 507, 284, 61, 880)}>
+        <span>Find jobs</span>
+        <ArrowRight aria-hidden />
       </Link>
       <Link href="/find-crew" className={styles.link} style={area(373, 507, 180, 61, 880)}>
         <span className={styles.label}>Find crew</span>
