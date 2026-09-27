@@ -23,7 +23,7 @@ export const homeCopy = {
     hiringImageAlt: "Five professional yacht crew members together on deck in white and navy uniforms",
     platformAction: "Explore Yacht-OS",
     trust1: "Discover professional crew", trust1Text: "Selected profile details help you find the right fit.", trust2: "Private details stay protected", trust2Text: "Full names, contacts and private documents remain protected.", trust3: "Access follows your role", trust3Text: "Account permissions keep each workspace in the right hands.", trustAction: "Explore trust & privacy",
-    ctaTitle: "Your next chapter starts here.", ctaText: "Find your opportunity. Build your crew. Bring it all together.", ctaAction: "Create your BlueDeck account", dashboard: "Open your dashboard",
+    ctaTitle: "If you’re ready, let’s get started.", ctaAction: "Create your BlueDeck account", dashboard: "Open your dashboard",
   },
   tr: {
     searchLabel: "Bir sonraki yat ilanınızı bulun", keyword: "Pozisyon veya anahtar kelime", location: "Konum", department: "Tüm departmanlar", search: "İlan ara", all: "Tüm ilanlar",
@@ -34,7 +34,7 @@ export const homeCopy = {
     hiringImageAlt: "Beyaz ve lacivert üniformalarıyla güvertede bir araya gelen beş profesyonel yat çalışanı",
     platformAction: "Yacht-OS’u keşfet",
     trust1: "Profesyonel mürettebat keşfi", trust1Text: "Seçili profil bilgileri, uygun adayları bulmanıza yardımcı olur.", trust2: "Özel bilgiler korumalı kalır", trust2Text: "Tam adlar, iletişim bilgileri ve özel belgeler koruma altındadır.", trust3: "Rolünüze uygun erişim", trust3Text: "Hesap izinleri her çalışma alanını doğru kişilerle sınırlar.", trustAction: "Güven ve gizliliği incele",
-    ctaTitle: "Yeni yolculuğunuz burada başlıyor.", ctaText: "Fırsatınızı bulun. Ekibinizi kurun. İşlerinizi bir araya getirin.", ctaAction: "BlueDeck hesabınızı oluşturun", dashboard: "Panelinizi açın",
+    ctaTitle: "Eğer hazırsan, başlayalım.", ctaAction: "BlueDeck hesabınızı oluşturun", dashboard: "Panelinizi açın",
   },
 } as const;
 
@@ -140,7 +140,7 @@ export function HomePageSections({ language, viewer }: { language: Language; vie
         </div>
       </section>
 
-      <section className={styles.closingSection} aria-labelledby="closing-heading"><div className={styles.container}><div className={styles.closingCard}><div><h2 id="closing-heading">{c.ctaTitle}</h2><p>{c.ctaText}</p></div><div className={styles.closingActions}><Link href={signedIn ? "/dashboard" : "/login?mode=signup"} className={styles.button}>{signedIn ? c.dashboard : c.ctaAction}<ArrowRight aria-hidden /></Link><Link href="/yacht-os" className={styles.outlineButton}>{c.platformAction}</Link></div></div></div></section>
+      <section className={styles.closingSection} aria-labelledby="closing-heading"><div className={styles.container}><div className={styles.closingCard}><div><h2 id="closing-heading">{c.ctaTitle}</h2></div><div className={styles.closingActions}><Link href={signedIn ? "/dashboard" : "/login?mode=signup"} className={styles.button}>{signedIn ? c.dashboard : c.ctaAction}<ArrowRight aria-hidden /></Link><Link href="/yacht-os" className={styles.outlineButton}>{c.platformAction}</Link></div></div></div></section>
     </div>
   );
 }

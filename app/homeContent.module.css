@@ -196,7 +196,6 @@
 .closingSection { padding-block: clamp(3rem, 5vw, 5rem); }
 .closingCard { display: flex; align-items: center; justify-content: space-between; gap: 2rem; isolation: isolate; border-radius: .85rem; overflow: hidden; padding: clamp(2rem, 4vw, 4rem); color: #fff; background: linear-gradient(100deg, #061629 0%, #081b30f5 50%, #0a2c49b5 100%), url('/media/bluedeck-yacht-hero-v2.webp') right 72% / cover; }
 .closingCard h2 { font-size: clamp(1.75rem, 2.4vw, 2.6rem); font-weight: 650; letter-spacing: -.035em; line-height: 1.2; }
-.closingCard p { margin-top: .9rem; font-size: 1rem; line-height: 1.65; color: #c7d3e2; }
 .closingActions { display: flex; flex-direction: column; gap: .7rem; flex-shrink: 0; }
 
 @media (max-width: 1100px) { .searchForm { grid-template-columns: 1fr 1fr; } .jobsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .jobsGrid > :last-child:nth-child(3) { grid-column: 1 / -1; } .closingCard { align-items: start; flex-direction: column; } .closingActions { flex-direction: row; flex-wrap: wrap; } }
