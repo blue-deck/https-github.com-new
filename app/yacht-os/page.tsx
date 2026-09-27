@@ -20,9 +20,6 @@ import styles from "./yacht-os.module.css";
 const copy = {
   en: {
     eyebrow: "BlueDeck Yacht-OS",
-    title: "One clear workspace from hiring to life on board.",
-    intro:
-      "BlueDeck connects professional crew discovery, secure records and daily yacht workflows without turning the experience into another crowded operations system.",
     overviewEyebrow: "One connected record",
     overviewTitle: "Keep people, records and responsibilities in context.",
     overviewText:
@@ -67,9 +64,6 @@ const copy = {
   },
   tr: {
     eyebrow: "BlueDeck Yacht-OS",
-    title: "İşe alımdan teknedeki yaşama kadar tek ve net çalışma alanı.",
-    intro:
-      "BlueDeck; profesyonel mürettebat keşfini, güvenli kayıtları ve günlük yat işlerini yeni bir kalabalık operasyon sistemi yaratmadan birbirine bağlar.",
     overviewEyebrow: "Tek bağlantılı kayıt",
     overviewTitle: "İnsanları, kayıtları ve sorumlulukları aynı bağlamda tutun.",
     overviewText:
@@ -124,11 +118,7 @@ export default function YachtOsPage() {
       : { href: "/login?mode=signup", label: c.createAccount };
 
   return (
-    <PublicPageShell
-      eyebrow={c.eyebrow}
-      title={c.title}
-      intro={c.intro}
-    >
+    <PublicPageShell eyebrow={c.eyebrow}>
       <section className={styles.overview}>
         <div className={styles.overviewCopy}>
           <p className={styles.eyebrow}>{c.overviewEyebrow}</p>

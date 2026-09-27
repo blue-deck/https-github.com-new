@@ -590,8 +590,8 @@ export function PublicPageShell({
   children,
 }: {
   eyebrow: string;
-  title: string;
-  intro: string;
+  title?: string;
+  intro?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -601,8 +601,8 @@ export function PublicPageShell({
         <section className="bd-public-page-intro">
           <div className="bd-public-container bd-public-page-intro-inner">
             <p className="bd-kicker">{eyebrow}</p>
-            <h1>{title}</h1>
-            <p>{intro}</p>
+            {title && <h1>{title}</h1>}
+            {intro && <p>{intro}</p>}
           </div>
         </section>
         {children}
