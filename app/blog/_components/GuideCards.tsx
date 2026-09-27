@@ -24,8 +24,7 @@ export function GuidesHomeSection() {
       <div className={styles.container}>
         <div className={styles.sectionHead}>
           <div>
-            <p className={styles.eyebrow}><span /> BLUEDECK BLOG</p>
-            <h2 id="blog-heading">{copy.homeTitle}<br /><span>{copy.homeTitleAccent}</span></h2>
+            <h2 id="blog-heading" className={styles.eyebrow}><span /> BLUEDECK BLOG</h2>
           </div>
           <div className={styles.sectionHeadAside}>
             <p>{copy.homeDescription}<br />{copy.homeDescriptionEnd}</p>
