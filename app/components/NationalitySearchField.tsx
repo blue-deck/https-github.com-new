@@ -36,6 +36,7 @@ export function NationalitySearchField({
   labelClassName = defaultLabelClassName,
   controlClassName = defaultControlClassName,
   dismissOnBlur = false,
+  compactOnMobile = false,
 }: {
   label: string;
   value: string;
@@ -45,6 +46,7 @@ export function NationalitySearchField({
   labelClassName?: string;
   controlClassName?: string;
   dismissOnBlur?: boolean;
+  compactOnMobile?: boolean;
 }) {
   const { language } = useLanguage();
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -195,13 +197,16 @@ export function NationalitySearchField({
             if (!open) openPicker();
             window.requestAnimationFrame(() => input.select());
           }}
+          onClick={() => {
+            if (compactOnMobile && !open) openPicker();
+          }}
           onChange={(event) => {
             setOpen(true);
             setQuery(capitalizeInitialInput(event.target.value, language));
             setActiveIndex(0);
           }}
           onKeyDown={handleKeyDown}
-          className={`${controlClassName} pr-20`}
+          className={`${controlClassName} ${compactOnMobile ? "pr-10 sm:pr-20" : "pr-20"}`}
         />
 
         {value ? (
@@ -216,7 +221,7 @@ export function NationalitySearchField({
               closePicker();
               inputRef.current?.focus();
             }}
-            className="bd-focus absolute right-10 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            className={`bd-focus absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 ${compactOnMobile ? "right-1 sm:right-10" : "right-10"}`}
           >
             <X className="h-4 w-4" aria-hidden />
           </button>
@@ -237,7 +242,7 @@ export function NationalitySearchField({
             inputRef.current?.focus();
             window.requestAnimationFrame(() => openPicker(true));
           }}
-          className="bd-focus absolute right-1 top-1/2 flex h-10 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50"
+          className={`bd-focus absolute right-1 top-1/2 h-10 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-cyan-700 transition hover:bg-cyan-50 ${compactOnMobile && value ? "hidden sm:flex" : "flex"}`}
         >
           <ChevronDown
             className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
@@ -253,7 +258,7 @@ export function NationalitySearchField({
       {open ? (
         <div
           data-i18n-ignore
-          className="bd-auth-popover absolute left-0 top-[calc(100%+8px)] z-50 w-full min-w-[260px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20"
+          className={`bd-auth-popover absolute top-[calc(100%+8px)] z-50 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/20 ${compactOnMobile ? "right-0 w-[calc(200%+0.75rem)] min-w-0 sm:w-[calc(200%+1rem)] md:w-full" : "left-0 w-full min-w-[260px]"}`}
         >
           <ul
             id={listboxId}

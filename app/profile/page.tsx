@@ -1286,18 +1286,15 @@ export default function ProfilePage() {
         <section id="cv-studio" aria-labelledby="cv-studio-title" className="mt-6 min-w-0 scroll-mt-6 overflow-hidden rounded-[24px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:rounded-[28px]">
           <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
           <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-4 py-5 text-white sm:px-6">
-            <div className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 sm:gap-x-6">
               <div className="min-w-0">
                 <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#8ed8e6]">BlueDeck CV Studio</p>
                 <h2 id="cv-studio-title" tabIndex={-1} className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
-                <p className="mt-1 text-sm font-semibold text-white/70">{activeStudioTabInfo.description}</p>
               </div>
-              <div className="flex w-full min-w-0 items-center justify-between gap-3 sm:w-auto sm:justify-start">
+              <div className="col-start-2 row-start-1 justify-self-end sm:row-span-2">
                 <CvCompletionRing percent={cvCompletionPercent} />
-                <span className="min-w-0 truncate rounded-full border border-[#8ed8e6]/35 bg-white/10 px-3.5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-black/10">
-                  {activeStudioTabInfo.status}
-                </span>
               </div>
+              <p className="col-span-2 text-sm font-semibold text-white/70 sm:col-span-1 sm:col-start-1 sm:row-start-2">{activeStudioTabInfo.description}</p>
             </div>
           </div>
 
@@ -1369,9 +1366,11 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} profileField />
-                  <div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 [&>*]:min-w-0">
+                  <div className="col-span-2 md:col-span-1">
+                    <Field label="Name and surname" value={profile.full_name} onChange={(value) => setProfile({ ...profile, full_name: value })} profileField />
+                  </div>
+                  <div className="col-span-2 md:col-span-1">
                     <p className={profileFieldLabelClassName}>Position</p>
                     <DropdownChoiceGroup
                       title="Position"
@@ -1392,6 +1391,7 @@ export default function ProfilePage() {
                   </div>
                   <DateField label="Date of birth" value={profile.date_of_birth} onChange={(value) => setProfile({ ...profile, date_of_birth: value })} profileField />
                   <NationalitySearchField
+                    compactOnMobile
                     label="Nationality"
                     value={profile.nationality || ""}
                     onChange={(value) => setProfile({ ...profile, nationality: value })}
@@ -1400,10 +1400,8 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 border-t border-slate-200 pt-5 md:grid-cols-6 [&>*]:min-w-0">
-                  <div className="col-span-2 md:col-span-1">
-                    <SelectField label="Gender" value={profile.gender || ""} options={crewGenderOptions} onChange={(value) => setProfile({ ...profile, gender: value })} />
-                  </div>
+                <div className="grid grid-cols-2 gap-3 border-t border-slate-200 pt-5 sm:gap-4 lg:grid-cols-6 [&>*]:min-w-0">
+                  <SelectField label="Gender" value={profile.gender || ""} options={crewGenderOptions} onChange={(value) => setProfile({ ...profile, gender: value })} />
                   <SelectField label="Marital status" value={profile.marital_status || ""} options={["Single", "Married"]} onChange={(value) => setProfile({ ...profile, marital_status: value })} />
                   <Field
                     label="Height cm"
