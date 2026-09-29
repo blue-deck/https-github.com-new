@@ -539,9 +539,11 @@ export default function ProfilePage() {
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const [openSkillsGroup, setOpenSkillsGroup] = useState<string | null>(null);
   const [newDocumentOpen, setNewDocumentOpen] = useState(true);
-  const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState(true);
+  const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState(false);
+  const [newYachtDraftRevision, setNewYachtDraftRevision] = useState(0);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
-  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState(true);
+  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState(false);
+  const [newOtherWorkDraftRevision, setNewOtherWorkDraftRevision] = useState(0);
   const [newOtherWorkExperienceDirty, setNewOtherWorkExperienceDirty] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
   const newDocumentFormId = useId();
@@ -1336,7 +1338,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="min-w-0 bg-[#f6f9fa] p-2.5 sm:p-5">
+          <div className={`min-w-0 ${activeStudioTab === "experience" || activeStudioTab === "otherWork" ? "bg-white px-4 sm:px-6" : "bg-[#f6f9fa] p-2.5 sm:p-5"}`}>
             <div className="contents">
             <Panel
               active={activeStudioTab === "personal"}
@@ -1456,8 +1458,16 @@ export default function ProfilePage() {
           </div>
 
           <div className="contents">
-            <Panel active={activeStudioTab === "experience"} title="Yacht experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
-              <div className="space-y-4">
+            <ExperiencePanel
+              active={activeStudioTab === "experience"}
+              title="Yacht experience"
+              count={editableYachtExperiences.length}
+              formId={newYachtExperienceFormId}
+              formOpen={showNewYachtExperienceForm}
+              draftDirty={newYachtExperienceDirty}
+              onToggleForm={() => setNewYachtExperienceOpen((open) => !open)}
+            >
+              <div className="min-w-0">
                 {referenceStatus?.type === "error" && (
                   <p
                     className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
@@ -1473,28 +1483,10 @@ export default function ProfilePage() {
                   onSaveReference={saveReference}
                   onDeleteReference={deleteReference}
                 />
-                <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
-                  <button
-                    type="button"
-                    onClick={() => setNewYachtExperienceOpen(!showNewYachtExperienceForm)}
-                    aria-expanded={showNewYachtExperienceForm}
-                    aria-controls={newYachtExperienceFormId}
-                    className={`bd-focus grid min-h-16 w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 bg-cyan-50/70 px-4 py-3.5 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewYachtExperienceForm ? "border-b border-cyan-100" : ""}`}
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
-                      <Plus className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-semibold text-slate-950">Add experience</h3>
-                    </div>
-                    <span className="flex shrink-0 items-center gap-2">
-                      {newYachtExperienceDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
-                      <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewYachtExperienceForm ? "rotate-180" : ""}`} />
-                    </span>
-                  </button>
-                  <div id={newYachtExperienceFormId} hidden={!showNewYachtExperienceForm} className="p-4 sm:p-5">
+                <section>
+                  <div id={newYachtExperienceFormId} hidden={!showNewYachtExperienceForm} className="border-b border-slate-200 py-5">
                     <ExperienceEditor
-                      key={`new-${experiences.length}`}
+                      key={`new-yacht-${newYachtDraftRevision}`}
                       item={emptyExperience}
                       isNew
                       references={references}
@@ -1502,6 +1494,7 @@ export default function ProfilePage() {
                       onSave={async (item) => {
                         const saved = await saveExperience(item);
                         if (saved) {
+                          setNewYachtDraftRevision((value) => value + 1);
                           setNewYachtExperienceDirty(false);
                           setNewYachtExperienceOpen(false);
                         }
@@ -1511,22 +1504,16 @@ export default function ProfilePage() {
                       onDelete={deleteExperience}
                       onSaveReference={saveReference}
                       onDeleteReference={deleteReference}
-                      onUpload={async (file) => uploadFile(file, "crew-portfolio", `experience-photo-new-${editableYachtExperiences.length}`)}
+                      onUpload={async (file) => uploadFile(file, "crew-portfolio", "experience-photo-new-yacht")}
                       onCancelUpload={cancelUpload}
-                      uploading={uploading === `experience-photo-new-${editableYachtExperiences.length}`}
+                      uploading={uploading === "experience-photo-new-yacht"}
                     />
                   </div>
                 </section>
 
                 {editableYachtExperiences.length > 0 && (
-                  <section className="pt-2">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-semibold text-slate-800">Saved</h3>
-                      <span data-i18n-ignore className="inline-flex min-w-7 items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold tabular-nums text-slate-600">
-                        {editableYachtExperiences.length}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
+                  <section aria-label="Saved experiences">
+                    <div className="divide-y divide-slate-200">
                       {editableYachtExperiences.map((item) => {
                         const uploadSlot = item.id ? `experience-photo-${item.id}` : `experience-photo-${editableYachtExperiences.length}`;
 
@@ -1551,10 +1538,21 @@ export default function ProfilePage() {
                   </section>
                 )}
               </div>
-            </Panel>
+              {!showNewYachtExperienceForm && editableYachtExperiences.length === 0 && (
+                <p className="py-8 text-center text-sm text-slate-500">No experience added yet.</p>
+              )}
+            </ExperiencePanel>
 
-            <Panel active={activeStudioTab === "otherWork"} title="Other work experience" icon={<BriefcaseBusiness className="h-5 w-5" />}>
-              <div className="space-y-4">
+            <ExperiencePanel
+              active={activeStudioTab === "otherWork"}
+              title="Other work experience"
+              count={editableOtherWorkExperiences.length}
+              formId={newOtherWorkExperienceFormId}
+              formOpen={showNewOtherWorkExperienceForm}
+              draftDirty={newOtherWorkExperienceDirty}
+              onToggleForm={() => setNewOtherWorkExperienceOpen((open) => !open)}
+            >
+              <div className="min-w-0">
                 {referenceStatus?.type === "error" && (
                   <p
                     className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800"
@@ -1570,28 +1568,10 @@ export default function ProfilePage() {
                   onSaveReference={saveReference}
                   onDeleteReference={deleteReference}
                 />
-                <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
-                  <button
-                    type="button"
-                    onClick={() => setNewOtherWorkExperienceOpen(!showNewOtherWorkExperienceForm)}
-                    aria-expanded={showNewOtherWorkExperienceForm}
-                    aria-controls={newOtherWorkExperienceFormId}
-                    className={`bd-focus grid min-h-16 w-full grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 bg-cyan-50/70 px-4 py-3.5 text-left transition hover:bg-cyan-50 sm:px-5 ${showNewOtherWorkExperienceForm ? "border-b border-cyan-100" : ""}`}
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-cyan-700 shadow-sm ring-1 ring-cyan-100">
-                      <Plus className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <h3 className="text-base font-semibold text-slate-950">Add experience</h3>
-                    </div>
-                    <span className="flex shrink-0 items-center gap-2">
-                      {newOtherWorkExperienceDirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
-                      <ChevronDown className={`h-5 w-5 shrink-0 text-cyan-800 transition ${showNewOtherWorkExperienceForm ? "rotate-180" : ""}`} />
-                    </span>
-                  </button>
-                  <div id={newOtherWorkExperienceFormId} hidden={!showNewOtherWorkExperienceForm} className="p-4 sm:p-5">
+                <section>
+                  <div id={newOtherWorkExperienceFormId} hidden={!showNewOtherWorkExperienceForm} className="border-b border-slate-200 py-5">
                     <OtherWorkExperienceEditor
-                      key={`new-other-work-${editableOtherWorkExperiences.length}`}
+                      key={`new-other-work-${newOtherWorkDraftRevision}`}
                       item={emptyOtherWorkExperience}
                       isNew
                       references={references}
@@ -1599,6 +1579,7 @@ export default function ProfilePage() {
                       onSave={async (item) => {
                         const saved = await saveExperience(item);
                         if (saved) {
+                          setNewOtherWorkDraftRevision((value) => value + 1);
                           setNewOtherWorkExperienceDirty(false);
                           setNewOtherWorkExperienceOpen(false);
                         }
@@ -1613,14 +1594,8 @@ export default function ProfilePage() {
                 </section>
 
                 {editableOtherWorkExperiences.length > 0 && (
-                  <section className="pt-2">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <h3 className="text-sm font-semibold text-slate-800">Saved</h3>
-                      <span data-i18n-ignore className="inline-flex min-w-7 items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold tabular-nums text-slate-600">
-                        {editableOtherWorkExperiences.length}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
+                  <section aria-label="Saved experiences">
+                    <div className="divide-y divide-slate-200">
                       {editableOtherWorkExperiences.map((item) => (
                         <OtherWorkExperienceEditor
                           key={item.id || `${item.yacht_name}-${item.start_date}`}
@@ -1638,7 +1613,10 @@ export default function ProfilePage() {
                   </section>
                 )}
               </div>
-            </Panel>
+              {!showNewOtherWorkExperienceForm && editableOtherWorkExperiences.length === 0 && (
+                <p className="py-8 text-center text-sm text-slate-500">No experience added yet.</p>
+              )}
+            </ExperiencePanel>
 
             <Panel active={activeStudioTab === "documents"} title="Documents & Certificates" icon={<IdCard className="h-5 w-5" />}>
               <div className="space-y-4">
@@ -3491,6 +3469,49 @@ function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
   );
 }
 
+function ExperiencePanel({
+  active,
+  title,
+  count,
+  formId,
+  formOpen,
+  draftDirty,
+  onToggleForm,
+  children,
+}: {
+  active: boolean;
+  title: string;
+  count: number;
+  formId: string;
+  formOpen: boolean;
+  draftDirty: boolean;
+  onToggleForm: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section hidden={!active} aria-label={title} className="min-w-0 bg-white pb-2">
+      <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 py-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-[#071f3c]">Experience</h2>
+          {count > 0 && <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">{count}</span>}
+        </div>
+        <button
+          type="button"
+          onClick={onToggleForm}
+          aria-expanded={formOpen}
+          aria-controls={formId}
+          className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-50"
+        >
+          <Plus className={`h-4 w-4 shrink-0 transition ${formOpen ? "rotate-45" : ""}`} aria-hidden />
+          <span>Add experience</span>
+          {draftDirty && <span className="text-[10px] font-semibold text-amber-700">Unsaved</span>}
+        </button>
+      </div>
+      {children}
+    </section>
+  );
+}
+
 function Panel({
   title,
   icon,
@@ -4190,16 +4211,16 @@ function ExperienceEditor({
   }
 
   return (
-    <article className={isNew ? "min-w-0" : "min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5"}>
+    <article data-experience-id={item.id || "new"} className="min-w-0">
       {!isNew && (
         <button
           type="button"
           onClick={() => setEditorOpen((open) => !open)}
           aria-expanded={editorOpen}
           aria-controls={editorContentId}
-          className="bd-focus grid min-h-16 w-full grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-slate-50 sm:px-4"
+          className="bd-focus grid min-h-16 w-full grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-4 text-left transition hover:bg-slate-50/70"
         >
-          <span className="flex h-12 w-12 overflow-hidden rounded-xl bg-slate-100 text-slate-400">
+          <span className="flex h-11 w-11 overflow-hidden rounded-lg bg-slate-100 text-slate-400">
             {draft.photo_url ? (
               <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
             ) : (
@@ -4213,21 +4234,29 @@ function ExperienceEditor({
               {draft.yacht_name ? <span data-i18n-ignore>{draft.yacht_name}</span> : "Yacht"}
             </span>
             {hasSummaryMeta ? (
-              <span className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs text-slate-500">
-                {draft.position && <span className="truncate">{draft.position}</span>}
-                {draft.position && summaryDate && <span aria-hidden>·</span>}
-                {summaryDate && <span data-i18n-ignore className="shrink-0">{summaryDate}</span>}
-                {summaryOngoing && <span aria-hidden>–</span>}
-                {summaryOngoing && <span className="shrink-0">Present</span>}
+              <span className="mt-1 block min-w-0 text-xs leading-5 text-slate-500">
+                {draft.position && <span className="block truncate">{draft.position}</span>}
+                {summaryDate && (
+                  <span className="flex flex-wrap gap-x-1">
+                    {draft.start_date && <span data-i18n-ignore>{formatCvDate(draft.start_date)}</span>}
+                    {draft.end_date ? (
+                      <span className="inline-flex items-center gap-1">
+                        {draft.start_date && <span aria-hidden>–</span>}
+                        <span data-i18n-ignore>{formatCvDate(draft.end_date)}</span>
+                      </span>
+                    ) : summaryOngoing ? (
+                      <span className="inline-flex items-center gap-1"><span aria-hidden>–</span><span>Present</span></span>
+                    ) : null}
+                  </span>
+                )}
               </span>
             ) : (
               <span aria-hidden className="mt-0.5 block text-xs text-slate-500">View details</span>
             )}
           </span>
-          <span className="flex items-center gap-2 text-cyan-800">
+          <span className="flex flex-col-reverse items-end gap-1 text-cyan-800">
             {dirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
             <span className="sr-only">{editorOpen ? "Hide details" : "View details"}</span>
-            <span aria-hidden className="hidden text-xs font-semibold sm:inline">{editorOpen ? "Hide details" : "View details"}</span>
             <ChevronDown className={`h-5 w-5 shrink-0 transition ${editorOpen ? "rotate-180" : ""}`} />
           </span>
         </button>
@@ -4236,18 +4265,14 @@ function ExperienceEditor({
       <div
         id={editorContentId}
         hidden={!isNew && !editorOpen}
-        className={`${isNew ? "w-full min-w-0" : "border-t border-slate-200 p-4 sm:p-5"}`}
+        className={isNew ? "w-full min-w-0" : "border-t border-slate-100 pb-5 pt-4"}
       >
         <fieldset className="m-0 min-w-0 border-0 p-0">
           <legend className="sr-only">Yacht details</legend>
 
-          <div className="grid min-w-0 gap-4 md:grid-cols-[220px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)] xl:gap-5">
-            <section className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-slate-900">Photo</p>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">Optional</span>
-              </div>
-              <div className="mt-4 flex aspect-[16/9] w-full overflow-hidden rounded-xl bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 md:aspect-[4/3]">
+          <div className="min-w-0 space-y-5">
+            <section aria-label="Experience photo" className="flex min-w-0 items-center gap-3">
+              <div className="flex h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100 text-slate-400">
                 {draft.photo_url ? (
                   <img src={draft.photo_url} alt="" className="h-full w-full object-cover" />
                 ) : (
@@ -4270,36 +4295,29 @@ function ExperienceEditor({
                   if (url) setDraft((current) => ({ ...current, photo_url: url }));
                 }}
               />
-              <div className="mt-3 grid gap-2">
-                <label htmlFor={photoInputId} className={`bd-primary-action inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-semibold text-white transition hover:bg-slate-700 peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-500 peer-focus-visible:ring-offset-2 ${uploading ? "cursor-progress opacity-70" : ""}`}>
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 peer-focus-visible:[&_label]:ring-2 peer-focus-visible:[&_label]:ring-cyan-500 peer-focus-visible:[&_label]:ring-offset-2">
+                <label htmlFor={photoInputId} className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-1 text-sm font-semibold text-cyan-800 transition hover:text-cyan-600 ${uploading ? "cursor-progress opacity-70" : ""}`}>
                   <Upload className="h-4 w-4" />
                   <span aria-live="polite">{uploading ? "Uploading..." : draft.photo_url ? "Change photo" : "Add photo"}</span>
                 </label>
                 {uploading && (
-                  <button type="button" onClick={onCancelUpload} className="min-h-11 w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:border-rose-200 hover:text-rose-700">
+                  <button type="button" onClick={onCancelUpload} className="bd-focus min-h-11 cursor-pointer rounded-lg px-1 text-sm font-semibold text-slate-600 transition hover:text-rose-700">
                     Cancel
                   </button>
                 )}
                 {draft.photo_url && !uploading && (
-                  <button type="button" onClick={removePhoto} className="inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-rose-100 bg-white px-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50">
+                  <button type="button" onClick={removePhoto} className="bd-focus inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-rose-600 transition hover:text-rose-800">
                     <Trash2 className="h-4 w-4" />
                     Remove photo
                   </button>
                 )}
+                {!draft.photo_url && !uploading && <span className="text-xs text-slate-400">Optional</span>}
               </div>
             </section>
 
-            <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-              <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">Yacht details</p>
-                  <p className="mt-1 text-sm text-slate-500">Role, dates and vessel information</p>
-                </div>
-                <span className="hidden text-xs font-medium text-slate-400 sm:inline">CV information</span>
-              </div>
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <div className="xl:col-span-2">
+            <section className="min-w-0">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 xl:grid-cols-4 [&>*]:min-w-0">
+                <div className="col-span-2 md:col-span-1 xl:col-span-2">
                   <ExperienceCardInput
                     label="Yacht name"
                     value={draft.yacht_name}
@@ -4309,7 +4327,7 @@ function ExperienceEditor({
                     onChange={(value) => setDraft({ ...draft, yacht_name: value })}
                   />
                 </div>
-                <div className="xl:col-span-2">
+                <div className="col-span-2 md:col-span-1 xl:col-span-2">
                   <ExperienceCardSelect
                     label="Position"
                     value={draft.position}
@@ -4354,7 +4372,7 @@ function ExperienceEditor({
             </section>
           </div>
 
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+        <section className="mt-5">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor={dutiesId} className="text-xs font-semibold text-slate-700">Duties</label>
             <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">
@@ -4367,32 +4385,31 @@ function ExperienceEditor({
             maxLength={yachtDutiesMaxLength}
             onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
             placeholder="Responsibilities and onboard duties"
-            className="mt-1.5 min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
+            className="mt-1.5 min-h-28 w-full resize-y rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
           />
         </section>
 
         </fieldset>
 
-        <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <section className="mt-5 border-t border-slate-200">
           <button
             type="button"
             onClick={() => setReferencesOpen((open) => !open)}
             aria-expanded={referencesOpen}
             aria-controls={referencesId}
-            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 text-left transition hover:bg-slate-50 sm:px-4"
+            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 text-left transition hover:bg-slate-50/70"
           >
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">References</span>
-              <span className="mt-0.5 block text-xs text-slate-500">Add contact details only when needed</span>
             </span>
             <span className="flex items-center gap-2 text-slate-500">
-              <span className={`rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold ${linkedReferenceCount > 0 ? "inline-flex" : "hidden sm:inline-flex"}`}>
+              <span className="text-xs font-medium text-slate-500">
                 {linkedReferenceCount > 0 ? <span data-i18n-ignore>{linkedReferenceCount}</span> : "Optional"}
               </span>
               <ChevronDown className={`h-5 w-5 shrink-0 transition ${referencesOpen ? "rotate-180 text-cyan-700" : ""}`} />
             </span>
           </button>
-          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
+          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-100 py-3 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:[&_input]:text-sm">
             <LinkedReferencePanel
               targetExperienceId={draft.id}
               targetName={draft.yacht_name}
@@ -4406,7 +4423,7 @@ function ExperienceEditor({
           </div>
         </section>
 
-        <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" mobileWide />
+        <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" flat saving={uploading} />
       </div>
     </article>
   );
@@ -4434,6 +4451,7 @@ function OtherWorkExperienceEditor({
   onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState(normalizeOtherWorkExperience(item));
+  const previousItemRef = useRef(item);
   const [editorOpen, setEditorOpen] = useState(isNew);
   const [referencesOpen, setReferencesOpen] = useState(false);
   const editorContentId = useId();
@@ -4452,7 +4470,11 @@ function OtherWorkExperienceEditor({
   const linkedReferenceCount = referencesForExperience(draft, references).length;
 
   useEffect(() => {
-    setDraft(normalizeOtherWorkExperience(item));
+    const previousItem = previousItemRef.current;
+    previousItemRef.current = item;
+    setDraft((current) => saveStateEquals(experienceSaveState(normalizeOtherWorkExperience(current)), experienceSaveState(normalizeOtherWorkExperience(previousItem)))
+      ? normalizeOtherWorkExperience(item)
+      : current);
   }, [item]);
 
   useEffect(() => {
@@ -4460,16 +4482,16 @@ function OtherWorkExperienceEditor({
   }, [dirty, onDirtyChange]);
 
   return (
-    <article className={isNew ? "min-w-0" : "min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5"}>
+    <article data-experience-id={item.id || "new"} className="min-w-0">
       {!isNew && (
         <button
           type="button"
           onClick={() => setEditorOpen((open) => !open)}
           aria-expanded={editorOpen}
           aria-controls={editorContentId}
-          className="bd-focus grid min-h-16 w-full grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2.5 text-left transition hover:bg-slate-50 sm:px-4"
+          className="bd-focus grid min-h-16 w-full grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-4 text-left transition hover:bg-slate-50/70"
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
             <BriefcaseBusiness className="h-5 w-5" />
           </span>
           <span className="min-w-0">
@@ -4477,21 +4499,29 @@ function OtherWorkExperienceEditor({
               {draft.yacht_name ? <span data-i18n-ignore>{draft.yacht_name}</span> : "Workplace / company"}
             </span>
             {hasSummaryMeta ? (
-              <span className="mt-0.5 flex min-w-0 items-center gap-1 truncate text-xs text-slate-500">
-                {draft.position && <span data-i18n-ignore className="truncate">{draft.position}</span>}
-                {draft.position && summaryDate && <span aria-hidden>·</span>}
-                {summaryDate && <span data-i18n-ignore className="shrink-0">{summaryDate}</span>}
-                {summaryOngoing && <span aria-hidden>–</span>}
-                {summaryOngoing && <span className="shrink-0">Present</span>}
+              <span className="mt-1 block min-w-0 text-xs leading-5 text-slate-500">
+                {draft.position && <span data-i18n-ignore className="block truncate">{draft.position}</span>}
+                {summaryDate && (
+                  <span className="flex flex-wrap gap-x-1">
+                    {draft.start_date && <span data-i18n-ignore>{formatCvDate(draft.start_date)}</span>}
+                    {draft.end_date ? (
+                      <span className="inline-flex items-center gap-1">
+                        {draft.start_date && <span aria-hidden>–</span>}
+                        <span data-i18n-ignore>{formatCvDate(draft.end_date)}</span>
+                      </span>
+                    ) : summaryOngoing ? (
+                      <span className="inline-flex items-center gap-1"><span aria-hidden>–</span><span>Present</span></span>
+                    ) : null}
+                  </span>
+                )}
               </span>
             ) : (
               <span aria-hidden className="mt-0.5 block text-xs text-slate-500">View details</span>
             )}
           </span>
-          <span className="flex items-center gap-2 text-cyan-800">
+          <span className="flex flex-col-reverse items-end gap-1 text-cyan-800">
             {dirty && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-semibold text-amber-800">Unsaved</span>}
             <span className="sr-only">{editorOpen ? "Hide details" : "View details"}</span>
-            <span aria-hidden className="hidden text-xs font-semibold sm:inline">{editorOpen ? "Hide details" : "View details"}</span>
             <ChevronDown className={`h-5 w-5 shrink-0 transition ${editorOpen ? "rotate-180" : ""}`} />
           </span>
         </button>
@@ -4500,19 +4530,11 @@ function OtherWorkExperienceEditor({
       <div
         id={editorContentId}
         hidden={!isNew && !editorOpen}
-        className={`${isNew ? "w-full min-w-0" : "border-t border-slate-200 p-4 sm:p-5"}`}
+        className={isNew ? "w-full min-w-0" : "border-t border-slate-100 pb-5 pt-4"}
       >
-        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
-          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200 pb-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-700">Other work experience</p>
-              <p className="mt-1 text-sm text-slate-500">Workplace, role and employment period</p>
-            </div>
-            <span className="hidden text-xs font-medium text-slate-400 sm:inline">CV information</span>
-          </div>
-
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
-            <div className="xl:col-span-3">
+        <section className="min-w-0">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-4 xl:grid-cols-6 [&>*]:min-w-0">
+            <div className="col-span-2 md:col-span-1 xl:col-span-3">
               <ExperienceCardInput
                 label="Workplace / company"
                 value={draft.yacht_name}
@@ -4522,7 +4544,7 @@ function OtherWorkExperienceEditor({
                 onChange={(value) => setDraft({ ...draft, yacht_name: capitalizeFirstCharacter(value) })}
               />
             </div>
-            <div className="xl:col-span-3">
+            <div className="col-span-2 md:col-span-1 xl:col-span-3">
               <ExperienceCardInput
                 label="Position"
                 value={draft.position}
@@ -4537,7 +4559,7 @@ function OtherWorkExperienceEditor({
             <div className="xl:col-span-2">
               <ExperienceCardDateField label="End date" value={draft.end_date} mobileFriendly onChange={(value) => setDraft({ ...draft, end_date: value })} />
             </div>
-            <div className="sm:col-span-2 xl:col-span-2">
+            <div className="col-span-2 xl:col-span-2">
               <ExperienceCardInput
                 label="Location"
                 value={draft.location}
@@ -4549,7 +4571,7 @@ function OtherWorkExperienceEditor({
           </div>
         </section>
 
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+        <section className="mt-5">
           <div className="flex items-center justify-between gap-3">
             <label htmlFor={dutiesId} className="text-xs font-semibold text-slate-700">Duties</label>
             <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">
@@ -4562,30 +4584,29 @@ function OtherWorkExperienceEditor({
             maxLength={yachtDutiesMaxLength}
             onChange={(event) => setDraft({ ...draft, description: event.target.value.slice(0, yachtDutiesMaxLength) })}
             placeholder="Responsibilities, achievements and work duties"
-            className="mt-1.5 min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
+            className="mt-1.5 min-h-28 w-full resize-y rounded-lg border border-slate-200 bg-white px-3.5 py-3 text-base leading-6 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/15 sm:text-sm"
           />
         </section>
 
-        <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <section className="mt-5 border-t border-slate-200">
           <button
             type="button"
             onClick={() => setReferencesOpen((open) => !open)}
             aria-expanded={referencesOpen}
             aria-controls={referencesId}
-            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3.5 py-3 text-left transition hover:bg-slate-50 sm:px-4"
+            className="bd-focus grid min-h-14 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 text-left transition hover:bg-slate-50/70"
           >
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">References</span>
-              <span className="mt-0.5 block text-xs text-slate-500">Add contact details only when needed</span>
             </span>
             <span className="flex items-center gap-2 text-slate-500">
-              <span className={`rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold ${linkedReferenceCount > 0 ? "inline-flex" : "hidden sm:inline-flex"}`}>
+              <span className="text-xs font-medium text-slate-500">
                 {linkedReferenceCount > 0 ? <span data-i18n-ignore>{linkedReferenceCount}</span> : "Optional"}
               </span>
               <ChevronDown className={`h-5 w-5 shrink-0 transition ${referencesOpen ? "rotate-180 text-cyan-700" : ""}`} />
             </span>
           </button>
-          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-200 bg-slate-50/70 p-3.5 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:p-4 sm:[&_input]:text-sm">
+          <div id={referencesId} hidden={!referencesOpen} className="border-t border-slate-100 py-3 [&_.experience-reference-phone]:h-11 [&_button]:min-h-11 [&_button]:text-sm [&_button]:font-semibold [&_button]:normal-case [&_button]:tracking-normal [&_input]:min-h-11 [&_input]:text-base [&_p]:text-xs [&_p]:font-semibold [&_p]:normal-case [&_p]:tracking-normal sm:[&_input]:text-sm">
             <LinkedReferencePanel
               targetExperienceId={draft.id}
               targetName={draft.yacht_name}
@@ -4605,7 +4626,7 @@ function OtherWorkExperienceEditor({
           onSave={() => onSave(normalizedDraft)}
           onDelete={() => onDelete(draft.id)}
           addLabel="Add work experience"
-          mobileWide
+          flat
         />
       </div>
     </article>
@@ -4764,10 +4785,12 @@ function LinkedReferencePanel({
 
   return (
     <div className={embedded ? "" : "mt-3 border-t border-[#c7d2d6] pt-3"}>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
-        <p className="text-[10px] font-semibold text-[#6b7b84]">{linkedText}</p>
-      </div>
+      {!embedded && (
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#2d7482]">Reference</p>
+          <p className="text-[10px] font-semibold text-[#6b7b84]">{linkedText}</p>
+        </div>
+      )}
 
       {!cleanTargetExperienceId && (
         <p className="rounded-xl border border-cyan-100 bg-cyan-50 px-3 py-2.5 text-sm font-semibold text-cyan-900">
@@ -4853,7 +4876,7 @@ function ExperienceCardInput({
   mobileFriendly?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className={mobileFriendly ? "mb-1.5 block text-xs font-semibold text-slate-700" : "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500"}>{label}</span>
       <input
         aria-label={label}
@@ -4862,7 +4885,7 @@ function ExperienceCardInput({
         placeholder={placeholder}
         className={`w-full border border-[#d8e2e6] bg-white outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${
           mobileFriendly
-            ? `min-h-11 rounded-xl px-3 text-base sm:text-sm ${strong ? "font-semibold text-slate-950" : "font-medium text-slate-800"}`
+            ? `min-h-12 rounded-lg px-3 text-base sm:text-sm ${strong ? "font-semibold text-slate-950" : "font-medium text-slate-800"}`
             : `rounded-lg px-2.5 py-2 ${strong ? "text-[15px] font-semibold leading-tight text-slate-900" : "text-[13px] font-medium text-slate-700"}`
         }`}
       />
@@ -4884,14 +4907,14 @@ function ExperienceCardSelect({
   mobileFriendly?: boolean;
 }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className={mobileFriendly ? "mb-1.5 block text-xs font-semibold text-slate-700" : "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500"}>{label}</span>
       <select
         aria-label={label}
         value={value || ""}
         onChange={(event) => onChange(event.target.value)}
         className={`w-full cursor-pointer border border-[#d8e2e6] bg-white font-medium text-slate-700 outline-none transition focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${
-          mobileFriendly ? "min-h-11 rounded-xl px-3 text-base sm:text-sm" : "rounded-lg px-2.5 py-2 text-[13px]"
+          mobileFriendly ? "min-h-12 rounded-lg px-3 text-base sm:text-sm" : "rounded-lg px-2.5 py-2 text-[13px]"
         }`}
       >
         <option value="">{label}</option>
@@ -4924,9 +4947,9 @@ function ExperienceSizeField({ value, onChange, mobileFriendly = false }: { valu
   }
 
   return (
-    <div className="block">
+    <div className="block min-w-0">
       <span className={mobileFriendly ? "mb-1.5 block text-xs font-semibold text-slate-700" : "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500"}>Yacht size</span>
-      <div className={`grid overflow-hidden border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15 ${mobileFriendly ? "grid-cols-[1fr_64px] rounded-xl" : "grid-cols-[1fr_58px] rounded-lg"}`}>
+      <div className={`grid overflow-hidden border border-[#d8e2e6] bg-white transition focus-within:border-[#2d7482] focus-within:ring-2 focus-within:ring-[#2d7482]/15 ${mobileFriendly ? "grid-cols-[minmax(0,1fr)_64px] rounded-lg" : "grid-cols-[1fr_58px] rounded-lg"}`}>
         <input
           aria-label="Yacht size"
           inputMode="numeric"
@@ -4934,13 +4957,13 @@ function ExperienceSizeField({ value, onChange, mobileFriendly = false }: { valu
           value={parsed.amount}
           onChange={(event) => updateAmount(event.target.value.replace(/[^\d]/g, ""))}
           placeholder="Size"
-          className={`min-w-0 border-0 bg-white font-medium text-slate-700 outline-none placeholder:text-[#9aa8ae] ${mobileFriendly ? "min-h-11 px-3 text-base sm:text-sm" : "px-2.5 py-2 text-[13px]"}`}
+          className={`min-w-0 border-0 bg-white font-medium text-slate-700 outline-none placeholder:text-[#9aa8ae] ${mobileFriendly ? "min-h-12 px-3 text-base sm:text-sm" : "px-2.5 py-2 text-[13px]"}`}
         />
         <select
           aria-label="Yacht size unit"
           value={selectedUnit}
           onChange={(event) => updateUnit(event.target.value as YachtSizeUnit)}
-          className={`cursor-pointer border-0 border-l border-[#d8e2e6] bg-slate-50 font-semibold uppercase tracking-[0.06em] text-slate-600 outline-none ${mobileFriendly ? "min-h-11 px-2 text-base sm:text-xs" : "px-1.5 py-2 text-[11px]"}`}
+          className={`cursor-pointer border-0 border-l border-[#d8e2e6] bg-slate-50 font-semibold uppercase tracking-[0.06em] text-slate-600 outline-none ${mobileFriendly ? "min-h-12 px-2 text-base sm:text-xs" : "px-1.5 py-2 text-[11px]"}`}
         >
           <option value="ft">ft</option>
           <option value="m">m</option>
@@ -4960,7 +4983,7 @@ function ExperienceCardDateField({ label, value, onChange, mobileFriendly = fals
   }
 
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className={mobileFriendly ? "mb-1.5 block text-xs font-semibold text-slate-700" : "mb-1.5 block text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500"}>{label}</span>
       <input
         aria-label={label}
@@ -4969,7 +4992,7 @@ function ExperienceCardDateField({ label, value, onChange, mobileFriendly = fals
         onChange={(event) => commit(event.target.value)}
         onBlur={() => setDisplay(formatDateForDisplay(parseDisplayDate(display)))}
         placeholder={label}
-        className={`w-full border border-[#d8e2e6] bg-white font-medium text-slate-700 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${mobileFriendly ? "min-h-11 rounded-xl px-3 text-base sm:text-sm" : "rounded-lg px-2.5 py-1.5 text-[13px] leading-5"}`}
+        className={`w-full border border-[#d8e2e6] bg-white font-medium text-slate-700 outline-none transition placeholder:text-[#9aa8ae] focus:border-[#2d7482] focus:ring-2 focus:ring-[#2d7482]/15 ${mobileFriendly ? "min-h-12 rounded-lg px-3 text-base sm:text-sm" : "rounded-lg px-2.5 py-1.5 text-[13px] leading-5"}`}
       />
     </label>
   );
@@ -5238,6 +5261,7 @@ function EditorButtons({
   addLabel,
   saving = false,
   mobileWide = false,
+  flat = false,
 }: {
   isNew: boolean;
   dirty?: boolean;
@@ -5246,6 +5270,7 @@ function EditorButtons({
   addLabel: string;
   saving?: boolean;
   mobileWide?: boolean;
+  flat?: boolean;
 }) {
   const saved = !isNew && !dirty;
   const [pending, setPending] = useState(false);
@@ -5258,6 +5283,27 @@ function EditorButtons({
     } finally {
       setPending(false);
     }
+  }
+
+  if (flat) {
+    return (
+      <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
+        {!isNew && (
+          <button type="button" disabled={activeSaving} onClick={onDelete} className="bd-focus min-h-11 rounded-lg px-1 text-sm font-semibold text-rose-600 transition hover:text-rose-800 disabled:cursor-not-allowed disabled:opacity-60">
+            Delete
+          </button>
+        )}
+        <button
+          type="button"
+          disabled={activeSaving || saved}
+          onClick={handleSave}
+          className={`bd-focus ml-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-default ${saved ? "text-emerald-700" : "bg-[#0e4f5d] text-white hover:bg-[#0a3e49] disabled:opacity-60"}`}
+        >
+          {activeSaving ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden /> : saved ? <Check className="h-4 w-4" aria-hidden /> : null}
+          <span aria-live="polite">{activeSaving ? "Saving..." : isNew ? addLabel : saved ? "Saved" : "Save changes"}</span>
+        </button>
+      </div>
+    );
   }
 
   return (
