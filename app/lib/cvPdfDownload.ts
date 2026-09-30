@@ -1,4 +1,6 @@
 import { assertCvPdfActive, awaitCvPdf } from "./cvPdfAsync";
+import { cvPdfCoverRect } from "./cvPdfImageGeometry";
+import type { jsPDF } from "jspdf";
 
 type CvPdfDownloadInput = {
   pages: HTMLElement[];
@@ -32,6 +34,7 @@ export async function downloadCvPages({ pages, fileName, title, author, signal, 
       assertCvPdfActive(signal);
       const page = pages[pageIndex];
       const exportRoot = page.closest(".bd-cv-print-root") || page;
+      let portrait: CvPdfPortrait | null = null;
       onPage?.(pageIndex + 1, pages.length);
       // Cloning the whole profile also waits for hidden editor/preview photos.
       // Keep the CV and its page siblings so structural print selectors still match.
@@ -74,6 +77,8 @@ export async function downloadCvPages({ pages, fileName, title, author, signal, 
           clonedDocument.body.style.setProperty("background-color", "#ffffff", "important");
           clonedDocument.body.style.setProperty("color", "#242a31", "important");
           if (clonedDocument.fonts) await awaitCvPdf(clonedDocument.fonts.ready, signal);
+          portrait = prepareCvPdfPortrait(clonedPage);
+          await normalizeCvPhotoCrops(clonedPage, renderScale, signal);
           await rasterizeCvExportSvgs(clonedPage, signal);
           assertCvPdfActive(signal);
           normalizeCvExportColors(clonedPage);
@@ -95,6 +100,7 @@ export async function downloadCvPages({ pages, fileName, title, author, signal, 
           assertCvPdfActive(signal);
           if (pageIndex > 0) pdf.addPage("a4", "portrait");
           pdf.addImage(canvas, "PNG", 0, 0, 210, 297, undefined, "FAST");
+          if (portrait) addCvPdfPortrait(pdf, portrait);
         } finally {
           canvas.width = 1;
           canvas.height = 1;
@@ -119,6 +125,108 @@ export async function downloadCvPages({ pages, fileName, title, author, signal, 
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 45000);
+}
+
+type CvPdfPortrait = {
+  source: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  frame: { x: number; y: number; width: number; height: number };
+};
+
+function prepareCvPdfPortrait(page: HTMLElement): CvPdfPortrait | null {
+  const image = page.querySelector<HTMLImageElement>(".bd-print-avatar img");
+  if (!image) return null;
+  if (!image.complete || !image.naturalWidth || !image.naturalHeight) {
+    throw new Error("CV portrait is not ready for export.");
+  }
+
+  // Measure the actual inner photo box after print styles, excluding its white ring.
+  // Embed the original pixels in the PDF instead of downsampling them into the page.
+  const pageBounds = page.getBoundingClientRect();
+  const bounds = image.getBoundingClientRect();
+  const canvas = page.ownerDocument.createElement("canvas");
+  try {
+    const scale = Math.min(1, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("CV portrait could not be prepared.");
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    // Browser-decoded PNG also covers AVIF/WebP sources and their orientation.
+    // jsPDF cannot embed every format accepted by the image proxy directly.
+    const portrait = {
+      source: canvas.toDataURL("image/png"),
+      sourceWidth: canvas.width,
+      sourceHeight: canvas.height,
+      frame: {
+        x: (bounds.left - pageBounds.left) * 210 / pageBounds.width,
+        y: (bounds.top - pageBounds.top) * 297 / pageBounds.height,
+        width: bounds.width * 210 / pageBounds.width,
+        height: bounds.height * 297 / pageBounds.height,
+      },
+    };
+    image.style.setProperty("visibility", "hidden", "important");
+    return portrait;
+  } finally {
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
+function addCvPdfPortrait(pdf: jsPDF, portrait: CvPdfPortrait) {
+  const { source, sourceWidth, sourceHeight, frame } = portrait;
+  const placement = cvPdfCoverRect(sourceWidth, sourceHeight, frame);
+  pdf.saveGraphicsState();
+  try {
+    pdf.ellipse(frame.x + frame.width / 2, frame.y + frame.height / 2,
+      frame.width / 2, frame.height / 2, null);
+    pdf.clip();
+    pdf.discardPath();
+    pdf.addImage(source, placement.x, placement.y, placement.width, placement.height, undefined, "FAST");
+  } finally {
+    pdf.restoreGraphicsState();
+  }
+}
+
+async function normalizeCvPhotoCrops(page: HTMLElement, scale: number, signal: AbortSignal) {
+  const document = page.ownerDocument;
+  const view = document.defaultView;
+  if (!view) return;
+
+  const tasks = Array.from(page.querySelectorAll("img")).map(async (image) => {
+    if (image.closest(".bd-print-avatar") || view.getComputedStyle(image).objectFit !== "cover") return;
+    assertCvPdfActive(signal);
+    const bounds = image.getBoundingClientRect();
+    if (!bounds.width || !bounds.height || !image.naturalWidth || !image.naturalHeight) return;
+
+    // html2canvas stretches replaced images and ignores object-fit. Pre-crop only
+    // the clone so the saved PDF uses the browser's centered cover proportions.
+    const canvas = document.createElement("canvas");
+    let source: string;
+    try {
+      canvas.width = Math.max(1, Math.round(bounds.width * scale));
+      canvas.height = Math.max(1, Math.round(bounds.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("CV photo crop could not be prepared.");
+      const crop = cvPdfCoverRect(image.naturalWidth, image.naturalHeight,
+        { x: 0, y: 0, width: canvas.width, height: canvas.height });
+      context.imageSmoothingQuality = "high";
+      context.drawImage(image, crop.x, crop.y, crop.width, crop.height);
+      source = canvas.toDataURL("image/png");
+    } finally {
+      canvas.width = 1;
+      canvas.height = 1;
+    }
+    assertCvPdfActive(signal);
+    image.removeAttribute("srcset");
+    image.src = source;
+    await awaitCvPdf(image.decode(), signal);
+  });
+  const results = await awaitCvPdf(Promise.allSettled(tasks), signal);
+  const failed = results.find((result) => result.status === "rejected");
+  if (failed?.status === "rejected") throw failed.reason;
 }
 
 function installHtml2CanvasFontMetricStyles() {
