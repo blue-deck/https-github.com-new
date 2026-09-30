@@ -540,10 +540,10 @@ export default function ProfilePage() {
   const [activeStudioTab, setActiveStudioTab] = useState<CvStudioTab>("personal");
   const [openSkillsGroup, setOpenSkillsGroup] = useState<string | null>(null);
   const [newDocumentOpen, setNewDocumentOpen] = useState(true);
-  const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState(false);
+  const [newYachtExperienceOpen, setNewYachtExperienceOpen] = useState<boolean | null>(null);
   const [newYachtDraftRevision, setNewYachtDraftRevision] = useState(0);
   const [newYachtExperienceDirty, setNewYachtExperienceDirty] = useState(false);
-  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState(false);
+  const [newOtherWorkExperienceOpen, setNewOtherWorkExperienceOpen] = useState<boolean | null>(null);
   const [newOtherWorkDraftRevision, setNewOtherWorkDraftRevision] = useState(0);
   const [newOtherWorkExperienceDirty, setNewOtherWorkExperienceDirty] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
@@ -588,8 +588,9 @@ export default function ProfilePage() {
     () => sortedExperiences.filter(isOtherWorkExperience),
     [sortedExperiences],
   );
-  const showNewYachtExperienceForm = newYachtExperienceOpen;
-  const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen;
+  // Empty sections start ready to edit; explicit toggles and successful saves take precedence.
+  const showNewYachtExperienceForm = newYachtExperienceOpen ?? editableYachtExperiences.length === 0;
+  const showNewOtherWorkExperienceForm = newOtherWorkExperienceOpen ?? editableOtherWorkExperiences.length === 0;
   const showNewDocumentForm = newDocumentOpen;
   const newDocumentDirty = !saveStateEquals(documentSaveState(documentDraft), documentSaveState(newDocumentDraft()));
   const experienceBreakdown = useMemo(
@@ -1291,6 +1292,12 @@ export default function ProfilePage() {
           onSectionChange={(tab) => {
             setActiveStudioTab(tab);
             if (tab !== "skills") setOpenSkillsGroup(null);
+            if (tab === "experience" && editableYachtExperiences.length === 0) {
+              setNewYachtExperienceOpen(true);
+            }
+            if (tab === "otherWork" && editableOtherWorkExperiences.length === 0) {
+              setNewOtherWorkExperienceOpen(true);
+            }
           }}
           completion={cvCompletionPercent}
           hasUnsavedProfile={profileDirty}
@@ -1416,11 +1423,12 @@ export default function ProfilePage() {
             <ExperiencePanel
               active={activeStudioTab === "experience"}
               title="Yacht experience"
+              addLabel="Add yacht experience"
               count={editableYachtExperiences.length}
               formId={newYachtExperienceFormId}
               formOpen={showNewYachtExperienceForm}
               draftDirty={newYachtExperienceDirty}
-              onToggleForm={() => setNewYachtExperienceOpen((open) => !open)}
+              onToggleForm={() => setNewYachtExperienceOpen((open) => !(open ?? editableYachtExperiences.length === 0))}
             >
               <div className="min-w-0">
                 {referenceStatus?.type === "error" && (
@@ -1501,11 +1509,12 @@ export default function ProfilePage() {
             <ExperiencePanel
               active={activeStudioTab === "otherWork"}
               title="Other work experience"
+              addLabel="Add other work experience"
               count={editableOtherWorkExperiences.length}
               formId={newOtherWorkExperienceFormId}
               formOpen={showNewOtherWorkExperienceForm}
               draftDirty={newOtherWorkExperienceDirty}
-              onToggleForm={() => setNewOtherWorkExperienceOpen((open) => !open)}
+              onToggleForm={() => setNewOtherWorkExperienceOpen((open) => !(open ?? editableOtherWorkExperiences.length === 0))}
             >
               <div className="min-w-0">
                 {referenceStatus?.type === "error" && (
@@ -3430,6 +3439,7 @@ function SeazoneDocumentRow({ document }: { document: CrewDocument }) {
 function ExperiencePanel({
   active,
   title,
+  addLabel,
   count,
   formId,
   formOpen,
@@ -3439,6 +3449,7 @@ function ExperiencePanel({
 }: {
   active: boolean;
   title: string;
+  addLabel: string;
   count: number;
   formId: string;
   formOpen: boolean;
@@ -3457,7 +3468,7 @@ function ExperiencePanel({
           className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-cyan-800 transition hover:bg-cyan-50"
         >
           <Plus className={`h-4 w-4 shrink-0 transition ${formOpen ? "rotate-45" : ""}`} aria-hidden />
-          <span>Add experience</span>
+          <span>{addLabel}</span>
           {draftDirty && <span className="text-[10px] font-semibold text-amber-700">Unsaved</span>}
         </button>
         <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -4370,7 +4381,7 @@ function ExperienceEditor({
           </div>
         </section>
 
-        <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add experience" flat saving={uploading} />
+        <EditorButtons isNew={isNew} dirty={dirty} onSave={() => onSave(draft)} onDelete={() => onDelete(draft.id)} addLabel="Add yacht experience" flat saving={uploading} />
       </div>
     </article>
   );
@@ -4572,7 +4583,7 @@ function OtherWorkExperienceEditor({
           dirty={dirty}
           onSave={() => onSave(normalizedDraft)}
           onDelete={() => onDelete(draft.id)}
-          addLabel="Add work experience"
+          addLabel="Add other work experience"
           flat
         />
       </div>

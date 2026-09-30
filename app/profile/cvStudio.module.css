@@ -1,6 +1,5 @@
 .studio {
   --studio-navy: #0c293e;
-  --studio-navy-active: #173e56;
   --studio-cyan: #61dce3;
   --studio-line: #d7e6ed;
   min-width: 0;
@@ -68,6 +67,8 @@
 }
 
 .sectionButton,
+.mobileSelector,
+.mobileSectionButton,
 .secondaryAction,
 .continueAction {
   cursor: pointer;
@@ -76,6 +77,8 @@
 }
 
 .sectionButton:focus-visible,
+.mobileSelector:focus-visible,
+.mobileSectionButton:focus-visible,
 .secondaryAction:focus-visible,
 .continueAction:focus-visible {
   outline: 2px solid var(--studio-cyan);
@@ -99,45 +102,94 @@
 }
 
 .mobileSelector {
-  position: relative;
   display: flex;
-  min-height: 48px;
+  width: 100%;
+  min-height: 68px;
   align-items: center;
   gap: 0.65rem;
-  border-left: 3px solid var(--studio-cyan);
-  background: var(--studio-navy-active);
-  padding: 0.65rem 0.875rem;
-  color: #f5fbff;
+  border: 0;
+  border-bottom: 2px solid var(--studio-cyan);
+  background: transparent;
+  padding: 0.75rem 0.5rem;
+  color: #dcebf3;
+  text-align: left;
 }
 
-.mobileSelector:focus-within {
-  outline: 2px solid var(--studio-cyan);
-  outline-offset: 3px;
+.mobileSelection {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.mobilePrompt {
+  color: #a4ccdc;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
 }
 
 .mobileCurrent {
-  flex: 1;
   min-width: 0;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.mobileStep {
+  flex-shrink: 0;
+  color: #a4ccdc;
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mobileChevron {
+  flex-shrink: 0;
+  color: var(--studio-cyan);
+  transition: transform 150ms ease;
+}
+
+.mobileSelector[aria-expanded="true"] .mobileChevron {
+  transform: rotate(180deg);
+}
+
+.mobileSectionList {
+  display: grid;
+  padding: 0.5rem 0;
+}
+
+.mobileSectionList[hidden] {
+  display: none;
+}
+
+.mobileSectionButton {
+  display: flex;
+  min-height: 48px;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 0.75rem 0.5rem;
+  color: #dcebf3;
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 500;
   line-height: 1.4;
 }
 
-.mobileSelector > svg {
-  flex-shrink: 0;
-  color: var(--studio-cyan);
+.mobileSectionButton[aria-current="page"] {
+  border-bottom-color: var(--studio-cyan);
 }
 
-/* Keep the native picker for touch, keyboard and screen-reader support. */
-.mobileSelect {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.sectionLabel {
   min-width: 0;
-  cursor: pointer;
-  opacity: 0;
-  font-size: 16px;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .sectionIcon {
@@ -157,30 +209,16 @@
   padding: 1.375rem 1rem 1.5rem;
 }
 
-.contentHeading {
-  margin-bottom: 1.5rem;
-}
-
-.contentHeading h2 {
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
   margin: 0;
-  color: #0c293e;
-  font-size: clamp(1.35rem, 2.3vw, 1.9rem);
-  line-height: 1.25;
-  font-weight: 700;
-  letter-spacing: -0.035em;
-  scroll-margin-top: 6rem;
-}
-
-.contentHeading h2:focus-visible {
-  outline: 2px solid #137b8d;
-  outline-offset: 5px;
-}
-
-.contentHeading p {
-  margin: 0.5rem 0 0;
-  color: #546f80;
-  font-size: 0.8125rem;
-  line-height: 1.6;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .formPanel {
@@ -196,11 +234,6 @@
     background: #fff;
   }
 
-  .previewContent .contentHeading {
-    margin: 0;
-    padding: 1.5rem var(--preview-gutter) 1.125rem;
-  }
-
   .previewPanel,
   .previewRoot {
     min-width: 0;
@@ -212,7 +245,7 @@
 
   .previewNotice {
     margin: 0;
-    padding: 0 var(--preview-gutter);
+    padding: 1.5rem var(--preview-gutter) 0;
     color: #64748b;
     font-size: 0.75rem;
     line-height: 1.7;
@@ -332,7 +365,7 @@
     --preview-gutter: 2rem;
   }
 
-  .previewContent .contentHeading {
+  .previewNotice {
     padding-top: 2rem;
   }
 
@@ -452,29 +485,16 @@
     line-height: 1.4;
   }
 
-  .sectionLabel {
-    min-width: 0;
-    overflow-wrap: anywhere;
-    text-wrap: balance;
-  }
-
   .sectionButton .sectionIcon {
     display: none;
   }
 
   .sectionButton:hover {
-    background: #12354c;
+    border-bottom-color: rgb(97 220 227 / 45%);
   }
 
   .sectionButton[aria-current="page"] {
     border-bottom-color: var(--studio-cyan);
-    background: var(--studio-navy-active);
-    color: #fff;
-    font-weight: 600;
-  }
-
-  .sectionButton[aria-current="page"] .sectionIcon {
-    color: #a1edf1;
   }
 
   .sectionButton:focus-visible {
@@ -548,7 +568,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .studio button {
+  .studio button,
+  .mobileChevron {
     transition: none;
   }
 
