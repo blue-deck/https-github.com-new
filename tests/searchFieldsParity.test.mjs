@@ -212,7 +212,7 @@ test("homepage initially renders the real Careers fields with an accessible sele
   const panel = fixture.elements.find(({ props }) => props.role === "tabpanel").props;
   assert.equal(panel["aria-labelledby"], tabs[0].props.id);
   assert.equal(panel.id, tabs[0].props["aria-controls"]);
-  assert.match(html, /href="\/yacht-os"/);
+  assert.doesNotMatch(html, /href="\/yacht-os"/);
   assert.ok(html.includes("Position, location, yacht type or any"));
   assert.ok(html.includes("Search location"));
   fixture.elements.find(({ type, props }) => type === "button" && props.className === "submit").props.onClick();
