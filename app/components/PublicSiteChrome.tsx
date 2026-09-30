@@ -188,28 +188,38 @@ export function PublicHeader() {
         </nav>
 
         <div className="bd-public-actions">
-          <LanguageSwitcher size="compact" className="bd-public-language" />
-          {sessionUser ? (
-            <AccountMenu
-              key={sessionUser.id}
-              onOpen={() => setMenuOpen(false)}
-            />
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="bd-focus bd-public-action bd-public-action-quiet bd-public-auth-action bd-site-login"
-              >
-                {t("auth.login")}
-              </Link>
-              <Link
-                href="/login?mode=signup"
-                className="bd-focus bd-public-action bd-public-action-primary bd-public-auth-action bd-site-signup"
-              >
-                {t("auth.signUp")}
-              </Link>
-            </>
-          )}
+          <div className={styles.authSlot}>
+            {/* Reserve the homepage controls' width through session changes. */}
+            <div className={styles.authSizer} aria-hidden="true">
+              <span className={styles.languageSizer} />
+              <span className="bd-public-action">{t("auth.login")}</span>
+              <span className="bd-public-action">{t("auth.signUp")}</span>
+            </div>
+            <div className={styles.authControls}>
+              <LanguageSwitcher size="compact" className="bd-public-language" />
+              {sessionUser ? (
+                <AccountMenu
+                  key={sessionUser.id}
+                  onOpen={() => setMenuOpen(false)}
+                />
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="bd-focus bd-public-action bd-public-action-quiet bd-public-auth-action bd-site-login"
+                  >
+                    {t("auth.login")}
+                  </Link>
+                  <Link
+                    href="/login?mode=signup"
+                    className="bd-focus bd-public-action bd-public-action-primary bd-public-auth-action bd-site-signup"
+                  >
+                    {t("auth.signUp")}
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {menuOpen ? (

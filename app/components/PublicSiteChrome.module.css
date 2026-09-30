@@ -31,6 +31,32 @@
   }
 }
 
+/* Keep the public controls' intrinsic size when the account button replaces them. */
+.authSlot {
+  display: grid;
+  gap: inherit;
+}
+
+.authSizer,
+.authControls {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: inherit;
+}
+
+.authSizer {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.languageSizer {
+  flex: 0 0 2.75rem;
+  height: 2.75rem;
+}
+
 /* The same navigation layout is used on public and signed-in pages. */
 .header :global(.bd-public-header-inner) {
   grid-template-columns: max-content minmax(0, 1fr) max-content;
@@ -101,6 +127,10 @@
 }
 
 @media (max-width: 959px) {
+  .authSizer {
+    display: none;
+  }
+
   .header:global(.bd-public-header) {
     border-bottom: 0;
     background: #041629;
