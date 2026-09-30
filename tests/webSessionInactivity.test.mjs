@@ -2,18 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-  buildIdleLoginHref,
+  getWebSessionLogoutHref,
   createWebSessionActivityRecord,
   createWebSessionLogoutMarker,
   hasWebSessionIdleTimeoutElapsed,
-  isVerifiedIdleLogoutTransition,
   parseWebSessionActivity,
   parseWebSessionIdleLock,
   parseWebSessionLogoutMarker,
   remainingWebSessionIdleTime,
   resolveWebSessionId,
   resolveWebSessionLogoutTarget,
-  safeIdleReturnPath,
   selectReplacementWebSessionLogoutMarker,
   webSessionIdleLockApplies,
   WEB_SESSION_IDLE_TIMEOUT_MS,
@@ -166,28 +164,6 @@ test("validates session-bound cross-tab logout markers", () => {
     ),
     null,
   );
-
-  const idleLock = {
-    version: 1,
-    sessionId,
-    lockedAt: loggedOutAt,
-    lastActivityAt: loggedOutAt - WEB_SESSION_IDLE_TIMEOUT_MS,
-  };
-  assert.equal(
-    isVerifiedIdleLogoutTransition(
-      idleLock,
-      { ...marker, reason: "idle" },
-      createWebSessionActivityRecord(
-        sessionId,
-        loggedOutAt - WEB_SESSION_IDLE_TIMEOUT_MS,
-      ),
-    ),
-    true,
-  );
-  assert.equal(
-    isVerifiedIdleLogoutTransition(idleLock, marker, null),
-    false,
-  );
 });
 
 test("never lets an old tab target a newer persisted session", () => {
@@ -330,29 +306,15 @@ test("gives a slow refresh and its follow-up revoke independent deadlines", asyn
   assert.notEqual(signals[0], signals[1]);
 });
 
-test("preserves safe return routes but never returns to auth or recovery pages", () => {
-  assert.equal(
-    safeIdleReturnPath("/yachts/abc", "?tab=crew"),
-    "/yachts/abc?tab=crew",
+test("silent idle logout opens the homepage without retaining a login notice", () => {
+  const idleDestination = new URL(
+    getWebSessionLogoutHref("idle"),
+    "https://www.bluedeck.app",
   );
-
-  for (const path of [
-    "/login",
-    "/signup",
-    "/auth/confirm",
-    "/forgot-password",
-    "/reset-password",
-    "//attacker.example",
-    "/bad\\path",
-  ]) {
-    assert.equal(safeIdleReturnPath(path), "/dashboard");
-  }
-
-  const href = buildIdleLoginHref("/portal/applications", "?view=open");
-  const url = new URL(href, "https://www.bluedeck.app");
-  assert.equal(url.pathname, "/login");
-  assert.equal(url.searchParams.get("reason"), "inactive");
-  assert.equal(url.searchParams.get("next"), "/portal/applications?view=open");
+  assert.equal(idleDestination.pathname, "/");
+  assert.equal(idleDestination.search, "");
+  assert.equal(idleDestination.hash, "");
+  assert.equal(getWebSessionLogoutHref("manual"), "/login");
 });
 
 test("global guard covers browser and installed PWA lifecycle edges", async () => {
@@ -364,7 +326,7 @@ test("global guard covers browser and installed PWA lifecycle edges", async () =
     logoutRoute,
     revocationHelper,
     login,
-    topBar,
+    accountMenu,
     publicChrome,
     authConfig,
   ] =
@@ -376,7 +338,7 @@ test("global guard covers browser and installed PWA lifecycle edges", async () =
       source("app/api/auth/logout/route.ts"),
       source("app/lib/supabaseSessionRevocation.ts"),
       source("app/login/page.tsx"),
-      source("app/components/BlueDeckTopBar.tsx"),
+      source("app/components/AccountMenu.tsx"),
       source("app/components/PublicSiteChrome.tsx"),
       source("supabase/config.toml"),
     ]);
@@ -414,10 +376,10 @@ test("global guard covers browser and installed PWA lifecycle edges", async () =
   assert.match(logoutRoute, /revokeSupabaseSessionWithRefresh/);
   assert.match(revocationHelper, /grant_type=refresh_token/);
   assert.match(revocationHelper, /logout\?scope=local/);
-  assert.match(login, /login\.notice\.inactiveSession/);
-  assert.match(login, /isVerifiedIdleLogoutTransition/);
-  assert.match(topBar, /endWebBrowserSession\("manual"\)/);
-  assert.match(publicChrome, /endWebBrowserSession\("manual"\)/);
+  assert.doesNotMatch(login, /login\.notice\.inactiveSession/);
+  assert.doesNotMatch(guard, /role="alert"|aria-live|2 hours|2 saat/);
+  assert.match(guard, /getWebSessionLogoutHref\(marker\.reason\)/);
+  assert.match(accountMenu, /endWebBrowserSession\("manual"\)/);
   assert.doesNotMatch(publicChrome, /await import\([^)]*webBrowserSession/);
   assert.doesNotMatch(
     authConfig,

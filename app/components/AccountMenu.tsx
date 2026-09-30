@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
@@ -16,7 +18,6 @@ import {
   ShieldCheck,
   Ship,
   UserRound,
-  UsersRound,
   X,
 } from "lucide-react";
 import {
@@ -28,37 +29,21 @@ import { languages } from "../lib/i18n";
 import { canUseCrewWorkspace } from "../lib/marketplaceCapabilities";
 import { supabase } from "../lib/supabase";
 import { endWebBrowserSession } from "../lib/webBrowserSession";
-import { BlueDeckLogoLink } from "./BlueDeckLogo";
 import { useLanguage } from "./LanguageProvider";
 
 function getInitials(name: string) {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
 
-  return parts.map((part) => part.charAt(0).toLocaleUpperCase()).join("") || "BD";
+  return (
+    parts.map((part) => part.charAt(0).toLocaleUpperCase()).join("") || "BD"
+  );
 }
 
 function isRouteActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function ensureMainContentTarget() {
-  const existingTarget = document.getElementById("main-content");
-  const target =
-    existingTarget instanceof HTMLElement
-      ? existingTarget
-      : document.querySelector<HTMLElement>("main");
-
-  if (!target) return null;
-  if (!target.id) target.id = "main-content";
-  if (!target.hasAttribute("tabindex")) target.tabIndex = -1;
-  return target;
-}
-
-export function BlueDeckTopBar() {
+export function AccountMenu({ onOpen }: { onOpen: () => void }) {
   const pathname = usePathname() || "/dashboard";
   const { language, setLanguage, t } = useLanguage();
   const [identity, setIdentity] = useState<AccountIdentity | null>(null);
@@ -134,19 +119,20 @@ export function BlueDeckTopBar() {
   }, [pathname]);
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => {
-      ensureMainContentTarget();
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [pathname]);
+    const breakpoint = window.matchMedia("(max-width: 959px)");
+    const closeMenu = () => setMenuOpen(false);
+    breakpoint.addEventListener("change", closeMenu);
+    return () => breakpoint.removeEventListener("change", closeMenu);
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
 
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
+    const focusFrame = window.requestAnimationFrame(() =>
+      closeButtonRef.current?.focus(),
+    );
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -169,7 +155,11 @@ export function BlueDeckTopBar() {
       const lastElement = focusableElements[focusableElements.length - 1];
       const activeElement = document.activeElement;
 
-      if (event.shiftKey && (activeElement === firstElement || !menuPanelRef.current.contains(activeElement))) {
+      if (
+        event.shiftKey &&
+        (activeElement === firstElement ||
+          !menuPanelRef.current.contains(activeElement))
+      ) {
         event.preventDefault();
         lastElement.focus();
       } else if (!event.shiftKey && activeElement === lastElement) {
@@ -187,7 +177,8 @@ export function BlueDeckTopBar() {
     };
   }, [menuOpen]);
 
-  const displayName = identity?.fullName || identity?.email || t("topbar.accountFallback");
+  const displayName =
+    identity?.fullName || identity?.email || t("topbar.accountFallback");
   const photoUrl = identity?.dashboardPhotoUrl || "";
   const showPhoto = Boolean(photoUrl && failedPhotoUrl !== photoUrl);
   const normalizedRole = identity?.role?.trim().toLowerCase() || "crew";
@@ -218,9 +209,6 @@ export function BlueDeckTopBar() {
         ]
       : []),
     ...(canApplyToJobs
-      ? [{ href: "/jobs", label: t("nav.findJob"), icon: BriefcaseBusiness }]
-      : []),
-    ...(canApplyToJobs
       ? [
           {
             href: "/portal/applications",
@@ -230,10 +218,13 @@ export function BlueDeckTopBar() {
         ]
       : []),
     ...(canManageYachts
-      ? [{ href: "/hiring", label: t("topbar.hiring"), icon: BriefcaseBusiness }]
-      : []),
-    ...(canManageYachts
-      ? [{ href: "/find-crew", label: t("nav.findCrew"), icon: UsersRound }]
+      ? [
+          {
+            href: "/hiring",
+            label: t("topbar.hiring"),
+            icon: BriefcaseBusiness,
+          },
+        ]
       : []),
     ...(canManageYachts
       ? [{ href: "/yachts", label: t("topbar.captainWorkspace"), icon: Ship }]
@@ -260,63 +251,39 @@ export function BlueDeckTopBar() {
   }
 
   return (
-    <header
-      className="bd-app-topbar bd-account-topbar border-b border-white/10 shadow-2xl shadow-slate-950/22"
-    >
-      <a
-        className="bd-skip-link"
-        href="#main-content"
-        onClick={(event) => {
-          const target = ensureMainContentTarget();
-          if (!target) return;
-
-          event.preventDefault();
-          target.focus({ preventScroll: true });
-          target.scrollIntoView({ block: "start" });
+    <>
+      <button
+        ref={menuButtonRef}
+        type="button"
+        aria-label={menuOpen ? t("topbar.closeMenu") : t("topbar.openMenu")}
+        aria-haspopup="dialog"
+        aria-expanded={menuOpen}
+        aria-controls={menuOpen ? menuId : undefined}
+        onClick={() => {
+          onOpen();
+          setMenuOpen((current) => !current);
         }}
+        className="bd-focus bd-site-account-trigger"
       >
-        {language === "tr" ? "İçeriğe geç" : "Skip to content"}
-      </a>
-      <div className="bd-app-topbar-inner bd-page-frame bd-page-gutter mx-auto flex h-[88px] max-w-[1500px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
-        <div className="bd-topbar-logo-area flex min-w-0 items-center gap-4">
-          <BlueDeckLogoLink
-            href="/"
-            label="BlueDeck home"
-            className="bd-topbar-logo h-12 w-48 shrink-0 sm:w-60"
-            imageClassName="object-contain p-0"
-          />
-
-        </div>
-
-        <div className="bd-topbar-account-area relative flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-          <div className="bd-topbar-user-copy min-w-0 text-right">
-            <p
-              data-i18n-ignore
-              className="truncate text-sm font-extrabold tracking-[-0.01em] text-white"
-              title={displayName}
-            >
-              {identityLoading ? "BlueDeck" : displayName}
-            </p>
-            <p className="truncate text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100/70">
-              {identityLoading || !identity ? t("topbar.account") : roleLabel}
-            </p>
-          </div>
-
-          <button
-            ref={menuButtonRef}
-            type="button"
-            aria-label={menuOpen ? t("topbar.closeMenu") : t("topbar.openMenu")}
-            aria-expanded={menuOpen}
-            aria-controls={menuOpen ? menuId : undefined}
-            onClick={() => setMenuOpen((current) => !current)}
-            className={`bd-focus bd-topbar-menu-button relative z-[60] inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/16 bg-white/7 text-white shadow-lg shadow-slate-950/16 transition hover:border-cyan-200 hover:bg-white/13 ${
-              menuOpen ? "invisible pointer-events-none" : ""
-            }`}
-          >
-            {menuOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
-          </button>
-
-          {menuOpen ? (
+        <Menu className="bd-site-account-menu-icon" aria-hidden />
+        <span className="bd-site-account-avatar" aria-hidden>
+          {showPhoto ? (
+            <Image
+              src={photoUrl}
+              alt=""
+              width={44}
+              height={44}
+              unoptimized
+              onError={() => setFailedPhotoUrl(photoUrl)}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span data-i18n-ignore>{getInitials(displayName)}</span>
+          )}
+        </span>
+      </button>
+      {menuOpen
+        ? createPortal(
             <>
               <div
                 aria-hidden="true"
@@ -348,7 +315,10 @@ export function BlueDeckTopBar() {
                       aria-label={t("topbar.closeMenu")}
                       onClick={() => {
                         setMenuOpen(false);
-                        window.setTimeout(() => menuButtonRef.current?.focus(), 0);
+                        window.setTimeout(
+                          () => menuButtonRef.current?.focus(),
+                          0,
+                        );
                       }}
                       className="bd-focus inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-cyan-300 hover:text-[#071f3c]"
                     >
@@ -362,14 +332,20 @@ export function BlueDeckTopBar() {
                       className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-[#eef5f9] text-[#0a5465]"
                     >
                       {showPhoto ? (
-                        <img
+                        <Image
                           src={photoUrl}
                           alt=""
+                          width={56}
+                          height={56}
+                          unoptimized
                           onError={() => setFailedPhotoUrl(photoUrl)}
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span data-i18n-ignore className="text-sm font-black tracking-[0.08em]">
+                        <span
+                          data-i18n-ignore
+                          className="text-sm font-black tracking-[0.08em]"
+                        >
                           {getInitials(displayName)}
                         </span>
                       )}
@@ -384,9 +360,14 @@ export function BlueDeckTopBar() {
                         {displayName}
                       </h2>
                       <p className="mt-1 truncate text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700">
-                        {identityLoading || !identity ? t("topbar.account") : roleLabel}
+                        {identityLoading || !identity
+                          ? t("topbar.account")
+                          : roleLabel}
                       </p>
-                      <p data-i18n-ignore className="mt-1 truncate text-xs font-medium text-slate-500">
+                      <p
+                        data-i18n-ignore
+                        className="mt-1 truncate text-xs font-medium text-slate-500"
+                      >
                         {identity?.email || ""}
                       </p>
                     </div>
@@ -403,7 +384,10 @@ export function BlueDeckTopBar() {
                     </p>
                   </div>
 
-                  <nav aria-label={t("topbar.navigation")} className="grid gap-1">
+                  <nav
+                    aria-label={t("topbar.navigation")}
+                    className="grid gap-1"
+                  >
                     {navigationItems.map((item) => {
                       const Icon = item.icon;
                       const active = isRouteActive(pathname, item.href);
@@ -424,7 +408,10 @@ export function BlueDeckTopBar() {
                             className={`h-[18px] w-[18px] shrink-0 ${active ? "text-cyan-700" : "text-slate-500"}`}
                             aria-hidden
                           />
-                          <span data-i18n-ignore className="min-w-0 flex-1 truncate">
+                          <span
+                            data-i18n-ignore
+                            className="min-w-0 flex-1 truncate"
+                          >
                             {item.label}
                           </span>
                         </Link>
@@ -436,10 +423,18 @@ export function BlueDeckTopBar() {
                 <div className="bd-account-drawer-footer shrink-0 border-t border-slate-200 bg-white px-4 pb-4 pt-3">
                   <div className="flex min-h-12 items-center justify-between gap-3 px-2">
                     <div className="flex min-w-0 items-center gap-2 text-sm font-extrabold text-[#26455f]">
-                      <Languages className="h-4 w-4 shrink-0 text-cyan-700" aria-hidden />
+                      <Languages
+                        className="h-4 w-4 shrink-0 text-cyan-700"
+                        aria-hidden
+                      />
                       <span>{t("topbar.language")}</span>
                     </div>
-                    <div data-i18n-ignore role="group" aria-label={t("topbar.language")} className="flex gap-1">
+                    <div
+                      data-i18n-ignore
+                      role="group"
+                      aria-label={t("topbar.language")}
+                      className="flex gap-1"
+                    >
                       {languages.map((item) => (
                         <button
                           key={item.code}
@@ -466,14 +461,16 @@ export function BlueDeckTopBar() {
                     className="bd-focus mt-1 flex min-h-12 w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-black text-rose-600 transition hover:border-rose-100 hover:bg-rose-50"
                   >
                     <LogOut className="h-[18px] w-[18px]" aria-hidden />
-                    <span className="flex-1 text-left">{t("topbar.logout")}</span>
+                    <span className="flex-1 text-left">
+                      {t("topbar.logout")}
+                    </span>
                   </button>
                 </div>
               </aside>
-            </>
-          ) : null}
-        </div>
-      </div>
-    </header>
+            </>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }

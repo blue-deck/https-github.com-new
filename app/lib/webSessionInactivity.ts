@@ -11,8 +11,6 @@ export const WEB_SESSION_LOGOUT_EVENT = "bluedeck:web-session-logout";
 const clockSkewToleranceMs = 5 * 60 * 1_000;
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const unsafeReturnPathPattern =
-  /^\/(?:auth|forgot-password|login|reset-password|signup)(?:\/|$)/i;
 
 export type WebSessionActivityRecord = {
   version: 1;
@@ -148,30 +146,6 @@ export function parseWebSessionLogoutMarker(
   );
 }
 
-export function isVerifiedIdleLogoutTransition(
-  idleLock: WebSessionIdleLock | null,
-  logoutMarker: WebSessionLogoutMarker | null,
-  activity: WebSessionActivityRecord | null,
-  expectedSessionId = "",
-) {
-  if (
-    !idleLock ||
-    !logoutMarker ||
-    logoutMarker.reason !== "idle" ||
-    logoutMarker.sessionId !== idleLock.sessionId ||
-    (expectedSessionId &&
-      logoutMarker.sessionId !== expectedSessionId.toLowerCase())
-  ) {
-    return false;
-  }
-
-  return webSessionIdleLockApplies(
-    idleLock,
-    activity,
-    logoutMarker.sessionId,
-  );
-}
-
 export function resolveWebSessionLogoutTarget(
   markerSessionId: string,
   currentSessionId: string,
@@ -296,41 +270,10 @@ export function webSessionIdleLockApplies(
   );
 }
 
-export function buildIdleLoginHref(pathname: string, search = "") {
-  const params = new URLSearchParams({
-    reason: "inactive",
-    next: safeIdleReturnPath(pathname, search),
-  });
-  return `/login?${params.toString()}`;
-}
-
-export function safeIdleReturnPath(pathname: string, search = "") {
-  if (
-    !pathname ||
-    pathname.length + search.length > 2_048 ||
-    !pathname.startsWith("/") ||
-    pathname.startsWith("//") ||
-    pathname.includes("\\") ||
-    /[\u0000-\u001f\u007f]/.test(pathname) ||
-    (search && (!search.startsWith("?") || search.includes("#")))
-  ) {
-    return "/dashboard";
-  }
-
-  try {
-    const origin = "https://www.bluedeck.app";
-    const destination = new URL(`${pathname}${search}`, origin);
-    if (
-      destination.origin !== origin ||
-      unsafeReturnPathPattern.test(destination.pathname)
-    ) {
-      return "/dashboard";
-    }
-
-    return `${destination.pathname}${destination.search}`;
-  } catch {
-    return "/dashboard";
-  }
+export function getWebSessionLogoutHref(
+  reason: WebSessionLogoutMarker["reason"],
+) {
+  return reason === "idle" ? "/" : "/login";
 }
 
 function readJwtSessionId(accessToken: string) {

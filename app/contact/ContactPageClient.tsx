@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, LoaderCircle } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLanguage } from "../components/LanguageProvider";
-import { PublicHeader } from "../components/PublicSiteChrome";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { CONTACT_EMAIL, CONTACT_LIMITS, CONTACT_TOPICS, CONTACT_TOPIC_LABELS, validateContactForm } from "./contactForm";
 import styles from "./contact.module.css";
@@ -126,7 +125,6 @@ export default function ContactPageClient({ siteKey }: { siteKey: string }) {
 
   return (
     <div className={styles.page}>
-      <PublicHeader />
       <main id="main-content" className={styles.main} data-i18n-ignore>
         <div className={styles.grid}>
           <section className={styles.details} aria-labelledby="contact-title">

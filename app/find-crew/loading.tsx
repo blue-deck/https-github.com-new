@@ -1,9 +1,7 @@
-import { PublicHeader } from "../components/PublicSiteChrome";
 
 export default function FindCrewLoading() {
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
 
       <main id="main-content" aria-busy="true">
         <section

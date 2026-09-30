@@ -20,7 +20,7 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
-import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
+import { PublicFooter } from "../components/PublicSiteChrome";
 import {
   JobKeywordSearchField,
   JobLocationSearchField,
@@ -424,7 +424,6 @@ export function JobsClient({
 
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
 
       <main id="main-content">
         <h1 className="sr-only">{c.pageTitle}</h1>

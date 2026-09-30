@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "../components/LanguageProvider";
-import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
+import { PublicFooter } from "../components/PublicSiteChrome";
 import { aboutContent } from "./about-content";
 import styles from "./about.module.css";
 
@@ -13,7 +13,6 @@ export default function AboutPage() {
 
   return (
     <div className={`bd-site-shell ${styles.page}`}>
-      <PublicHeader />
       <main id="main-content" className={styles.main} data-i18n-ignore tabIndex={-1}>
         <div className={styles.container}>
           <section className={styles.hero} aria-labelledby="about-title">

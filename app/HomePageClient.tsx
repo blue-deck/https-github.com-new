@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
+import { PublicFooter } from "./components/PublicSiteChrome";
 import { useLanguage } from "./components/LanguageProvider";
 import { parsePublicJobCards, type PublicJobCard } from "./jobs/job-data";
 import { useJobListingViewer } from "./jobs/JobListingAction";
@@ -198,7 +198,6 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
   return (
     <div className={`bd-site-shell min-h-screen ${styles.page} ${heroFontClassName}`}>
       <link rel="preload" as="image" href="/media/bluedeck-desktop-reference-v1.png" media="(min-width: 960px)" />
-      <PublicHeader />
 
       <main id="main-content" data-i18n-ignore>
         <DesktopReferenceHero />

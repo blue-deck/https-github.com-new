@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { BlueDeckLogoLink } from "../components/BlueDeckLogo";
 import { useLanguage } from "../components/LanguageProvider";
-import { PublicHeader } from "../components/PublicSiteChrome";
 import type { TranslationKey } from "../lib/i18n";
 
 type RecoveryState = "checking" | "confirm" | "ready" | "done" | "error";
@@ -170,7 +169,6 @@ export default function ResetPasswordPage() {
 
   return (
     <>
-      <PublicHeader />
 
       <main
         id="main-content"

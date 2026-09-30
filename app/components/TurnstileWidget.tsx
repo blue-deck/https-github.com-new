@@ -1,29 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
-type TurnstileRenderOptions = {
-  sitekey: string;
-  action?: string;
-  theme?: "light" | "dark" | "auto";
-  size?: "normal" | "compact" | "flexible";
-  callback?: (token: string) => void;
-  "expired-callback"?: () => void;
-  "timeout-callback"?: () => void;
-  "error-callback"?: () => void;
-};
-
-type TurnstileApi = {
-  render: (container: HTMLElement, options: TurnstileRenderOptions) => string;
-  reset: (widgetId?: string) => void;
-  remove: (widgetId?: string) => void;
-};
-
-declare global {
-  interface Window {
-    turnstile?: TurnstileApi;
-  }
-}
+import { useEffect, useRef, useState } from "react";
+import { loadTurnstile } from "../lib/turnstileClient";
 
 type TurnstileWidgetProps = {
   siteKey: string;
@@ -31,6 +9,7 @@ type TurnstileWidgetProps = {
   className?: string;
   theme?: "light" | "dark" | "auto";
   size?: "normal" | "compact" | "flexible";
+  retryLabel?: string;
   onVerify: (token: string) => void;
   onExpire: () => void;
   onError: () => void;
@@ -41,70 +20,136 @@ export function TurnstileWidget({
   action = "forgot_password",
   className = "",
   theme = "light",
-  size = "normal",
+  size,
+  retryLabel = "Retry security check",
   onVerify,
   onExpire,
   onError,
 }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const widgetIdRef = useRef<string | null>(null);
   const callbacksRef = useRef({ onVerify, onExpire, onError });
+  const widthRef = useRef<HTMLDivElement | null>(null);
+  const [responsiveSize, setResponsiveSize] = useState<"compact" | "flexible" | null>(null);
+  const resolvedSize = size ?? responsiveSize;
+  const [attempt, setAttempt] = useState(0);
+  const [needsRetry, setNeedsRetry] = useState(false);
 
   useEffect(() => {
     callbacksRef.current = { onVerify, onExpire, onError };
   }, [onVerify, onExpire, onError]);
 
   useEffect(() => {
-    let isMounted = true;
-    const scriptId = "bluedeck-turnstile-script";
+    if (size || !widthRef.current) return;
+    const container = widthRef.current;
+    const measure = () => setResponsiveSize(
+      container.getBoundingClientRect().width < 300 ? "compact" : "flexible",
+    );
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [size]);
 
-    function renderWidget() {
-      if (!isMounted || !containerRef.current || !window.turnstile || widgetIdRef.current) return;
+  useEffect(() => {
+    if (!resolvedSize) return;
+    const widgetSize = resolvedSize;
+    let active = true;
+    let widgetId: string | null = null;
+    let verifiedAt = 0;
+    let retryTimer: number | undefined;
+    let scriptAttempts = 0;
 
-      widgetIdRef.current = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        action,
-        theme,
-        size,
-        callback: (token) => callbacksRef.current.onVerify(token),
-        "expired-callback": () => callbacksRef.current.onExpire(),
-        "timeout-callback": () => callbacksRef.current.onExpire(),
-        "error-callback": () => callbacksRef.current.onError(),
-      });
+    function failed() {
+      if (!active) return;
+      verifiedAt = 0;
+      setNeedsRetry(true);
+      callbacksRef.current.onError();
     }
 
-    const existingScript = document.getElementById(scriptId) as HTMLScriptElement | null;
+    function expired() {
+      if (!active) return;
+      verifiedAt = 0;
+      callbacksRef.current.onExpire();
+    }
 
-    if (existingScript) {
-      if (window.turnstile) {
-        renderWidget();
-      } else {
-        existingScript.addEventListener("load", renderWidget, { once: true });
+    async function initialize() {
+      try {
+        const api = await loadTurnstile();
+        if (!active || !containerRef.current) return;
+        widgetId = api.render(containerRef.current, {
+          sitekey: siteKey,
+          action,
+          theme,
+          size: widgetSize,
+          retry: "auto",
+          "refresh-expired": "auto",
+          "refresh-timeout": "auto",
+          callback: (token) => {
+            if (!active) return;
+            if (!token) return expired();
+            verifiedAt = Date.now();
+            setNeedsRetry(false);
+            callbacksRef.current.onVerify(token);
+          },
+          "expired-callback": expired,
+          "timeout-callback": expired,
+          "error-callback": () => {
+            failed();
+            return true;
+          },
+        });
+      } catch {
+        if (!active) return;
+        failed();
+        // Retry a transient script/render failure once; the visible retry action
+        // remains available if a blocker or offline connection persists.
+        if (scriptAttempts++ === 0) retryTimer = window.setTimeout(initialize, 1_500);
       }
-
-      return () => {
-        isMounted = false;
-        existingScript.removeEventListener("load", renderWidget);
-        if (widgetIdRef.current && window.turnstile) window.turnstile.remove(widgetIdRef.current);
-        widgetIdRef.current = null;
-      };
     }
 
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-    script.async = true;
-    script.defer = true;
-    script.onload = renderWidget;
-    script.onerror = () => callbacksRef.current.onError();
-    document.head.appendChild(script);
+    function checkResumedToken() {
+      if (document.visibilityState !== "visible" || !verifiedAt) return;
+      if (Date.now() - verifiedAt < 300_000) return;
+      expired();
+      if (widgetId !== null) {
+        try { window.turnstile?.reset(widgetId); } catch { failed(); }
+      }
+    }
+
+    callbacksRef.current.onExpire();
+    void initialize();
+    document.addEventListener("visibilitychange", checkResumedToken);
 
     return () => {
-      isMounted = false;
-      if (widgetIdRef.current && window.turnstile) window.turnstile.remove(widgetIdRef.current);
-      widgetIdRef.current = null;
+      active = false;
+      window.clearTimeout(retryTimer);
+      document.removeEventListener("visibilitychange", checkResumedToken);
+      if (widgetId !== null) {
+        try { window.turnstile?.remove(widgetId); } catch { /* Already removed by the provider. */ }
+      }
     };
-  }, [action, siteKey, theme, size]);
+  }, [action, siteKey, theme, resolvedSize, attempt]);
 
-  return <div ref={containerRef} className={className} />;
+  return (
+    <div ref={widthRef} className={className} style={{ contain: "inline-size" }}>
+      <div ref={containerRef} style={resolvedSize === "compact" ? { width: 150, marginInline: "auto" } : undefined} />
+      {needsRetry && (
+        <button
+          type="button"
+          onClick={() => {
+            callbacksRef.current.onExpire();
+            setNeedsRetry(false);
+            setAttempt((value) => value + 1);
+          }}
+          className="bd-focus mt-2 min-h-11 rounded-lg px-2 text-sm font-semibold text-cyan-800 underline underline-offset-4"
+        >
+          {retryLabel}
+        </button>
+      )}
+    </div>
+  );
 }

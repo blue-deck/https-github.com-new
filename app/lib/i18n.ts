@@ -265,6 +265,8 @@ const en = {
   "login.notice.required":
     "Name, email, password, account type and yacht position are required.",
   "login.notice.privacy": "Please accept the Privacy Policy to create your account.",
+  "login.securityRetry": "Retry security check",
+  "login.securityAutomatic": "Verification may complete automatically. No click is needed when it shows success.",
   "login.notice.completeSecurity": "Please complete the security verification.",
   "login.notice.securityError":
     "Security verification could not load. Please refresh and try again.",
@@ -632,6 +634,8 @@ const tr: Record<TranslationKey, string> = {
   "login.notice.emailPassword": "Lütfen e-posta ve şifrenizi girin.",
   "login.notice.required": "İsim, e-posta, şifre, hesap tipi ve yat pozisyonu zorunludur.",
   "login.notice.privacy": "Hesap oluşturmak için Gizlilik Politikası’nı kabul edin.",
+  "login.securityRetry": "Güvenlik doğrulamasını yeniden dene",
+  "login.securityAutomatic": "Doğrulama otomatik tamamlanabilir. Başarılı görünüyorsa tıklamanız gerekmez.",
   "login.notice.completeSecurity": "Lütfen güvenlik doğrulamasını tamamlayın.",
   "login.notice.securityError":
     "Güvenlik doğrulaması yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.",

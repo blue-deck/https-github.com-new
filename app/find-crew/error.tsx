@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { RefreshCcw, UsersRound } from "lucide-react";
-import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
+import { PublicFooter } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 
 export default function FindCrewError({
@@ -21,7 +21,6 @@ export default function FindCrewError({
 
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
 
       <main id="main-content">
         <section className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-3xl items-center px-5 py-16 text-center sm:px-8">

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PublicFooter, PublicHeader } from "../../components/PublicSiteChrome";
+import { PublicFooter } from "../../components/PublicSiteChrome";
 import { getDiscoverableCrew } from "../../lib/findCrewData";
 import { absoluteSiteUrl } from "../../lib/site";
 import { PublicCrewProfileContent } from "./InviteCrewPanel";
@@ -46,7 +46,6 @@ export default async function FindCrewProfilePage({ params }: PageProps) {
 
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
 
       <main id="main-content">
         <PublicCrewProfileContent profile={profile} />

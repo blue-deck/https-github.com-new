@@ -19,7 +19,7 @@ import {
   crewFilterControlSurfaceClassName,
   crewPrimarySearchCopy,
 } from "../components/CrewSearchFields";
-import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
+import { PublicFooter } from "../components/PublicSiteChrome";
 import { useLanguage } from "../components/LanguageProvider";
 import { crewDirectoryAvailabilityStatuses } from "../lib/crewDiscovery";
 import type { DiscoverableCrewPreview } from "../lib/findCrewData";
@@ -287,7 +287,6 @@ export function FindCrewClient({
 
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
 
       <main id="main-content">
         <div className="bd-page-frame mx-auto w-full max-w-7xl px-5 pb-12 pt-5 sm:px-8 lg:px-[2.625rem] lg:pb-14">

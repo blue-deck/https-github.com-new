@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Mail, Send, ShieldCheck } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
-import { PublicFooter, PublicHeader } from "../components/PublicSiteChrome";
+import { PublicFooter } from "../components/PublicSiteChrome";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useTurnstileConfiguration } from "../lib/useTurnstileConfiguration";
 
@@ -14,6 +14,8 @@ export default function ForgotPasswordPage() {
     ready: turnstileReady,
     enabled: turnstileEnabled,
     siteKey: turnstileSiteKey,
+    unavailable: turnstileUnavailable,
+    retry: retryTurnstileConfiguration,
   } = useTurnstileConfiguration();
   const emailId = useId();
   const [email, setEmail] = useState("");
@@ -91,7 +93,6 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <PublicHeader />
 
       <main
         id="main-content"
@@ -161,11 +162,12 @@ export default function ForgotPasswordPage() {
                 <TurnstileWidget
                   key={captchaAttempt}
                   siteKey={turnstileSiteKey}
+                  retryLabel={t("login.securityRetry")}
                   action="forgot_password"
                   className="min-h-[65px]"
                   onVerify={(token) => {
                     setCaptchaToken(token);
-                    setNotice("");
+                    setNotice((current) => [t("forgot.completeSecurity"), t("forgot.securityError")].includes(current) ? "" : current);
                   }}
                   onExpire={() => setCaptchaToken("")}
                   onError={() => {
@@ -176,6 +178,15 @@ export default function ForgotPasswordPage() {
               </div>
             </div>
           ) : null}
+
+          {!sent && turnstileUnavailable && (
+            <div role="status" className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+              <p>{t("forgot.securityError")}</p>
+              <button type="button" onClick={retryTurnstileConfiguration} className="bd-focus mt-2 min-h-11 rounded-lg px-2 font-semibold text-cyan-800 underline underline-offset-4">
+                {t("login.securityRetry")}
+              </button>
+            </div>
+          )}
 
           {notice && (
             <div
@@ -202,7 +213,7 @@ export default function ForgotPasswordPage() {
 
           <button
             type="submit"
-            disabled={loading || sent || !turnstileReady}
+            disabled={loading || sent || !turnstileReady || (turnstileEnabled && !captchaToken)}
             aria-busy={loading}
             className="bd-focus bd-primary-action mt-6 inline-flex min-h-14 items-center justify-center gap-3 rounded-xl px-7 text-base font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
           >

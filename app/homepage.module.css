@@ -14,33 +14,6 @@
   }
 }
 
-/* Desktop shares the standard public header; retain the mobile art direction. */
-@media (min-width: 641px) and (max-width: 959px) {
-  .page :global(.bd-public-header) {
-    background: var(--hero-navy);
-    box-shadow: none;
-  }
-
-  .page :global(.bd-public-header-inner) {
-    padding-inline: var(--hero-gutter);
-  }
-
-  .page :global(.bd-public-nav-link),
-  .page :global(.bd-public-auth-action) {
-    color: #edf3fb;
-    font-weight: 500;
-  }
-
-  .page :global(.bd-public-action-primary) {
-    border-color: #cfdbed;
-    border-radius: 4px;
-    background: transparent;
-  }
-
-  .page :global(.bd-public-action-primary:hover) {
-    background: #18324c;
-  }
-}
 
 .hero {
   background: var(--hero-navy);

@@ -1,11 +1,10 @@
 "use client";
 
 import type { Session } from "@supabase/supabase-js";
-import { LockKeyhole } from "lucide-react";
 import { useEffect, useState } from "react";
 import { clearLegacySensitiveClientStorage } from "../lib/clientStorageSecurity";
 import {
-  buildIdleLoginHref,
+  getWebSessionLogoutHref,
   createWebSessionActivityRecord,
   createWebSessionIdleLock,
   hasWebSessionIdleTimeoutElapsed,
@@ -33,7 +32,6 @@ import {
   terminatePersistedSupabaseBrowserSession,
 } from "../lib/supabase";
 import { endWebBrowserSession } from "../lib/webBrowserSession";
-import { useLanguage } from "./LanguageProvider";
 
 const activityEvents = [
   "pointerdown",
@@ -46,7 +44,6 @@ const idleLockConfirmationDelayMs = 100;
 const crossTabLogoutSettlementDelayMs = 150;
 
 export function WebSessionInactivityGuard() {
-  const { language } = useLanguage();
   const [locked, setLocked] = useState(false);
 
   useEffect(() => {
@@ -267,10 +264,7 @@ export function WebSessionInactivityGuard() {
       writeStorage(WEB_SESSION_IDLE_LOCK_STORAGE_KEY, idleLock);
 
       const sessionIdAtExpiry = currentSessionId;
-      const redirectHref = buildIdleLoginHref(
-        window.location.pathname,
-        window.location.search,
-      );
+      const redirectHref = getWebSessionLogoutHref("idle");
 
       // A short confirmation window lets a concurrent, pre-deadline activity
       // write invalidate a stale tab's lock before credentials are removed.
@@ -645,13 +639,7 @@ export function WebSessionInactivityGuard() {
         return;
       }
 
-      const redirectHref =
-        marker.reason === "idle"
-          ? buildIdleLoginHref(
-              window.location.pathname,
-              window.location.search,
-            )
-          : "/login";
+      const redirectHref = getWebSessionLogoutHref(marker.reason);
       window.location.replace(redirectHref);
     }
 
@@ -694,26 +682,12 @@ export function WebSessionInactivityGuard() {
 
   if (!locked) return null;
 
+  // Hide private content during credential cleanup without announcing an
+  // expiry notice. The completed idle logout immediately opens the homepage.
   return (
     <div
-      role="alert"
-      aria-live="assertive"
-      aria-atomic="true"
-      className="fixed inset-0 z-[2147483647] grid place-items-center bg-[#071631] px-6 text-white"
-    >
-      <div className="w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-8 text-center shadow-2xl backdrop-blur-xl">
-        <LockKeyhole className="mx-auto h-12 w-12 text-cyan-200" aria-hidden />
-        <h2 className="mt-5 text-2xl font-semibold">
-          {language === "tr"
-            ? "Oturumunuz güvenle kapatılıyor"
-            : "Your session is being secured"}
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-cyan-50/85">
-          {language === "tr"
-            ? "2 saat işlem yapılmadığı için yeniden giriş yapmanız gerekiyor."
-            : "You need to sign in again after 2 hours without activity."}
-        </p>
-      </div>
-    </div>
+      aria-hidden="true"
+      className="fixed inset-0 z-[2147483647] bg-[#f5f7fa]"
+    />
   );
 }

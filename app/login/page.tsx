@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { CheckCircle2, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound } from "lucide-react";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
-import { PublicHeader } from "../components/PublicSiteChrome";
 import { TurnstileWidget } from "../components/TurnstileWidget";
 import { useLanguage } from "../components/LanguageProvider";
 import type { TranslationKey } from "../lib/i18n";
@@ -18,16 +17,11 @@ import { currentLegalAcceptance } from "../lib/legalPolicies";
 import { useTurnstileConfiguration } from "../lib/useTurnstileConfiguration";
 import { getDefaultPositionForAccountType, positionSelectGroups } from "../lib/yachtOperations";
 import {
-  parseWebSessionIdleLock,
-  parseWebSessionActivity,
   parseWebSessionLogoutMarker,
-  isVerifiedIdleLogoutTransition,
   resolveWebSessionId,
   WEB_SESSION_ACTIVITY_STORAGE_KEY,
   WEB_SESSION_IDLE_LOCK_STORAGE_KEY,
   WEB_SESSION_LOGOUT_STORAGE_KEY,
-  type WebSessionActivityRecord,
-  type WebSessionIdleLock,
   type WebSessionLogoutMarker,
 } from "../lib/webSessionInactivity";
 
@@ -51,6 +45,8 @@ export default function LoginPage() {
     ready: turnstileReady,
     enabled: turnstileEnabled,
     siteKey: turnstileSiteKey,
+    unavailable: turnstileUnavailable,
+    retry: retryTurnstileConfiguration,
   } = useTurnstileConfiguration();
   const router = useRouter();
   const formTitleId = useId();
@@ -119,7 +115,6 @@ export default function LoginPage() {
     const searchParams = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const requestedNext = safeInternalPath(searchParams.get("next"));
-    const inactiveSession = searchParams.get("reason") === "inactive";
     const isPasswordRecovery =
       searchParams.get("mode") === "recovery" ||
       searchParams.get("type") === "recovery" ||
@@ -136,16 +131,8 @@ export default function LoginPage() {
       } = await supabase.auth.getSession();
       if (!active) return;
 
-      let idleLock: WebSessionIdleLock | null = null;
-      let activity: WebSessionActivityRecord | null = null;
       let logoutMarker: WebSessionLogoutMarker | null = null;
       try {
-        idleLock = parseWebSessionIdleLock(
-          window.localStorage.getItem(WEB_SESSION_IDLE_LOCK_STORAGE_KEY),
-        );
-        activity = parseWebSessionActivity(
-          window.localStorage.getItem(WEB_SESSION_ACTIVITY_STORAGE_KEY),
-        );
         logoutMarker = parseWebSessionLogoutMarker(
           window.localStorage.getItem(WEB_SESSION_LOGOUT_STORAGE_KEY),
         );
@@ -169,25 +156,6 @@ export default function LoginPage() {
           window.location.reload();
           return;
         }
-        if (
-          inactiveSession &&
-          isVerifiedIdleLogoutTransition(
-            idleLock,
-            logoutMarker,
-            activity,
-            sessionId,
-          )
-        ) {
-          setNotice(t("login.notice.inactiveSession"));
-        }
-        return;
-      }
-
-      if (
-        inactiveSession &&
-        isVerifiedIdleLogoutTransition(idleLock, logoutMarker, activity)
-      ) {
-        setNotice(t("login.notice.inactiveSession"));
         return;
       }
 
@@ -199,9 +167,10 @@ export default function LoginPage() {
     return () => {
       active = false;
     };
-  }, [router, t]);
+  }, [router]);
 
   async function submit() {
+    if (loading) return;
     setNotice("");
 
     if (!email || !password) {
@@ -354,6 +323,7 @@ export default function LoginPage() {
   }
 
   async function resendConfirmation() {
+    if (loading) return;
     if (!email) {
       setNotice(t("login.notice.enterEmail"));
       return;
@@ -396,7 +366,6 @@ export default function LoginPage() {
 
   return (
     <>
-      <PublicHeader />
       <main
         id="main-content"
         className="bd-site-shell min-h-screen overflow-x-clip text-slate-900"
@@ -443,7 +412,9 @@ export default function LoginPage() {
           >
             <button
               type="button"
+              disabled={loading}
               onClick={() => {
+                if (mode === "login") return;
                 setMode("login");
                 setCaptchaToken("");
               }}
@@ -454,7 +425,9 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
+              disabled={loading}
               onClick={() => {
+                if (mode === "signup") return;
                 setMode("signup");
                 setCaptchaToken("");
                 setCaptchaAttempt((attempt) => attempt + 1);
@@ -651,11 +624,12 @@ export default function LoginPage() {
                 <TurnstileWidget
                   key={`${mode}-${captchaAttempt}`}
                   siteKey={turnstileSiteKey}
+                  retryLabel={t("login.securityRetry")}
                   action={mode === "signup" ? "signup" : "account_access"}
                   className="min-h-[65px]"
                   onVerify={(token) => {
                     setCaptchaToken(token);
-                    setNotice("");
+                    setNotice((current) => [t("login.notice.completeSecurity"), t("login.notice.securityError")].includes(current) ? "" : current);
                   }}
                   onExpire={() => setCaptchaToken("")}
                   onError={() => {
@@ -663,8 +637,18 @@ export default function LoginPage() {
                     setNotice(t("login.notice.securityError"));
                   }}
                 />
+                <p className="mt-2 text-xs leading-5 text-slate-500">{t("login.securityAutomatic")}</p>
               </div>
             ) : null}
+
+            {turnstileUnavailable && (
+              <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <p>{t("login.notice.securityError")}</p>
+                <button type="button" onClick={retryTurnstileConfiguration} className="bd-focus mt-2 min-h-11 rounded-lg px-2 font-semibold text-cyan-800 underline underline-offset-4">
+                  {t("login.securityRetry")}
+                </button>
+              </div>
+            )}
 
             {notice && (
               <div
@@ -679,7 +663,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || !turnstileReady}
+              disabled={loading || !turnstileReady || (turnstileEnabled && !captchaToken)}
               aria-busy={loading}
               className="bd-focus bd-primary-action min-h-12 w-full rounded-xl px-5 py-3 font-bold text-white transition disabled:cursor-wait disabled:opacity-60"
             >
@@ -690,7 +674,7 @@ export default function LoginPage() {
               <Link href={forgotPasswordHref} className="bd-focus inline-flex min-h-11 items-center rounded-lg px-1 font-semibold text-[var(--bluedeck-accent-on-light)]">
                 {t("login.forgot")}
               </Link>
-              <button type="button" disabled={loading || !turnstileReady} onClick={resendConfirmation} className="bd-focus min-h-11 rounded-lg px-1 font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50">
+              <button type="button" disabled={loading || !turnstileReady || (turnstileEnabled && !captchaToken)} onClick={resendConfirmation} className="bd-focus min-h-11 rounded-lg px-1 font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50">
                 {t("login.resend")}
               </button>
             </div>

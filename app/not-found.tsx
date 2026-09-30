@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { Compass } from "lucide-react";
-import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
+import { PublicFooter } from "./components/PublicSiteChrome";
 
 export default function NotFound() {
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      <PublicHeader />
       <main id="main-content">
         <section className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-3xl items-center px-5 py-16 text-center sm:px-8">
           <div className="bd-editorial-card w-full p-8 sm:p-12">

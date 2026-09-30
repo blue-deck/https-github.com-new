@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RefreshCcw, ShieldAlert } from "lucide-react";
 import { isAuthenticatedAppRoute } from "./components/AuthenticatedTopBar";
-import { PublicFooter, PublicHeader } from "./components/PublicSiteChrome";
+import { PublicFooter } from "./components/PublicSiteChrome";
 
 export default function ErrorPage({
   error,
@@ -23,7 +23,6 @@ export default function ErrorPage({
 
   return (
     <div className="bd-site-shell min-h-screen text-[#071f3c]">
-      {!usesAccountShell && <PublicHeader />}
       <main id="main-content">
         <section className="mx-auto flex min-h-[calc(100dvh-var(--public-header-height))] max-w-3xl items-center px-5 py-16 text-center sm:px-8">
           <div className="bd-editorial-card w-full p-8 sm:p-12">

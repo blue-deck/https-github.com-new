@@ -1,81 +1,74 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { plausibleTurnstileSiteKey } from "./turnstileClient";
 
 type PublicTurnstileConfiguration = {
   ready: boolean;
   enabled: boolean;
   siteKey: string;
+  unavailable: boolean;
 };
 
-const compiledSiteKey = plausibleSiteKey(
+const compiledSiteKey = plausibleTurnstileSiteKey(
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "",
 );
 
 export function useTurnstileConfiguration() {
-  const [configuration, setConfiguration] =
-    useState<PublicTurnstileConfiguration>({
-      ready: false,
-      enabled: false,
-      siteKey: "",
-    });
+  const [attempt, setAttempt] = useState(0);
+  const [configuration, setConfiguration] = useState<PublicTurnstileConfiguration>({
+    ready: false,
+    enabled: true,
+    siteKey: "",
+    unavailable: false,
+  });
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 8_000);
 
     async function loadConfiguration() {
       try {
         const response = await fetch("/api/auth/security-config", {
           cache: "no-store",
+          signal: controller.signal,
         });
-        if (!response.ok) {
-          if (!active) return;
-          setConfiguration({
-            ready: true,
-            enabled: Boolean(compiledSiteKey),
-            siteKey: compiledSiteKey,
-          });
-          return;
+        if (!response.ok) throw new Error("Configuration unavailable");
+        const payload = (await response.json()) as Partial<PublicTurnstileConfiguration> | null;
+        const siteKey = plausibleTurnstileSiteKey(payload?.siteKey);
+        if (!payload || typeof payload.enabled !== "boolean" || (payload.enabled && !siteKey)) {
+          throw new Error("Invalid security configuration");
         }
-        const payload =
-          (await response.json()) as Partial<PublicTurnstileConfiguration>;
-
-        if (!active) return;
-
-        setConfiguration({
-          ready: true,
-          enabled: payload.enabled === true && Boolean(payload.siteKey),
-          siteKey: typeof payload.siteKey === "string" ? payload.siteKey : "",
-        });
+        if (active) setConfiguration({ ready: true, enabled: payload.enabled, siteKey, unavailable: false });
       } catch {
         if (!active) return;
-
-        // If the configuration probe alone fails, showing the compiled widget
-        // still lets a correctly configured server validate the request.
+        // A compiled public key can recover a failed probe. Without any key,
+        // keep the form locked and offer a retry rather than treating it as off.
         setConfiguration({
-          ready: true,
-          enabled: Boolean(compiledSiteKey),
+          ready: Boolean(compiledSiteKey),
+          enabled: true,
           siteKey: compiledSiteKey,
+          unavailable: !compiledSiteKey,
         });
+      } finally {
+        window.clearTimeout(timeout);
       }
     }
 
     void loadConfiguration();
-
     return () => {
       active = false;
+      controller.abort();
+      window.clearTimeout(timeout);
     };
-  }, []);
+  }, [attempt]);
 
-  return configuration;
-}
-
-function plausibleSiteKey(value: string) {
-  const trimmed = value.trim();
-  return trimmed.length >= 20 &&
-    trimmed.length <= 256 &&
-    /^[A-Za-z0-9_-]+$/.test(trimmed) &&
-    !/^(placeholder|changeme|turnstile|example)/i.test(trimmed)
-    ? trimmed
-    : "";
+  return {
+    ...configuration,
+    retry: () => {
+      setConfiguration({ ready: false, enabled: true, siteKey: "", unavailable: false });
+      setAttempt((value) => value + 1);
+    },
+  };
 }

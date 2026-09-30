@@ -1700,10 +1700,6 @@ html[data-display-mode="standalone"] .fixed.inset-0 {
     scroll-padding-top: var(--safe-area-top);
   }
 
-  html[data-authenticated][data-account-shell] .bd-public-header {
-    display: none;
-  }
-
   html[data-authenticated][data-account-shell] .bd-site-shell {
     padding-top: 0;
   }

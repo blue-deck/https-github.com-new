@@ -1,13 +1,12 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import { PublicHeader } from "./PublicSiteChrome";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 
-// Keep this as an explicit private-workspace allowlist. Marketing, marketplace,
-// auth, invitation and public crew routes retain their own page chrome.
+// Private workspace styling remains scoped; navigation is shared by every route.
 const authenticatedAppRoutePrefixes = [
-  "/admin/employer-access",
+  "/admin",
   "/contracts",
   "/crew/tasks",
   "/dashboard",
@@ -24,15 +23,6 @@ export function isAuthenticatedAppRoute(pathname: string) {
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 }
-
-function AccountTopBarPlaceholder() {
-  return <div className="bd-app-topbar-placeholder" aria-hidden="true" />;
-}
-
-const BlueDeckTopBar = dynamic(
-  () => import("./BlueDeckTopBar").then((module) => module.BlueDeckTopBar),
-  { ssr: false, loading: AccountTopBarPlaceholder },
-);
 
 export function AuthenticatedTopBar() {
   const pathname = usePathname() || "/";
@@ -91,9 +81,5 @@ export function AuthenticatedTopBar() {
     };
   }, [checked, hasSession, usesAccountShell]);
 
-  if (!usesAccountShell) return null;
-  if (!checked) return <AccountTopBarPlaceholder />;
-  if (!hasSession) return null;
-
-  return <BlueDeckTopBar />;
+  return <PublicHeader />;
 }
