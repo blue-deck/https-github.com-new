@@ -13,7 +13,6 @@ export type TurnstileRenderOptions = {
 };
 
 export type TurnstileApi = {
-  ready?: (callback: () => void) => void;
   render: (container: HTMLElement, options: TurnstileRenderOptions) => string;
   reset: (widgetId: string) => void;
   remove: (widgetId: string) => void;
@@ -58,14 +57,12 @@ export function loadTurnstile(): Promise<TurnstileApi> {
       if (settled) return;
       const api = window.turnstile;
       if (!api) return fail();
-      const ready = () => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-        resolve(api);
-      };
-      if (api.ready) api.ready(ready);
-      else ready();
+      // The load event means the explicit-render API has executed. Calling
+      // turnstile.ready() here throws when api.js uses async/defer, leaving
+      // every waiting form stuck until the loader timeout.
+      settled = true;
+      cleanup();
+      resolve(api);
     }
 
     script.addEventListener("load", loaded);

@@ -43,35 +43,58 @@ function browser() {
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-test("concurrent widgets share one script and wait until Turnstile is ready", async () => {
+test("concurrent widgets share one async script and resolve on load without calling incompatible ready", async () => {
   const context = browser();
   const { loadTurnstile } = load("app/lib/turnstileClient.ts", context);
   const first = loadTurnstile();
   assert.equal(loadTurnstile(), first);
   assert.equal(context.scripts.length, 1);
-  let ready;
-  const api = { ready(callback) { ready = callback; } };
+  assert.equal(context.scripts[0].async, true);
+  let readyCalls = 0;
+  const api = {
+    render() {},
+    ready() {
+      readyCalls++;
+      throw new Error("[Cloudflare Turnstile] Remove async/defer from the Turnstile api.js script tag before using turnstile.ready()..");
+    },
+  };
   context.window.turnstile = api;
-  context.scripts[0].dispatchEvent(new Event("load"));
-  assert.equal(loadTurnstile(), first);
   let resolved = false;
   first.then(() => { resolved = true; });
   await flush();
-  assert.equal(resolved, false);
-  ready();
+  assert.equal(resolved, false, "the shared loader waits for the script load event");
+  context.scripts[0].dispatchEvent(new Event("load"));
+  assert.equal(readyCalls, 0, "async Turnstile scripts must not call turnstile.ready()");
   assert.equal(await first, api);
+  assert.equal(loadTurnstile(), first, "later forms reuse the successful load");
+  assert.equal(context.timers.size, 0);
+  context.scripts[0].dispatchEvent(new Event("error"));
+  assert.equal(await loadTurnstile(), api, "late script events cannot invalidate the loaded API");
+});
+
+test("an API already loaded by a previous form is reused without injecting a script or calling ready", async () => {
+  const context = browser();
+  const api = {
+    render() {},
+    ready() { assert.fail("ready is incompatible with the async script"); },
+  };
+  context.window.turnstile = api;
+  const { loadTurnstile } = load("app/lib/turnstileClient.ts", context);
+  assert.equal(await loadTurnstile(), api);
+  assert.equal(context.scripts.length, 0);
   assert.equal(context.timers.size, 0);
 });
 
 test("failed or blocked script loads are removed so navigation/manual retry can recover", async () => {
-  for (const kind of ["error", "timeout"]) {
+  for (const kind of ["error", "timeout", "missing-api"]) {
     const context = browser();
     const { loadTurnstile } = load("app/lib/turnstileClient.ts", context);
     const pending = loadTurnstile();
     const rejected = assert.rejects(pending, /could not load/);
     const oldScript = context.scripts[0];
     if (kind === "error") oldScript.dispatchEvent(new Event("error"));
-    else [...context.timers.values()][0].callback();
+    else if (kind === "timeout") [...context.timers.values()][0].callback();
+    else oldScript.dispatchEvent(new Event("load"));
     await rejected;
     assert.equal(context.scripts.length, 0);
     assert.equal(context.timers.size, 0);
