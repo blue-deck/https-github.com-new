@@ -692,7 +692,7 @@ export default function DashboardPage() {
     >
       <div className={`bd-page-frame ${styles.shell}`}>
         <header className={styles.header}>
-          <h1 className={styles.heading}>{t("dashboard.myDashboard")}</h1>
+          <h1 className="sr-only">{t("dashboard.myDashboard")}</h1>
           <div className={styles.identity}>
             <DashboardPhotoControl
               url={profile?.dashboard_photo_url}

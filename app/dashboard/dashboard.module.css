@@ -18,18 +18,9 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
+  justify-content: flex-start;
   padding: 1.75rem 2rem;
   border-bottom: 1px solid #e8eef2;
-}
-
-.heading {
-  flex-shrink: 0;
-  font-size: 1.5rem;
-  font-weight: 650;
-  letter-spacing: -0.035em;
-  line-height: 1.25;
 }
 
 .identity {
@@ -197,7 +188,6 @@
 }
 
 @media (max-width: 900px) {
-  .header { align-items: flex-start; flex-direction: column; gap: 1.25rem; }
   .identity { width: 100%; }
   .workspaceContent { width: 78%; }
 }
@@ -205,8 +195,7 @@
 @media (max-width: 639px) {
   .page { padding: 1rem 0.75rem 2rem; }
   .shell { border-radius: 16px; }
-  .header { padding: 1.25rem; gap: 1rem; }
-  .heading { font-size: 1.125rem; }
+  .header { padding: 1.25rem; }
   .identity { gap: 0.75rem; }
   .name { font-size: 1.05rem; }
   .personalLinks { padding: 0.75rem 0; }
