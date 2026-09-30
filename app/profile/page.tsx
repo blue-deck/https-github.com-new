@@ -3445,10 +3445,6 @@ function ExperiencePanel({
   return (
     <section hidden={!active} aria-label={title} className="min-w-0 pb-2">
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 py-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-[#071f3c]">Experience</h2>
-          {count > 0 && <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">{count}</span>}
-        </div>
         <button
           type="button"
           onClick={onToggleForm}
@@ -3460,6 +3456,10 @@ function ExperiencePanel({
           <span>Add experience</span>
           {draftDirty && <span className="text-[10px] font-semibold text-amber-700">Unsaved</span>}
         </button>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <h2 className="text-base font-semibold text-[#071f3c]">Experience</h2>
+          {count > 0 && <span data-i18n-ignore className="text-xs font-medium tabular-nums text-slate-400">{count}</span>}
+        </div>
       </div>
       {children}
     </section>

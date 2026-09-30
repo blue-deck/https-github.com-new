@@ -28,22 +28,27 @@
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 0.8rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
   min-width: 0;
 }
 
 .wordmark {
-  font-size: 1.125rem;
-  font-weight: 750;
-  letter-spacing: -0.045em;
+  color: #a4ccdc;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .studioLabel {
-  border-left: 1px solid #466478;
-  padding-left: 0.8rem;
-  font-size: 0.8125rem;
-  color: #d6e7ef;
+  color: #f5fbff;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
 }
 
 .completion {
@@ -62,7 +67,6 @@
   font-weight: 650;
 }
 
-.previewAction,
 .sectionButton,
 .secondaryAction,
 .continueAction {
@@ -71,31 +75,11 @@
   transition: background-color 150ms ease, border-color 150ms ease;
 }
 
-.previewAction:focus-visible,
 .sectionButton:focus-visible,
 .secondaryAction:focus-visible,
 .continueAction:focus-visible {
   outline: 2px solid var(--studio-cyan);
   outline-offset: 3px;
-}
-
-.previewAction {
-  display: none;
-  min-height: 42px;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1px solid #58798e;
-  border-radius: 7px;
-  padding: 0.5rem 0.875rem;
-  color: #f5fbff;
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.previewAction:hover {
-  background: #1b4259;
-  border-color: #a8dae8;
 }
 
 .layout,
@@ -204,9 +188,7 @@
 }
 
 .footer {
-  position: sticky;
-  z-index: 20;
-  bottom: 0;
+  position: static;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -257,10 +239,6 @@
   .completion {
     margin-left: auto;
     font-size: 0.75rem;
-  }
-
-  .previewAction {
-    display: inline-flex;
   }
 
   .mobileNavigation {
@@ -365,7 +343,6 @@
   }
 
   .footer {
-    position: static;
     border-color: var(--studio-line);
     background: #f1f8fb;
     padding: 1rem 2rem;

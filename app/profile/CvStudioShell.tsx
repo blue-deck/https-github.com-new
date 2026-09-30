@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ChevronDown, ChevronLeft, Download } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import styles from "./cvStudio.module.css";
 
@@ -55,21 +55,12 @@ export function CvStudioShell({
     <section ref={studioRef} id="cv-studio" aria-labelledby="cv-studio-title" className={styles.studio}>
       <header className={styles.toolbar}>
         <div className={styles.brand}>
-          <span className={styles.wordmark}>BlueDeck</span>
+          <span className={styles.wordmark} data-i18n-ignore>BlueDeck</span>
           <span className={styles.studioLabel}>CV Studio</span>
         </div>
         <span className={styles.completion} aria-label={`CV completion ${percent}%`}>
           <strong data-i18n-ignore>{percent}%</strong> <span>complete</span>
         </span>
-        <button
-          type="button"
-          className={styles.previewAction}
-          onClick={() => selectSection("preview", true)}
-          aria-current={previewActive ? "page" : undefined}
-        >
-          <Download aria-hidden size={16} />
-          <span>Preview / Download</span>
-        </button>
       </header>
 
       <div className={styles.layout}>
@@ -129,11 +120,7 @@ export function CvStudioShell({
               <button type="button" className={styles.secondaryAction} onClick={() => selectSection(previous?.id || "personal", true)}>
                 <ChevronLeft size={16} aria-hidden /> Previous
               </button>
-            ) : (
-              <button type="button" className={styles.secondaryAction} onClick={() => selectSection("preview", true)}>
-                <Download size={16} aria-hidden /> Preview CV
-              </button>
-            )}
+            ) : null}
             {next ? (
               <button
                 type="button"
