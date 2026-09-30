@@ -4,21 +4,23 @@ import test from "node:test";
 
 const root = new URL("../", import.meta.url);
 
-test("dashboard places the profile photo below its label and left of account details", async () => {
+test("dashboard keeps an editable identity beside a direct dashboard heading", async () => {
   const dashboard = await readFile(new URL("app/dashboard/page.tsx", root), "utf8");
   const labelIndex = dashboard.indexOf('t("dashboard.myDashboard")');
   const identityRowIndex = dashboard.indexOf(
-    'className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 sm:items-center sm:gap-6"',
+    'className={styles.identity}',
   );
   const photoIndex = dashboard.indexOf("<DashboardPhotoControl", identityRowIndex);
-  const welcomeIndex = dashboard.indexOf('t("dashboard.welcome")', photoIndex);
-  const roleIndex = dashboard.indexOf('t("dashboard.role")', welcomeIndex);
+  const nameIndex = dashboard.indexOf('className={styles.name}', photoIndex);
+  const roleIndex = dashboard.indexOf('t("dashboard.role")', nameIndex);
   const teamCoupleIndex = dashboard.indexOf("<TeamCouplePanel />", roleIndex);
 
   assert.ok(labelIndex >= 0);
   assert.ok(identityRowIndex > labelIndex);
   assert.ok(photoIndex > identityRowIndex);
-  assert.ok(welcomeIndex > photoIndex);
-  assert.ok(roleIndex > welcomeIndex);
+  assert.ok(nameIndex > photoIndex);
+  assert.ok(roleIndex > nameIndex);
   assert.ok(teamCoupleIndex > roleIndex);
+  assert.doesNotMatch(dashboard, /dashboard\.welcome/);
+  assert.equal(dashboard.match(/<TeamCouplePanel \/>/g)?.length, 1);
 });

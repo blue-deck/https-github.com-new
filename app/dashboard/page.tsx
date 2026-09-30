@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
+  ArrowRight,
   BriefcaseBusiness,
   Camera,
   CheckCircle2,
@@ -13,9 +15,11 @@ import {
   Plus,
   ShieldCheck,
   Ship,
+  ShipWheel,
   Trash2,
   UserPlus,
   UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
 import {
@@ -35,6 +39,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 import TeamCouplePanel from "./TeamCouplePanel";
+import styles from "./dashboard.module.css";
 
 type DashboardProfile = {
   id?: string;
@@ -73,8 +78,8 @@ type DashboardDeck = {
 
 const dashboardCopy = {
   en: {
-    profileDescription: "Manage your crew ID, documents, expiry dates and CV.",
-    galleryDescription: "Open and manage your professional photo gallery.",
+    profileDescription: "Crew ID, documents and CV.",
+    galleryDescription: "Your professional photo gallery.",
     inviteBadge: "Invite",
     inviteTitle: "Yacht Invite",
     invitedBy: "You are invited by",
@@ -87,10 +92,12 @@ const dashboardCopy = {
     acceptingInvite: "Accepting...",
     acceptInvite: "Accept Yacht Invite",
     additionalDecks: (count: number) => `+${count} additional ${count === 1 ? "deck" : "decks"}`,
-    captainWorkspaceDescription: "Manage yachts, crew, documents and onboard operations.",
+    captainWorkspaceDescription: "Yachts, crew and onboard operations.",
+    openWorkspace: "Open workspace",
+    hiringDescription: "Job posts, applicants and hiring.",
     applicationsTitle: "My Applications",
-    applicationsDescription: "Track the jobs you applied for and their latest status in one place.",
-    contractsDescription: "Review yacht contracts assigned to your profile.",
+    applicationsDescription: "Track your applications and their status.",
+    contractsDescription: "Your assigned yacht contracts.",
     photoUpdateFailed: "Your photo could not be updated.",
     photoStorageUnavailable: "Photo storage is not ready yet. Please try again later.",
     photoRemoveFailed: "Your photo could not be removed.",
@@ -98,8 +105,8 @@ const dashboardCopy = {
     inviteAcceptFailed: "Invitation could not be accepted.",
   },
   tr: {
-    profileDescription: "Mürettebat kimliğinizi, belgelerinizi, geçerlilik tarihlerinizi ve CV’nizi yönetin.",
-    galleryDescription: "Profesyonel fotoğraf galerinizi açın ve yönetin.",
+    profileDescription: "Mürettebat kimliğiniz, belgeleriniz ve CV’niz.",
+    galleryDescription: "Profesyonel fotoğraf galeriniz.",
     inviteBadge: "Davet",
     inviteTitle: "Yat Daveti",
     invitedBy: "Şu yat tarafından davet edildiniz:",
@@ -112,10 +119,12 @@ const dashboardCopy = {
     acceptingInvite: "Kabul ediliyor...",
     acceptInvite: "Yat Davetini Kabul Et",
     additionalDecks: (count: number) => `+${count} ek tekne`,
-    captainWorkspaceDescription: "Yatları, mürettebatı, belgeleri ve tekne operasyonlarını yönetin.",
+    captainWorkspaceDescription: "Yatlar, mürettebat ve tekne operasyonları.",
+    openWorkspace: "Çalışma alanını aç",
+    hiringDescription: "İş ilanları, adaylar ve işe alım.",
     applicationsTitle: "Başvurularım",
-    applicationsDescription: "Başvurduğunuz ilanları ve güncel durumlarını tek ekrandan takip edin.",
-    contractsDescription: "Profilinize atanmış yat kontratlarını inceleyin.",
+    applicationsDescription: "Başvurularınızı ve güncel durumlarını takip edin.",
+    contractsDescription: "Profilinize atanmış yat kontratları.",
     photoUpdateFailed: "Fotoğrafınız güncellenemedi.",
     photoStorageUnavailable: "Fotoğraf depolama alanı henüz hazır değil. Lütfen daha sonra tekrar deneyin.",
     photoRemoveFailed: "Fotoğrafınız kaldırılamadı.",
@@ -160,7 +169,7 @@ function DashboardPhotoControl({
 }) {
   return (
     <div
-      className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200 sm:h-28 sm:w-28"
+      className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-200 "
       aria-busy={uploading}
     >
       {url && (
@@ -249,6 +258,29 @@ function DashboardPhotoControl({
         {uploading ? uploadingLabel : ""}
       </span>
     </div>
+  );
+}
+
+function DashboardEntry({
+  href,
+  title,
+  description,
+  icon: Icon,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: LucideIcon;
+}) {
+  return (
+    <Link href={href} className={styles.entry} aria-label={title}>
+      <span className={styles.entryIcon}><Icon aria-hidden /></span>
+      <div className={styles.entryCopy}>
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+      <span className={styles.entryArrow}><ArrowRight aria-hidden /></span>
+    </Link>
   );
 }
 
@@ -656,43 +688,36 @@ export default function DashboardPage() {
     <main
       id="main-content"
       tabIndex={-1}
-      className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-10 text-slate-900 sm:px-8 lg:px-10"
+      className={`bd-app-page bd-page-gutter ${styles.page}`}
     >
-      <div className="bd-ocean-content bd-page-frame mx-auto max-w-7xl">
-        <section className="bd-filter-panel relative overflow-hidden rounded-2xl border">
-          <div className="bd-brand-rule h-0.5" />
-          <div className="p-5 sm:p-7">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700">
-              {t("dashboard.myDashboard")}
-            </p>
-
-            <div className="mt-3 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-4 sm:items-center sm:gap-6">
-              <DashboardPhotoControl
-                url={profile?.dashboard_photo_url}
-                photoAlt={`${profile?.full_name || t("topbar.accountFallback")} — ${t("dashboard.profilePhoto")}`}
-                addLabel={`${t("topbar.addPhoto")} — ${t("dashboard.profilePhoto")}`}
-                changeLabel={`${t("topbar.changePhoto")} — ${t("dashboard.profilePhoto")}`}
-                removeLabel={`${t("topbar.removePhoto")} — ${t("dashboard.profilePhoto")}`}
-                uploading={photoUploading}
-                uploadingLabel={t("dashboard.updatingPhoto")}
-                onChoose={() => fileInputRef.current?.click()}
-                onRemove={() => void removeDashboardPhoto()}
-              />
-
-              <div className="min-w-0">
-                <h1 className="text-2xl font-semibold leading-tight tracking-[-0.025em] text-[#071f3c] sm:text-4xl">
-                  <span className="font-medium text-slate-500">{t("dashboard.welcome")}, </span>
-                  <span data-i18n-ignore>{profile?.full_name || profile?.email}</span>
-                </h1>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <div className="inline-flex min-h-8 items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50/70 px-3 text-xs">
-                    <span className="font-semibold text-slate-500">{t("dashboard.role")}</span>
-                    <span data-i18n-ignore className="font-bold text-[#173f4a]">{roleLabel}</span>
-                  </div>
-                  {hasCrewWorkspace ? <TeamCouplePanel /> : null}
+      <div className={`bd-page-frame ${styles.shell}`}>
+        <header className={styles.header}>
+          <h1 className={styles.heading}>{t("dashboard.myDashboard")}</h1>
+          <div className={styles.identity}>
+            <DashboardPhotoControl
+              url={profile?.dashboard_photo_url}
+              photoAlt={`${profile?.full_name || t("topbar.accountFallback")} — ${t("dashboard.profilePhoto")}`}
+              addLabel={`${t("topbar.addPhoto")} — ${t("dashboard.profilePhoto")}`}
+              changeLabel={`${t("topbar.changePhoto")} — ${t("dashboard.profilePhoto")}`}
+              removeLabel={`${t("topbar.removePhoto")} — ${t("dashboard.profilePhoto")}`}
+              uploading={photoUploading}
+              uploadingLabel={t("dashboard.updatingPhoto")}
+              onChoose={() => fileInputRef.current?.click()}
+              onRemove={() => void removeDashboardPhoto()}
+            />
+            <div className={styles.identityDetails}>
+              <p className={styles.name} data-i18n-ignore>
+                {profile?.full_name || profile?.email}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className={styles.role}>
+                  <span className="sr-only">{t("dashboard.role")}: </span>
+                  <span data-i18n-ignore>{roleLabel}</span>
                 </div>
+                {hasCrewWorkspace ? <TeamCouplePanel /> : null}
               </div>
             </div>
+          </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -711,40 +736,27 @@ export default function DashboardPage() {
                 if (file) await saveDashboardPhoto(file);
               }}
             />
-          </div>
-        </section>
+        </header>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {hasCrewWorkspace ? (
-            <Link
+        {hasCrewWorkspace ? (
+          <div className={styles.personalLinks}>
+            <DashboardEntry
               href="/profile"
-              className={`${dashboardCardClass} bd-card-featured`}
-            >
-              <UserRound className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("topbar.myProfile")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {copy.profileDescription}
-              </p>
-            </Link>
-          ) : null}
-
-          {hasCrewWorkspace ? (
-            <Link
+              title={t("topbar.myProfile")}
+              description={copy.profileDescription}
+              icon={UserRound}
+            />
+            <DashboardEntry
               href="/my-blue"
-              className={dashboardCardClass}
-            >
-              <Camera className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("topbar.myBlue")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {copy.galleryDescription}
-              </p>
-            </Link>
-          ) : null}
+              title={t("topbar.myBlue")}
+              description={copy.galleryDescription}
+              icon={Camera}
+            />
+          </div>
+        ) : null}
 
+        {hasCrewWorkspace && (deckInvites.length > 0 || myDecks.length > 0) ? (
+          <div className={styles.deckAccess}>
           {hasCrewWorkspace && deckInvites.length > 0 ? (
             <div className="bd-dashboard-card rounded-2xl p-6">
               <div className="flex items-start justify-between gap-4">
@@ -841,101 +853,82 @@ export default function DashboardPage() {
               )}
             </Link>
           ) : null}
+          </div>
+        ) : null}
 
-          {canManageYachts ? (
-            <Link
-              href="/yachts"
-              className={`${dashboardCardClass}${!hasCrewWorkspace && !canPostJobs ? " bd-card-featured" : ""}`}
-            >
-              <Ship className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("topbar.captainWorkspace")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {copy.captainWorkspaceDescription}
-              </p>
-            </Link>
-          ) : null}
+        {canManageYachts ? (
+          <Link
+            href="/yachts"
+            className={styles.workspaceRibbon}
+            aria-labelledby="dashboard-workspace-title"
+          >
+            <Image
+              src="/media/dashboard-workspace-ribbon.webp"
+              alt=""
+              fill
+              sizes="100vw"
+              className={styles.workspaceImage}
+            />
+            <div className={styles.workspaceContent}>
+              <ShipWheel className={styles.workspaceIcon} aria-hidden />
+              <div className={styles.workspaceCopy}>
+                <h2 id="dashboard-workspace-title">{t("topbar.captainWorkspace")}</h2>
+                <p>{copy.captainWorkspaceDescription}</p>
+                <span className={styles.workspaceAction}>
+                  {copy.openWorkspace}<ArrowRight aria-hidden />
+                </span>
+              </div>
+            </div>
+          </Link>
+        ) : null}
 
-          {canPostJobs ? (
-            <Link
-              href="/hiring"
-              className={`${dashboardCardClass}${!hasCrewWorkspace ? " bd-card-featured" : ""}`}
-            >
-              <BriefcaseBusiness className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("dashboard.hiring")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {t("dashboard.hiringText")}
-              </p>
-            </Link>
-          ) : null}
+        {canPostJobs || canApplyToJobs || hasCrewWorkspace ? (
+          <div className={styles.careerLinks}>
+            {canPostJobs ? (
+              <DashboardEntry
+                href="/hiring"
+                title={t("dashboard.hiring")}
+                description={copy.hiringDescription}
+                icon={BriefcaseBusiness}
+              />
+            ) : null}
+            {canApplyToJobs ? (
+              <DashboardEntry
+                href="/portal/applications"
+                title={copy.applicationsTitle}
+                description={copy.applicationsDescription}
+                icon={ClipboardCheck}
+              />
+            ) : null}
+            {hasCrewWorkspace ? (
+              <DashboardEntry
+                href="/contracts"
+                title={t("topbar.contracts")}
+                description={copy.contractsDescription}
+                icon={FileText}
+              />
+            ) : null}
+          </div>
+        ) : null}
 
-          {canApplyToJobs ? (
-            <Link
-              href="/portal/applications"
-              className={dashboardCardClass}
-            >
-              <ClipboardCheck className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {copy.applicationsTitle}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {copy.applicationsDescription}
-              </p>
-            </Link>
-          ) : null}
-
-          {profile?.is_admin ? (
-            <Link
+        {profile?.is_admin ? (
+          <div className={styles.adminLinks} data-i18n-ignore>
+            <DashboardEntry
               href="/admin/contact-messages"
-              className={dashboardCardClass}
-              data-i18n-ignore
-            >
-              <Inbox className="h-8 w-8 text-cyan-700" aria-hidden />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {language === "tr" ? "İletişim mesajları" : "Contact messages"}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {language === "tr"
-                  ? "Gelen mesajları okuyun, işaretleyin ve arşivleyin."
-                  : "Read, mark and archive incoming contact messages."}
-              </p>
-            </Link>
-          ) : null}
-
-          {profile?.is_admin ? (
-            <Link
+              title={language === "tr" ? "İletişim mesajları" : "Contact messages"}
+              description={language === "tr"
+                ? "Gelen mesajları okuyun, işaretleyin ve arşivleyin."
+                : "Read, mark and archive incoming contact messages."}
+              icon={Inbox}
+            />
+            <DashboardEntry
               href="/admin/employer-access"
-              className={dashboardCardClass}
-            >
-              <ShieldCheck className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("dashboard.employerApprovals")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {t("dashboard.employerApprovalsText")}
-              </p>
-            </Link>
-          ) : null}
-
-          {hasCrewWorkspace ? (
-            <Link
-              href="/contracts"
-              className={dashboardCardClass}
-            >
-              <FileText className="h-8 w-8 text-cyan-700" />
-              <h2 className="mt-5 text-3xl font-semibold text-slate-950">
-                {t("topbar.contracts")}
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600">
-                {copy.contractsDescription}
-              </p>
-            </Link>
-          ) : null}
-
-        </div>
+              title={t("dashboard.employerApprovals")}
+              description={t("dashboard.employerApprovalsText")}
+              icon={ShieldCheck}
+            />
+          </div>
+        ) : null}
       </div>
     </main>
   );
