@@ -1,15 +1,20 @@
+import { assertCvPdfActive, awaitCvPdf } from "./cvPdfAsync";
+
 type CvPdfDownloadInput = {
   pages: HTMLElement[];
   fileName: string;
   title: string;
   author: string;
+  signal: AbortSignal;
+  onPage?: (page: number, total: number) => void;
 };
 
-export async function downloadCvPages({ pages, fileName, title, author }: CvPdfDownloadInput) {
-  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+export async function downloadCvPages({ pages, fileName, title, author, signal, onPage }: CvPdfDownloadInput) {
+  assertCvPdfActive(signal);
+  const [{ default: html2canvas }, { jsPDF }] = await awaitCvPdf(Promise.all([
     import("html2canvas"),
     import("jspdf"),
-  ]);
+  ]), signal);
   const printCss = collectPrintCss();
   const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
   const renderScale = 3;
@@ -24,16 +29,26 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
   const restoreFontMetricStyles = installHtml2CanvasFontMetricStyles();
   try {
     for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-      const canvas = await html2canvas(pages[pageIndex], {
+      assertCvPdfActive(signal);
+      const page = pages[pageIndex];
+      const exportRoot = page.closest(".bd-cv-print-root") || page;
+      onPage?.(pageIndex + 1, pages.length);
+      // Cloning the whole profile also waits for hidden editor/preview photos.
+      // Keep the CV and its page siblings so structural print selectors still match.
+      const existingFrames = new Set(document.querySelectorAll("iframe.html2canvas-container"));
+      const render = html2canvas(page, {
         scale: renderScale,
         useCORS: true,
         allowTaint: false,
         backgroundColor: "#ffffff",
         logging: false,
-        imageTimeout: 30000,
+        imageTimeout: 10000,
         windowWidth: 794,
         windowHeight: 1123,
+        ignoreElements: (element) => !document.head.contains(element)
+          && !element.contains(exportRoot) && !exportRoot.contains(element),
         onclone: async (clonedDocument, clonedPage) => {
+          assertCvPdfActive(signal);
           const style = clonedDocument.createElement("style");
           style.dataset.cvPdfPrintStyles = "true";
           style.textContent = printCss;
@@ -58,22 +73,43 @@ export async function downloadCvPages({ pages, fileName, title, author }: CvPdfD
           clonedDocument.body.style.padding = "0";
           clonedDocument.body.style.setProperty("background-color", "#ffffff", "important");
           clonedDocument.body.style.setProperty("color", "#242a31", "important");
-          await clonedDocument.fonts?.ready;
-          await rasterizeCvExportSvgs(clonedPage);
+          if (clonedDocument.fonts) await awaitCvPdf(clonedDocument.fonts.ready, signal);
+          await rasterizeCvExportSvgs(clonedPage, signal);
+          assertCvPdfActive(signal);
           normalizeCvExportColors(clonedPage);
         },
       });
-
-      if (pageIndex > 0) pdf.addPage("a4", "portrait");
-      pdf.addImage(canvas, "PNG", 0, 0, 210, 297, undefined, "FAST");
-      canvas.width = 1;
-      canvas.height = 1;
+      // html2canvas creates its iframe synchronously before its first await.
+      // A timed-out render must not leave that hidden document behind.
+      const renderFrames = Array.from(document.querySelectorAll("iframe.html2canvas-container"))
+        .filter((frame) => !existingFrames.has(frame));
+      render.then((canvas) => {
+        if (signal.aborted) {
+          canvas.width = 1;
+          canvas.height = 1;
+        }
+      }, () => undefined);
+      try {
+        const canvas = await awaitCvPdf(render, signal);
+        try {
+          assertCvPdfActive(signal);
+          if (pageIndex > 0) pdf.addPage("a4", "portrait");
+          pdf.addImage(canvas, "PNG", 0, 0, 210, 297, undefined, "FAST");
+        } finally {
+          canvas.width = 1;
+          canvas.height = 1;
+        }
+      } finally {
+        renderFrames.forEach((frame) => frame.remove());
+      }
     }
   } finally {
     restoreFontMetricStyles();
   }
 
+  assertCvPdfActive(signal);
   const pdfBlob = pdf.output("blob");
+  assertCvPdfActive(signal);
   const downloadUrl = URL.createObjectURL(pdfBlob);
   const link = document.createElement("a");
   link.href = downloadUrl;
@@ -102,14 +138,15 @@ function installHtml2CanvasFontMetricStyles() {
   return () => style.remove();
 }
 
-async function rasterizeCvExportSvgs(root: HTMLElement) {
+async function rasterizeCvExportSvgs(root: HTMLElement, signal: AbortSignal) {
   const document = root.ownerDocument;
   const view = document.defaultView;
   if (!view) return;
 
   const svgs = Array.from(root.querySelectorAll<SVGSVGElement>("svg.lucide"));
-  await Promise.all(
+  await awaitCvPdf(Promise.all(
     svgs.map(async (svg) => {
+      assertCvPdfActive(signal);
       const bounds = svg.getBoundingClientRect();
       const width = Math.max(1, Math.round(bounds.width));
       const height = Math.max(1, Math.round(bounds.height));
@@ -127,13 +164,16 @@ async function rasterizeCvExportSvgs(root: HTMLElement) {
         new XMLSerializer().serializeToString(serializedSvg),
       )}`;
       const sourceImage = document.createElement("img");
+      let timeout: ReturnType<typeof setTimeout> | undefined;
 
       try {
-        await new Promise<void>((resolve, reject) => {
+        await awaitCvPdf(new Promise<void>((resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error("CV icon loading timed out.")), 2000);
           sourceImage.onload = () => resolve();
           sourceImage.onerror = () => reject(new Error("CV icon could not be rasterized."));
           sourceImage.src = source;
-        });
+        }), signal);
+        assertCvPdfActive(signal);
 
         const iconScale = 4;
         const canvas = document.createElement("canvas");
@@ -161,10 +201,15 @@ async function rasterizeCvExportSvgs(root: HTMLElement) {
         canvas.style.marginLeft = computed.marginLeft;
         svg.replaceWith(canvas);
       } catch {
+        assertCvPdfActive(signal);
         // Keep the original SVG if the browser cannot rasterize a particular icon.
+      } finally {
+        clearTimeout(timeout);
+        sourceImage.onload = null;
+        sourceImage.onerror = null;
       }
     }),
-  );
+  ), signal);
 }
 
 const unsupportedPdfColorPattern =
