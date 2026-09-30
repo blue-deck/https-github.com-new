@@ -104,7 +104,7 @@
   min-width: 0;
 }
 
-.sidebar {
+.sectionList {
   display: none;
   background: var(--studio-navy);
 }
@@ -283,39 +283,42 @@
   }
 }
 
-/* Keep the full-width editor on tablets; give desktop forms enough room. */
-@media (min-width: 1280px) {
-  .layout {
-    display: grid;
-    grid-template-columns: 224px minmax(0, 1fr);
-  }
-
-  .sidebar {
-    display: block;
-  }
-
+/* Fit every section above the editor, without a horizontal scroller. */
+@media (min-width: 1024px) {
   .sectionList {
-    position: sticky;
-    top: 6rem;
-    padding: 1rem 0;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    padding: 0 1rem;
+    border-bottom: 1px solid #29495d;
   }
 
   .sectionButton {
     position: relative;
     display: flex;
-    width: 100%;
-    min-height: 52px;
+    min-width: 0;
+    min-height: 76px;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
+    gap: 0.5rem;
     border: 0;
-    border-left: 3px solid transparent;
-    padding: 0.75rem 1rem 0.75rem 1.125rem;
+    border-bottom: 3px solid transparent;
+    padding: 0.875rem 0.75rem;
     background: transparent;
     color: #dcebf3;
-    text-align: left;
+    text-align: center;
     font-size: 0.8125rem;
     font-weight: 500;
-    line-height: 1.5;
+    line-height: 1.4;
+  }
+
+  .sectionLabel {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+
+  .sectionButton .sectionIcon {
+    display: none;
   }
 
   .sectionButton:hover {
@@ -323,7 +326,7 @@
   }
 
   .sectionButton[aria-current="page"] {
-    border-left-color: var(--studio-cyan);
+    border-bottom-color: var(--studio-cyan);
     background: var(--studio-navy-active);
     color: #fff;
     font-weight: 600;
@@ -337,16 +340,12 @@
     outline-offset: -4px;
   }
 
-  .previewSection {
-    margin-top: 1rem;
-    border-top: 1px solid #2b4b60;
-  }
-
   .unsavedDot {
+    position: absolute;
+    top: 9px;
+    right: 9px;
     width: 5px;
     height: 5px;
-    flex-shrink: 0;
-    margin-left: auto;
     border-radius: 50%;
     background: #f5cc77;
   }
@@ -395,6 +394,16 @@
   .secondaryAction:focus-visible,
   .continueAction:focus-visible {
     outline-color: #12667a;
+  }
+}
+
+@media (min-width: 1280px) {
+  .sectionButton {
+    text-align: left;
+  }
+
+  .sectionButton .sectionIcon {
+    display: inline-flex;
   }
 }
 
