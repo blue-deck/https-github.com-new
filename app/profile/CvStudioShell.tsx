@@ -28,6 +28,7 @@ export function CvStudioShell({
   hasUnsavedProfile: boolean;
   children: ReactNode;
 }) {
+  const studioRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const activeIndex = sections.findIndex((section) => section.id === activeSection);
   const current = sections[activeIndex] || sections[0];
@@ -42,7 +43,7 @@ export function CvStudioShell({
       requestAnimationFrame(() => {
         const heading = headingRef.current;
         heading?.focus({ preventScroll: true });
-        heading?.scrollIntoView({
+        studioRef.current?.scrollIntoView({
           block: "start",
           behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
         });
@@ -51,7 +52,7 @@ export function CvStudioShell({
   }
 
   return (
-    <section id="cv-studio" aria-labelledby="cv-studio-title" className={styles.studio}>
+    <section ref={studioRef} id="cv-studio" aria-labelledby="cv-studio-title" className={styles.studio}>
       <header className={styles.toolbar}>
         <div className={styles.brand}>
           <span className={styles.wordmark}>BlueDeck</span>
@@ -72,26 +73,24 @@ export function CvStudioShell({
       </header>
 
       <div className={styles.layout}>
-        <aside className={styles.sidebar}>
-          <nav className={styles.sectionList} aria-label="CV sections">
-            {sections.map((section) => (
-              <button
-                type="button"
-                key={section.id}
-                className={`${styles.sectionButton} ${section.id === "preview" ? styles.previewSection : ""}`}
-                aria-current={section.id === activeSection ? "page" : undefined}
-                aria-controls="cv-studio-content"
-                onClick={() => selectSection(section.id, true)}
-              >
-                <span className={styles.sectionIcon} aria-hidden>{section.icon}</span>
-                <span>{section.label}</span>
-                {section.id === "personal" && hasUnsavedProfile ? (
-                  <span className={styles.unsavedDot} role="img" aria-label="Unsaved personal details" title="Unsaved personal details" />
-                ) : null}
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <nav className={styles.sectionList} aria-label="CV sections">
+          {sections.map((section) => (
+            <button
+              type="button"
+              key={section.id}
+              className={styles.sectionButton}
+              aria-current={section.id === activeSection ? "page" : undefined}
+              aria-controls="cv-studio-content"
+              onClick={() => selectSection(section.id, true)}
+            >
+              <span className={styles.sectionIcon} aria-hidden>{section.icon}</span>
+              <span className={styles.sectionLabel}>{section.label}</span>
+              {section.id === "personal" && hasUnsavedProfile ? (
+                <span className={styles.unsavedDot} role="img" aria-label="Unsaved personal details" title="Unsaved personal details" />
+              ) : null}
+            </button>
+          ))}
+        </nav>
 
         <div className={styles.workspace}>
           <div className={styles.mobileNavigation}>
