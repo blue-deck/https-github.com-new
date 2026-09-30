@@ -892,6 +892,11 @@ const manualPhraseTranslations: Record<string, Partial<Record<Language, string>>
   "Review the final CV and save PDF.": { tr: "Final CV'yi gözden geçir ve PDF olarak kaydet." },
   "Review the final CV and download PDF.": { tr: "Final CV'yi gözden geçir ve PDF olarak indir." },
   "PDF ready": { tr: "PDF hazır" },
+  "Download PDF": { tr: "PDF indir" },
+  "Generating PDF...": { tr: "PDF hazırlanıyor..." },
+  "CV PDF generation took too long. Please try again.": { tr: "CV PDF dosyasının hazırlanması çok uzun sürdü. Lütfen tekrar deneyin." },
+  "Some CV photos could not be loaded. Please try again.": { tr: "CV'deki bazı fotoğraflar yüklenemedi. Lütfen tekrar deneyin." },
+  "CV PDF could not be generated. Please try again.": { tr: "CV PDF dosyası oluşturulamadı. Lütfen tekrar deneyin." },
   "BlueDeck Profile": { tr: "BlueDeck Profili" },
   "Professional Crew Profile": { tr: "Profesyonel Mürettebat Profili" },
   "Build a clean yachting CV from verified profile data, documents, work preferences, skills, references and photo gallery.": {

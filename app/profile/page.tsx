@@ -79,6 +79,7 @@ import { supabase } from "../lib/supabase";
 import { resolveSupabaseUrl } from "../lib/supabaseConfig";
 import { yachtPositionTitles } from "../lib/yachtOperations";
 import { downloadCvPages } from "../lib/cvPdfDownload";
+import { assertCvPdfActive, awaitCvPdf, CvPdfTimeoutError, runCvPdfJob } from "../lib/cvPdfAsync";
 
 type PhoneCountryOption = (typeof blueDeckCountries)[number];
 
@@ -547,6 +548,9 @@ export default function ProfilePage() {
   const [newOtherWorkDraftRevision, setNewOtherWorkDraftRevision] = useState(0);
   const [newOtherWorkExperienceDirty, setNewOtherWorkExperienceDirty] = useState(false);
   const [pdfDownloading, setPdfDownloading] = useState(false);
+  const pdfDownloadInFlight = useRef(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfPageProgress, setPdfPageProgress] = useState<{ page: number; total: number } | null>(null);
   const newDocumentFormId = useId();
   const newYachtExperienceFormId = useId();
   const newOtherWorkExperienceFormId = useId();
@@ -1756,6 +1760,11 @@ export default function ProfilePage() {
 
             {activeStudioTab === "preview" && (
               <div className={studioStyles.previewPanel}>
+                {pdfError ? (
+                  <p role="alert" className="mx-4 mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                    {pdfError}
+                  </p>
+                ) : null}
                 <p className={studioStyles.previewNotice}>
                   Your saved personal and contact details, plus references selected for CV including their contact details, appear in your public Crew CV.
                 </p>
@@ -1767,14 +1776,23 @@ export default function ProfilePage() {
                   yachtExperienceDuration={yachtExperienceDuration}
                   otherExperienceDuration={otherExperienceDuration}
                   downloading={pdfDownloading}
+                  pageProgress={pdfPageProgress}
                   onDownload={async (payload) => {
+                    if (pdfDownloadInFlight.current) return;
+                    pdfDownloadInFlight.current = true;
+                    setPdfError(null);
+                    setPdfPageProgress(null);
                     setPdfDownloading(true);
                     try {
-                      await downloadCvPdf(payload);
+                      await downloadCvPdf(payload, (page, total) => setPdfPageProgress({ page, total }));
                     } catch (error) {
-                      alert(error instanceof Error ? error.message : "CV PDF could not be generated.");
+                      setPdfError(error instanceof CvPdfTimeoutError || error instanceof CvPdfImageError
+                        ? error.message
+                        : "CV PDF could not be generated. Please try again.");
                     } finally {
+                      pdfDownloadInFlight.current = false;
                       setPdfDownloading(false);
+                      setPdfPageProgress(null);
                     }
                   }}
                 />
@@ -2105,7 +2123,7 @@ type CvPdfPayload = {
   visibleSkills: string[];
 };
 
-async function downloadCvPdf(payload: CvPdfPayload) {
+async function downloadCvPdf(payload: CvPdfPayload, onPage: (page: number, total: number) => void) {
   const root = document.querySelector<HTMLElement>("#bluedeck-cv .bd-cv-print-root");
   const pages = root ? Array.from(root.querySelectorAll<HTMLElement>(".bd-print-page")) : [];
 
@@ -2113,36 +2131,83 @@ async function downloadCvPdf(payload: CvPdfPayload) {
     throw new Error("CV preview is not ready yet.");
   }
 
-  await waitForCvPrintAssets(root);
-  const restoreExportImages = await prepareCvExportImages(root);
+  let stage = "preparing";
+  const started = performance.now();
+  const reportStage = (nextStage: string) => {
+    stage = nextStage;
+    console.info("[cv-pdf]", { event: "stage", stage, pages: pages.length });
+  };
   try {
-    await waitForCvPrintAssets(root);
-    await waitForNextPaint();
+    await runCvPdfJob(async (signal) => {
+      reportStage("preparing-images");
+      await awaitCvPdf(waitForCvPrintAssets(root), signal);
+      const restoreExportImages = await prepareCvExportImages(root, signal);
+      try {
+        await awaitCvPdf(waitForCvPrintAssets(root), signal);
+        await awaitCvPdf(waitForNextPaint(), signal);
+        assertCvPdfActive(signal);
 
-    const fileName = cvPdfFileName(payload.profile);
-    await downloadCvPages({
-      pages,
-      fileName,
-      title: fileName.replace(/\.pdf$/i, ""),
-      author: payload.crewName,
+        const fileName = cvPdfFileName(payload.profile);
+        reportStage("rendering");
+        await downloadCvPages({
+          pages,
+          fileName,
+          title: fileName.replace(/\.pdf$/i, ""),
+          author: payload.crewName,
+          signal,
+          onPage,
+        });
+        console.info("[cv-pdf]", { event: "download-ready", pages: pages.length, durationMs: Math.round(performance.now() - started) });
+      } finally {
+        restoreExportImages();
+      }
     });
-  } finally {
-    restoreExportImages();
+  } catch (error) {
+    console.error("[cv-pdf]", { event: "failed", stage, error: error instanceof Error ? error.name : "UnknownError" });
+    throw error;
   }
 }
 
-async function prepareCvExportImages(root: HTMLElement) {
+class CvPdfImageError extends Error {
+  constructor() {
+    super("Some CV photos could not be loaded. Please try again.");
+    this.name = "CvPdfImageError";
+  }
+}
+
+async function prepareCvExportImages(root: HTMLElement, signal: AbortSignal) {
   const restore: Array<() => void> = [];
   const images = Array.from(root.querySelectorAll("img"));
   const backgroundElements = Array.from(root.querySelectorAll<HTMLElement>("[style*='background-image']"));
+  const imageData = new Map<string, Promise<string>>();
+  const sourceKey = (source: string) => new URL(source, window.location.href).href;
+  const restoreImages = () => [...restore].reverse().forEach((restoreItem) => restoreItem());
 
-  await Promise.all(
-    images.map(async (image) => {
+  // Reuse pixels already loaded in the CV instead of fetching the same photo again.
+  // The same source may also be the avatar background or appear on several pages.
+  images.forEach((image) => {
+    const source = image.currentSrc || image.src;
+    if (!source || imageData.has(sourceKey(source))) return;
+    const dataUrl = source.startsWith("data:") ? source : domImageToDataUrl(image);
+    if (dataUrl) imageData.set(sourceKey(source), Promise.resolve(dataUrl));
+  });
+  const resolveImage = (source: string, element: Element) => {
+    const requestSource = cvImageRequestSource(source, cvImageProxyOptionsForElement(element));
+    const existing = imageData.get(sourceKey(source)) || imageData.get(sourceKey(requestSource));
+    if (existing) return existing;
+    const pending = imageSourceToDataUrl(requestSource, signal);
+    imageData.set(sourceKey(requestSource), pending);
+    return pending;
+  };
+
+  const tasks = [
+    ...images.map(async (image) => {
+      assertCvPdfActive(signal);
       const source = image.currentSrc || image.src;
       if (!source || source.startsWith("data:")) return;
-
-      const dataUrl = (await imageSourceToDataUrl(source, cvImageProxyOptionsForElement(image))) || domImageToDataUrl(image);
-      if (!dataUrl) return;
+      const dataUrl = await resolveImage(source, image);
+      assertCvPdfActive(signal);
+      if (!dataUrl) throw new CvPdfImageError();
 
       const previousSource = image.getAttribute("src");
       const previousSourceSet = image.getAttribute("srcset");
@@ -2153,31 +2218,33 @@ async function prepareCvExportImages(root: HTMLElement) {
         else image.setAttribute("srcset", previousSourceSet);
       });
       image.removeAttribute("srcset");
-      image.setAttribute("src", dataUrl);
       image.src = dataUrl;
     }),
-  );
-
-  await Promise.all(
-    backgroundElements.map(async (element) => {
+    ...backgroundElements.map(async (element) => {
+      assertCvPdfActive(signal);
       const source = cssBackgroundImageUrl(element.style.backgroundImage);
       if (!source || source.startsWith("data:")) return;
-
-      const dataUrl = await imageSourceToDataUrl(source, cvImageProxyOptionsForElement(element));
-      if (!dataUrl) return;
+      const dataUrl = await resolveImage(source, element);
+      assertCvPdfActive(signal);
+      if (!dataUrl) throw new CvPdfImageError();
 
       const previousBackground = element.style.backgroundImage;
-      restore.push(() => {
-        element.style.backgroundImage = previousBackground;
-      });
+      restore.push(() => { element.style.backgroundImage = previousBackground; });
       element.style.backgroundImage = `url("${dataUrl}")`;
     }),
-  );
+  ];
 
-  return () => {
-    [...restore].reverse().forEach((restoreItem) => restoreItem());
-  };
+  try {
+    const results = await awaitCvPdf(Promise.allSettled(tasks), signal);
+    const failed = results.find((result) => result.status === "rejected");
+    if (failed?.status === "rejected") throw failed.reason;
+    return restoreImages;
+  } catch (error) {
+    restoreImages();
+    throw error;
+  }
 }
+
 
 type CvImageProxyOptions = {
   width?: number;
@@ -2193,15 +2260,24 @@ function cvImageProxyOptionsForElement(element: Element): CvImageProxyOptions {
   return { max: 1800 };
 }
 
-async function imageSourceToDataUrl(source: string, options: CvImageProxyOptions = {}) {
+async function imageSourceToDataUrl(source: string, signal: AbortSignal) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const timeout = window.setTimeout(abort, 10000);
+  signal.addEventListener("abort", abort, { once: true });
   try {
-    const response = await fetch(cvImageRequestSource(source, options), { cache: "force-cache" });
+    assertCvPdfActive(signal);
+    const response = await awaitCvPdf(fetch(source, { cache: "force-cache", signal: controller.signal }), signal);
     if (!response.ok) return "";
-    const blob = await response.blob();
+    const blob = await awaitCvPdf(response.blob(), signal);
     if (!blob.type.toLowerCase().startsWith("image/")) return "";
-    return blobToDataUrl(blob);
+    return await awaitCvPdf(blobToDataUrl(blob), signal);
   } catch {
+    assertCvPdfActive(signal);
     return "";
+  } finally {
+    clearTimeout(timeout);
+    signal.removeEventListener("abort", abort);
   }
 }
 
@@ -2210,6 +2286,7 @@ function blobToDataUrl(blob: Blob) {
     const reader = new FileReader();
     reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
     reader.onerror = () => resolve("");
+    reader.onabort = () => resolve("");
     reader.readAsDataURL(blob);
   });
 }
@@ -2217,17 +2294,21 @@ function blobToDataUrl(blob: Blob) {
 function domImageToDataUrl(image: HTMLImageElement) {
   if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return "";
 
+  const canvas = document.createElement("canvas");
   try {
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
+    const scale = Math.min(1, 1800 / Math.max(image.naturalWidth, image.naturalHeight));
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
     const context = canvas.getContext("2d");
     if (!context) return "";
 
-    context.drawImage(image, 0, 0);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL("image/png");
   } catch {
     return "";
+  } finally {
+    canvas.width = 1;
+    canvas.height = 1;
   }
 }
 
@@ -2237,7 +2318,14 @@ function cssBackgroundImageUrl(value: string) {
 
 function waitForNextPaint() {
   return new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    let frame = 0;
+    const finish = () => {
+      clearTimeout(timeout);
+      cancelAnimationFrame(frame);
+      resolve();
+    };
+    const timeout = window.setTimeout(finish, 100);
+    frame = requestAnimationFrame(() => { frame = requestAnimationFrame(finish); });
   });
 }
 
@@ -2587,6 +2675,7 @@ function SeazoneStyleCvPreview({
   yachtExperienceDuration,
   otherExperienceDuration,
   downloading,
+  pageProgress,
   onDownload,
 }: {
   profile: CrewProfile;
@@ -2596,6 +2685,7 @@ function SeazoneStyleCvPreview({
   yachtExperienceDuration: string;
   otherExperienceDuration: string;
   downloading: boolean;
+  pageProgress: { page: number; total: number } | null;
   onDownload: (payload: CvPdfPayload) => void | Promise<void>;
 }) {
   const primaryPosition = profile.current_positions?.[0] || profile.current_position || "Yacht Crew";
@@ -2642,6 +2732,7 @@ function SeazoneStyleCvPreview({
         >
           {downloading ? <LoaderCircle className={studioStyles.downloadIcon} aria-hidden /> : <Download className={studioStyles.downloadIcon} aria-hidden />}
           {downloading ? "Generating PDF..." : "Download PDF"}
+          {downloading && pageProgress ? <span data-i18n-ignore>{pageProgress.page}/{pageProgress.total}</span> : null}
         </button>
       </div>
 
