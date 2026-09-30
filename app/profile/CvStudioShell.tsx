@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, ChevronDown, ChevronLeft } from "lucide-react";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./cvStudio.module.css";
 
 export type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "languages" | "preview";
@@ -30,6 +30,9 @@ export function CvStudioShell({
 }) {
   const studioRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const mobileNavigationRef = useRef<HTMLDivElement>(null);
+  const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+  const [mobileSectionsOpen, setMobileSectionsOpen] = useState(false);
   const activeIndex = sections.findIndex((section) => section.id === activeSection);
   const current = sections[activeIndex] || sections[0];
   const next = sections[activeIndex + 1];
@@ -37,7 +40,36 @@ export function CvStudioShell({
   const percent = Math.max(0, Math.min(100, Math.round(completion)));
   const previewActive = activeSection === "preview";
 
+  useEffect(() => {
+    if (!mobileSectionsOpen) return;
+
+    function closeOutside(event: PointerEvent) {
+      if (!mobileNavigationRef.current?.contains(event.target as Node)) {
+        setMobileSectionsOpen(false);
+      }
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setMobileSectionsOpen(false);
+      mobileTriggerRef.current?.focus();
+    }
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    function closeOnDesktop() {
+      if (desktop.matches) setMobileSectionsOpen(false);
+    }
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    desktop.addEventListener("change", closeOnDesktop);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+      desktop.removeEventListener("change", closeOnDesktop);
+    };
+  }, [mobileSectionsOpen]);
+
   function selectSection(section: CvStudioTab, focusContent = false) {
+    setMobileSectionsOpen(false);
     onSectionChange(section);
     if (focusContent) {
       requestAnimationFrame(() => {
@@ -84,30 +116,58 @@ export function CvStudioShell({
         </nav>
 
         <div className={styles.workspace}>
-          <div className={styles.mobileNavigation}>
-            <div className={styles.mobileSelector}>
+          <div
+            ref={mobileNavigationRef}
+            className={styles.mobileNavigation}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setMobileSectionsOpen(false);
+            }}
+          >
+            <button
+              id="cv-studio-mobile-trigger"
+              ref={mobileTriggerRef}
+              type="button"
+              className={styles.mobileSelector}
+              aria-labelledby="cv-studio-mobile-prompt cv-studio-mobile-current"
+              aria-describedby="cv-studio-mobile-step"
+              aria-expanded={mobileSectionsOpen}
+              aria-controls="cv-studio-mobile-sections"
+              onClick={() => setMobileSectionsOpen((open) => !open)}
+            >
               <span className={styles.sectionIcon} aria-hidden>{current.icon}</span>
-              <span className={styles.mobileCurrent} aria-hidden>{current.label}</span>
-              <ChevronDown size={18} aria-hidden />
-              <select
-                aria-label="CV section"
-                aria-controls="cv-studio-content"
-                value={activeSection}
-                onChange={(event) => selectSection(event.target.value as CvStudioTab)}
-                className={styles.mobileSelect}
-              >
-                {sections.map((section) => (
-                  <option key={section.id} value={section.id}>{section.label}</option>
-                ))}
-              </select>
-            </div>
+              <span className={styles.mobileSelection}>
+                <span id="cv-studio-mobile-prompt" className={styles.mobilePrompt}>Sections</span>
+                <span id="cv-studio-mobile-current" className={styles.mobileCurrent}>{current.label}</span>
+              </span>
+              <span id="cv-studio-mobile-step" className={styles.mobileStep} data-i18n-ignore>
+                {activeIndex + 1} / {sections.length}
+              </span>
+              <ChevronDown className={styles.mobileChevron} size={18} aria-hidden />
+            </button>
+            <nav
+              id="cv-studio-mobile-sections"
+              className={styles.mobileSectionList}
+              aria-label="Choose CV section"
+              hidden={!mobileSectionsOpen}
+            >
+              {sections.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  className={styles.mobileSectionButton}
+                  aria-current={section.id === activeSection ? "page" : undefined}
+                  aria-controls="cv-studio-content"
+                  onClick={() => selectSection(section.id, true)}
+                >
+                  <span className={styles.sectionIcon} aria-hidden>{section.icon}</span>
+                  <span className={styles.sectionLabel}>{section.label}</span>
+                </button>
+              ))}
+            </nav>
           </div>
 
           <div id="cv-studio-content" className={styles.content}>
-            <div className={styles.contentHeading}>
-              <h2 id="cv-studio-title" ref={headingRef} tabIndex={-1}>{current.label}</h2>
-              <p>{current.description}</p>
-            </div>
+            <h2 id="cv-studio-title" className={styles.srOnly} ref={headingRef} tabIndex={-1}>{current.label}</h2>
             {children}
           </div>
 
