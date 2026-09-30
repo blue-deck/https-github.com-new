@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { CvStudioShell, type CvStudioTab } from "./CvStudioShell";
+import studioStyles from "./cvStudio.module.css";
 import { useEffect, useId, useMemo, useRef, useState, type InputHTMLAttributes, type ReactNode } from "react";
 import {
   AlertTriangle,
@@ -166,7 +168,6 @@ type ReferenceEntry = {
 
 type RelatedKind = "document" | "experience" | "reference" | "portfolio";
 type UploadBucket = "crew-documents" | "crew-portfolio";
-type CvStudioTab = "personal" | "experience" | "otherWork" | "skills" | "documents" | "languages" | "preview";
 type CvPreferenceGroup = {
   label: string;
   items: string[];
@@ -672,7 +673,6 @@ export default function ProfilePage() {
       icon: <Download className="h-4 w-4" />,
     },
   ];
-  const activeStudioTabInfo = studioTabs.find((tab) => tab.id === activeStudioTab) || studioTabs[0];
 
   function updateDiscoverySettings(
     updates: Partial<CrewDiscoverySettings>,
@@ -1285,65 +1285,20 @@ export default function ProfilePage() {
           </section>
         )}
 
-        <section id="cv-studio" aria-labelledby="cv-studio-title" className="mt-6 min-w-0 scroll-mt-6 overflow-hidden rounded-[24px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:rounded-[28px]">
-          <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
-          <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-4 py-5 text-white sm:px-6">
-            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1 sm:gap-x-6">
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#8ed8e6]">BlueDeck CV Studio</p>
-                <h2 id="cv-studio-title" tabIndex={-1} className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">{activeStudioTabInfo.label}</h2>
-              </div>
-              <div className="col-start-2 row-start-1 justify-self-end sm:row-span-2">
-                <CvCompletionRing percent={cvCompletionPercent} />
-              </div>
-              <p className="col-span-2 text-sm font-semibold text-white/70 sm:col-span-1 sm:col-start-1 sm:row-start-2">{activeStudioTabInfo.description}</p>
-            </div>
-          </div>
-
-          <div className="min-w-0 border-b border-[#2fb6c7]/25 bg-[linear-gradient(135deg,#0b5160_0%,#108094_52%,#0a4a58_100%)] px-3 pb-3 sm:px-5">
-            <div className="bd-profile-studio-tabs flex min-w-0 snap-x snap-proximity gap-2 overflow-x-auto overflow-y-hidden rounded-[22px] border border-white/18 bg-white/[0.10] p-2 shadow-inner shadow-black/10">
-              {studioTabs.map((tab) => {
-                const active = activeStudioTab === tab.id;
-
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    aria-current={active ? "page" : undefined}
-                    onClick={(event) => {
-                      setActiveStudioTab(tab.id);
-                      if (tab.id !== "skills") setOpenSkillsGroup(null);
-                      event.currentTarget.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-                    }}
-                    className={`bd-profile-studio-tab group flex shrink-0 snap-start items-center gap-2.5 overflow-hidden rounded-[18px] border px-3 py-3 text-left transition sm:gap-3 sm:px-3.5 sm:py-3.5 ${
-                      active
-                        ? "border-[#c9f7ff] bg-[#f8fbfc] text-[#06111f] shadow-xl shadow-[#062c35]/20"
-                        : "border-white/18 bg-white/10 text-white/86 hover:border-[#c9f7ff]/70 hover:bg-white/16 hover:text-white"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${
-                        active ? "border-[#08313b] bg-[#08313b] text-[#8ed8e6]" : "border-white/18 bg-white/10 text-[#d4fbff] group-hover:bg-white/16"
-                      }`}
-                    >
-                      {tab.icon}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-black">{tab.label}</span>
-                      <span className={`mt-1 block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] ${active ? "bg-[#e6f8fb] text-[#2d7482]" : "bg-white/12 text-white/72"}`}>{tab.status}</span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className={`min-w-0 ${activeStudioTab === "experience" || activeStudioTab === "otherWork" ? "bg-white px-4 sm:px-6" : "bg-[#f6f9fa] p-2.5 sm:p-5"}`}>
-            <div className="contents">
+        <CvStudioShell
+          sections={studioTabs}
+          activeSection={activeStudioTab}
+          onSectionChange={(tab) => {
+            setActiveStudioTab(tab);
+            if (tab !== "skills") setOpenSkillsGroup(null);
+          }}
+          completion={cvCompletionPercent}
+          hasUnsavedProfile={profileDirty}
+        >
+          <div className="contents">
             <Panel
               active={activeStudioTab === "personal"}
               title="Personal details"
-              icon={<UserRound className="h-5 w-5" />}
             >
               <div className="space-y-5">
                 <div className="grid gap-5 border-b border-slate-200 pb-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
@@ -1618,7 +1573,7 @@ export default function ProfilePage() {
               )}
             </ExperiencePanel>
 
-            <Panel active={activeStudioTab === "documents"} title="Documents & Certificates" icon={<IdCard className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "documents"} title="Documents & Certificates">
               <div className="space-y-4">
                 <section className="overflow-hidden rounded-2xl border border-cyan-100 bg-white">
                   <button
@@ -1678,7 +1633,7 @@ export default function ProfilePage() {
               </div>
             </Panel>
 
-            <Panel active={activeStudioTab === "languages"} title="Languages" icon={<Languages className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "languages"} title="Languages">
               <LanguagePicker
                 value={profile.languages || []}
                 onChange={(languages) => {
@@ -1689,7 +1644,7 @@ export default function ProfilePage() {
               />
             </Panel>
 
-            <Panel active={activeStudioTab === "skills"} title="Skills & characteristics" icon={<Check className="h-5 w-5" />}>
+            <Panel active={activeStudioTab === "skills"} title="Skills & characteristics">
               <div className="divide-y divide-slate-200">
                 <DropdownChoiceGroup
                   title="Personal skills"
@@ -1817,8 +1772,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </div>
-        </section>
+        </CvStudioShell>
 
         <footer
           className="mt-4 border-t border-slate-200/80 px-1 py-3 text-[10px] leading-4 text-slate-500"
@@ -3489,7 +3443,7 @@ function ExperiencePanel({
   children: ReactNode;
 }) {
   return (
-    <section hidden={!active} aria-label={title} className="min-w-0 bg-white pb-2">
+    <section hidden={!active} aria-label={title} className="min-w-0 pb-2">
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 py-2">
         <div className="flex items-center gap-2">
           <h2 className="text-base font-semibold text-[#071f3c]">Experience</h2>
@@ -3514,13 +3468,11 @@ function ExperiencePanel({
 
 function Panel({
   title,
-  icon,
   children,
   action,
   active = true,
 }: {
   title: string;
-  icon: ReactNode;
   children: ReactNode;
   action?: ReactNode;
   active?: boolean;
@@ -3528,18 +3480,9 @@ function Panel({
   if (!active) return null;
 
   return (
-    <section className="min-w-0 overflow-hidden rounded-2xl border border-cyan-100 bg-white/90 shadow-xl shadow-slate-900/10 backdrop-blur">
-      <div className="h-1 bg-[linear-gradient(90deg,#07111f,#0891b2,#2d7482)]" />
-      <div className="p-3 sm:p-4">
-        <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200 pb-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0e7490,#67e8f9)] text-white shadow-lg shadow-cyan-900/15">{icon}</div>
-            <h2 className="truncate text-base font-semibold text-slate-950">{title}</h2>
-          </div>
-          {action && <div className="shrink-0">{action}</div>}
-        </div>
-        <div className="min-w-0 space-y-3.5">{children}</div>
-      </div>
+    <section aria-label={title} className={studioStyles.formPanel}>
+      {action ? <div className="mb-4 flex justify-end">{action}</div> : null}
+      <div className="min-w-0 space-y-3.5">{children}</div>
     </section>
   );
 }
@@ -5519,29 +5462,6 @@ function Snapshot({ label, value, tone = "cyan" }: { label: string; value: strin
   return <div className={`rounded-xl border p-3 ${tones[tone]}`}><p className="text-xs opacity-65">{label}</p><p className="mt-1 text-lg font-semibold">{value}</p></div>;
 }
 
-function CvCompletionRing({ percent }: { percent: number }) {
-  const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
-
-  return (
-    <div className="flex items-center gap-2 rounded-2xl border border-[#8ed8e6]/35 bg-white/10 px-3 py-2 text-white shadow-lg shadow-black/10">
-      <span
-        className="grid h-12 w-12 place-items-center rounded-full"
-        style={{
-          background: `conic-gradient(#8ed8e6 ${safePercent * 3.6}deg, rgba(255,255,255,0.16) 0deg)`,
-        }}
-        aria-label={`CV completion ${safePercent}%`}
-      >
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-[#0d3f4b] text-[11px] font-black tabular-nums text-white">
-          {safePercent}%
-        </span>
-      </span>
-      <span className="hidden leading-tight sm:block">
-        <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-[#8ed8e6]">CV</span>
-        <span className="block text-xs font-black uppercase tracking-[0.08em] text-white">Completion</span>
-      </span>
-    </div>
-  );
-}
 
 function PremiumProfileBadge({ percent }: { percent: number }) {
   return (

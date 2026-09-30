@@ -1,0 +1,405 @@
+.studio {
+  --studio-navy: #0c293e;
+  --studio-navy-active: #173e56;
+  --studio-cyan: #61dce3;
+  --studio-line: #d7e6ed;
+  min-width: 0;
+  margin-top: 1.5rem;
+  overflow: clip;
+  border: 1px solid var(--studio-line);
+  border-radius: 18px;
+  background: #f1f8fb;
+  box-shadow: 0 6px 24px rgb(12 41 62 / 5%);
+  scroll-margin-top: 6rem;
+}
+
+.toolbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.125rem;
+  border-bottom: 1px solid rgb(163 219 235 / 16%);
+  background: var(--studio-navy);
+  color: #f5fbff;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.wordmark {
+  font-size: 1.125rem;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+}
+
+.studioLabel {
+  border-left: 1px solid #466478;
+  padding-left: 0.8rem;
+  font-size: 0.8125rem;
+  color: #d6e7ef;
+}
+
+.completion {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-left: auto;
+  color: #bcebf0;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.completion strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.previewAction,
+.sectionButton,
+.secondaryAction,
+.continueAction {
+  cursor: pointer;
+  font: inherit;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.previewAction:focus-visible,
+.sectionButton:focus-visible,
+.secondaryAction:focus-visible,
+.continueAction:focus-visible {
+  outline: 2px solid var(--studio-cyan);
+  outline-offset: 3px;
+}
+
+.previewAction {
+  display: none;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid #58798e;
+  border-radius: 7px;
+  padding: 0.5rem 0.875rem;
+  color: #f5fbff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.previewAction:hover {
+  background: #1b4259;
+  border-color: #a8dae8;
+}
+
+.layout,
+.workspace,
+.content {
+  min-width: 0;
+}
+
+.sidebar {
+  display: none;
+  background: var(--studio-navy);
+}
+
+.mobileNavigation {
+  background: var(--studio-navy);
+  padding: 0 0.75rem 0.875rem;
+}
+
+.mobileSelector {
+  position: relative;
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  gap: 0.65rem;
+  border-left: 3px solid var(--studio-cyan);
+  background: var(--studio-navy-active);
+  padding: 0.65rem 0.875rem;
+  color: #f5fbff;
+}
+
+.mobileSelector:focus-within {
+  outline: 2px solid var(--studio-cyan);
+  outline-offset: 3px;
+}
+
+.mobileCurrent {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.mobileSelector > svg {
+  flex-shrink: 0;
+  color: var(--studio-cyan);
+}
+
+/* Keep the native picker for touch, keyboard and screen-reader support. */
+.mobileSelect {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  cursor: pointer;
+  opacity: 0;
+  font-size: 16px;
+}
+
+.sectionIcon {
+  display: inline-flex;
+  flex: 0 0 17px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sectionIcon svg {
+  width: 17px;
+  height: 17px;
+  stroke-width: 1.65;
+}
+
+.content {
+  padding: 1.375rem 1rem 1.5rem;
+}
+
+.contentHeading {
+  margin-bottom: 1.5rem;
+}
+
+.contentHeading h2 {
+  margin: 0;
+  color: #0c293e;
+  font-size: clamp(1.35rem, 2.3vw, 1.9rem);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  scroll-margin-top: 6rem;
+}
+
+.contentHeading h2:focus-visible {
+  outline: 2px solid #137b8d;
+  outline-offset: 5px;
+}
+
+.contentHeading p {
+  margin: 0.5rem 0 0;
+  color: #546f80;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.formPanel {
+  min-width: 0;
+}
+
+.footer {
+  position: sticky;
+  z-index: 20;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid #29495d;
+  background: var(--studio-navy);
+  padding: 0.875rem 1rem max(0.875rem, env(safe-area-inset-bottom));
+}
+
+.secondaryAction,
+.continueAction {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid #6d899c;
+  border-radius: 7px;
+  padding: 0.625rem 0.875rem;
+  color: #f5fbff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.secondaryAction:hover {
+  background: #1b4259;
+}
+
+.continueAction {
+  margin-left: auto;
+  border-color: var(--studio-cyan);
+  background: var(--studio-cyan);
+  color: #082a3e;
+}
+
+.continueAction:hover {
+  border-color: #9beff2;
+  background: #9beff2;
+}
+
+@media (min-width: 640px) {
+  .toolbar {
+    padding: 1rem 1.5rem;
+  }
+
+  .completion {
+    margin-left: auto;
+    font-size: 0.75rem;
+  }
+
+  .previewAction {
+    display: inline-flex;
+  }
+
+  .mobileNavigation {
+    padding: 0 1.5rem 1rem;
+  }
+
+  .content {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .footer {
+    padding-right: 1.5rem;
+    padding-left: 1.5rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .completion > span {
+    display: none;
+  }
+}
+
+/* Keep the full-width editor on tablets; give desktop forms enough room. */
+@media (min-width: 1280px) {
+  .layout {
+    display: grid;
+    grid-template-columns: 224px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: block;
+  }
+
+  .sectionList {
+    position: sticky;
+    top: 6rem;
+    padding: 1rem 0;
+  }
+
+  .sectionButton {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-height: 52px;
+    align-items: center;
+    gap: 0.75rem;
+    border: 0;
+    border-left: 3px solid transparent;
+    padding: 0.75rem 1rem 0.75rem 1.125rem;
+    background: transparent;
+    color: #dcebf3;
+    text-align: left;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .sectionButton:hover {
+    background: #12354c;
+  }
+
+  .sectionButton[aria-current="page"] {
+    border-left-color: var(--studio-cyan);
+    background: var(--studio-navy-active);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .sectionButton[aria-current="page"] .sectionIcon {
+    color: #a1edf1;
+  }
+
+  .sectionButton:focus-visible {
+    outline-offset: -4px;
+  }
+
+  .previewSection {
+    margin-top: 1rem;
+    border-top: 1px solid #2b4b60;
+  }
+
+  .unsavedDot {
+    width: 5px;
+    height: 5px;
+    flex-shrink: 0;
+    margin-left: auto;
+    border-radius: 50%;
+    background: #f5cc77;
+  }
+
+  .mobileNavigation {
+    display: none;
+  }
+
+  .workspace {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .content {
+    flex: 1;
+    padding: 2rem;
+  }
+
+  .footer {
+    position: static;
+    border-color: var(--studio-line);
+    background: #f1f8fb;
+    padding: 1rem 2rem;
+  }
+
+  .secondaryAction {
+    border-color: #afc6d2;
+    color: #20536b;
+  }
+
+  .secondaryAction:hover {
+    background: #e3f0f5;
+  }
+
+  .continueAction {
+    border-color: #12667a;
+    background: #12667a;
+    color: #fff;
+  }
+
+  .continueAction:hover {
+    border-color: #0d5062;
+    background: #0d5062;
+  }
+
+  .secondaryAction:focus-visible,
+  .continueAction:focus-visible {
+    outline-color: #12667a;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio button {
+    transition: none;
+  }
+}
