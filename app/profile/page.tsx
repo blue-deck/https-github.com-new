@@ -2269,7 +2269,7 @@ type CvImageProxyOptions = {
 };
 
 function cvImageProxyOptionsForElement(element: Element): CvImageProxyOptions {
-  if (element.closest(".bd-print-avatar")) return { width: 720, height: 720, fit: "cover" };
+  if (element.closest(".bd-print-avatar")) return { width: 1200, height: 1200, fit: "cover" };
   if (element.closest(".bd-print-brand-logo")) return { max: 720, fit: "contain" };
   if (element.closest(".bd-print-experience-meta")) return { width: 720, height: 520, fit: "cover" };
   return { max: 1800 };
@@ -3133,16 +3133,13 @@ function PrintablePageFooter() {
 
 function PrintableHero({ profile, crewName, primaryPosition }: { profile: CrewProfile; crewName: string; primaryPosition: string }) {
   const profilePhotoSource = profile.profile_photo_url
-    ? cvImageRequestSource(profile.profile_photo_url, { width: 720, height: 720, fit: "cover" })
+    ? cvImageRequestSource(profile.profile_photo_url, { width: 1200, height: 1200, fit: "cover" })
     : "";
 
   return (
     <header className="bd-print-hero">
       <div className="bd-print-hero-band">
-        <div
-          className="bd-print-avatar"
-          style={profilePhotoSource ? { backgroundImage: `url("${profilePhotoSource}")` } : undefined}
-        >
+        <div className="bd-print-avatar">
           {profilePhotoSource ? (
             <img src={profilePhotoSource} alt={profile.full_name || "Profile"} loading="eager" decoding="sync" />
           ) : (
