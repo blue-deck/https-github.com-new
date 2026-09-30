@@ -166,7 +166,7 @@ export function CvStudioShell({
             </nav>
           </div>
 
-          <div id="cv-studio-content" className={styles.content}>
+          <div id="cv-studio-content" className={`${styles.content} ${previewActive ? styles.previewContent : ""}`}>
             <h2 id="cv-studio-title" className={styles.srOnly} ref={headingRef} tabIndex={-1}>{current.label}</h2>
             {children}
           </div>

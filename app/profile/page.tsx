@@ -1755,8 +1755,8 @@ export default function ProfilePage() {
             </Panel>
 
             {activeStudioTab === "preview" && (
-              <div className="space-y-5">
-                <p className="px-1 text-xs leading-relaxed text-slate-500">
+              <div className={studioStyles.previewPanel}>
+                <p className={studioStyles.previewNotice}>
                   Your saved personal and contact details, plus references selected for CV including their contact details, appear in your public Crew CV.
                 </p>
                 <SeazoneStyleCvPreview
@@ -2613,14 +2613,15 @@ function SeazoneStyleCvPreview({
   return (
     <section
       id="bluedeck-cv"
-      className="bd-cv-root overflow-hidden rounded-[24px] border border-[#d8e2e6] bg-[#f3f7f8] text-slate-950 shadow-xl shadow-slate-950/10 print:rounded-none print:border-0 print:bg-white print:shadow-none"
+      className={`bd-cv-root ${studioStyles.previewRoot}`}
     >
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#b9c8cd] bg-white px-5 py-4 print:hidden">
+      <div className={`${studioStyles.previewToolbar} print:hidden`}>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#228fc4]">BlueDeck crew CV</p>
-          <p className="mt-1 text-sm text-slate-500">Minimal maritime CV generated from your saved profile.</p>
+          <p className={studioStyles.previewEyebrow}>BlueDeck crew CV</p>
+          <p className={studioStyles.previewDescription}>Minimal maritime CV generated from your saved profile.</p>
         </div>
         <button
+          type="button"
           onClick={() =>
             onDownload({
               profile,
@@ -2636,15 +2637,17 @@ function SeazoneStyleCvPreview({
             })
           }
           disabled={downloading}
-          className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#5fd3e5] px-4 py-3 text-sm font-black text-[#031923] shadow-lg shadow-cyan-950/15 transition hover:bg-[#86e7f3] disabled:cursor-progress disabled:opacity-70 sm:w-auto"
+          aria-busy={downloading}
+          className={studioStyles.downloadAction}
         >
-          {downloading ? <Plus className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+          {downloading ? <LoaderCircle className={studioStyles.downloadIcon} aria-hidden /> : <Download className={studioStyles.downloadIcon} aria-hidden />}
           {downloading ? "Generating PDF..." : "Download PDF"}
         </button>
       </div>
 
+      <div className={studioStyles.previewStage}>
       <CvScaleFrame>
-        <div className="bd-cv-sheet mx-auto w-[980px] max-w-none overflow-hidden rounded-[18px] border border-[#d8e2e6] bg-white shadow-xl shadow-slate-950/10 print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+        <div className={`bd-cv-sheet ${studioStyles.previewSheet} mx-auto w-[980px] max-w-none overflow-hidden bg-white print:max-w-none print:rounded-none print:border-0 print:shadow-none`}>
           <div className="bd-cv-layout grid min-h-[1120px] grid-cols-[320px_1fr] bg-white print:min-h-0 print:grid-cols-[300px_1fr]">
             <aside className="bd-cv-sidebar relative bg-[#e7ecee] px-7 pb-8 pt-56 text-[#242a31] print:pt-56">
               <CvSidebarSignature />
@@ -2798,6 +2801,7 @@ function SeazoneStyleCvPreview({
           </div>
         </div>
       </CvScaleFrame>
+      </div>
       <PrintableCvPages
         profile={profile}
         documents={documents}
