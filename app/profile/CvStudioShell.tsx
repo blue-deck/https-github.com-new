@@ -17,14 +17,12 @@ export function CvStudioShell({
   sections,
   activeSection,
   onSectionChange,
-  completion,
   hasUnsavedProfile,
   children,
 }: {
   sections: StudioSection[];
   activeSection: CvStudioTab;
   onSectionChange: (section: CvStudioTab) => void;
-  completion: number;
   hasUnsavedProfile: boolean;
   children: ReactNode;
 }) {
@@ -37,7 +35,6 @@ export function CvStudioShell({
   const current = sections[activeIndex] || sections[0];
   const next = sections[activeIndex + 1];
   const previous = sections[activeIndex - 1];
-  const percent = Math.max(0, Math.min(100, Math.round(completion)));
   const previewActive = activeSection === "preview";
 
   useEffect(() => {
@@ -85,16 +82,6 @@ export function CvStudioShell({
 
   return (
     <section ref={studioRef} id="cv-studio" aria-labelledby="cv-studio-title" className={styles.studio}>
-      <header className={styles.toolbar}>
-        <div className={styles.brand}>
-          <span className={styles.wordmark} data-i18n-ignore>BlueDeck</span>
-          <span className={styles.studioLabel}>CV Studio</span>
-        </div>
-        <span className={styles.completion} aria-label={`CV completion ${percent}%`}>
-          <strong data-i18n-ignore>{percent}%</strong> <span>complete</span>
-        </span>
-      </header>
-
       <div className={styles.layout}>
         <nav className={styles.sectionList} aria-label="CV sections">
           {sections.map((section) => (
