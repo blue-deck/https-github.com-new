@@ -1198,14 +1198,30 @@ export default function ProfilePage() {
           <div className="p-5 sm:p-8">
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-end">
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">BlueDeck Profile</p>
-                <div className="mt-3 flex flex-wrap items-center gap-3">
-                  <h1 className="bd-serif text-3xl font-normal text-[#071f3c] sm:text-5xl">
+                <p className={studioStyles.profileEyebrow}>
+                  <span>BlueDeck Profile</span>
+                  <span><span className={studioStyles.profileDivider} aria-hidden>/</span> CV Studio</span>
+                </p>
+                <div className={studioStyles.profileIdentity}>
+                  <h1 className={`bd-serif text-3xl font-normal text-[#071f3c] sm:text-5xl ${studioStyles.profileName}`}>
                     {profile.full_name || "Professional Crew Profile"}
                   </h1>
-                  {isPremiumCrewProfile(cvCompletionPercent) ? (
-                    <PremiumProfileBadge percent={cvCompletionPercent} />
-                  ) : null}
+                  <div className={studioStyles.profileStatus}>
+                    {isPremiumCrewProfile(cvCompletionPercent) ? (
+                      <PremiumProfileBadge percent={cvCompletionPercent} />
+                    ) : null}
+                    <span
+                      className={studioStyles.profileCompletion}
+                      role="meter"
+                      aria-label="CV completion"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={cvCompletionPercent}
+                      title={`CV completion ${cvCompletionPercent}%`}
+                    >
+                      <strong data-i18n-ignore>{cvCompletionPercent}%</strong>
+                    </span>
+                  </div>
                 </div>
                 <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
                   Build a clean yachting CV from verified profile data, documents,
@@ -1303,7 +1319,6 @@ export default function ProfilePage() {
               setNewOtherWorkExperienceOpen(true);
             }
           }}
-          completion={cvCompletionPercent}
           hasUnsavedProfile={profileDirty}
         >
           <div className="contents">
