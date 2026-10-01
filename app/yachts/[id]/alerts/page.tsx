@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
-  ArrowLeft,
   ArrowRight,
   BellRing,
   CalendarClock,
@@ -16,6 +15,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { formatDateForDisplay } from "../../../components/DateTextField";
+import { YachtWorkspaceBackLink } from "../../../components/YachtWorkspaceBackLink";
 import {
   calculateExpiryAlertLevel,
   daysUntilExpiry,
@@ -300,9 +300,10 @@ export default function AlertsPage() {
 
   if (loading) {
     return (
-      <main className="bd-app-page bd-page-gutter min-h-screen bg-[#f4f7fb] px-4 py-10 text-slate-900 sm:px-6 lg:px-10">
-        <div className="bd-page-frame mx-auto flex min-h-[420px] max-w-7xl items-center justify-center">
-          <div className="text-center">
+      <main className="bd-app-page bd-page-gutter min-h-screen bg-[#f4f7fb] px-4 pb-20 pt-6 text-slate-900 sm:px-6 sm:pt-8 lg:px-10">
+        <div className="bd-page-frame mx-auto max-w-7xl">
+          <YachtWorkspaceBackLink yachtId={yachtId} />
+          <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
             <LoaderCircle
               className="mx-auto h-8 w-8 animate-spin text-cyan-800"
               aria-hidden
@@ -319,13 +320,7 @@ export default function AlertsPage() {
   return (
     <main className="bd-app-page bd-page-gutter min-h-screen bg-[#f4f7fb] px-4 pb-20 pt-6 text-slate-900 sm:px-6 sm:pt-8 lg:px-10">
       <div className="bd-page-frame mx-auto max-w-7xl">
-        <Link
-          href={`/yachts/${yachtId}`}
-          className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-600 transition hover:text-slate-950"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to yacht
-        </Link>
+        <YachtWorkspaceBackLink yachtId={yachtId} />
 
         <header className="bd-page-hero mt-3 flex flex-col gap-5 rounded-[24px] border border-slate-200 p-5 sm:mt-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="flex items-start gap-4">

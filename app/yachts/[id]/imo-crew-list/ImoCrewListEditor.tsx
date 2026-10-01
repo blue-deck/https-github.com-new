@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import Link from "next/link";
-import { ArrowDown, ArrowLeft, ArrowUp, Download, Eye, Plus, Trash2, Undo2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Eye, Plus, Trash2, Undo2, X } from "lucide-react";
 import { DateTextField } from "../../../components/DateTextField";
+import { YachtWorkspaceBackLink } from "../../../components/YachtWorkspaceBackLink";
 import {
   capitalizeImoField, createEmptyImoCrewRow, getImoCrewListFilename, normalizeImoGender,
   IMO_CREW_LIST_MAX_FIELD_LENGTH, IMO_CREW_LIST_MAX_ROWS,
@@ -215,9 +215,9 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
   return (
     <main className={`bd-app-page ${styles.page}`} data-i18n-ignore>
       <div className={styles.container}>
-        <Link className={styles.back} href={`/yachts/${draft.yachtId}`} onClick={(event) => {
+        <YachtWorkspaceBackLink yachtId={draft.yachtId} onClick={(event) => {
           if (dirty && !window.confirm(copy("Leave this page? Your latest changes have not been downloaded.", "Bu sayfadan çıkılsın mı? Son değişiklikleriniz henüz indirilmedi."))) event.preventDefault();
-        }}><ArrowLeft size={15} />{copy("Yacht workspace", "Yat çalışma alanı")}</Link>
+        }} />
         <header className={styles.hero}>
           <h1>IMO Crew List</h1>
           <div className={styles.heroActions}>

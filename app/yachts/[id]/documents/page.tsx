@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft,
   CalendarDays,
   ExternalLink,
   FilePlus2,
@@ -20,6 +18,7 @@ import {
   formatDateForDisplay,
 } from "../../../components/DateTextField";
 import { ConfirmationDialog } from "../../../components/ConfirmationDialog";
+import { YachtWorkspaceBackLink } from "../../../components/YachtWorkspaceBackLink";
 import {
   parsePrivateStorageReference,
   resolvePrivateStorageUrls,
@@ -294,13 +293,7 @@ export default function DocumentsPage() {
   return (
     <main className="bd-app-page bd-page-gutter min-h-screen bg-[#f4f7fb] px-4 pb-20 pt-6 text-slate-900 sm:px-6 sm:pt-8 lg:px-10">
       <div className="bd-page-frame mx-auto max-w-7xl">
-        <Link
-          href={`/yachts/${yachtId}`}
-          className="bd-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-bold text-slate-600 transition hover:text-slate-950"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to yacht
-        </Link>
+        <YachtWorkspaceBackLink yachtId={yachtId} />
 
         <header className="bd-page-hero mt-3 flex flex-col gap-5 rounded-[24px] border border-slate-200 p-5 sm:mt-5 sm:p-7 md:flex-row md:items-end md:justify-between">
           <div className="flex items-start gap-4">
