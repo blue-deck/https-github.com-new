@@ -13,6 +13,7 @@ import { useParams } from "next/navigation";
 import studioStyles from "./contractStudio.module.css";
 import PdfDocumentPreview from "../imo-crew-list/ImoCrewListPreview";
 import { AccessibleImageLightbox } from "../../../components/AccessibleImageLightbox";
+import { YachtWorkspaceBackLink } from "../../../components/YachtWorkspaceBackLink";
 import { supabase } from "../../../lib/supabase";
 import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
 import {
@@ -2463,6 +2464,9 @@ export default function CrewPage({
     <main className="bd-app-page bd-crew-command-page bd-page-gutter min-h-screen w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#fbf7ef_0%,#eef7f8_48%,#f7efe0_100%)] px-4 py-5 pb-12 text-slate-900 sm:p-6">
       <h1 className="sr-only">Yacht crew and operations</h1>
       <div className="bd-page-frame mx-auto w-full min-w-0 max-w-[1700px]">
+        <div className="mb-3 flex sm:mb-5">
+          <YachtWorkspaceBackLink yachtId={yachtId} />
+        </div>
         {isCrewCommand && (
           <div className="mb-8 min-w-0 space-y-5 sm:mb-10">
             <section

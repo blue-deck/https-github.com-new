@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, FileText, RefreshCw } from "lucide-react";
+import { FileText, RefreshCw } from "lucide-react";
 import { useLanguage } from "../../../components/LanguageProvider";
+import { YachtWorkspaceBackLink } from "../../../components/YachtWorkspaceBackLink";
 import { supabase } from "../../../lib/supabase";
 import { createImoCrewListDraft, type ImoCrewListDraft } from "../../../lib/imoCrewList";
 import ImoCrewListEditor from "./ImoCrewListEditor";
@@ -69,7 +69,7 @@ export default function ImoCrewListPage() {
   return (
     <main className={`bd-app-page ${styles.page}`} data-i18n-ignore>
       <div className={styles.container}>
-        <Link className={styles.back} href={`/yachts/${yachtId}`}><ArrowLeft size={16} />{tr ? "Yat çalışma alanı" : "Yacht workspace"}</Link>
+        <YachtWorkspaceBackLink yachtId={yachtId} />
         <div className={styles.loading} role={error ? "alert" : "status"} aria-busy={!error}>
           <FileText size={32} />
           <h1>IMO Crew List</h1>
