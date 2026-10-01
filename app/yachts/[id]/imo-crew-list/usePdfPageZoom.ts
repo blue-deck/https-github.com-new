@@ -84,6 +84,13 @@ export function usePdfPageZoom(viewportRef: RefObject<HTMLDivElement | null>, fr
     const pointers = new Map<number, Point>();
     let previous: { distance: number; center: Point } | null = null;
     let safariStartZoom = 1;
+    // WebKit can retain :focus-visible after touch/programmatic focus. Keep the
+    // viewer focused for shortcuts without painting its keyboard ring on touch.
+    const pointerInteraction = () => {
+      // A wheel over an unfocused viewer must not hide a later Tab focus ring.
+      if (viewport.matches(":focus")) viewport.dataset.pointerInteraction = "true";
+    };
+    const clearPointerInteraction = () => { delete viewport.dataset.pointerInteraction; };
     const centerOfViewport = () => {
       const bounds = viewport.getBoundingClientRect();
       return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
@@ -97,6 +104,7 @@ export function usePdfPageZoom(viewportRef: RefObject<HTMLDivElement | null>, fr
       pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       viewport.setPointerCapture(event.pointerId);
       viewport.focus({ preventScroll: true });
+      pointerInteraction();
       previous = pinch();
     };
     const move = (event: PointerEvent) => {
@@ -120,21 +128,24 @@ export function usePdfPageZoom(viewportRef: RefObject<HTMLDivElement | null>, fr
       previous = pinch();
     };
     const wheel = (event: WheelEvent) => {
+      pointerInteraction();
       if (!event.ctrlKey && !event.metaKey) return;
       event.preventDefault();
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? viewport.clientHeight : 1);
       zoomAt(zoomRef.current * Math.exp(-Math.max(-200, Math.min(200, delta)) * 0.005), { x: event.clientX, y: event.clientY });
     };
     const doubleClick = (event: MouseEvent) => {
+      pointerInteraction();
       event.preventDefault();
       zoomAt(zoomRef.current > 1.05 ? 1 : 2, { x: event.clientX, y: event.clientY });
     };
     const key = (event: KeyboardEvent) => {
+      clearPointerInteraction();
       if (!["+", "=", "-", "0"].includes(event.key)) return;
       event.preventDefault();
       zoomAt(event.key === "0" ? 1 : zoomRef.current * (event.key === "-" ? 0.8 : 1.25), centerOfViewport());
     };
-    const gestureStart = (event: Event) => { event.preventDefault(); safariStartZoom = zoomRef.current; };
+    const gestureStart = (event: Event) => { event.preventDefault(); pointerInteraction(); safariStartZoom = zoomRef.current; };
     const gestureChange = (event: Event) => {
       event.preventDefault();
       const scale = (event as Event & { scale?: number }).scale;
@@ -148,6 +159,7 @@ export function usePdfPageZoom(viewportRef: RefObject<HTMLDivElement | null>, fr
     viewport.addEventListener("wheel", wheel, { passive: false });
     viewport.addEventListener("dblclick", doubleClick);
     viewport.addEventListener("keydown", key);
+    viewport.addEventListener("blur", clearPointerInteraction);
     viewport.addEventListener("gesturestart", gestureStart, { passive: false });
     viewport.addEventListener("gesturechange", gestureChange, { passive: false });
     return () => {
@@ -159,8 +171,10 @@ export function usePdfPageZoom(viewportRef: RefObject<HTMLDivElement | null>, fr
       viewport.removeEventListener("wheel", wheel);
       viewport.removeEventListener("dblclick", doubleClick);
       viewport.removeEventListener("keydown", key);
+      viewport.removeEventListener("blur", clearPointerInteraction);
       viewport.removeEventListener("gesturestart", gestureStart);
       viewport.removeEventListener("gesturechange", gestureChange);
+      clearPointerInteraction();
     };
   }, [viewportRef, zoomAt]);
 

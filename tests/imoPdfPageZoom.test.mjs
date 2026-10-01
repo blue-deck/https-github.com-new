@@ -26,6 +26,7 @@ function harness() {
   let result;
   let left = 0;
   let top = 0;
+  let focused = false;
   const sameDeps = (a, b) => a && b && a.length === b.length && a.every((value, i) => Object.is(value, b[i]));
   const effect = (kind, callback, deps) => {
     const index = cursor++;
@@ -62,13 +63,15 @@ function harness() {
     clearTimeout(id) { timers.delete(id); },
   };
   const viewport = {
+    dataset: {},
     clientHeight: 400,
     get scrollLeft() { return left; },
     set scrollLeft(value) { left = Math.max(0, Math.min(300 * (frameZoom - 1), value)); },
     get scrollTop() { return top; },
     set scrollTop(value) { top = Math.max(0, Math.min(424 * frameZoom + 160 - 400, value)); },
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 340, height: 400 }),
-    focus(options) { assert.deepEqual(options, { preventScroll: true }); },
+    focus(options) { assert.deepEqual(options, { preventScroll: true }); focused = true; },
+    matches(selector) { assert.equal(selector, ":focus"); return focused; },
     setPointerCapture(id) { captures.add(id); },
     hasPointerCapture(id) { return captures.has(id); },
     releasePointerCapture(id) { captures.delete(id); },
