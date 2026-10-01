@@ -4,9 +4,9 @@
 .navigation button:hover:not(:disabled) { background: #edf5f8; }
 .navigation button:disabled { opacity: .35; cursor: not-allowed; }
 .pageCount { min-width: 100px; text-align: center; color: #466477; font-size: 12px; font-variant-numeric: tabular-nums; }
-.preview :is(button, [tabindex]):focus-visible { outline: 2px solid #25839b; outline-offset: -3px; }
+.preview button:focus-visible, .viewport:focus-visible:not([data-pointer-interaction]) { outline: 2px solid #25839b; outline-offset: -3px; }
 .pageArea { position: relative; display: flex; flex: 1 1 0; min-height: 0; min-width: 0; overflow: hidden; }
-.viewport { flex: 1; min-height: 0; min-width: 0; overflow-x: auto; overflow-y: scroll; padding: 72px 20px 88px; overscroll-behavior: contain; overflow-anchor: none; touch-action: none; user-select: none; scrollbar-gutter: stable; background: #e8eef3; cursor: grab; }
+.viewport { flex: 1; min-height: 0; min-width: 0; overflow-x: auto; overflow-y: scroll; padding: 72px 20px 88px; overscroll-behavior: contain; overflow-anchor: none; touch-action: none; user-select: none; scrollbar-gutter: stable; background: #e8eef3; outline: none; cursor: grab; }
 .viewport:active { cursor: grabbing; }
 /* Width drives gesture geometry. The global reduced-motion duration must not
    introduce an implicit width transition before the anchor is measured. */
