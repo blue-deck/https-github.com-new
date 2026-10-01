@@ -228,7 +228,8 @@ export default function ImoCrewListEditor({ initialDraft, language }: { initialD
         </header>
         {error && <div className={styles.error} role="alert">{error}</div>}
         <div ref={viewportRef} className={styles.documentViewport} style={{ "--document-scale": documentScale, "--document-control-scale": 1 / documentScale } as CSSProperties} role="region" aria-label={copy("Editable crew list document", "Doldurulabilir mürettebat listesi belgesi")} tabIndex={0}>
-          <form ref={formRef} className={styles.paper} lang="en" onSubmit={(event) => event.preventDefault()} onInputCapture={() => setInputRevision((current) => current + 1)} onClickCapture={(event) => {
+          {/* Keep edit tracking in the same bubble phase as controlled field updates. */}
+          <form ref={formRef} className={styles.paper} lang="en" onSubmit={(event) => event.preventDefault()} onInput={() => setInputRevision((current) => current + 1)} onClickCapture={(event) => {
             if (!compact || event.button !== 0) return;
             const cell = (event.target as HTMLElement).closest<HTMLElement>("[data-cell-id]");
             if (!cell) return;
@@ -310,13 +311,15 @@ function DocumentField({ id, label, value, onChange, date = false, gender = fals
     };
     resize();
     let width = input.clientWidth;
+    let frame = 0;
     const observer = new ResizeObserver(() => {
       if (width === input.clientWidth) return;
       width = input.clientWidth;
-      resize();
+      // Resizing an observed textarea during delivery can loop in WebKit.
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; resize(); });
     });
     observer.observe(input);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   }, [value]);
   const labelClass = hiddenLabel ? styles.srOnly : styles.fieldLabel;
   if (date) return <div className={styles.field} data-cell-id={id}><DateTextField label={label} value={value} onChange={onChange} placeholder="" invalidText={dateError} autoComplete="off" className={styles.field} labelClassName={labelClass} inputClassName={styles.dateInput} /></div>;
