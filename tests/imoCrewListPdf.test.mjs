@@ -5,6 +5,7 @@ import test from "node:test";
 import ts from "typescript";
 import { getDocument, version as pdfjsVersion } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createEmptyImoCrewRow, createImoCrewListDraft } from "../app/lib/imoCrewList.ts";
+import { IMO_CREW_LIST_COLUMNS, IMO_CREW_LIST_CONTENT_WIDTH } from "../app/lib/imoCrewListLayout.ts";
 
 const generatorUrl = new URL("../app/lib/imoCrewListPdf.ts", import.meta.url);
 const layoutUrl = new URL("../app/lib/imoCrewListLayout.ts", import.meta.url);
@@ -38,7 +39,7 @@ function makeDraft(crewCount = 0) {
     nationality: "Türkiye",
     dateOfBirth: `1990-12-${String(index % 28 + 1).padStart(2, "0")}`,
     placeOfBirth: "İstanbul",
-    gender: "Female",
+    gender: "F",
     documentType: "Passport",
     documentNumber: `PASSPORT-${String(index + 1).padStart(4, "0")}`,
     documentExpiry: `2032-01-${String(index % 28 + 1).padStart(2, "0")}`,
@@ -143,6 +144,10 @@ test("keeps the desktop ten-column table geometry in the portrait PDF", async (c
   assert.equal(pages.length, 1);
   assertPortraitPages(pages);
   const items = pages[0].items.filter((item) => item.str.trim());
+  assert.equal(items.find((item) => item.str === "CREW LIST").transform[0], 16);
+  assert.equal(items.find((item) => item.str === "IMO FAL Form 5").transform[0], 10);
+  assert.equal(items.find((item) => item.str.startsWith("1.1")).transform[0], 7.2);
+  assert.equal(items.find((item) => item.str.startsWith("16.")).transform[0], 8);
   const rows = expectedRows.map((values) => values.map((value) => {
     const matches = items.filter((item) => item.str.trim() === value);
     assert.equal(matches.length, 1, `A distinct table cell renders ${value} exactly once`);
@@ -163,10 +168,37 @@ test("keeps the desktop ten-column table geometry in the portrait PDF", async (c
     assert.equal(headings.length, 1, `Column ${number} has one shared table header`);
     assert.ok(Math.abs(headings[0].transform[4] - rows[0][column].transform[4]) < 0.1, `Column ${number} header aligns with its crew values`);
     assert.ok(headings[0].transform[5] > rows[0][column].transform[5], "Shared headers sit above the crew rows");
+    assert.equal(headings[0].transform[0], 6.9, "Column headings use the enlarged font");
+    const rightEdgeMm = 10 + IMO_CREW_LIST_COLUMNS.slice(0, column + 1)
+      .reduce((total, item) => total + item.width, 0) * 190 / IMO_CREW_LIST_CONTENT_WIDTH;
+    const headerFragments = items.filter((item) =>
+      Math.abs(item.transform[4] - headings[0].transform[4]) < 0.1 &&
+      item.transform[5] <= headings[0].transform[5] && item.transform[5] > rows[0][column].transform[5],
+    );
+    assert.ok(compact(headerFragments.map((item) => item.str).join(" ")).includes(compact(IMO_CREW_LIST_COLUMNS[column].label)));
+    for (const item of headerFragments) {
+      assert.ok(item.transform[4] + item.width <= rightEdgeMm * 72 / 25.4 + 0.1, `Enlarged heading stays inside column ${column + 1}: ${item.str}`);
+    }
   }
   const identity = items.find((item) => item.str.trim() === "Identity document");
   assert.ok(identity, "Identity document remains a grouped table header");
   assert.ok(identity.transform[5] > items.find((item) => item.str.trim().startsWith("13.")).transform[5]);
+  assert.ok(items.some((item) => item.str.trim() === "Gender"), "The narrow gender heading must not split inside the word");
+});
+
+test("keeps all 200 enlarged crew sequence numbers together inside their column", async (context) => {
+  const draft = makeDraft(200);
+  const pages = await readGeneratedPdf(context, draft);
+  assertPortraitPages(pages);
+  const sequenceRightEdge = (10 + IMO_CREW_LIST_COLUMNS[0].width * 190 / IMO_CREW_LIST_CONTENT_WIDTH) * 72 / 25.4;
+  const numbers = pages.flatMap((page) => page.items.filter((item) =>
+    /^\d+$/.test(item.str.trim()) && Math.abs(item.transform[4] - 10.7 * 72 / 25.4) < 0.1,
+  ));
+  assert.deepEqual(numbers.map((item) => Number(item.str)), Array.from({ length: 200 }, (_, index) => index + 1));
+  for (const item of numbers) {
+    assert.equal(item.transform[0], 7);
+    assert.ok(item.transform[4] + item.width < sequenceRightEdge, `${item.str} fits without wrapping`);
+  }
 });
 
 test("retains long names and document numbers without clipping or dropping wrapped text", async (context) => {

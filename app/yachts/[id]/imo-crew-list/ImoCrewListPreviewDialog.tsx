@@ -1,9 +1,9 @@
 "use client";
 
-import { useId, useLayoutEffect, useRef, type RefObject } from "react";
+import { useLayoutEffect, useRef, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
-import { Download, X } from "lucide-react";
+import { X } from "lucide-react";
 import styles from "./ImoCrewListPreviewDialog.module.css";
 
 const Preview = dynamic(() => import("./ImoCrewListPreview"), {
@@ -11,12 +11,11 @@ const Preview = dynamic(() => import("./ImoCrewListPreview"), {
   loading: () => <div className={styles.loading} role="status">Loading PDF…</div>,
 });
 
-export default function ImoCrewListPreviewDialog({ blob, url, filename, language, onClose, onDownload, returnFocusRef }: {
-  blob: Blob; url: string; filename: string; language: string; onClose: () => void; onDownload: () => void;
+export default function ImoCrewListPreviewDialog({ blob, language, onClose, returnFocusRef }: {
+  blob: Blob; language: string; onClose: () => void;
   returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const tr = language === "tr";
-  const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -70,13 +69,9 @@ export default function ImoCrewListPreviewDialog({ blob, url, filename, language
 
   if (typeof document === "undefined") return null;
   // Keep the viewer outside the document's scaled content and workspace styles.
-  return createPortal(<dialog ref={dialogRef} className={styles.dialog} aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); onClose(); }}>
+  return createPortal(<dialog ref={dialogRef} className={styles.dialog} aria-label={tr ? "PDF önizlemesi" : "PDF preview"} onCancel={(event) => { event.preventDefault(); onClose(); }}>
     <div className={styles.panel}>
-      <header className={styles.header}>
-        <h2 id={titleId}>{tr ? "Belge önizlemesi" : "Document preview"}</h2>
-        <a className={styles.download} href={url} download={filename} onClick={onDownload}><Download size={17} /><span>{tr ? "PDF indir" : "Download PDF"}</span></a>
-        <button ref={closeRef} type="button" className={styles.close} aria-label={tr ? "Önizlemeyi kapat" : "Close preview"} onClick={onClose}><X size={22} /></button>
-      </header>
+      <button ref={closeRef} type="button" className={styles.close} aria-label={tr ? "Önizlemeyi kapat" : "Close preview"} onClick={onClose}><X size={22} /></button>
       <Preview blob={blob} language={language} />
     </div>
   </dialog>, document.body);

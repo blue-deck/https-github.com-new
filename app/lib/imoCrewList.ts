@@ -112,6 +112,13 @@ export function capitalizeImoField(value: string): string {
   return value.replace(/\S/u, (character) => character.toLocaleUpperCase("en"));
 }
 
+export function normalizeImoGender(value: string): string {
+  const gender = value.normalize("NFC").trim().toLocaleLowerCase("tr-TR");
+  if (["male", "man", "m", "erkek"].includes(gender)) return "M";
+  if (["female", "woman", "f", "kadın", "kadin"].includes(gender)) return "F";
+  return "";
+}
+
 function fieldText(value: unknown, field: string): string {
   if (
     typeof value !== "string" ||
@@ -173,7 +180,7 @@ export function createImoCrewListDraft(
       rank: sourceText(member.position) || sourceText(profile.current_position),
       nationality: sourceText(profile.nationality),
       dateOfBirth: sourceDate(profile.date_of_birth),
-      gender: sourceText(profile.gender),
+      gender: normalizeImoGender(sourceText(profile.gender)),
       documentType: documentNumber || documentExpiry ? "Passport" : "",
       documentNumber,
       documentExpiry,
@@ -262,6 +269,7 @@ export function parseImoCrewListDraft(text: string, yachtId: string): ImoCrewLis
     for (const field of rowFields) {
       row[field] = fieldText(rowInput[field], field);
     }
+    row.gender = normalizeImoGender(row.gender);
     return row;
   });
 
@@ -277,7 +285,20 @@ export function serializeImoCrewListDraft(draft: ImoCrewListDraft): string {
 export function getImoCrewListFilename(
   draft: ImoCrewListDraft,
   extension: "pdf" | "json",
+  workspaceYachtName?: string,
 ): string {
+  if (extension === "pdf") {
+    const shipName = Array.from((workspaceYachtName ?? draft.voyage.shipName)
+      .normalize("NFC")
+      .replace(unsafeCharactersGlobal, " ")
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, " ")
+      .replace(/^[\s.-]+|[\s.]+$/g, ""))
+      .slice(0, 48)
+      .join("")
+      .replace(/[\s.]+$/g, "") || "Yacht";
+    return `${shipName} IMO Crew List - Created by bluedeck.app.pdf`;
+  }
   const shipSlug = draft.voyage.shipName
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
