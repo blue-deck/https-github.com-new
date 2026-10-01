@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { DateTextField } from "../../../components/DateTextField";
-import { capitalizeImoField, IMO_CREW_LIST_MAX_FIELD_LENGTH } from "../../../lib/imoCrewList";
+import { capitalizeImoField, IMO_CREW_LIST_MAX_FIELD_LENGTH, normalizeImoGender } from "../../../lib/imoCrewList";
 import styles from "./ImoCrewCellEditor.module.css";
 
 type CrewCellField = {
@@ -12,6 +12,7 @@ type CrewCellField = {
   context: string;
   value: string;
   date: boolean;
+  gender?: boolean;
 };
 
 type ImoCrewCellEditorProps = {
@@ -25,7 +26,7 @@ type ImoCrewCellEditorProps = {
 
 export default function ImoCrewCellEditor({ field, language, hasPrevious, hasNext, onCommit, onClose }: ImoCrewCellEditorProps) {
   const tr = language === "tr";
-  const [value, setValue] = useState(() => field.date ? field.value : capitalizeImoField(field.value));
+  const [value, setValue] = useState(() => field.gender ? normalizeImoGender(field.value) : field.date ? field.value : capitalizeImoField(field.value));
   const [showError, setShowError] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -41,7 +42,7 @@ export default function ImoCrewCellEditor({ field, language, hasPrevious, hasNex
     if (!dialog) return;
     if (!dialog.open) dialog.showModal();
     if (!focusedRef.current) {
-      formRef.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+      formRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>("input, select")?.focus({ preventScroll: true });
       focusedRef.current = true;
     }
 
@@ -97,7 +98,7 @@ export default function ImoCrewCellEditor({ field, language, hasPrevious, hasNex
             label={field.label}
             value={value}
             onChange={setValue}
-            placeholder="DD/MM/YYYY"
+            placeholder=""
             invalidText={invalidDate}
             autoComplete="off"
             className={styles.field}
@@ -105,7 +106,9 @@ export default function ImoCrewCellEditor({ field, language, hasPrevious, hasNex
             inputClassName={styles.input}
           /> : <div className={styles.field}>
             <label htmlFor={inputId} className={styles.srOnly}>{field.label}</label>
-            <input
+            {field.gender ? <select id={inputId} className={styles.input} value={value} onChange={(event) => setValue(normalizeImoGender(event.target.value))}>
+              <option value="">—</option><option value="M">M</option><option value="F">F</option>
+            </select> : <input
               id={inputId}
               className={styles.input}
               type="text"
@@ -117,7 +120,7 @@ export default function ImoCrewCellEditor({ field, language, hasPrevious, hasNex
               spellCheck={false}
               enterKeyHint="done"
               aria-describedby={showError ? errorId : undefined}
-            />
+            />}
           </div>}
           {showError && <p id={errorId} className={styles.error} role="alert">{field.date ? invalidDate : (tr ? "Devam etmeden önce bu alanı kontrol edin." : "Check this field before continuing.")}</p>}
         </div>

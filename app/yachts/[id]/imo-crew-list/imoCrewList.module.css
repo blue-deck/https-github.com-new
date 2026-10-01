@@ -11,39 +11,41 @@
 .secondary { color: #35566b; border: 1px solid #ccd7e0; background: #fff; }
 .secondary:hover { border-color: #91b0bf; background: #f8fbfc; }
 .page button:disabled { opacity: .4; cursor: not-allowed; }
-.page :is(button, a, input, textarea, [tabindex]):focus-visible { outline: 2px solid #25839b; outline-offset: 3px; }
+.page :is(button, a, input, textarea, select, [tabindex]):focus-visible { outline: 2px solid #25839b; outline-offset: 3px; }
 .documentViewport { overflow: auto; max-width: 100%; padding: 4px 4px 18px; scrollbar-color: #a5b6c3 #e1e7ed; scrollbar-width: thin; }
 .paper { min-width: 1120px; min-height: 770px; padding: 36px 40px 42px; border: 1px solid #d3dae0; background: white; color: #141c26; box-shadow: 0 3px 14px #2235480b, 0 1px 3px #2235480a; font-family: Arial, Helvetica, sans-serif; }
 .paperHeading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
-.paperHeading h2 { font-size: 25px; font-weight: 700; letter-spacing: -.025em; line-height: 1; }
-.paperHeading > span { font-size: 15px; }
+.paperHeading h2 { font-size: 28px; font-weight: 700; letter-spacing: -.025em; line-height: 1; }
+.paperHeading > span { font-size: 17px; }
 .movement { display: flex; align-items: center; gap: 34px; margin: 0 0 19px; padding: 0; border: 0; }
-.movement label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
-.movement input { appearance: none; width: 15px; height: 15px; border: 1px solid #626a72; border-radius: 0; background: white; cursor: pointer; }
-.movement input:checked { background: linear-gradient(45deg, transparent 44%, #172a38 44%, #172a38 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #172a38 44%, #172a38 56%, transparent 56%); background-size: 9px 9px; background-position: center; background-repeat: no-repeat; }
+.movement label { display: inline-flex; align-items: center; gap: 8px; min-width: 44px; min-height: 44px; padding: 4px 6px; font-size: 12px; cursor: pointer; }
+.movement input { appearance: none; -webkit-appearance: none; flex-shrink: 0; width: 16px; height: 16px; margin: 0; border: 1px solid #626a72; border-radius: 0; background: white; cursor: pointer; }
+/* The yacht portal input background must not erase the selected mark. */
+.paper .movement input:checked { border-color: #172a38 !important; background: linear-gradient(45deg, transparent 44%, #172a38 44%, #172a38 56%, transparent 56%) center / 9px 9px no-repeat, linear-gradient(-45deg, transparent 44%, #172a38 44%, #172a38 56%, transparent 56%) center / 9px 9px no-repeat #fff !important; }
+.movement label:has(input:focus-visible) { outline: 2px solid #25839b; outline-offset: 2px; }
 .voyageGrid { border-top: 1px solid #68717b; border-left: 1px solid #68717b; }
 .voyageBand { display: grid; }
 .voyageBand > .field { border-right: 1px solid #68717b; border-bottom: 1px solid #68717b; padding: 8px 9px 5px; min-height: 58px; }
 .field { min-width: 0; width: 100%; }
-.fieldLabel { display: block; margin: 0 0 3px; font-size: 11px; line-height: 1.45; font-weight: 600; color: #202a34; }
-.textInput, .dateInput { display: block; width: 100%; min-width: 0; min-height: 30px; margin: 0; padding: 5px 3px; border: 1px solid transparent; border-radius: 2px; background: transparent; box-shadow: none; color: #111d27; font-family: inherit; font-size: 13px; font-weight: 400; line-height: 1.5; outline: none; }
+.fieldLabel { display: block; margin: 0 0 3px; font-size: 12.5px; line-height: 1.45; font-weight: 600; color: #202a34; }
+.textInput, .dateInput, .selectInput { display: block; width: 100%; min-width: 0; min-height: 30px; margin: 0; padding: 5px 3px; border: 1px solid transparent; border-radius: 2px; background: transparent; box-shadow: none; color: #111d27; font-family: inherit; font-size: 13px; font-weight: 400; line-height: 1.5; outline: none; }
 .textInput { resize: none; overflow: hidden; overflow-wrap: anywhere; }
 .dateInput { font-variant-numeric: tabular-nums; }
-.dateInput::placeholder { color: #8b9299; font-size: 11px; }
-.field:hover :is(.textInput, .dateInput) { background: #f7fafc; }
-.field :is(.textInput, .dateInput):focus { background: #f0f8fc; border-color: #6e9eb5; outline: none; }
+.selectInput { cursor: pointer; text-align: left; }
+.field:hover :is(.textInput, .dateInput, .selectInput) { background: #f7fafc; }
+.field :is(.textInput, .dateInput, .selectInput):focus { background: #f0f8fc; border-color: #6e9eb5; outline: none; }
 .field .dateInput[aria-invalid="true"] { border-color: #c36758; background: #fff4f1; }
 .crewTable { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 13px; font-size: 11px; }
 .crewTable th, .crewTable td { border: 1px solid #68717b; }
-.crewTable th { padding: 7px 6px; background: #f4f6f8; text-align: left; vertical-align: middle; font-size: 11px; font-weight: 600; line-height: 1.5; overflow-wrap: normal; }
+.crewTable th { padding: 7px 6px; background: #f4f6f8; text-align: left; vertical-align: middle; font-size: 12.5px; font-weight: 600; line-height: 1.5; overflow-wrap: normal; }
 .crewTable th:first-child { padding-inline: 4px; }
 .crewTable td { vertical-align: top; padding: 5px 3px; height: 51px; }
-.crewTable .textInput, .crewTable .dateInput { padding-inline: 2px; font-size: 12px; min-height: 38px; }
-.crewTable .dateInput::placeholder { font-size: 10px; }
+.crewTable .textInput, .crewTable .dateInput, .crewTable .selectInput { padding-inline: 2px; font-size: 12px; min-height: 38px; }
 .crewTable .sequence { padding: 0; vertical-align: top; text-align: center; }
 .rowTools { position: relative; }
 .rowTrigger { display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; min-height: 50px; padding: 5px 0 2px; border: 0; background: transparent; color: #273d4f; font-size: 12px; cursor: pointer; }
 .rowTrigger > span { color: #92a1ad; font-size: 13px; line-height: 9px; }
+.rowTrigger > .rowIndex { font-size: 14px; line-height: 1.1; }
 .rowTrigger:hover, .rowTrigger[aria-expanded="true"] { background: #eaf3f8; }
 .rowActions { position: absolute; top: 3px; left: calc(100% + 5px); z-index: 5; display: flex; flex-direction: column; gap: 2px; min-width: 140px; border: 1px solid #cddae3; border-radius: 7px; padding: 5px; background: white; box-shadow: 0 5px 18px #18344924; }
 .rowActions button { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 4px; padding: 8px; background: white; color: #355369; text-align: left; font-size: 12px; cursor: pointer; }
@@ -51,9 +53,9 @@
 .rowActions button.remove { color: #a54444; }
 .crewTable .blankRow td { height: 46px; padding: 0; }
 .declaration { margin-top: 32px; border: 1px solid #68717b; padding: 10px 10px 14px; }
-.declaration > p { margin: 0 0 15px; font-size: 11px; font-weight: 600; }
+.declaration > p { margin: 0 0 15px; font-size: 12.5px; font-weight: 600; }
 .signatureFields { display: grid; grid-template-columns: 1.25fr .65fr 1fr; gap: 28px; }
-.signatureFields .fieldLabel, .signature > span { display: block; color: #454e57; font-size: 10px; font-weight: 400; }
+.signatureFields .fieldLabel, .signature > span { display: block; color: #454e57; font-size: 11.3px; font-weight: 400; }
 .signatureFields .textInput, .signatureFields .dateInput { border-bottom-color: #9ca2a8; border-radius: 0; }
 .signature > div { height: 36px; border-bottom: 1px solid #9ca2a8; }
 .undoBar { padding: 0 4px; }
@@ -66,11 +68,13 @@
 @media (prefers-reduced-motion: no-preference) { .textInput, .dateInput { transition: background .12s, border-color .12s; } }
 
 /* The document controls intentionally override the shared app input skin. */
-.paper .field :is(.textInput, .dateInput) { border-color: transparent !important; background: transparent !important; box-shadow: none !important; }
-.paper .field:hover :is(.textInput, .dateInput) { background: #f7fafc !important; }
-.paper .field :is(.textInput, .dateInput):focus { background: #f0f8fc !important; border-color: #6e9eb5 !important; box-shadow: none !important; }
+.paper .field :is(.textInput, .dateInput, .selectInput) { border-color: transparent !important; background: transparent !important; box-shadow: none !important; }
+.paper .field:hover :is(.textInput, .dateInput, .selectInput) { background: #f7fafc !important; }
+.paper .field :is(.textInput, .dateInput, .selectInput):focus { background: #f0f8fc !important; border-color: #6e9eb5 !important; box-shadow: none !important; }
 .paper .field .dateInput[aria-invalid="true"] { border-color: #c36758 !important; background: #fff4f1 !important; }
 .paper .signatureFields :is(.textInput, .dateInput) { border-bottom-color: #9ca2a8 !important; }
+/* These are document cells; the separate, unscaled cell editor stays at 16px. */
+.paper .crewTable :is(.dateInput, .selectInput) { font-size: 12px !important; }
 @media (max-width: 1100px) {
   .page { padding: 22px 16px 36px; }
   .container { max-width: 100%; }
@@ -82,6 +86,8 @@
   /* Keep every column and vessel band intact; scale the whole portrait sheet. */
   .paper { display: flex; flex-direction: column; width: 1120px; min-width: 1120px; min-height: 1584px; padding: 36px 40px 42px; zoom: var(--document-scale); }
   .paperHeading, .movement, .voyageGrid, .crewTable, .declaration { flex-shrink: 0; }
+  /* Keep the two radio labels at real 44px touch height inside the scaled sheet. */
+  .movement { align-self: flex-start; width: max-content; max-width: 100%; gap: 16px; margin-bottom: 10px; zoom: var(--document-control-scale); }
   .crewTable { margin-bottom: 32px; }
   .declaration { margin-top: auto; }
   .rowTrigger > .rowIndex { color: #273d4f; }

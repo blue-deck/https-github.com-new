@@ -3,11 +3,11 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, LoaderCircle, RefreshCw } from "lucide-react";
 import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderTask } from "pdfjs-dist";
+import { usePdfPageZoom } from "./usePdfPageZoom";
 import styles from "./ImoCrewListPreview.module.css";
 
-type Zoom = "fit" | "100" | "150";
 type LoadedDocument = { pdf: PDFDocumentProxy; blob: Blob; attempt: number; id: number };
-type RenderedPage = { key: string; text: string; blob: Blob };
+type RenderedPage = { key: string; text: string; blob: Blob; pageNumber: number };
 
 const workerSource = "/pdfjs/6.3.289/pdf.worker.min.mjs";
 const maximumCanvasPixels = 16_777_216;
@@ -19,22 +19,23 @@ export default function ImoCrewListPreview({ blob, language }: { blob: Blob; lan
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const pageAreaRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const { zoom, renderZoom, resetZoom } = usePdfPageZoom(viewportRef, frameRef);
   const documentId = useRef(0);
   const textId = useId();
-  const zoomId = useId();
+  const instructionsId = useId();
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<LoadedDocument | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
-  const [zoom, setZoom] = useState<Zoom>("fit");
   const [size, setSize] = useState({ width: 0, dpr: 1 });
   const [rendered, setRendered] = useState<RenderedPage | null>(null);
   const [renderErrorKey, setRenderErrorKey] = useState("");
   const pdf = loaded?.blob === blob && loaded.attempt === attempt ? loaded.pdf : null;
-  const renderWidth = zoom === "fit" ? size.width : 0;
-  const renderKey = `${loaded?.id ?? 0}:${pageNumber}:${zoom}:${renderWidth}:${size.dpr}`;
+  const renderWidth = size.width * renderZoom;
+  const renderKey = `${loaded?.id ?? 0}:${pageNumber}:${renderWidth}:${size.dpr}`;
   const pageReady = Boolean(pdf && rendered?.key === renderKey);
-  const hasRenderedPage = rendered?.blob === blob;
+  const hasRenderedPage = rendered?.blob === blob && rendered.pageNumber === pageNumber;
   const hasError = loadError || renderErrorKey === renderKey;
   const pageLabel = pdf
     ? (tr ? `Sayfa ${pageNumber} / ${pdf.numPages}` : `Page ${pageNumber} of ${pdf.numPages}`)
@@ -103,14 +104,15 @@ export default function ImoCrewListPreview({ blob, language }: { blob: Blob; lan
   }, []);
 
   useEffect(() => {
+    resetZoom();
     if (viewportRef.current) {
       viewportRef.current.scrollTop = 0;
       viewportRef.current.scrollLeft = 0;
     }
-  }, [pdf, pageNumber]);
+  }, [pdf, pageNumber, resetZoom]);
 
   useEffect(() => {
-    if (!pdf || (zoom === "fit" && renderWidth <= 0)) return;
+    if (!pdf || renderWidth <= 0) return;
     let active = true;
     let page: PDFPageProxy | undefined;
     let task: RenderTask | undefined;
@@ -122,8 +124,7 @@ export default function ImoCrewListPreview({ blob, language }: { blob: Blob; lan
         page = await pdf!.getPage(pageNumber);
         if (!active) return;
         const baseViewport = page.getViewport({ scale: 1 });
-        // PDF points are 1/72 inch; CSS pixels are 1/96 inch at 100% zoom.
-        const scale = zoom === "fit" ? renderWidth / baseViewport.width : Number(zoom) / 100 * 96 / 72;
+        const scale = renderWidth / baseViewport.width;
         const viewport = page.getViewport({ scale });
         const outputScale = Math.min(
           size.dpr,
@@ -149,12 +150,11 @@ export default function ImoCrewListPreview({ blob, language }: { blob: Blob; lan
         if (!context) throw new Error("Canvas is unavailable.");
         canvas.width = stagingCanvas.width;
         canvas.height = stagingCanvas.height;
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
         context.drawImage(stagingCanvas, 0, 0);
         setRendered({
           key: renderKey,
           blob,
+          pageNumber,
           text: content?.items.flatMap((item) => "str" in item ? [item.str] : []).join(" ") ?? "",
         });
       } catch {
@@ -174,33 +174,24 @@ export default function ImoCrewListPreview({ blob, language }: { blob: Blob; lan
       active = false;
       task?.cancel();
     };
-  }, [pdf, pageNumber, zoom, renderWidth, size.dpr, renderKey, blob]);
+  }, [pdf, pageNumber, renderWidth, size.dpr, renderKey, blob]);
 
   return (
     <section className={styles.preview} aria-label={tr ? "PDF önizlemesi" : "PDF preview"}>
-      <div className={styles.toolbar}>
-        <div className={styles.navigation}>
+      {pdf && pdf.numPages > 1 && <nav className={styles.navigation} aria-label={tr ? "PDF sayfaları" : "PDF pages"}>
           <button type="button" disabled={!pdf || pageNumber <= 1} onClick={() => setPageNumber((current) => Math.max(1, current - 1))} aria-label={tr ? "Önceki sayfa" : "Previous page"}><ChevronLeft size={18} /></button>
           <span className={styles.pageCount} role="status" aria-live="polite">{pageLabel}</span>
           <button type="button" disabled={!pdf || pageNumber >= pdf.numPages} onClick={() => setPageNumber((current) => Math.min(pdf?.numPages ?? 1, current + 1))} aria-label={tr ? "Sonraki sayfa" : "Next page"}><ChevronRight size={18} /></button>
-        </div>
-        <div className={styles.zoom}>
-          <label htmlFor={zoomId}>{tr ? "Görünüm" : "View"}</label>
-          <select id={zoomId} value={zoom} onChange={(event) => setZoom(event.target.value as Zoom)}>
-            <option value="fit">{tr ? "Genişliğe sığdır" : "Fit width"}</option>
-            <option value="100">100%</option>
-            <option value="150">150%</option>
-          </select>
-        </div>
-      </div>
+      </nav>}
       <div ref={pageAreaRef} className={styles.pageArea}>
-        <div ref={viewportRef} className={styles.viewport} tabIndex={0} aria-label={tr ? "PDF sayfası" : "PDF page"} aria-busy={!pageReady && !hasError}>
-          <div className={styles.canvasFrame} data-has-page={hasRenderedPage} data-pending={!pageReady || hasError} aria-hidden={!pageReady || hasError}>
+        <div ref={viewportRef} className={styles.viewport} tabIndex={0} aria-label={tr ? "PDF sayfası" : "PDF page"} aria-describedby={instructionsId} aria-busy={!pageReady && !hasError} data-zoom={zoom.toFixed(3)}>
+          <div ref={frameRef} className={styles.canvasFrame} style={{ width: size.width > 0 ? size.width * zoom : undefined }} data-has-page={hasRenderedPage} aria-hidden={!hasRenderedPage || hasError}>
             <canvas ref={canvasRef} className={styles.canvas} role="img" aria-label={pageLabel} aria-describedby={textId} />
           </div>
-          <p id={textId} className={styles.srOnly}>{pageReady && !hasError ? rendered?.text || (tr ? "Sayfa metnine indirilen PDF üzerinden erişebilirsiniz." : "Page text is available in the downloaded PDF.") : ""}</p>
+          <p id={textId} className={styles.srOnly}>{hasRenderedPage && !hasError ? rendered?.text || (tr ? "Sayfa metnine indirilen PDF üzerinden erişebilirsiniz." : "Page text is available in the downloaded PDF.") : ""}</p>
+          <p id={instructionsId} className={styles.srOnly}>{tr ? "Yakınlaştırmak için iki parmağınızı açın veya çift dokunun. Klavyede artı ve eksi tuşlarını, sıfırlamak için 0 tuşunu kullanın. Sayfayı sürükleyerek kaydırın." : "Pinch or double tap to zoom. Use plus and minus keys to zoom, or 0 to reset. Drag to pan the page."}</p>
         </div>
-        {(hasError || !pageReady) && <div className={styles.statusOverlay}>
+        {(hasError || !hasRenderedPage) && <div className={styles.statusOverlay}>
           {hasError ? <div className={styles.status} role="alert">
             <p>{tr ? "PDF önizlemesi açılamadı. Yeniden deneyin veya PDF’yi indirin." : "The PDF preview could not be opened. Try again or download the PDF."}</p>
             <button type="button" onClick={() => setAttempt((current) => current + 1)}><RefreshCw size={16} />{tr ? "Yeniden dene" : "Try again"}</button>

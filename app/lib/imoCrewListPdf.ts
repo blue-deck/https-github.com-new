@@ -9,10 +9,19 @@ import {
 } from "./imoCrewListLayout";
 
 const FONT_FAMILY = "NotoSans";
-const FONT_SIZE = 6.5;
-const LINE_HEIGHT = 3.1;
+const FONT_SIZE = 7;
+const LINE_HEIGHT = 3.2;
+const LABEL_FONT_SIZE = 7.2;
+const TABLE_HEADER_FONT_SIZE = 6.9;
+const LABEL_LINE_HEIGHT = 3;
 const CELL_PADDING = 1.1;
 const MARGIN = 10;
+
+function columnPadding(index: number): number {
+  // Give narrow columns room for three-digit crew numbers and the whole Gender label.
+  const key = IMO_CREW_LIST_COLUMNS[index].key;
+  return key === "sequence" || key === "gender" ? 0.7 : CELL_PADDING;
+}
 
 let fontDataPromise: Promise<[string, string]> | undefined;
 
@@ -112,7 +121,7 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
   const signatureGap = 7;
   const signatureFieldUnit = (width - signaturePadding * 2 - signatureGap * 2) / 2.9;
   const signatureFieldWidths = [signatureFieldUnit * 1.25, signatureFieldUnit * 0.65, signatureFieldUnit];
-  setBodyFont(7.5);
+  setBodyFont(8);
   const masterLines = wrap(doc, voyage.masterName, signatureFieldWidths[0]);
   const signatureUnderlineOffset = 13 + Math.max(7, masterLines.length * LINE_HEIGHT + 2);
   const signatureHeight = signatureUnderlineOffset + signaturePadding;
@@ -124,24 +133,24 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     const prepared = fields.map((field) => {
       const fieldWidth = width * field.fraction;
       doc.setFont(FONT_FAMILY, "bold");
-      doc.setFontSize(6.5);
+      doc.setFontSize(LABEL_FONT_SIZE);
       const labelLines = wrap(doc, field.label, fieldWidth - CELL_PADDING * 2);
-      setBodyFont(7.5);
+      setBodyFont(8);
       return {
         width: fieldWidth,
         labelLines,
         lines: wrap(doc, field.value, fieldWidth - CELL_PADDING * 2),
       };
     });
-    const valueOffset = 4.4 + Math.max(...prepared.map((field) => field.labelLines.length)) * 2.8;
+    const valueOffset = 4.4 + Math.max(...prepared.map((field) => field.labelLines.length)) * LABEL_LINE_HEIGHT;
     const height = Math.max(11, Math.max(...prepared.map((field) => field.lines.length)) * LINE_HEIGHT + valueOffset);
     let x = MARGIN;
     prepared.forEach((field) => {
       doc.rect(x, y, field.width, height);
       doc.setFont(FONT_FAMILY, "bold");
-      doc.setFontSize(6.5);
-      drawLines(doc, field.labelLines, x + CELL_PADDING, y + 3.4, 2.8);
-      setBodyFont(7.5);
+      doc.setFontSize(LABEL_FONT_SIZE);
+      drawLines(doc, field.labelLines, x + CELL_PADDING, y + 3.5, LABEL_LINE_HEIGHT);
+      setBodyFont(8);
       drawLines(doc, field.lines, x + CELL_PADDING, y + valueOffset);
       x += field.width;
     });
@@ -153,12 +162,12 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     doc.setLineWidth(0.2);
     doc.setTextColor(20, 28, 38);
     doc.setFont(FONT_FAMILY, "bold");
-    doc.setFontSize(15);
+    doc.setFontSize(16);
     doc.text("CREW LIST", MARGIN, 12);
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.text("IMO FAL Form 5", pageWidth - MARGIN, 12, { align: "right" });
     doc.setFont(FONT_FAMILY, "normal");
-    doc.setFontSize(7.5);
+    doc.setFontSize(8);
     doc.text("Arrival", MARGIN + 5, 18);
     doc.text("Departure", MARGIN + 32, 18);
     ["arrival", "departure"].forEach((movement, index) => {
@@ -187,17 +196,17 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     y += 3;
     let x = MARGIN;
     doc.setFont(FONT_FAMILY, "bold");
-    doc.setFontSize(6.1);
-    const headerLabels = columns.map((column) => wrap(doc, column.label, column.width - CELL_PADDING * 2));
+    doc.setFontSize(TABLE_HEADER_FONT_SIZE);
+    const headerLabels = columns.map((column, index) => wrap(doc, column.label, column.width - columnPadding(index) * 2));
     const headerHeight = Math.max(14.5, ...headerLabels.map((lines, index) =>
-      (index >= IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX ? 5 : 0) + 3.4 + (lines.length - 1) * 2.8 + 1.8,
+      (index >= IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX ? 5 : 0) + 3.5 + (lines.length - 1) * LABEL_LINE_HEIGHT + 1.8,
     ));
     doc.setFillColor(244, 246, 248);
     doc.rect(MARGIN, y, width, headerHeight, "F");
     columns.forEach((column, index) => {
       const groupHeight = index >= IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX ? 5 : 0;
       doc.rect(x, y + groupHeight, column.width, headerHeight - groupHeight);
-      drawLines(doc, headerLabels[index], x + CELL_PADDING, y + groupHeight + 3.4, 2.8);
+      drawLines(doc, headerLabels[index], x + columnPadding(index), y + groupHeight + 3.5, LABEL_LINE_HEIGHT);
       x += column.width;
     });
     const identityStart = MARGIN + columns.slice(0, IMO_CREW_LIST_DOCUMENT_COLUMN_INDEX)
@@ -221,7 +230,7 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     let x = MARGIN;
     columns.forEach((column, index) => {
       doc.rect(x, y, column.width, height);
-      drawLines(doc, cells[index].slice(lineOffset, lineOffset + lineCount), x + CELL_PADDING, y + 3.4);
+      drawLines(doc, cells[index].slice(lineOffset, lineOffset + lineCount), x + columnPadding(index), y + 3.4);
       x += column.width;
     });
     y += height;
@@ -235,14 +244,14 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     }
   } else {
     draft.crew.forEach((crew, index) => {
-      const cells = columns.map((column) => wrap(
+      const cells = columns.map((column, columnIndex) => wrap(
         doc,
         column.key === "sequence"
           ? String(index + 1)
           : column.key === "dateOfBirth" || column.key === "documentExpiry"
             ? formatPdfDate(crew[column.key])
             : crew[column.key],
-        column.width - CELL_PADDING * 2,
+        column.width - columnPadding(columnIndex) * 2,
       ));
       const lineCount = Math.max(...cells.map((cell) => cell.length));
       const rowHeight = Math.max(6.5, lineCount * LINE_HEIGHT + CELL_PADDING * 2);
@@ -265,7 +274,7 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     doc.setPage(page);
     const signatureY = tableBottom + 4;
     doc.setFont(FONT_FAMILY, "bold");
-    doc.setFontSize(7.2);
+    doc.setFontSize(8);
     doc.setTextColor(25, 31, 39);
     doc.setDrawColor(90, 99, 112);
     doc.setLineWidth(0.2);
@@ -279,10 +288,10 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
     let signatureX = MARGIN + signaturePadding;
     signatureFields.forEach((field, index) => {
       doc.setFont(FONT_FAMILY, "normal");
-      doc.setFontSize(6.5);
+      doc.setFontSize(LABEL_FONT_SIZE);
       doc.setTextColor(69, 78, 87);
       doc.text(field.label, signatureX, signatureY + 10.5);
-      setBodyFont(7.5);
+      setBodyFont(8);
       drawLines(doc, field.lines, signatureX, signatureY + 15);
       doc.setDrawColor(156, 162, 168);
       doc.setLineWidth(0.15);
@@ -290,7 +299,7 @@ export async function createImoCrewListPdf(draft: ImoCrewListDraft): Promise<Blo
       signatureX += signatureFieldWidths[index] + signatureGap;
     });
     setBodyFont();
-    doc.setFontSize(6.5);
+    doc.setFontSize(7);
     doc.setTextColor(88, 97, 109);
     doc.text("Prepared in BlueDeck", MARGIN, pageHeight - MARGIN);
     doc.text(`Page ${page} of ${pageCount}`, pageWidth - MARGIN, pageHeight - MARGIN, { align: "right" });

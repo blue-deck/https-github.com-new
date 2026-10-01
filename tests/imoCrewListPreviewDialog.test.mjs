@@ -94,15 +94,14 @@ function harness({ visualViewport = true, explicitReturnFocus = false } = {}) {
     (element) => ({ paddingRight: element.style.getPropertyValue("padding-right") }),
   );
   let closed = 0;
-  let downloaded = 0;
   const portal = loaded.exports.default({
-    blob: new Blob(["PDF test"]), url: "blob:test-preview", filename: "crew-list.pdf", language: "en",
-    onClose: () => { closed += 1; }, onDownload: () => { downloaded += 1; },
+    blob: new Blob(["PDF test"]), language: "en",
+    onClose: () => { closed += 1; },
     ...(explicitReturnFocus ? { returnFocusRef: { current: returnTarget } } : {}),
   });
   assert.equal(effects.length, 1);
   return { body, root, trigger, returnTarget, dialog, closeButton, document, window, elements, portal, calls,
-    setup: effects[0], get closed() { return closed; }, get downloaded() { return downloaded; } };
+    setup: effects[0], get closed() { return closed; } };
 }
 
 test("preview opens in the body and restores scroll, focus, and owned inline styles on close", () => {
@@ -169,7 +168,7 @@ test("preview follows the visual viewport and balances StrictMode effect replay"
   assert.equal(h.window.visualViewport.count("scroll"), 0);
 });
 
-test("desktop fallback resizes and close, Escape, and download retain their real callbacks", () => {
+test("document-only preview keeps an accessible name, close and Escape without the old toolbar", () => {
   const h = harness({ visualViewport: false });
   const cleanup = h.setup();
   assert.equal(h.dialog.style.getPropertyValue("--preview-width"), "1000px");
@@ -186,11 +185,9 @@ test("desktop fallback resizes and close, Escape, and download retain their real
   h.portal.children.props.onCancel({ preventDefault() { prevented = true; } });
   assert.equal(prevented, true);
   assert.equal(h.closed, 2);
-  const download = h.elements.find((element) => element.type === "a");
-  assert.equal(download.props.href, "blob:test-preview");
-  assert.equal(download.props.download, "crew-list.pdf");
-  download.props.onClick();
-  assert.equal(h.downloaded, 1);
+  assert.equal(h.portal.children.props["aria-label"], "PDF preview");
+  assert.equal(h.elements.some((element) => ["a", "header", "h2"].includes(element.type)), false,
+    "Preview has no heading/download toolbar; the editor still owns downloading");
   h.trigger.isConnected = false;
   cleanup();
   assert.equal(h.calls.some((call) => call.kind === "focus" && call.element === h.trigger), false, "Never refocus an unmounted route trigger");

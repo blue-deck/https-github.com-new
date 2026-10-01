@@ -9,6 +9,7 @@ import {
   createImoCrewListDraft,
   getImoCrewListFilename,
   getImoCrewListIssues,
+  normalizeImoGender,
   parseImoCrewListDraft,
   serializeImoCrewListDraft,
 } from "../app/lib/imoCrewList.ts";
@@ -77,7 +78,7 @@ test("starts from the active authorized roster in source order and keeps absent 
   assert.equal(draft.crew[0].documentNumber, "123456789");
   assert.equal(draft.crew[0].documentExpiry, "2032-01-31");
   assert.equal(draft.crew[0].dateOfBirth, "1990-12-10");
-  assert.equal(draft.crew[0].gender, "Female");
+  assert.equal(draft.crew[0].gender, "F");
   assert.equal(draft.crew[0].placeOfBirth, "");
   assert.equal(Object.hasOwn(draft.crew[0], "issuingState"), false);
   assert.equal(draft.crew[1].documentType, "");
@@ -245,9 +246,36 @@ test("advises on missing data, IMO checksum, birth dates and expiry at the voyag
 test("creates bounded download filenames without path separators or sensitive crew data", () => {
   const draft = completeDraft();
   draft.voyage.shipName = "../../ M/Y Ége Işığı ";
-  assert.equal(getImoCrewListFilename(draft, "pdf"), "imo-crew-list-m-y-ege-isigi-arrival-2027-04-20.pdf");
+  assert.equal(getImoCrewListFilename(draft, "pdf"), "M-Y Ége Işığı IMO Crew List - Created by bluedeck.app.pdf");
   draft.voyage.shipName = "船";
   draft.voyage.arrivalDepartureDate = "";
   draft.voyage.movement = "departure";
   assert.equal(getImoCrewListFilename(draft, "json"), "imo-crew-list-yacht-departure-undated.json");
+  const unicodeFilename = getImoCrewListFilename(draft, "pdf", "⛵".repeat(120));
+  assert.ok(new TextEncoder().encode(unicodeFilename).byteLength < 255);
+  assert.equal(getImoCrewListFilename(draft, "pdf", " .../\\\\:*?\"<>|\u202e\n "), "Yacht IMO Crew List - Created by bluedeck.app.pdf");
+  assert.doesNotMatch(getImoCrewListFilename(draft, "pdf"), /[\\/:*?"<>|\u0000-\u001f\u202e]/);
+});
+
+test("uses the workspace yacht identity for PDF names even when the editable ship field changes", () => {
+  const draft = completeDraft();
+  const workspaceName = draft.voyage.shipName;
+  draft.voyage.shipName = "A locally edited ship name";
+  assert.equal(getImoCrewListFilename(draft, "pdf", workspaceName), "M-Y Blue Sea IMO Crew List - Created by bluedeck.app.pdf");
+  assert.equal(getImoCrewListFilename(draft, "pdf"), "A locally edited ship name IMO Crew List - Created by bluedeck.app.pdf");
+  assert.equal(getImoCrewListFilename(draft, "pdf", ""), "Yacht IMO Crew List - Created by bluedeck.app.pdf");
+});
+
+test("normalizes supported gender labels without assigning an unknown value", () => {
+  for (const value of ["Male", "man", " M ", "ERKEK"]) assert.equal(normalizeImoGender(value), "M", value);
+  for (const value of ["Female", "woman", " F ", "Kadın", "KADIN", "KADİN"]) assert.equal(normalizeImoGender(value), "F", value);
+  for (const value of ["", " ", "Unknown", "Other", "Nonbinary", "Male / Female"]) assert.equal(normalizeImoGender(value), "", value);
+
+  const draft = completeDraft();
+  draft.crew[0].gender = "kadın";
+  assert.equal(parseImoCrewListDraft(JSON.stringify(draft), yachtId).crew[0].gender, "F");
+  draft.crew[0].gender = "Other";
+  assert.equal(parseImoCrewListDraft(JSON.stringify(draft), yachtId).crew[0].gender, "");
+  assert.equal(draft.crew[0].gender, "Other", "normalizing an imported draft must not mutate the caller");
+  assert.equal(createImoCrewListDraft(yachtId, {}, [member({ crew_profiles: { gender: "unknown" } })]).crew[0].gender, "");
 });
