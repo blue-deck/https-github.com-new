@@ -10,6 +10,8 @@ import {
   useState,
 } from "react";
 import { useParams } from "next/navigation";
+import studioStyles from "./contractStudio.module.css";
+import PdfDocumentPreview from "../imo-crew-list/ImoCrewListPreview";
 import { AccessibleImageLightbox } from "../../../components/AccessibleImageLightbox";
 import { supabase } from "../../../lib/supabase";
 import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
@@ -992,7 +994,6 @@ export default function CrewPage({
     contractStepCards.findIndex((step) => step.id === contractStep),
     0
   );
-  const activeContractStepInfo = contractStepCards[contractStepIndex] || contractStepCards[0];
   const previousContractStep = contractStepCards[Math.max(contractStepIndex - 1, 0)]?.id || "parties";
   const nextContractStep =
     contractStepCards[Math.min(contractStepIndex + 1, contractStepCards.length - 1)]?.id || "preview";
@@ -2920,88 +2921,59 @@ export default function CrewPage({
         )}
 
         {isContractStudio && (
-          <section className="bd-app-card mb-8 overflow-hidden rounded-[28px] border border-[#2fb6c7]/25 bg-white shadow-2xl shadow-slate-950/14 sm:mb-10">
-            <div className="h-1 bg-[linear-gradient(90deg,#07313b_0%,#8ed8e6_36%,#21aebf_72%,#0a4452_100%)]" />
-            <div className="border-b border-white/12 bg-[linear-gradient(135deg,#08242e_0%,#0e4f5d_54%,#106f7f_100%)] px-5 py-4 text-white sm:px-6 sm:py-5">
-              <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-[#8ed8e6]">
-                    BlueDeck Contract Studio
-                  </p>
-                  <h2 className="bd-contract-studio-current mt-2 text-2xl font-black leading-tight drop-shadow-sm sm:text-3xl lg:text-4xl">
-                    {activeContractStepInfo.title}
-                  </h2>
-                  <p className="bd-contract-studio-current mt-1 text-sm font-semibold sm:text-base">
-                    {activeContractStepInfo.meta}
-                  </p>
-                </div>
-                <label className="block w-full xl:max-w-md">
-                  <span className="text-xs font-black uppercase tracking-[0.18em] text-[#8ed8e6]">
-                    Contract crew member
+          <section className={studioStyles.studio} aria-label="Contract Studio">
+            <header className={studioStyles.header}>
+              <h2 className={studioStyles.title}>BlueDeck Contract Studio</h2>
+              <label className={studioStyles.crewPicker}>
+                <span className={studioStyles.pickerLabel}>Contract crew member</span>
+                <select
+                  value={selectedCrew}
+                  onChange={(event) => selectContractCrew(event.target.value)}
+                  className={studioStyles.control}
+                >
+                  <option value="">Select crew</option>
+                  {crew.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.crew_profiles?.full_name || member.invited_email || "Crew member"} — {member.position || member.crew_profiles?.current_position || "Crew"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </header>
+
+            <nav className={studioStyles.navigation} aria-label="Contract sections">
+              {contractStepCards.map((step) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => navigateContractStep(step.id)}
+                  aria-current={contractStep === step.id ? "step" : undefined}
+                  className={studioStyles.tab}
+                >
+                  <span className={studioStyles.tabIcon}><ContractStepIcon step={step.id} /></span>
+                  <span className="min-w-0">
+                    <span className={studioStyles.tabLabel}>{step.title}</span>
+                    <span className={studioStyles.tabMeta}>{step.meta}</span>
                   </span>
-                  <select
-                    value={selectedCrew}
-                    onChange={(event) => selectContractCrew(event.target.value)}
-                    className="mt-2 w-full rounded-2xl border border-white/25 bg-white px-4 py-3 font-black text-[#08242e] outline-none focus:border-[#8ed8e6]"
-                  >
-                    <option value="">Select crew</option>
-                    {crew.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.crew_profiles?.full_name || member.invited_email || "Crew member"} — {member.position || member.crew_profiles?.current_position || "Crew"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
+                </button>
+              ))}
+            </nav>
 
-            <div className="border-b border-[#2fb6c7]/20 bg-[#eef7f8] px-4 py-3 sm:px-5">
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {contractStepCards.map((step) => {
-                  const active = contractStep === step.id;
-                  return (
-                    <button
-                      key={step.id}
-                      type="button"
-                      onClick={() => navigateContractStep(step.id)}
-                      className={`bd-focus group flex min-h-[72px] items-center gap-3 rounded-[16px] border p-3 text-left transition ${
-                        active
-                          ? "border-[#21aebf] bg-white text-[#0b2330] shadow-lg shadow-[#21aebf]/16 ring-2 ring-[#21aebf]/24"
-                          : "border-[#cde7ec] bg-white text-[#0b2330] shadow-sm shadow-slate-950/5 hover:border-[#5fd3e5] hover:bg-[#f8fcfd]"
-                      }`}
-                    >
-                      <span
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${
-                          active ? "border-[#21aebf] bg-[#eef7f8] text-[#0b6b7b]" : "border-[#d7eaf0] bg-[#eef7f8] text-[#0b6b7b] group-hover:border-[#5fd3e5]"
-                        }`}
-                      >
-                        <ContractStepIcon step={step.id} />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-black">{step.title}</span>
-                        <span className="block truncate text-[11px] font-semibold text-slate-500">{step.meta}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="bg-[#f6f9fa] p-5 sm:p-8">
+            <div className={studioStyles.workspace}>
               {contractStep === "parties" && (
-                <div className="space-y-5">
-                  <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
-                    <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
+                <div className={studioStyles.sectionStack}>
+                  <div className={studioStyles.section}>
+                    <div className={studioStyles.sectionHeader}>
                       <div className="flex items-center gap-4">
-                        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
+                        <h3 className={studioStyles.sectionTitle}>
                           Yacht details
                         </h3>
                       </div>
-                      <span className="hidden text-xs font-bold text-[#0d58ae] sm:block">
+                      <span className={studioStyles.sectionNote}>
                         To be completed by the Owner / Company
                       </span>
                     </div>
-                    <div className="grid gap-4 p-5 lg:grid-cols-2">
+                    <div className={`${studioStyles.sectionBody} grid gap-4 lg:grid-cols-2`}>
                         <ContractField
                           label="Yacht name"
                           value={contractDraft.vesselName}
@@ -3063,7 +3035,7 @@ export default function CrewPage({
                           placeholder=""
                         />
                     </div>
-                    <div className="flex justify-end border-t border-[#d9e8f3] px-5 py-4">
+                    <div className={studioStyles.sectionActions}>
                       <ContractSectionSaveButton
                         saved={contractSectionSaved.annexAYacht}
                         saving={Boolean(savingContractSections.annexAYacht)}
@@ -3073,18 +3045,18 @@ export default function CrewPage({
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
-                    <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
+                  <div className={studioStyles.section}>
+                    <div className={studioStyles.sectionHeader}>
                       <div className="flex items-center gap-4">
-                        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
+                        <h3 className={studioStyles.sectionTitle}>
                           Owner / Company details
                         </h3>
                       </div>
-                      <span className="hidden text-xs font-bold text-[#0d58ae] sm:block">
+                      <span className={studioStyles.sectionNote}>
                         Legal contracting party
                       </span>
                     </div>
-                    <div className="grid gap-4 p-5 lg:grid-cols-2">
+                    <div className={`${studioStyles.sectionBody} grid gap-4 lg:grid-cols-2`}>
                         <ContractField
                           className="lg:col-span-2"
                           label="Owner / company legal name"
@@ -3124,7 +3096,7 @@ export default function CrewPage({
                           placeholder=""
                         />
                     </div>
-                    <div className="flex justify-end border-t border-[#d9e8f3] px-5 py-4">
+                    <div className={studioStyles.sectionActions}>
                       <ContractSectionSaveButton
                         saved={contractSectionSaved.annexAOwner}
                         saving={Boolean(savingContractSections.annexAOwner)}
@@ -3134,30 +3106,28 @@ export default function CrewPage({
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-[26px] border border-[#bfd8ea] bg-white shadow-sm shadow-slate-950/5">
-                    <div className="flex items-center justify-between gap-4 border-b border-[#d9e8f3] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] px-5 py-4">
+                  <div className={studioStyles.section}>
+                    <div className={studioStyles.sectionHeader}>
                       <div className="flex items-center gap-4">
-                        <h3 className="font-serif text-2xl font-black uppercase tracking-[0.02em] text-[#082759]">
+                        <h3 className={studioStyles.sectionTitle}>
                           Crew member details
                         </h3>
                       </div>
-                      <span className="hidden text-xs font-bold text-[#0d58ae] sm:block">
+                      <span className={studioStyles.sectionNote}>
                         Employee / Seafarer information
                       </span>
                     </div>
-                    <div className="p-5">
-                      <div className="rounded-[22px] border border-dashed border-[#9fc6e7] bg-[#f7fbff] p-5">
-                        <p className="text-sm font-semibold leading-7 text-slate-600">
+                    <div className={studioStyles.sectionBody}>
+                        <p className={studioStyles.note}>
                           The final contract will be sent to the selected crew member through BlueDeck. The crew member will accept the contract and complete their own crew details; after completion, those details will appear on the final contract.
                         </p>
-                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               {contractStep === "terms" && (
-                <div className="space-y-5">
+                <div className={studioStyles.sectionStack}>
                     <ContractTermsBlock
                       title="Agreement details"
                       note="Complete all applicable fields"
@@ -3209,7 +3179,7 @@ export default function CrewPage({
                           onChange={(value) => updateContractDraft("trialPeriodEndDate", value)}
                         />
                       </div>
-                      <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                      <div className={studioStyles.sectionActions}>
                         <ContractSectionSaveButton
                           saved={contractSectionSaved.annexBAgreement}
                           saving={Boolean(savingContractSections.annexBAgreement)}
@@ -3219,7 +3189,7 @@ export default function CrewPage({
                       </div>
                     </ContractTermsBlock>
 
-                    <div className="grid gap-5 xl:grid-cols-2">
+                    <div className={studioStyles.columns}>
                       <ContractTermsBlock
                         title="Terms within trial period"
                         note="if applicable"
@@ -3263,7 +3233,7 @@ export default function CrewPage({
                             placeholder=""
                           />
                         </div>
-                        <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                        <div className={studioStyles.sectionActions}>
                           <ContractSectionSaveButton
                             saved={contractSectionSaved.annexBTrial}
                             saving={Boolean(savingContractSections.annexBTrial)}
@@ -3313,7 +3283,7 @@ export default function CrewPage({
                             placeholder=""
                           />
                         </div>
-                        <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                        <div className={studioStyles.sectionActions}>
                           <ContractSectionSaveButton
                             saved={contractSectionSaved.annexBStandard}
                             saving={Boolean(savingContractSections.annexBStandard)}
@@ -3351,7 +3321,7 @@ export default function CrewPage({
                         rows={4}
                         placeholder="Any additional agreed terms may be written here and shall take priority over Annex B."
                       />
-                      <div className="mt-4 flex justify-end border-t border-[#d9e8f3] pt-4">
+                      <div className={studioStyles.sectionActions}>
                         <ContractSectionSaveButton
                           saved={contractSectionSaved.annexBSpecial}
                           saving={Boolean(savingContractSections.annexBSpecial)}
@@ -3364,39 +3334,32 @@ export default function CrewPage({
               )}
 
               {contractStep === "clauses" && (
-                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className={studioStyles.section}>
                   <ContractPanelTitle
-                    eyebrow="Annex C"
                     title="General terms and conditions"
                     text="Fixed agreement clauses are grouped below. Open a clause to review the complete legal text."
                   />
-                  <div className="mt-5 space-y-3">
+                  <div className={studioStyles.clauseList}>
                     {contractAnnexCClauses.map((clause) => {
                       const isOpen = openAnnexCClause === clause.number;
 
                       return (
                         <div
                           key={clause.number}
-                          className={`overflow-hidden rounded-[24px] border shadow-sm transition ${
-                            isOpen
-                              ? "border-[#6ed7e8] bg-[#f6fcff]"
-                              : "border-[#d9e8f3] bg-white hover:border-[#9bdce9]"
-                          }`}
+                          className={studioStyles.clause}
+                          data-open={isOpen}
                         >
                           <button
                             type="button"
-                            className="flex w-full items-center gap-4 px-4 py-4 text-left"
+                            className={studioStyles.clauseToggle}
                             onClick={() => setOpenAnnexCClause(isOpen ? null : clause.number)}
                             aria-expanded={isOpen}
                           >
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#cfe2f4] bg-white text-lg font-black text-[#071631]">
+                            <span className={studioStyles.clauseNumber}>
                               {clause.number}
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block text-[0.7rem] font-black uppercase tracking-[0.24em] text-[#1f8397]">
-                                General term
-                              </span>
-                              <span className="mt-1 block text-base font-black uppercase tracking-[0.04em] text-[#071631]">
+                              <span className={studioStyles.clauseTitle}>
                                 {clause.title}
                               </span>
                             </span>
@@ -3406,14 +3369,12 @@ export default function CrewPage({
                           </button>
 
                           {isOpen && (
-                            <div className="border-t border-[#d9e8f3] bg-white px-4 py-4">
-                              <div className="rounded-[20px] border border-[#d9e8f3] bg-[#f8fbff] p-4 text-sm leading-7 text-[#314357]">
+                            <div className={studioStyles.clauseBody}>
                                 {clause.body.map((paragraph, paragraphIndex) => (
                                   <p key={`${clause.number}-${paragraphIndex}`} className={paragraphIndex ? "mt-3" : ""}>
                                     {paragraph}
                                   </p>
                                 ))}
-                              </div>
                             </div>
                           )}
                         </div>
@@ -3424,18 +3385,17 @@ export default function CrewPage({
               )}
 
               {contractStep === "signature" && (
-                <div className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+                <div className={studioStyles.section}>
                   <ContractPanelTitle
-                    eyebrow="Annex D"
                     title="Declaration and signatures"
                     text="Complete both declaration blocks below. Every detail appears automatically in the Preview PDF; save each block to keep it in the studio draft."
                   />
-                  <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+                  <div className={studioStyles.columns}>
                     <ContractTermsBlock
                       title="Employer's Declaration"
                       note="Employer / Authorised Signatory"
                     >
-                      <div className="space-y-3 rounded-2xl border border-[#d9e8f3] bg-[#f8fbff] p-4 text-sm font-medium leading-6 text-[#314357]">
+                      <div className={studioStyles.declaration}>
                         {contractEmployerDeclarationParagraphs.map((paragraph) => (
                           <p key={paragraph}>{paragraph}</p>
                         ))}
@@ -3474,7 +3434,7 @@ export default function CrewPage({
                           updateContractDraft("employerSignatureDataUrl", value)
                         }
                       />
-                      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className={studioStyles.sectionActions}>
                         <p className="text-xs font-semibold leading-5 text-slate-500">
                           Changes are reflected automatically in Preview PDF.
                         </p>
@@ -3491,7 +3451,7 @@ export default function CrewPage({
                       title="Seafarer's Declaration"
                       note="Seafarer acknowledgement"
                     >
-                      <div className="space-y-3 rounded-2xl border border-[#d9e8f3] bg-[#f8fbff] p-4 text-sm font-medium leading-6 text-[#314357]">
+                      <div className={studioStyles.declaration}>
                         {contractSeafarerDeclarationParagraphs.map((paragraph) => (
                           <p key={paragraph}>{paragraph}</p>
                         ))}
@@ -3517,7 +3477,7 @@ export default function CrewPage({
                         />
                       </div>
                       <ContractSignatureArea party="Seafarer" />
-                      <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className={studioStyles.sectionActions}>
                         <p className="text-xs font-semibold leading-5 text-slate-500">
                           The seafarer signs through the BlueDeck signature workflow.
                         </p>
@@ -3534,10 +3494,9 @@ export default function CrewPage({
               )}
 
               {contractStep === "preview" && (
-                <div className="bd-contract-preview-grid grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-                  <div className="bd-contract-preview-card min-w-0 overflow-hidden rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                <div className={studioStyles.previewGrid}>
+                  <div className={studioStyles.previewDocument}>
                     <ContractPanelTitle
-                      eyebrow="Preview contract"
                       title="Final contract draft"
                       text="Review the generated text before sending it for mobile signature."
                     />
@@ -3548,19 +3507,19 @@ export default function CrewPage({
                     />
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="rounded-[28px] border border-[#2fb6c7]/20 bg-[linear-gradient(135deg,#effbfc_0%,#ffffff_100%)] p-5">
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
+                  <div className={studioStyles.previewActions}>
+                    <div className="min-w-0">
+                      <p className={studioStyles.actionTitle}>
                         Send to crew
                       </p>
-                      <p className="mt-3 text-sm leading-6 text-slate-600">
+                      <p className={studioStyles.actionDescription}>
                         This will create a BlueDeck contract record and place it in the crew signature workflow.
                       </p>
                       <button
                         type="button"
                         onClick={assignContract}
                         disabled={loading || !selectedCrew}
-                        className="bd-primary-action mt-5 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#08313b] py-4 text-base font-black text-white shadow-lg shadow-slate-950/15 transition hover:bg-[#0e4f5d] disabled:opacity-50"
+                        className={studioStyles.primaryAction}
                       >
                         <Send className="h-5 w-5" />
                         Send for Signature
@@ -3570,7 +3529,7 @@ export default function CrewPage({
                     <button
                       type="button"
                       onClick={() => void downloadContractDraftPdf()}
-                      className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#5fd3e5] py-4 text-base font-black text-[#031923] shadow-lg shadow-cyan-700/20 transition hover:bg-[#84e6f3]"
+                      className={studioStyles.secondaryAction}
                     >
                       <Download className="h-5 w-5" />
                       Download Draft PDF
@@ -3579,23 +3538,23 @@ export default function CrewPage({
                 </div>
               )}
 
-              <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className={studioStyles.pagination}>
                 <button
                   type="button"
                   onClick={() => navigateContractStep(previousContractStep)}
                   disabled={contractStepIndex === 0}
-                  className="bd-focus rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-600 transition hover:border-cyan-300 hover:text-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  className={studioStyles.secondaryAction}
                 >
                   Previous
                 </button>
-                <div className="text-center text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                <div className={studioStyles.stepCount}>
                   Step {contractStepIndex + 1} of {contractStepCards.length}
                 </div>
                 <button
                   type="button"
                   onClick={() => navigateContractStep(nextContractStep)}
                   disabled={contractStepIndex === contractStepCards.length - 1}
-                  className="bd-primary-action bd-focus rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-lg shadow-slate-950/12 transition hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  className={studioStyles.primaryAction}
                 >
                   Next
                 </button>
@@ -4937,11 +4896,10 @@ function ContractGeneratedPreview({
 }) {
   const previewFrameRef = useRef<HTMLDivElement | null>(null);
   const [pageScale, setPageScale] = useState(0.32);
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewBlob, setPdfPreviewBlob] = useState<Blob | null>(null);
   const [pdfPreviewError, setPdfPreviewError] = useState("");
   const [isPdfPreviewLoading, setIsPdfPreviewLoading] = useState(true);
   const pdfGeneratorRef = useRef(createPdfBlob);
-  const activePdfPreviewUrlRef = useRef<string | null>(null);
   const previewSourceKey = useMemo(() => JSON.stringify({ draft, member: member || null }), [draft, member]);
   const sections = getContractCoverSections(draft, member);
   const termsSections = getContractTermsSections(draft, member);
@@ -4973,7 +4931,6 @@ function ContractGeneratedPreview({
 
   useEffect(() => {
     let disposed = false;
-    let generatedUrl = "";
 
     setPdfPreviewError("");
     setIsPdfPreviewLoading(true);
@@ -4981,17 +4938,7 @@ function ContractGeneratedPreview({
     void (async () => {
       try {
         const pdfBlob = await pdfGeneratorRef.current();
-        generatedUrl = URL.createObjectURL(pdfBlob);
-        if (disposed) {
-          URL.revokeObjectURL(generatedUrl);
-          return;
-        }
-
-        const previousUrl = activePdfPreviewUrlRef.current;
-        activePdfPreviewUrlRef.current = generatedUrl;
-        setPdfPreviewUrl(generatedUrl);
-        generatedUrl = "";
-        if (previousUrl) URL.revokeObjectURL(previousUrl);
+        if (!disposed) setPdfPreviewBlob(pdfBlob);
       } catch (error) {
         if (!disposed) {
           setPdfPreviewError(error instanceof Error ? error.message : "PDF preview could not be prepared.");
@@ -5003,17 +4950,8 @@ function ContractGeneratedPreview({
 
     return () => {
       disposed = true;
-      if (generatedUrl) URL.revokeObjectURL(generatedUrl);
     };
   }, [previewSourceKey]);
-
-  useEffect(() => {
-    return () => {
-      if (activePdfPreviewUrlRef.current) {
-        URL.revokeObjectURL(activePdfPreviewUrlRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     const node = previewFrameRef.current;
@@ -5033,13 +4971,10 @@ function ContractGeneratedPreview({
         const safeViewportWidth = Number.isFinite(viewportWidth)
           ? viewportWidth
           : measuredWidth;
-        const availableWidth =
-          safeViewportWidth < 768
-            ? Math.max(220, safeViewportWidth - 32)
-            : Math.max(220, Math.min(measuredWidth, parentWidth) - 2);
+        const availableWidth = Math.max(1, Math.min(measuredWidth, parentWidth, safeViewportWidth - 32) - 2);
         const nextScale = Math.min(
           1,
-          Math.max(0.2, availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH)
+          availableWidth / CONTRACT_PREVIEW_PAGE_WIDTH
         );
         setPageScale((current) => (Math.abs(current - nextScale) < 0.005 ? current : nextScale));
       });
@@ -5122,17 +5057,13 @@ function ContractGeneratedPreview({
   );
 
   return (
-    <div ref={previewFrameRef} className="bd-contract-preview-frame mt-5 w-full max-w-full min-w-0 space-y-5 overflow-hidden">
-      {pdfPreviewUrl && !pdfPreviewError ? (
-        <div className="w-full overflow-hidden rounded-[20px] border border-[#c4d9ee] bg-[#f4f8fc] shadow-sm shadow-blue-950/10">
-          <iframe
-            title="Exact contract PDF preview"
-            src={`${pdfPreviewUrl}#view=FitH&toolbar=0&navpanes=0`}
-            className="block h-[min(82dvh,1080px)] min-h-[620px] w-full border-0 bg-white"
-          />
+    <div ref={previewFrameRef} className={studioStyles.previewFrame}>
+      {pdfPreviewBlob && !pdfPreviewError ? (
+        <div className={studioStyles.pdfSurface}>
+          <PdfDocumentPreview blob={pdfPreviewBlob} language="en" />
         </div>
       ) : isPdfPreviewLoading ? (
-        <div className="flex min-h-[620px] w-full items-center justify-center rounded-[20px] border border-[#c4d9ee] bg-[#f8fbfe] p-8 text-center">
+        <div className={studioStyles.pdfLoading}>
           <div>
             <RefreshCcw className="mx-auto h-7 w-7 animate-spin text-cyan-700" />
             <p className="mt-3 text-sm font-black text-[#082759]">Preparing the exact PDF preview</p>
@@ -5492,48 +5423,25 @@ function ContractStepIcon({ step }: { step: ContractStudioStep }) {
   return <Download className="h-5 w-5" />;
 }
 
-function ContractPanelTitle({
-  eyebrow,
-  title,
-  text,
-}: {
-  eyebrow: string;
-  title: string;
-  text: string;
-}) {
+function ContractPanelTitle({ title, text }: { title: string; text: string }) {
   return (
-    <div>
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-cyan-800">
-        {eyebrow}
-      </p>
-      <h3 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
-        {title}
-      </h3>
-      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{text}</p>
+    <div className={studioStyles.panelTitle}>
+      <h3 className={studioStyles.panelHeading}>{title}</h3>
+      <p className={studioStyles.panelDescription}>{text}</p>
     </div>
   );
 }
 
-function ContractTermsBlock({
-  title,
-  note,
-  children,
-}: {
-  title: string;
-  note?: string;
-  children: ReactNode;
+function ContractTermsBlock({ title, note, children }: {
+  title: string; note?: string; children: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-[22px] border border-[#bfd8ea] bg-white/96 shadow-sm shadow-blue-950/5">
-      <div className="flex flex-col gap-2 border-b border-[#d9e8f3] bg-[#f8fbff]/95 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="font-serif text-xl font-black uppercase tracking-[0.02em] text-[#082759]">
-          {title}
-        </h4>
-        {note ? (
-          <span className="text-[11px] font-bold text-[#0d58ae]">{note}</span>
-        ) : null}
+    <section className={studioStyles.section}>
+      <div className={studioStyles.sectionHeader}>
+        <h4 className={studioStyles.sectionTitle}>{title}</h4>
+        {note ? <span className={studioStyles.sectionNote}>{note}</span> : null}
       </div>
-      <div className="p-4">{children}</div>
+      <div className={studioStyles.sectionBody}>{children}</div>
     </section>
   );
 }
@@ -5542,12 +5450,12 @@ function ContractSignatureArea({ party }: { party: string }) {
   return (
     <div className="mt-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+        <p className={studioStyles.fieldLabel}>
           Signature
         </p>
         <span className="text-[11px] font-semibold text-[#0d58ae]">{party}</span>
       </div>
-      <div className="mt-2 flex min-h-[112px] items-end justify-end rounded-2xl border-2 border-dashed border-[#9ec4ed] bg-white p-3">
+      <div className={studioStyles.signatureReserved}>
         <span className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
           Reserved signature area
         </span>
@@ -5677,9 +5585,9 @@ function ContractMobileSignatureArea({
   }
 
   return (
-    <div className="mt-4 w-full md:w-1/2 md:pr-2">
-      <div className="overflow-hidden rounded-2xl border border-[#9ec4ed] bg-white shadow-sm shadow-blue-950/5">
-        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-[#d9e8f3] bg-[#f4f8fc] px-3.5 py-3">
+    <div className={studioStyles.signatureArea}>
+      <div>
+        <div className={studioStyles.signatureHeader}>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#0b3c77]">
               Mobile electronic signature
@@ -5698,7 +5606,7 @@ function ContractMobileSignatureArea({
           </span>
         </div>
 
-        <div className="relative bg-white">
+        <div className={studioStyles.signatureSurface}>
           <canvas
             ref={canvasRef}
             aria-label="Draw employer electronic signature"
@@ -5730,7 +5638,7 @@ function ContractMobileSignatureArea({
           </span>
         </div>
 
-        <div className="flex flex-col gap-2 border-t border-[#e1edf7] bg-[#fbfdff] px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className={studioStyles.signatureFooter}>
           <p className="text-[10px] font-semibold leading-4 text-slate-500">
             The captured signature is saved with the Employer&apos;s Declaration and included in the PDF.
           </p>
@@ -5738,7 +5646,7 @@ function ContractMobileSignatureArea({
             type="button"
             onClick={clearSignature}
             disabled={!hasSignature && !drawing}
-            className="bd-focus inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-black uppercase tracking-[0.08em] text-slate-600 transition hover:border-cyan-300 hover:text-[#082759] disabled:cursor-default disabled:opacity-45"
+            className={studioStyles.secondaryAction}
           >
             <RefreshCcw className="h-3.5 w-3.5" aria-hidden />
             Clear and sign again
@@ -5765,11 +5673,8 @@ function ContractSectionSaveButton({
       type="button"
       disabled={saved || saving || disabled}
       onClick={onSave}
-      className={`bd-focus inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black uppercase tracking-[0.08em] shadow-sm transition disabled:cursor-default ${
-        saved
-          ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "bd-primary-action bg-[#5fd3e5] text-[#031923] hover:bg-[#84e6f3] disabled:opacity-70"
-      }`}
+      className={studioStyles.saveButton}
+      data-saved={saved}
     >
       {saving ? <Plus className="h-4 w-4" /> : saved ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
       {saving ? "Saving..." : saved ? "Saved" : "Save"}
@@ -5791,14 +5696,14 @@ function ContractSelectField({
   className?: string;
 }) {
   return (
-    <label className={`block ${className}`}>
-      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+    <label className={`${studioStyles.field} ${className}`}>
+      <span className={studioStyles.fieldLabel}>
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+        className={studioStyles.control}
       >
         <option value="">-</option>
         {options.map((option) => (
@@ -5821,11 +5726,11 @@ function ContractReadOnlyField({
   className?: string;
 }) {
   return (
-    <div className={`block ${className}`}>
-      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+    <div className={`${studioStyles.field} ${className}`}>
+      <span className={studioStyles.fieldLabel}>
         {label}
       </span>
-      <div className="mt-2 min-h-[58px] rounded-2xl border border-slate-200 bg-[#f8fbff] px-5 py-4 text-base font-semibold leading-6 text-slate-700">
+      <div className={studioStyles.readonly}>
         {value}
       </div>
     </div>
@@ -5844,8 +5749,8 @@ function ContractDateField({
   className?: string;
 }) {
   return (
-    <label className={`block ${className}`}>
-      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+    <label className={`${studioStyles.field} ${className}`}>
+      <span className={studioStyles.fieldLabel}>
         {label}
       </span>
       <input
@@ -5854,7 +5759,7 @@ function ContractDateField({
         maxLength={10}
         onChange={(event) => onChange(formatContractDateInput(event.target.value))}
         placeholder="DD/MM/YYYY"
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+        className={studioStyles.control}
       />
     </label>
   );
@@ -5874,22 +5779,22 @@ function ContractMoneyField({
   onCurrencyChange: (value: string) => void;
 }) {
   return (
-    <label className="block">
-      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+    <label className={studioStyles.field}>
+      <span className={studioStyles.fieldLabel}>
         {label}
       </span>
-      <div className="mt-2 grid grid-cols-[1fr_104px] overflow-hidden rounded-2xl border border-slate-200 bg-white transition focus-within:border-cyan-300 focus-within:ring-4 focus-within:ring-cyan-500/10">
+      <div className={studioStyles.moneyControl}>
         <input
           value={amount}
           inputMode="numeric"
           onChange={(event) => onAmountChange(formatContractMoneyInput(event.target.value))}
           placeholder="0"
-          className="min-w-0 border-0 bg-transparent px-5 py-4 text-base font-semibold text-slate-950 outline-none placeholder:text-slate-400"
+          className={studioStyles.control}
         />
         <select
           value={currency || "EUR"}
           onChange={(event) => onCurrencyChange(event.target.value)}
-          className="border-l border-slate-200 bg-[#f8fbff] px-3 py-4 text-sm font-black text-[#082759] outline-none"
+          className={studioStyles.control}
         >
           {contractCurrencyOptions.map((option) => (
             <option key={option} value={option}>
@@ -5916,8 +5821,8 @@ function ContractField({
   className?: string;
 }) {
   return (
-    <label className={`block ${className}`}>
-      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+    <label className={`${studioStyles.field} ${className}`}>
+      <span className={studioStyles.fieldLabel}>
         {label}
       </span>
       <input
@@ -5925,7 +5830,7 @@ function ContractField({
         onChange={(event) => onChange(normalizeInitialContractInput(event.target.value, value))}
         placeholder={placeholder}
         autoCapitalize="sentences"
-        className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+        className={studioStyles.control}
       />
     </label>
   );
@@ -5947,8 +5852,8 @@ function ContractArea({
   className?: string;
 }) {
   return (
-    <label className={`block ${className}`}>
-      <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+    <label className={`${studioStyles.field} ${className}`}>
+      <span className={studioStyles.fieldLabel}>
         {label}
       </span>
       <textarea
@@ -5957,7 +5862,7 @@ function ContractArea({
         onChange={(event) => onChange(normalizeInitialContractInput(event.target.value, value))}
         placeholder={placeholder}
         autoCapitalize="sentences"
-        className="mt-2 w-full resize-y rounded-2xl border border-slate-200 bg-white px-5 py-4 text-base font-semibold leading-7 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-cyan-300 focus:ring-4 focus:ring-cyan-500/10"
+        className={studioStyles.control}
       />
     </label>
   );
