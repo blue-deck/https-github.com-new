@@ -32,7 +32,8 @@ const restorationCode = ts.transpileModule(await readFile(new URL("../app/lib/re
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
 }).outputText
   .replaceAll('"./legacyContractStudio"', JSON.stringify(new URL("../app/lib/legacyContractStudio.ts", import.meta.url).href))
-  .replaceAll('"./contractStudioPdf"', JSON.stringify(rendererUrl));
+  .replaceAll('"./contractStudioPdf"', JSON.stringify(rendererUrl))
+  .replaceAll('"./contractStudioAugust2026"', JSON.stringify(new URL("../app/lib/contractStudioAugust2026.ts", import.meta.url).href));
 const restorationUrl = `data:text/javascript;base64,${Buffer.from(restorationCode).toString("base64")}`;
 const assignedCode = helperCode.replaceAll('import("./restoreContractStudioPdf")', `import(${JSON.stringify(restorationUrl)})`);
 const { createAssignedContractPdf } = await import(`data:text/javascript;base64,${Buffer.from(assignedCode).toString("base64")}`);
@@ -295,4 +296,20 @@ test("unknown historical terms keep the saved clauses and declarations without a
     }
   } finally { await task.destroy(); }
   await assert.rejects(createAssignedContractPdf("SEAFARER EMPLOYMENT AGREEMENT\nCOVER SHEET\nDamaged saved Studio contract"), /could not be restored/);
+});
+
+
+test("later Studio introduction edits cannot change a restored historical agreement", async (context) => {
+  context.mock.method(globalThis, "fetch", async (path) => new Response(await readFile(new URL(`../public${path}`, import.meta.url))));
+  const member = { crew_profiles: { email: "synthetic@example.invalid", phone: "+00 000 000" } };
+  const { text, input } = await createFixture(visualFixtureDraft(), member);
+  const payload = JSON.stringify({ kind: "bluedeck.assigned-contract", version: 1, contractText: text, employerSignatureDataUrl: input.annexD.employerSignatureDataUrl });
+  const originalParagraph = renderer.contractStudioIntroduction.paragraphs[0];
+  try {
+    renderer.contractStudioIntroduction.paragraphs[0] = "A later Studio introductory note that does not belong to the recorded agreement.";
+    const restored = await createAssignedContractPdf(payload);
+    assert.deepEqual(await pageFingerprints(restored), await originalPageFingerprints(), "Historical introductory note stays pinned despite current Studio edits");
+  } finally {
+    renderer.contractStudioIntroduction.paragraphs[0] = originalParagraph;
+  }
 });

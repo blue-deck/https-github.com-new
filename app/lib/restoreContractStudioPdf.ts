@@ -1,5 +1,6 @@
 import { parseLegacyStudioContract } from "./legacyContractStudio";
-import { createContractStudioPdf, contractStudioIntroduction } from "./contractStudioPdf";
+import { createContractStudioPdf } from "./contractStudioPdf";
+import { getAugust2026ContractIntroduction } from "./contractStudioAugust2026";
 
 // Template present in e78d24b (2026-08-01), before the retained legacy
 // contracts were sent. Its introductory note is unchanged in 7c7a848.
@@ -21,6 +22,6 @@ export async function restoreContractStudioPdf(text: string, signature: string):
   const fingerprint = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
   return createContractStudioPdf({
     ...input,
-    intro: fingerprint === august2026TemplateFingerprint ? contractStudioIntroduction : undefined,
+    intro: fingerprint === august2026TemplateFingerprint ? getAugust2026ContractIntroduction() : undefined,
   });
 }
