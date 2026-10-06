@@ -96,6 +96,10 @@ export async function createAssignedContractPdf(value: unknown): Promise<Blob> {
   }
 
   if (!contract.contractText.trim()) throw new Error("No saved contract document is available.");
+  if (/^SEAFARER EMPLOYMENT AGREEMENT\r?\nCOVER SHEET(?:\r?\n|$)/.test(contract.contractText.trimStart())) {
+    const { restoreContractStudioPdf } = await import("./restoreContractStudioPdf");
+    return restoreContractStudioPdf(contract.contractText, contract.employerSignatureDataUrl);
+  }
   const [{ jsPDF }] = await Promise.all([import("jspdf"), loadFonts()]);
   const doc = new jsPDF({ unit: "pt", format: "a4", compress: true, putOnlyUsedFonts: true });
   doc.setProperties({ title: "Stored contract record", creator: "BlueDeck" });

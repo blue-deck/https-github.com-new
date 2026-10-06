@@ -9,6 +9,8 @@ export type ContractAnnexDDetails = {
   seafarerName: string;
   seafarerPlaceSigned: string;
   seafarerDateSigned: string;
+  employerDeclarationParagraphs?: string[];
+  seafarerDeclarationParagraphs?: string[];
 };
 
 export const contractEmployerDeclarationParagraphs = [
@@ -229,7 +231,7 @@ export function drawContractAnnexDPage(
 
   const employerHeight = drawDeclarationCard({
     title: "Employer's Declaration",
-    paragraphs: contractEmployerDeclarationParagraphs,
+    paragraphs: details.employerDeclarationParagraphs ?? contractEmployerDeclarationParagraphs,
     nameLabel: "Employer / Authorised Signatory",
     nameValue: details.employerName,
     secondaryLabel: "Capacity",
@@ -243,7 +245,7 @@ export function drawContractAnnexDPage(
 
   drawDeclarationCard({
     title: "Seafarer's Declaration",
-    paragraphs: contractSeafarerDeclarationParagraphs,
+    paragraphs: details.seafarerDeclarationParagraphs ?? contractSeafarerDeclarationParagraphs,
     nameLabel: "Seafarer's Full Name",
     nameValue: details.seafarerName,
     placeValue: details.seafarerPlaceSigned,
