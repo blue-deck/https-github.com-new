@@ -87,16 +87,24 @@ export default function CrewTasksPage() {
   const pendingChecklistIds = useRef(new Set<string>());
   const [completionErrors, setCompletionErrors] = useState<Record<string, "incomplete" | "failed" | undefined>>({});
   const [completionReceipt, setCompletionReceipt] = useState<{ id: string; title: string } | null>(null);
-  const completionReceiptAction = useRef<HTMLButtonElement>(null);
-  const focusCompletionReceipt = useRef(false);
+  const firstChecklistAction = useRef<HTMLButtonElement>(null);
+  const checklistHeading = useRef<HTMLHeadingElement>(null);
+  const completionReturn = useRef<{ moveFocus: boolean } | null>(null);
   const [pdfAction, setPdfAction] = useState("");
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
 
   useEffect(() => {
-    if (focusCompletionReceipt.current) {
-      completionReceiptAction.current?.focus({ preventScroll: true });
-      focusCompletionReceipt.current = false;
-    }
+    const requestedReturn = completionReturn.current;
+    completionReturn.current = null;
+    if (!requestedReturn) return;
+
+    const destination = firstChecklistAction.current || checklistHeading.current;
+    if (!destination) return;
+    if (requestedReturn.moveFocus) destination.focus({ preventScroll: true });
+    destination.scrollIntoView({
+      block: "start",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+    });
   }, [completionReceipt]);
 
   const stats = useMemo(() => {
@@ -535,7 +543,10 @@ export default function CrewTasksPage() {
 
     try {
       const savedChecklist = await saveCrewChecklistCompletion(supabase, checklist.id);
-      focusCompletionReceipt.current = Boolean(trigger && document.activeElement === trigger);
+      // A removed trigger means the user already opened another list or section.
+      completionReturn.current = trigger?.isConnected
+        ? { moveFocus: document.activeElement === trigger }
+        : null;
       setChecklists((current) => current.map((list) => list.id === savedChecklist.id ? { ...list, ...savedChecklist } : list));
       setActiveChecklist((current: any) => current?.id === savedChecklist.id ? null : current);
       setCompletionReceipt({ id: savedChecklist.id, title: checklist.title || "Checklist" });
@@ -649,15 +660,7 @@ export default function CrewTasksPage() {
   return (
     <main className="bd-app-page bd-ocean-shell min-h-screen min-w-0 overflow-x-hidden text-slate-900">
       <div className="bd-ocean-content bd-crew-task-content bd-page-frame bd-page-gutter mx-auto w-full min-w-0 max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
-        <header className="bd-page-hero mb-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-          <p className="bd-kicker">BlueDeck Crew Workspace</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[#071f3c] sm:text-4xl">
-            My Deck
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
-            Review assigned work, contracts, invitations and your yacht activity from one place.
-          </p>
-        </header>
+        <h1 className="bd-kicker mb-5">BlueDeck Crew Workspace</h1>
         {portalView === "home" && (
           <section className="space-y-5">
           <div className="grid gap-5 md:grid-cols-3">
@@ -747,7 +750,7 @@ export default function CrewTasksPage() {
                   <p className="mt-1 break-words text-sm">{completionReceipt.title}</p>
                 </div>
               </div>
-              <button ref={completionReceiptAction} type="button" onClick={() => {
+              <button type="button" onClick={() => {
                 setChecklistView("completed");
                 setActiveChecklist(checklists.find((list) => list.id === completionReceipt.id) || null);
               }} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
@@ -759,9 +762,9 @@ export default function CrewTasksPage() {
           {checklists.length > 0 && (
             <div className="bd-glass-card rounded-[34px] p-4">
               <div className="flex flex-col gap-3 px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm font-black uppercase tracking-[0.14em] text-cyan-700">
+                <h2 ref={checklistHeading} tabIndex={-1} className="scroll-mt-4 text-sm font-black uppercase tracking-[0.14em] text-cyan-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-700">
                   {checklistView === "open" ? "Open Checklists" : checklistView === "completed" ? "Completed Checklists" : "Archive"}
-                </p>
+                </h2>
                 {checklistView === "archive" && checklistGroups.archive.length > 0 && (
                   <button
                     type="button"
@@ -776,7 +779,7 @@ export default function CrewTasksPage() {
               </div>
 
               <div className={`space-y-3 ${checklistView === "archive" ? "max-h-[640px] overflow-y-auto pr-2" : ""}`}>
-                {checklistGroups[checklistView].map((list) => {
+                {checklistGroups[checklistView].map((list, index) => {
                   const items = list.yacht_checklist_items || [];
                   const done = items.filter((item: any) => item.completed).length;
                   const percent = items.length ? Math.round((done / items.length) * 100) : 0;
@@ -792,9 +795,10 @@ export default function CrewTasksPage() {
                       }`}
                     >
                       <button
+                        ref={index === 0 ? firstChecklistAction : undefined}
                         type="button"
                         onClick={() => setActiveChecklist(active ? null : list)}
-                        className="w-full p-5 text-left"
+                        className="w-full scroll-mt-4 p-5 text-left"
                       >
                       <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="min-w-0">
