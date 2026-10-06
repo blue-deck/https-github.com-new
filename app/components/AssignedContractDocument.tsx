@@ -52,7 +52,7 @@ export default function AssignedContractDocument({
         const blob = await createAssignedContractPdf(source);
         if (disposed) return;
         objectUrl = URL.createObjectURL(blob);
-        setDocument({ blob, url: objectUrl, legacy: parsed.documentVersion !== 2 });
+        setDocument({ blob, url: objectUrl, legacy: parsed.documentVersion !== 2 && !/^SEAFARER EMPLOYMENT AGREEMENT\r?\nCOVER SHEET(?:\r?\n|$)/.test(parsed.contractText.trimStart()) });
       } catch (cause) {
         if (!disposed) setError(cause instanceof Error ? cause.message : "This contract could not be opened. Please try again.");
       } finally {
