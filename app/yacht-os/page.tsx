@@ -21,7 +21,7 @@ const copy = {
     explore: "Yacht-OS’u keşfet", account: "Çalışma alanınızı oluşturun", dashboard: "Çalışma alanınıza gidin", tour: "Ürün turunu izleyin", private: "Yatınıza özel, yetkilere göre erişim.",
     sceneLabels: ["Eklenen yatlar", "Yatın yönetim paneli", "Kontrol listeleri"],
     sceneTexts: ["Yat bilgileri, fotoğraf ve çalışma alanına giriş", "Tekneye girdiğinizde karşılaştığınız yönetim ekranı", "Kendi görevlerinizi oluşturma ve mürettebata atama"], workspace: "Çalışma alanı", daily: "Yat & panel", access: "Erişim & güven", start: "Başlayın", pause: "Otomatik geçişleri duraklat", play: "Otomatik geçişleri başlat",
-    productKicker: "CAPTAIN WORKSPACE / İÇERİYE BİR BAKIŞ", productTitle: "Captain Workspace’te\nneler yönetebilirsiniz?", productIntro: "Mürettebat davetlerinden kontratlara, günlük görevlerden yat belgelerine kadar altı yönetim alanını inceleyin.",
+    productKicker: "CAPTAIN WORKSPACE / İÇERİYE BİR BAKIŞ", productTitle: "Captain Workspace’te\nneler yönetebilirsiniz?",
     modules: [
       { title: "Mürettebat davetleri\nve pozisyon yönetimi", text: "Mürettebatı yatınıza davet edin, teknedeki pozisyonunu belirleyin ve katılım durumunu takip edin. Kişi kayıtları ve erişim bilgileri aynı alanda görüntülenir.", bullets: ["Crew ID veya e-posta ile mürettebat daveti", "Pozisyona bağlı erişim ve sorumluluklar", "Bekleyen ve kabul edilen davetleri izleme"], note: "CREW ID · E-POSTA · POZİSYON · DAVET DURUMU" },
       { title: "Kontrat hazırlama,\nPDF ve mobil imza", text: "Tarafları, yat bilgilerini ve çalışma şartlarını aynı kontrat içinde hazırlayın. Ekleri düzenleyin, PDF önizlemesini inceleyin ve imza için mürettebata gönderin.", bullets: ["Annex A–D ile düzenli kontrat yapısı", "Kaydetme, PDF önizleme ve indirme", "Mürettebatın mobil imza akışına gönderim"], note: "ANNEX A–D · PDF · MOBİL İMZA" },
@@ -47,7 +47,7 @@ const copy = {
   en: {
     eyebrow: "BLUEDECK YACHT-OS", heroA: "Manage your yacht.", heroB: "Crew, records, operations.", intro: "Manage crew invitations, contracts, custom checklists and yacht documents through Captain Workspace.",
     explore: "Explore Yacht-OS", account: "Create your workspace", dashboard: "Open your workspace", tour: "Take the product tour", private: "Private yacht workspace with role-based access.", sceneLabels: ["Your yachts", "Yacht dashboard", "Custom checklists"], sceneTexts: ["Yacht details, photograph and workspace entry", "The management dashboard inside your yacht", "Create tasks and assign them to your crew"],workspace:"The workspace",daily:"Yacht & dashboard",access:"Access & trust",start:"Get started",pause:"Pause automatic transitions",play:"Start automatic transitions",
-    productKicker:"CAPTAIN WORKSPACE / A LOOK INSIDE",productTitle:"What can you manage\nin Captain Workspace?",productIntro:"Explore six management tools, from crew invitations and contracts to daily tasks and yacht documents.",
+    productKicker:"CAPTAIN WORKSPACE / A LOOK INSIDE",productTitle:"What can you manage\nin Captain Workspace?",
     modules:[
       {title:"Crew invitations\nand position management",text:"Invite crew to your yacht, define onboard positions and track invitation status. View crew records and access information in the same workspace.",bullets:["Invite crew by Crew ID or email","Position-based access and responsibilities","Track pending and accepted invitations"],note:"CREW ID · EMAIL · POSITION · INVITATION STATUS"},
       {title:"Contracts, PDFs\nand mobile signatures",text:"Prepare the parties, yacht details and employment terms in one contract. Edit the annexes, review the PDF and send it to your crew for signature.",bullets:["Structured agreements with Annex A–D","Save, preview and download as PDF","Send to the crew’s mobile signing flow"],note:"ANNEX A–D · PDF · MOBILE SIGNATURE"},
@@ -70,8 +70,6 @@ const copy = {
 const entryCopy = {
   tr: {
     kicker: "YAT KAYDINDAN YÖNETİM PANELİNE",
-    title: "Eklediğiniz yat.\nİçindeki çalışma alanı.",
-    intro: "Yat bilgilerinizi bir kez kaydedin. Yat kartından mürettebat, kontrat, görev ve belge ekranlarına geçin.",
     steps: [
       { title: "Yatınızı Captain Workspace’e ekleyin", text: "Yatın adını, türünü, modelini, mürettebat sayısını ve bayrağını kaydedin. Fotoğrafıyla birlikte listelenen yat kartını buradan açın.", note: "Yat ekle · Yatı düzenle · Yat çalışma alanını aç" },
       { title: "Yata girin, yönetim alanını açın", text: "Tekneye girdikten sonra Crew Command, Contract Studio, Checklist System, IMO Crew List, Document Vault ve Expiry Alerts alanlarına bu panelden ulaşın.", note: "Yat paneli · Yönetim modülleri · Son aktiviteler" }
@@ -79,8 +77,6 @@ const entryCopy = {
   },
   en: {
     kicker: "FROM YACHT RECORD TO WORKSPACE",
-    title: "Your yacht record.\nThe workspace inside.",
-    intro: "Save your yacht’s details, then open its card to access crew, contracts, tasks and documents.",
     steps: [
       { title: "Add your yacht to Captain Workspace", text: "Save its name, type, model, crew size and flag. Add a photograph, then open the yacht from its card.", note: "Add yacht · Edit yacht · Open yacht workspace" },
       { title: "Open the yacht management dashboard", text: "Access Crew Command, Contract Studio, Checklist System, IMO Crew List, Document Vault and Expiry Alerts from the yacht’s own dashboard.", note: "Yacht dashboard · Management modules · Recent activity" }
@@ -211,8 +207,8 @@ export default function YachtOsPage() {
         <Link href={accountHref}>{c.start}<ArrowUpRight size={15}/></Link>
       </nav>
 
-      <section className={styles.entrySection} id="entry">
-        <div className={styles.sectionHeading} data-reveal><div><p className={styles.eyebrow}>{entry.kicker}</p><h2>{entry.title}</h2></div><p>{entry.intro}</p></div>
+      <section className={styles.entrySection} id="entry" aria-labelledby="entry-heading">
+        <h2 id="entry-heading" className={`${styles.eyebrow} ${styles.entryHeading}`} data-reveal>{entry.kicker}</h2>
         <div className={styles.entryGrid}>
           <div className={styles.entrySteps}>{entry.steps.map((step, i) => <button type="button" key={step.title} className={entryStep === i ? styles.entrySelected : ""} aria-pressed={entryStep === i} onClick={() => setEntryStep(i)}>
             <span className={styles.entryNumber}>0{i + 1}</span><h3>{step.title}</h3><p>{step.text}</p><small>{step.note}</small><ArrowUpRight size={18}/>
@@ -222,7 +218,7 @@ export default function YachtOsPage() {
       </section>
 
       <section className={styles.productSection} id="workspace" ref={tourRef}>
-        <div className={styles.sectionHeading} data-reveal><div><p className={styles.eyebrow}>{c.productKicker}</p><h2>{c.productTitle}</h2></div><p>{c.productIntro}</p></div>
+        <div className={styles.sectionHeading} data-reveal><div><p className={styles.eyebrow}>{c.productKicker}</p><h2>{c.productTitle}</h2></div></div>
         <div className={styles.moduleTabs} onFocusCapture={() => setTourPaused(true)} role="tablist" aria-label={language === "tr" ? "Yacht-OS modülleri" : "Yacht-OS modules"}>
           {moduleNames.map((name, i) => { const Icon = icons[i]; return <button type="button" id={`module-tab-${i}`} key={name} role="tab" aria-selected={module === i} aria-controls="module-panel" tabIndex={module === i ? 0 : -1} className={module === i ? styles.activeTab : ""} onClick={() => chooseModule(i)} onKeyDown={e => moduleKey(e, i)}><Icon size={19}/><span>{name}</span><small>0{i + 1}</small></button>; })}
         </div>

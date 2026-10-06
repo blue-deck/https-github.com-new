@@ -44,6 +44,7 @@
 .scenePicker button{font-size:12px}
 .chapterNav{top:0}
 .entrySection{max-width:1370px;width:calc(100% - 112px);margin:auto;padding:100px 0 90px;scroll-margin-top:100px}
+.page .entryHeading{font-size:11px;font-weight:600;line-height:1.8;letter-spacing:.16em;color:var(--teal);margin-bottom:28px}
 .entryGrid{display:grid;grid-template-columns:.78fr 1.6fr;align-items:center;gap:50px}
 .entrySteps{display:flex;flex-direction:column;gap:15px}
 .entrySteps>button{text-align:left;position:relative;display:block;padding:24px 21px 24px 49px;border:1px solid transparent;border-left:2px solid #c7d8d8;transition:border-color .3s,background .3s;background:transparent;border-radius:0 7px 7px 0}
