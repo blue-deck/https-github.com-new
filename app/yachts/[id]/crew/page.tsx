@@ -11,10 +11,12 @@ import {
 } from "react";
 import { useParams } from "next/navigation";
 import studioStyles from "./contractStudio.module.css";
-import PdfDocumentPreview from "../imo-crew-list/ImoCrewListPreview";
+import ContractPdfPreview from "../../../components/ContractPdfPreview";
+import CaptainContractArchive from "../../../components/CaptainContractArchive";
 import { AccessibleImageLightbox } from "../../../components/AccessibleImageLightbox";
 import { YachtWorkspaceBackLink } from "../../../components/YachtWorkspaceBackLink";
 import { supabase } from "../../../lib/supabase";
+import { installContractPdfFonts } from "../../../lib/assignedContractPdf";
 import { drawContractAnnexAPage } from "../../../lib/contractAnnexA";
 import {
   drawContractAnnexBSpecialConditionsPages,
@@ -34,7 +36,7 @@ import {
 } from "../../../lib/storage";
 import {
   isContractSignatureDataUrl,
-  serializeAssignedContractPayload,
+  serializeAssignedContractPdfPayload,
 } from "../../../lib/contractPayload";
 import {
   downloadChecklistPdfDocument,
@@ -849,6 +851,13 @@ export default function CrewPage({
   const [dueDate, setDueDate] = useState("");
   const [captainNote, setCaptainNote] = useState("");
   const [contractStep, setContractStep] = useState<ContractStudioStep>("parties");
+  const [contractStudioView, setContractStudioView] = useState<"create" | "sent">("create");
+  const [contractArchiveRefreshKey, setContractArchiveRefreshKey] = useState(0);
+  const [contractNotice, setContractNotice] = useState<{ message: string; error: boolean } | null>(null);
+  const [sendingContract, setSendingContract] = useState(false);
+  const [downloadingContract, setDownloadingContract] = useState(false);
+  const contractSendInFlightRef = useRef(false);
+  const contractDownloadInFlightRef = useRef(false);
   const [openAnnexCClause, setOpenAnnexCClause] = useState<string | null>(null);
   const [contractDraft, setContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
   const [savedContractDraft, setSavedContractDraft] = useState<ContractDraft>(createEmptyContractDraft());
@@ -951,6 +960,11 @@ export default function CrewPage({
     [crew, selectedCrew]
   );
 
+  const contractRecipientLabels = useMemo(
+    () => Object.fromEntries(crew.map((member) => [member.id, getCrewDisplayName(member)])),
+    [crew],
+  );
+
   const contractPreviewDraft = useMemo(
     () => mergeSavedContractAnnexes(contractDraft, savedContractDraft),
     [contractDraft, savedContractDraft]
@@ -989,7 +1003,7 @@ export default function CrewPage({
     [contractSectionSaveKeys, savedContractSectionKeys]
   );
 
-  const contractSaveInFlight = Object.values(savingContractSections).some(Boolean);
+  const contractSaveInFlight = sendingContract || Object.values(savingContractSections).some(Boolean);
 
   const contractStepIndex = Math.max(
     contractStepCards.findIndex((step) => step.id === contractStep),
@@ -1111,7 +1125,7 @@ export default function CrewPage({
       .select("id, contract_text")
       .eq("yacht_id", yachtId)
       .eq("status", "studio_draft")
-      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -1147,9 +1161,14 @@ export default function CrewPage({
         .select("id")
         .eq("yacht_id", yachtId)
         .eq("status", "studio_draft")
-        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      if (existing.error) {
+        console.warn("Contract draft lookup failed", existing.error.message);
+        return false;
+      }
 
       if (existing.data?.id) {
         recordId = existing.data.id;
@@ -1158,16 +1177,20 @@ export default function CrewPage({
     }
 
     if (recordId) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("yacht_contracts")
         .update({
           contract_text: contractText,
           status: "studio_draft",
         })
-        .eq("id", recordId);
+        .eq("id", recordId)
+        .eq("yacht_id", yachtId)
+        .eq("status", "studio_draft")
+        .select("id")
+        .maybeSingle();
 
-      if (!error) return true;
-      console.warn("Contract draft update failed", error.message);
+      if (!error && data?.id) return true;
+      console.warn("Contract draft update failed", error?.message || "Draft is no longer available.");
       return false;
     }
 
@@ -1191,7 +1214,7 @@ export default function CrewPage({
   }
 
   async function saveContractSection(sectionKey: ContractSaveSectionKey, fields: ContractDraftField[]) {
-    if (contractSaveInFlightRef.current) return;
+    if (contractSaveInFlightRef.current || contractSendInFlightRef.current) return;
     contractSaveInFlightRef.current = true;
 
     const currentSectionSaveKey = contractSectionSaveKeys[sectionKey];
@@ -1219,7 +1242,8 @@ export default function CrewPage({
 
   async function downloadContractDraftPdf(mode: "download" | "preview" = "download") {
     const { jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
+    const doc = new jsPDF({ unit: "pt", format: "a4", compress: true, putOnlyUsedFonts: true });
+    await installContractPdfFonts(doc, contractPreviewText, ["helvetica", "times"]);
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
 
@@ -1391,10 +1415,14 @@ export default function CrewPage({
         const lineWidth = pageWidth - 88;
 
         contractAnnexCClauses.forEach((clause, clauseIndex) => {
+          doc.setFont("times", "bold");
+          doc.setFontSize(11.2);
           (doc.splitTextToSize(`${clause.number}. ${clause.title}`, lineWidth) as string[]).forEach((text) => {
             rows.push({ kind: "heading", text });
           });
 
+          doc.setFont("times", "normal");
+          doc.setFontSize(9.9);
           clause.body.forEach((paragraph) => {
             (doc.splitTextToSize(paragraph, lineWidth) as string[]).forEach((text) => {
               rows.push({ kind: "body", text });
@@ -1517,10 +1545,25 @@ export default function CrewPage({
 
     const pdfBlob = doc.output("blob");
     if (mode === "download") {
-      doc.save(buildContractFileName(contractPreviewDraft, selectedContractMember));
+      await doc.save(buildContractFileName(contractPreviewDraft, selectedContractMember), { returnPromise: true });
     }
 
     return pdfBlob;
+  }
+
+  async function downloadContractDraft() {
+    if (contractDownloadInFlightRef.current || contractSendInFlightRef.current) return;
+    contractDownloadInFlightRef.current = true;
+    setDownloadingContract(true);
+    setContractNotice(null);
+    try {
+      await downloadContractDraftPdf();
+    } catch {
+      setContractNotice({ message: "The contract PDF could not be downloaded. Please try again.", error: true });
+    } finally {
+      contractDownloadInFlightRef.current = false;
+      setDownloadingContract(false);
+    }
   }
 
   function toggleProgressCard(id: string) {
@@ -2390,74 +2433,96 @@ export default function CrewPage({
   }
 
   async function assignContract() {
-    if (!selectedCrew) {
-      alert("Select crew member");
+    if (contractSendInFlightRef.current || contractSaveInFlightRef.current || contractDownloadInFlightRef.current) return;
+    const member = crew.find((item) => item.id === selectedCrew);
+    if (!member) {
+      setContractNotice({ message: "Select a crew member before sending the contract.", error: true });
       return;
     }
 
     if (!contractPreviewText.trim()) {
-      alert("Contract details required");
+      setContractNotice({ message: "Complete the contract details before sending.", error: true });
       return;
     }
 
-    const member = crew.find((item) => item.id === selectedCrew);
-
-    const assignedContractText = serializeAssignedContractPayload(
-      contractPreviewText,
-      contractPreviewDraft.employerSignatureDataUrl,
-    );
+    contractSendInFlightRef.current = true;
+    setSendingContract(true);
+    setContractNotice(null);
     let draftId = contractDraftRecordId;
     let createdDraft = false;
 
-    if (!draftId) {
-      const draftResponse = await supabase
-        .from("yacht_contracts")
-        .insert({
-          yacht_id: yachtId,
-          contract_text: assignedContractText,
-          status: "studio_draft",
-        })
-        .select("id")
-        .single();
+    try {
+      // Freeze the exact PDF before any database mutation, for both sides of the agreement.
+      const pdfBlob = await downloadContractDraftPdf("preview");
+      const assignedContractText = await serializeAssignedContractPdfPayload(
+        contractPreviewText,
+        contractPreviewDraft.employerSignatureDataUrl,
+        pdfBlob,
+      );
 
-      if (draftResponse.error || !draftResponse.data?.id) {
-        alert(draftResponse.error?.message || "Contract draft could not be created.");
-        return;
-      }
-
-      draftId = draftResponse.data.id;
-      createdDraft = true;
-    }
-
-    const sendResponse = await supabase
-      .from("yacht_contracts")
-      .update({
-        crew_profile_id: member?.crew_profile_id,
-        membership_id: selectedCrew,
-        contract_text: assignedContractText,
-        status: "sent_for_signature",
-      })
-      .eq("id", draftId)
-      .eq("yacht_id", yachtId)
-      .eq("status", "studio_draft")
-      .select("id")
-      .maybeSingle();
-
-    if (sendResponse.error || !sendResponse.data?.id) {
-      if (createdDraft) {
-        await supabase
+      if (!draftId) {
+        const draftResponse = await supabase
           .from("yacht_contracts")
-          .delete()
-          .eq("id", draftId)
-          .eq("status", "studio_draft");
-      }
-      alert(sendResponse.error?.message || "Contract could not be sent.");
-      return;
-    }
+          .insert({
+            yacht_id: yachtId,
+            contract_text: assignedContractText,
+            status: "studio_draft",
+          })
+          .select("id")
+          .single();
 
-    setContractDraftRecordId("");
-    setContractStep("preview");
-    alert("Contract sent for mobile signature.");
+        if (draftResponse.error || !draftResponse.data?.id) {
+          throw new Error("The contract could not be saved. Please try again.");
+        }
+
+        draftId = draftResponse.data.id;
+        createdDraft = true;
+      }
+
+      const sendResponse = await supabase
+        .from("yacht_contracts")
+        .update({
+          crew_profile_id: member.crew_profile_id,
+          membership_id: member.id,
+          contract_text: assignedContractText,
+          status: "sent_for_signature",
+        })
+        .eq("id", draftId)
+        .eq("yacht_id", yachtId)
+        .eq("status", "studio_draft")
+        .select("id")
+        .maybeSingle();
+
+      if (sendResponse.error || !sendResponse.data?.id) {
+        throw new Error("The contract could not be sent. Please check Sent contracts before trying again.");
+      }
+
+      setContractDraftRecordId("");
+      setContractStep("preview");
+      setContractArchiveRefreshKey((current) => current + 1);
+      setContractStudioView("sent");
+      setContractNotice({ message: "Contract sent for signature. Your saved copy is available below.", error: false });
+    } catch (error) {
+      if (createdDraft) {
+        try {
+          await supabase
+            .from("yacht_contracts")
+            .delete()
+            .eq("id", draftId)
+            .eq("yacht_id", yachtId)
+            .eq("status", "studio_draft");
+        } catch {
+          // Retain the original send error even if draft cleanup is unavailable.
+        }
+      }
+      setContractNotice({
+        message: error instanceof Error ? error.message : "The contract could not be sent. Please try again.",
+        error: true,
+      });
+    } finally {
+      contractSendInFlightRef.current = false;
+      setSendingContract(false);
+    }
   }
 
   return (
@@ -2928,11 +2993,13 @@ export default function CrewPage({
           <section className={studioStyles.studio} aria-label="Contract Studio">
             <header className={studioStyles.header}>
               <h2 className={studioStyles.title}>BlueDeck Contract Studio</h2>
+              {contractStudioView === "create" && (
               <label className={studioStyles.crewPicker}>
                 <span className={studioStyles.pickerLabel}>Contract crew member</span>
                 <select
                   value={selectedCrew}
                   onChange={(event) => selectContractCrew(event.target.value)}
+                  disabled={sendingContract || downloadingContract}
                   className={studioStyles.control}
                 >
                   <option value="">Select crew</option>
@@ -2943,14 +3010,59 @@ export default function CrewPage({
                   ))}
                 </select>
               </label>
+              )}
             </header>
 
+            <nav className={studioStyles.viewNavigation} aria-label="Contract workspace">
+              <button
+                type="button"
+                className={studioStyles.viewTab}
+                aria-pressed={contractStudioView === "create"}
+                disabled={sendingContract || downloadingContract}
+                onClick={() => setContractStudioView("create")}
+              >
+                <FileText aria-hidden="true" className="h-4 w-4" />
+                Create contract
+              </button>
+              <button
+                type="button"
+                className={studioStyles.viewTab}
+                aria-pressed={contractStudioView === "sent"}
+                disabled={sendingContract || downloadingContract}
+                onClick={() => setContractStudioView("sent")}
+              >
+                <Archive aria-hidden="true" className="h-4 w-4" />
+                Sent contracts
+              </button>
+            </nav>
+
+            {contractNotice && (
+              <p
+                className={studioStyles.notice}
+                role={contractNotice.error ? "alert" : "status"}
+                data-error={contractNotice.error}
+              >
+                {contractNotice.message}
+              </p>
+            )}
+
+            {contractStudioView === "sent" ? (
+              <div className={studioStyles.workspace}>
+                <CaptainContractArchive
+                  yachtId={yachtId}
+                  refreshKey={contractArchiveRefreshKey}
+                  recipientLabels={contractRecipientLabels}
+                />
+              </div>
+            ) : (
+              <>
             <nav className={studioStyles.navigation} aria-label="Contract sections">
               {contractStepCards.map((step) => (
                 <button
                   key={step.id}
                   type="button"
                   onClick={() => navigateContractStep(step.id)}
+                  disabled={sendingContract || downloadingContract}
                   aria-current={contractStep === step.id ? "step" : undefined}
                   className={studioStyles.tab}
                 >
@@ -3502,7 +3614,7 @@ export default function CrewPage({
                   <div className={studioStyles.previewDocument}>
                     <ContractPanelTitle
                       title="Final contract draft"
-                      text="Review the generated text before sending it for mobile signature."
+                      text="Review every page before sending it for signature. The same PDF will be saved for you and the crew member."
                     />
                     <ContractGeneratedPreview
                       draft={contractPreviewDraft}
@@ -3517,26 +3629,27 @@ export default function CrewPage({
                         Send to crew
                       </p>
                       <p className={studioStyles.actionDescription}>
-                        This will create a BlueDeck contract record and place it in the crew signature workflow.
+                        Send this PDF for signature and keep a copy in Sent contracts.
                       </p>
                       <button
                         type="button"
                         onClick={assignContract}
-                        disabled={loading || !selectedCrew}
+                        disabled={loading || contractSaveInFlight || downloadingContract || !selectedCrew}
                         className={studioStyles.primaryAction}
                       >
-                        <Send className="h-5 w-5" />
-                        Send for Signature
+                        {sendingContract ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                        {sendingContract ? "Preparing and sending…" : "Send for Signature"}
                       </button>
                     </div>
 
                     <button
                       type="button"
-                      onClick={() => void downloadContractDraftPdf()}
+                      onClick={() => void downloadContractDraft()}
+                      disabled={sendingContract || downloadingContract}
                       className={studioStyles.secondaryAction}
                     >
-                      <Download className="h-5 w-5" />
-                      Download Draft PDF
+                      {downloadingContract ? <RefreshCcw className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+                      {downloadingContract ? "Preparing PDF…" : "Download Draft PDF"}
                     </button>
                   </div>
                 </div>
@@ -3546,7 +3659,7 @@ export default function CrewPage({
                 <button
                   type="button"
                   onClick={() => navigateContractStep(previousContractStep)}
-                  disabled={contractStepIndex === 0}
+                  disabled={contractStepIndex === 0 || sendingContract || downloadingContract}
                   className={studioStyles.secondaryAction}
                 >
                   Previous
@@ -3557,13 +3670,15 @@ export default function CrewPage({
                 <button
                   type="button"
                   onClick={() => navigateContractStep(nextContractStep)}
-                  disabled={contractStepIndex === contractStepCards.length - 1}
+                  disabled={contractStepIndex === contractStepCards.length - 1 || sendingContract || downloadingContract}
                   className={studioStyles.primaryAction}
                 >
                   Next
                 </button>
               </div>
             </div>
+              </>
+            )}
           </section>
         )}
 
@@ -4937,6 +5052,7 @@ function ContractGeneratedPreview({
     let disposed = false;
 
     setPdfPreviewError("");
+    setPdfPreviewBlob(null);
     setIsPdfPreviewLoading(true);
 
     void (async () => {
@@ -5064,7 +5180,7 @@ function ContractGeneratedPreview({
     <div ref={previewFrameRef} className={studioStyles.previewFrame}>
       {pdfPreviewBlob && !pdfPreviewError ? (
         <div className={studioStyles.pdfSurface}>
-          <PdfDocumentPreview blob={pdfPreviewBlob} language="en" />
+          <ContractPdfPreview blob={pdfPreviewBlob} language="en" />
         </div>
       ) : isPdfPreviewLoading ? (
         <div className={studioStyles.pdfLoading}>

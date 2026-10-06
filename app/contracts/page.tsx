@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ChevronLeft, FileSignature, PenLine } from "lucide-react";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
 import { supabase } from "../lib/supabase";
-import { parseAssignedContractPayload } from "../lib/contractPayload";
+import AssignedContractDocument, { formatContractDate } from "../components/AssignedContractDocument";
 
 function DashboardReturnLink() {
   return (
@@ -22,105 +22,83 @@ function DashboardReturnLink() {
 }
 
 export default function ContractsPage() {
-  const [contracts, setContracts] = useState<any[]>([]);
-  const [signatureName, setSignatureName] = useState("");
-  const [signatureConsent, setSignatureConsent] = useState(false);
+  const [contracts, setContracts] = useState<ReviewContract[]>([]);
+  const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
   async function loadContracts() {
     setLoading(true);
     setLoadError("");
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (!user?.email) {
-      window.location.replace(
-        `/login?next=${encodeURIComponent("/contracts")}`,
-      );
-      return;
-    }
+      if (!user?.email) {
+        window.location.replace(
+          `/login?next=${encodeURIComponent("/contracts")}`,
+        );
+        return;
+      }
 
-    if (userError) {
+      if (userError) {
+        setLoadError("Your contracts could not be loaded. Check your connection and try again.");
+        setLoading(false);
+        return;
+      }
+
+      const capabilities = await loadAccountCapabilities().catch(() => null);
+      if (!capabilities) {
+        setLoadError("Your contracts could not be loaded. Check your connection and try again.");
+        setLoading(false);
+        return;
+      }
+      if (capabilities?.canUseCrewWorkspace !== true) {
+        window.location.replace("/dashboard");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("crew_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        setLoadError("Your contracts could not be loaded. Check your connection and try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!profile) {
+        setContracts([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error: contractsError } = await supabase
+        .from("yacht_contracts")
+        .select("id,yacht_id,crew_profile_id,status,sent_at,signed_at,signed_name")
+        .eq("crew_profile_id", profile.id)
+        .in("status", ["sent_for_signature", "signed"])
+        .order("sent_at", { ascending: false });
+
+      if (contractsError) {
+        setLoadError("Your contracts could not be loaded. Check your connection and try again.");
+        setLoading(false);
+        return;
+      }
+
+      setContracts(data || []);
+      const requestedId = new URLSearchParams(window.location.search).get("contract");
+      setSelectedId((current) => (data || []).find((row) => row.id === (requestedId || current))?.id || data?.[0]?.id || "");
+      setLoading(false);
+    } catch {
       setLoadError("Your contracts could not be loaded. Check your connection and try again.");
       setLoading(false);
-      return;
     }
-
-    const capabilities = await loadAccountCapabilities().catch(() => null);
-    if (!capabilities) {
-      setLoadError("Your contracts could not be loaded. Check your connection and try again.");
-      setLoading(false);
-      return;
-    }
-    if (capabilities?.canUseCrewWorkspace !== true) {
-      window.location.replace("/dashboard");
-      return;
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from("crew_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      setLoadError("Your contracts could not be loaded. Check your connection and try again.");
-      setLoading(false);
-      return;
-    }
-
-    if (!profile) {
-      setContracts([]);
-      setLoading(false);
-      return;
-    }
-
-    const { data, error: contractsError } = await supabase
-      .from("yacht_contracts")
-      .select("*")
-      .eq("crew_profile_id", profile.id)
-      .order("sent_at", { ascending: false });
-
-    if (contractsError) {
-      setLoadError("Your contracts could not be loaded. Check your connection and try again.");
-      setLoading(false);
-      return;
-    }
-
-    setContracts(data || []);
-    setLoading(false);
-  }
-
-  async function signContract(contractId: string) {
-    if (!signatureName.trim()) {
-      alert("Type your full name as mobile signature.");
-      return;
-    }
-    if (!signatureConsent) {
-      alert("Confirm that you reviewed and accept this contract before signing.");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("yacht_contracts")
-      .update({
-        status: "signed",
-        signed_name: signatureName,
-      })
-      .eq("id", contractId)
-      .eq("status", "sent_for_signature");
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setSignatureName("");
-    setSignatureConsent(false);
-    loadContracts();
   }
 
   useEffect(() => {
@@ -168,127 +146,91 @@ export default function ContractsPage() {
     <main className="bd-app-page bd-ocean-shell bd-page-gutter min-h-screen px-5 py-8 text-slate-900 sm:px-8 lg:px-10">
       <div className="bd-ocean-content bd-page-frame mx-auto max-w-5xl">
         <DashboardReturnLink />
-        <header className="bd-page-hero bd-glass-card-strong rounded-[34px] p-8">
-          <p className="text-cyan-300">My Contracts</p>
-          <h1 className="bd-serif mt-3 text-5xl font-normal text-[#071f3c]">Mobile Signature</h1>
-          <p className="mt-4 max-w-2xl text-slate-600">
-            Review yacht contracts assigned by captains and sign them inside
-            your BlueDeck account.
-          </p>
+        <header className="bd-page-hero bd-glass-card-strong rounded-[28px] p-5 sm:p-8">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-700">Crew workspace</p>
+          <h1 className="mt-3 text-3xl font-bold text-[#071f3c] sm:text-4xl">My contracts</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Review, download and sign your yacht contracts.</p>
         </header>
-
-        <div className="mt-8 space-y-6">
-          {contracts.map((contract) => (
-            <article key={contract.id} className="bd-glass-card rounded-[28px] p-6">
-              <div className="flex items-start justify-between gap-5">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <FileSignature className="h-6 w-6 text-cyan-700" aria-hidden="true" />
-                    <h2 className="text-2xl font-black text-slate-950">Yacht Contract</h2>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Status: {contract.status}
-                  </p>
-                </div>
-                {contract.status === "signed" && (
-                  <span className="flex items-center gap-2 rounded-full bg-green-400/10 px-4 py-2 text-green-200">
-                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                    Signed
-                  </span>
-                )}
-              </div>
-
-              <ContractDocument value={contract.contract_text} />
-
-              {contract.status === "sent_for_signature" ? (
-                <div className="mt-6 grid gap-4">
-                  <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white/75 px-4 py-3 text-sm leading-6 text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={signatureConsent}
-                      onChange={(event) => setSignatureConsent(event.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300"
-                    />
-                    <span>
-                      I have reviewed this contract and intend my typed name to
-                      record my electronic acceptance. BlueDeck records the
-                      authenticated account and server timestamp; this workflow
-                      is not legal advice or a qualified electronic signature.
-                    </span>
-                  </label>
-                  <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-                  <label htmlFor={`signature-name-${contract.id}`} className="sr-only">
-                    Full name for electronic acceptance
-                  </label>
-                  <input
-                    id={`signature-name-${contract.id}`}
-                    value={signatureName}
-                    onChange={(e) => setSignatureName(e.target.value)}
-                    placeholder="Type your full name"
-                    autoComplete="name"
-                    className="rounded-2xl border border-slate-200 bg-white/80 px-5 py-4 text-slate-950 outline-none focus:border-cyan-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => signContract(contract.id)}
-                    disabled={!signatureConsent || !signatureName.trim()}
-                    className="bd-primary-action flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 py-4 font-black text-black disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <PenLine className="h-5 w-5" aria-hidden="true" />
-                    Sign
-                  </button>
-                  </div>
-                </div>
-              ) : contract.status === "signed" ? (
-                <p className="mt-5 text-sm text-slate-500">
-                  Signed by {contract.signed_name} on {contract.signed_at}
-                </p>
-              ) : (
-                <p className="mt-5 text-sm text-slate-500">
-                  This contract is not currently available for signature.
-                </p>
-              )}
-            </article>
+        <div className="mt-6 space-y-5">
+          {contracts.length > 1 && <div className="grid gap-2 sm:grid-cols-2" aria-label="Choose a contract">
+            {contracts.map((contract) => <button key={contract.id} type="button" aria-pressed={selectedId === contract.id} onClick={() => setSelectedId(contract.id)} className={`bd-focus rounded-2xl border px-4 py-3 text-left ${selectedId === contract.id ? "border-cyan-700 bg-cyan-50" : "border-slate-200 bg-white"}`}>
+              <span className="block text-sm font-bold text-[#071f3c]">Yacht contract · {formatContractDate(contract.sent_at)}</span>
+              <span className="mt-1 block text-xs text-slate-600">{contract.status === "signed" ? "Signed" : "Awaiting your signature"}</span>
+            </button>)}
+          </div>}
+          {contracts.filter((contract) => contract.id === selectedId).map((contract) => (
+            <ContractReview key={contract.id} contract={contract} onSigned={(updated) => setContracts((current) => current.map((row) => row.id === contract.id ? { ...row, ...updated } : row))} />
           ))}
-
-          {contracts.length === 0 && (
-            <div className="bd-glass-card rounded-3xl p-8 text-slate-500" role="status">
-              No contracts assigned yet.
-            </div>
-          )}
+          {contracts.length === 0 && <div className="bd-glass-card rounded-3xl p-8 text-slate-500" role="status">No contracts assigned yet.</div>}
         </div>
       </div>
     </main>
   );
 }
 
-function ContractDocument({ value }: { value: unknown }) {
-  const contract = parseAssignedContractPayload(value);
+type ReviewContract = {
+  id: string;
+  contract_text?: string;
+  status: string;
+  sent_at: string | null;
+  signed_at: string | null;
+  signed_name: string | null;
+};
+
+function ContractReview({ contract, onSigned }: { contract: ReviewContract; onSigned: (updated: Partial<ReviewContract>) => void }) {
+  const [signatureName, setSignatureName] = useState("");
+  const [signatureConsent, setSignatureConsent] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [documentReady, setDocumentReady] = useState(false);
+  const [error, setError] = useState("");
+  const pending = useRef(false);
+
+  async function signContract() {
+    if (pending.current || !documentReady || !signatureConsent || !signatureName.trim() || contract.status !== "sent_for_signature") return;
+    pending.current = true;
+    setSigning(true);
+    setError("");
+    try {
+      const { data, error: updateError } = await supabase.from("yacht_contracts")
+        .update({ status: "signed", signed_name: signatureName.trim() })
+        .eq("id", contract.id).eq("status", "sent_for_signature")
+        .select("id,status,signed_name,signed_at").maybeSingle();
+      if (updateError || !data) throw updateError || new Error("The contract may have changed. Refresh the page and check its status before trying again.");
+      onSigned(data);
+      setSignatureName("");
+      setSignatureConsent(false);
+    } catch {
+      setError("Your acceptance could not be confirmed. Refresh the page to check the contract status before trying again.");
+    } finally {
+      pending.current = false;
+      setSigning(false);
+    }
+  }
 
   return (
-    <>
-      <pre className="mt-6 max-w-full whitespace-pre-wrap break-words rounded-2xl border border-slate-200 bg-white/70 p-5 font-sans leading-7 text-slate-700 [overflow-wrap:anywhere]">
-        {contract.contractText}
-      </pre>
-      {contract.employerSignatureDataUrl ? (
-        <section className="mt-4 overflow-hidden rounded-2xl border border-[#bfd8ea] bg-white sm:w-1/2">
-          <div className="border-b border-[#d9e8f3] bg-[#f4f8fc] px-4 py-2.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#0b3c77]">
-              Employer / Authorised Signatory
-            </p>
-            <p className="mt-1 text-xs font-semibold text-slate-500">
-              Electronic signature recorded in Annex D
-            </p>
+    <article className="min-w-0 space-y-5" id={`contract-${contract.id}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-[#071f3c]"><FileSignature className="h-5 w-5 text-cyan-700" aria-hidden />Yacht contract</h2>
+        <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${contract.status === "signed" ? "bg-emerald-50 text-emerald-800" : "bg-cyan-50 text-cyan-800"}`}>
+          {contract.status === "signed" && <CheckCircle2 className="h-4 w-4" aria-hidden />}{contract.status === "signed" ? "Signed" : "Awaiting your signature"}
+        </span>
+      </div>
+      <AssignedContractDocument contractId={contract.id} value={contract.contract_text} status={contract.status} signedName={contract.signed_name} signedAt={contract.signed_at} onReadyChange={setDocumentReady} />
+      {contract.status === "sent_for_signature" && (
+        <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6" aria-label="Electronic acceptance">
+          <h3 className="font-bold text-[#071f3c]">Sign this contract</h3>
+          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700">
+            <input type="checkbox" checked={signatureConsent} disabled={signing} onChange={(event) => setSignatureConsent(event.target.checked)} className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300" />
+            <span>I have reviewed this contract and intend my typed name to record my electronic acceptance. BlueDeck records the authenticated account and server timestamp; this workflow is not legal advice or a qualified electronic signature.</span>
+          </label>
+          <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+            <label htmlFor={`signature-name-${contract.id}`} className="sr-only">Full name for electronic acceptance</label>
+            <input id={`signature-name-${contract.id}`} value={signatureName} disabled={signing} onChange={(event) => setSignatureName(event.target.value)} placeholder="Type your full name" autoComplete="name" className="min-w-0 rounded-xl border border-slate-200 px-4 py-3 text-base text-slate-950 outline-none focus:border-cyan-700" />
+            <button type="button" onClick={() => void signContract()} disabled={signing || !documentReady || !signatureConsent || !signatureName.trim()} className="bd-primary-action bd-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#071f3c] px-6 py-3 text-sm font-bold text-white hover:bg-cyan-800 disabled:opacity-50"><PenLine className="h-4 w-4" aria-hidden />{signing ? "Signing…" : "Sign contract"}</button>
           </div>
-          <div className="flex h-28 items-center justify-center p-3">
-            <img
-              src={contract.employerSignatureDataUrl}
-              alt="Employer electronic signature"
-              className="max-h-full max-w-full object-contain"
-            />
-          </div>
+          {error && <p role="alert" className="text-sm text-rose-800">{error}</p>}
         </section>
-      ) : null}
-    </>
+      )}
+    </article>
   );
 }
