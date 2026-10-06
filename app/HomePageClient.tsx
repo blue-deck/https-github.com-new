@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Search,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import { PublicFooter } from "./components/PublicSiteChrome";
@@ -81,11 +80,6 @@ const copy = {
     jobsErrorTitle: "Roles are temporarily unavailable.",
     jobsErrorText: "Open the full jobs board to try again.",
     openJobs: "Open jobs board",
-    hiringPromptEyebrow: "Build your team",
-    hiringPromptTitle: "Publish and manage roles in one place.",
-    hiringPromptText:
-      "Create listings, review applications and keep every shortlist organized.",
-
   },
   tr: {
     eyebrow: "Yat kariyeri · mürettebat · operasyon",
@@ -115,11 +109,6 @@ const copy = {
     jobsErrorTitle: "İlanlara şu anda ulaşılamıyor.",
     jobsErrorText: "Tekrar denemek için tam ilan panosunu açın.",
     openJobs: "İlan panosunu aç",
-    hiringPromptEyebrow: "Ekibinizi kurun",
-    hiringPromptTitle: "İlanları tek yerden yayınlayın ve yönetin.",
-    hiringPromptText:
-      "İlan oluşturun, başvuruları inceleyin ve aday listelerinizi düzenli tutun.",
-
   },
 } as const;
 
@@ -134,15 +123,6 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
   const isEmployerViewer =
     jobViewer.kind === "signed-in" &&
     (jobViewer.role === "owner" || jobViewer.role === "management");
-  const rolePrompt = isEmployerViewer
-    ? {
-        eyebrow: c.hiringPromptEyebrow,
-        title: c.hiringPromptTitle,
-        text: c.hiringPromptText,
-        action: c.openHiring,
-        href: "/hiring",
-      }
-    : null;
   const noJobsAction =
     loadState === "error"
       ? { href: "/jobs", label: c.openJobs }
@@ -280,17 +260,14 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
                 );
               })}
             </div>
-            <div id="home-job-results" className={homeStyles.jobsGrid} data-count={loadState === "loading" ? 3 : jobs.length + (jobs.length > 0 && jobs.length < 3 && rolePrompt ? 1 : 0)} aria-live="polite" aria-busy={loadState === "loading"}>
+            <div id="home-job-results" className={homeStyles.jobsGrid} data-count={loadState === "loading" ? 3 : jobs.length} aria-live="polite" aria-busy={loadState === "loading"}>
               {loadState === "loading" ? (
                 <>
                   {[0, 1, 2].map((item) => <PublicJobListingSkeleton key={item} compact appearance="homepage" />)}
                   <span className="sr-only">{c.loadingJobs}</span>
                 </>
               ) : loadState === "ready" && jobs.length > 0 ? (
-                <>
-                  {jobs.map((job) => <PublicJobListingCard key={job.id} job={job} language={language} viewer={jobViewer} compact appearance="homepage" />)}
-                  {jobs.length < 3 && rolePrompt ? <RolePrompt {...rolePrompt} /> : null}
-                </>
+                jobs.map((job) => <PublicJobListingCard key={job.id} job={job} language={language} viewer={jobViewer} compact appearance="homepage" />)
               ) : (
                 <div className={homeStyles.jobsEmpty}>
                   <Search aria-hidden />
@@ -314,35 +291,6 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
 
       <PublicFooter />
     </div>
-  );
-}
-
-function RolePrompt({
-  eyebrow,
-  title,
-  text,
-  action,
-  href,
-}: {
-  eyebrow: string;
-  title: string;
-  text: string;
-  action: string;
-  href: string;
-}) {
-  return (
-    <aside className={homeStyles.rolePrompt}>
-      <ShieldCheck aria-hidden />
-      <div>
-        <p className={homeStyles.eyebrow}>{eyebrow}</p>
-        <h3>{title}</h3>
-        <span>{text}</span>
-      </div>
-      <Link href={href} className={homeStyles.textLink}>
-        {action}
-        <ArrowRight aria-hidden />
-      </Link>
-    </aside>
   );
 }
 
