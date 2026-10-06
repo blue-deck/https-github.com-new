@@ -7,6 +7,7 @@ import { signChecklistTaskPhotoUrls } from "../../lib/privateStorageUrls";
 import { saveCrewTaskCompletion } from "../../lib/crewTaskCompletion";
 import { saveCrewChecklistCompletion } from "../../lib/crewChecklistCompletion";
 import { TaskCompletionControl } from "./TaskCompletionControl";
+import AssignedContractDocument from "../../components/AssignedContractDocument";
 import {
   createSafeStoragePath,
   maximumImageUploadBytes,
@@ -69,6 +70,9 @@ export default function CrewTasksPage() {
   const [invitationHistory, setInvitationHistory] = useState<any[]>([]);
   const [memberships, setMemberships] = useState<any[]>([]);
   const [contracts, setContracts] = useState<any[]>([]);
+  const [contractLoadError, setContractLoadError] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState("");
+  const selectedContract = contracts.find((contract) => contract.id === selectedContractId) || contracts[0];
   const [yachts, setYachts] = useState<Record<string, any>>({});
   const [activeChecklist, setActiveChecklist] = useState<any>(null);
   const [portalView, setPortalView] = useState<"home" | "checklists" | "contracts" | "log">("home");
@@ -232,8 +236,9 @@ export default function CrewTasksPage() {
         .order("created_at", { ascending: false }),
       supabase
         .from("yacht_contracts")
-        .select("*")
+        .select("id,yacht_id,crew_profile_id,membership_id,status,sent_at,signed_at,signed_name")
         .eq("crew_profile_id", crewProfile.id)
+        .in("status", ["sent_for_signature", "signed"])
         .order("sent_at", { ascending: false }),
     ]);
 
@@ -255,6 +260,7 @@ export default function CrewTasksPage() {
     setInvitationHistory(allProfileInvites.data || []);
     setMemberships(membershipResponse.data || []);
     setContracts(contractResponse.data || []);
+    setContractLoadError(Boolean(contractResponse.error));
 
     const yachtIds = Array.from(new Set([
       ...(allProfileInvites.data || []).map((item: any) => item.yacht_id),
@@ -884,19 +890,25 @@ export default function CrewTasksPage() {
               <h2 className="mt-2 text-3xl font-black text-slate-950">Seafarer contracts</h2>
               <p className="mt-3 text-slate-600">Contracts sent to your authenticated crew profile remain available here.</p>
             </div>
-            {contracts.map((contract) => (
-              <article key={contract.id} className="bd-glass-card rounded-[26px] p-5 sm:p-6">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.14em] text-cyan-700">{contract.status || "Draft"}</p>
-                    <h3 className="mt-2 text-xl font-black text-slate-950" data-i18n-ignore>{yachts[contract.yacht_id]?.name || "Seafarer Employment Agreement"}</h3>
-                    <p className="mt-2 text-sm text-slate-500">Received {formatPortalDate(contract.sent_at || contract.created_at)}</p>
+            {contractLoadError ? (
+              <div role="alert" className="rounded-2xl border border-rose-200 bg-white p-5 text-sm text-slate-700">Contracts could not be loaded. <Link href="/contracts" className="font-bold text-cyan-800 underline">Open contracts to try again</Link></div>
+            ) : contracts.length === 0 ? <EmptyPortalState icon={FileText} text="No contracts have been sent to your crew profile yet." /> : (
+              <>
+                {contracts.length > 1 && <div className="grid gap-2 sm:grid-cols-2" aria-label="Choose a contract">
+                  {contracts.map((contract) => <button key={contract.id} type="button" aria-pressed={selectedContract?.id === contract.id} onClick={() => setSelectedContractId(contract.id)} className={`bd-focus min-w-0 rounded-2xl border px-4 py-3 text-left ${selectedContract?.id === contract.id ? "border-cyan-700 bg-cyan-50" : "border-slate-200 bg-white"}`}>
+                    <span className="block truncate text-sm font-bold text-[#071f3c]" data-i18n-ignore>{yachts[contract.yacht_id]?.name || "Yacht contract"}</span>
+                    <span className="mt-1 block text-xs leading-5 text-slate-600">{formatPortalDate(contract.sent_at)} · {contract.status === "signed" ? "Signed" : "Awaiting your signature"}</span>
+                  </button>)}
+                </div>}
+                {selectedContract && <article className="min-w-0 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                    <div><h3 className="text-lg font-bold text-[#071f3c]" data-i18n-ignore>{yachts[selectedContract.yacht_id]?.name || "Seafarer Employment Agreement"}</h3><p className="mt-1 text-xs text-slate-500">Received {formatPortalDate(selectedContract.sent_at)} · {selectedContract.status === "signed" ? "Signed" : "Awaiting your signature"}</p></div>
+                    {selectedContract.status === "sent_for_signature" && <Link href={`/contracts?contract=${encodeURIComponent(selectedContract.id)}`} className="bd-focus inline-flex min-h-11 items-center rounded-xl border border-cyan-700 bg-white px-4 py-2 text-sm font-bold text-cyan-800">Review &amp; sign</Link>}
                   </div>
-                  <Link href="/contracts" className="bd-primary-action rounded-xl bg-[#071631] px-5 py-3 text-center text-sm font-black text-white">Open Contract</Link>
-                </div>
-              </article>
-            ))}
-            {contracts.length === 0 && <EmptyPortalState icon={FileText} text="No contracts have been sent to your crew profile yet." />}
+                  <AssignedContractDocument key={selectedContract.id} contractId={selectedContract.id} value={selectedContract.contract_text} status={selectedContract.status} signedName={selectedContract.signed_name} signedAt={selectedContract.signed_at} />
+                </article>}
+              </>
+            )}
           </section>
         )}
 

@@ -17,6 +17,13 @@
 .studio .header .title { margin: 0; color: #fff !important; -webkit-text-fill-color: #fff !important; font-size: 20px; font-weight: 600; line-height: 1.35; letter-spacing: -.015em; }
 .crewPicker { display: block; min-width: 0; }
 .studio .pickerLabel { display: block; margin-bottom: 7px; color: #d1e1ea !important; font-size: 12px; font-weight: 500; line-height: 1.4; }
+.viewNavigation { display: flex; gap: 24px; min-width: 0; padding: 0 28px; border-bottom: 1px solid var(--studio-line); background: #f8fafb; }
+.viewTab { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; margin-bottom: -1px; padding: 12px 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--studio-muted); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+.viewTab[aria-pressed="true"] { border-bottom-color: var(--studio-accent); color: var(--studio-ink); }
+.viewTab:hover:not(:disabled) { color: var(--studio-accent); }
+.viewTab:disabled, .tab:disabled { opacity: .5; cursor: not-allowed; }
+.notice { margin: 20px 28px 0; padding: 12px 16px; border: 1px solid #bfdcd5; border-radius: 8px; background: #f2faf7; color: #285d50; font-size: 14px; line-height: 1.6; }
+.notice[data-error="true"] { border-color: #f3c5c0; background: #fff7f6; color: #983a32; }
 
 .navigation { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; padding: 0 12px; border-bottom: 1px solid var(--studio-line); background: #fff; }
 .tab { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-width: 0; min-height: 70px; margin: 0 0 -1px; padding: 12px 14px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--studio-muted); text-align: left; font: inherit; cursor: pointer; touch-action: manipulation; }
@@ -65,7 +72,7 @@
 
 .previewGrid { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 28px; align-items: start; }
 .previewDocument { min-width: 0; border: 0; border-radius: 0; padding: 0; background: transparent; box-shadow: none; }
-.previewActions { min-width: 0; padding-top: 24px; border-top: 1px solid var(--studio-line); }
+.previewActions { order: -1; min-width: 0; padding-bottom: 24px; border-bottom: 1px solid var(--studio-line); }
 .actionTitle { margin: 0; color: var(--studio-ink); font-size: 16px; font-weight: 600; line-height: 1.4; }
 .actionDescription { margin: 8px 0 20px; color: var(--studio-muted); font-size: 13px; line-height: 1.7; }
 .primaryAction, .secondaryAction, .saveButton { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 16px; border: 1px solid transparent; border-radius: 8px; font-family: inherit; font-size: 13px; font-weight: 600; line-height: 1.4; text-align: center; text-decoration: none; cursor: pointer; touch-action: manipulation; }
@@ -82,7 +89,7 @@
 .pagination > :last-child { justify-self: end; }
 .stepCount { color: var(--studio-muted); font-size: 12px; font-weight: 500; line-height: 1.4; text-align: center; }
 .previewFrame { display: grid; justify-items: center; gap: 20px; width: 100%; min-width: 0; max-width: 100%; overflow: hidden; }
-.pdfSurface { display: flex; flex-direction: column; width: 100%; min-width: 0; height: min(82dvh, 1080px); min-height: 620px; overflow: hidden; border: 1px solid #d7e0e7; border-radius: 4px; background: #edf2f5; box-shadow: none; }
+.pdfSurface { width: 100%; min-width: 0; }
 .pdfLoading { display: grid; place-items: center; width: 100%; min-height: 480px; padding: 24px; color: var(--studio-muted); text-align: center; font-size: 14px; line-height: 1.6; }
 
 .field { display: block; min-width: 0; }
@@ -109,13 +116,13 @@
 .signatureFooter button { flex-shrink: 0; min-height: 44px; }
 .signatureReserved { display: flex; align-items: flex-end; justify-content: flex-end; min-height: 144px; padding: 12px; border: 1px dashed #c3d1dc; border-radius: 8px; color: #718798; background: #fff; font-size: 11px; line-height: 1.5; }
 
-.studio :is(.tab, .clauseToggle, .primaryAction, .secondaryAction, .saveButton):focus-visible { outline: 2px solid #168298; outline-offset: -3px; }
+.studio :is(.viewTab, .tab, .clauseToggle, .primaryAction, .secondaryAction, .saveButton):focus-visible { outline: 2px solid #168298; outline-offset: -3px; }
 
 @media (min-width: 1100px) {
   .columns { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
   .columns > .section + .section::before { top: 0; right: auto; bottom: 0; left: -14px; width: 1px; height: auto; }
   .previewGrid { grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; }
-  .previewActions { padding-top: 0; padding-left: 28px; border-top: 0; border-left: 1px solid var(--studio-line); }
+  .previewActions { order: 0; padding-bottom: 0; padding-left: 28px; border-bottom: 0; border-left: 1px solid var(--studio-line); }
 }
 
 @media (max-width: 1000px) and (min-width: 701px) {
@@ -125,6 +132,9 @@
 
 @media (max-width: 700px) {
   .header { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 18px 16px; }
+  .viewNavigation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-inline: 16px; }
+  .viewTab { gap: 6px; font-size: 13px; }
+  .notice { margin: 16px 16px 0; }
   .navigation { padding-inline: 6px; }
   .tab { justify-content: center; gap: 0; min-height: 48px; padding: 12px 2px; text-align: center; }
   .tabLabel { font-size: 12px; }
@@ -140,11 +150,6 @@
   .pagination { gap: 8px; }
   .pagination :is(.primaryAction, .secondaryAction) { padding-inline: 12px; }
   .stepCount { font-size: 11px; }
-  .pdfSurface { min-height: 480px; height: 72dvh; }
   .pdfLoading { min-height: 400px; }
   .signatureSurface canvas { height: 144px; }
-}
-
-@media (max-height: 600px) {
-  .pdfSurface { min-height: 0; height: 72dvh; }
 }
