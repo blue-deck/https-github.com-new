@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { signChecklistTaskPhotoUrls } from "../../lib/privateStorageUrls";
 import { saveCrewTaskCompletion } from "../../lib/crewTaskCompletion";
+import { saveCrewChecklistCompletion } from "../../lib/crewChecklistCompletion";
 import { TaskCompletionControl } from "./TaskCompletionControl";
 import {
   createSafeStoragePath,
@@ -31,6 +32,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { AccessibleImageLightbox } from "../../components/AccessibleImageLightbox";
 import { BlueDeckMark } from "../../components/BlueDeckLogo";
+import { useLanguage } from "../../components/LanguageProvider";
 import { loadAccountCapabilities } from "../../lib/accountCapabilities";
 import {
   downloadChecklistPdfDocument,
@@ -42,7 +44,28 @@ const configuredSupabaseUrl = resolveSupabaseUrl(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
 );
 
+const checklistCompletionCopy = {
+  en: {
+    success: "Checklist completed.",
+    view: "View completed checklist",
+    incomplete: "Complete every task before finishing this checklist.",
+    failed: "Couldn’t complete this checklist. Your tasks are still saved. Please try again.",
+    saving: "Completing...",
+    complete: "Complete Checklist",
+  },
+  tr: {
+    success: "Kontrol listesi tamamlandı.",
+    view: "Tamamlanan listeyi gör",
+    incomplete: "Kontrol listesini tamamlamadan önce tüm görevleri işaretleyin.",
+    failed: "Kontrol listesi tamamlanamadı. Görevleriniz kayıtlı duruyor. Lütfen tekrar deneyin.",
+    saving: "Tamamlanıyor...",
+    complete: "Kontrol Listesini Tamamla",
+  },
+};
+
 export default function CrewTasksPage() {
+  const { language } = useLanguage();
+  const completionText = checklistCompletionCopy[language];
   const [email, setEmail] = useState("");
   const [profile, setProfile] = useState<any>(null);
   const [checklists, setChecklists] = useState<any[]>([]);
@@ -60,9 +83,21 @@ export default function CrewTasksPage() {
   const pendingTaskIds = useRef(new Set<string>());
   const [taskErrors, setTaskErrors] = useState<Record<string, boolean>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState("");
-  const [completingChecklistId, setCompletingChecklistId] = useState("");
+  const [completingChecklistIds, setCompletingChecklistIds] = useState<Set<string>>(() => new Set());
+  const pendingChecklistIds = useRef(new Set<string>());
+  const [completionErrors, setCompletionErrors] = useState<Record<string, "incomplete" | "failed" | undefined>>({});
+  const [completionReceipt, setCompletionReceipt] = useState<{ id: string; title: string } | null>(null);
+  const completionReceiptAction = useRef<HTMLButtonElement>(null);
+  const focusCompletionReceipt = useRef(false);
   const [pdfAction, setPdfAction] = useState("");
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
+
+  useEffect(() => {
+    if (focusCompletionReceipt.current) {
+      completionReceiptAction.current?.focus({ preventScroll: true });
+      focusCompletionReceipt.current = false;
+    }
+  }, [completionReceipt]);
 
   const stats = useMemo(() => {
     const allItems = checklists.flatMap((list) => list.yacht_checklist_items || []);
@@ -335,7 +370,7 @@ export default function CrewTasksPage() {
   }
 
   async function toggleTask(task: any, checklist: any) {
-    if (pendingTaskIds.current.has(task.id) || checklist.status === "completed" || completingChecklistId === checklist.id) return;
+    if (pendingTaskIds.current.has(task.id) || checklist.status === "completed" || pendingChecklistIds.current.has(checklist.id)) return;
 
     pendingTaskIds.current.add(task.id);
     setUpdatingTaskIds(new Set(pendingTaskIds.current));
@@ -351,6 +386,7 @@ export default function CrewTasksPage() {
       };
       setChecklists((current) => current.map(updateChecklist));
       setActiveChecklist(updateChecklist);
+      setCompletionErrors((current) => current[checklist.id] === "incomplete" ? { ...current, [checklist.id]: undefined } : current);
     } catch {
       setTaskErrors((current) => ({ ...current, [task.id]: true }));
     } finally {
@@ -481,66 +517,34 @@ export default function CrewTasksPage() {
     openLoggedInPortal();
   }, []);
 
-  async function completeChecklist(checklist: any) {
-    if (checklist?.status === "completed") return;
+  async function completeChecklist(checklist: any, trigger?: HTMLButtonElement) {
+    if (checklist?.status === "completed" || pendingChecklistIds.current.has(checklist.id)) return;
 
     const items = checklist.yacht_checklist_items || [];
     if (items.some((item: any) => pendingTaskIds.current.has(item.id))) return;
     const allCompleted = items.length > 0 && items.every((item: any) => item.completed);
 
     if (!allCompleted) {
-      alert("Please complete all tasks first.");
+      setCompletionErrors((current) => ({ ...current, [checklist.id]: "incomplete" }));
       return;
     }
 
-    setCompletingChecklistId(checklist.id);
+    pendingChecklistIds.current.add(checklist.id);
+    setCompletingChecklistIds(new Set(pendingChecklistIds.current));
+    setCompletionErrors((current) => ({ ...current, [checklist.id]: undefined }));
 
-    const { error } = await updateChecklistWithFallback(checklist.id, {
-      status: "completed",
-      completed_at: new Date().toISOString(),
-    });
-
-    if (error) {
-      alert(error.message);
-      setCompletingChecklistId("");
-      return;
+    try {
+      const savedChecklist = await saveCrewChecklistCompletion(supabase, checklist.id);
+      focusCompletionReceipt.current = Boolean(trigger && document.activeElement === trigger);
+      setChecklists((current) => current.map((list) => list.id === savedChecklist.id ? { ...list, ...savedChecklist } : list));
+      setActiveChecklist((current: any) => current?.id === savedChecklist.id ? null : current);
+      setCompletionReceipt({ id: savedChecklist.id, title: checklist.title || "Checklist" });
+    } catch {
+      setCompletionErrors((current) => ({ ...current, [checklist.id]: "failed" }));
+    } finally {
+      pendingChecklistIds.current.delete(checklist.id);
+      setCompletingChecklistIds(new Set(pendingChecklistIds.current));
     }
-
-    await loadTasks();
-    setCompletingChecklistId("");
-  }
-
-  async function updateChecklistWithFallback(
-    checklistId: string,
-    payload: Record<string, unknown>
-  ) {
-    const variants = [payload, omitKeys(payload, ["completed_at"])];
-    let lastResponse: any = null;
-
-    for (const variant of variants) {
-      const response = await supabase
-        .from("yacht_checklists")
-        .update(variant)
-        .eq("id", checklistId)
-        .select("id, status, completed_at")
-        .maybeSingle();
-
-      if (!response.error && response.data) return response;
-      if (!response.error) {
-        return {
-          ...response,
-          error: new Error(
-            "Checklist could not be updated. Please refresh the page and try again."
-          ),
-        };
-      }
-
-      lastResponse = response;
-
-      if (!isSchemaCacheError(response.error)) return response;
-    }
-
-    return lastResponse;
   }
 
   function canEditChecklist(checklist: any) {
@@ -734,6 +738,24 @@ export default function CrewTasksPage() {
             </div>
           </div>
 
+          {completionReceipt && (
+            <div data-i18n-ignore className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div role="status" className="flex min-w-0 items-start gap-3 text-emerald-900">
+                <CheckCircle2 aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="font-semibold">{completionText.success}</p>
+                  <p className="mt-1 break-words text-sm">{completionReceipt.title}</p>
+                </div>
+              </div>
+              <button ref={completionReceiptAction} type="button" onClick={() => {
+                setChecklistView("completed");
+                setActiveChecklist(checklists.find((list) => list.id === completionReceipt.id) || null);
+              }} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
+                {completionText.view}<ChevronRight aria-hidden className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           {checklists.length > 0 && (
             <div className="bd-glass-card rounded-[34px] p-4">
               <div className="flex flex-col gap-3 px-2 pb-3 sm:flex-row sm:items-center sm:justify-between">
@@ -815,7 +837,7 @@ export default function CrewTasksPage() {
                                   disabled={
                                     list.status === "completed"
                                     || !canEditChecklist(list)
-                                    || completingChecklistId === list.id
+                                    || completingChecklistIds.has(list.id)
                                   }
                                 />
                                 {checklistView === "archive" || checklistView === "completed" ? (
@@ -835,6 +857,11 @@ export default function CrewTasksPage() {
                             ))}
                           </div>
 
+                          {completionErrors[list.id] && (
+                            <p data-i18n-ignore id={`checklist-error-${list.id}`} role="alert" className="mt-4 text-sm font-medium text-red-700">
+                              {completionErrors[list.id] === "incomplete" ? completionText.incomplete : completionText.failed}
+                            </p>
+                          )}
                           <div className="mt-5 flex flex-wrap justify-end gap-3">
                             {checklistView === "archive" && (
                               <button
@@ -847,8 +874,9 @@ export default function CrewTasksPage() {
                               </button>
                             )}
                             {list.status !== "completed" && (
-                              <button type="button" onClick={() => completeChecklist(list)} disabled={completingChecklistId === list.id || items.some((item: any) => updatingTaskIds.has(item.id))} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">
-                                {completingChecklistId === list.id ? "Completing..." : "Complete Checklist"}
+                              <button type="button" data-i18n-ignore onClick={(event) => completeChecklist(list, event.currentTarget)} aria-busy={completingChecklistIds.has(list.id)} aria-disabled={completingChecklistIds.has(list.id) || items.some((item: any) => updatingTaskIds.has(item.id))} aria-describedby={completionErrors[list.id] ? `checklist-error-${list.id}` : undefined} disabled={items.some((item: any) => updatingTaskIds.has(item.id))} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60 aria-disabled:cursor-wait aria-disabled:opacity-60">
+                                {completingChecklistIds.has(list.id) && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}
+                                {completingChecklistIds.has(list.id) ? completionText.saving : completionText.complete}
                               </button>
                             )}
                             {list.status === "completed" && canEditChecklist(list) && (
@@ -1090,12 +1118,12 @@ export default function CrewTasksPage() {
                   onClick={() => completeChecklist(activeChecklist)}
                   disabled={
                     activeChecklist.status === "completed" ||
-                    completingChecklistId === activeChecklist.id ||
+                    completingChecklistIds.has(activeChecklist.id) ||
                     (activeChecklist.yacht_checklist_items || []).some((item: any) => updatingTaskIds.has(item.id))
                   }
                   className="flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-500 px-6 py-4 font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600 disabled:cursor-default disabled:bg-emerald-700 disabled:shadow-none"
                 >
-                  {completingChecklistId === activeChecklist.id ? (
+                  {completingChecklistIds.has(activeChecklist.id) ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Completing...
@@ -1128,7 +1156,7 @@ export default function CrewTasksPage() {
                       error={Boolean(taskErrors[task.id])}
                       disabled={
                         activeChecklist.status === "completed" ||
-                        completingChecklistId === activeChecklist.id
+                        completingChecklistIds.has(activeChecklist.id)
                       }
                     />
 
@@ -1333,12 +1361,6 @@ function getTaskPhoto(task: any, type: "before" | "after") {
     note?.[`${type}_photo_url`] ||
     note?.photos?.[type] ||
     ""
-  );
-}
-
-function omitKeys<T extends Record<string, unknown>>(value: T, keys: string[]) {
-  return Object.fromEntries(
-    Object.entries(value).filter(([key]) => !keys.includes(key))
   );
 }
 
