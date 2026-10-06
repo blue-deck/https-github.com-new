@@ -46,16 +46,12 @@ const configuredSupabaseUrl = resolveSupabaseUrl(
 
 const checklistCompletionCopy = {
   en: {
-    success: "Checklist completed.",
-    view: "View completed checklist",
     incomplete: "Complete every task before finishing this checklist.",
     failed: "Couldn’t complete this checklist. Your tasks are still saved. Please try again.",
     saving: "Completing...",
     complete: "Complete Checklist",
   },
   tr: {
-    success: "Kontrol listesi tamamlandı.",
-    view: "Tamamlanan listeyi gör",
     incomplete: "Kontrol listesini tamamlamadan önce tüm görevleri işaretleyin.",
     failed: "Kontrol listesi tamamlanamadı. Görevleriniz kayıtlı duruyor. Lütfen tekrar deneyin.",
     saving: "Tamamlanıyor...",
@@ -86,26 +82,23 @@ export default function CrewTasksPage() {
   const [completingChecklistIds, setCompletingChecklistIds] = useState<Set<string>>(() => new Set());
   const pendingChecklistIds = useRef(new Set<string>());
   const [completionErrors, setCompletionErrors] = useState<Record<string, "incomplete" | "failed" | undefined>>({});
-  const [completionReceipt, setCompletionReceipt] = useState<{ id: string; title: string } | null>(null);
+  const [completionReturn, setCompletionReturn] = useState<{ moveFocus: boolean } | null>(null);
   const firstChecklistAction = useRef<HTMLButtonElement>(null);
   const checklistHeading = useRef<HTMLHeadingElement>(null);
-  const completionReturn = useRef<{ moveFocus: boolean } | null>(null);
   const [pdfAction, setPdfAction] = useState("");
   const [photoPreview, setPhotoPreview] = useState<{ label: string; url: string } | null>(null);
 
   useEffect(() => {
-    const requestedReturn = completionReturn.current;
-    completionReturn.current = null;
-    if (!requestedReturn) return;
+    if (!completionReturn) return;
 
     const destination = firstChecklistAction.current || checklistHeading.current;
     if (!destination) return;
-    if (requestedReturn.moveFocus) destination.focus({ preventScroll: true });
+    if (completionReturn.moveFocus) destination.focus({ preventScroll: true });
     destination.scrollIntoView({
       block: "start",
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
     });
-  }, [completionReceipt]);
+  }, [completionReturn]);
 
   const stats = useMemo(() => {
     const allItems = checklists.flatMap((list) => list.yacht_checklist_items || []);
@@ -544,12 +537,11 @@ export default function CrewTasksPage() {
     try {
       const savedChecklist = await saveCrewChecklistCompletion(supabase, checklist.id);
       // A removed trigger means the user already opened another list or section.
-      completionReturn.current = trigger?.isConnected
+      setCompletionReturn(trigger?.isConnected
         ? { moveFocus: document.activeElement === trigger }
-        : null;
+        : null);
       setChecklists((current) => current.map((list) => list.id === savedChecklist.id ? { ...list, ...savedChecklist } : list));
       setActiveChecklist((current: any) => current?.id === savedChecklist.id ? null : current);
-      setCompletionReceipt({ id: savedChecklist.id, title: checklist.title || "Checklist" });
     } catch {
       setCompletionErrors((current) => ({ ...current, [checklist.id]: "failed" }));
     } finally {
@@ -740,24 +732,6 @@ export default function CrewTasksPage() {
               ))}
             </div>
           </div>
-
-          {completionReceipt && (
-            <div data-i18n-ignore className="flex flex-col gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div role="status" className="flex min-w-0 items-start gap-3 text-emerald-900">
-                <CheckCircle2 aria-hidden className="mt-0.5 h-5 w-5 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-semibold">{completionText.success}</p>
-                  <p className="mt-1 break-words text-sm">{completionReceipt.title}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => {
-                setChecklistView("completed");
-                setActiveChecklist(checklists.find((list) => list.id === completionReceipt.id) || null);
-              }} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700">
-                {completionText.view}<ChevronRight aria-hidden className="h-4 w-4" />
-              </button>
-            </div>
-          )}
 
           {checklists.length > 0 && (
             <div className="bd-glass-card rounded-[34px] p-4">
