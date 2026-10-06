@@ -2,7 +2,7 @@
 .stack { width: 100%; max-width: 794px; min-width: 0; margin-inline: auto; }
 .page { margin: 0; }
 .page + .page { margin-top: 24px; }
-.pageLabel { margin-bottom: 8px; color: #627b8b; font-size: 11px; font-weight: 600; line-height: 1.5; text-align: center; font-variant-numeric: tabular-nums; }
+.pageLabel { margin-bottom: 8px; color: #526a7b; font-size: 11px; font-weight: 600; line-height: 1.5; text-align: center; font-variant-numeric: tabular-nums; }
 .sheet { position: relative; width: 100%; overflow: hidden; background: #fff; box-shadow: 0 2px 9px #183c521c, 0 0 0 1px #c8d6df80; }
 .canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .page[data-ready="false"] .canvas { visibility: hidden; }
