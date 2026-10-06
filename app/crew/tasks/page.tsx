@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { signChecklistTaskPhotoUrls } from "../../lib/privateStorageUrls";
+import { saveCrewTaskCompletion } from "../../lib/crewTaskCompletion";
+import { TaskCompletionControl } from "./TaskCompletionControl";
 import {
   createSafeStoragePath,
   maximumImageUploadBytes,
@@ -16,7 +18,6 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardCheck,
-  Clock3,
   Download,
   FileText,
   History,
@@ -55,7 +56,9 @@ export default function CrewTasksPage() {
   const [checklistView, setChecklistView] = useState<"open" | "completed" | "archive">("open");
   const [loading, setLoading] = useState(true);
   const [acceptingInviteId, setAcceptingInviteId] = useState("");
-  const [updatingTaskId, setUpdatingTaskId] = useState("");
+  const [updatingTaskIds, setUpdatingTaskIds] = useState<Set<string>>(() => new Set());
+  const pendingTaskIds = useRef(new Set<string>());
+  const [taskErrors, setTaskErrors] = useState<Record<string, boolean>>({});
   const [uploadingPhoto, setUploadingPhoto] = useState("");
   const [completingChecklistId, setCompletingChecklistId] = useState("");
   const [pdfAction, setPdfAction] = useState("");
@@ -331,22 +334,29 @@ export default function CrewTasksPage() {
     }
   }
 
-  async function toggleTask(task: any) {
-    setUpdatingTaskId(task.id);
+  async function toggleTask(task: any, checklist: any) {
+    if (pendingTaskIds.current.has(task.id) || checklist.status === "completed" || completingChecklistId === checklist.id) return;
 
-    const { error } = await updateTaskWithFallback(task.id, {
-      completed: !task.completed,
-      completed_at: !task.completed ? new Date().toISOString() : null,
-      completed_by: profile?.email || email,
-    });
+    pendingTaskIds.current.add(task.id);
+    setUpdatingTaskIds(new Set(pendingTaskIds.current));
+    setTaskErrors((current) => ({ ...current, [task.id]: false }));
 
-    if (error) {
-      alert(error.message);
-    } else {
-      await loadTasks();
+    try {
+      const savedTask = await saveCrewTaskCompletion(supabase, task.id, !task.completed, profile?.email || email);
+      const updateChecklist = (current: any) => current?.id !== checklist.id ? current : {
+        ...current,
+        yacht_checklist_items: (current.yacht_checklist_items || []).map((item: any) =>
+          item.id === savedTask.id ? { ...item, ...savedTask } : item,
+        ),
+      };
+      setChecklists((current) => current.map(updateChecklist));
+      setActiveChecklist(updateChecklist);
+    } catch {
+      setTaskErrors((current) => ({ ...current, [task.id]: true }));
+    } finally {
+      pendingTaskIds.current.delete(task.id);
+      setUpdatingTaskIds(new Set(pendingTaskIds.current));
     }
-
-    setUpdatingTaskId("");
   }
 
   async function uploadTaskPhoto(task: any, file: File, type: "before" | "after") {
@@ -419,29 +429,6 @@ export default function CrewTasksPage() {
     };
   }
 
-  async function updateTaskWithFallback(taskId: string, payload: Record<string, unknown>) {
-    const variants = [
-      payload,
-      omitKeys(payload, ["completed_at", "completed_by"]),
-    ];
-
-    let lastResponse: any = null;
-
-    for (const variant of variants) {
-      const response = await supabase
-        .from("yacht_checklist_items")
-        .update(variant)
-        .eq("id", taskId);
-
-      if (!response.error) return response;
-      lastResponse = response;
-
-      if (!isSchemaCacheError(response.error)) return response;
-    }
-
-    return lastResponse;
-  }
-
   async function updateTaskPhotoWithFallback(
     taskId: string,
     type: "before" | "after",
@@ -498,6 +485,7 @@ export default function CrewTasksPage() {
     if (checklist?.status === "completed") return;
 
     const items = checklist.yacht_checklist_items || [];
+    if (items.some((item: any) => pendingTaskIds.current.has(item.id))) return;
     const allCompleted = items.length > 0 && items.every((item: any) => item.completed);
 
     if (!allCompleted) {
@@ -809,7 +797,7 @@ export default function CrewTasksPage() {
                       </button>
 
                       {active && (
-                        <div className="border-t border-cyan-200/70 p-5 sm:p-6">
+                        <div className="border-t border-cyan-200/70 p-3 sm:p-6">
                           {getCaptainNote(list) && (
                             <p className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700">
                               Captain note: <span data-i18n-ignore>{getCaptainNote(list)}</span>
@@ -818,20 +806,18 @@ export default function CrewTasksPage() {
 
                           <div className="space-y-3">
                             {items.map((task: any) => (
-                              <div key={task.id} className={`rounded-2xl border p-4 ${task.completed ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"}`}>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleTask(task)}
+                              <div key={task.id} className={`rounded-2xl border p-3 sm:p-4 ${task.completed ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+                                <TaskCompletionControl
+                                  task={task}
+                                  onToggle={() => toggleTask(task, list)}
+                                  pending={updatingTaskIds.has(task.id)}
+                                  error={Boolean(taskErrors[task.id])}
                                   disabled={
                                     list.status === "completed"
                                     || !canEditChecklist(list)
-                                    || updatingTaskId === task.id
+                                    || completingChecklistId === list.id
                                   }
-                                  className="flex w-full items-center gap-3 text-left disabled:cursor-default"
-                                >
-                                  {updatingTaskId === task.id ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className={`h-5 w-5 ${task.completed ? "text-emerald-600" : "text-slate-300"}`} />}
-                                  <span data-i18n-ignore className={`font-semibold ${task.completed ? "text-slate-500 line-through" : "text-slate-900"}`}>{task.task_text}</span>
-                                </button>
+                                />
                                 {checklistView === "archive" || checklistView === "completed" ? (
                                   (getTaskPhoto(task, "before") || getTaskPhoto(task, "after")) && (
                                     <div className="mt-4 flex flex-wrap gap-2">
@@ -861,7 +847,7 @@ export default function CrewTasksPage() {
                               </button>
                             )}
                             {list.status !== "completed" && (
-                              <button type="button" onClick={() => completeChecklist(list)} disabled={completingChecklistId === list.id} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">
+                              <button type="button" onClick={() => completeChecklist(list)} disabled={completingChecklistId === list.id || items.some((item: any) => updatingTaskIds.has(item.id))} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">
                                 {completingChecklistId === list.id ? "Completing..." : "Complete Checklist"}
                               </button>
                             )}
@@ -1104,7 +1090,8 @@ export default function CrewTasksPage() {
                   onClick={() => completeChecklist(activeChecklist)}
                   disabled={
                     activeChecklist.status === "completed" ||
-                    completingChecklistId === activeChecklist.id
+                    completingChecklistId === activeChecklist.id ||
+                    (activeChecklist.yacht_checklist_items || []).some((item: any) => updatingTaskIds.has(item.id))
                   }
                   className="flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl bg-green-500 px-6 py-4 font-black text-white shadow-lg shadow-green-500/20 transition hover:bg-green-600 disabled:cursor-default disabled:bg-emerald-700 disabled:shadow-none"
                 >
@@ -1134,45 +1121,16 @@ export default function CrewTasksPage() {
                         : "border-slate-200 bg-white/70 hover:border-cyan-300/40"
                     }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggleTask(task)}
+                    <TaskCompletionControl
+                      task={task}
+                      onToggle={() => toggleTask(task, activeChecklist)}
+                      pending={updatingTaskIds.has(task.id)}
+                      error={Boolean(taskErrors[task.id])}
                       disabled={
                         activeChecklist.status === "completed" ||
-                        updatingTaskId === task.id
+                        completingChecklistId === activeChecklist.id
                       }
-                      className="flex w-full items-center gap-4 text-left"
-                    >
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                          task.completed ? "bg-green-400 text-white" : "bg-white/10 text-slate-400"
-                        }`}
-                      >
-                        {updatingTaskId === task.id ? (
-                          <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="h-6 w-6" />
-                        )}
-                      </div>
-
-                      <div className="flex-1">
-                        <p
-                          data-i18n-ignore
-                          className={`text-lg font-semibold ${
-                            task.completed ? "text-slate-500 line-through" : "text-slate-950"
-                          }`}
-                        >
-                          {task.task_text}
-                        </p>
-
-                        {task.completed_at && (
-                          <p className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                            <Clock3 className="h-3 w-3" />
-                            Completed
-                          </p>
-                        )}
-                      </div>
-                    </button>
+                    />
 
                     <div className="bd-crew-proof-grid mt-5 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
                       <PhotoBox
