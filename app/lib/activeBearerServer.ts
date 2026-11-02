@@ -5,7 +5,10 @@ import {
   activeBearerClaimsAreValid,
   isCanonicalUuid,
 } from "./activeBearerClaims";
-import { accountProvisioningIsReady } from "./accountProvisioningServer";
+import {
+  accountProvisioningIsReady,
+  recoverSignupAccount,
+} from "./accountProvisioningServer";
 
 export type ActiveBearerFailureReason =
   "invalid_session" | "account_not_ready" | "session_check_unavailable";
@@ -50,10 +53,29 @@ export async function authenticateActiveBearer({
       return invalidSession(claimsResponse.error);
     }
 
-    const provisioning = await accountProvisioningIsReady(
+    let provisioning = await accountProvisioningIsReady(
       serviceClient,
       user.id,
     );
+    if (!provisioning.error && !provisioning.ready) {
+      // Only verified password sessions reach this service-only recovery path.
+      // The database rechecks the live session and recovers pending signups
+      // without changing existing roles, profile data, or failed-account state.
+      provisioning = await recoverSignupAccount(
+        serviceClient,
+        user.id,
+        claims.session_id as string,
+      );
+    }
+    if (provisioning.error) {
+      return {
+        ok: false,
+        reason: "session_check_unavailable",
+        error: "Account setup could not be verified. Please try again.",
+        status: 503,
+        cause: provisioning.error,
+      };
+    }
     if (!provisioning.ready) {
       return {
         ok: false,

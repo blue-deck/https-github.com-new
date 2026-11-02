@@ -50,7 +50,7 @@ begin
       select 1
       from public.crew_profiles
       where user_id = account_id
-        and public_crew_id ~ '^BD-[A-F0-9]{32}$'
+        and public_crew_id ~ '^[A-F0-9]{8}$'
     )
   then
     raise exception 'Untrusted signup metadata escaped the default Crew role.';
@@ -178,7 +178,7 @@ begin
       'authenticated',
       crew_account_email,
       '',
-      statement_timestamp(),
+      null,
       jsonb_build_object('provider', 'email', 'providers', array['email']),
       jsonb_build_object(
         'full_name', 'Automatic Crew Signup',
@@ -197,7 +197,7 @@ begin
       'authenticated',
       captain_account_email,
       '',
-      statement_timestamp(),
+      null,
       jsonb_build_object('provider', 'email', 'providers', array['email']),
       jsonb_build_object(
         'full_name', 'Automatic Captain Signup',
@@ -226,6 +226,9 @@ begin
   ) then
     raise exception 'Crew/Captain signup provisioning failed.';
   end if;
+
+  update auth.users set email_confirmed_at = statement_timestamp()
+  where id in (crew_account_id, captain_account_id);
 
   select id into crew_profile_id
   from public.crew_profiles where user_id = crew_account_id;

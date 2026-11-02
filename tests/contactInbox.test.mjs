@@ -50,6 +50,7 @@ function harness(options = {}) {
     async rpc(name) {
       authCalls.push(name);
       if (name === "bluedeck_account_is_ready") return { data: options.provisioned !== false, error: null };
+      if (name === "bluedeck_recover_signup_account") return { data: false, error: null };
       if (name === "bluedeck_bearer_session_is_live") {
         return { data: options.liveSession !== false, error: options.sessionError ? { message: "private" } : null };
       }

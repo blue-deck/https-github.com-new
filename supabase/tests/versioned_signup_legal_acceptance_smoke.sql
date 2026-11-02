@@ -299,7 +299,7 @@ begin
     'authenticated',
     historical_email,
     '',
-    statement_timestamp(),
+    null,
     '{"provider":"email","providers":["email"]}'::jsonb,
     jsonb_build_object('full_name', 'Historical Legal Acceptance'),
     statement_timestamp(),
@@ -320,7 +320,10 @@ begin
     'account_signup'
   );
 
-  if not public.bluedeck_provision_signup_account(
+  -- Model the historical default-signup trigger before the server finalizes
+  -- the unconfirmed account. Confirmed accounts now require password recovery.
+  if not private.bluedeck_ensure_default_signup_account(historical_user)
+    or not public.bluedeck_provision_signup_account(
     historical_user,
     historical_email,
     'Historical Legal Acceptance',

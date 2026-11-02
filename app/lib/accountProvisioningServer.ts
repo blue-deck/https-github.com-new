@@ -1,12 +1,13 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isCanonicalUuid } from "./activeBearerClaims";
 
 export async function accountProvisioningIsReady(
   serviceClient: SupabaseClient,
   userId: string,
 ) {
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+  if (!isCanonicalUuid(userId)) {
     return { ready: false, error: new Error("Invalid account identifier") };
   }
 
@@ -14,5 +15,35 @@ export async function accountProvisioningIsReady(
     "bluedeck_account_is_ready",
     { p_user_id: userId },
   );
-  return { ready: data === true && !error, error };
+  if (error) return { ready: false, error };
+  if (typeof data !== "boolean") {
+    return {
+      ready: false,
+      error: new Error("Account readiness response is invalid"),
+    };
+  }
+  return { ready: data, error: null };
+}
+
+export async function recoverSignupAccount(
+  serviceClient: SupabaseClient,
+  userId: string,
+  sessionId: string,
+) {
+  if (!isCanonicalUuid(userId) || !isCanonicalUuid(sessionId)) {
+    return { ready: false, error: new Error("Invalid account session identifier") };
+  }
+
+  const { data, error } = await serviceClient.rpc(
+    "bluedeck_recover_signup_account",
+    { p_user_id: userId, p_session_id: sessionId },
+  );
+  if (error) return { ready: false, error };
+  if (typeof data !== "boolean") {
+    return {
+      ready: false,
+      error: new Error("Account recovery response is invalid"),
+    };
+  }
+  return { ready: data, error: null };
 }

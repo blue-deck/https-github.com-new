@@ -8,6 +8,10 @@ import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
 import { readLimitedJsonObject } from "../../../lib/requestBodyServer";
 import { isTrustedSameOriginMutation } from "../../../lib/requestOriginServer";
 import {
+  completeSignupProvisioning,
+  prepareSignupProvisioning,
+} from "../../../lib/signupProvisioningServer";
+import {
   currentLegalAcceptance,
   isCurrentLegalAcceptance,
 } from "../../../lib/legalPolicies";
@@ -117,6 +121,26 @@ export async function POST(request: NextRequest) {
     return signupError("captcha_required", 400);
   }
   const resolvedSupabaseUrl = resolveSupabaseUrl(supabaseUrl);
+  const adminSupabase = createClient(resolvedSupabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  // Store the validated signup choices before Auth inserts the user. Its
+  // database trigger consumes this opaque reference in the same transaction,
+  // so a terminated HTTP request cannot leave the requested role unfinished.
+  const prepared = await prepareSignupProvisioning(adminSupabase, {
+    email,
+    fullName,
+    role,
+    position,
+  });
+  if (!prepared.nonce) {
+    console.error("BlueDeck signup preparation failed", { code: prepared.failureCode });
+    return signupError("service_unavailable", 503);
+  }
 
   const supabase = createClient(resolvedSupabaseUrl, supabaseAnonKey, {
     auth: {
@@ -136,6 +160,7 @@ export async function POST(request: NextRequest) {
         full_name: fullName,
         role,
         position,
+        bluedeck_signup_intent: prepared.nonce,
         bluedeck_legal_acceptance: currentLegalAcceptance(),
       },
     },
@@ -157,58 +182,27 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const isNewAccount = Boolean(
+  const hasSignupIdentity = Boolean(
     data.user?.id &&
       Array.isArray(data.user.identities) &&
       data.user.identities.length > 0,
   );
   let provisioningFailed = false;
-  if (isNewAccount && data.user?.id) {
-    const adminSupabase = createClient(resolvedSupabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      },
+  if (hasSignupIdentity && data.user?.id) {
+    const provisioned = await completeSignupProvisioning(adminSupabase, {
+      userId: data.user.id,
+      email,
+      fullName,
+      role,
+      position,
     });
 
-    const { data: provisioned, error: provisioningError } =
-      await adminSupabase.rpc("bluedeck_provision_signup_account", {
-        p_user_id: data.user.id,
-        p_email: email,
-        p_full_name: fullName,
-        p_account_role: role,
-        p_position: position,
-      });
-
-    if (provisioningError || provisioned !== true) {
+    if (!provisioned.ready) {
       provisioningFailed = true;
       console.error("BlueDeck atomic signup provisioning failed", {
         userId: data.user.id,
-        code: provisioningError?.code || "signup_not_provisioned",
+        code: provisioned.failureCode,
       });
-
-      const { error: quarantineError } = await adminSupabase.rpc(
-        "bluedeck_fail_signup_provisioning",
-        {
-          p_user_id: data.user.id,
-          p_failure_code: "trusted_promotion_failed",
-        },
-      );
-      if (quarantineError) {
-        console.error("BlueDeck failed signup quarantine failed", {
-          userId: data.user.id,
-          code: quarantineError.code || "signup_quarantine_failed",
-        });
-      }
-
-      const { error: cleanupError } =
-        await adminSupabase.auth.admin.deleteUser(data.user.id, false);
-      if (cleanupError) {
-        console.error("BlueDeck failed signup cleanup failed", {
-          userId: data.user.id,
-          code: cleanupError.code || "signup_cleanup_failed",
-        });
-      }
     }
   }
 
