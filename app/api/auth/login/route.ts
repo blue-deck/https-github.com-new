@@ -5,6 +5,7 @@ import { readLimitedJsonObjectDetailed } from "../../../lib/requestBodyServer";
 import { consumeRequestRateLimit } from "../../../lib/requestRateLimitServer";
 import { isTrustedSameOriginMutation } from "../../../lib/requestOriginServer";
 import { resolveSupabaseUrl } from "../../../lib/supabaseConfig";
+import { authenticateActiveBearer } from "../../../lib/activeBearerServer";
 import {
   getClientIp,
   isTurnstileConfigured,
@@ -20,7 +21,8 @@ export async function POST(request: NextRequest) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "";
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || "";
-  if (!supabaseUrl || !anonKey) return loginError("service_unavailable", 503);
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
+  if (!supabaseUrl || !anonKey || !serviceKey) return loginError("service_unavailable", 503);
 
   const trustedClientIp = getClientIp(request);
   const clientIp = trustedClientIp || "unknown";
@@ -83,6 +85,23 @@ export async function POST(request: NextRequest) {
     return loginError(code, code === "rate_limited" ? 429 : 400);
   }
   if (!data.session?.access_token || !data.session.refresh_token) {
+    return loginError("service_unavailable", 503);
+  }
+
+  const serviceClient = createClient(resolveSupabaseUrl(supabaseUrl), serviceKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+  const account = await authenticateActiveBearer({
+    token: data.session.access_token,
+    authClient: supabase,
+    serviceClient,
+  });
+  if (!account.ok) {
+    console.error("[account-login]", { event: account.reason });
     return loginError("service_unavailable", 503);
   }
 

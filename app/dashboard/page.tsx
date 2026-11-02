@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
+  AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
   Camera,
@@ -13,6 +14,7 @@ import {
   Inbox,
   LoaderCircle,
   Plus,
+  RefreshCw,
   ShieldCheck,
   Ship,
   ShipWheel,
@@ -22,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "../components/LanguageProvider";
+import { isExpiredAuthSession } from "../lib/authSessionErrors";
 import {
   dashboardPhotoFromMetadata,
   removeDashboardPhoto as clearDashboardPhoto,
@@ -101,6 +104,10 @@ const dashboardCopy = {
     photoUpdateFailed: "Your photo could not be updated.",
     photoStorageUnavailable: "Photo storage is not ready yet. Please try again later.",
     photoRemoveFailed: "Your photo could not be removed.",
+    photoInvalidFile: "Please choose a JPG, PNG, WebP or AVIF photo smaller than 10 MB.",
+    loadFailedTitle: "Your dashboard could not be loaded",
+    loadFailedDescription: "We could not load your account access. Please try again to open your workspace.",
+    tryAgain: "Try again",
     inviteLinkIncomplete: "This invitation link is incomplete. Ask the sender to create a new invitation.",
     inviteAcceptFailed: "Invitation could not be accepted.",
   },
@@ -128,6 +135,10 @@ const dashboardCopy = {
     photoUpdateFailed: "Fotoğrafınız güncellenemedi.",
     photoStorageUnavailable: "Fotoğraf depolama alanı henüz hazır değil. Lütfen daha sonra tekrar deneyin.",
     photoRemoveFailed: "Fotoğrafınız kaldırılamadı.",
+    photoInvalidFile: "Lütfen 10 MB'den küçük bir JPG, PNG, WebP veya AVIF fotoğraf seçin.",
+    loadFailedTitle: "Dashboard yüklenemedi",
+    loadFailedDescription: "Hesap erişiminizi yükleyemedik. Çalışma alanınızı açmak için lütfen tekrar deneyin.",
+    tryAgain: "Tekrar dene",
     inviteLinkIncomplete: "Bu davet bağlantısı eksik. Gönderenden yeni bir davet oluşturmasını isteyin.",
     inviteAcceptFailed: "Davet kabul edilemedi.",
   },
@@ -292,6 +303,8 @@ export default function DashboardPage() {
     useState<AccountCapabilities | null>(null);
   const [loading, setLoading] = useState(true);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
   const [deckInvites, setDeckInvites] = useState<DashboardYachtInvite[]>([]);
   const [myDecks, setMyDecks] = useState<DashboardDeck[]>([]);
   const [acceptingInviteId, setAcceptingInviteId] = useState("");
@@ -389,123 +402,126 @@ export default function DashboardPage() {
   }
 
   async function loadDashboard() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    setLoading(true);
+    setLoadFailed(false);
+    let redirecting = false;
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      window.location.href = "/login";
-      return;
-    }
+      if ((!user && !userError) || isExpiredAuthSession(userError)) {
+        redirecting = true;
+        window.location.href = "/login";
+        return;
+      }
+      if (userError) throw userError;
+      if (!user) throw new Error("Account session could not be loaded.");
 
-    const [profileResult, capabilities] = await Promise.all([
-      supabase
+      // This request verifies access and synchronizes the server-owned account
+      // records. Read those records only after it completes.
+      const capabilities = await loadAccountCapabilities();
+      if (!capabilities) throw new Error("Account access could not be loaded.");
+      const profileResult = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .maybeSingle(),
-      loadAccountCapabilities(),
-    ]);
+        .maybeSingle();
+      if (profileResult.error || !profileResult.data) {
+        throw new Error("Account profile could not be loaded.");
+      }
 
-    let crewProfile: Record<string, any> | null = null;
-    if (capabilities?.canUseCrewWorkspace === true) {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.access_token) {
-        try {
-          await fetch("/api/crew-profile/reconcile", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          });
-        } catch {
-          // Reconciliation is a safe, idempotent legacy bridge. The regular
-          // dashboard can still load when it is temporarily unavailable.
+      let crewProfile: Record<string, any> | null = null;
+      if (capabilities?.canUseCrewWorkspace === true) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          try {
+            await fetch("/api/crew-profile/reconcile", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${session.access_token}`,
+              },
+            });
+          } catch {
+            // Reconciliation is a safe, idempotent legacy bridge. The regular
+            // dashboard can still load when it is temporarily unavailable.
+          }
+        }
+
+        const crewProfileResult = await supabase
+          .from("crew_profiles")
+          .select("id, full_name, phone, email, profile_photo_url")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (crewProfileResult.error) throw crewProfileResult.error;
+        crewProfile = crewProfileResult.data;
+      }
+
+      let profileData = profileResult.data;
+
+      const preferredName =
+        cleanDisplayName(profileData) ||
+        cleanDisplayName(crewProfile) ||
+        (typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "") ||
+        user.email;
+
+      if (preferredName && profileData.full_name !== preferredName) {
+        profileData = { ...profileData, full_name: preferredName };
+      }
+
+      const userMetadata = user.user_metadata as Record<string, unknown> | undefined;
+      const rawProfilePhotoUrl = crewProfile?.profile_photo_url || "";
+      const rawDashboardPhotoUrl = dashboardPhotoFromMetadata(
+        userMetadata,
+        rawProfilePhotoUrl,
+      );
+      const [profilePhotoUrl, dashboardPhotoUrl] =
+        await signCrewPortfolioReferences(
+          supabase,
+          [rawProfilePhotoUrl, rawDashboardPhotoUrl],
+          [user.id, crewProfile?.id],
+          resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        );
+      if (!userMetadata || !Object.prototype.hasOwnProperty.call(userMetadata, "avatar_url")) {
+        const stableAvatarPath = normalizeCrewPortfolioStoragePath(
+          rawDashboardPhotoUrl,
+          [user.id, crewProfile?.id],
+          resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+        );
+        if (stableAvatarPath) {
+          await supabase.auth.updateUser({ data: { avatar_url: stableAvatarPath } });
         }
       }
 
-      const crewProfileResult = await supabase
-        .from("crew_profiles")
-        .select("id, full_name, phone, email, profile_photo_url")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      crewProfile = crewProfileResult.data;
-    }
-
-    let profileData = profileResult.data;
-
-    const preferredName =
-      cleanDisplayName(profileData) ||
-      cleanDisplayName(crewProfile) ||
-      (typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "") ||
-      user.email;
-
-    if (!profileData) {
-      const { data: newProfile } = await supabase
-        .from("profiles")
-        .insert({
-          id: user.id,
-          email: user.email,
-          full_name: preferredName,
-          phone: crewProfile?.phone || user.user_metadata?.phone || "",
-          role: capabilities?.role || "crew",
-        })
-        .select()
-        .single();
-
-      profileData = newProfile;
-    } else if (preferredName && profileData.full_name !== preferredName) {
-      profileData = { ...profileData, full_name: preferredName };
-    }
-
-    const userMetadata = user.user_metadata as Record<string, unknown> | undefined;
-    const rawProfilePhotoUrl = crewProfile?.profile_photo_url || "";
-    const rawDashboardPhotoUrl = dashboardPhotoFromMetadata(
-      userMetadata,
-      rawProfilePhotoUrl,
-    );
-    const [profilePhotoUrl, dashboardPhotoUrl] =
-      await signCrewPortfolioReferences(
-        supabase,
-        [rawProfilePhotoUrl, rawDashboardPhotoUrl],
-        [user.id, crewProfile?.id],
-        resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
-      );
-    if (!userMetadata || !Object.prototype.hasOwnProperty.call(userMetadata, "avatar_url")) {
-      const stableAvatarPath = normalizeCrewPortfolioStoragePath(
-        rawDashboardPhotoUrl,
-        [user.id, crewProfile?.id],
-        resolveSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
-      );
-      if (stableAvatarPath) {
-        await supabase.auth.updateUser({ data: { avatar_url: stableAvatarPath } });
+      setProfile({
+        ...profileData,
+        role: capabilities?.role || profileData?.role || "crew",
+        crew_profile_id: crewProfile?.id,
+        full_name: preferredName,
+        email: profileData?.email || crewProfile?.email || user.email,
+        phone: profileData?.phone || crewProfile?.phone || user.user_metadata?.phone || "",
+        is_admin: user.app_metadata?.bluedeck_admin === true,
+        profile_photo_url: profilePhotoUrl,
+        dashboard_photo_url: dashboardPhotoUrl,
+      });
+      setAccountCapabilities(capabilities);
+      if (capabilities?.canUseCrewWorkspace === true) {
+        await hydrateDeckAccess(
+          crewProfile,
+          profileData?.email || crewProfile?.email || user.email,
+        );
+      } else {
+        setDeckInvites([]);
+        setMyDecks([]);
       }
+    } catch {
+      setLoadFailed(true);
+    } finally {
+      if (!redirecting) setLoading(false);
     }
-
-    setProfile({
-      ...profileData,
-      role: capabilities?.role || profileData?.role || "crew",
-      crew_profile_id: crewProfile?.id,
-      full_name: preferredName,
-      email: profileData?.email || crewProfile?.email || user.email,
-      phone: profileData?.phone || crewProfile?.phone || user.user_metadata?.phone || "",
-      is_admin: user.app_metadata?.bluedeck_admin === true,
-      profile_photo_url: profilePhotoUrl,
-      dashboard_photo_url: dashboardPhotoUrl,
-    });
-    setAccountCapabilities(capabilities);
-    if (capabilities?.canUseCrewWorkspace === true) {
-      await hydrateDeckAccess(
-        crewProfile,
-        profileData?.email || crewProfile?.email || user.email,
-      );
-    } else {
-      setDeckInvites([]);
-      setMyDecks([]);
-    }
-    setLoading(false);
   }
 
   async function saveDashboardPhoto(file: File) {
@@ -519,6 +535,7 @@ export default function DashboardPage() {
     }
 
     setPhotoUploading(true);
+    setPhotoError("");
 
     try {
       const result = await persistDashboardPhoto({
@@ -536,10 +553,12 @@ export default function DashboardPage() {
       }));
     } catch (error) {
       const message = error instanceof Error ? error.message : copy.photoUpdateFailed;
-      alert(
+      setPhotoError(
         message === "Bucket not found"
           ? copy.photoStorageUnavailable
-          : message,
+          : /^(Please choose a valid photo file\.|Please choose a JPG, PNG, WebP or AVIF photo\.|Please choose a photo smaller than 10 MB\.)$/.test(message)
+            ? copy.photoInvalidFile
+            : copy.photoUpdateFailed,
       );
     } finally {
       setPhotoUploading(false);
@@ -557,14 +576,15 @@ export default function DashboardPage() {
     }
 
     setPhotoUploading(true);
+    setPhotoError("");
     try {
       await clearDashboardPhoto({
         user,
         fullName: profile?.full_name,
       });
       setProfile((current) => ({ ...(current || {}), dashboard_photo_url: "" }));
-    } catch (error) {
-      alert(error instanceof Error ? error.message : copy.photoRemoveFailed);
+    } catch {
+      setPhotoError(copy.photoRemoveFailed);
     } finally {
       setPhotoUploading(false);
     }
@@ -654,14 +674,26 @@ export default function DashboardPage() {
     );
   }
 
+  if (loadFailed || !accountCapabilities) {
+    return (
+      <main id="main-content" tabIndex={-1} className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900 sm:px-8">
+        <section className="bd-ocean-content mx-auto max-w-2xl rounded-2xl border border-rose-200 bg-white p-6 shadow-sm" role="alert">
+          <AlertCircle className="h-8 w-8 text-rose-700" aria-hidden />
+          <h1 className="mt-4 text-2xl font-semibold text-[#071f3c]">{copy.loadFailedTitle}</h1>
+          <p className="mt-3 text-slate-600">{copy.loadFailedDescription}</p>
+          <button type="button" onClick={() => void loadDashboard()} className="bd-focus mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-cyan-700 px-5 py-3 font-bold text-white hover:bg-cyan-800">
+            <RefreshCw className="h-5 w-5" aria-hidden />
+            {copy.tryAgain}
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   const normalizedRole = profile?.role?.trim().toLowerCase() || "crew";
-  const canManageYachts =
-    accountCapabilities?.canManageYachts ??
-    ["captain", "owner", "management"].includes(normalizedRole);
-  const canPostJobs = accountCapabilities?.canPostJobs === true;
-  const canApplyToJobs =
-    accountCapabilities?.canApplyToJobs ??
-    ["crew", "captain"].includes(normalizedRole);
+  const canManageYachts = accountCapabilities.canManageYachts;
+  const canPostJobs = accountCapabilities.canPostJobs;
+  const canApplyToJobs = accountCapabilities.canApplyToJobs;
   const hasCrewWorkspace =
     accountCapabilities?.canUseCrewWorkspace === true;
   const roleLabel =
@@ -718,6 +750,9 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+            {photoError ? (
+              <p role="alert" className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{photoError}</p>
+            ) : null}
             <input
               ref={fileInputRef}
               type="file"

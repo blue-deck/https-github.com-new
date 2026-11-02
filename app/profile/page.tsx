@@ -30,9 +30,11 @@ import { toDataURL } from "qrcode";
 import { BlueDeckMark } from "../components/BlueDeckLogo";
 import { CvScaleFrame } from "../components/CvScaleFrame";
 import { LocationSearchField } from "../components/LocationSearchField";
+import { useLanguage } from "../components/LanguageProvider";
 import { NationalitySearchField } from "../components/NationalitySearchField";
 import { PhoneInput } from "../components/PhoneInput";
 import { loadAccountCapabilities } from "../lib/accountCapabilities";
+import { isExpiredAuthSession } from "../lib/authSessionErrors";
 import {
   blueDeckCountries,
   canonicalNationalityValue,
@@ -42,7 +44,6 @@ import {
   crewAvailabilityStatuses,
   crewEmploymentTypes,
   crewPreferredLocations,
-  defaultCrewDiscoverySettings,
   parseCrewDiscoverySettings,
   writeCrewDiscoverySettings,
   type CrewDiscoverySettings,
@@ -525,6 +526,7 @@ const emptyReference: ReferenceEntry = {
 };
 
 export default function ProfilePage() {
+  const { language } = useLanguage();
   const [profile, setProfile] = useState<CrewProfile>({});
   const [documents, setDocuments] = useState<CrewDocument[]>([]);
   const [experiences, setExperiences] = useState<Experience[]>([]);
@@ -532,6 +534,7 @@ export default function ProfilePage() {
   const [portfolio, setPortfolio] = useState<PortfolioPhoto[]>([]);
   const [documentDraft, setDocumentDraft] = useState<CrewDocument>(newDocumentDraft());
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedProfile, setSavedProfile] = useState<CrewProfile>({});
   const [referenceSaving, setReferenceSaving] = useState(false);
@@ -697,29 +700,41 @@ export default function ProfilePage() {
   }
 
   async function loadProfile() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    setLoading(true);
+    setLoadFailed(false);
+    let redirecting = false;
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (!user?.email) {
-      const nextPath = window.location.hash === "#cv-studio" ? "/profile#cv-studio" : "/profile";
-      window.location.replace(`/login?next=${encodeURIComponent(nextPath)}`);
-      return;
-    }
+      if ((!user && !userError) || isExpiredAuthSession(userError)) {
+        redirecting = true;
+        const nextPath = window.location.hash === "#cv-studio" ? "/profile#cv-studio" : "/profile";
+        window.location.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+        return;
+      }
+      if (userError) throw userError;
+      if (!user?.email) throw new Error("Account session could not be loaded.");
 
-    const capabilities = await loadAccountCapabilities().catch(() => null);
-    if (capabilities?.canUseCrewWorkspace !== true) {
-      window.location.replace("/dashboard");
-      return;
-    }
+      const capabilities = await loadAccountCapabilities();
+      if (!capabilities) throw new Error("Account access could not be loaded.");
+      if (!capabilities.canUseCrewWorkspace) {
+        redirecting = true;
+        window.location.replace("/dashboard");
+        return;
+      }
 
-    const { data: existingProfile } = await supabase
-      .from("crew_profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      const { data: existingProfile, error: profileError } = await supabase
+        .from("crew_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (profileError || !existingProfile?.id) {
+        throw new Error("Crew profile could not be loaded.");
+      }
 
-    if (existingProfile) {
       const normalizedProfile = normalizeProfile({
         ...existingProfile,
         email: existingProfile.email || user.email || "",
@@ -734,37 +749,11 @@ export default function ProfilePage() {
       setProfile(normalizedProfile);
       setSavedProfile(normalizedProfile);
       await loadRelated(existingProfile.id);
-      setLoading(false);
-      return;
+    } catch {
+      setLoadFailed(true);
+    } finally {
+      if (!redirecting) setLoading(false);
     }
-
-    const newProfile = {
-      user_id: user.id,
-      email: user.email,
-      full_name: user.user_metadata?.full_name || user.email,
-      public_crew_id: user.id.slice(0, 8).toUpperCase(),
-      current_positions: [],
-      seeking_positions: [],
-      work_preferences: [],
-      personal_skills: [],
-      personal_characteristics: [],
-      languages: [],
-      notes: writeCrewDiscoverySettings("", defaultCrewDiscoverySettings),
-    };
-
-    const { data } = await supabase
-      .from("crew_profiles")
-      .insert(newProfile)
-      .select()
-      .single();
-
-    const normalizedProfile = normalizeProfile({
-      ...(data || newProfile),
-      gender: user.user_metadata?.gender || "",
-    });
-    setProfile(normalizedProfile);
-    setSavedProfile(normalizedProfile);
-    setLoading(false);
   }
 
   async function loadRelated(profileId?: string) {
@@ -1176,6 +1165,22 @@ export default function ProfilePage() {
         <div className="bd-ocean-content" role="status" aria-live="polite">
           <h1 className="text-3xl font-semibold text-[#071f3c]">Loading profile...</h1>
         </div>
+      </main>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <main className="bd-app-page bd-ocean-shell min-h-screen px-5 py-10 text-slate-900">
+        <section className="bd-ocean-content mx-auto max-w-2xl rounded-2xl border border-rose-200 bg-white p-6 shadow-sm" role="alert">
+          <AlertTriangle className="h-8 w-8 text-rose-700" aria-hidden />
+          <h1 className="mt-4 text-2xl font-semibold text-[#071f3c]">{language === "tr" ? "Profiliniz yüklenemedi" : "Your profile could not be loaded"}</h1>
+          <p className="mt-3 text-slate-600">{language === "tr" ? "Profilinizi ve CV düzenleyicinizi açmak için lütfen tekrar deneyin." : "Please try again to open your profile and CV editor."}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button type="button" onClick={() => void loadProfile()} className="bd-focus min-h-12 rounded-xl bg-cyan-700 px-5 py-3 font-bold text-white hover:bg-cyan-800">{language === "tr" ? "Tekrar dene" : "Try again"}</button>
+            <Link href="/dashboard" className="bd-focus inline-flex min-h-12 items-center rounded-xl border border-slate-200 px-5 py-3 font-bold text-[#173f4a]">Dashboard</Link>
+          </div>
+        </section>
       </main>
     );
   }

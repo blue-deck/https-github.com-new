@@ -92,13 +92,17 @@ export async function GET(request: NextRequest) {
     role: entitlement.role,
   });
 
-  if (profileResult.error) {
+  if (profileResult.error || !profileResult.data?.length) {
     console.error("[account-capabilities]", {
       event: "base_profile_role_sync_failed",
       userId: clients.user.id,
-      code: cleanText(profileResult.error.code) || undefined,
-      message: cleanText(profileResult.error.message) || "Unknown database error",
+      code: cleanText(profileResult.error?.code) || undefined,
+      message: cleanText(profileResult.error?.message) || "Account profile was not saved",
     });
+    return accountResponse(
+      { ok: false, error: "Your account profile could not be prepared. Please try again." },
+      503,
+    );
   }
 
   const trustedPositionCandidate =
@@ -120,6 +124,10 @@ export async function GET(request: NextRequest) {
       code: cleanText(crewProfileError.code) || undefined,
       message: cleanText(crewProfileError.message) || "Unknown database error",
     });
+    return accountResponse(
+      { ok: false, error: "Your crew profile could not be loaded. Please try again." },
+      503,
+    );
   }
 
   const savedPosition =
@@ -129,7 +137,7 @@ export async function GET(request: NextRequest) {
       : "");
   const position = savedPosition || trustedPosition;
 
-  if (!crewProfileError && position && !savedPosition) {
+  if (!crewProfile?.id || (position && !savedPosition)) {
     const crewProfileResult = await saveCrewProfileByUserId(
       clients.serviceClient,
       clients.user.id,
@@ -138,23 +146,23 @@ export async function GET(request: NextRequest) {
         full_name:
           cleanText(clients.user.user_metadata?.full_name) ||
           clients.user.email,
-        current_position: position,
-        current_positions: [position],
-        ...(entitlement.canUseCrewWorkspace
-          ? { public_crew_id: clients.user.id.slice(0, 8).toUpperCase() }
-          : crewProfile?.id
-            ? {}
-            : { public_crew_id: null }),
+        ...(position
+          ? { current_position: position, current_positions: [position] }
+          : { current_positions: [] }),
       },
       "id,current_position,current_positions",
     );
 
-    if (crewProfileResult.error) {
+    if (crewProfileResult.error || !crewProfileResult.data?.id) {
       console.error("[account-capabilities]", {
         event: "crew_position_sync_failed",
         userId: clients.user.id,
-        message: cleanText(crewProfileResult.error.message),
+        message: cleanText(crewProfileResult.error?.message) || "Crew profile was not saved",
       });
+      return accountResponse(
+        { ok: false, error: "Your crew profile could not be prepared. Please try again." },
+        503,
+      );
     }
   }
 
