@@ -22,6 +22,7 @@ import { HomePageSections, departmentLabel, homeCopy } from "./HomePageSections"
 import { DesktopReferenceHero } from "./DesktopReferenceHero";
 import { DesktopHomeSearch } from "./DesktopHomeSearch";
 import type { YachtDepartmentId } from "./lib/yachtOperations";
+import type { GuideLanguage, GuideSummary } from "./blog/_components/guide-index";
 
 type LoadState = "loading" | "ready" | "error";
 
@@ -112,7 +113,7 @@ const copy = {
   },
 } as const;
 
-export default function HomePageClient({ heroFontClassName }: { heroFontClassName: string }) {
+export default function HomePageClient({ heroFontClassName, blogTranslations }: { heroFontClassName: string; blogTranslations: Record<GuideLanguage, GuideSummary[]> }) {
   const { language } = useLanguage();
   const c = copy[language];
   const hc = homeCopy[language];
@@ -286,7 +287,7 @@ export default function HomePageClient({ heroFontClassName }: { heroFontClassNam
           </div>
         </section>
 
-        <HomePageSections language={language} viewer={jobViewer} />
+        <HomePageSections language={language} viewer={jobViewer} blogTranslations={blogTranslations} />
       </main>
 
       <PublicFooter />

@@ -9,6 +9,7 @@ import { getHomeAudienceNavigation } from "./lib/homeAudienceNavigation";
 import { yachtDepartments } from "./lib/yachtOperations";
 import { YachtOsSection } from "./YachtOsSection";
 import { GuidesHomeSection } from "./blog/_components/GuideCards";
+import type { GuideLanguage, GuideSummary } from "./blog/_components/guide-index";
 import styles from "./homeContent.module.css";
 
 type Language = "en" | "tr";
@@ -75,7 +76,7 @@ export function HomeJobSearch({ language }: { language: Language }) {
   );
 }
 
-export function HomePageSections({ language, viewer }: { language: Language; viewer: JobListingViewer }) {
+export function HomePageSections({ language, viewer, blogTranslations }: { language: Language; viewer: JobListingViewer; blogTranslations: Record<GuideLanguage, GuideSummary[]> }) {
   const c = homeCopy[language];
   const { crewProfileHref, hiringHref } = getHomeAudienceNavigation(viewer);
   const signedIn = viewer.kind === "signed-in";
@@ -127,7 +128,7 @@ export function HomePageSections({ language, viewer }: { language: Language; vie
 
       <YachtOsSection language={language} />
 
-      <GuidesHomeSection />
+      <GuidesHomeSection translations={blogTranslations} />
 
       <section className={styles.trustSection} aria-label={language === "tr" ? "Güven ve gizlilik" : "Trust and privacy"}>
         <div className={styles.container}>

@@ -88,9 +88,9 @@
 .emptyState p { color: var(--muted); font-size: 14px; }
 .libraryCta { display: flex; justify-content: space-between; align-items: center; gap: 30px; padding: 46px 55px; background: #edf3f6; border-radius: 7px; margin-bottom: 80px; }
 .libraryCta h2 { font-size: clamp(25px, 3vw, 36px); line-height: 1.2; letter-spacing: -.04em; font-weight: 500; margin-top: 15px; }
-.articleHeading { max-width: 885px; margin: 51px auto 0; }
+.articleHeading { max-width: 1100px; margin: 51px auto 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
 .articleHeading .meta { font-size: 12px; }
-.articleHeading h1 { font-size: clamp(36px, 4.4vw, 59px); line-height: 1.1; letter-spacing: -.05em; font-weight: 550; margin-top: 20px; }
+.articleHeading h1 { max-width: 885px; text-wrap: balance; font-size: clamp(36px, 4.4vw, 59px); line-height: 1.1; letter-spacing: -.05em; font-weight: 550; margin-top: 20px; }
 .articleDek { font-size: 17px; line-height: 1.8; color: #6a7987; margin-top: 22px; max-width: 760px; }
 .articleByline { display: flex; align-items: center; gap: 12px; padding-block: 29px; margin-top: 6px; }
 .authorMark { display: inline-flex; align-items: center; justify-content: center; width: 43px; height: 43px; background: #eef4f6; border: 1px solid #dbe5ea; border-radius: 50%; color: #1a506e; font-size: 22px; font-weight: 550; flex-shrink: 0; }
@@ -98,12 +98,7 @@
 .articleByline > div { display: flex; flex-direction: column; gap: 5px; }
 .articleByline strong { font-size: 11px; font-weight: 650; }
 .articleByline > div > span { font-size: 10px; color: #7c8994; }
-.articleHero { margin-top: 16px; }
-.articleHero > div { position: relative; height: clamp(260px, 38vw, 510px); border-radius: 8px; overflow: hidden; }
-.articleHero img { object-fit: cover; object-position: center 38%; }
-.articleHero figcaption { display: flex; justify-content: space-between; gap: 20px; padding-block: 13px; font-size: 9px; letter-spacing: .13em; color: #6f7e8a; }
-.articleHero figcaption > span { letter-spacing: 0; }
-.readingLayout { display: grid; grid-template-columns: 235px minmax(0, 690px); gap: 78px; max-width: 1100px; margin: 57px auto 0; }
+.readingLayout { display: grid; grid-template-columns: 235px minmax(0, 690px); gap: 78px; max-width: 1100px; margin: 43px auto 0; padding-bottom: 70px; }
 .stickyContents { position: sticky; top: 120px; }
 .stickyContents > .eyebrow { padding-bottom: 19px; border-bottom: 1px solid var(--line); }
 .stickyContents nav { margin-top: 14px; display: flex; flex-direction: column; gap: 4px; }
@@ -122,7 +117,7 @@
 .proseSection { scroll-margin-top: 120px; margin-bottom: 41px; }
 .chapterLabel { font-size: 9px; font-weight: 650; letter-spacing: .16em; color: #86a1b1; margin-bottom: 10px; }
 .proseSection h2 { font-size: 29px; line-height: 1.25; letter-spacing: -.035em; font-weight: 550; margin-bottom: 19px; }
-.proseSection p, .proseSection li { color: #56697a; font-size: 15px; line-height: 1.95; }
+.proseSection p, .proseSection li { overflow-wrap: anywhere; white-space: pre-line; color: #56697a; font-size: 15px; line-height: 1.95; }
 .proseSection p + p { margin-top: 17px; }
 .proseSection ul { margin-top: 21px; padding-left: 22px; list-style: disc; }
 .proseSection li { padding-left: 5px; margin-top: 9px; }
@@ -150,7 +145,7 @@
 .authorFooter { display: flex; align-items: center; gap: 16px; padding-block: 29px; border-block: 1px solid var(--line); margin-top: 34px; }
 .authorFooter strong { font-size: 12px; font-weight: 650; }
 .authorFooter p { font-size: 12px; color: #778692; line-height: 1.75; margin-top: 5px; }
-.related { padding-top: 71px; margin-top: 61px; border-top: 1px solid var(--line); padding-bottom: 86px; }
+.related { padding-top: 61px; margin-top: 0; border-top: 1px solid var(--line); padding-bottom: 86px; }
 .relatedHead { display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; margin-bottom: 34px; }
 .relatedHead h2 { font-size: 36px; letter-spacing: -.045em; line-height: 1.2; font-weight: 500; margin-top: 12px; }
 .relatedGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; }
@@ -220,15 +215,10 @@
   .cardCopy h3 { font-size: 25px; }
   .libraryCta { flex-direction: column; align-items: flex-start; padding: 30px 25px; margin-bottom: 45px; }
   .articleHeading { margin-top: 34px; }
-  .articleHeading h1 { font-size: 37px; margin-top: 16px; }
+  .articleHeading h1 { max-width: 885px; text-wrap: balance; font-size: 37px; margin-top: 16px; }
   .articleDek { font-size: 15px; line-height: 1.8; margin-top: 20px; }
   .articleByline { flex-wrap: wrap; padding: 24px 0 23px; }
-  .articleHero { margin-top: 0; }
-  .articleHero > div { height: 280px; }
-  .articleHero img { object-position: 65% 40%; }
-  .articleHero figcaption { font-size: 8px; gap: 10px; line-height: 1.7; }
-  .articleHero figcaption > span { max-width: 165px; text-align: right; }
-  .readingLayout { margin-top: 22px; gap: 28px; }
+  .readingLayout { margin-top: 22px; gap: 28px; padding-bottom: 40px; }
   .stickyContents nav { grid-template-columns: 1fr; gap: 0; }
   .stickyContents nav a { font-size: 12px; padding-block: 7px; }
   .takeaway { padding: 22px; margin-bottom: 32px; }
@@ -245,7 +235,7 @@
   .articleCta h2 { font-size: 27px; }
   .articleCta .primaryButton { gap: 15px; font-size: 11px; }
   .authorFooter { align-items: flex-start; }
-  .related { margin-top: 40px; padding: 40px 0 48px; }
+  .related { margin-top: 0; padding: 40px 0 48px; }
   .relatedHead { flex-wrap: wrap; align-items: flex-start; gap: 18px; }
   .relatedHead h2 { font-size: 31px; }
   .relatedGrid { grid-template-columns: 1fr; gap: 36px; }

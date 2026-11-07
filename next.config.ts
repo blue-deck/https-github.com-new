@@ -32,9 +32,15 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/yachts": ["./node_modules/@img/sharp-*/lib/**/*"],
     "/api/yachts/*": ["./node_modules/@img/sharp-*/lib/**/*"],
+    "/api/admin/blog/media": ["./node_modules/@img/sharp-*/lib/**/*"],
   },
   images: {
     qualities: [75, 90],
+    remotePatterns: [{
+      protocol: "https",
+      hostname: "onftggrmmpvvwgxxzywo.supabase.co",
+      pathname: "/storage/v1/object/public/blog-media/**",
+    }],
   },
   async redirects() {
     return [
