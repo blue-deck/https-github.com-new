@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { BLUEDECK_SITE_URL } from "./lib/site";
-import { guideBase, guideHref, guideSummaries as guides } from "./blog/_components/guide-index";
+import { guideBase, guideHref } from "./blog/_components/guide-index";
+import { getPublishedPosts } from "./blog/_components/published-guides";
+
+export const dynamic = "force-dynamic";
 
 const publicRoutes = [
   { path: "", changeFrequency: "weekly", priority: 1 },
@@ -14,7 +17,8 @@ const publicRoutes = [
   { path: "/terms", changeFrequency: "yearly", priority: 0.4 },
 ] as const;
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const posts = await getPublishedPosts();
   return [...publicRoutes.map((route) => ({
     url: `${BLUEDECK_SITE_URL}${route.path}`,
     changeFrequency: route.changeFrequency,
@@ -23,9 +27,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${BLUEDECK_SITE_URL}${guideBase}`,
     changeFrequency: "weekly",
     priority: 0.75,
-  }, ...guides.map((guide) => ({
-    url: `${BLUEDECK_SITE_URL}${guideHref(guide.slug)}`,
-    lastModified: guide.publishedAt,
+  }, ...posts.filter((post) => post.published).map((post) => ({
+    url: `${BLUEDECK_SITE_URL}${guideHref(post.published!.slug)}`,
+    lastModified: post.publishedUpdatedAt ?? post.publishedAt ?? undefined,
     changeFrequency: "monthly" as const,
     priority: 0.65,
   }))];

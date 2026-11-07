@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useLanguage } from "../../components/LanguageProvider";
-import { guideBase } from "./guide-index";
+import { guideBase, type GuideLanguage, type GuideSummary } from "./guide-index";
 import { getBlogCopy } from "./blog-copy";
 import { GuidesCarousel } from "./GuidesCarousel";
 import styles from "./guides.module.css";
 
-export function GuidesHomeSection() {
+export function GuidesHomeSection({ translations }: { translations: Record<GuideLanguage, GuideSummary[]> }) {
   const { language } = useLanguage();
   const copy = getBlogCopy(language);
+  const guides = translations[language];
+
+  if (!guides.length) return null;
 
   return (
     <section
@@ -33,7 +36,7 @@ export function GuidesHomeSection() {
             </Link>
           </div>
         </div>
-        <GuidesCarousel language={language} />
+        <GuidesCarousel key={guides.map((guide) => guide.slug).join("|")} language={language} guides={guides} />
       </div>
     </section>
   );

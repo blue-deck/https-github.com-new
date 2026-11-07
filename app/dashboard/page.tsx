@@ -12,6 +12,7 @@ import {
   ClipboardCheck,
   FileText,
   Inbox,
+  NotebookPen,
   LoaderCircle,
   Plus,
   RefreshCw,
@@ -948,6 +949,14 @@ export default function DashboardPage() {
 
         {profile?.is_admin ? (
           <div className={styles.adminLinks} data-i18n-ignore>
+            <DashboardEntry
+              href="/admin/blog"
+              title={language === "tr" ? "Blog yönetimi" : "Blog studio"}
+              description={language === "tr"
+                ? "Yazı oluşturun, kapak ekleyin, önizleyin ve yayınlarınızı yönetin."
+                : "Create articles, add covers, preview and manage your publications."}
+              icon={NotebookPen}
+            />
             <DashboardEntry
               href="/admin/contact-messages"
               title={language === "tr" ? "İletişim mesajları" : "Contact messages"}

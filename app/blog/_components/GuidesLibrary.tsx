@@ -5,16 +5,16 @@ import Link from "next/link";
 import { ArrowRight, Search, X } from "lucide-react";
 import { useLanguage } from "../../components/LanguageProvider";
 import { GuideCard } from "./GuideCard";
-import { getGuideSummaries, type GuideSummary } from "./guide-index";
+import type { GuideLanguage, GuideSummary } from "./guide-index";
 import { articleCount, getBlogCopy } from "./blog-copy";
 import styles from "./guides.module.css";
 
 type CategoryFilter = "all" | GuideSummary["categoryId"];
 
-export function GuidesLibrary() {
+export function GuidesLibrary({ translations }: { translations: Record<GuideLanguage, GuideSummary[]> }) {
   const { language } = useLanguage();
   const copy = getBlogCopy(language);
-  const guides = getGuideSummaries(language);
+  const guides = translations[language];
   const [category, setCategory] = useState<CategoryFilter>("all");
   const [query, setQuery] = useState("");
   const categories: { id: CategoryFilter; label: string }[] = [

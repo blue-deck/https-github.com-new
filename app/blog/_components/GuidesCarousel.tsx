@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { GuideCard } from "./GuideCard";
-import { getGuideSummaries, type GuideLanguage } from "./guide-index";
+import type { GuideLanguage, GuideSummary } from "./guide-index";
 import { getBlogCopy, slidePosition } from "./blog-copy";
 import styles from "./GuidesCarousel.module.css";
 
@@ -11,8 +11,7 @@ const DWELL_MS = 4_000;
 const TRANSITION_MS = 720;
 const modulo = (value: number, length: number) => ((value % length) + length) % length;
 
-export function GuidesCarousel({ language }: { language: GuideLanguage }) {
-  const guides = getGuideSummaries(language);
+export function GuidesCarousel({ language, guides }: { language: GuideLanguage; guides: GuideSummary[] }) {
   const copy = getBlogCopy(language);
   const count = guides.length;
   const viewportRef = useRef<HTMLDivElement>(null);
